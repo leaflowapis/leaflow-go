@@ -6,6 +6,7 @@ package computev1server
 type OperationName = string
 
 const (
+	AcceptPeeringOperation             OperationName = "AcceptPeering"
 	AllocateFloatingIPOperation        OperationName = "AllocateFloatingIP"
 	AttachDiskOperation                OperationName = "AttachDisk"
 	AttachInstanceFloatingIPOperation  OperationName = "AttachInstanceFloatingIP"
@@ -14,6 +15,7 @@ const (
 	ConfirmInstanceResizeOperation     OperationName = "ConfirmInstanceResize"
 	CreateBackupOperation              OperationName = "CreateBackup"
 	CreateDiskOperation                OperationName = "CreateDisk"
+	CreatePeeringOperation             OperationName = "CreatePeering"
 	CreatePortOperation                OperationName = "CreatePort"
 	CreatePrivateImageOperation        OperationName = "CreatePrivateImage"
 	CreatePrivateNetworkOperation      OperationName = "CreatePrivateNetwork"
@@ -25,6 +27,7 @@ const (
 	DeleteBackupOperation              OperationName = "DeleteBackup"
 	DeleteDiskOperation                OperationName = "DeleteDisk"
 	DeleteInstanceOperation            OperationName = "DeleteInstance"
+	DeletePeeringOperation             OperationName = "DeletePeering"
 	DeletePortOperation                OperationName = "DeletePort"
 	DeletePrivateImageOperation        OperationName = "DeletePrivateImage"
 	DeletePrivateNetworkOperation      OperationName = "DeletePrivateNetwork"
@@ -44,6 +47,7 @@ const (
 	GetFloatingIPOperation             OperationName = "GetFloatingIP"
 	GetInstanceOperation               OperationName = "GetInstance"
 	GetInstanceConsoleOutputOperation  OperationName = "GetInstanceConsoleOutput"
+	GetPeeringOperation                OperationName = "GetPeering"
 	GetPrivateImageOperation           OperationName = "GetPrivateImage"
 	GetPrivateNetworkOperation         OperationName = "GetPrivateNetwork"
 	GetPrivateNetworkIpv6Operation     OperationName = "GetPrivateNetworkIpv6"
@@ -63,6 +67,7 @@ const (
 	ListInstancesOperation             OperationName = "ListInstances"
 	ListIpv4PoolsOperation             OperationName = "ListIpv4Pools"
 	ListOperationLogsOperation         OperationName = "ListOperationLogs"
+	ListPeeringsOperation              OperationName = "ListPeerings"
 	ListPortsOperation                 OperationName = "ListPorts"
 	ListPrivateImagesOperation         OperationName = "ListPrivateImages"
 	ListPrivateNetworksOperation       OperationName = "ListPrivateNetworks"
@@ -75,6 +80,7 @@ const (
 	OpenInstanceConsoleOperation       OperationName = "OpenInstanceConsole"
 	RebootInstanceOperation            OperationName = "RebootInstance"
 	RebuildInstanceOperation           OperationName = "RebuildInstance"
+	RejectPeeringOperation             OperationName = "RejectPeering"
 	ReleaseFloatingIPOperation         OperationName = "ReleaseFloatingIP"
 	RenameBackupOperation              OperationName = "RenameBackup"
 	RenameDiskOperation                OperationName = "RenameDisk"

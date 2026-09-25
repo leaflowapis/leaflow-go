@@ -29,6 +29,12 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// AcceptPeering invokes accept-peering operation.
+	//
+	// Accept peering.
+	//
+	// POST /api/v1/peerings/{peeringId}/accept
+	AcceptPeering(ctx context.Context, params AcceptPeeringParams) (*PeeringResource, error)
 	// AllocateFloatingIP invokes allocate-floating-ip operation.
 	//
 	// If the private network is not yet connected to the internet, connectivity is established as part of
@@ -37,15 +43,21 @@ type Invoker interface {
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
 	// network; enable IPv6 on that network instead.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/floating-ips
-	AllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (*PlacedOrder, error)
+	AllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (AllocateFloatingIPRes, error)
 	// AttachDisk invokes attach-disk operation.
 	//
 	// The disk must be in the same region and availability zone as the instance. Partition it and mount
 	// the file system inside the instance once it is attached.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/disks
-	AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (*Task, error)
+	AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error)
 	// AttachInstanceFloatingIP invokes attach-instance-floating-ip operation.
 	//
 	// Changes the public IP binding on the instance's primary network interface. The returned task tracks
@@ -55,10 +67,11 @@ type Invoker interface {
 	AttachInstanceFloatingIP(ctx context.Context, request *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// AttachPort invokes attach-port operation.
 	//
-	// Attach a network interface.
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/instances/{instanceId}/ports
-	AttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (*Task, error)
+	AttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (AttachPortRes, error)
 	// BindFloatingIP invokes bind-floating-ip operation.
 	//
 	// Bind a floating IP to a network interface.
@@ -70,8 +83,11 @@ type Invoker interface {
 	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
 	// effect and is billed from then on.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/resize/confirm
-	ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (*Task, error)
+	ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (ConfirmInstanceResizeRes, error)
 	// CreateBackup invokes create-backup operation.
 	//
 	// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
@@ -82,10 +98,13 @@ type Invoker interface {
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-	// poll the retrieve endpoint.
+	// track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (*PlacedOrder, error)
+	CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (CreateBackupRes, error)
 	// CreateDisk invokes create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -95,8 +114,18 @@ type Invoker interface {
 	// still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one
 	// keep working and can still be resized.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error)
+	// CreatePeering invokes create-peering operation.
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+	// before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// POST /api/v1/peerings
+	CreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (*PeeringResource, error)
 	// CreatePort invokes create-port operation.
 	//
 	// The new network interface is not attached to any instance. Primary network interfaces are not
@@ -111,7 +140,7 @@ type Invoker interface {
 	//
 	// The image reflects the moment the capture started. Later changes to the instance are not included.
 	//
-	// The capture has two phases. Poll the retrieve endpoint:
+	// The capture has two phases, reported by the status of the image:
 	//
 	//  - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
 	//    remains usable during this phase, although stopping it first is recommended for consistency.
@@ -125,8 +154,11 @@ type Invoker interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/private-images
-	CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (*PlacedOrder, error)
+	CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (CreatePrivateImageRes, error)
 	// CreatePrivateNetwork invokes create-private-network operation.
 	//
 	// Creates a network, a router and a default security group in one call. The default security group
@@ -169,8 +201,11 @@ type Invoker interface {
 	// preserve and restore an entire system, use a private image; for a copy that crosses availability
 	// zones and survives deletion of the disk, use a backup.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/snapshots
-	CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (*PlacedOrder, error)
+	CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (CreateSnapshotRes, error)
 	// CreateSubnet invokes create-subnet operation.
 	//
 	// Create a subnet.
@@ -181,14 +216,20 @@ type Invoker interface {
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/backups/{backupId}
-	DeleteBackup(ctx context.Context, params DeleteBackupParams) (*Task, error)
+	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
 	// DeleteDisk invokes delete-disk operation.
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/disks/{diskId}
-	DeleteDisk(ctx context.Context, params DeleteDiskParams) (*Task, error)
+	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
 	// DeleteInstance invokes delete-instance operation.
 	//
 	// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
@@ -198,8 +239,17 @@ type Invoker interface {
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 	// delete that image first.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/instances/{instanceId}
-	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (*Task, error)
+	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
+	// DeletePeering invokes delete-peering operation.
+	//
+	// Delete peering.
+	//
+	// DELETE /api/v1/peerings/{peeringId}
+	DeletePeering(ctx context.Context, params DeletePeeringParams) (*PeeringResource, error)
 	// DeletePort invokes delete-port operation.
 	//
 	// The primary network interface cannot be deleted on its own, as it is released with the instance. A
@@ -214,8 +264,11 @@ type Invoker interface {
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/private-images/{privateImageId}
-	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (*Task, error)
+	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
 	// DeletePrivateNetwork invokes delete-private-network operation.
 	//
 	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
@@ -244,10 +297,11 @@ type Invoker interface {
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot invokes delete-snapshot operation.
 	//
-	// Delete a snapshot.
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// DELETE /api/v1/snapshots/{snapshotId}
-	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (*Task, error)
+	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
 	// DeleteSubnet invokes delete-subnet operation.
 	//
 	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
@@ -260,8 +314,11 @@ type Invoker interface {
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 	// system that is being written to corrupts data.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-	DetachDisk(ctx context.Context, params DetachDiskParams) (*Task, error)
+	DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error)
 	// DetachInstanceFloatingIP invokes detach-instance-floating-ip operation.
 	//
 	// Changes the public IP binding on the instance's primary network interface. The returned task tracks
@@ -273,8 +330,11 @@ type Invoker interface {
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/instances/{instanceId}/ports/{portId}
-	DetachPort(ctx context.Context, params DetachPortParams) (*Task, error)
+	DetachPort(ctx context.Context, params DetachPortParams) (DetachPortRes, error)
 	// DisablePrivateNetworkIpv6 invokes disable-private-network-ipv6 operation.
 	//
 	// A released prefix is not re-allocated immediately.
@@ -335,6 +395,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/instances/{instanceId}/console-output
 	GetInstanceConsoleOutput(ctx context.Context, params GetInstanceConsoleOutputParams) (*ConsoleOutputResponseBody, error)
+	// GetPeering invokes get-peering operation.
+	//
+	// Get peering.
+	//
+	// GET /api/v1/peerings/{peeringId}
+	GetPeering(ctx context.Context, params GetPeeringParams) (*PeeringResource, error)
 	// GetPrivateImage invokes get-private-image operation.
 	//
 	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
@@ -374,19 +440,25 @@ type Invoker interface {
 	// LaunchInstance invokes launch-instance operation.
 	//
 	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly
-	// one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
+	// Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
+	// the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
+	// submit a new purchase after paying, and reuse the original idempotency key after an uncertain
+	// response.
+	//
+	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 	// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
 	// boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-	// own subscription items on the same order. A request for several instances is all or nothing — if
-	// any instance cannot be created, every instance of that request is released and the order fails, so
-	// nothing is charged. Each instance is named after this request with a number appended, and each has
-	// its own task.
+	// own subscription items on the same order.
+	//
+	// A request for several instances is all or nothing: if any instance cannot be created, every instance
+	// of that request is released, the order fails, and any payment for it is refunded. Each instance is
+	// named after this request with a number appended, and each has its own task.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/instances
-	LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
+	LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (LaunchInstanceRes, error)
 	// ListAvailabilityZones invokes list-availability-zones operation.
 	//
 	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
@@ -477,6 +549,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/operation-logs
 	ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (*OperationLogListResponseBody, error)
+	// ListPeerings invokes list-peerings operation.
+	//
+	// List peerings.
+	//
+	// GET /api/v1/peerings
+	ListPeerings(ctx context.Context, params ListPeeringsParams) (*PeeringListResponseBody, error)
 	// ListPorts invokes list-ports operation.
 	//
 	// List network interfaces.
@@ -557,8 +635,11 @@ type Invoker interface {
 	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
 	// instance until it settles at `running`.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/reboot
-	RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (*Task, error)
+	RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error)
 	// RebuildInstance invokes rebuild-instance operation.
 	//
 	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
@@ -569,12 +650,21 @@ type Invoker interface {
 	//
 	// POST /api/v1/instances/{instanceId}/rebuild
 	RebuildInstance(ctx context.Context, request *RebuildInstanceRequestBody, params RebuildInstanceParams) (*RebuildInstanceResponseBody, error)
+	// RejectPeering invokes reject-peering operation.
+	//
+	// Reject peering.
+	//
+	// POST /api/v1/peerings/{peeringId}/reject
+	RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error)
 	// ReleaseFloatingIP invokes release-floating-ip operation.
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
-	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (*Task, error)
+	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error)
 	// RenameBackup invokes rename-backup operation.
 	//
 	// Rename a backup.
@@ -633,44 +723,53 @@ type Invoker interface {
 	ResetInstancePassword(ctx context.Context, request *ResetPasswordRequestBody, params ResetInstancePasswordParams) (*ResetPasswordResponseBody, error)
 	// ResizeDisk invokes resize-disk operation.
 	//
-	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
-	// instance once the resize completes.
+	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this
+	// endpoint returns; track the returned task, then extend the file system inside the instance.
 	//
-	// A data disk whose performance grows with its size has to be detached first. The storage backend
-	// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
-	// attached would give you the capacity immediately and leave the speed at the old size's figure —
-	// indefinitely, and stopping the instance does not help. Rather than take the money for performance
-	// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
-	// and attach it again.
+	// An attached data disk whose performance scales with its size must be detached before it is resized.
+	// The performance of an attached disk does not change until the disk is detached and attached again,
+	// so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity
+	// at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
-	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
-	// level, or whose performance has already reached the type's ceiling, grows online as before.
+	// The request is refused only when the new size has a different performance level. A disk whose type
+	// has no QoS level, or whose performance has already reached the maximum of its type, can be resized
+	// while attached.
 	//
-	// A system disk is the exception and grows online, because a root volume cannot be detached at all.
-	// Its performance does not change with size for exactly that reason — system disk types are required
-	// to carry a level that does not scale.
+	// A system disk can be resized while attached, because a system disk cannot be detached. System disk
+	// types use a performance level that does not scale with size, so resizing a system disk does not
+	// change its performance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (*PlacedOrder, error)
+	ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
 	// ResizeInstance invokes resize-instance operation.
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing
+	// Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
+	// applied after the order's invoice is paid, or without waiting when the order has no immediate
+	// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
+	// uncertain response.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/instances/{instanceId}/resize
-	ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (*PlacedOrder, error)
+	ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error)
 	// RestoreBackup invokes restore-backup operation.
 	//
 	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 	//
 	// The target disk type may belong to another availability zone of the same region, and its capacity
-	// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
-	// the disk retrieve endpoint.
+	// must not be smaller than the backup. The disk cannot be attached until the restore completes; track
+	// the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (*PlacedOrder, error)
+	RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
 	// RevertDisk invokes revert-disk operation.
 	//
 	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
@@ -683,15 +782,21 @@ type Invoker interface {
 	//
 	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (*Task, error)
+	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
 	// RevertInstanceResize invokes revert-instance-resize operation.
 	//
 	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
 	// unaffected by the resize.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/resize/revert
-	RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (*Task, error)
+	RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (RevertInstanceResizeRes, error)
 	// RunInstanceCommand invokes run-instance-command operation.
 	//
 	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
@@ -726,16 +831,18 @@ type Invoker interface {
 	RunInstanceCommand(ctx context.Context, request *RunCommandRequestBody, params RunInstanceCommandParams) (*CommandResultResponseBody, error)
 	// SetFloatingIPBandwidth invokes set-floating-ip-bandwidth operation.
 	//
-	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
-	// saturating the uplink.
+	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this
+	// endpoint returns; track the returned task.
 	//
-	// While the address is bound to an instance, the ceiling has to fit that instance type's
-	// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
-	// to nothing is not checked against any type — there is none to check against — and is checked
-	// again when it is attached.
+	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
+	// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
+	// address that is not bound is checked when the address is bound to an instance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-	SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*PlacedOrder, error)
+	SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (SetFloatingIPBandwidthRes, error)
 	// SetInstanceLabels invokes set-instance-labels operation.
 	//
 	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
@@ -764,8 +871,11 @@ type Invoker interface {
 	// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 	// determine completion.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/start
-	StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (*Task, error)
+	StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (StartInstanceRes, error)
 	// StopInstance invokes stop-instance operation.
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
@@ -773,8 +883,11 @@ type Invoker interface {
 	// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 	// determine completion.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/stop
-	StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (*Task, error)
+	StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (StopInstanceRes, error)
 	// SuggestSubnetCidr invokes suggest-subnet-cidr operation.
 	//
 	// The returned value is a suggestion and is validated again when the subnet is created. It exists to
@@ -831,6 +944,138 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 	return u
 }
 
+// AcceptPeering invokes accept-peering operation.
+//
+// Accept peering.
+//
+// POST /api/v1/peerings/{peeringId}/accept
+func (c *Client) AcceptPeering(ctx context.Context, params AcceptPeeringParams) (*PeeringResource, error) {
+	res, err := c.sendAcceptPeering(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendAcceptPeering(ctx context.Context, params AcceptPeeringParams) (res *PeeringResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("accept-peering"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}/accept"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, AcceptPeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/peerings/"
+	{
+		// Encode "peeringId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "peeringId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PeeringId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/accept"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, AcceptPeeringOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeAcceptPeeringResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // AllocateFloatingIP invokes allocate-floating-ip operation.
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of
@@ -839,13 +1084,16 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
 // network; enable IPv6 on that network instead.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/floating-ips
-func (c *Client) AllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (*PlacedOrder, error) {
+func (c *Client) AllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (AllocateFloatingIPRes, error) {
 	res, err := c.sendAllocateFloatingIP(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendAllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (res *PlacedOrder, err error) {
+func (c *Client) sendAllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (res AllocateFloatingIPRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("allocate-floating-ip"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -899,14 +1147,14 @@ func (c *Client) sendAllocateFloatingIP(ctx context.Context, request *AllocateFl
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, AllocateFloatingIPOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, AllocateFloatingIPOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -956,13 +1204,16 @@ func (c *Client) sendAllocateFloatingIP(ctx context.Context, request *AllocateFl
 // The disk must be in the same region and availability zone as the instance. Partition it and mount
 // the file system inside the instance once it is attached.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/disks
-func (c *Client) AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (*Task, error) {
+func (c *Client) AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error) {
 	res, err := c.sendAttachDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (res *Task, err error) {
+func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (res AttachDiskRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("attach-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1049,14 +1300,14 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, AttachDiskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, AttachDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -1185,14 +1436,14 @@ func (c *Client) sendAttachInstanceFloatingIP(ctx context.Context, request *Atta
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, AttachInstanceFloatingIPOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, AttachInstanceFloatingIPOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -1239,15 +1490,16 @@ func (c *Client) sendAttachInstanceFloatingIP(ctx context.Context, request *Atta
 
 // AttachPort invokes attach-port operation.
 //
-// Attach a network interface.
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/ports
-func (c *Client) AttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (*Task, error) {
+func (c *Client) AttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (AttachPortRes, error) {
 	res, err := c.sendAttachPort(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (res *Task, err error) {
+func (c *Client) sendAttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (res AttachPortRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("attach-port"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1334,14 +1586,14 @@ func (c *Client) sendAttachPort(ctx context.Context, request *AttachPortRequestB
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, AttachPortOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, AttachPortOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -1469,14 +1721,14 @@ func (c *Client) sendBindFloatingIP(ctx context.Context, request *BindFloatingIP
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, BindFloatingIPOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, BindFloatingIPOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -1526,13 +1778,16 @@ func (c *Client) sendBindFloatingIP(ctx context.Context, request *BindFloatingIP
 // Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
 // effect and is billed from then on.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/resize/confirm
-func (c *Client) ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (*Task, error) {
+func (c *Client) ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (ConfirmInstanceResizeRes, error) {
 	res, err := c.sendConfirmInstanceResize(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (res *Task, err error) {
+func (c *Client) sendConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (res ConfirmInstanceResizeRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("confirm-instance-resize"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1616,14 +1871,14 @@ func (c *Client) sendConfirmInstanceResize(ctx context.Context, params ConfirmIn
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ConfirmInstanceResizeOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ConfirmInstanceResizeOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -1678,15 +1933,18 @@ func (c *Client) sendConfirmInstanceResize(ctx context.Context, params ConfirmIn
 // Disks attached to a running instance, including system disks, can be backed up.
 //
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-// poll the retrieve endpoint.
+// track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/backups
-func (c *Client) CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (*PlacedOrder, error) {
+func (c *Client) CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (CreateBackupRes, error) {
 	res, err := c.sendCreateBackup(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequestBody) (res *PlacedOrder, err error) {
+func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequestBody) (res CreateBackupRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-backup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1740,14 +1998,14 @@ func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequ
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateBackupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateBackupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -1800,6 +2058,9 @@ func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequ
 // A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier
 // still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one
 // keep working and can still be resized.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/disks
 func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error) {
@@ -1861,14 +2122,14 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateDiskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -1906,6 +2167,123 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateDiskResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreatePeering invokes create-peering operation.
+//
+// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+// before any connectivity is created. Does not change security groups or provide transitive routing.
+//
+// POST /api/v1/peerings
+func (c *Client) CreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (*PeeringResource, error) {
+	res, err := c.sendCreatePeering(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (res *PeeringResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-peering"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/peerings"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreatePeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/peerings"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreatePeeringRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreatePeeringOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreatePeeringResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1978,14 +2356,14 @@ func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestB
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreatePortOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreatePortOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -2037,7 +2415,7 @@ func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestB
 //
 // The image reflects the moment the capture started. Later changes to the instance are not included.
 //
-// The capture has two phases. Poll the retrieve endpoint:
+// The capture has two phases, reported by the status of the image:
 //
 //   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
 //     remains usable during this phase, although stopping it first is recommended for consistency.
@@ -2051,13 +2429,16 @@ func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestB
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/private-images
-func (c *Client) CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (*PlacedOrder, error) {
+func (c *Client) CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (CreatePrivateImageRes, error) {
 	res, err := c.sendCreatePrivateImage(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (res *PlacedOrder, err error) {
+func (c *Client) sendCreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (res CreatePrivateImageRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-private-image"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2111,14 +2492,14 @@ func (c *Client) sendCreatePrivateImage(ctx context.Context, request *CreatePriv
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreatePrivateImageOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreatePrivateImageOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -2228,14 +2609,14 @@ func (c *Client) sendCreatePrivateNetwork(ctx context.Context, request *CreatePr
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreatePrivateNetworkOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreatePrivateNetworkOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -2366,14 +2747,14 @@ func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteReques
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateRouteOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateRouteOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -2484,14 +2865,14 @@ func (c *Client) sendCreateSecurityGroup(ctx context.Context, request *CreateSec
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateSecurityGroupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateSecurityGroupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -2620,14 +3001,14 @@ func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *Creat
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateSecurityGroupRuleOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateSecurityGroupRuleOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -2683,13 +3064,16 @@ func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *Creat
 // preserve and restore an entire system, use a private image; for a copy that crosses availability
 // zones and survives deletion of the disk, use a backup.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/snapshots
-func (c *Client) CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (*PlacedOrder, error) {
+func (c *Client) CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (CreateSnapshotRes, error) {
 	res, err := c.sendCreateSnapshot(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (res *PlacedOrder, err error) {
+func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (res CreateSnapshotRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-snapshot"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2743,14 +3127,14 @@ func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshot
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateSnapshotOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateSnapshotOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -2878,14 +3262,14 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateSubnetOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateSubnetOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -2934,13 +3318,16 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/backups/{backupId}
-func (c *Client) DeleteBackup(ctx context.Context, params DeleteBackupParams) (*Task, error) {
+func (c *Client) DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error) {
 	res, err := c.sendDeleteBackup(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams) (res *Task, err error) {
+func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams) (res DeleteBackupRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-backup"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -3023,14 +3410,14 @@ func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteBackupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteBackupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -3079,13 +3466,16 @@ func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/disks/{diskId}
-func (c *Client) DeleteDisk(ctx context.Context, params DeleteDiskParams) (*Task, error) {
+func (c *Client) DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error) {
 	res, err := c.sendDeleteDisk(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (res *Task, err error) {
+func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (res DeleteDiskRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-disk"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -3168,14 +3558,14 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteDiskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -3229,13 +3619,16 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 // delete that image first.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/instances/{instanceId}
-func (c *Client) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (*Task, error) {
+func (c *Client) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error) {
 	res, err := c.sendDeleteInstance(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeleteInstance(ctx context.Context, params DeleteInstanceParams) (res *Task, err error) {
+func (c *Client) sendDeleteInstance(ctx context.Context, params DeleteInstanceParams) (res DeleteInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-instance"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -3318,14 +3711,14 @@ func (c *Client) sendDeleteInstance(ctx context.Context, params DeleteInstancePa
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -3363,6 +3756,137 @@ func (c *Client) sendDeleteInstance(ctx context.Context, params DeleteInstancePa
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeletePeering invokes delete-peering operation.
+//
+// Delete peering.
+//
+// DELETE /api/v1/peerings/{peeringId}
+func (c *Client) DeletePeering(ctx context.Context, params DeletePeeringParams) (*PeeringResource, error) {
+	res, err := c.sendDeletePeering(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeletePeering(ctx context.Context, params DeletePeeringParams) (res *PeeringResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-peering"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeletePeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/peerings/"
+	{
+		// Encode "peeringId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "peeringId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PeeringId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeletePeeringOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeletePeeringResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3450,14 +3974,14 @@ func (c *Client) sendDeletePort(ctx context.Context, params DeletePortParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeletePortOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeletePortOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -3509,13 +4033,16 @@ func (c *Client) sendDeletePort(ctx context.Context, params DeletePortParams) (r
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/private-images/{privateImageId}
-func (c *Client) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (*Task, error) {
+func (c *Client) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error) {
 	res, err := c.sendDeletePrivateImage(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (res *Task, err error) {
+func (c *Client) sendDeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (res DeletePrivateImageRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-private-image"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -3598,14 +4125,14 @@ func (c *Client) sendDeletePrivateImage(ctx context.Context, params DeletePrivat
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeletePrivateImageOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeletePrivateImageOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -3730,14 +4257,14 @@ func (c *Client) sendDeletePrivateNetwork(ctx context.Context, params DeletePriv
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeletePrivateNetworkOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeletePrivateNetworkOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -3880,14 +4407,14 @@ func (c *Client) sendDeleteRoute(ctx context.Context, params DeleteRouteParams) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteRouteOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteRouteOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -4012,14 +4539,14 @@ func (c *Client) sendDeleteSecurityGroup(ctx context.Context, params DeleteSecur
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteSecurityGroupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteSecurityGroupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -4162,14 +4689,14 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteSecurityGroupRuleOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteSecurityGroupRuleOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -4216,15 +4743,16 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 
 // DeleteSnapshot invokes delete-snapshot operation.
 //
-// Delete a snapshot.
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
-func (c *Client) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (*Task, error) {
+func (c *Client) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error) {
 	res, err := c.sendDeleteSnapshot(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (res *Task, err error) {
+func (c *Client) sendDeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (res DeleteSnapshotRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-snapshot"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -4307,14 +4835,14 @@ func (c *Client) sendDeleteSnapshot(ctx context.Context, params DeleteSnapshotPa
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteSnapshotOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteSnapshotOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -4458,14 +4986,14 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteSubnetOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteSubnetOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -4515,13 +5043,16 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 // system that is being written to corrupts data.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-func (c *Client) DetachDisk(ctx context.Context, params DetachDiskParams) (*Task, error) {
+func (c *Client) DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error) {
 	res, err := c.sendDetachDisk(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (res *Task, err error) {
+func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (res DetachDiskRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("detach-disk"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -4623,14 +5154,14 @@ func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DetachDiskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DetachDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -4774,14 +5305,14 @@ func (c *Client) sendDetachInstanceFloatingIP(ctx context.Context, params Detach
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DetachInstanceFloatingIPOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DetachInstanceFloatingIPOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -4830,13 +5361,16 @@ func (c *Client) sendDetachInstanceFloatingIP(ctx context.Context, params Detach
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/instances/{instanceId}/ports/{portId}
-func (c *Client) DetachPort(ctx context.Context, params DetachPortParams) (*Task, error) {
+func (c *Client) DetachPort(ctx context.Context, params DetachPortParams) (DetachPortRes, error) {
 	res, err := c.sendDetachPort(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachPort(ctx context.Context, params DetachPortParams) (res *Task, err error) {
+func (c *Client) sendDetachPort(ctx context.Context, params DetachPortParams) (res DetachPortRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("detach-port"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -4938,14 +5472,14 @@ func (c *Client) sendDetachPort(ctx context.Context, params DetachPortParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DetachPortOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DetachPortOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -5070,14 +5604,14 @@ func (c *Client) sendDisablePrivateNetworkIpv6(ctx context.Context, params Disab
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DisablePrivateNetworkIpv6Operation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DisablePrivateNetworkIpv6Operation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -5206,14 +5740,14 @@ func (c *Client) sendEnablePrivateNetworkIpv6(ctx context.Context, params Enable
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, EnablePrivateNetworkIpv6Operation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, EnablePrivateNetworkIpv6Operation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -5338,14 +5872,14 @@ func (c *Client) sendGetBackup(ctx context.Context, params GetBackupParams) (res
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetBackupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetBackupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -5470,14 +6004,14 @@ func (c *Client) sendGetDisk(ctx context.Context, params GetDiskParams) (res *Di
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetDiskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -5602,14 +6136,14 @@ func (c *Client) sendGetDiskType(ctx context.Context, params GetDiskTypeParams) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetDiskTypeOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetDiskTypeOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -5733,14 +6267,14 @@ func (c *Client) sendGetFloatingIP(ctx context.Context, params GetFloatingIPPara
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetFloatingIPOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetFloatingIPOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -5865,14 +6399,14 @@ func (c *Client) sendGetInstance(ctx context.Context, params GetInstanceParams) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -6022,14 +6556,14 @@ func (c *Client) sendGetInstanceConsoleOutput(ctx context.Context, params GetIns
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetInstanceConsoleOutputOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInstanceConsoleOutputOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -6067,6 +6601,137 @@ func (c *Client) sendGetInstanceConsoleOutput(ctx context.Context, params GetIns
 
 	stage = "DecodeResponse"
 	result, err := decodeGetInstanceConsoleOutputResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetPeering invokes get-peering operation.
+//
+// Get peering.
+//
+// GET /api/v1/peerings/{peeringId}
+func (c *Client) GetPeering(ctx context.Context, params GetPeeringParams) (*PeeringResource, error) {
+	res, err := c.sendGetPeering(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetPeering(ctx context.Context, params GetPeeringParams) (res *PeeringResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-peering"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/peerings/"
+	{
+		// Encode "peeringId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "peeringId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PeeringId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetPeeringOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPeeringResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6153,14 +6818,14 @@ func (c *Client) sendGetPrivateImage(ctx context.Context, params GetPrivateImage
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetPrivateImageOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetPrivateImageOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -6284,14 +6949,14 @@ func (c *Client) sendGetPrivateNetwork(ctx context.Context, params GetPrivateNet
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetPrivateNetworkOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetPrivateNetworkOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -6416,14 +7081,14 @@ func (c *Client) sendGetPrivateNetworkIpv6(ctx context.Context, params GetPrivat
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetPrivateNetworkIpv6Operation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetPrivateNetworkIpv6Operation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -6547,14 +7212,14 @@ func (c *Client) sendGetSecurityGroup(ctx context.Context, params GetSecurityGro
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetSecurityGroupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetSecurityGroupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -6678,14 +7343,14 @@ func (c *Client) sendGetSnapshot(ctx context.Context, params GetSnapshotParams) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetSnapshotOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetSnapshotOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -6809,14 +7474,14 @@ func (c *Client) sendGetTask(ctx context.Context, params GetTaskParams) (res *Ta
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetTaskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetTaskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -6864,24 +7529,30 @@ func (c *Client) sendGetTask(ctx context.Context, params GetTaskParams) (res *Ta
 // LaunchInstance invokes launch-instance operation.
 //
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly
-// one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
+// Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
+// the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
+// submit a new purchase after paying, and reuse the original idempotency key after an uncertain
+// response.
+//
+// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 // subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
 // boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-// own subscription items on the same order. A request for several instances is all or nothing — if
-// any instance cannot be created, every instance of that request is released and the order fails, so
-// nothing is charged. Each instance is named after this request with a number appended, and each has
-// its own task.
+// own subscription items on the same order.
+//
+// A request for several instances is all or nothing: if any instance cannot be created, every instance
+// of that request is released, the order fails, and any payment for it is refunded. Each instance is
+// named after this request with a number appended, and each has its own task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances
-func (c *Client) LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error) {
+func (c *Client) LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (LaunchInstanceRes, error) {
 	res, err := c.sendLaunchInstance(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendLaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (res *LaunchInstanceResponseBody, err error) {
+func (c *Client) sendLaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (res LaunchInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("launch-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -6935,14 +7606,14 @@ func (c *Client) sendLaunchInstance(ctx context.Context, request *LaunchInstance
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, LaunchInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, LaunchInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -7068,14 +7739,14 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListAvailabilityZonesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListAvailabilityZonesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -7202,14 +7873,14 @@ func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListBackupsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListBackupsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -7334,14 +8005,14 @@ func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesPara
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListDiskTypesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListDiskTypesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -7486,14 +8157,14 @@ func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListDisksOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListDisksOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -7599,14 +8270,14 @@ func (c *Client) sendListFloatingIps(ctx context.Context) (res *FloatingIPListRe
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListFloatingIpsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListFloatingIpsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -7769,14 +8440,14 @@ func (c *Client) sendListImages(ctx context.Context, params ListImagesParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListImagesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListImagesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -7939,14 +8610,14 @@ func (c *Client) sendListInstanceDisks(ctx context.Context, params ListInstanceD
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListInstanceDisksOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstanceDisksOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -8109,14 +8780,14 @@ func (c *Client) sendListInstancePorts(ctx context.Context, params ListInstanceP
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListInstancePortsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstancePortsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -8275,14 +8946,14 @@ func (c *Client) sendListInstanceTypes(ctx context.Context, params ListInstanceT
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListInstanceTypesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstanceTypesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -8444,14 +9115,14 @@ func (c *Client) sendListInstances(ctx context.Context, params ListInstancesPara
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListInstancesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstancesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -8609,14 +9280,14 @@ func (c *Client) sendListIpv4Pools(ctx context.Context, params ListIpv4PoolsPara
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListIpv4PoolsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListIpv4PoolsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -8785,14 +9456,14 @@ func (c *Client) sendListOperationLogs(ctx context.Context, params ListOperation
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListOperationLogsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListOperationLogsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -8830,6 +9501,157 @@ func (c *Client) sendListOperationLogs(ctx context.Context, params ListOperation
 
 	stage = "DecodeResponse"
 	result, err := decodeListOperationLogsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPeerings invokes list-peerings operation.
+//
+// List peerings.
+//
+// GET /api/v1/peerings
+func (c *Client) ListPeerings(ctx context.Context, params ListPeeringsParams) (*PeeringListResponseBody, error) {
+	res, err := c.sendListPeerings(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPeerings(ctx context.Context, params ListPeeringsParams) (res *PeeringListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-peerings"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/peerings"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPeeringsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/peerings"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "limit" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Limit.Get(); ok {
+				return e.EncodeValue(conv.IntToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "offset" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Offset.Get(); ok {
+				return e.EncodeValue(conv.IntToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListPeeringsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPeeringsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -8898,14 +9720,14 @@ func (c *Client) sendListPorts(ctx context.Context) (res *PortListResponseBody, 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListPortsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListPortsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -9066,14 +9888,14 @@ func (c *Client) sendListPrivateImages(ctx context.Context, params ListPrivateIm
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListPrivateImagesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListPrivateImagesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -9200,14 +10022,14 @@ func (c *Client) sendListPrivateNetworks(ctx context.Context, params ListPrivate
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListPrivateNetworksOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListPrivateNetworksOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -9313,14 +10135,14 @@ func (c *Client) sendListRegions(ctx context.Context) (res *RegionListResponseBo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListRegionsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListRegionsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -9445,14 +10267,14 @@ func (c *Client) sendListRoutes(ctx context.Context, params ListRoutesParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListRoutesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListRoutesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -9577,14 +10399,14 @@ func (c *Client) sendListSecurityGroupRules(ctx context.Context, params ListSecu
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSecurityGroupRulesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListSecurityGroupRulesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -9728,14 +10550,14 @@ func (c *Client) sendListSecurityGroups(ctx context.Context, params ListSecurity
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSecurityGroupsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListSecurityGroupsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -9862,14 +10684,14 @@ func (c *Client) sendListSnapshots(ctx context.Context, params ListSnapshotsPara
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSnapshotsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListSnapshotsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -9995,14 +10817,14 @@ func (c *Client) sendListSubnets(ctx context.Context, params ListSubnetsParams) 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSubnetsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListSubnetsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -10130,14 +10952,14 @@ func (c *Client) sendOpenInstanceConsole(ctx context.Context, params OpenInstanc
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, OpenInstanceConsoleOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, OpenInstanceConsoleOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -10198,13 +11020,16 @@ func (c *Client) sendOpenInstanceConsole(ctx context.Context, params OpenInstanc
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
 // instance until it settles at `running`.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/reboot
-func (c *Client) RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (*Task, error) {
+func (c *Client) RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error) {
 	res, err := c.sendRebootInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (res *Task, err error) {
+func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (res RebootInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reboot-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -10291,14 +11116,14 @@ func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstance
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RebootInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RebootInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -10430,14 +11255,14 @@ func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstan
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RebuildInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RebuildInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -10482,17 +11307,152 @@ func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstan
 	return result, nil
 }
 
+// RejectPeering invokes reject-peering operation.
+//
+// Reject peering.
+//
+// POST /api/v1/peerings/{peeringId}/reject
+func (c *Client) RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error) {
+	res, err := c.sendRejectPeering(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringParams) (res *PeeringResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("reject-peering"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}/reject"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RejectPeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/peerings/"
+	{
+		// Encode "peeringId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "peeringId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PeeringId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/reject"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RejectPeeringOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRejectPeeringResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ReleaseFloatingIP invokes release-floating-ip operation.
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/floating-ips/{floatingIpId}
-func (c *Client) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (*Task, error) {
+func (c *Client) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error) {
 	res, err := c.sendReleaseFloatingIP(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (res *Task, err error) {
+func (c *Client) sendReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (res ReleaseFloatingIPRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("release-floating-ip"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -10575,14 +11535,14 @@ func (c *Client) sendReleaseFloatingIP(ctx context.Context, params ReleaseFloati
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ReleaseFloatingIPOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ReleaseFloatingIPOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -10709,14 +11669,14 @@ func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequ
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenameBackupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RenameBackupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -10844,14 +11804,14 @@ func (c *Client) sendRenameDisk(ctx context.Context, request *RenameDiskRequestB
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenameDiskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RenameDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -10979,14 +11939,14 @@ func (c *Client) sendRenameInstance(ctx context.Context, request *RenameInstance
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenameInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RenameInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -11113,14 +12073,14 @@ func (c *Client) sendRenamePrivateImage(ctx context.Context, request *RenamePriv
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenamePrivateImageOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RenamePrivateImageOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -11247,14 +12207,14 @@ func (c *Client) sendRenamePrivateNetwork(ctx context.Context, request *RenamePr
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenamePrivateNetworkOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RenamePrivateNetworkOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -11381,14 +12341,14 @@ func (c *Client) sendRenameSecurityGroup(ctx context.Context, request *RenameSec
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenameSecurityGroupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RenameSecurityGroupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -11515,14 +12475,14 @@ func (c *Client) sendRenameSnapshot(ctx context.Context, request *RenameSnapshot
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenameSnapshotOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RenameSnapshotOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -11656,14 +12616,14 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ResetInstancePasswordOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ResetInstancePasswordOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -11710,30 +12670,32 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 
 // ResizeDisk invokes resize-disk operation.
 //
-// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
-// instance once the resize completes.
+// Capacity can only be increased; shrinking is not supported. The resize is not complete when this
+// endpoint returns; track the returned task, then extend the file system inside the instance.
 //
-// A data disk whose performance grows with its size has to be detached first. The storage backend
-// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
-// attached would give you the capacity immediately and leave the speed at the old size's figure —
-// indefinitely, and stopping the instance does not help. Rather than take the money for performance
-// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
-// and attach it again.
+// An attached data disk whose performance scales with its size must be detached before it is resized.
+// The performance of an attached disk does not change until the disk is detached and attached again,
+// so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity
+// at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
-// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
-// level, or whose performance has already reached the type's ceiling, grows online as before.
+// The request is refused only when the new size has a different performance level. A disk whose type
+// has no QoS level, or whose performance has already reached the maximum of its type, can be resized
+// while attached.
 //
-// A system disk is the exception and grows online, because a root volume cannot be detached at all.
-// Its performance does not change with size for exactly that reason — system disk types are required
-// to carry a level that does not scale.
+// A system disk can be resized while attached, because a system disk cannot be detached. System disk
+// types use a performance level that does not scale with size, so resizing a system disk does not
+// change its performance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/disks/{diskId}/resize
-func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (*PlacedOrder, error) {
+func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error) {
 	res, err := c.sendResizeDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (res *PlacedOrder, err error) {
+func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (res ResizeDiskRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -11806,14 +12768,14 @@ func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestB
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ResizeDiskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ResizeDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -11860,18 +12822,22 @@ func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestB
 
 // ResizeInstance invokes resize-instance operation.
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Creates a Billing change order, including for metered pricing. The price must belong to the Billing
+// Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
+// applied after the order's invoice is paid, or without waiting when the order has no immediate
+// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
+// uncertain response.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/resize
-func (c *Client) ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (*PlacedOrder, error) {
+func (c *Client) ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error) {
 	res, err := c.sendResizeInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (res *PlacedOrder, err error) {
+func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (res ResizeInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -11944,14 +12910,14 @@ func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstance
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ResizeInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ResizeInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -12001,16 +12967,19 @@ func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstance
 // Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 //
 // The target disk type may belong to another availability zone of the same region, and its capacity
-// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
-// the disk retrieve endpoint.
+// must not be smaller than the backup. The disk cannot be attached until the restore completes; track
+// the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/backups/{backupId}/restore
-func (c *Client) RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (*PlacedOrder, error) {
+func (c *Client) RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error) {
 	res, err := c.sendRestoreBackup(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (res *PlacedOrder, err error) {
+func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (res RestoreBackupRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("restore-backup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -12083,14 +13052,14 @@ func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRe
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RestoreBackupOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RestoreBackupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -12147,13 +13116,16 @@ func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRe
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/disks/{diskId}/revert
-func (c *Client) RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (*Task, error) {
+func (c *Client) RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error) {
 	res, err := c.sendRevertDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (res *Task, err error) {
+func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (res RevertDiskRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revert-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -12240,14 +13212,14 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RevertDiskOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RevertDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -12297,13 +13269,16 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 // The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
 // unaffected by the resize.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/resize/revert
-func (c *Client) RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (*Task, error) {
+func (c *Client) RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (RevertInstanceResizeRes, error) {
 	res, err := c.sendRevertInstanceResize(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendRevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (res *Task, err error) {
+func (c *Client) sendRevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (res RevertInstanceResizeRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revert-instance-resize"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -12387,14 +13362,14 @@ func (c *Client) sendRevertInstanceResize(ctx context.Context, params RevertInst
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RevertInstanceResizeOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RevertInstanceResizeOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -12548,14 +13523,14 @@ func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunCommand
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RunInstanceCommandOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RunInstanceCommandOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -12602,21 +13577,23 @@ func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunCommand
 
 // SetFloatingIPBandwidth invokes set-floating-ip-bandwidth operation.
 //
-// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
-// saturating the uplink.
+// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this
+// endpoint returns; track the returned task.
 //
-// While the address is bound to an instance, the ceiling has to fit that instance type's
-// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
-// to nothing is not checked against any type — there is none to check against — and is checked
-// again when it is attached.
+// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
+// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
+// address that is not bound is checked when the address is bound to an instance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-func (c *Client) SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*PlacedOrder, error) {
+func (c *Client) SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (SetFloatingIPBandwidthRes, error) {
 	res, err := c.sendSetFloatingIPBandwidth(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (res *PlacedOrder, err error) {
+func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (res SetFloatingIPBandwidthRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-floating-ip-bandwidth"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -12689,14 +13666,14 @@ func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetBan
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SetFloatingIPBandwidthOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, SetFloatingIPBandwidthOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -12828,14 +13805,14 @@ func (c *Client) sendSetInstanceLabels(ctx context.Context, request *SetInstance
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SetInstanceLabelsOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, SetInstanceLabelsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -12968,14 +13945,14 @@ func (c *Client) sendSetInstanceNotes(ctx context.Context, request *SetInstanceN
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SetInstanceNotesOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, SetInstanceNotesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -13027,13 +14004,16 @@ func (c *Client) sendSetInstanceNotes(ctx context.Context, request *SetInstanceN
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/start
-func (c *Client) StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (*Task, error) {
+func (c *Client) StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (StartInstanceRes, error) {
 	res, err := c.sendStartInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (res *Task, err error) {
+func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (res StartInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("start-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -13120,14 +14100,14 @@ func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, p
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, StartInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, StartInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -13179,13 +14159,16 @@ func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, p
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/stop
-func (c *Client) StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (*Task, error) {
+func (c *Client) StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (StopInstanceRes, error) {
 	res, err := c.sendStopInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (res *Task, err error) {
+func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (res StopInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("stop-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -13272,14 +14255,14 @@ func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, pa
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, StopInstanceOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, StopInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -13426,14 +14409,14 @@ func (c *Client) sendSuggestSubnetCidr(ctx context.Context, params SuggestSubnet
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SuggestSubnetCidrOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, SuggestSubnetCidrOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 
@@ -13558,14 +14541,14 @@ func (c *Client) sendUnbindFloatingIP(ctx context.Context, params UnbindFloating
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, UnbindFloatingIPOperation, r); {
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UnbindFloatingIPOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
 			}
 		}
 

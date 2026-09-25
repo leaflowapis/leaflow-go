@@ -8,177 +8,39 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
-	// CancelScheduledChange implements cancel-scheduled-change operation.
-	//
-	// Only for a change scheduled for the end of the period, and only while it is still pending. An
-	// immediate change has already happened by the time it is placed, and there is nothing to call off.
-	//
-	// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
-	// subscription keeps running on what it is on now, and the item is free to be changed again.
-	//
-	// POST /account/v1/orders/{orderId}/cancel
-	CancelScheduledChange(ctx context.Context, params CancelScheduledChangeParams) (*Order, error)
-	// CreateBillingAccount implements create-billing-account operation.
-	//
-	// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
-	// prices, orders, invoices, balance — is denominated in it.
-	//
-	// One person may hold several accounts, for example a personal one and one for a team.
-	//
-	// POST /account/v1/billing-accounts
-	CreateBillingAccount(ctx context.Context, req *BillingAccountCreate) (*BillingAccount, error)
-	// CreateEstimate implements create-estimate operation.
-	//
-	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be called as often
-	// as required.
-	//
-	// `POST` is used because the set of items to price does not fit in a query string. There is no
-	// corresponding `GET`, and no estimate is stored to retrieve.
-	//
-	// An account holding a negotiated agreement may be charged less than this. Tax and discounts are not
-	// included.
-	//
-	// POST /catalog/v1/estimates
-	CreateEstimate(ctx context.Context, req *EstimateRequest) (*Quote, error)
-	// CreatePaymentMethodSetup implements create-payment-method-setup operation.
-	//
-	// Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
-	// charged, and the method appears in the list once the gateway confirms it.
-	//
-	// Card numbers are never sent to or stored by this service.
-	//
-	// POST /account/v1/payment-methods/setup
-	CreatePaymentMethodSetup(ctx context.Context, req *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
 	// CreateProjectQuote implements create-project-quote operation.
 	//
-	// Priced in the paying account's currency, and at any rate negotiated for that account. Nothing is
-	// reserved and nothing is recorded, so this may be called as often as required.
+	// Priced in the project billing account's currency, and at any rate negotiated for that account.
+	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
 	//
 	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
 	// is placed, so a quote should be refreshed before a final confirmation is shown.
 	//
-	// Returns 404 when no account pays for this project.
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
+	// with the discounts the account holds, and with tax.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed does not
+	// belong to this project.
 	//
 	// POST /api/v1/projects/{projectId}/quotes
 	CreateProjectQuote(ctx context.Context, req *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
-	// CreateTopUp implements create-top-up operation.
-	//
-	// Returns a checkout address. The balance increases when the payment gateway confirms the payment,
-	// which may be after this call returns.
-	//
-	// The amount is in the account's currency. A checkout page may present a local currency; the amount
-	// credited to the account is the one requested here.
-	//
-	// POST /account/v1/top-ups
-	CreateTopUp(ctx context.Context, req *TopUpCreate) (*TopUp, error)
-	// DeletePaymentMethod implements delete-payment-method operation.
-	//
-	// Refused when it is the only method on an account that has resources billed by the hour, as there
-	// would be nothing left to charge when the balance runs out.
-	//
-	// DELETE /account/v1/payment-methods/{paymentMethodId}
-	DeletePaymentMethod(ctx context.Context, params DeletePaymentMethodParams) error
-	// FindProjectPayer implements find-project-payer operation.
-	//
-	// Returns 404 when no account pays for it. No resources can be created until one does.
-	//
-	// GET /account/v1/projects/{projectId}/billing-account
-	FindProjectPayer(ctx context.Context, params FindProjectPayerParams) (*ProjectBinding, error)
-	// GetAccountBalance implements get-account-balance operation.
-	//
-	// Get account balance.
-	//
-	// GET /account/v1/billing-accounts/{accountId}/balance
-	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
-	// GetAccountProjectClosurePreview implements get-account-project-closure-preview operation.
-	//
-	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action
-	// and timing for each item. This read never performs cleanup or creates a closure request. Historical
-	// invoices and account-level purchases are retained. Billing approval alone does not prove that
-	// technical resources are absent.
-	//
-	// GET /account/v1/projects/{projectId}/closure-preview
-	GetAccountProjectClosurePreview(ctx context.Context, params GetAccountProjectClosurePreviewParams) (*ProjectClosurePreview, error)
-	// GetBillingAccount implements get-billing-account operation.
-	//
-	// Get billing account.
-	//
-	// GET /account/v1/billing-accounts/{accountId}
-	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
-	// GetCatalogPlan implements get-catalog-plan operation.
-	//
-	// Resolves a stored identifier into something that can be displayed. Returns items that are no longer
-	// on sale: an existing purchase still refers to one.
-	//
-	// GET /catalog/v1/plans/{planId}
-	GetCatalogPlan(ctx context.Context, params GetCatalogPlanParams) (GetCatalogPlanRes, error)
-	// GetCatalogPrice implements get-catalog-price operation.
-	//
-	// Returns retired prices. An existing subscription still bills at the price it was bought at, so this
-	// is how to show what that purchase is paying.
-	//
-	// GET /catalog/v1/prices/{priceId}
-	GetCatalogPrice(ctx context.Context, params GetCatalogPriceParams) (GetCatalogPriceRes, error)
-	// GetCatalogProduct implements get-catalog-product operation.
-	//
-	// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or the terms
-	// of a credit — into something that can be displayed.
-	//
-	// GET /catalog/v1/products/{productId}
-	GetCatalogProduct(ctx context.Context, params GetCatalogProductParams) (GetCatalogProductRes, error)
-	// GetInvoice implements get-invoice operation.
-	//
-	// Get invoice.
-	//
-	// GET /account/v1/invoices/{invoiceId}
-	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
-	// GetInvoiceRefundQuote implements get-invoice-refund-quote operation.
-	//
-	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the answer
-	// follows from what has been paid and what has already been returned, so it may be read as often as
-	// required.
-	//
-	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an invoice already
-	// refunded in full.
-	//
-	// GET /account/v1/invoices/{invoiceId}/refund-quote
-	GetInvoiceRefundQuote(ctx context.Context, params GetInvoiceRefundQuoteParams) (*RefundQuote, error)
-	// GetOrder implements get-order operation.
-	//
-	// Get order.
-	//
-	// GET /account/v1/orders/{orderId}
-	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
-	// GetOrderRefundQuote implements get-order-refund-quote operation.
-	//
-	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the answer
-	// follows from what has been paid and what has already been returned, so it may be read as often as
-	// required.
-	//
-	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an order already
-	// refunded in full.
-	//
-	// Refunding an order also ends what it bought and reclaims whatever it provisioned. That is not
-	// reflected in the amounts here.
-	//
-	// GET /account/v1/orders/{orderId}/refund-quote
-	GetOrderRefundQuote(ctx context.Context, params GetOrderRefundQuoteParams) (*RefundQuote, error)
 	// GetProjectBillingAccount implements get-project-billing-account operation.
 	//
-	// Returns the payer's identity, its currency, and how much can still be spent. Cards, invoices and
-	// transaction history are not included; they belong to the account owner and are reached through
-	// `/account/v1/`.
+	// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
+	// invoices and transaction history are not included; they belong to the account owner and are reached
+	// through `/account/v1/`.
 	//
-	// Returns 404 when no account pays for this project. Resources cannot be created in that state.
+	// Returns 404 when the project has no billing account. Resources cannot be created in that state.
 	//
 	// GET /api/v1/projects/{projectId}/billing-account
-	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectPayer, error)
+	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectBillingAccount, error)
 	// GetProjectClosurePreview implements get-project-closure-preview operation.
 	//
 	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action
-	// and timing for each item. This read never performs cleanup or creates a closure request. Historical
-	// invoices and account-level purchases are retained. Billing approval alone does not prove that
-	// technical resources are absent.
+	// and timing for each item. This read never performs cleanup or creates a closure request. Charges
+	// already incurred remain owed by the billing account that was linked when they occurred and do not
+	// prevent closure. Historical invoices and account-level purchases are retained. Billing approval
+	// alone does not prove that technical resources are absent.
 	//
 	// GET /api/v1/projects/{projectId}/closure-preview
 	GetProjectClosurePreview(ctx context.Context, params GetProjectClosurePreviewParams) (*ProjectClosurePreview, error)
@@ -188,133 +50,6 @@ type Handler interface {
 	//
 	// GET /api/v1/projects/{projectId}/orders/{orderId}
 	GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error)
-	// GetTopUp implements get-top-up operation.
-	//
-	// Get top up.
-	//
-	// GET /account/v1/top-ups/{topUpId}
-	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
-	// ListAccountDiscounts implements list-account-discounts operation.
-	//
-	// Coupons placed on the account directly, which apply at checkout without a code being entered. A
-	// coupon reached through a code is not listed here.
-	//
-	// GET /account/v1/discounts
-	ListAccountDiscounts(ctx context.Context, params ListAccountDiscountsParams) (*DiscountList, error)
-	// ListAllowanceConsumptions implements list-allowance-consumptions operation.
-	//
-	// Each entry names the charge it covered, so the granted amount, what has been used and what remains
-	// all reconcile.
-	//
-	// GET /account/v1/allowances/{allowanceId}/consumptions
-	ListAllowanceConsumptions(ctx context.Context, params ListAllowanceConsumptionsParams) (*AllowanceConsumptionList, error)
-	// ListAllowances implements list-allowances operation.
-	//
-	// A quantity rather than an amount of money: bytes, seconds or tokens that are used before anything is
-	// charged for.
-	//
-	// Usage draws on these first and is only charged once they are exhausted. Where several apply, they
-	// are drawn on in a fixed order: lower `priority` first, then whichever expires soonest, then
-	// whichever was granted first. Included quantities therefore go before purchased packs, and a pack
-	// that is about to expire goes before one that is not.
-	//
-	// An unused quantity is lost when it expires; it is not refunded and does not carry over.
-	//
-	// Quantities belong to the account and are shared by every project it pays for.
-	//
-	// GET /account/v1/allowances
-	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
-	// ListBillingAccounts implements list-billing-accounts operation.
-	//
-	// List billing accounts.
-	//
-	// GET /account/v1/billing-accounts
-	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
-	// ListCatalogItems implements list-catalog-items operation.
-	//
-	// Every sellable thing and what it costs, in one request. A plan appears once per price.
-	//
-	// `currency` is required: a plan has a price in each currency it is sold in, so "what does this cost"
-	// has no answer without one.
-	//
-	// Retired prices are left out. Existing subscriptions still reference them, so this is not the place
-	// to look up what an existing purchase is paying.
-	//
-	// GET /catalog/v1/items
-	ListCatalogItems(ctx context.Context, params ListCatalogItemsParams) (ListCatalogItemsRes, error)
-	// ListCreditGrants implements list-credit-grants operation.
-	//
-	// Each grant shows what remains and what it may be used for. Credit is spent before cash and cannot be
-	// withdrawn.
-	//
-	// GET /account/v1/credit-grants
-	ListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (*CreditGrantList, error)
-	// ListEntitlements implements list-entitlements operation.
-	//
-	// Capabilities that come with what has been bought. A capability that is not held simply does not
-	// appear, so that "this does not exist" and "this has not been bought" cannot be confused.
-	//
-	// Derived from live subscriptions rather than stored, so this always agrees with what is being paid
-	// for. It stops being listed as soon as the subscription providing it ends.
-	//
-	// GET /account/v1/entitlements
-	ListEntitlements(ctx context.Context, params ListEntitlementsParams) (*EntitlementList, error)
-	// ListInvoiceItems implements list-invoice-items operation.
-	//
-	// List invoice items.
-	//
-	// GET /account/v1/invoices/{invoiceId}/items
-	ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error)
-	// ListInvoices implements list-invoices operation.
-	//
-	// List invoices.
-	//
-	// GET /account/v1/invoices
-	ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error)
-	// ListOrderItems implements list-order-items operation.
-	//
-	// One entry per item bought, with the price charged and the period it covers.
-	//
-	// GET /account/v1/orders/{orderId}/items
-	ListOrderItems(ctx context.Context, params ListOrderItemsParams) (*OrderItemList, error)
-	// ListOrders implements list-orders operation.
-	//
-	// An order in `pending` still owes money; `amount_due` states how much and `reservation_expires_at`
-	// states how long it can still be paid.
-	//
-	// GET /account/v1/orders
-	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
-	// ListPaidProjects implements list-paid-projects operation.
-	//
-	// List paid projects.
-	//
-	// GET /account/v1/projects
-	ListPaidProjects(ctx context.Context, params ListPaidProjectsParams) (*ProjectBindingList, error)
-	// ListPaymentMethods implements list-payment-methods operation.
-	//
-	// List payment methods.
-	//
-	// GET /account/v1/payment-methods
-	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
-	// ListPlans implements list-plans operation.
-	//
-	// List catalog plans.
-	//
-	// GET /catalog/v1/products/{productId}/plans
-	ListPlans(ctx context.Context, params ListPlansParams) (ListPlansRes, error)
-	// ListPrices implements list-prices operation.
-	//
-	// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
-	// charged more.
-	//
-	// GET /catalog/v1/plans/{planId}/prices
-	ListPrices(ctx context.Context, params ListPricesParams) (ListPricesRes, error)
-	// ListProducts implements list-products operation.
-	//
-	// List catalog products.
-	//
-	// GET /catalog/v1/products
-	ListProducts(ctx context.Context, params ListProductsParams) (ListProductsRes, error)
 	// ListProjectActiveResources implements list-project-active-resources operation.
 	//
 	// A resource that is running but does not appear here is not being charged for.
@@ -323,14 +58,15 @@ type Handler interface {
 	ListProjectActiveResources(ctx context.Context, params ListProjectActiveResourcesParams) (*ActiveResourceList, error)
 	// ListProjectAllowances implements list-project-allowances operation.
 	//
-	// These belong to the paying account and are shared with every other project it pays for, so what is
-	// left here may be consumed elsewhere.
+	// These belong to the project's billing account and are shared with every other project linked to it,
+	// so what is left here may be consumed elsewhere.
 	//
 	// GET /api/v1/projects/{projectId}/allowances
 	ListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (*AllowanceList, error)
 	// ListProjectEntitlements implements list-project-entitlements operation.
 	//
-	// Includes capabilities bought for this project and those the paying account holds at account level.
+	// Includes capabilities bought for this project and those the project's billing account holds at
+	// account level.
 	//
 	// Where a capability counts uses, `remaining_quantity` states how much is left. Whether exceeding it
 	// refuses the request or simply continues to be charged for is decided by the service that owns the
@@ -360,12 +96,6 @@ type Handler interface {
 	//
 	// GET /api/v1/projects/{projectId}/spend
 	ListProjectSpend(ctx context.Context, params ListProjectSpendParams) (*SpendRowList, error)
-	// ListProjectSubscriptionItems implements list-project-subscription-items operation.
-	//
-	// List project subscription items.
-	//
-	// GET /api/v1/projects/{projectId}/subscription-items
-	ListProjectSubscriptionItems(ctx context.Context, params ListProjectSubscriptionItemsParams) (*SubscriptionItemList, error)
 	// ListProjectSubscriptions implements list-project-subscriptions operation.
 	//
 	// List project subscriptions.
@@ -379,193 +109,13 @@ type Handler interface {
 	//
 	// GET /api/v1/projects/{projectId}/usage-charges
 	ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*UsageChargeList, error)
-	// ListRates implements list-rates operation.
-	//
-	// Only public price lists are readable here. A list written for a single agreement is not, and its
-	// identifier cannot be used to reach it.
-	//
-	// GET /catalog/v1/rate-cards/{rateCardId}/rules
-	ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error)
-	// ListRefunds implements list-refunds operation.
-	//
-	// List refunds.
-	//
-	// GET /account/v1/refunds
-	ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error)
-	// ListRenewalPrices implements list-renewal-prices operation.
-	//
-	// Every term on offer with what it costs, in one request: a renewal form needs the whole ladder to
-	// render, and asking once per term is a request per row.
-	//
-	// Prices agreed for this account are reflected. The term this item already bills at is marked
-	// `current`: renewing for it is not affected by a later price change, while any other term is bought
-	// at today's price.
-	//
-	// GET /account/v1/subscription-items/{itemId}/renewal-prices
-	ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (*RenewalPriceList, error)
-	// ListSubscriptionItems implements list-subscription-items operation.
-	//
-	// List subscription items.
-	//
-	// GET /account/v1/subscription-items
-	ListSubscriptionItems(ctx context.Context, params ListSubscriptionItemsParams) (*SubscriptionItemList, error)
-	// ListSubscriptions implements list-subscriptions operation.
-	//
-	// List subscriptions.
-	//
-	// GET /account/v1/subscriptions
-	ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error)
-	// ListTopUps implements list-top-ups operation.
-	//
-	// List top ups.
-	//
-	// GET /account/v1/top-ups
-	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
-	// ListTransactions implements list-transactions operation.
-	//
-	// List transactions.
-	//
-	// GET /account/v1/transactions
-	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
-	// ListUsageCharges implements list-usage-charges operation.
-	//
-	// Includes charges that have not been invoiced yet, which is how the current month's spending is seen
-	// before the invoice is issued.
-	//
-	// GET /account/v1/usage-charges
-	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
-	// PayInvoice implements pay-invoice operation.
-	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
-	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the payment; the
-	// invoice is marked paid once the gateway confirms it.
-	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
-	//
-	// POST /account/v1/invoices/{invoiceId}/pay
-	PayInvoice(ctx context.Context, req OptPayRequest, params PayInvoiceParams) (*PaymentResult, error)
-	// PayOrder implements pay-order operation.
-	//
-	// Use this to resume an order whose checkout was interrupted.
-	//
-	// An order reserves both funds and stock for a limited time. Once that reservation expires the order
-	// can no longer be paid and must be placed again; `reservation_expires_at` on the order states when.
-	//
-	// POST /account/v1/orders/{orderId}/pay
-	PayOrder(ctx context.Context, req OptPayRequest, params PayOrderParams) (*PaymentResult, error)
-	// PayTogether implements pay-together operation.
-	//
-	// All of them or none. Nothing is settled unless everything named here can be, so a partial result is
-	// not a state this can leave behind.
-	//
-	// The balance is not split across the two cases: either it covers the whole total and everything is
-	// settled from it, or it is left untouched and the full total is collected through the gateway. It is
-	// never partly spent against an unpaid remainder.
-	//
-	// When the gateway is needed, this returns a checkout address and settles nothing. Call it again once
-	// the payment has landed — the balance then covers the total and the same call settles everything.
-	//
-	// Anything already paid is skipped rather than refused, so a repeated call after a partial success is
-	// safe.
-	//
-	// POST /account/v1/payments
-	PayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentResult, error)
-	// PreviewCode implements preview-code operation.
-	//
-	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
-	// commit.
-	//
-	// POST /account/v1/codes/preview
-	PreviewCode(ctx context.Context, req *CodeRequest) (*CodePreview, error)
-	// RenewSubscriptionItem implements renew-subscription-item operation.
-	//
-	// Extends the paid period from its current end, not from today, so renewing early does not shorten
-	// what has already been paid for.
-	//
-	// The price charged is the one in effect at the moment of renewal, which may differ from what was paid
-	// for the current period.
-	//
-	// POST /account/v1/subscription-items/{itemId}/renew
-	RenewSubscriptionItem(ctx context.Context, req *RenewRequest, params RenewSubscriptionItemParams) (*PaymentResult, error)
-	// RequestRefund implements request-refund operation.
-	//
-	// Refunding ends the subscription and reclaims whatever it provisioned. That is the difference from
-	// letting a period lapse: a lapsed period keeps the machine around for a while so that topping up
-	// brings it back, whereas a refund returns the money and therefore cannot leave the thing running.
-	//
-	// What can be refunded, for how long, and how much, is decided here rather than by the caller. A
-	// request outside those bounds is refused with the reason.
-	//
-	// The money goes back the way it came: card charges to the card, balance to the balance, credit to
-	// credit. A grant never turns into cash.
-	//
-	// POST /account/v1/refunds
-	RequestRefund(ctx context.Context, req *RefundRequest) (*Refund, error)
-	// SetAutoRenew implements set-auto-renew operation.
-	//
-	// When on, the account balance is charged at the renewal date. Turning it off lets the current period
-	// run to its end and stops the resource afterwards.
-	//
-	// PUT /account/v1/subscription-items/{itemId}/auto-renew
-	SetAutoRenew(ctx context.Context, req *AutoRenewSet, params SetAutoRenewParams) (*SubscriptionItem, error)
-	// SetDefaultPaymentMethod implements set-default-payment-method operation.
-	//
-	// Set default payment method.
-	//
-	// PUT /account/v1/payment-methods/{paymentMethodId}/default
-	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
 	// SetProjectAutoRenew implements set-project-auto-renew operation.
 	//
-	// Automatic renewal draws on the paying account's balance, which a project member may commit. Paying
-	// by card requires the account owner and is done from the billing centre.
+	// Automatic renewal draws on the project billing account's balance, which a project member may commit.
+	// Paying by card requires the account owner and is done from the billing centre.
 	//
-	// PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew
-	SetProjectAutoRenew(ctx context.Context, req *AutoRenewSet, params SetProjectAutoRenewParams) (*SubscriptionItem, error)
-	// SetProjectPayer implements set-project-payer operation.
-	//
-	// Charges already recorded remain with the account that was paying when they occurred, and are still
-	// invoiced to it. Metered resources are settled up to the moment of the change.
-	//
-	// Periods already paid for are unaffected; renewals are charged to the new account.
-	//
-	// The request is refused while the current account has an unpaid invoice, and — once the project
-	// holds subscriptions — while the new account uses a different currency.
-	//
-	// PUT /account/v1/projects/{projectId}/billing-account
-	SetProjectPayer(ctx context.Context, req *ProjectPayerSet, params SetProjectPayerParams) (*ProjectBinding, error)
-	// SettleProjectUsage implements settle-project-usage operation.
-	//
-	// Metered usage is normally invoiced at the end of the month. This issues an invoice for everything
-	// charged to the project so far, to the account currently paying for it.
-	//
-	// Use it before unbinding a project, or to obtain a settled figure part-way through a month. Calling
-	// it again when nothing is outstanding has no effect.
-	//
-	// POST /account/v1/projects/{projectId}/billing-account/settle
-	SettleProjectUsage(ctx context.Context, params SettleProjectUsageParams) (*SettleResult, error)
-	// UnbindProjectPayer implements unbind-project-payer operation.
-	//
-	// Permitted only when the project has nothing left to charge: no resources accruing charges, no
-	// subscriptions still running, no usage awaiting invoicing, and no unpaid invoice on the account.
-	//
-	// Usage that has not yet been invoiced is settled by calling
-	// `POST /account/v1/projects/{projectId}/billing-account/settle` first.
-	//
-	// After this the project cannot create resources until an account is chosen again.
-	//
-	// DELETE /account/v1/projects/{projectId}/billing-account
-	UnbindProjectPayer(ctx context.Context, params UnbindProjectPayerParams) error
-	// UpdateBillingAccount implements update-billing-account operation.
-	//
-	// The legal name, address and tax identifier are copied onto each invoice when it is issued. Changing
-	// them here affects invoices issued afterwards, not those already sent.
-	//
-	// The currency cannot be changed.
-	//
-	// PATCH /account/v1/billing-accounts/{accountId}
-	UpdateBillingAccount(ctx context.Context, req *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
+	// PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew
+	SetProjectAutoRenew(ctx context.Context, req *AutoRenewSet, params SetProjectAutoRenewParams) (*Subscription, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

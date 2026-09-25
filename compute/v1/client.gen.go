@@ -535,6 +535,39 @@ func (e InstanceRestrictionSource) Valid() bool {
 	}
 }
 
+// Defines values for PeeringResourceStatus.
+const (
+	PeeringResourceStatusActive            PeeringResourceStatus = "active"
+	PeeringResourceStatusDeleted           PeeringResourceStatus = "deleted"
+	PeeringResourceStatusDeleting          PeeringResourceStatus = "deleting"
+	PeeringResourceStatusError             PeeringResourceStatus = "error"
+	PeeringResourceStatusPendingAcceptance PeeringResourceStatus = "pending_acceptance"
+	PeeringResourceStatusProvisioning      PeeringResourceStatus = "provisioning"
+	PeeringResourceStatusRejected          PeeringResourceStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the PeeringResourceStatus enum.
+func (e PeeringResourceStatus) Valid() bool {
+	switch e {
+	case PeeringResourceStatusActive:
+		return true
+	case PeeringResourceStatusDeleted:
+		return true
+	case PeeringResourceStatusDeleting:
+		return true
+	case PeeringResourceStatusError:
+		return true
+	case PeeringResourceStatusPendingAcceptance:
+		return true
+	case PeeringResourceStatusProvisioning:
+		return true
+	case PeeringResourceStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PortAddressState.
 const (
 	PortAddressStateAssigned  PortAddressState = "assigned"
@@ -843,7 +876,7 @@ type AllocateFloatingIPRequestBody struct {
 	BandwidthPriceId openapi_types.UUID `json:"bandwidth_price_id"`
 	Ipv4PoolId       openapi_types.UUID `json:"ipv4_pool_id"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order            OrderOptions       `json:"order"`
 	PriceId          openapi_types.UUID `json:"price_id"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
@@ -936,7 +969,7 @@ type CreateBackupRequestBody struct {
 	DiskId openapi_types.UUID `json:"disk_id"`
 	Name   string             `json:"name"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order   OrderOptions       `json:"order"`
 	PriceId openapi_types.UUID `json:"price_id"`
 }
@@ -947,13 +980,21 @@ type CreateDiskRequestBody struct {
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order   OrderOptions       `json:"order"`
 	PriceId openapi_types.UUID `json:"price_id"`
 	SizeGb  int64              `json:"size_gb"`
 
 	// SnapshotId Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot
 	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
+}
+
+// CreatePeeringRequestBody defines model for CreatePeeringRequestBody.
+type CreatePeeringRequestBody struct {
+	AccepterNetworkId  openapi_types.UUID `json:"accepter_network_id"`
+	AccepterProjectId  openapi_types.UUID `json:"accepter_project_id"`
+	Name               string             `json:"name"`
+	RequesterNetworkId openapi_types.UUID `json:"requester_network_id"`
 }
 
 // CreatePortRequestBody defines model for CreatePortRequestBody.
@@ -973,7 +1014,7 @@ type CreatePrivateImageRequestBody struct {
 	InstanceId openapi_types.UUID `json:"instance_id"`
 	Name       string             `json:"name"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order   OrderOptions       `json:"order"`
 	PriceId openapi_types.UUID `json:"price_id"`
 }
@@ -1034,7 +1075,7 @@ type CreateSnapshotRequestBody struct {
 	DiskId openapi_types.UUID `json:"disk_id"`
 	Name   string             `json:"name"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order   OrderOptions       `json:"order"`
 	PriceId openapi_types.UUID `json:"price_id"`
 }
@@ -1141,13 +1182,14 @@ type DiskTypeResource struct {
 	Media              DiskTypeResourceMedia `json:"media"`
 	MinSizeGb          int64                 `json:"min_size_gb"`
 	Name               string                `json:"name"`
-	NameTranslations   map[string]string     `json:"name_translations"`
 	PlanId             *openapi_types.UUID   `json:"plan_id"`
 	PrivateImagePlanId *openapi_types.UUID   `json:"private_image_plan_id"`
-	ProductId          *openapi_types.UUID   `json:"product_id"`
-	RegionId           openapi_types.UUID    `json:"region_id"`
-	SnapshotPlanId     *openapi_types.UUID   `json:"snapshot_plan_id"`
-	StepGb             int64                 `json:"step_gb"`
+
+	// ProductId Billing Product ID. Null when no Product is assigned; otherwise `compute`.
+	ProductId      *string             `json:"product_id"`
+	RegionId       openapi_types.UUID  `json:"region_id"`
+	SnapshotPlanId *openapi_types.UUID `json:"snapshot_plan_id"`
+	StepGb         int64               `json:"step_gb"`
 
 	// ThroughputAtMaxSize Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not rate-limited
 	ThroughputAtMaxSize *int64 `json:"throughput_at_max_size"`
@@ -1383,11 +1425,10 @@ type InstanceTypeResource struct {
 	//
 	// A ceiling on what can be bought, not a speed. How fast the machine's own interfaces run is
 	// `network_egress_kbps` / `network_ingress_kbps`.
-	MaxBandwidthMbps int64             `json:"max_bandwidth_mbps"`
-	MaxFloatingIps   int64             `json:"max_floating_ips"`
-	MaxPorts         int64             `json:"max_ports"`
-	Name             string            `json:"name"`
-	NameTranslations map[string]string `json:"name_translations"`
+	MaxBandwidthMbps int64  `json:"max_bandwidth_mbps"`
+	MaxFloatingIps   int64  `json:"max_floating_ips"`
+	MaxPorts         int64  `json:"max_ports"`
+	Name             string `json:"name"`
 
 	// NetworkEgressKbps Outbound ceiling of **each** network interface, in kbps. Null when this type is not
 	// rate-limited.
@@ -1399,10 +1440,12 @@ type InstanceTypeResource struct {
 	// NetworkIngressKbps Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited
 	NetworkIngressKbps *int64              `json:"network_ingress_kbps"`
 	PlanId             *openapi_types.UUID `json:"plan_id"`
-	ProductId          *openapi_types.UUID `json:"product_id"`
-	RamMb              int64               `json:"ram_mb"`
-	RegionId           openapi_types.UUID  `json:"region_id"`
-	Vcpus              int64               `json:"vcpus"`
+
+	// ProductId Billing Product ID. Null when no Product is assigned; otherwise `compute`.
+	ProductId *string            `json:"product_id"`
+	RamMb     int64              `json:"ram_mb"`
+	RegionId  openapi_types.UUID `json:"region_id"`
+	Vcpus     int64              `json:"vcpus"`
 }
 
 // LaunchInstanceRequestBody defines model for LaunchInstanceRequestBody.
@@ -1445,7 +1488,7 @@ type LaunchInstanceRequestBody struct {
 	LoginUsername *string `json:"login_username,omitempty"`
 	Name          string  `json:"name"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order OrderOptions `json:"order"`
 
 	// Password The password to set, on the login account and on root. Only the SSH public keys of the project are used when omitted
@@ -1467,15 +1510,17 @@ type LaunchInstanceRequestBody struct {
 
 // LaunchInstanceResponseBody defines model for LaunchInstanceResponseBody.
 type LaunchInstanceResponseBody struct {
-	// Order A billable order has been created. Read it from the billing API to find out what is
-	// owed and whether payment is still required.
-	//
-	// Only the identifier is returned. Amounts and state are not repeated here; the order
-	// itself is the single source for them.
+	// InstanceIds Instances created by this operation. Empty before resource creation starts; a replay may include identifiers produced since the first response. Historical identifiers do not imply that the instances still exist.
+	InstanceIds []openapi_types.UUID `json:"instance_ids"`
+
+	// Order Identifies the original purchase. Replays retain these identifiers. Read the order for purchase progress and its invoice for amounts and payment status.
 	Order PlacedOrder `json:"order"`
 
-	// Password Generated login password. Null when no password was generated. Keep it before leaving this response.
+	// Password Generated login password, returned only by the initial response. Null on replay or when no password was generated. A retry never generates or resets a password.
 	Password *string `json:"password"`
+
+	// TaskId The original Compute task. Replays retain this identifier, including after failure or cancellation.
+	TaskId openapi_types.UUID `json:"task_id"`
 }
 
 // NewBootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
@@ -1539,14 +1584,33 @@ type OperationLogResource struct {
 	Succeeded   bool   `json:"succeeded"`
 }
 
-// OrderOptions Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+// OrderOptions Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 type OrderOptions = externalRef0.OrderOptions
 
-// PlacedOrder A billable order has been created. Read it from the billing API to find out what is
-// owed and whether payment is still required.
-//
-// Only the identifier is returned. Amounts and state are not repeated here; the order
-// itself is the single source for them.
+// PeeringListResponseBody defines model for PeeringListResponseBody.
+type PeeringListResponseBody struct {
+	Items []PeeringResource `json:"items"`
+	Total int               `json:"total"`
+}
+
+// PeeringResource defines model for PeeringResource.
+type PeeringResource struct {
+	AccepterNetworkId  openapi_types.UUID    `json:"accepter_network_id"`
+	AccepterProjectId  openapi_types.UUID    `json:"accepter_project_id"`
+	CreatedAt          time.Time             `json:"created_at"`
+	FailureCode        *string               `json:"failure_code,omitempty"`
+	Id                 openapi_types.UUID    `json:"id"`
+	Name               string                `json:"name"`
+	RegionId           openapi_types.UUID    `json:"region_id"`
+	RequesterNetworkId openapi_types.UUID    `json:"requester_network_id"`
+	RequesterProjectId openapi_types.UUID    `json:"requester_project_id"`
+	Status             PeeringResourceStatus `json:"status"`
+}
+
+// PeeringResourceStatus defines model for PeeringResource.Status.
+type PeeringResourceStatus string
+
+// PlacedOrder Identifies the original purchase. Replays retain these identifiers. Read the order for purchase progress and its invoice for amounts and payment status.
 type PlacedOrder = externalRef0.PlacedOrder
 
 // PortAddress defines model for PortAddress.
@@ -1693,6 +1757,15 @@ type PrivateNetworkResource struct {
 // PrivateNetworkResourceStatus defines model for PrivateNetworkResource.Status.
 type PrivateNetworkResourceStatus string
 
+// PurchaseResult Identifies the Compute task and the Billing order of a purchase. Work on the purchase starts after the order's invoice is paid, or without waiting when the order has no immediate invoice. Track the task for completion.
+type PurchaseResult struct {
+	// Order Identifies the original purchase. Replays retain these identifiers. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
+
+	// TaskId The original Compute task. Replays retain this identifier, including after failure or cancellation.
+	TaskId openapi_types.UUID `json:"task_id"`
+}
+
 // RebootInstanceRequestBody defines model for RebootInstanceRequestBody.
 type RebootInstanceRequestBody struct {
 	// Force A forced reboot does not wait for the operating system to shut down and unwritten data is lost; use it when the system is unresponsive. False when omitted
@@ -1733,7 +1806,7 @@ type RegionResource struct {
 	CountryCode string             `json:"country_code"`
 	Id          openapi_types.UUID `json:"id"`
 
-	// Name Display name for this place, shown to tenants (Hong Kong). It is the translatable one; the stable handle is code.
+	// Name Display name for this place, shown to tenants (Hong Kong). The stable handle is code.
 	Name string `json:"name"`
 }
 
@@ -1789,7 +1862,7 @@ type ResetPasswordResponseBody struct {
 
 // ResizeDiskRequestBody defines model for ResizeDiskRequestBody.
 type ResizeDiskRequestBody struct {
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order   OrderOptions       `json:"order"`
 	PriceId openapi_types.UUID `json:"price_id"`
 
@@ -1802,7 +1875,7 @@ type ResizeInstanceRequestBody struct {
 	// InstanceTypeId Must be in the same region and availability zone as the current instance type
 	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order   OrderOptions       `json:"order"`
 	PriceId openapi_types.UUID `json:"price_id"`
 }
@@ -1813,7 +1886,7 @@ type RestoreBackupRequestBody struct {
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order   OrderOptions       `json:"order"`
 	PriceId openapi_types.UUID `json:"price_id"`
 
@@ -1838,7 +1911,12 @@ type RouteResource struct {
 	Description string             `json:"description"`
 	Destination string             `json:"destination"`
 	Id          openapi_types.UUID `json:"id"`
-	Nexthop     string             `json:"nexthop"`
+
+	// Nexthop Present for custom routes; peering routes expose peering_id instead.
+	Nexthop *string `json:"nexthop,omitempty"`
+
+	// PeeringId System-owned peering route. Delete the peering to remove this route.
+	PeeringId *openapi_types.UUID `json:"peering_id,omitempty"`
 }
 
 // RunCommandRequestBody defines model for RunCommandRequestBody.
@@ -1900,7 +1978,7 @@ type SetBandwidthRequestBody struct {
 	// Mbps Applied to both directions
 	Mbps int64 `json:"mbps"`
 
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+	// Order Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 	Order   OrderOptions       `json:"order"`
 	PriceId openapi_types.UUID `json:"price_id"`
 }
@@ -1983,7 +2061,7 @@ type ZoneResource struct {
 	Code string             `json:"code"`
 	Id   openapi_types.UUID `json:"id"`
 
-	// Name Display name for this zone, shown to tenants (Hong Kong A). It is the translatable one; the stable handle is code.
+	// Name Display name for this zone, shown to tenants (Hong Kong A). The stable handle is code.
 	Name string `json:"name"`
 }
 
@@ -2145,6 +2223,12 @@ type ListOperationLogsParams struct {
 	PageSize *int64  `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
+// ListPeeringsParams defines parameters for ListPeerings.
+type ListPeeringsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListPrivateImagesParams defines parameters for ListPrivateImages.
 type ListPrivateImagesParams struct {
 	// RegionId Return only the images of this region. An image can only be used in the region that holds it
@@ -2261,6 +2345,9 @@ type StartInstanceJSONRequestBody = PowerRequest
 
 // StopInstanceJSONRequestBody defines body for StopInstance for application/json ContentType.
 type StopInstanceJSONRequestBody = PowerRequest
+
+// CreatePeeringJSONRequestBody defines body for CreatePeering for application/json ContentType.
+type CreatePeeringJSONRequestBody = CreatePeeringRequestBody
 
 // CreatePortJSONRequestBody defines body for CreatePort for application/json ContentType.
 type CreatePortJSONRequestBody = CreatePortRequestBody
@@ -2383,7 +2470,9 @@ type ClientInterface interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2396,7 +2485,9 @@ type ClientInterface interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2406,6 +2497,8 @@ type ClientInterface interface {
 	// DeleteBackup Delete a backup
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 	DeleteBackup(ctx context.Context, backupId openapi_types.UUID, params *DeleteBackupParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2435,7 +2528,9 @@ type ClientInterface interface {
 	//
 	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2446,7 +2541,9 @@ type ClientInterface interface {
 	//
 	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2480,6 +2577,8 @@ type ClientInterface interface {
 	//
 	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -2491,6 +2590,8 @@ type ClientInterface interface {
 	//
 	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -2499,6 +2600,8 @@ type ClientInterface interface {
 	// DeleteDisk Delete a disk
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
 	DeleteDisk(ctx context.Context, diskId openapi_types.UUID, params *DeleteDiskParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2530,13 +2633,15 @@ type ClientInterface interface {
 
 	// ResizeDiskWithBody Resize a disk
 	//
-	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
 	//
-	// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+	// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
-	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+	// The request is refused only when the new size has a different performance level. A disk whose type has no QoS level, or whose performance has already reached the maximum of its type, can be resized while attached.
 	//
-	// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+	// **A system disk can be resized while attached**, because a system disk cannot be detached. System disk types use a performance level that does not scale with size, so resizing a system disk does not change its performance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2545,13 +2650,15 @@ type ClientInterface interface {
 
 	// ResizeDisk Resize a disk
 	//
-	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
 	//
-	// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+	// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
-	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+	// The request is refused only when the new size has a different performance level. A disk whose type has no QoS level, or whose performance has already reached the maximum of its type, can be resized while attached.
 	//
-	// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+	// **A system disk can be resized while attached**, because a system disk cannot be detached. System disk types use a performance level that does not scale with size, so resizing a system disk does not change its performance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2566,6 +2673,8 @@ type ClientInterface interface {
 	//
 	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
@@ -2578,6 +2687,8 @@ type ClientInterface interface {
 	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
 	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2595,6 +2706,8 @@ type ClientInterface interface {
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
@@ -2606,6 +2719,8 @@ type ClientInterface interface {
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
@@ -2614,6 +2729,8 @@ type ClientInterface interface {
 	// ReleaseFloatingIp Release a floating IP
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 	ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, params *ReleaseFloatingIpParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2625,9 +2742,11 @@ type ClientInterface interface {
 
 	// SetFloatingIpBandwidthWithBody Set the bandwidth limit
 	//
-	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
 	//
-	// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2636,9 +2755,11 @@ type ClientInterface interface {
 
 	// SetFloatingIpBandwidth Set the bandwidth limit
 	//
-	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
 	//
-	// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2691,7 +2812,13 @@ type ClientInterface interface {
 
 	// LaunchInstanceWithBody Create instances
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order. A request for several instances is all or nothing — if any instance cannot be created, every instance of that request is released and the order fails, so nothing is charged. Each instance is named after this request with a number appended, and each has its own task.
+	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+	//
+	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	//
+	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2700,7 +2827,13 @@ type ClientInterface interface {
 
 	// LaunchInstance Create instances
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order. A request for several instances is all or nothing — if any instance cannot be created, every instance of that request is released and the order fails, so nothing is charged. Each instance is named after this request with a number appended, and each has its own task.
+	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+	//
+	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	//
+	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2712,6 +2845,8 @@ type ClientInterface interface {
 	// The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 	//
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId} (the `DeleteInstance` operationId).
 	DeleteInstance(ctx context.Context, instanceId openapi_types.UUID, params *DeleteInstanceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2818,6 +2953,8 @@ type ClientInterface interface {
 	//
 	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
@@ -2827,6 +2964,8 @@ type ClientInterface interface {
 	//
 	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
@@ -2835,6 +2974,8 @@ type ClientInterface interface {
 	// DetachDisk Detach a disk
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 	DetachDisk(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, params *DetachDiskParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2949,12 +3090,16 @@ type ClientInterface interface {
 
 	// AttachPortWithBody Attach a network interface
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
 	AttachPortWithBody(ctx context.Context, instanceId openapi_types.UUID, params *AttachPortParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AttachPort Attach a network interface
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2964,6 +3109,8 @@ type ClientInterface interface {
 	// DetachPort Detach a network interface
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 	DetachPort(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, params *DetachPortParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2979,6 +3126,8 @@ type ClientInterface interface {
 	// An instance suspended by the platform must be unsuspended first.
 	//
 	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2996,6 +3145,8 @@ type ClientInterface interface {
 	// An instance suspended by the platform must be unsuspended first.
 	//
 	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3026,7 +3177,9 @@ type ClientInterface interface {
 
 	// ResizeInstanceWithBody Resize an instance
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3035,7 +3188,9 @@ type ClientInterface interface {
 
 	// ResizeInstance Resize an instance
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3046,6 +3201,8 @@ type ClientInterface interface {
 	//
 	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
 	ConfirmInstanceResize(ctx context.Context, instanceId openapi_types.UUID, params *ConfirmInstanceResizeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -3053,12 +3210,16 @@ type ClientInterface interface {
 	//
 	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
 	RevertInstanceResize(ctx context.Context, instanceId openapi_types.UUID, params *RevertInstanceResizeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartInstanceWithBody Start an instance
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3069,6 +3230,8 @@ type ClientInterface interface {
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/start (the `StartInstance` operationId).
@@ -3078,6 +3241,8 @@ type ClientInterface interface {
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/stop (the `StopInstance` operationId).
@@ -3086,6 +3251,8 @@ type ClientInterface interface {
 	// StopInstance Stop an instance
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3109,6 +3276,49 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
 	ListOperationLogs(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListPeerings List peerings
+	//
+	// Corresponds with GET /api/v1/peerings (the `ListPeerings` operationId).
+	ListPeerings(ctx context.Context, params *ListPeeringsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePeeringWithBody Create peering
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/peerings (the `CreatePeering` operationId).
+	CreatePeeringWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePeering Create peering
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/peerings (the `CreatePeering` operationId).
+	CreatePeering(ctx context.Context, body CreatePeeringJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeletePeering Delete peering
+	//
+	// Corresponds with DELETE /api/v1/peerings/{peeringId} (the `DeletePeering` operationId).
+	DeletePeering(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPeering Get peering
+	//
+	// Corresponds with GET /api/v1/peerings/{peeringId} (the `GetPeering` operationId).
+	GetPeering(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AcceptPeering Accept peering
+	//
+	// Corresponds with POST /api/v1/peerings/{peeringId}/accept (the `AcceptPeering` operationId).
+	AcceptPeering(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RejectPeering Reject peering
+	//
+	// Corresponds with POST /api/v1/peerings/{peeringId}/reject (the `RejectPeering` operationId).
+	RejectPeering(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPorts List network interfaces
 	//
@@ -3151,7 +3361,7 @@ type ClientInterface interface {
 	//
 	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 	//
-	// The capture has two phases. Poll the retrieve endpoint:
+	// The capture has two phases, reported by the status of the image:
 	//
 	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -3159,6 +3369,8 @@ type ClientInterface interface {
 	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3171,7 +3383,7 @@ type ClientInterface interface {
 	//
 	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 	//
-	// The capture has two phases. Poll the retrieve endpoint:
+	// The capture has two phases, reported by the status of the image:
 	//
 	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -3179,6 +3391,8 @@ type ClientInterface interface {
 	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3190,6 +3404,8 @@ type ClientInterface interface {
 	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
 	DeletePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, params *DeletePrivateImageParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3456,6 +3672,8 @@ type ClientInterface interface {
 	//
 	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -3467,12 +3685,16 @@ type ClientInterface interface {
 	//
 	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
 	CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteSnapshot Delete a snapshot
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 	DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, params *DeleteSnapshotParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3523,7 +3745,9 @@ func (c *Client) ListBackups(ctx context.Context, params *ListBackupsParams, req
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3546,7 +3770,9 @@ func (c *Client) CreateBackupWithBody(ctx context.Context, contentType string, b
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3566,6 +3792,8 @@ func (c *Client) CreateBackup(ctx context.Context, body CreateBackupJSONRequestB
 // DeleteBackup Delete a backup
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 func (c *Client) DeleteBackup(ctx context.Context, backupId openapi_types.UUID, params *DeleteBackupParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3635,7 +3863,9 @@ func (c *Client) RenameBackup(ctx context.Context, backupId openapi_types.UUID, 
 //
 // Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3656,7 +3886,9 @@ func (c *Client) RestoreBackupWithBody(ctx context.Context, backupId openapi_typ
 //
 // Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3730,6 +3962,8 @@ func (c *Client) ListDisks(ctx context.Context, params *ListDisksParams, reqEdit
 //
 // A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -3751,6 +3985,8 @@ func (c *Client) CreateDiskWithBody(ctx context.Context, contentType string, bod
 //
 // A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -3769,6 +4005,8 @@ func (c *Client) CreateDisk(ctx context.Context, body CreateDiskJSONRequestBody,
 // DeleteDisk Delete a disk
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
 func (c *Client) DeleteDisk(ctx context.Context, diskId openapi_types.UUID, params *DeleteDiskParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3840,13 +4078,15 @@ func (c *Client) RenameDisk(ctx context.Context, diskId openapi_types.UUID, body
 
 // ResizeDiskWithBody Resize a disk
 //
-// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
 //
-// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
-// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+// The request is refused only when the new size has a different performance level. A disk whose type has no QoS level, or whose performance has already reached the maximum of its type, can be resized while attached.
 //
-// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+// **A system disk can be resized while attached**, because a system disk cannot be detached. System disk types use a performance level that does not scale with size, so resizing a system disk does not change its performance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3865,13 +4105,15 @@ func (c *Client) ResizeDiskWithBody(ctx context.Context, diskId openapi_types.UU
 
 // ResizeDisk Resize a disk
 //
-// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
 //
-// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
-// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+// The request is refused only when the new size has a different performance level. A disk whose type has no QoS level, or whose performance has already reached the maximum of its type, can be resized while attached.
 //
-// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+// **A system disk can be resized while attached**, because a system disk cannot be detached. System disk types use a performance level that does not scale with size, so resizing a system disk does not change its performance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3896,6 +4138,8 @@ func (c *Client) ResizeDisk(ctx context.Context, diskId openapi_types.UUID, body
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
@@ -3918,6 +4162,8 @@ func (c *Client) RevertDiskWithBody(ctx context.Context, diskId openapi_types.UU
 // Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3955,6 +4201,8 @@ func (c *Client) ListFloatingIps(ctx context.Context, reqEditors ...RequestEdito
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
@@ -3976,6 +4224,8 @@ func (c *Client) AllocateFloatingIpWithBody(ctx context.Context, contentType str
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
@@ -3994,6 +4244,8 @@ func (c *Client) AllocateFloatingIp(ctx context.Context, body AllocateFloatingIp
 // ReleaseFloatingIp Release a floating IP
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 func (c *Client) ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, params *ReleaseFloatingIpParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4025,9 +4277,11 @@ func (c *Client) GetFloatingIp(ctx context.Context, floatingIpId openapi_types.U
 
 // SetFloatingIpBandwidthWithBody Set the bandwidth limit
 //
-// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
 //
-// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4046,9 +4300,11 @@ func (c *Client) SetFloatingIpBandwidthWithBody(ctx context.Context, floatingIpI
 
 // SetFloatingIpBandwidth Set the bandwidth limit
 //
-// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
 //
-// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4171,7 +4427,13 @@ func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams,
 
 // LaunchInstanceWithBody Create instances
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order. A request for several instances is all or nothing — if any instance cannot be created, every instance of that request is released and the order fails, so nothing is charged. Each instance is named after this request with a number appended, and each has its own task.
+// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+//
+// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4190,7 +4452,13 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 
 // LaunchInstance Create instances
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order. A request for several instances is all or nothing — if any instance cannot be created, every instance of that request is released and the order fails, so nothing is charged. Each instance is named after this request with a number appended, and each has its own task.
+// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+//
+// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4212,6 +4480,8 @@ func (c *Client) LaunchInstance(ctx context.Context, body LaunchInstanceJSONRequ
 // The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId} (the `DeleteInstance` operationId).
 func (c *Client) DeleteInstance(ctx context.Context, instanceId openapi_types.UUID, params *DeleteInstanceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4408,6 +4678,8 @@ func (c *Client) ListInstanceDisks(ctx context.Context, instanceId openapi_types
 //
 // The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
@@ -4427,6 +4699,8 @@ func (c *Client) AttachDiskWithBody(ctx context.Context, instanceId openapi_type
 //
 // The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
@@ -4445,6 +4719,8 @@ func (c *Client) AttachDisk(ctx context.Context, instanceId openapi_types.UUID, 
 // DetachDisk Detach a disk
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 func (c *Client) DetachDisk(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, params *DetachDiskParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4669,6 +4945,8 @@ func (c *Client) ListInstancePorts(ctx context.Context, instanceId openapi_types
 
 // AttachPortWithBody Attach a network interface
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
@@ -4685,6 +4963,8 @@ func (c *Client) AttachPortWithBody(ctx context.Context, instanceId openapi_type
 }
 
 // AttachPort Attach a network interface
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4704,6 +4984,8 @@ func (c *Client) AttachPort(ctx context.Context, instanceId openapi_types.UUID, 
 // DetachPort Detach a network interface
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 func (c *Client) DetachPort(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, params *DetachPortParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4729,6 +5011,8 @@ func (c *Client) DetachPort(ctx context.Context, instanceId openapi_types.UUID, 
 // An instance suspended by the platform must be unsuspended first.
 //
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4756,6 +5040,8 @@ func (c *Client) RebootInstanceWithBody(ctx context.Context, instanceId openapi_
 // An instance suspended by the platform must be unsuspended first.
 //
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4816,7 +5102,9 @@ func (c *Client) RebuildInstance(ctx context.Context, instanceId openapi_types.U
 
 // ResizeInstanceWithBody Resize an instance
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4835,7 +5123,9 @@ func (c *Client) ResizeInstanceWithBody(ctx context.Context, instanceId openapi_
 
 // ResizeInstance Resize an instance
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4856,6 +5146,8 @@ func (c *Client) ResizeInstance(ctx context.Context, instanceId openapi_types.UU
 //
 // Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
 func (c *Client) ConfirmInstanceResize(ctx context.Context, instanceId openapi_types.UUID, params *ConfirmInstanceResizeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewConfirmInstanceResizeRequest(c.Server, instanceId, params)
@@ -4873,6 +5165,8 @@ func (c *Client) ConfirmInstanceResize(ctx context.Context, instanceId openapi_t
 //
 // The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
 func (c *Client) RevertInstanceResize(ctx context.Context, instanceId openapi_types.UUID, params *RevertInstanceResizeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRevertInstanceResizeRequest(c.Server, instanceId, params)
@@ -4889,6 +5183,8 @@ func (c *Client) RevertInstanceResize(ctx context.Context, instanceId openapi_ty
 // StartInstanceWithBody Start an instance
 //
 // Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4909,6 +5205,8 @@ func (c *Client) StartInstanceWithBody(ctx context.Context, instanceId openapi_t
 //
 // Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/start (the `StartInstance` operationId).
@@ -4928,6 +5226,8 @@ func (c *Client) StartInstance(ctx context.Context, instanceId openapi_types.UUI
 //
 // Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/stop (the `StopInstance` operationId).
@@ -4946,6 +5246,8 @@ func (c *Client) StopInstanceWithBody(ctx context.Context, instanceId openapi_ty
 // StopInstance Stop an instance
 //
 // Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4990,6 +5292,119 @@ func (c *Client) ListIpv4Pools(ctx context.Context, params *ListIpv4PoolsParams,
 // Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
 func (c *Client) ListOperationLogs(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListOperationLogsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListPeerings List peerings
+//
+// Corresponds with GET /api/v1/peerings (the `ListPeerings` operationId).
+func (c *Client) ListPeerings(ctx context.Context, params *ListPeeringsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPeeringsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePeeringWithBody Create peering
+//
+// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept before any connectivity is created. Does not change security groups or provide transitive routing.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/peerings (the `CreatePeering` operationId).
+func (c *Client) CreatePeeringWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePeeringRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePeering Create peering
+//
+// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept before any connectivity is created. Does not change security groups or provide transitive routing.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/peerings (the `CreatePeering` operationId).
+func (c *Client) CreatePeering(ctx context.Context, body CreatePeeringJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePeeringRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeletePeering Delete peering
+//
+// Corresponds with DELETE /api/v1/peerings/{peeringId} (the `DeletePeering` operationId).
+func (c *Client) DeletePeering(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePeeringRequest(c.Server, peeringId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPeering Get peering
+//
+// Corresponds with GET /api/v1/peerings/{peeringId} (the `GetPeering` operationId).
+func (c *Client) GetPeering(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPeeringRequest(c.Server, peeringId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AcceptPeering Accept peering
+//
+// Corresponds with POST /api/v1/peerings/{peeringId}/accept (the `AcceptPeering` operationId).
+func (c *Client) AcceptPeering(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcceptPeeringRequest(c.Server, peeringId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RejectPeering Reject peering
+//
+// Corresponds with POST /api/v1/peerings/{peeringId}/reject (the `RejectPeering` operationId).
+func (c *Client) RejectPeering(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRejectPeeringRequest(c.Server, peeringId)
 	if err != nil {
 		return nil, err
 	}
@@ -5091,7 +5506,7 @@ func (c *Client) ListPrivateImages(ctx context.Context, params *ListPrivateImage
 //
 // **The image reflects the moment the capture started. Later changes to the instance are not included.**
 //
-// The capture has two phases. Poll the retrieve endpoint:
+// The capture has two phases, reported by the status of the image:
 //
 // - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 // - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -5099,6 +5514,8 @@ func (c *Client) ListPrivateImages(ctx context.Context, params *ListPrivateImage
 // The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -5121,7 +5538,7 @@ func (c *Client) CreatePrivateImageWithBody(ctx context.Context, contentType str
 //
 // **The image reflects the moment the capture started. Later changes to the instance are not included.**
 //
-// The capture has two phases. Poll the retrieve endpoint:
+// The capture has two phases, reported by the status of the image:
 //
 // - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 // - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -5129,6 +5546,8 @@ func (c *Client) CreatePrivateImageWithBody(ctx context.Context, contentType str
 // The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -5150,6 +5569,8 @@ func (c *Client) CreatePrivateImage(ctx context.Context, body CreatePrivateImage
 // Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
 func (c *Client) DeletePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, params *DeletePrivateImageParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5786,6 +6207,8 @@ func (c *Client) ListSnapshots(ctx context.Context, params *ListSnapshotsParams,
 //
 // **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -5807,6 +6230,8 @@ func (c *Client) CreateSnapshotWithBody(ctx context.Context, contentType string,
 //
 // **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -5823,6 +6248,8 @@ func (c *Client) CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequ
 }
 
 // DeleteSnapshot Delete a snapshot
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 func (c *Client) DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, params *DeleteSnapshotParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8530,6 +8957,248 @@ func NewListOperationLogsRequest(server string, params *ListOperationLogsParams)
 	return req, nil
 }
 
+// NewListPeeringsRequest constructs an http.Request for the ListPeerings method
+func NewListPeeringsRequest(server string, params *ListPeeringsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/peerings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "offset", *params.Offset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreatePeeringRequest calls the generic CreatePeering builder with application/json body
+func NewCreatePeeringRequest(server string, body CreatePeeringJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePeeringRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreatePeeringRequestWithBody constructs an http.Request for the CreatePeering method, with any body, and a specified content type
+func NewCreatePeeringRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/peerings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeletePeeringRequest constructs an http.Request for the DeletePeering method
+func NewDeletePeeringRequest(server string, peeringId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "peeringId", peeringId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/peerings/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetPeeringRequest constructs an http.Request for the GetPeering method
+func NewGetPeeringRequest(server string, peeringId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "peeringId", peeringId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/peerings/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAcceptPeeringRequest constructs an http.Request for the AcceptPeering method
+func NewAcceptPeeringRequest(server string, peeringId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "peeringId", peeringId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/peerings/%s/accept", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRejectPeeringRequest constructs an http.Request for the RejectPeering method
+func NewRejectPeeringRequest(server string, peeringId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "peeringId", peeringId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/peerings/%s/reject", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListPortsRequest constructs an http.Request for the ListPorts method
 func NewListPortsRequest(server string) (*http.Request, error) {
 	var err error
@@ -10210,7 +10879,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10223,7 +10894,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10233,6 +10906,8 @@ type ClientWithResponsesInterface interface {
 	// DeleteBackupWithResponse Delete a backup
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10266,7 +10941,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10277,7 +10954,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10317,6 +10996,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -10328,6 +11009,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -10336,6 +11019,8 @@ type ClientWithResponsesInterface interface {
 	// DeleteDiskWithResponse Delete a disk
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10371,13 +11056,15 @@ type ClientWithResponsesInterface interface {
 
 	// ResizeDiskWithBodyWithResponse Resize a disk
 	//
-	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
 	//
-	// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+	// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
-	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+	// The request is refused only when the new size has a different performance level. A disk whose type has no QoS level, or whose performance has already reached the maximum of its type, can be resized while attached.
 	//
-	// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+	// **A system disk can be resized while attached**, because a system disk cannot be detached. System disk types use a performance level that does not scale with size, so resizing a system disk does not change its performance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10386,13 +11073,15 @@ type ClientWithResponsesInterface interface {
 
 	// ResizeDiskWithResponse Resize a disk
 	//
-	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
 	//
-	// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+	// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
-	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+	// The request is refused only when the new size has a different performance level. A disk whose type has no QoS level, or whose performance has already reached the maximum of its type, can be resized while attached.
 	//
-	// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+	// **A system disk can be resized while attached**, because a system disk cannot be detached. System disk types use a performance level that does not scale with size, so resizing a system disk does not change its performance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10407,6 +11096,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
@@ -10419,6 +11110,8 @@ type ClientWithResponsesInterface interface {
 	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
 	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10438,6 +11131,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
@@ -10449,6 +11144,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
@@ -10457,6 +11154,8 @@ type ClientWithResponsesInterface interface {
 	// ReleaseFloatingIpWithResponse Release a floating IP
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10472,9 +11171,11 @@ type ClientWithResponsesInterface interface {
 
 	// SetFloatingIpBandwidthWithBodyWithResponse Set the bandwidth limit
 	//
-	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
 	//
-	// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10483,9 +11184,11 @@ type ClientWithResponsesInterface interface {
 
 	// SetFloatingIpBandwidthWithResponse Set the bandwidth limit
 	//
-	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
 	//
-	// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10546,7 +11249,13 @@ type ClientWithResponsesInterface interface {
 
 	// LaunchInstanceWithBodyWithResponse Create instances
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order. A request for several instances is all or nothing — if any instance cannot be created, every instance of that request is released and the order fails, so nothing is charged. Each instance is named after this request with a number appended, and each has its own task.
+	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+	//
+	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	//
+	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10555,7 +11264,13 @@ type ClientWithResponsesInterface interface {
 
 	// LaunchInstanceWithResponse Create instances
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order. A request for several instances is all or nothing — if any instance cannot be created, every instance of that request is released and the order fails, so nothing is charged. Each instance is named after this request with a number appended, and each has its own task.
+	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+	//
+	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	//
+	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10567,6 +11282,8 @@ type ClientWithResponsesInterface interface {
 	// The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 	//
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10683,6 +11400,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
@@ -10692,6 +11411,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
@@ -10700,6 +11421,8 @@ type ClientWithResponsesInterface interface {
 	// DetachDiskWithResponse Detach a disk
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10820,12 +11543,16 @@ type ClientWithResponsesInterface interface {
 
 	// AttachPortWithBodyWithResponse Attach a network interface
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
 	AttachPortWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *AttachPortParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachPortResponse, error)
 
 	// AttachPortWithResponse Attach a network interface
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10835,6 +11562,8 @@ type ClientWithResponsesInterface interface {
 	// DetachPortWithResponse Detach a network interface
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10853,6 +11582,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
@@ -10869,6 +11600,8 @@ type ClientWithResponsesInterface interface {
 	// An instance suspended by the platform must be unsuspended first.
 	//
 	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10899,7 +11632,9 @@ type ClientWithResponsesInterface interface {
 
 	// ResizeInstanceWithBodyWithResponse Resize an instance
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10908,7 +11643,9 @@ type ClientWithResponsesInterface interface {
 
 	// ResizeInstanceWithResponse Resize an instance
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10919,6 +11656,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
@@ -10927,6 +11666,8 @@ type ClientWithResponsesInterface interface {
 	// RevertInstanceResizeWithResponse Revert a resize
 	//
 	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10937,6 +11678,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/start (the `StartInstance` operationId).
@@ -10945,6 +11688,8 @@ type ClientWithResponsesInterface interface {
 	// StartInstanceWithResponse Start an instance
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10955,6 +11700,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/stop (the `StopInstance` operationId).
@@ -10963,6 +11710,8 @@ type ClientWithResponsesInterface interface {
 	// StopInstanceWithResponse Stop an instance
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10990,6 +11739,59 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
 	ListOperationLogsWithResponse(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*ListOperationLogsResponse, error)
+
+	// ListPeeringsWithResponse List peerings
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/peerings (the `ListPeerings` operationId).
+	ListPeeringsWithResponse(ctx context.Context, params *ListPeeringsParams, reqEditors ...RequestEditorFn) (*ListPeeringsResponse, error)
+
+	// CreatePeeringWithBodyWithResponse Create peering
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/peerings (the `CreatePeering` operationId).
+	CreatePeeringWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePeeringResponse, error)
+
+	// CreatePeeringWithResponse Create peering
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/peerings (the `CreatePeering` operationId).
+	CreatePeeringWithResponse(ctx context.Context, body CreatePeeringJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePeeringResponse, error)
+
+	// DeletePeeringWithResponse Delete peering
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/peerings/{peeringId} (the `DeletePeering` operationId).
+	DeletePeeringWithResponse(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePeeringResponse, error)
+
+	// GetPeeringWithResponse Get peering
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/peerings/{peeringId} (the `GetPeering` operationId).
+	GetPeeringWithResponse(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPeeringResponse, error)
+
+	// AcceptPeeringWithResponse Accept peering
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/peerings/{peeringId}/accept (the `AcceptPeering` operationId).
+	AcceptPeeringWithResponse(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*AcceptPeeringResponse, error)
+
+	// RejectPeeringWithResponse Reject peering
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/peerings/{peeringId}/reject (the `RejectPeering` operationId).
+	RejectPeeringWithResponse(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RejectPeeringResponse, error)
 
 	// ListPortsWithResponse List network interfaces
 	//
@@ -11038,7 +11840,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 	//
-	// The capture has two phases. Poll the retrieve endpoint:
+	// The capture has two phases, reported by the status of the image:
 	//
 	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -11046,6 +11848,8 @@ type ClientWithResponsesInterface interface {
 	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11058,7 +11862,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 	//
-	// The capture has two phases. Poll the retrieve endpoint:
+	// The capture has two phases, reported by the status of the image:
 	//
 	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -11066,6 +11870,8 @@ type ClientWithResponsesInterface interface {
 	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11077,6 +11883,8 @@ type ClientWithResponsesInterface interface {
 	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11385,6 +12193,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -11396,12 +12206,16 @@ type ClientWithResponsesInterface interface {
 	//
 	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
 	CreateSnapshotWithResponse(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotResponse, error)
 
 	// DeleteSnapshotWithResponse Delete a snapshot
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11489,14 +12303,21 @@ type CreateBackupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PlacedOrder
+	JSON201 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateBackupResponse) GetJSON201() *PlacedOrder {
+func (r CreateBackupResponse) GetJSON201() *PurchaseResult {
 	return r.JSON201
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateBackupResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -11538,6 +12359,8 @@ type DeleteBackupResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -11545,6 +12368,11 @@ type DeleteBackupResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r DeleteBackupResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteBackupResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -11681,14 +12509,21 @@ type RestoreBackupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PlacedOrder
+	JSON201 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r RestoreBackupResponse) GetJSON201() *PlacedOrder {
+func (r RestoreBackupResponse) GetJSON201() *PurchaseResult {
 	return r.JSON201
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RestoreBackupResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -11873,21 +12708,21 @@ type CreateDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PlacedOrder
-	// JSON402 the response for an HTTP 402 `application/json` response
-	JSON402 *Error
+	JSON201 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateDiskResponse) GetJSON201() *PlacedOrder {
+func (r CreateDiskResponse) GetJSON201() *PurchaseResult {
 	return r.JSON201
 }
 
-// GetJSON402 returns the response for an HTTP 402 `application/json` response
-func (r CreateDiskResponse) GetJSON402() *Error {
-	return r.JSON402
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateDiskResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -11929,6 +12764,8 @@ type DeleteDiskResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -11936,6 +12773,11 @@ type DeleteDiskResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r DeleteDiskResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteDiskResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12072,14 +12914,21 @@ type ResizeDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PlacedOrder
+	JSON200 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ResizeDiskResponse) GetJSON200() *PlacedOrder {
+func (r ResizeDiskResponse) GetJSON200() *PurchaseResult {
 	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ResizeDiskResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12121,6 +12970,8 @@ type RevertDiskResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -12128,6 +12979,11 @@ type RevertDiskResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r RevertDiskResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RevertDiskResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12216,14 +13072,21 @@ type AllocateFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PlacedOrder
+	JSON201 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r AllocateFloatingIpResponse) GetJSON201() *PlacedOrder {
+func (r AllocateFloatingIpResponse) GetJSON201() *PurchaseResult {
 	return r.JSON201
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AllocateFloatingIpResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12265,6 +13128,8 @@ type ReleaseFloatingIpResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -12272,6 +13137,11 @@ type ReleaseFloatingIpResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r ReleaseFloatingIpResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ReleaseFloatingIpResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12360,14 +13230,21 @@ type SetFloatingIpBandwidthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PlacedOrder
+	JSON200 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SetFloatingIpBandwidthResponse) GetJSON200() *PlacedOrder {
+func (r SetFloatingIpBandwidthResponse) GetJSON200() *PurchaseResult {
 	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r SetFloatingIpBandwidthResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12649,6 +13526,8 @@ type LaunchInstanceResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *LaunchInstanceResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -12656,6 +13535,11 @@ type LaunchInstanceResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r LaunchInstanceResponse) GetJSON202() *LaunchInstanceResponseBody {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r LaunchInstanceResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12697,6 +13581,8 @@ type DeleteInstanceResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -12704,6 +13590,11 @@ type DeleteInstanceResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r DeleteInstanceResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteInstanceResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13033,6 +13924,8 @@ type AttachDiskResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13040,6 +13933,11 @@ type AttachDiskResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r AttachDiskResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AttachDiskResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13081,6 +13979,8 @@ type DetachDiskResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13088,6 +13988,11 @@ type DetachDiskResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r DetachDiskResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DetachDiskResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13417,6 +14322,8 @@ type AttachPortResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13424,6 +14331,11 @@ type AttachPortResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r AttachPortResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AttachPortResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13465,6 +14377,8 @@ type DetachPortResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13472,6 +14386,11 @@ type DetachPortResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r DetachPortResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DetachPortResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13513,6 +14432,8 @@ type RebootInstanceResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13520,6 +14441,11 @@ type RebootInstanceResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r RebootInstanceResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RebootInstanceResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13608,14 +14534,21 @@ type ResizeInstanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *PlacedOrder
+	JSON202 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r ResizeInstanceResponse) GetJSON202() *PlacedOrder {
+func (r ResizeInstanceResponse) GetJSON202() *PurchaseResult {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ResizeInstanceResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13657,6 +14590,8 @@ type ConfirmInstanceResizeResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13664,6 +14599,11 @@ type ConfirmInstanceResizeResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r ConfirmInstanceResizeResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ConfirmInstanceResizeResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13705,6 +14645,8 @@ type RevertInstanceResizeResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13712,6 +14654,11 @@ type RevertInstanceResizeResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r RevertInstanceResizeResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RevertInstanceResizeResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13753,6 +14700,8 @@ type StartInstanceResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13760,6 +14709,11 @@ type StartInstanceResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r StartInstanceResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r StartInstanceResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13801,6 +14755,8 @@ type StopInstanceResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -13808,6 +14764,11 @@ type StopInstanceResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r StopInstanceResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r StopInstanceResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13934,6 +14895,294 @@ func (r ListOperationLogsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListOperationLogsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListPeeringsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PeeringListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListPeeringsResponse) GetJSON200() *PeeringListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListPeeringsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListPeeringsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPeeringsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPeeringsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListPeeringsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreatePeeringResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *PeeringResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreatePeeringResponse) GetJSON201() *PeeringResource {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreatePeeringResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreatePeeringResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreatePeeringResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreatePeeringResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreatePeeringResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeletePeeringResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *PeeringResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r DeletePeeringResponse) GetJSON202() *PeeringResource {
+	return r.JSON202
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeletePeeringResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeletePeeringResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeletePeeringResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeletePeeringResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeletePeeringResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetPeeringResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PeeringResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPeeringResponse) GetJSON200() *PeeringResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetPeeringResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPeeringResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPeeringResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPeeringResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPeeringResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AcceptPeeringResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *PeeringResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r AcceptPeeringResponse) GetJSON202() *PeeringResource {
+	return r.JSON202
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AcceptPeeringResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AcceptPeeringResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AcceptPeeringResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AcceptPeeringResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AcceptPeeringResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RejectPeeringResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PeeringResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RejectPeeringResponse) GetJSON200() *PeeringResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r RejectPeeringResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RejectPeeringResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RejectPeeringResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RejectPeeringResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RejectPeeringResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -14129,14 +15378,21 @@ type CreatePrivateImageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PlacedOrder
+	JSON201 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreatePrivateImageResponse) GetJSON201() *PlacedOrder {
+func (r CreatePrivateImageResponse) GetJSON201() *PurchaseResult {
 	return r.JSON201
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreatePrivateImageResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14178,6 +15434,8 @@ type DeletePrivateImageResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -14185,6 +15443,11 @@ type DeletePrivateImageResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r DeletePrivateImageResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeletePrivateImageResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15527,14 +16790,21 @@ type CreateSnapshotResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PlacedOrder
+	JSON201 *PurchaseResult
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateSnapshotResponse) GetJSON201() *PlacedOrder {
+func (r CreateSnapshotResponse) GetJSON201() *PurchaseResult {
 	return r.JSON201
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateSnapshotResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15576,6 +16846,8 @@ type DeleteSnapshotResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -15583,6 +16855,11 @@ type DeleteSnapshotResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r DeleteSnapshotResponse) GetJSON202() *Task {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteSnapshotResponse) GetJSON409() *Error {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15782,7 +17059,9 @@ func (c *ClientWithResponses) ListBackupsWithResponse(ctx context.Context, param
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -15801,7 +17080,9 @@ func (c *ClientWithResponses) CreateBackupWithBodyWithResponse(ctx context.Conte
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -15817,6 +17098,8 @@ func (c *ClientWithResponses) CreateBackupWithResponse(ctx context.Context, body
 // DeleteBackupWithResponse Delete a backup
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -15874,7 +17157,9 @@ func (c *ClientWithResponses) RenameBackupWithResponse(ctx context.Context, back
 //
 // Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -15891,7 +17176,9 @@ func (c *ClientWithResponses) RestoreBackupWithBodyWithResponse(ctx context.Cont
 //
 // Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -15955,6 +17242,8 @@ func (c *ClientWithResponses) ListDisksWithResponse(ctx context.Context, params 
 //
 // A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -15972,6 +17261,8 @@ func (c *ClientWithResponses) CreateDiskWithBodyWithResponse(ctx context.Context
 //
 // A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -15986,6 +17277,8 @@ func (c *ClientWithResponses) CreateDiskWithResponse(ctx context.Context, body C
 // DeleteDiskWithResponse Delete a disk
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16045,13 +17338,15 @@ func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId
 
 // ResizeDiskWithBodyWithResponse Resize a disk
 //
-// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
 //
-// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
-// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+// The request is refused only when the new size has a different performance level. A disk whose type has no QoS level, or whose performance has already reached the maximum of its type, can be resized while attached.
 //
-// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+// **A system disk can be resized while attached**, because a system disk cannot be detached. System disk types use a performance level that does not scale with size, so resizing a system disk does not change its performance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16066,13 +17361,15 @@ func (c *ClientWithResponses) ResizeDiskWithBodyWithResponse(ctx context.Context
 
 // ResizeDiskWithResponse Resize a disk
 //
-// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
 //
-// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
-// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+// The request is refused only when the new size has a different performance level. A disk whose type has no QoS level, or whose performance has already reached the maximum of its type, can be resized while attached.
 //
-// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+// **A system disk can be resized while attached**, because a system disk cannot be detached. System disk types use a performance level that does not scale with size, so resizing a system disk does not change its performance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16093,6 +17390,8 @@ func (c *ClientWithResponses) ResizeDiskWithResponse(ctx context.Context, diskId
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
@@ -16111,6 +17410,8 @@ func (c *ClientWithResponses) RevertDiskWithBodyWithResponse(ctx context.Context
 // Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16142,6 +17443,8 @@ func (c *ClientWithResponses) ListFloatingIpsWithResponse(ctx context.Context, r
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
@@ -16159,6 +17462,8 @@ func (c *ClientWithResponses) AllocateFloatingIpWithBodyWithResponse(ctx context
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
@@ -16173,6 +17478,8 @@ func (c *ClientWithResponses) AllocateFloatingIpWithResponse(ctx context.Context
 // ReleaseFloatingIpWithResponse Release a floating IP
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16200,9 +17507,11 @@ func (c *ClientWithResponses) GetFloatingIpWithResponse(ctx context.Context, flo
 
 // SetFloatingIpBandwidthWithBodyWithResponse Set the bandwidth limit
 //
-// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
 //
-// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16217,9 +17526,11 @@ func (c *ClientWithResponses) SetFloatingIpBandwidthWithBodyWithResponse(ctx con
 
 // SetFloatingIpBandwidthWithResponse Set the bandwidth limit
 //
-// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
 //
-// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16322,7 +17633,13 @@ func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, par
 
 // LaunchInstanceWithBodyWithResponse Create instances
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order. A request for several instances is all or nothing — if any instance cannot be created, every instance of that request is released and the order fails, so nothing is charged. Each instance is named after this request with a number appended, and each has its own task.
+// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+//
+// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16337,7 +17654,13 @@ func (c *ClientWithResponses) LaunchInstanceWithBodyWithResponse(ctx context.Con
 
 // LaunchInstanceWithResponse Create instances
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order. A request for several instances is all or nothing — if any instance cannot be created, every instance of that request is released and the order fails, so nothing is charged. Each instance is named after this request with a number appended, and each has its own task.
+// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+//
+// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16355,6 +17678,8 @@ func (c *ClientWithResponses) LaunchInstanceWithResponse(ctx context.Context, bo
 // The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16525,6 +17850,8 @@ func (c *ClientWithResponses) ListInstanceDisksWithResponse(ctx context.Context,
 //
 // The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
@@ -16540,6 +17867,8 @@ func (c *ClientWithResponses) AttachDiskWithBodyWithResponse(ctx context.Context
 //
 // The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
@@ -16554,6 +17883,8 @@ func (c *ClientWithResponses) AttachDiskWithResponse(ctx context.Context, instan
 // DetachDiskWithResponse Detach a disk
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16740,6 +18071,8 @@ func (c *ClientWithResponses) ListInstancePortsWithResponse(ctx context.Context,
 
 // AttachPortWithBodyWithResponse Attach a network interface
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
@@ -16752,6 +18085,8 @@ func (c *ClientWithResponses) AttachPortWithBodyWithResponse(ctx context.Context
 }
 
 // AttachPortWithResponse Attach a network interface
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16767,6 +18102,8 @@ func (c *ClientWithResponses) AttachPortWithResponse(ctx context.Context, instan
 // DetachPortWithResponse Detach a network interface
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16791,6 +18128,8 @@ func (c *ClientWithResponses) DetachPortWithResponse(ctx context.Context, instan
 //
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
@@ -16813,6 +18152,8 @@ func (c *ClientWithResponses) RebootInstanceWithBodyWithResponse(ctx context.Con
 // An instance suspended by the platform must be unsuspended first.
 //
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16861,7 +18202,9 @@ func (c *ClientWithResponses) RebuildInstanceWithResponse(ctx context.Context, i
 
 // ResizeInstanceWithBodyWithResponse Resize an instance
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16876,7 +18219,9 @@ func (c *ClientWithResponses) ResizeInstanceWithBodyWithResponse(ctx context.Con
 
 // ResizeInstanceWithResponse Resize an instance
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16893,6 +18238,8 @@ func (c *ClientWithResponses) ResizeInstanceWithResponse(ctx context.Context, in
 //
 // Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
@@ -16907,6 +18254,8 @@ func (c *ClientWithResponses) ConfirmInstanceResizeWithResponse(ctx context.Cont
 // RevertInstanceResizeWithResponse Revert a resize
 //
 // The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16923,6 +18272,8 @@ func (c *ClientWithResponses) RevertInstanceResizeWithResponse(ctx context.Conte
 //
 // Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/start (the `StartInstance` operationId).
@@ -16937,6 +18288,8 @@ func (c *ClientWithResponses) StartInstanceWithBodyWithResponse(ctx context.Cont
 // StartInstanceWithResponse Start an instance
 //
 // Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16953,6 +18306,8 @@ func (c *ClientWithResponses) StartInstanceWithResponse(ctx context.Context, ins
 //
 // Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/stop (the `StopInstance` operationId).
@@ -16967,6 +18322,8 @@ func (c *ClientWithResponses) StopInstanceWithBodyWithResponse(ctx context.Conte
 // StopInstanceWithResponse Stop an instance
 //
 // Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17011,6 +18368,101 @@ func (c *ClientWithResponses) ListOperationLogsWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseListOperationLogsResponse(rsp)
+}
+
+// ListPeeringsWithResponse List peerings
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/peerings (the `ListPeerings` operationId).
+func (c *ClientWithResponses) ListPeeringsWithResponse(ctx context.Context, params *ListPeeringsParams, reqEditors ...RequestEditorFn) (*ListPeeringsResponse, error) {
+	rsp, err := c.ListPeerings(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPeeringsResponse(rsp)
+}
+
+// CreatePeeringWithBodyWithResponse Create peering
+//
+// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept before any connectivity is created. Does not change security groups or provide transitive routing.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/peerings (the `CreatePeering` operationId).
+func (c *ClientWithResponses) CreatePeeringWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePeeringResponse, error) {
+	rsp, err := c.CreatePeeringWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePeeringResponse(rsp)
+}
+
+// CreatePeeringWithResponse Create peering
+//
+// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept before any connectivity is created. Does not change security groups or provide transitive routing.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/peerings (the `CreatePeering` operationId).
+func (c *ClientWithResponses) CreatePeeringWithResponse(ctx context.Context, body CreatePeeringJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePeeringResponse, error) {
+	rsp, err := c.CreatePeering(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePeeringResponse(rsp)
+}
+
+// DeletePeeringWithResponse Delete peering
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/peerings/{peeringId} (the `DeletePeering` operationId).
+func (c *ClientWithResponses) DeletePeeringWithResponse(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePeeringResponse, error) {
+	rsp, err := c.DeletePeering(ctx, peeringId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeletePeeringResponse(rsp)
+}
+
+// GetPeeringWithResponse Get peering
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/peerings/{peeringId} (the `GetPeering` operationId).
+func (c *ClientWithResponses) GetPeeringWithResponse(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPeeringResponse, error) {
+	rsp, err := c.GetPeering(ctx, peeringId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPeeringResponse(rsp)
+}
+
+// AcceptPeeringWithResponse Accept peering
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/peerings/{peeringId}/accept (the `AcceptPeering` operationId).
+func (c *ClientWithResponses) AcceptPeeringWithResponse(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*AcceptPeeringResponse, error) {
+	rsp, err := c.AcceptPeering(ctx, peeringId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcceptPeeringResponse(rsp)
+}
+
+// RejectPeeringWithResponse Reject peering
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/peerings/{peeringId}/reject (the `RejectPeering` operationId).
+func (c *ClientWithResponses) RejectPeeringWithResponse(ctx context.Context, peeringId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RejectPeeringResponse, error) {
+	rsp, err := c.RejectPeering(ctx, peeringId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRejectPeeringResponse(rsp)
 }
 
 // ListPortsWithResponse List network interfaces
@@ -17090,7 +18542,7 @@ func (c *ClientWithResponses) ListPrivateImagesWithResponse(ctx context.Context,
 //
 // **The image reflects the moment the capture started. Later changes to the instance are not included.**
 //
-// The capture has two phases. Poll the retrieve endpoint:
+// The capture has two phases, reported by the status of the image:
 //
 // - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 // - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -17098,6 +18550,8 @@ func (c *ClientWithResponses) ListPrivateImagesWithResponse(ctx context.Context,
 // The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17116,7 +18570,7 @@ func (c *ClientWithResponses) CreatePrivateImageWithBodyWithResponse(ctx context
 //
 // **The image reflects the moment the capture started. Later changes to the instance are not included.**
 //
-// The capture has two phases. Poll the retrieve endpoint:
+// The capture has two phases, reported by the status of the image:
 //
 // - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 // - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -17124,6 +18578,8 @@ func (c *ClientWithResponses) CreatePrivateImageWithBodyWithResponse(ctx context
 // The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17141,6 +18597,8 @@ func (c *ClientWithResponses) CreatePrivateImageWithResponse(ctx context.Context
 // Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17671,6 +19129,8 @@ func (c *ClientWithResponses) ListSnapshotsWithResponse(ctx context.Context, par
 //
 // **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -17688,6 +19148,8 @@ func (c *ClientWithResponses) CreateSnapshotWithBodyWithResponse(ctx context.Con
 //
 // **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -17700,6 +19162,8 @@ func (c *ClientWithResponses) CreateSnapshotWithResponse(ctx context.Context, bo
 }
 
 // DeleteSnapshotWithResponse Delete a snapshot
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17812,11 +19276,18 @@ func ParseCreateBackupResponse(rsp *http.Response) (*CreateBackupResponse, error
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -17850,6 +19321,13 @@ func ParseDeleteBackupResponse(rsp *http.Response) (*DeleteBackupResponse, error
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -17944,11 +19422,18 @@ func ParseRestoreBackupResponse(rsp *http.Response) (*RestoreBackupResponse, err
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18076,18 +19561,18 @@ func ParseCreateDiskResponse(rsp *http.Response) (*CreateDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON201 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON402 = &dest
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18121,6 +19606,13 @@ func ParseDeleteDiskResponse(rsp *http.Response) (*DeleteDiskResponse, error) {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18215,11 +19707,18 @@ func ParseResizeDiskResponse(rsp *http.Response) (*ResizeDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18253,6 +19752,13 @@ func ParseRevertDiskResponse(rsp *http.Response) (*RevertDiskResponse, error) {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18314,11 +19820,18 @@ func ParseAllocateFloatingIpResponse(rsp *http.Response) (*AllocateFloatingIpRes
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18352,6 +19865,13 @@ func ParseReleaseFloatingIpResponse(rsp *http.Response) (*ReleaseFloatingIpRespo
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18413,11 +19933,18 @@ func ParseSetFloatingIpBandwidthResponse(rsp *http.Response) (*SetFloatingIpBand
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18617,6 +20144,13 @@ func ParseLaunchInstanceResponse(rsp *http.Response) (*LaunchInstanceResponse, e
 		}
 		response.JSON202 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -18649,6 +20183,13 @@ func ParseDeleteInstanceResponse(rsp *http.Response) (*DeleteInstanceResponse, e
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -18881,6 +20422,13 @@ func ParseAttachDiskResponse(rsp *http.Response) (*AttachDiskResponse, error) {
 		}
 		response.JSON202 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -18913,6 +20461,13 @@ func ParseDetachDiskResponse(rsp *http.Response) (*DetachDiskResponse, error) {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19145,6 +20700,13 @@ func ParseAttachPortResponse(rsp *http.Response) (*AttachPortResponse, error) {
 		}
 		response.JSON202 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -19178,6 +20740,13 @@ func ParseDetachPortResponse(rsp *http.Response) (*DetachPortResponse, error) {
 		}
 		response.JSON202 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -19210,6 +20779,13 @@ func ParseRebootInstanceResponse(rsp *http.Response) (*RebootInstanceResponse, e
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19271,11 +20847,18 @@ func ParseResizeInstanceResponse(rsp *http.Response) (*ResizeInstanceResponse, e
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19310,6 +20893,13 @@ func ParseConfirmInstanceResizeResponse(rsp *http.Response) (*ConfirmInstanceRes
 		}
 		response.JSON202 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -19342,6 +20932,13 @@ func ParseRevertInstanceResizeResponse(rsp *http.Response) (*RevertInstanceResiz
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19376,6 +20973,13 @@ func ParseStartInstanceResponse(rsp *http.Response) (*StartInstanceResponse, err
 		}
 		response.JSON202 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -19408,6 +21012,13 @@ func ParseStopInstanceResponse(rsp *http.Response) (*StopInstanceResponse, error
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19470,6 +21081,204 @@ func ParseListOperationLogsResponse(rsp *http.Response) (*ListOperationLogsRespo
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest OperationLogListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListPeeringsResponse parses an HTTP response from a ListPeeringsWithResponse call
+func ParseListPeeringsResponse(rsp *http.Response) (*ListPeeringsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPeeringsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PeeringListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreatePeeringResponse parses an HTTP response from a CreatePeeringWithResponse call
+func ParseCreatePeeringResponse(rsp *http.Response) (*CreatePeeringResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreatePeeringResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest PeeringResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeletePeeringResponse parses an HTTP response from a DeletePeeringWithResponse call
+func ParseDeletePeeringResponse(rsp *http.Response) (*DeletePeeringResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeletePeeringResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest PeeringResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPeeringResponse parses an HTTP response from a GetPeeringWithResponse call
+func ParseGetPeeringResponse(rsp *http.Response) (*GetPeeringResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPeeringResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PeeringResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAcceptPeeringResponse parses an HTTP response from a AcceptPeeringWithResponse call
+func ParseAcceptPeeringResponse(rsp *http.Response) (*AcceptPeeringResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AcceptPeeringResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest PeeringResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRejectPeeringResponse parses an HTTP response from a RejectPeeringWithResponse call
+func ParseRejectPeeringResponse(rsp *http.Response) (*RejectPeeringResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RejectPeeringResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PeeringResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -19630,11 +21439,18 @@ func ParseCreatePrivateImageResponse(rsp *http.Response) (*CreatePrivateImageRes
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19668,6 +21484,13 @@ func ParseDeletePrivateImageResponse(rsp *http.Response) (*DeletePrivateImageRes
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20596,11 +22419,18 @@ func ParseCreateSnapshotResponse(rsp *http.Response) (*CreateSnapshotResponse, e
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PlacedOrder
+		var dest PurchaseResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20634,6 +22464,13 @@ func ParseDeleteSnapshotResponse(rsp *http.Response) (*DeleteSnapshotResponse, e
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

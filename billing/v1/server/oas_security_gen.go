@@ -13,12 +13,7 @@ import (
 
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
-	// HandleAccountAuth handles accountAuth security.
-	// The access token issued by auth.leaflow.net. It states who the caller is and names no project.
-	//
-	// Use it to list the projects the caller belongs to and to obtain a scoped token.
-	HandleAccountAuth(ctx context.Context, operationName OperationName, t AccountAuth) (context.Context, error)
-	// HandleProjectAuth handles projectAuth security.
+	// HandleScopedTokenAuth handles scopedTokenAuth security.
 	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
 	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
 	//
@@ -29,7 +24,7 @@ type SecurityHandler interface {
 	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
 	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
 	// and `USER_BANNED` mean the account itself is barred from operating.
-	HandleProjectAuth(ctx context.Context, operationName OperationName, t ProjectAuth) (context.Context, error)
+	HandleScopedTokenAuth(ctx context.Context, operationName OperationName, t ScopedTokenAuth) (context.Context, error)
 }
 
 func findAuthorization(h http.Header, prefix string) (string, bool) {
@@ -47,67 +42,35 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 	return "", false
 }
 
-// operationRolesAccountAuth is a private map storing roles per operation.
-var operationRolesAccountAuth = map[string][]string{
-	CancelScheduledChangeOperation:           []string{},
-	CreateBillingAccountOperation:            []string{},
-	CreatePaymentMethodSetupOperation:        []string{},
-	CreateTopUpOperation:                     []string{},
-	DeletePaymentMethodOperation:             []string{},
-	FindProjectPayerOperation:                []string{},
-	GetAccountBalanceOperation:               []string{},
-	GetAccountProjectClosurePreviewOperation: []string{},
-	GetBillingAccountOperation:               []string{},
-	GetInvoiceOperation:                      []string{},
-	GetInvoiceRefundQuoteOperation:           []string{},
-	GetOrderOperation:                        []string{},
-	GetOrderRefundQuoteOperation:             []string{},
-	GetTopUpOperation:                        []string{},
-	ListAccountDiscountsOperation:            []string{},
-	ListAllowanceConsumptionsOperation:       []string{},
-	ListAllowancesOperation:                  []string{},
-	ListBillingAccountsOperation:             []string{},
-	ListCreditGrantsOperation:                []string{},
-	ListEntitlementsOperation:                []string{},
-	ListInvoiceItemsOperation:                []string{},
-	ListInvoicesOperation:                    []string{},
-	ListOrderItemsOperation:                  []string{},
-	ListOrdersOperation:                      []string{},
-	ListPaidProjectsOperation:                []string{},
-	ListPaymentMethodsOperation:              []string{},
-	ListRefundsOperation:                     []string{},
-	ListRenewalPricesOperation:               []string{},
-	ListSubscriptionItemsOperation:           []string{},
-	ListSubscriptionsOperation:               []string{},
-	ListTopUpsOperation:                      []string{},
-	ListTransactionsOperation:                []string{},
-	ListUsageChargesOperation:                []string{},
-	PayInvoiceOperation:                      []string{},
-	PayOrderOperation:                        []string{},
-	PayTogetherOperation:                     []string{},
-	PreviewCodeOperation:                     []string{},
-	RenewSubscriptionItemOperation:           []string{},
-	RequestRefundOperation:                   []string{},
-	SetAutoRenewOperation:                    []string{},
-	SetDefaultPaymentMethodOperation:         []string{},
-	SetProjectPayerOperation:                 []string{},
-	SettleProjectUsageOperation:              []string{},
-	UnbindProjectPayerOperation:              []string{},
-	UpdateBillingAccountOperation:            []string{},
+// operationRolesScopedTokenAuth is a private map storing roles per operation.
+var operationRolesScopedTokenAuth = map[string][]string{
+	CreateProjectQuoteOperation:         []string{},
+	GetProjectBillingAccountOperation:   []string{},
+	GetProjectClosurePreviewOperation:   []string{},
+	GetProjectOrderOperation:            []string{},
+	ListProjectActiveResourcesOperation: []string{},
+	ListProjectAllowancesOperation:      []string{},
+	ListProjectEntitlementsOperation:    []string{},
+	ListProjectOrderItemsOperation:      []string{},
+	ListProjectOrdersOperation:          []string{},
+	ListProjectSpendOperation:           []string{},
+	ListProjectSubscriptionsOperation:   []string{},
+	ListProjectUsageChargesOperation:    []string{},
+	SetProjectAutoRenewOperation:        []string{},
 }
 
-// GetRolesForAccountAuth returns the required roles for the given operation.
+// GetRolesForScopedTokenAuth returns the required roles for the given operation.
 //
 // This is useful for authorization scenarios where you need to know which roles
 // are required for an operation.
 //
 // Example:
 //
-//	requiredRoles := GetRolesForAccountAuth(AddPetOperation)
+//	requiredRoles := GetRolesForScopedTokenAuth(AddPetOperation)
 //
 // Returns nil if the operation has no role requirements or if the operation is unknown.
-func GetRolesForAccountAuth(operation string) []string {
-	roles, ok := operationRolesAccountAuth[operation]
+func GetRolesForScopedTokenAuth(operation string) []string {
+	roles, ok := operationRolesScopedTokenAuth[operation]
 	if !ok {
 		return nil
 	}
@@ -117,71 +80,15 @@ func GetRolesForAccountAuth(operation string) []string {
 	return result
 }
 
-// operationRolesProjectAuth is a private map storing roles per operation.
-var operationRolesProjectAuth = map[string][]string{
-	CreateProjectQuoteOperation:           []string{},
-	GetProjectBillingAccountOperation:     []string{},
-	GetProjectClosurePreviewOperation:     []string{},
-	GetProjectOrderOperation:              []string{},
-	ListProjectActiveResourcesOperation:   []string{},
-	ListProjectAllowancesOperation:        []string{},
-	ListProjectEntitlementsOperation:      []string{},
-	ListProjectOrderItemsOperation:        []string{},
-	ListProjectOrdersOperation:            []string{},
-	ListProjectSpendOperation:             []string{},
-	ListProjectSubscriptionItemsOperation: []string{},
-	ListProjectSubscriptionsOperation:     []string{},
-	ListProjectUsageChargesOperation:      []string{},
-	SetProjectAutoRenewOperation:          []string{},
-}
-
-// GetRolesForProjectAuth returns the required roles for the given operation.
-//
-// This is useful for authorization scenarios where you need to know which roles
-// are required for an operation.
-//
-// Example:
-//
-//	requiredRoles := GetRolesForProjectAuth(AddPetOperation)
-//
-// Returns nil if the operation has no role requirements or if the operation is unknown.
-func GetRolesForProjectAuth(operation string) []string {
-	roles, ok := operationRolesProjectAuth[operation]
-	if !ok {
-		return nil
-	}
-	// Return a copy to prevent external modification
-	result := make([]string, len(roles))
-	copy(result, roles)
-	return result
-}
-
-func (s *Server) securityAccountAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
-	var t AccountAuth
+func (s *Server) securityScopedTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
+	var t ScopedTokenAuth
 	token, ok := findAuthorization(req.Header, "Bearer")
 	if !ok {
 		return ctx, false, nil
 	}
 	t.Token = token
-	t.Roles = operationRolesAccountAuth[operationName]
-	rctx, err := s.sec.HandleAccountAuth(ctx, operationName, t)
-	if errors.Is(err, ogenerrors.ErrSkipServerSecurity) {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, err
-	}
-	return rctx, true, err
-}
-
-func (s *Server) securityProjectAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
-	var t ProjectAuth
-	token, ok := findAuthorization(req.Header, "Bearer")
-	if !ok {
-		return ctx, false, nil
-	}
-	t.Token = token
-	t.Roles = operationRolesProjectAuth[operationName]
-	rctx, err := s.sec.HandleProjectAuth(ctx, operationName, t)
+	t.Roles = operationRolesScopedTokenAuth[operationName]
+	rctx, err := s.sec.HandleScopedTokenAuth(ctx, operationName, t)
 	if errors.Is(err, ogenerrors.ErrSkipServerSecurity) {
 		return nil, false, nil
 	} else if err != nil {
@@ -192,12 +99,7 @@ func (s *Server) securityProjectAuth(ctx context.Context, operationName Operatio
 
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
-	// AccountAuth provides accountAuth security value.
-	// The access token issued by auth.leaflow.net. It states who the caller is and names no project.
-	//
-	// Use it to list the projects the caller belongs to and to obtain a scoped token.
-	AccountAuth(ctx context.Context, operationName OperationName) (AccountAuth, error)
-	// ProjectAuth provides projectAuth security value.
+	// ScopedTokenAuth provides scopedTokenAuth security value.
 	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
 	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
 	//
@@ -208,21 +110,13 @@ type SecuritySource interface {
 	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
 	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
 	// and `USER_BANNED` mean the account itself is barred from operating.
-	ProjectAuth(ctx context.Context, operationName OperationName) (ProjectAuth, error)
+	ScopedTokenAuth(ctx context.Context, operationName OperationName) (ScopedTokenAuth, error)
 }
 
-func (s *Client) securityAccountAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
-	t, err := s.sec.AccountAuth(ctx, operationName)
+func (s *Client) securityScopedTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
+	t, err := s.sec.ScopedTokenAuth(ctx, operationName)
 	if err != nil {
-		return errors.Wrap(err, "security source \"AccountAuth\"")
-	}
-	req.Header.Set("Authorization", "Bearer "+t.Token)
-	return nil
-}
-func (s *Client) securityProjectAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
-	t, err := s.sec.ProjectAuth(ctx, operationName)
-	if err != nil {
-		return errors.Wrap(err, "security source \"ProjectAuth\"")
+		return errors.Wrap(err, "security source \"ScopedTokenAuth\"")
 	}
 	req.Header.Set("Authorization", "Bearer "+t.Token)
 	return nil

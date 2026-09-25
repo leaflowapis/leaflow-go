@@ -217,34 +217,21 @@ type OffsetPagination struct {
 	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
-// OrderOptions Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+// OrderOptions Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
 type OrderOptions struct {
+	// AutoPay Defaults to true. When true, the purchase is paid from available account funds and applicable grants when it is placed. If they do not cover the amount due, the request fails with HTTP 422 and code BILLING_INSUFFICIENT_FUNDS; no order is created and nothing is charged. The idempotency key remains bound to the refused request. Retrying with the same key returns HTTP 409 with code ORDER_CLOSED, and purchasing again requires a new idempotency key. When false, the order is created without payment, and its invoice, if any, is paid through Billing.
+	AutoPay        *bool   `json:"auto_pay,omitempty"`
 	ExpectedAmount *string `json:"expected_amount,omitempty"`
 	IdempotencyKey string  `json:"idempotency_key"`
-
-	// PaymentPlan Requested funding split. This does not select a card or payment provider; complete payment through Billing.
-	PaymentPlan    *PaymentPlan `json:"payment_plan,omitempty"`
-	RedemptionCode *string      `json:"redemption_code,omitempty"`
+	RedemptionCode *string `json:"redemption_code,omitempty"`
 }
 
-// PaymentPlan Requested funding split. This does not select a card or payment provider; complete payment through Billing.
-type PaymentPlan struct {
-	BalanceAmount  string `json:"balance_amount"`
-	ProviderAmount string `json:"provider_amount"`
-}
-
-// PlacedOrder A billable order has been created. Read it from the billing API to find out what is
-// owed and whether payment is still required.
-//
-// Only the identifier is returned. Amounts and state are not repeated here; the order
-// itself is the single source for them.
+// PlacedOrder Identifies the original purchase. Replays retain these identifiers. Read the order for purchase progress and its invoice for amounts and payment status.
 type PlacedOrder struct {
-	// OrderId Identifies the order. Use it to read the order and, where payment is required,
-	// to pay it.
-	//
-	// An order is created even when nothing is owed, such as a plan with no charge or one
-	// covered entirely by granted credit. Such an order is already settled, and no
-	// payment step applies.
+	// InvoiceId The invoice for this purchase. Null when there is no immediate invoice. Replays retain this identifier; read the invoice for its current payment state.
+	InvoiceId *openapi_types.UUID `json:"invoice_id"`
+
+	// OrderId The original order, including for purchases without an immediate charge. Payment alone does not imply that the service has completed delivery.
 	OrderId openapi_types.UUID `json:"order_id"`
 }
 
@@ -342,16 +329,6 @@ type Task struct {
 
 // TaskState defines model for Task.State.
 type TaskState string
-
-// Translations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-//
-// When your locale is absent, use the plain field next to this one. **There is no fallback
-// chain**: a missing `zh-Hans` does not fall back to `zh`.
-//
-// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-// cached and served from a CDN, and one cache serves every language only if the response does
-// not depend on the request's language.
-type Translations map[string]string
 
 // Cursor defines model for Cursor.
 type Cursor = string

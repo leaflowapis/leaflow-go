@@ -17,3 +17,11 @@ func (s *NewBootDisk) setDefaults() {
 		s.DeleteWithInstance.SetTo(val)
 	}
 }
+
+// setDefaults set default value of fields.
+func (s *OrderOptions) setDefaults() {
+	{
+		val := bool(true)
+		s.AutoPay.SetTo(val)
+	}
+}

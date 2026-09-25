@@ -8,6 +8,12 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// AcceptPeering implements accept-peering operation.
+	//
+	// Accept peering.
+	//
+	// POST /api/v1/peerings/{peeringId}/accept
+	AcceptPeering(ctx context.Context, params AcceptPeeringParams) (*PeeringResource, error)
 	// AllocateFloatingIP implements allocate-floating-ip operation.
 	//
 	// If the private network is not yet connected to the internet, connectivity is established as part of
@@ -16,15 +22,21 @@ type Handler interface {
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
 	// network; enable IPv6 on that network instead.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/floating-ips
-	AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (*PlacedOrder, error)
+	AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (AllocateFloatingIPRes, error)
 	// AttachDisk implements attach-disk operation.
 	//
 	// The disk must be in the same region and availability zone as the instance. Partition it and mount
 	// the file system inside the instance once it is attached.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/disks
-	AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (*Task, error)
+	AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error)
 	// AttachInstanceFloatingIP implements attach-instance-floating-ip operation.
 	//
 	// Changes the public IP binding on the instance's primary network interface. The returned task tracks
@@ -34,10 +46,11 @@ type Handler interface {
 	AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// AttachPort implements attach-port operation.
 	//
-	// Attach a network interface.
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/instances/{instanceId}/ports
-	AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (*Task, error)
+	AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (AttachPortRes, error)
 	// BindFloatingIP implements bind-floating-ip operation.
 	//
 	// Bind a floating IP to a network interface.
@@ -49,8 +62,11 @@ type Handler interface {
 	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
 	// effect and is billed from then on.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/resize/confirm
-	ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (*Task, error)
+	ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (ConfirmInstanceResizeRes, error)
 	// CreateBackup implements create-backup operation.
 	//
 	// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
@@ -61,10 +77,13 @@ type Handler interface {
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-	// poll the retrieve endpoint.
+	// track the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (*PlacedOrder, error)
+	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (CreateBackupRes, error)
 	// CreateDisk implements create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -74,8 +93,18 @@ type Handler interface {
 	// still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one
 	// keep working and can still be resized.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (CreateDiskRes, error)
+	// CreatePeering implements create-peering operation.
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+	// before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// POST /api/v1/peerings
+	CreatePeering(ctx context.Context, req *CreatePeeringRequestBody) (*PeeringResource, error)
 	// CreatePort implements create-port operation.
 	//
 	// The new network interface is not attached to any instance. Primary network interfaces are not
@@ -90,7 +119,7 @@ type Handler interface {
 	//
 	// The image reflects the moment the capture started. Later changes to the instance are not included.
 	//
-	// The capture has two phases. Poll the retrieve endpoint:
+	// The capture has two phases, reported by the status of the image:
 	//
 	//  - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
 	//    remains usable during this phase, although stopping it first is recommended for consistency.
@@ -104,8 +133,11 @@ type Handler interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/private-images
-	CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (*PlacedOrder, error)
+	CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (CreatePrivateImageRes, error)
 	// CreatePrivateNetwork implements create-private-network operation.
 	//
 	// Creates a network, a router and a default security group in one call. The default security group
@@ -148,8 +180,11 @@ type Handler interface {
 	// preserve and restore an entire system, use a private image; for a copy that crosses availability
 	// zones and survives deletion of the disk, use a backup.
 	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/snapshots
-	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (*PlacedOrder, error)
+	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (CreateSnapshotRes, error)
 	// CreateSubnet implements create-subnet operation.
 	//
 	// Create a subnet.
@@ -160,14 +195,20 @@ type Handler interface {
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/backups/{backupId}
-	DeleteBackup(ctx context.Context, params DeleteBackupParams) (*Task, error)
+	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
 	// DeleteDisk implements delete-disk operation.
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/disks/{diskId}
-	DeleteDisk(ctx context.Context, params DeleteDiskParams) (*Task, error)
+	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
 	// DeleteInstance implements delete-instance operation.
 	//
 	// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
@@ -177,8 +218,17 @@ type Handler interface {
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 	// delete that image first.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/instances/{instanceId}
-	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (*Task, error)
+	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
+	// DeletePeering implements delete-peering operation.
+	//
+	// Delete peering.
+	//
+	// DELETE /api/v1/peerings/{peeringId}
+	DeletePeering(ctx context.Context, params DeletePeeringParams) (*PeeringResource, error)
 	// DeletePort implements delete-port operation.
 	//
 	// The primary network interface cannot be deleted on its own, as it is released with the instance. A
@@ -193,8 +243,11 @@ type Handler interface {
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/private-images/{privateImageId}
-	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (*Task, error)
+	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
 	// DeletePrivateNetwork implements delete-private-network operation.
 	//
 	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
@@ -223,10 +276,11 @@ type Handler interface {
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot implements delete-snapshot operation.
 	//
-	// Delete a snapshot.
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// DELETE /api/v1/snapshots/{snapshotId}
-	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (*Task, error)
+	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
 	// DeleteSubnet implements delete-subnet operation.
 	//
 	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
@@ -239,8 +293,11 @@ type Handler interface {
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 	// system that is being written to corrupts data.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-	DetachDisk(ctx context.Context, params DetachDiskParams) (*Task, error)
+	DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error)
 	// DetachInstanceFloatingIP implements detach-instance-floating-ip operation.
 	//
 	// Changes the public IP binding on the instance's primary network interface. The returned task tracks
@@ -252,8 +309,11 @@ type Handler interface {
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/instances/{instanceId}/ports/{portId}
-	DetachPort(ctx context.Context, params DetachPortParams) (*Task, error)
+	DetachPort(ctx context.Context, params DetachPortParams) (DetachPortRes, error)
 	// DisablePrivateNetworkIpv6 implements disable-private-network-ipv6 operation.
 	//
 	// A released prefix is not re-allocated immediately.
@@ -314,6 +374,12 @@ type Handler interface {
 	//
 	// GET /api/v1/instances/{instanceId}/console-output
 	GetInstanceConsoleOutput(ctx context.Context, params GetInstanceConsoleOutputParams) (*ConsoleOutputResponseBody, error)
+	// GetPeering implements get-peering operation.
+	//
+	// Get peering.
+	//
+	// GET /api/v1/peerings/{peeringId}
+	GetPeering(ctx context.Context, params GetPeeringParams) (*PeeringResource, error)
 	// GetPrivateImage implements get-private-image operation.
 	//
 	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
@@ -353,19 +419,25 @@ type Handler interface {
 	// LaunchInstance implements launch-instance operation.
 	//
 	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly
-	// one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
+	// Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
+	// the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
+	// submit a new purchase after paying, and reuse the original idempotency key after an uncertain
+	// response.
+	//
+	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 	// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
 	// boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-	// own subscription items on the same order. A request for several instances is all or nothing — if
-	// any instance cannot be created, every instance of that request is released and the order fails, so
-	// nothing is charged. Each instance is named after this request with a number appended, and each has
-	// its own task.
+	// own subscription items on the same order.
+	//
+	// A request for several instances is all or nothing: if any instance cannot be created, every instance
+	// of that request is released, the order fails, and any payment for it is refunded. Each instance is
+	// named after this request with a number appended, and each has its own task.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/instances
-	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
+	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (LaunchInstanceRes, error)
 	// ListAvailabilityZones implements list-availability-zones operation.
 	//
 	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
@@ -456,6 +528,12 @@ type Handler interface {
 	//
 	// GET /api/v1/operation-logs
 	ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (*OperationLogListResponseBody, error)
+	// ListPeerings implements list-peerings operation.
+	//
+	// List peerings.
+	//
+	// GET /api/v1/peerings
+	ListPeerings(ctx context.Context, params ListPeeringsParams) (*PeeringListResponseBody, error)
 	// ListPorts implements list-ports operation.
 	//
 	// List network interfaces.
@@ -536,8 +614,11 @@ type Handler interface {
 	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
 	// instance until it settles at `running`.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/reboot
-	RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (*Task, error)
+	RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error)
 	// RebuildInstance implements rebuild-instance operation.
 	//
 	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
@@ -548,12 +629,21 @@ type Handler interface {
 	//
 	// POST /api/v1/instances/{instanceId}/rebuild
 	RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (*RebuildInstanceResponseBody, error)
+	// RejectPeering implements reject-peering operation.
+	//
+	// Reject peering.
+	//
+	// POST /api/v1/peerings/{peeringId}/reject
+	RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error)
 	// ReleaseFloatingIP implements release-floating-ip operation.
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
-	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (*Task, error)
+	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error)
 	// RenameBackup implements rename-backup operation.
 	//
 	// Rename a backup.
@@ -612,44 +702,53 @@ type Handler interface {
 	ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (*ResetPasswordResponseBody, error)
 	// ResizeDisk implements resize-disk operation.
 	//
-	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
-	// instance once the resize completes.
+	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this
+	// endpoint returns; track the returned task, then extend the file system inside the instance.
 	//
-	// A data disk whose performance grows with its size has to be detached first. The storage backend
-	// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
-	// attached would give you the capacity immediately and leave the speed at the old size's figure —
-	// indefinitely, and stopping the instance does not help. Rather than take the money for performance
-	// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
-	// and attach it again.
+	// An attached data disk whose performance scales with its size must be detached before it is resized.
+	// The performance of an attached disk does not change until the disk is detached and attached again,
+	// so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity
+	// at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
-	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
-	// level, or whose performance has already reached the type's ceiling, grows online as before.
+	// The request is refused only when the new size has a different performance level. A disk whose type
+	// has no QoS level, or whose performance has already reached the maximum of its type, can be resized
+	// while attached.
 	//
-	// A system disk is the exception and grows online, because a root volume cannot be detached at all.
-	// Its performance does not change with size for exactly that reason — system disk types are required
-	// to carry a level that does not scale.
+	// A system disk can be resized while attached, because a system disk cannot be detached. System disk
+	// types use a performance level that does not scale with size, so resizing a system disk does not
+	// change its performance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (*PlacedOrder, error)
+	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
 	// ResizeInstance implements resize-instance operation.
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing
+	// Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
+	// applied after the order's invoice is paid, or without waiting when the order has no immediate
+	// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
+	// uncertain response.
+	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/instances/{instanceId}/resize
-	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (*PlacedOrder, error)
+	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error)
 	// RestoreBackup implements restore-backup operation.
 	//
 	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 	//
 	// The target disk type may belong to another availability zone of the same region, and its capacity
-	// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
-	// the disk retrieve endpoint.
+	// must not be smaller than the backup. The disk cannot be attached until the restore completes; track
+	// the returned task.
+	//
+	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (*PlacedOrder, error)
+	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
 	// RevertDisk implements revert-disk operation.
 	//
 	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
@@ -662,15 +761,21 @@ type Handler interface {
 	//
 	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (*Task, error)
+	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
 	// RevertInstanceResize implements revert-instance-resize operation.
 	//
 	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
 	// unaffected by the resize.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/resize/revert
-	RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (*Task, error)
+	RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (RevertInstanceResizeRes, error)
 	// RunInstanceCommand implements run-instance-command operation.
 	//
 	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
@@ -705,16 +810,18 @@ type Handler interface {
 	RunInstanceCommand(ctx context.Context, req *RunCommandRequestBody, params RunInstanceCommandParams) (*CommandResultResponseBody, error)
 	// SetFloatingIPBandwidth implements set-floating-ip-bandwidth operation.
 	//
-	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
-	// saturating the uplink.
+	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this
+	// endpoint returns; track the returned task.
 	//
-	// While the address is bound to an instance, the ceiling has to fit that instance type's
-	// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
-	// to nothing is not checked against any type — there is none to check against — and is checked
-	// again when it is attached.
+	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
+	// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
+	// address that is not bound is checked when the address is bound to an instance.
+	//
+	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-	SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*PlacedOrder, error)
+	SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (SetFloatingIPBandwidthRes, error)
 	// SetInstanceLabels implements set-instance-labels operation.
 	//
 	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
@@ -743,8 +850,11 @@ type Handler interface {
 	// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 	// determine completion.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/start
-	StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (*Task, error)
+	StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (StartInstanceRes, error)
 	// StopInstance implements stop-instance operation.
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
@@ -752,8 +862,11 @@ type Handler interface {
 	// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 	// determine completion.
 	//
+	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+	// and terminal outcomes.
+	//
 	// POST /api/v1/instances/{instanceId}/stop
-	StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (*Task, error)
+	StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (StopInstanceRes, error)
 	// SuggestSubnetCidr implements suggest-subnet-cidr operation.
 	//
 	// The returned value is a suggestion and is validated again when the subnet is created. It exists to

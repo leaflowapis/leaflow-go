@@ -13,7 +13,7 @@ import (
 
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
-	// HandleBearerAuth handles bearerAuth security.
+	// HandleScopedTokenAuth handles scopedTokenAuth security.
 	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
 	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
 	//
@@ -24,7 +24,7 @@ type SecurityHandler interface {
 	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
 	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
 	// and `USER_BANNED` mean the account itself is barred from operating.
-	HandleBearerAuth(ctx context.Context, operationName OperationName, t BearerAuth) (context.Context, error)
+	HandleScopedTokenAuth(ctx context.Context, operationName OperationName, t ScopedTokenAuth) (context.Context, error)
 }
 
 func findAuthorization(h http.Header, prefix string) (string, bool) {
@@ -42,8 +42,9 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 	return "", false
 }
 
-// operationRolesBearerAuth is a private map storing roles per operation.
-var operationRolesBearerAuth = map[string][]string{
+// operationRolesScopedTokenAuth is a private map storing roles per operation.
+var operationRolesScopedTokenAuth = map[string][]string{
+	AcceptPeeringOperation:             []string{},
 	AllocateFloatingIPOperation:        []string{},
 	AttachDiskOperation:                []string{},
 	AttachInstanceFloatingIPOperation:  []string{},
@@ -52,6 +53,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ConfirmInstanceResizeOperation:     []string{},
 	CreateBackupOperation:              []string{},
 	CreateDiskOperation:                []string{},
+	CreatePeeringOperation:             []string{},
 	CreatePortOperation:                []string{},
 	CreatePrivateImageOperation:        []string{},
 	CreatePrivateNetworkOperation:      []string{},
@@ -63,6 +65,7 @@ var operationRolesBearerAuth = map[string][]string{
 	DeleteBackupOperation:              []string{},
 	DeleteDiskOperation:                []string{},
 	DeleteInstanceOperation:            []string{},
+	DeletePeeringOperation:             []string{},
 	DeletePortOperation:                []string{},
 	DeletePrivateImageOperation:        []string{},
 	DeletePrivateNetworkOperation:      []string{},
@@ -82,6 +85,7 @@ var operationRolesBearerAuth = map[string][]string{
 	GetFloatingIPOperation:             []string{},
 	GetInstanceOperation:               []string{},
 	GetInstanceConsoleOutputOperation:  []string{},
+	GetPeeringOperation:                []string{},
 	GetPrivateImageOperation:           []string{},
 	GetPrivateNetworkOperation:         []string{},
 	GetPrivateNetworkIpv6Operation:     []string{},
@@ -101,6 +105,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListInstancesOperation:             []string{},
 	ListIpv4PoolsOperation:             []string{},
 	ListOperationLogsOperation:         []string{},
+	ListPeeringsOperation:              []string{},
 	ListPortsOperation:                 []string{},
 	ListPrivateImagesOperation:         []string{},
 	ListPrivateNetworksOperation:       []string{},
@@ -113,6 +118,7 @@ var operationRolesBearerAuth = map[string][]string{
 	OpenInstanceConsoleOperation:       []string{},
 	RebootInstanceOperation:            []string{},
 	RebuildInstanceOperation:           []string{},
+	RejectPeeringOperation:             []string{},
 	ReleaseFloatingIPOperation:         []string{},
 	RenameBackupOperation:              []string{},
 	RenameDiskOperation:                []string{},
@@ -137,18 +143,18 @@ var operationRolesBearerAuth = map[string][]string{
 	UnbindFloatingIPOperation:          []string{},
 }
 
-// GetRolesForBearerAuth returns the required roles for the given operation.
+// GetRolesForScopedTokenAuth returns the required roles for the given operation.
 //
 // This is useful for authorization scenarios where you need to know which roles
 // are required for an operation.
 //
 // Example:
 //
-//	requiredRoles := GetRolesForBearerAuth(AddPetOperation)
+//	requiredRoles := GetRolesForScopedTokenAuth(AddPetOperation)
 //
 // Returns nil if the operation has no role requirements or if the operation is unknown.
-func GetRolesForBearerAuth(operation string) []string {
-	roles, ok := operationRolesBearerAuth[operation]
+func GetRolesForScopedTokenAuth(operation string) []string {
+	roles, ok := operationRolesScopedTokenAuth[operation]
 	if !ok {
 		return nil
 	}
@@ -158,15 +164,15 @@ func GetRolesForBearerAuth(operation string) []string {
 	return result
 }
 
-func (s *Server) securityBearerAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
-	var t BearerAuth
+func (s *Server) securityScopedTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
+	var t ScopedTokenAuth
 	token, ok := findAuthorization(req.Header, "Bearer")
 	if !ok {
 		return ctx, false, nil
 	}
 	t.Token = token
-	t.Roles = operationRolesBearerAuth[operationName]
-	rctx, err := s.sec.HandleBearerAuth(ctx, operationName, t)
+	t.Roles = operationRolesScopedTokenAuth[operationName]
+	rctx, err := s.sec.HandleScopedTokenAuth(ctx, operationName, t)
 	if errors.Is(err, ogenerrors.ErrSkipServerSecurity) {
 		return nil, false, nil
 	} else if err != nil {
@@ -177,7 +183,7 @@ func (s *Server) securityBearerAuth(ctx context.Context, operationName Operation
 
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
-	// BearerAuth provides bearerAuth security value.
+	// ScopedTokenAuth provides scopedTokenAuth security value.
 	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
 	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
 	//
@@ -188,13 +194,13 @@ type SecuritySource interface {
 	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
 	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
 	// and `USER_BANNED` mean the account itself is barred from operating.
-	BearerAuth(ctx context.Context, operationName OperationName) (BearerAuth, error)
+	ScopedTokenAuth(ctx context.Context, operationName OperationName) (ScopedTokenAuth, error)
 }
 
-func (s *Client) securityBearerAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
-	t, err := s.sec.BearerAuth(ctx, operationName)
+func (s *Client) securityScopedTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
+	t, err := s.sec.ScopedTokenAuth(ctx, operationName)
 	if err != nil {
-		return errors.Wrap(err, "security source \"BearerAuth\"")
+		return errors.Wrap(err, "security source \"ScopedTokenAuth\"")
 	}
 	req.Header.Set("Authorization", "Bearer "+t.Token)
 	return nil

@@ -33,6 +33,206 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 	return c.ResponseWriter
 }
 
+// handleAcceptPeeringRequest handles accept-peering operation.
+//
+// Accept peering.
+//
+// POST /api/v1/peerings/{peeringId}/accept
+func (s *Server) handleAcceptPeeringRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("accept-peering"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/peerings/{peeringId}/accept"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), AcceptPeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: AcceptPeeringOperation,
+			ID:   "accept-peering",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AcceptPeeringOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeAcceptPeeringParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *PeeringResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    AcceptPeeringOperation,
+			OperationSummary: "Accept peering",
+			OperationID:      "accept-peering",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "peeringId",
+					In:   "path",
+				}: params.PeeringId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = AcceptPeeringParams
+			Response = *PeeringResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackAcceptPeeringParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.AcceptPeering(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.AcceptPeering(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeAcceptPeeringResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleAllocateFloatingIPRequest handles allocate-floating-ip operation.
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of
@@ -40,6 +240,9 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
 // network; enable IPv6 on that network instead.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/floating-ips
 func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -117,15 +320,15 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, AllocateFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AllocateFloatingIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -177,7 +380,7 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 		}
 	}()
 
-	var response *PlacedOrder
+	var response AllocateFloatingIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -193,7 +396,7 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 		type (
 			Request  = *AllocateFloatingIPRequestBody
 			Params   = struct{}
-			Response = *PlacedOrder
+			Response = AllocateFloatingIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -241,6 +444,9 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 //
 // The disk must be in the same region and availability zone as the instance. Partition it and mount
 // the file system inside the instance once it is attached.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/disks
 func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -318,15 +524,15 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, AttachDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachDiskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -388,7 +594,7 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Task
+	var response AttachDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -413,7 +619,7 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *AttachDiskRequestBody
 			Params   = AttachDiskParams
-			Response = *Task
+			Response = AttachDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -538,15 +744,15 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, AttachInstanceFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachInstanceFloatingIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -675,7 +881,8 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 
 // handleAttachPortRequest handles attach-port operation.
 //
-// Attach a network interface.
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/ports
 func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -753,15 +960,15 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, AttachPortOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachPortOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -823,7 +1030,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Task
+	var response AttachPortRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -848,7 +1055,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *AttachPortRequestBody
 			Params   = AttachPortParams
-			Response = *Task
+			Response = AttachPortRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -972,15 +1179,15 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, BindFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, BindFloatingIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -1112,6 +1319,9 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 // Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
 // effect and is billed from then on.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/resize/confirm
 func (s *Server) handleConfirmInstanceResizeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -1188,15 +1398,15 @@ func (s *Server) handleConfirmInstanceResizeRequest(args [1]string, argsEscaped 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ConfirmInstanceResizeOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ConfirmInstanceResizeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -1243,7 +1453,7 @@ func (s *Server) handleConfirmInstanceResizeRequest(args [1]string, argsEscaped 
 
 	var rawBody []byte
 
-	var response *Task
+	var response ConfirmInstanceResizeRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1268,7 +1478,7 @@ func (s *Server) handleConfirmInstanceResizeRequest(args [1]string, argsEscaped 
 		type (
 			Request  = struct{}
 			Params   = ConfirmInstanceResizeParams
-			Response = *Task
+			Response = ConfirmInstanceResizeRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1322,7 +1532,10 @@ func (s *Server) handleConfirmInstanceResizeRequest(args [1]string, argsEscaped 
 // Disks attached to a running instance, including system disks, can be backed up.
 //
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-// poll the retrieve endpoint.
+// track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/backups
 func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1400,15 +1613,15 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateBackupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -1460,7 +1673,7 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response *PlacedOrder
+	var response CreateBackupRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1476,7 +1689,7 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 		type (
 			Request  = *CreateBackupRequestBody
 			Params   = struct{}
-			Response = *PlacedOrder
+			Response = CreateBackupRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1528,6 +1741,9 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 // A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier
 // still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one
 // keep working and can still be resized.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/disks
 func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1605,15 +1821,15 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateDiskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -1725,6 +1941,207 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 	}
 }
 
+// handleCreatePeeringRequest handles create-peering operation.
+//
+// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+// before any connectivity is created. Does not change security groups or provide transitive routing.
+//
+// POST /api/v1/peerings
+func (s *Server) handleCreatePeeringRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-peering"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/peerings"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreatePeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreatePeeringOperation,
+			ID:   "create-peering",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreatePeeringOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreatePeeringRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *PeeringResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreatePeeringOperation,
+			OperationSummary: "Create peering",
+			OperationID:      "create-peering",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *CreatePeeringRequestBody
+			Params   = struct{}
+			Response = *PeeringResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreatePeering(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreatePeering(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreatePeeringResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleCreatePortRequest handles create-port operation.
 //
 // The new network interface is not attached to any instance. Primary network interfaces are not
@@ -1806,15 +2223,15 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreatePortOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreatePortOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -1933,7 +2350,7 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 //
 // The image reflects the moment the capture started. Later changes to the instance are not included.
 //
-// The capture has two phases. Poll the retrieve endpoint:
+// The capture has two phases, reported by the status of the image:
 //
 //   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
 //     remains usable during this phase, although stopping it first is recommended for consistency.
@@ -1946,6 +2363,9 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 // before starting the capture and start it again once the status becomes `uploading`.
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/private-images
 func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2023,15 +2443,15 @@ func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped boo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreatePrivateImageOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreatePrivateImageOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -2083,7 +2503,7 @@ func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped boo
 		}
 	}()
 
-	var response *PlacedOrder
+	var response CreatePrivateImageRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -2099,7 +2519,7 @@ func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped boo
 		type (
 			Request  = *CreatePrivateImageRequestBody
 			Params   = struct{}
-			Response = *PlacedOrder
+			Response = CreatePrivateImageRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2224,15 +2644,15 @@ func (s *Server) handleCreatePrivateNetworkRequest(args [0]string, argsEscaped b
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreatePrivateNetworkOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreatePrivateNetworkOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -2427,15 +2847,15 @@ func (s *Server) handleCreateRouteRequest(args [1]string, argsEscaped bool, w ht
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateRouteOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateRouteOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -2644,15 +3064,15 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateSecurityGroupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateSecurityGroupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -2845,15 +3265,15 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateSecurityGroupRuleOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateSecurityGroupRuleOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -2991,6 +3411,9 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 // preserve and restore an entire system, use a private image; for a copy that crosses availability
 // zones and survives deletion of the disk, use a backup.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/snapshots
 func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -3067,15 +3490,15 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateSnapshotOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateSnapshotOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -3127,7 +3550,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *PlacedOrder
+	var response CreateSnapshotRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -3143,7 +3566,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = *CreateSnapshotRequestBody
 			Params   = struct{}
-			Response = *PlacedOrder
+			Response = CreateSnapshotRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3267,15 +3690,15 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateSubnetOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateSubnetOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -3406,6 +3829,9 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/backups/{backupId}
 func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -3482,15 +3908,15 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteBackupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteBackupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -3537,7 +3963,7 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 
 	var rawBody []byte
 
-	var response *Task
+	var response DeleteBackupRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -3562,7 +3988,7 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 		type (
 			Request  = struct{}
 			Params   = DeleteBackupParams
-			Response = *Task
+			Response = DeleteBackupRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3609,6 +4035,9 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 // handleDeleteDiskRequest handles delete-disk operation.
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // DELETE /api/v1/disks/{diskId}
 func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3686,15 +4115,15 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteDiskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -3741,7 +4170,7 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *Task
+	var response DeleteDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -3766,7 +4195,7 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DeleteDiskParams
-			Response = *Task
+			Response = DeleteDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3818,6 +4247,9 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 // delete that image first.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // DELETE /api/v1/instances/{instanceId}
 func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3895,15 +4327,15 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -3950,7 +4382,7 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 
 	var rawBody []byte
 
-	var response *Task
+	var response DeleteInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -3975,7 +4407,7 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = struct{}
 			Params   = DeleteInstanceParams
-			Response = *Task
+			Response = DeleteInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4011,6 +4443,206 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 	}
 
 	if err := encodeDeleteInstanceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDeletePeeringRequest handles delete-peering operation.
+//
+// Delete peering.
+//
+// DELETE /api/v1/peerings/{peeringId}
+func (s *Server) handleDeletePeeringRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-peering"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/peerings/{peeringId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeletePeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeletePeeringOperation,
+			ID:   "delete-peering",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeletePeeringOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeletePeeringParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *PeeringResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeletePeeringOperation,
+			OperationSummary: "Delete peering",
+			OperationID:      "delete-peering",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "peeringId",
+					In:   "path",
+				}: params.PeeringId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeletePeeringParams
+			Response = *PeeringResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeletePeeringParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DeletePeering(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DeletePeering(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeletePeeringResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4100,15 +4732,15 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeletePortOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeletePortOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -4227,6 +4859,9 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/private-images/{privateImageId}
 func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -4303,15 +4938,15 @@ func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped boo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeletePrivateImageOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeletePrivateImageOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -4358,7 +4993,7 @@ func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped boo
 
 	var rawBody []byte
 
-	var response *Task
+	var response DeletePrivateImageRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -4383,7 +5018,7 @@ func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped boo
 		type (
 			Request  = struct{}
 			Params   = DeletePrivateImageParams
-			Response = *Task
+			Response = DeletePrivateImageRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4508,15 +5143,15 @@ func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped b
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeletePrivateNetworkOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeletePrivateNetworkOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -4708,15 +5343,15 @@ func (s *Server) handleDeleteRouteRequest(args [2]string, argsEscaped bool, w ht
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteRouteOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteRouteOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -4913,15 +5548,15 @@ func (s *Server) handleDeleteSecurityGroupRequest(args [1]string, argsEscaped bo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteSecurityGroupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteSecurityGroupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -5113,15 +5748,15 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteSecurityGroupRuleOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteSecurityGroupRuleOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -5239,7 +5874,8 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 
 // handleDeleteSnapshotRequest handles delete-snapshot operation.
 //
-// Delete a snapshot.
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5317,15 +5953,15 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteSnapshotOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteSnapshotOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -5372,7 +6008,7 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 
 	var rawBody []byte
 
-	var response *Task
+	var response DeleteSnapshotRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -5397,7 +6033,7 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = struct{}
 			Params   = DeleteSnapshotParams
-			Response = *Task
+			Response = DeleteSnapshotRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5522,15 +6158,15 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteSubnetOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteSubnetOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -5651,6 +6287,9 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 // system that is being written to corrupts data.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/instances/{instanceId}/disks/{diskId}
 func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -5727,15 +6366,15 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DetachDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachDiskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -5782,7 +6421,7 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *Task
+	var response DetachDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -5811,7 +6450,7 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DetachDiskParams
-			Response = *Task
+			Response = DetachDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5936,15 +6575,15 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DetachInstanceFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachInstanceFloatingIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -6064,6 +6703,9 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/instances/{instanceId}/ports/{portId}
 func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -6140,15 +6782,15 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DetachPortOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachPortOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -6195,7 +6837,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *Task
+	var response DetachPortRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -6224,7 +6866,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DetachPortParams
-			Response = *Task
+			Response = DetachPortRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6348,15 +6990,15 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DisablePrivateNetworkIpv6Operation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DisablePrivateNetworkIpv6Operation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -6552,15 +7194,15 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, EnablePrivateNetworkIpv6Operation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, EnablePrivateNetworkIpv6Operation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -6753,15 +7395,15 @@ func (s *Server) handleGetBackupRequest(args [1]string, argsEscaped bool, w http
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetBackupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetBackupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -6954,15 +7596,15 @@ func (s *Server) handleGetDiskRequest(args [1]string, argsEscaped bool, w http.R
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetDiskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -7155,15 +7797,15 @@ func (s *Server) handleGetDiskTypeRequest(args [1]string, argsEscaped bool, w ht
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetDiskTypeOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetDiskTypeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -7355,15 +7997,15 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetFloatingIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -7556,15 +8198,15 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -7760,15 +8402,15 @@ func (s *Server) handleGetInstanceConsoleOutputRequest(args [1]string, argsEscap
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetInstanceConsoleOutputOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceConsoleOutputOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -7884,6 +8526,206 @@ func (s *Server) handleGetInstanceConsoleOutputRequest(args [1]string, argsEscap
 	}
 }
 
+// handleGetPeeringRequest handles get-peering operation.
+//
+// Get peering.
+//
+// GET /api/v1/peerings/{peeringId}
+func (s *Server) handleGetPeeringRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-peering"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/peerings/{peeringId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetPeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetPeeringOperation,
+			ID:   "get-peering",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetPeeringOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetPeeringParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *PeeringResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetPeeringOperation,
+			OperationSummary: "Get peering",
+			OperationID:      "get-peering",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "peeringId",
+					In:   "path",
+				}: params.PeeringId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetPeeringParams
+			Response = *PeeringResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetPeeringParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetPeering(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetPeering(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetPeeringResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleGetPrivateImageRequest handles get-private-image operation.
 //
 // Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
@@ -7964,15 +8806,15 @@ func (s *Server) handleGetPrivateImageRequest(args [1]string, argsEscaped bool, 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetPrivateImageOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetPrivateImageOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -8164,15 +9006,15 @@ func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetPrivateNetworkOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetPrivateNetworkOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -8364,15 +9206,15 @@ func (s *Server) handleGetPrivateNetworkIpv6Request(args [1]string, argsEscaped 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetPrivateNetworkIpv6Operation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetPrivateNetworkIpv6Operation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -8564,15 +9406,15 @@ func (s *Server) handleGetSecurityGroupRequest(args [1]string, argsEscaped bool,
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetSecurityGroupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetSecurityGroupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -8764,15 +9606,15 @@ func (s *Server) handleGetSnapshotRequest(args [1]string, argsEscaped bool, w ht
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetSnapshotOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetSnapshotOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -8964,15 +9806,15 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetTaskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetTaskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -9087,16 +9929,22 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 // handleLaunchInstanceRequest handles launch-instance operation.
 //
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly
-// one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
+// Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
+// the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
+// submit a new purchase after paying, and reuse the original idempotency key after an uncertain
+// response.
+//
+// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 // subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
 // boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-// own subscription items on the same order. A request for several instances is all or nothing — if
-// any instance cannot be created, every instance of that request is released and the order fails, so
-// nothing is charged. Each instance is named after this request with a number appended, and each has
-// its own task.
+// own subscription items on the same order.
+//
+// A request for several instances is all or nothing: if any instance cannot be created, every instance
+// of that request is released, the order fails, and any payment for it is refunded. Each instance is
+// named after this request with a number appended, and each has its own task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances
 func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9174,15 +10022,15 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, LaunchInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, LaunchInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -9234,7 +10082,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *LaunchInstanceResponseBody
+	var response LaunchInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -9250,7 +10098,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = *LaunchInstanceRequestBody
 			Params   = struct{}
-			Response = *LaunchInstanceResponseBody
+			Response = LaunchInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9375,15 +10223,15 @@ func (s *Server) handleListAvailabilityZonesRequest(args [1]string, argsEscaped 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListAvailabilityZonesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListAvailabilityZonesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -9575,15 +10423,15 @@ func (s *Server) handleListBackupsRequest(args [0]string, argsEscaped bool, w ht
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListBackupsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListBackupsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -9776,15 +10624,15 @@ func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListDiskTypesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListDiskTypesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -9977,15 +10825,15 @@ func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListDisksOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListDisksOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -10181,15 +11029,15 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListFloatingIpsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListFloatingIpsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -10371,15 +11219,15 @@ func (s *Server) handleListImagesRequest(args [0]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListImagesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListImagesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -10579,15 +11427,15 @@ func (s *Server) handleListInstanceDisksRequest(args [1]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListInstanceDisksOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstanceDisksOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -10787,15 +11635,15 @@ func (s *Server) handleListInstancePortsRequest(args [1]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListInstancePortsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstancePortsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -10996,15 +11844,15 @@ func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListInstanceTypesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstanceTypesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -11205,15 +12053,15 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListInstancesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstancesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -11413,15 +12261,15 @@ func (s *Server) handleListIpv4PoolsRequest(args [0]string, argsEscaped bool, w 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListIpv4PoolsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListIpv4PoolsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -11629,15 +12477,15 @@ func (s *Server) handleListOperationLogsRequest(args [0]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListOperationLogsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListOperationLogsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -11757,6 +12605,210 @@ func (s *Server) handleListOperationLogsRequest(args [0]string, argsEscaped bool
 	}
 }
 
+// handleListPeeringsRequest handles list-peerings operation.
+//
+// List peerings.
+//
+// GET /api/v1/peerings
+func (s *Server) handleListPeeringsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-peerings"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/peerings"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListPeeringsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListPeeringsOperation,
+			ID:   "list-peerings",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListPeeringsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListPeeringsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *PeeringListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListPeeringsOperation,
+			OperationSummary: "List peerings",
+			OperationID:      "list-peerings",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "limit",
+					In:   "query",
+				}: params.Limit,
+				{
+					Name: "offset",
+					In:   "query",
+				}: params.Offset,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListPeeringsParams
+			Response = *PeeringListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListPeeringsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListPeerings(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListPeerings(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListPeeringsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleListPortsRequest handles list-ports operation.
 //
 // List network interfaces.
@@ -11837,15 +12889,15 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListPortsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListPortsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -12022,15 +13074,15 @@ func (s *Server) handleListPrivateImagesRequest(args [0]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListPrivateImagesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListPrivateImagesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -12230,15 +13282,15 @@ func (s *Server) handleListPrivateNetworksRequest(args [0]string, argsEscaped bo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListPrivateNetworksOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListPrivateNetworksOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -12430,15 +13482,15 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListRegionsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListRegionsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -12615,15 +13667,15 @@ func (s *Server) handleListRoutesRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListRoutesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListRoutesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -12815,15 +13867,15 @@ func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListSecurityGroupRulesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListSecurityGroupRulesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -13015,15 +14067,15 @@ func (s *Server) handleListSecurityGroupsRequest(args [0]string, argsEscaped boo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListSecurityGroupsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListSecurityGroupsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -13219,15 +14271,15 @@ func (s *Server) handleListSnapshotsRequest(args [0]string, argsEscaped bool, w 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListSnapshotsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListSnapshotsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -13420,15 +14472,15 @@ func (s *Server) handleListSubnetsRequest(args [1]string, argsEscaped bool, w ht
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListSubnetsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListSubnetsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -13623,15 +14675,15 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, OpenInstanceConsoleOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, OpenInstanceConsoleOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -13759,6 +14811,9 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
 // instance until it settles at `running`.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/reboot
 func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -13835,15 +14890,15 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RebootInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebootInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -13905,7 +14960,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *Task
+	var response RebootInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -13930,7 +14985,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *RebootInstanceRequestBody
 			Params   = RebootInstanceParams
-			Response = *Task
+			Response = RebootInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14058,15 +15113,15 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RebuildInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebuildInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -14193,9 +15248,212 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 	}
 }
 
+// handleRejectPeeringRequest handles reject-peering operation.
+//
+// Reject peering.
+//
+// POST /api/v1/peerings/{peeringId}/reject
+func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("reject-peering"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/peerings/{peeringId}/reject"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RejectPeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RejectPeeringOperation,
+			ID:   "reject-peering",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RejectPeeringOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRejectPeeringParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *PeeringResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RejectPeeringOperation,
+			OperationSummary: "Reject peering",
+			OperationID:      "reject-peering",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "peeringId",
+					In:   "path",
+				}: params.PeeringId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = RejectPeeringParams
+			Response = *PeeringResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRejectPeeringParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RejectPeering(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RejectPeering(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRejectPeeringResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleReleaseFloatingIPRequest handles release-floating-ip operation.
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14273,15 +15531,15 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ReleaseFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ReleaseFloatingIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -14328,7 +15586,7 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 
 	var rawBody []byte
 
-	var response *Task
+	var response ReleaseFloatingIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -14353,7 +15611,7 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 		type (
 			Request  = struct{}
 			Params   = ReleaseFloatingIPParams
-			Response = *Task
+			Response = ReleaseFloatingIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14477,15 +15735,15 @@ func (s *Server) handleRenameBackupRequest(args [1]string, argsEscaped bool, w h
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenameBackupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameBackupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -14693,15 +15951,15 @@ func (s *Server) handleRenameDiskRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenameDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameDiskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -14909,15 +16167,15 @@ func (s *Server) handleRenameInstanceRequest(args [1]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenameInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -15124,15 +16382,15 @@ func (s *Server) handleRenamePrivateImageRequest(args [1]string, argsEscaped boo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenamePrivateImageOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenamePrivateImageOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -15339,15 +16597,15 @@ func (s *Server) handleRenamePrivateNetworkRequest(args [1]string, argsEscaped b
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenamePrivateNetworkOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenamePrivateNetworkOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -15554,15 +16812,15 @@ func (s *Server) handleRenameSecurityGroupRequest(args [1]string, argsEscaped bo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenameSecurityGroupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameSecurityGroupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -15769,15 +17027,15 @@ func (s *Server) handleRenameSnapshotRequest(args [1]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenameSnapshotOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameSnapshotOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -15990,15 +17248,15 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ResetInstancePasswordOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResetInstancePasswordOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -16127,22 +17385,24 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 
 // handleResizeDiskRequest handles resize-disk operation.
 //
-// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
-// instance once the resize completes.
+// Capacity can only be increased; shrinking is not supported. The resize is not complete when this
+// endpoint returns; track the returned task, then extend the file system inside the instance.
 //
-// A data disk whose performance grows with its size has to be detached first. The storage backend
-// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
-// attached would give you the capacity immediately and leave the speed at the old size's figure —
-// indefinitely, and stopping the instance does not help. Rather than take the money for performance
-// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
-// and attach it again.
+// An attached data disk whose performance scales with its size must be detached before it is resized.
+// The performance of an attached disk does not change until the disk is detached and attached again,
+// so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity
+// at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
-// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
-// level, or whose performance has already reached the type's ceiling, grows online as before.
+// The request is refused only when the new size has a different performance level. A disk whose type
+// has no QoS level, or whose performance has already reached the maximum of its type, can be resized
+// while attached.
 //
-// A system disk is the exception and grows online, because a root volume cannot be detached at all.
-// Its performance does not change with size for exactly that reason — system disk types are required
-// to carry a level that does not scale.
+// A system disk can be resized while attached, because a system disk cannot be detached. System disk
+// types use a performance level that does not scale with size, so resizing a system disk does not
+// change its performance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/disks/{diskId}/resize
 func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16220,15 +17480,15 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ResizeDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResizeDiskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -16290,7 +17550,7 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *PlacedOrder
+	var response ResizeDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -16311,7 +17571,7 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *ResizeDiskRequestBody
 			Params   = ResizeDiskParams
-			Response = *PlacedOrder
+			Response = ResizeDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -16357,10 +17617,14 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleResizeInstanceRequest handles resize-instance operation.
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Creates a Billing change order, including for metered pricing. The price must belong to the Billing
+// Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
+// applied after the order's invoice is paid, or without waiting when the order has no immediate
+// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
+// uncertain response.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/resize
 func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16438,15 +17702,15 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ResizeInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResizeInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -16508,7 +17772,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *PlacedOrder
+	var response ResizeInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -16529,7 +17793,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *ResizeInstanceRequestBody
 			Params   = ResizeInstanceParams
-			Response = *PlacedOrder
+			Response = ResizeInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -16578,8 +17842,11 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 // Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 //
 // The target disk type may belong to another availability zone of the same region, and its capacity
-// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
-// the disk retrieve endpoint.
+// must not be smaller than the backup. The disk cannot be attached until the restore completes; track
+// the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/backups/{backupId}/restore
 func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16657,15 +17924,15 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RestoreBackupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RestoreBackupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -16727,7 +17994,7 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 		}
 	}()
 
-	var response *PlacedOrder
+	var response RestoreBackupRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -16748,7 +18015,7 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = *RestoreBackupRequestBody
 			Params   = RestoreBackupParams
-			Response = *PlacedOrder
+			Response = RestoreBackupRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -16803,6 +18070,9 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 // from the snapshot instead.
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/disks/{diskId}/revert
 func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16880,15 +18150,15 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RevertDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RevertDiskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -16950,7 +18220,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Task
+	var response RevertDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -16975,7 +18245,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *RevertDiskRequestBody
 			Params   = RevertDiskParams
-			Response = *Task
+			Response = RevertDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17023,6 +18293,9 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 //
 // The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
 // unaffected by the resize.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/resize/revert
 func (s *Server) handleRevertInstanceResizeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -17100,15 +18373,15 @@ func (s *Server) handleRevertInstanceResizeRequest(args [1]string, argsEscaped b
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RevertInstanceResizeOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RevertInstanceResizeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -17155,7 +18428,7 @@ func (s *Server) handleRevertInstanceResizeRequest(args [1]string, argsEscaped b
 
 	var rawBody []byte
 
-	var response *Task
+	var response RevertInstanceResizeRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -17180,7 +18453,7 @@ func (s *Server) handleRevertInstanceResizeRequest(args [1]string, argsEscaped b
 		type (
 			Request  = struct{}
 			Params   = RevertInstanceResizeParams
-			Response = *Task
+			Response = RevertInstanceResizeRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17330,15 +18603,15 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RunInstanceCommandOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RunInstanceCommandOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -17467,13 +18740,15 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 
 // handleSetFloatingIPBandwidthRequest handles set-floating-ip-bandwidth operation.
 //
-// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
-// saturating the uplink.
+// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this
+// endpoint returns; track the returned task.
 //
-// While the address is bound to an instance, the ceiling has to fit that instance type's
-// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
-// to nothing is not checked against any type — there is none to check against — and is checked
-// again when it is attached.
+// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
+// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
+// address that is not bound is checked when the address is bound to an instance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -17551,15 +18826,15 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SetFloatingIPBandwidthOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetFloatingIPBandwidthOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -17621,7 +18896,7 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		}
 	}()
 
-	var response *PlacedOrder
+	var response SetFloatingIPBandwidthRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -17642,7 +18917,7 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		type (
 			Request  = *SetBandwidthRequestBody
 			Params   = SetFloatingIPBandwidthParams
-			Response = *PlacedOrder
+			Response = SetFloatingIPBandwidthRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17770,15 +19045,15 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SetInstanceLabelsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetInstanceLabelsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -17990,15 +19265,15 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SetInstanceNotesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetInstanceNotesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -18132,6 +19407,9 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/start
 func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -18208,15 +19486,15 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, StartInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, StartInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -18278,7 +19556,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		}
 	}()
 
-	var response *Task
+	var response StartInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -18303,7 +19581,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = *PowerRequest
 			Params   = StartInstanceParams
-			Response = *Task
+			Response = StartInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -18353,6 +19631,9 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 // start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/stop
 func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -18430,15 +19711,15 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, StopInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, StopInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -18500,7 +19781,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response *Task
+	var response StopInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -18525,7 +19806,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		type (
 			Request  = *PowerRequest
 			Params   = StopInstanceParams
-			Response = *Task
+			Response = StopInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -18650,15 +19931,15 @@ func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SuggestSubnetCidrOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SuggestSubnetCidrOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}
@@ -18854,15 +20135,15 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UnbindFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UnbindFloatingIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ScopedTokenAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ScopedTokenAuth", err)
 				}
 				return
 			}

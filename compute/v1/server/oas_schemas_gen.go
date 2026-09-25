@@ -454,31 +454,6 @@ func (s *BackupResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-type BearerAuth struct {
-	Token string
-	Roles []string
-}
-
-// GetToken returns the value of Token.
-func (s *BearerAuth) GetToken() string {
-	return s.Token
-}
-
-// GetRoles returns the value of Roles.
-func (s *BearerAuth) GetRoles() []string {
-	return s.Roles
-}
-
-// SetToken sets the value of Token.
-func (s *BearerAuth) SetToken(val string) {
-	s.Token = val
-}
-
-// SetRoles sets the value of Roles.
-func (s *BearerAuth) SetRoles(val []string) {
-	s.Roles = val
-}
-
 // Ref: #/components/schemas/BindFloatingIPRequestBody
 type BindFloatingIPRequestBody struct {
 	PortAddressID uuid.UUID `json:"port_address_id"`
@@ -708,6 +683,54 @@ func (s *CreateDiskRequestBody) SetPriceID(val uuid.UUID) {
 // SetOrder sets the value of Order.
 func (s *CreateDiskRequestBody) SetOrder(val OrderOptions) {
 	s.Order = val
+}
+
+// Ref: #/components/schemas/CreatePeeringRequestBody
+type CreatePeeringRequestBody struct {
+	Name               string    `json:"name"`
+	RequesterNetworkID uuid.UUID `json:"requester_network_id"`
+	AccepterProjectID  uuid.UUID `json:"accepter_project_id"`
+	AccepterNetworkID  uuid.UUID `json:"accepter_network_id"`
+}
+
+// GetName returns the value of Name.
+func (s *CreatePeeringRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetRequesterNetworkID returns the value of RequesterNetworkID.
+func (s *CreatePeeringRequestBody) GetRequesterNetworkID() uuid.UUID {
+	return s.RequesterNetworkID
+}
+
+// GetAccepterProjectID returns the value of AccepterProjectID.
+func (s *CreatePeeringRequestBody) GetAccepterProjectID() uuid.UUID {
+	return s.AccepterProjectID
+}
+
+// GetAccepterNetworkID returns the value of AccepterNetworkID.
+func (s *CreatePeeringRequestBody) GetAccepterNetworkID() uuid.UUID {
+	return s.AccepterNetworkID
+}
+
+// SetName sets the value of Name.
+func (s *CreatePeeringRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetRequesterNetworkID sets the value of RequesterNetworkID.
+func (s *CreatePeeringRequestBody) SetRequesterNetworkID(val uuid.UUID) {
+	s.RequesterNetworkID = val
+}
+
+// SetAccepterProjectID sets the value of AccepterProjectID.
+func (s *CreatePeeringRequestBody) SetAccepterProjectID(val uuid.UUID) {
+	s.AccepterProjectID = val
+}
+
+// SetAccepterNetworkID sets the value of AccepterNetworkID.
+func (s *CreatePeeringRequestBody) SetAccepterNetworkID(val uuid.UUID) {
+	s.AccepterNetworkID = val
 }
 
 // Ref: #/components/schemas/CreatePortRequestBody
@@ -1881,13 +1904,13 @@ type DiskTypeResource struct {
 	ThroughputAtMinSize NilInt64 `json:"throughput_at_min_size"`
 	// Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not
 	// rate-limited.
-	ThroughputAtMaxSize NilInt64                         `json:"throughput_at_max_size"`
-	ProductID           NilUUID                          `json:"product_id"`
-	PlanID              NilUUID                          `json:"plan_id"`
-	NameTranslations    DiskTypeResourceNameTranslations `json:"name_translations"`
-	SnapshotPlanID      NilUUID                          `json:"snapshot_plan_id"`
-	BackupPlanID        NilUUID                          `json:"backup_plan_id"`
-	PrivateImagePlanID  NilUUID                          `json:"private_image_plan_id"`
+	ThroughputAtMaxSize NilInt64 `json:"throughput_at_max_size"`
+	// Billing Product ID. Null when no Product is assigned; otherwise `compute`.
+	ProductID          NilString `json:"product_id"`
+	PlanID             NilUUID   `json:"plan_id"`
+	SnapshotPlanID     NilUUID   `json:"snapshot_plan_id"`
+	BackupPlanID       NilUUID   `json:"backup_plan_id"`
+	PrivateImagePlanID NilUUID   `json:"private_image_plan_id"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -1951,18 +1974,13 @@ func (s *DiskTypeResource) GetThroughputAtMaxSize() NilInt64 {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *DiskTypeResource) GetProductID() NilUUID {
+func (s *DiskTypeResource) GetProductID() NilString {
 	return s.ProductID
 }
 
 // GetPlanID returns the value of PlanID.
 func (s *DiskTypeResource) GetPlanID() NilUUID {
 	return s.PlanID
-}
-
-// GetNameTranslations returns the value of NameTranslations.
-func (s *DiskTypeResource) GetNameTranslations() DiskTypeResourceNameTranslations {
-	return s.NameTranslations
 }
 
 // GetSnapshotPlanID returns the value of SnapshotPlanID.
@@ -2041,18 +2059,13 @@ func (s *DiskTypeResource) SetThroughputAtMaxSize(val NilInt64) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *DiskTypeResource) SetProductID(val NilUUID) {
+func (s *DiskTypeResource) SetProductID(val NilString) {
 	s.ProductID = val
 }
 
 // SetPlanID sets the value of PlanID.
 func (s *DiskTypeResource) SetPlanID(val NilUUID) {
 	s.PlanID = val
-}
-
-// SetNameTranslations sets the value of NameTranslations.
-func (s *DiskTypeResource) SetNameTranslations(val DiskTypeResourceNameTranslations) {
-	s.NameTranslations = val
 }
 
 // SetSnapshotPlanID sets the value of SnapshotPlanID.
@@ -2118,17 +2131,6 @@ func (s *DiskTypeResourceMedia) UnmarshalText(data []byte) error {
 	}
 }
 
-type DiskTypeResourceNameTranslations map[string]string
-
-func (s *DiskTypeResourceNameTranslations) init() DiskTypeResourceNameTranslations {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
 // Ref: #/components/schemas/Error
 type Error struct {
 	Code    OptString `json:"code"`
@@ -2179,7 +2181,32 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-func (*Error) createDiskRes() {}
+func (*Error) allocateFloatingIPRes()     {}
+func (*Error) attachDiskRes()             {}
+func (*Error) attachPortRes()             {}
+func (*Error) confirmInstanceResizeRes()  {}
+func (*Error) createBackupRes()           {}
+func (*Error) createDiskRes()             {}
+func (*Error) createPrivateImageRes()     {}
+func (*Error) createSnapshotRes()         {}
+func (*Error) deleteBackupRes()           {}
+func (*Error) deleteDiskRes()             {}
+func (*Error) deleteInstanceRes()         {}
+func (*Error) deletePrivateImageRes()     {}
+func (*Error) deleteSnapshotRes()         {}
+func (*Error) detachDiskRes()             {}
+func (*Error) detachPortRes()             {}
+func (*Error) launchInstanceRes()         {}
+func (*Error) rebootInstanceRes()         {}
+func (*Error) releaseFloatingIPRes()      {}
+func (*Error) resizeDiskRes()             {}
+func (*Error) resizeInstanceRes()         {}
+func (*Error) restoreBackupRes()          {}
+func (*Error) revertDiskRes()             {}
+func (*Error) revertInstanceResizeRes()   {}
+func (*Error) setFloatingIPBandwidthRes() {}
+func (*Error) startInstanceRes()          {}
+func (*Error) stopInstanceRes()           {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
@@ -4029,16 +4056,16 @@ type InstanceTypeResource struct {
 	// them, not shared between them. `max_ports` says how many it may have.
 	NetworkEgressKbps NilInt64 `json:"network_egress_kbps"`
 	// Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited.
-	NetworkIngressKbps NilInt64                             `json:"network_ingress_kbps"`
-	MaxFloatingIps     int64                                `json:"max_floating_ips"`
-	MaxPorts           int64                                `json:"max_ports"`
-	Name               string                               `json:"name"`
-	RAMMB              int64                                `json:"ram_mb"`
-	RegionID           uuid.UUID                            `json:"region_id"`
-	Vcpus              int64                                `json:"vcpus"`
-	ProductID          NilUUID                              `json:"product_id"`
-	PlanID             NilUUID                              `json:"plan_id"`
-	NameTranslations   InstanceTypeResourceNameTranslations `json:"name_translations"`
+	NetworkIngressKbps NilInt64  `json:"network_ingress_kbps"`
+	MaxFloatingIps     int64     `json:"max_floating_ips"`
+	MaxPorts           int64     `json:"max_ports"`
+	Name               string    `json:"name"`
+	RAMMB              int64     `json:"ram_mb"`
+	RegionID           uuid.UUID `json:"region_id"`
+	Vcpus              int64     `json:"vcpus"`
+	// Billing Product ID. Null when no Product is assigned; otherwise `compute`.
+	ProductID NilString `json:"product_id"`
+	PlanID    NilUUID   `json:"plan_id"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -4097,18 +4124,13 @@ func (s *InstanceTypeResource) GetVcpus() int64 {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *InstanceTypeResource) GetProductID() NilUUID {
+func (s *InstanceTypeResource) GetProductID() NilString {
 	return s.ProductID
 }
 
 // GetPlanID returns the value of PlanID.
 func (s *InstanceTypeResource) GetPlanID() NilUUID {
 	return s.PlanID
-}
-
-// GetNameTranslations returns the value of NameTranslations.
-func (s *InstanceTypeResource) GetNameTranslations() InstanceTypeResourceNameTranslations {
-	return s.NameTranslations
 }
 
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
@@ -4167,29 +4189,13 @@ func (s *InstanceTypeResource) SetVcpus(val int64) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *InstanceTypeResource) SetProductID(val NilUUID) {
+func (s *InstanceTypeResource) SetProductID(val NilString) {
 	s.ProductID = val
 }
 
 // SetPlanID sets the value of PlanID.
 func (s *InstanceTypeResource) SetPlanID(val NilUUID) {
 	s.PlanID = val
-}
-
-// SetNameTranslations sets the value of NameTranslations.
-func (s *InstanceTypeResource) SetNameTranslations(val InstanceTypeResourceNameTranslations) {
-	s.NameTranslations = val
-}
-
-type InstanceTypeResourceNameTranslations map[string]string
-
-func (s *InstanceTypeResourceNameTranslations) init() InstanceTypeResourceNameTranslations {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
 }
 
 // Ref: #/components/schemas/LaunchInstanceRequestBody
@@ -4416,9 +4422,26 @@ func (s *LaunchInstanceRequestBody) SetFloatingIP(val OptNewFloatingIP) {
 
 // Ref: #/components/schemas/LaunchInstanceResponseBody
 type LaunchInstanceResponseBody struct {
-	Order PlacedOrder `json:"order"`
-	// Generated login password. Null when no password was generated. Keep it before leaving this response.
+	// Instances created by this operation. Empty before resource creation starts; a replay may include
+	// identifiers produced since the first response. Historical identifiers do not imply that the
+	// instances still exist.
+	InstanceIds []uuid.UUID `json:"instance_ids"`
+	// The original Compute task. Replays retain this identifier, including after failure or cancellation.
+	TaskID uuid.UUID   `json:"task_id"`
+	Order  PlacedOrder `json:"order"`
+	// Generated login password, returned only by the initial response. Null on replay or when no password
+	// was generated. A retry never generates or resets a password.
 	Password NilString `json:"password"`
+}
+
+// GetInstanceIds returns the value of InstanceIds.
+func (s *LaunchInstanceResponseBody) GetInstanceIds() []uuid.UUID {
+	return s.InstanceIds
+}
+
+// GetTaskID returns the value of TaskID.
+func (s *LaunchInstanceResponseBody) GetTaskID() uuid.UUID {
+	return s.TaskID
 }
 
 // GetOrder returns the value of Order.
@@ -4431,6 +4454,16 @@ func (s *LaunchInstanceResponseBody) GetPassword() NilString {
 	return s.Password
 }
 
+// SetInstanceIds sets the value of InstanceIds.
+func (s *LaunchInstanceResponseBody) SetInstanceIds(val []uuid.UUID) {
+	s.InstanceIds = val
+}
+
+// SetTaskID sets the value of TaskID.
+func (s *LaunchInstanceResponseBody) SetTaskID(val uuid.UUID) {
+	s.TaskID = val
+}
+
 // SetOrder sets the value of Order.
 func (s *LaunchInstanceResponseBody) SetOrder(val PlacedOrder) {
 	s.Order = val
@@ -4440,6 +4473,8 @@ func (s *LaunchInstanceResponseBody) SetOrder(val PlacedOrder) {
 func (s *LaunchInstanceResponseBody) SetPassword(val NilString) {
 	s.Password = val
 }
+
+func (*LaunchInstanceResponseBody) launchInstanceRes() {}
 
 // A system disk purchased in the same order. Required when booting from an image; mutually exclusive
 // with boot_disk_id.
@@ -5487,6 +5522,52 @@ func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
 	return d
 }
 
+// NewOptInt returns new OptInt with value set to v.
+func NewOptInt(v int) OptInt {
+	return OptInt{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInt is optional int.
+type OptInt struct {
+	Value int
+	Set   bool
+}
+
+// IsSet returns true if OptInt was set.
+func (o OptInt) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInt) Reset() {
+	var v int
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInt) SetTo(v int) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInt) Get() (v int, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt64 returns new OptInt64 with value set to v.
 func NewOptInt64(v int64) OptInt64 {
 	return OptInt64{
@@ -5897,52 +5978,6 @@ func (o OptNilUUIDArray) Or(d []uuid.UUID) []uuid.UUID {
 	return d
 }
 
-// NewOptPaymentPlan returns new OptPaymentPlan with value set to v.
-func NewOptPaymentPlan(v PaymentPlan) OptPaymentPlan {
-	return OptPaymentPlan{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptPaymentPlan is optional PaymentPlan.
-type OptPaymentPlan struct {
-	Value PaymentPlan
-	Set   bool
-}
-
-// IsSet returns true if OptPaymentPlan was set.
-func (o OptPaymentPlan) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptPaymentPlan) Reset() {
-	var v PaymentPlan
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptPaymentPlan) SetTo(v PaymentPlan) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptPaymentPlan) Get() (v PaymentPlan, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptPaymentPlan) Or(d PaymentPlan) PaymentPlan {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -6035,15 +6070,21 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// Reuse the same key for retries of the same purchase. Reusing it with a different request fails.
-// Billing selects contract pricing, applies eligible grants and promotions, and owns payment
-// challenges and expiry.
+// Purchase options. Reuse idempotency_key for retries of the same purchase, including resource
+// creation. Different parameters with the same key return HTTP 409. Replays identify the original
+// purchase and do not create another order.
 // Ref: #/components/schemas/OrderOptions
 type OrderOptions struct {
-	IdempotencyKey string         `json:"idempotency_key"`
-	PaymentPlan    OptPaymentPlan `json:"payment_plan"`
-	ExpectedAmount OptString      `json:"expected_amount"`
-	RedemptionCode OptString      `json:"redemption_code"`
+	IdempotencyKey string `json:"idempotency_key"`
+	// Defaults to true. When true, the purchase is paid from available account funds and applicable grants
+	// when it is placed. If they do not cover the amount due, the request fails with HTTP 422 and code
+	// BILLING_INSUFFICIENT_FUNDS; no order is created and nothing is charged. The idempotency key remains
+	// bound to the refused request. Retrying with the same key returns HTTP 409 with code ORDER_CLOSED,
+	// and purchasing again requires a new idempotency key. When false, the order is created without
+	// payment, and its invoice, if any, is paid through Billing.
+	AutoPay        OptBool   `json:"auto_pay"`
+	ExpectedAmount OptString `json:"expected_amount"`
+	RedemptionCode OptString `json:"redemption_code"`
 }
 
 // GetIdempotencyKey returns the value of IdempotencyKey.
@@ -6051,9 +6092,9 @@ func (s *OrderOptions) GetIdempotencyKey() string {
 	return s.IdempotencyKey
 }
 
-// GetPaymentPlan returns the value of PaymentPlan.
-func (s *OrderOptions) GetPaymentPlan() OptPaymentPlan {
-	return s.PaymentPlan
+// GetAutoPay returns the value of AutoPay.
+func (s *OrderOptions) GetAutoPay() OptBool {
+	return s.AutoPay
 }
 
 // GetExpectedAmount returns the value of ExpectedAmount.
@@ -6071,9 +6112,9 @@ func (s *OrderOptions) SetIdempotencyKey(val string) {
 	s.IdempotencyKey = val
 }
 
-// SetPaymentPlan sets the value of PaymentPlan.
-func (s *OrderOptions) SetPaymentPlan(val OptPaymentPlan) {
-	s.PaymentPlan = val
+// SetAutoPay sets the value of AutoPay.
+func (s *OrderOptions) SetAutoPay(val OptBool) {
+	s.AutoPay = val
 }
 
 // SetExpectedAmount sets the value of ExpectedAmount.
@@ -6086,46 +6127,237 @@ func (s *OrderOptions) SetRedemptionCode(val OptString) {
 	s.RedemptionCode = val
 }
 
-// Requested funding split. This does not select a card or payment provider; complete payment through
-// Billing.
-// Ref: #/components/schemas/PaymentPlan
-type PaymentPlan struct {
-	BalanceAmount  string `json:"balance_amount"`
-	ProviderAmount string `json:"provider_amount"`
+// Ref: #/components/schemas/PeeringListResponseBody
+type PeeringListResponseBody struct {
+	Items []PeeringResource `json:"items"`
+	Total int               `json:"total"`
 }
 
-// GetBalanceAmount returns the value of BalanceAmount.
-func (s *PaymentPlan) GetBalanceAmount() string {
-	return s.BalanceAmount
+// GetItems returns the value of Items.
+func (s *PeeringListResponseBody) GetItems() []PeeringResource {
+	return s.Items
 }
 
-// GetProviderAmount returns the value of ProviderAmount.
-func (s *PaymentPlan) GetProviderAmount() string {
-	return s.ProviderAmount
+// GetTotal returns the value of Total.
+func (s *PeeringListResponseBody) GetTotal() int {
+	return s.Total
 }
 
-// SetBalanceAmount sets the value of BalanceAmount.
-func (s *PaymentPlan) SetBalanceAmount(val string) {
-	s.BalanceAmount = val
+// SetItems sets the value of Items.
+func (s *PeeringListResponseBody) SetItems(val []PeeringResource) {
+	s.Items = val
 }
 
-// SetProviderAmount sets the value of ProviderAmount.
-func (s *PaymentPlan) SetProviderAmount(val string) {
-	s.ProviderAmount = val
+// SetTotal sets the value of Total.
+func (s *PeeringListResponseBody) SetTotal(val int) {
+	s.Total = val
 }
 
-// A billable order has been created. Read it from the billing API to find out what is owed and whether
-// payment is still required.
-//
-// Only the identifier is returned. Amounts and state are not repeated here; the order itself is the
-// single source for them.
+// Ref: #/components/schemas/PeeringResource
+type PeeringResource struct {
+	ID                 uuid.UUID             `json:"id"`
+	Name               string                `json:"name"`
+	RegionID           uuid.UUID             `json:"region_id"`
+	RequesterProjectID uuid.UUID             `json:"requester_project_id"`
+	AccepterProjectID  uuid.UUID             `json:"accepter_project_id"`
+	RequesterNetworkID uuid.UUID             `json:"requester_network_id"`
+	AccepterNetworkID  uuid.UUID             `json:"accepter_network_id"`
+	Status             PeeringResourceStatus `json:"status"`
+	CreatedAt          time.Time             `json:"created_at"`
+	FailureCode        OptString             `json:"failure_code"`
+}
+
+// GetID returns the value of ID.
+func (s *PeeringResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *PeeringResource) GetName() string {
+	return s.Name
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *PeeringResource) GetRegionID() uuid.UUID {
+	return s.RegionID
+}
+
+// GetRequesterProjectID returns the value of RequesterProjectID.
+func (s *PeeringResource) GetRequesterProjectID() uuid.UUID {
+	return s.RequesterProjectID
+}
+
+// GetAccepterProjectID returns the value of AccepterProjectID.
+func (s *PeeringResource) GetAccepterProjectID() uuid.UUID {
+	return s.AccepterProjectID
+}
+
+// GetRequesterNetworkID returns the value of RequesterNetworkID.
+func (s *PeeringResource) GetRequesterNetworkID() uuid.UUID {
+	return s.RequesterNetworkID
+}
+
+// GetAccepterNetworkID returns the value of AccepterNetworkID.
+func (s *PeeringResource) GetAccepterNetworkID() uuid.UUID {
+	return s.AccepterNetworkID
+}
+
+// GetStatus returns the value of Status.
+func (s *PeeringResource) GetStatus() PeeringResourceStatus {
+	return s.Status
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *PeeringResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *PeeringResource) GetFailureCode() OptString {
+	return s.FailureCode
+}
+
+// SetID sets the value of ID.
+func (s *PeeringResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *PeeringResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *PeeringResource) SetRegionID(val uuid.UUID) {
+	s.RegionID = val
+}
+
+// SetRequesterProjectID sets the value of RequesterProjectID.
+func (s *PeeringResource) SetRequesterProjectID(val uuid.UUID) {
+	s.RequesterProjectID = val
+}
+
+// SetAccepterProjectID sets the value of AccepterProjectID.
+func (s *PeeringResource) SetAccepterProjectID(val uuid.UUID) {
+	s.AccepterProjectID = val
+}
+
+// SetRequesterNetworkID sets the value of RequesterNetworkID.
+func (s *PeeringResource) SetRequesterNetworkID(val uuid.UUID) {
+	s.RequesterNetworkID = val
+}
+
+// SetAccepterNetworkID sets the value of AccepterNetworkID.
+func (s *PeeringResource) SetAccepterNetworkID(val uuid.UUID) {
+	s.AccepterNetworkID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *PeeringResource) SetStatus(val PeeringResourceStatus) {
+	s.Status = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *PeeringResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *PeeringResource) SetFailureCode(val OptString) {
+	s.FailureCode = val
+}
+
+type PeeringResourceStatus string
+
+const (
+	PeeringResourceStatusPendingAcceptance PeeringResourceStatus = "pending_acceptance"
+	PeeringResourceStatusProvisioning      PeeringResourceStatus = "provisioning"
+	PeeringResourceStatusActive            PeeringResourceStatus = "active"
+	PeeringResourceStatusDeleting          PeeringResourceStatus = "deleting"
+	PeeringResourceStatusDeleted           PeeringResourceStatus = "deleted"
+	PeeringResourceStatusRejected          PeeringResourceStatus = "rejected"
+	PeeringResourceStatusError             PeeringResourceStatus = "error"
+)
+
+// AllValues returns all PeeringResourceStatus values.
+func (PeeringResourceStatus) AllValues() []PeeringResourceStatus {
+	return []PeeringResourceStatus{
+		PeeringResourceStatusPendingAcceptance,
+		PeeringResourceStatusProvisioning,
+		PeeringResourceStatusActive,
+		PeeringResourceStatusDeleting,
+		PeeringResourceStatusDeleted,
+		PeeringResourceStatusRejected,
+		PeeringResourceStatusError,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PeeringResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case PeeringResourceStatusPendingAcceptance:
+		return []byte(s), nil
+	case PeeringResourceStatusProvisioning:
+		return []byte(s), nil
+	case PeeringResourceStatusActive:
+		return []byte(s), nil
+	case PeeringResourceStatusDeleting:
+		return []byte(s), nil
+	case PeeringResourceStatusDeleted:
+		return []byte(s), nil
+	case PeeringResourceStatusRejected:
+		return []byte(s), nil
+	case PeeringResourceStatusError:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
+	switch PeeringResourceStatus(data) {
+	case PeeringResourceStatusPendingAcceptance:
+		*s = PeeringResourceStatusPendingAcceptance
+		return nil
+	case PeeringResourceStatusProvisioning:
+		*s = PeeringResourceStatusProvisioning
+		return nil
+	case PeeringResourceStatusActive:
+		*s = PeeringResourceStatusActive
+		return nil
+	case PeeringResourceStatusDeleting:
+		*s = PeeringResourceStatusDeleting
+		return nil
+	case PeeringResourceStatusDeleted:
+		*s = PeeringResourceStatusDeleted
+		return nil
+	case PeeringResourceStatusRejected:
+		*s = PeeringResourceStatusRejected
+		return nil
+	case PeeringResourceStatusError:
+		*s = PeeringResourceStatusError
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Identifies the original purchase. Replays retain these identifiers. Read the order for purchase
+// progress and its invoice for amounts and payment status.
 // Ref: #/components/schemas/PlacedOrder
 type PlacedOrder struct {
-	// Identifies the order. Use it to read the order and, where payment is required, to pay it.
-	//
-	// An order is created even when nothing is owed, such as a plan with no charge or one covered entirely
-	// by granted credit. Such an order is already settled, and no payment step applies.
+	// The invoice for this purchase. Null when there is no immediate invoice. Replays retain this
+	// identifier; read the invoice for its current payment state.
+	InvoiceID NilUUID `json:"invoice_id"`
+	// The original order, including for purchases without an immediate charge. Payment alone does not
+	// imply that the service has completed delivery.
 	OrderID uuid.UUID `json:"order_id"`
+}
+
+// GetInvoiceID returns the value of InvoiceID.
+func (s *PlacedOrder) GetInvoiceID() NilUUID {
+	return s.InvoiceID
 }
 
 // GetOrderID returns the value of OrderID.
@@ -6133,12 +6365,15 @@ func (s *PlacedOrder) GetOrderID() uuid.UUID {
 	return s.OrderID
 }
 
+// SetInvoiceID sets the value of InvoiceID.
+func (s *PlacedOrder) SetInvoiceID(val NilUUID) {
+	s.InvoiceID = val
+}
+
 // SetOrderID sets the value of OrderID.
 func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
 	s.OrderID = val
 }
-
-func (*PlacedOrder) createDiskRes() {}
 
 // Ref: #/components/schemas/PortAddress
 type PortAddress struct {
@@ -7338,6 +7573,46 @@ func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Identifies the Compute task and the Billing order of a purchase. Work on the purchase starts after
+// the order's invoice is paid, or without waiting when the order has no immediate invoice. Track the
+// task for completion.
+// Ref: #/components/schemas/PurchaseResult
+type PurchaseResult struct {
+	// The original Compute task. Replays retain this identifier, including after failure or cancellation.
+	TaskID uuid.UUID   `json:"task_id"`
+	Order  PlacedOrder `json:"order"`
+}
+
+// GetTaskID returns the value of TaskID.
+func (s *PurchaseResult) GetTaskID() uuid.UUID {
+	return s.TaskID
+}
+
+// GetOrder returns the value of Order.
+func (s *PurchaseResult) GetOrder() PlacedOrder {
+	return s.Order
+}
+
+// SetTaskID sets the value of TaskID.
+func (s *PurchaseResult) SetTaskID(val uuid.UUID) {
+	s.TaskID = val
+}
+
+// SetOrder sets the value of Order.
+func (s *PurchaseResult) SetOrder(val PlacedOrder) {
+	s.Order = val
+}
+
+func (*PurchaseResult) allocateFloatingIPRes()     {}
+func (*PurchaseResult) createBackupRes()           {}
+func (*PurchaseResult) createDiskRes()             {}
+func (*PurchaseResult) createPrivateImageRes()     {}
+func (*PurchaseResult) createSnapshotRes()         {}
+func (*PurchaseResult) resizeDiskRes()             {}
+func (*PurchaseResult) resizeInstanceRes()         {}
+func (*PurchaseResult) restoreBackupRes()          {}
+func (*PurchaseResult) setFloatingIPBandwidthRes() {}
+
 // Ref: #/components/schemas/RebootInstanceRequestBody
 type RebootInstanceRequestBody struct {
 	// A forced reboot does not wait for the operating system to shut down and unwritten data is lost; use
@@ -7452,8 +7727,7 @@ func (s *RegionListResponseBody) SetItems(val []RegionResource) {
 type RegionResource struct {
 	// ISO 3166-1 alpha-2 country this region sits in. Two letters, uppercase.
 	CountryCode string `json:"country_code"`
-	// Display name for this place, shown to tenants (Hong Kong). It is the translatable one; the stable
-	// handle is code.
+	// Display name for this place, shown to tenants (Hong Kong). The stable handle is code.
 	Name string `json:"name"`
 	// The region's code, the way the outside world names this place (hk-1). Stable and human-written;
 	// addressing is by id.
@@ -7822,11 +8096,19 @@ func (s *RouteListResponseBody) SetItems(val []RouteResource) {
 
 // Ref: #/components/schemas/RouteResource
 type RouteResource struct {
+	// System-owned peering route. Delete the peering to remove this route.
+	PeeringID   OptUUID   `json:"peering_id"`
 	CreatedAt   time.Time `json:"created_at"`
 	Description string    `json:"description"`
 	Destination string    `json:"destination"`
 	ID          uuid.UUID `json:"id"`
-	Nexthop     string    `json:"nexthop"`
+	// Present for custom routes; peering routes expose peering_id instead.
+	Nexthop OptString `json:"nexthop"`
+}
+
+// GetPeeringID returns the value of PeeringID.
+func (s *RouteResource) GetPeeringID() OptUUID {
+	return s.PeeringID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -7850,8 +8132,13 @@ func (s *RouteResource) GetID() uuid.UUID {
 }
 
 // GetNexthop returns the value of Nexthop.
-func (s *RouteResource) GetNexthop() string {
+func (s *RouteResource) GetNexthop() OptString {
 	return s.Nexthop
+}
+
+// SetPeeringID sets the value of PeeringID.
+func (s *RouteResource) SetPeeringID(val OptUUID) {
+	s.PeeringID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -7875,7 +8162,7 @@ func (s *RouteResource) SetID(val uuid.UUID) {
 }
 
 // SetNexthop sets the value of Nexthop.
-func (s *RouteResource) SetNexthop(val string) {
+func (s *RouteResource) SetNexthop(val OptString) {
 	s.Nexthop = val
 }
 
@@ -7905,6 +8192,31 @@ func (s *RunCommandRequestBody) SetCommand(val string) {
 // SetTimeoutSeconds sets the value of TimeoutSeconds.
 func (s *RunCommandRequestBody) SetTimeoutSeconds(val OptInt64) {
 	s.TimeoutSeconds = val
+}
+
+type ScopedTokenAuth struct {
+	Token string
+	Roles []string
+}
+
+// GetToken returns the value of Token.
+func (s *ScopedTokenAuth) GetToken() string {
+	return s.Token
+}
+
+// GetRoles returns the value of Roles.
+func (s *ScopedTokenAuth) GetRoles() []string {
+	return s.Roles
+}
+
+// SetToken sets the value of Token.
+func (s *ScopedTokenAuth) SetToken(val string) {
+	s.Token = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *ScopedTokenAuth) SetRoles(val []string) {
+	s.Roles = val
 }
 
 // Ref: #/components/schemas/SecurityGroupListResponseBody
@@ -8768,6 +9080,23 @@ func (s *Task) SetCompletedAt(val NilDateTime) {
 	s.CompletedAt = val
 }
 
+func (*Task) attachDiskRes()            {}
+func (*Task) attachPortRes()            {}
+func (*Task) confirmInstanceResizeRes() {}
+func (*Task) deleteBackupRes()          {}
+func (*Task) deleteDiskRes()            {}
+func (*Task) deleteInstanceRes()        {}
+func (*Task) deletePrivateImageRes()    {}
+func (*Task) deleteSnapshotRes()        {}
+func (*Task) detachDiskRes()            {}
+func (*Task) detachPortRes()            {}
+func (*Task) rebootInstanceRes()        {}
+func (*Task) releaseFloatingIPRes()     {}
+func (*Task) revertDiskRes()            {}
+func (*Task) revertInstanceResizeRes()  {}
+func (*Task) startInstanceRes()         {}
+func (*Task) stopInstanceRes()          {}
+
 type TaskState string
 
 const (
@@ -8847,8 +9176,7 @@ func (s *ZoneListResponseBody) SetItems(val []ZoneResource) {
 
 // Ref: #/components/schemas/ZoneResource
 type ZoneResource struct {
-	// Display name for this zone, shown to tenants (Hong Kong A). It is the translatable one; the stable
-	// handle is code.
+	// Display name for this zone, shown to tenants (Hong Kong A). The stable handle is code.
 	Name string `json:"name"`
 	// The zone's code within its region (hk-1-a). Stable and human-written; addressing is by id.
 	Code string    `json:"code"`

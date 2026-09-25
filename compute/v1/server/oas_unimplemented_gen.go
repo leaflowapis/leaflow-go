@@ -13,6 +13,15 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// AcceptPeering implements accept-peering operation.
+//
+// Accept peering.
+//
+// POST /api/v1/peerings/{peeringId}/accept
+func (UnimplementedHandler) AcceptPeering(ctx context.Context, params AcceptPeeringParams) (r *PeeringResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // AllocateFloatingIP implements allocate-floating-ip operation.
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of
@@ -21,8 +30,11 @@ var _ Handler = UnimplementedHandler{}
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
 // network; enable IPv6 on that network instead.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/floating-ips
-func (UnimplementedHandler) AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (r AllocateFloatingIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -31,8 +43,11 @@ func (UnimplementedHandler) AllocateFloatingIP(ctx context.Context, req *Allocat
 // The disk must be in the same region and availability zone as the instance. Partition it and mount
 // the file system inside the instance once it is attached.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/disks
-func (UnimplementedHandler) AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (r *Task, _ error) {
+func (UnimplementedHandler) AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (r AttachDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -48,10 +63,11 @@ func (UnimplementedHandler) AttachInstanceFloatingIP(ctx context.Context, req *A
 
 // AttachPort implements attach-port operation.
 //
-// Attach a network interface.
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/ports
-func (UnimplementedHandler) AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (r *Task, _ error) {
+func (UnimplementedHandler) AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (r AttachPortRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -69,8 +85,11 @@ func (UnimplementedHandler) BindFloatingIP(ctx context.Context, req *BindFloatin
 // Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
 // effect and is billed from then on.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/resize/confirm
-func (UnimplementedHandler) ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (r *Task, _ error) {
+func (UnimplementedHandler) ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (r ConfirmInstanceResizeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -84,10 +103,13 @@ func (UnimplementedHandler) ConfirmInstanceResize(ctx context.Context, params Co
 // Disks attached to a running instance, including system disks, can be backed up.
 //
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-// poll the retrieve endpoint.
+// track the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/backups
-func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (r CreateBackupRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -100,8 +122,21 @@ func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupR
 // still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one
 // keep working and can still be resized.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/disks
 func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (r CreateDiskRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreatePeering implements create-peering operation.
+//
+// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+// before any connectivity is created. Does not change security groups or provide transitive routing.
+//
+// POST /api/v1/peerings
+func (UnimplementedHandler) CreatePeering(ctx context.Context, req *CreatePeeringRequestBody) (r *PeeringResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -122,7 +157,7 @@ func (UnimplementedHandler) CreatePort(ctx context.Context, req *CreatePortReque
 //
 // The image reflects the moment the capture started. Later changes to the instance are not included.
 //
-// The capture has two phases. Poll the retrieve endpoint:
+// The capture has two phases, reported by the status of the image:
 //
 //   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
 //     remains usable during this phase, although stopping it first is recommended for consistency.
@@ -136,8 +171,11 @@ func (UnimplementedHandler) CreatePort(ctx context.Context, req *CreatePortReque
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/private-images
-func (UnimplementedHandler) CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (r CreatePrivateImageRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -195,8 +233,11 @@ func (UnimplementedHandler) CreateSecurityGroupRule(ctx context.Context, req *Cr
 // preserve and restore an entire system, use a private image; for a copy that crosses availability
 // zones and survives deletion of the disk, use a backup.
 //
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/snapshots
-func (UnimplementedHandler) CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (r CreateSnapshotRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -213,8 +254,11 @@ func (UnimplementedHandler) CreateSubnet(ctx context.Context, req *CreateSubnetR
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/backups/{backupId}
-func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBackupParams) (r *Task, _ error) {
+func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBackupParams) (r DeleteBackupRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -222,8 +266,11 @@ func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBacku
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/disks/{diskId}
-func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskParams) (r *Task, _ error) {
+func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskParams) (r DeleteDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -236,8 +283,20 @@ func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskPar
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 // delete that image first.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/instances/{instanceId}
-func (UnimplementedHandler) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (r *Task, _ error) {
+func (UnimplementedHandler) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (r DeleteInstanceRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeletePeering implements delete-peering operation.
+//
+// Delete peering.
+//
+// DELETE /api/v1/peerings/{peeringId}
+func (UnimplementedHandler) DeletePeering(ctx context.Context, params DeletePeeringParams) (r *PeeringResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -258,8 +317,11 @@ func (UnimplementedHandler) DeletePort(ctx context.Context, params DeletePortPar
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/private-images/{privateImageId}
-func (UnimplementedHandler) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (r *Task, _ error) {
+func (UnimplementedHandler) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (r DeletePrivateImageRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -303,10 +365,11 @@ func (UnimplementedHandler) DeleteSecurityGroupRule(ctx context.Context, params 
 
 // DeleteSnapshot implements delete-snapshot operation.
 //
-// Delete a snapshot.
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
-func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (r *Task, _ error) {
+func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (r DeleteSnapshotRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -325,8 +388,11 @@ func (UnimplementedHandler) DeleteSubnet(ctx context.Context, params DeleteSubne
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 // system that is being written to corrupts data.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-func (UnimplementedHandler) DetachDisk(ctx context.Context, params DetachDiskParams) (r *Task, _ error) {
+func (UnimplementedHandler) DetachDisk(ctx context.Context, params DetachDiskParams) (r DetachDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -344,8 +410,11 @@ func (UnimplementedHandler) DetachInstanceFloatingIP(ctx context.Context, params
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/instances/{instanceId}/ports/{portId}
-func (UnimplementedHandler) DetachPort(ctx context.Context, params DetachPortParams) (r *Task, _ error) {
+func (UnimplementedHandler) DetachPort(ctx context.Context, params DetachPortParams) (r DetachPortRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -433,6 +502,15 @@ func (UnimplementedHandler) GetInstanceConsoleOutput(ctx context.Context, params
 	return r, ht.ErrNotImplemented
 }
 
+// GetPeering implements get-peering operation.
+//
+// Get peering.
+//
+// GET /api/v1/peerings/{peeringId}
+func (UnimplementedHandler) GetPeering(ctx context.Context, params GetPeeringParams) (r *PeeringResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetPrivateImage implements get-private-image operation.
 //
 // Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
@@ -490,19 +568,25 @@ func (UnimplementedHandler) GetTask(ctx context.Context, params GetTaskParams) (
 // LaunchInstance implements launch-instance operation.
 //
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly
-// one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
+// Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
+// the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
+// submit a new purchase after paying, and reuse the original idempotency key after an uncertain
+// response.
+//
+// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 // subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
 // boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-// own subscription items on the same order. A request for several instances is all or nothing — if
-// any instance cannot be created, every instance of that request is released and the order fails, so
-// nothing is charged. Each instance is named after this request with a number appended, and each has
-// its own task.
+// own subscription items on the same order.
+//
+// A request for several instances is all or nothing: if any instance cannot be created, every instance
+// of that request is released, the order fails, and any payment for it is refunded. Each instance is
+// named after this request with a number appended, and each has its own task.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances
-func (UnimplementedHandler) LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (r *LaunchInstanceResponseBody, _ error) {
+func (UnimplementedHandler) LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (r LaunchInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -632,6 +716,15 @@ func (UnimplementedHandler) ListOperationLogs(ctx context.Context, params ListOp
 	return r, ht.ErrNotImplemented
 }
 
+// ListPeerings implements list-peerings operation.
+//
+// List peerings.
+//
+// GET /api/v1/peerings
+func (UnimplementedHandler) ListPeerings(ctx context.Context, params ListPeeringsParams) (r *PeeringListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListPorts implements list-ports operation.
 //
 // List network interfaces.
@@ -742,8 +835,11 @@ func (UnimplementedHandler) OpenInstanceConsole(ctx context.Context, params Open
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
 // instance until it settles at `running`.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/reboot
-func (UnimplementedHandler) RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (r *Task, _ error) {
+func (UnimplementedHandler) RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (r RebootInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -760,12 +856,24 @@ func (UnimplementedHandler) RebuildInstance(ctx context.Context, req *RebuildIns
 	return r, ht.ErrNotImplemented
 }
 
+// RejectPeering implements reject-peering operation.
+//
+// Reject peering.
+//
+// POST /api/v1/peerings/{peeringId}/reject
+func (UnimplementedHandler) RejectPeering(ctx context.Context, params RejectPeeringParams) (r *PeeringResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ReleaseFloatingIP implements release-floating-ip operation.
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // DELETE /api/v1/floating-ips/{floatingIpId}
-func (UnimplementedHandler) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (r *Task, _ error) {
+func (UnimplementedHandler) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (r ReleaseFloatingIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -851,37 +959,43 @@ func (UnimplementedHandler) ResetInstancePassword(ctx context.Context, req *Rese
 
 // ResizeDisk implements resize-disk operation.
 //
-// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
-// instance once the resize completes.
+// Capacity can only be increased; shrinking is not supported. The resize is not complete when this
+// endpoint returns; track the returned task, then extend the file system inside the instance.
 //
-// A data disk whose performance grows with its size has to be detached first. The storage backend
-// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
-// attached would give you the capacity immediately and leave the speed at the old size's figure —
-// indefinitely, and stopping the instance does not help. Rather than take the money for performance
-// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
-// and attach it again.
+// An attached data disk whose performance scales with its size must be detached before it is resized.
+// The performance of an attached disk does not change until the disk is detached and attached again,
+// so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity
+// at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
-// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
-// level, or whose performance has already reached the type's ceiling, grows online as before.
+// The request is refused only when the new size has a different performance level. A disk whose type
+// has no QoS level, or whose performance has already reached the maximum of its type, can be resized
+// while attached.
 //
-// A system disk is the exception and grows online, because a root volume cannot be detached at all.
-// Its performance does not change with size for exactly that reason — system disk types are required
-// to carry a level that does not scale.
+// A system disk can be resized while attached, because a system disk cannot be detached. System disk
+// types use a performance level that does not scale with size, so resizing a system disk does not
+// change its performance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/disks/{diskId}/resize
-func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (r ResizeDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ResizeInstance implements resize-instance operation.
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Creates a Billing change order, including for metered pricing. The price must belong to the Billing
+// Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
+// applied after the order's invoice is paid, or without waiting when the order has no immediate
+// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
+// uncertain response.
+//
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/resize
-func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (r ResizeInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -890,11 +1004,14 @@ func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInsta
 // Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 //
 // The target disk type may belong to another availability zone of the same region, and its capacity
-// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
-// the disk retrieve endpoint.
+// must not be smaller than the backup. The disk cannot be attached until the restore completes; track
+// the returned task.
+//
+// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // POST /api/v1/backups/{backupId}/restore
-func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (r RestoreBackupRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -910,8 +1027,11 @@ func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBacku
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/disks/{diskId}/revert
-func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (r *Task, _ error) {
+func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (r RevertDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -920,8 +1040,11 @@ func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskReque
 // The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
 // unaffected by the resize.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/resize/revert
-func (UnimplementedHandler) RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (r *Task, _ error) {
+func (UnimplementedHandler) RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (r RevertInstanceResizeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -962,16 +1085,18 @@ func (UnimplementedHandler) RunInstanceCommand(ctx context.Context, req *RunComm
 
 // SetFloatingIPBandwidth implements set-floating-ip-bandwidth operation.
 //
-// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
-// saturating the uplink.
+// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this
+// endpoint returns; track the returned task.
 //
-// While the address is bound to an instance, the ceiling has to fit that instance type's
-// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
-// to nothing is not checked against any type — there is none to check against — and is checked
-// again when it is attached.
+// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
+// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
+// address that is not bound is checked when the address is bound to an instance.
+//
+// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-func (UnimplementedHandler) SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (r SetFloatingIPBandwidthRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1009,8 +1134,11 @@ func (UnimplementedHandler) SetInstanceNotes(ctx context.Context, req *SetInstan
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/start
-func (UnimplementedHandler) StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (r *Task, _ error) {
+func (UnimplementedHandler) StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (r StartInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1021,8 +1149,11 @@ func (UnimplementedHandler) StartInstance(ctx context.Context, req *PowerRequest
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
 //
+// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
+// and terminal outcomes.
+//
 // POST /api/v1/instances/{instanceId}/stop
-func (UnimplementedHandler) StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (r *Task, _ error) {
+func (UnimplementedHandler) StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (r StopInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

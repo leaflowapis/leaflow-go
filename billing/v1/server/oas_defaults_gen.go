@@ -3,21 +3,9 @@
 package billingv1server
 
 // setDefaults set default value of fields.
-func (s *PayRequest) setDefaults() {
-	{
-		val := bool(true)
-		s.UseBalance.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
-func (s *RenewRequest) setDefaults() {
+func (s *QuoteRenewal) setDefaults() {
 	{
 		val := int(1)
 		s.Periods.SetTo(val)
-	}
-	{
-		val := bool(true)
-		s.UseBalance.SetTo(val)
 	}
 }

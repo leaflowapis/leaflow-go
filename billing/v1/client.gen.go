@@ -22,6 +22,8 @@ import (
 // Defines values for ActiveResourceStatus.
 const (
 	ActiveResourceStatusActive    ActiveResourceStatus = "active"
+	ActiveResourceStatusClosing   ActiveResourceStatus = "closing"
+	ActiveResourceStatusCompleted ActiveResourceStatus = "completed"
 	ActiveResourceStatusSuspended ActiveResourceStatus = "suspended"
 )
 
@@ -29,6 +31,10 @@ const (
 func (e ActiveResourceStatus) Valid() bool {
 	switch e {
 	case ActiveResourceStatusActive:
+		return true
+	case ActiveResourceStatusClosing:
+		return true
+	case ActiveResourceStatusCompleted:
 		return true
 	case ActiveResourceStatusSuspended:
 		return true
@@ -40,7 +46,6 @@ func (e ActiveResourceStatus) Valid() bool {
 // Defines values for AllowanceSourceType.
 const (
 	Included    AllowanceSourceType = "included"
-	Package     AllowanceSourceType = "package"
 	Promotional AllowanceSourceType = "promotional"
 )
 
@@ -48,8 +53,6 @@ const (
 func (e AllowanceSourceType) Valid() bool {
 	switch e {
 	case Included:
-		return true
-	case Package:
 		return true
 	case Promotional:
 		return true
@@ -82,195 +85,48 @@ func (e AllowanceStatus) Valid() bool {
 	}
 }
 
-// Defines values for BillingAccountStatus.
+// Defines values for CancellationRequestMode.
 const (
-	BillingAccountStatusActive    BillingAccountStatus = "active"
-	BillingAccountStatusClosed    BillingAccountStatus = "closed"
-	BillingAccountStatusSuspended BillingAccountStatus = "suspended"
+	CancellationRequestModeImmediate CancellationRequestMode = "immediate"
+	CancellationRequestModePeriodEnd CancellationRequestMode = "period_end"
 )
 
-// Valid indicates whether the value is a known member of the BillingAccountStatus enum.
-func (e BillingAccountStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the CancellationRequestMode enum.
+func (e CancellationRequestMode) Valid() bool {
 	switch e {
-	case BillingAccountStatusActive:
+	case CancellationRequestModeImmediate:
 		return true
-	case BillingAccountStatusClosed:
-		return true
-	case BillingAccountStatusSuspended:
+	case CancellationRequestModePeriodEnd:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for CodeRejection.
+// Defines values for CancellationRequestStatus.
 const (
-	CodeRejectionAlreadyRedeemed     CodeRejection = "already_redeemed"
-	CodeRejectionBelowMinimum        CodeRejection = "below_minimum"
-	CodeRejectionCurrencyMismatch    CodeRejection = "currency_mismatch"
-	CodeRejectionExhausted           CodeRejection = "exhausted"
-	CodeRejectionExpired             CodeRejection = "expired"
-	CodeRejectionNone                CodeRejection = "none"
-	CodeRejectionNotFirstPurchase    CodeRejection = "not_first_purchase"
-	CodeRejectionNotFound            CodeRejection = "not_found"
-	CodeRejectionNotYetValid         CodeRejection = "not_yet_valid"
-	CodeRejectionOperationNotCovered CodeRejection = "operation_not_covered"
-	CodeRejectionPlanNotCovered      CodeRejection = "plan_not_covered"
-	CodeRejectionPriceNotCovered     CodeRejection = "price_not_covered"
-	CodeRejectionPriceTypeNotCovered CodeRejection = "price_type_not_covered"
-	CodeRejectionProductNotCovered   CodeRejection = "product_not_covered"
-	CodeRejectionTermNotCovered      CodeRejection = "term_not_covered"
+	CancellationRequestStatusCanceled  CancellationRequestStatus = "canceled"
+	CancellationRequestStatusCompleted CancellationRequestStatus = "completed"
+	CancellationRequestStatusFailed    CancellationRequestStatus = "failed"
+	CancellationRequestStatusReleasing CancellationRequestStatus = "releasing"
+	CancellationRequestStatusRequested CancellationRequestStatus = "requested"
+	CancellationRequestStatusScheduled CancellationRequestStatus = "scheduled"
 )
 
-// Valid indicates whether the value is a known member of the CodeRejection enum.
-func (e CodeRejection) Valid() bool {
+// Valid indicates whether the value is a known member of the CancellationRequestStatus enum.
+func (e CancellationRequestStatus) Valid() bool {
 	switch e {
-	case CodeRejectionAlreadyRedeemed:
+	case CancellationRequestStatusCanceled:
 		return true
-	case CodeRejectionBelowMinimum:
+	case CancellationRequestStatusCompleted:
 		return true
-	case CodeRejectionCurrencyMismatch:
+	case CancellationRequestStatusFailed:
 		return true
-	case CodeRejectionExhausted:
+	case CancellationRequestStatusReleasing:
 		return true
-	case CodeRejectionExpired:
+	case CancellationRequestStatusRequested:
 		return true
-	case CodeRejectionNone:
-		return true
-	case CodeRejectionNotFirstPurchase:
-		return true
-	case CodeRejectionNotFound:
-		return true
-	case CodeRejectionNotYetValid:
-		return true
-	case CodeRejectionOperationNotCovered:
-		return true
-	case CodeRejectionPlanNotCovered:
-		return true
-	case CodeRejectionPriceNotCovered:
-		return true
-	case CodeRejectionPriceTypeNotCovered:
-		return true
-	case CodeRejectionProductNotCovered:
-		return true
-	case CodeRejectionTermNotCovered:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreditGrantSourceType.
-const (
-	Manual     CreditGrantSourceType = "manual"
-	Membership CreditGrantSourceType = "membership"
-	Promotion  CreditGrantSourceType = "promotion"
-	Voucher    CreditGrantSourceType = "voucher"
-)
-
-// Valid indicates whether the value is a known member of the CreditGrantSourceType enum.
-func (e CreditGrantSourceType) Valid() bool {
-	switch e {
-	case Manual:
-		return true
-	case Membership:
-		return true
-	case Promotion:
-		return true
-	case Voucher:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CreditGrantStatus.
-const (
-	CreditGrantStatusActive   CreditGrantStatus = "active"
-	CreditGrantStatusDepleted CreditGrantStatus = "depleted"
-	CreditGrantStatusExpired  CreditGrantStatus = "expired"
-	CreditGrantStatusVoided   CreditGrantStatus = "voided"
-)
-
-// Valid indicates whether the value is a known member of the CreditGrantStatus enum.
-func (e CreditGrantStatus) Valid() bool {
-	switch e {
-	case CreditGrantStatusActive:
-		return true
-	case CreditGrantStatusDepleted:
-		return true
-	case CreditGrantStatusExpired:
-		return true
-	case CreditGrantStatusVoided:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for IncludedAllowanceExpiry.
-const (
-	IncludedAllowanceExpiryDays      IncludedAllowanceExpiry = "days"
-	IncludedAllowanceExpiryNever     IncludedAllowanceExpiry = "never"
-	IncludedAllowanceExpiryPeriodEnd IncludedAllowanceExpiry = "period_end"
-)
-
-// Valid indicates whether the value is a known member of the IncludedAllowanceExpiry enum.
-func (e IncludedAllowanceExpiry) Valid() bool {
-	switch e {
-	case IncludedAllowanceExpiryDays:
-		return true
-	case IncludedAllowanceExpiryNever:
-		return true
-	case IncludedAllowanceExpiryPeriodEnd:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InvoiceType.
-const (
-	InvoiceTypeAdjustment InvoiceType = "adjustment"
-	InvoiceTypeOrder      InvoiceType = "order"
-	InvoiceTypeUsage      InvoiceType = "usage"
-)
-
-// Valid indicates whether the value is a known member of the InvoiceType enum.
-func (e InvoiceType) Valid() bool {
-	switch e {
-	case InvoiceTypeAdjustment:
-		return true
-	case InvoiceTypeOrder:
-		return true
-	case InvoiceTypeUsage:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InvoiceItemType.
-const (
-	InvoiceItemTypeAdjustment   InvoiceItemType = "adjustment"
-	InvoiceItemTypeCredit       InvoiceItemType = "credit"
-	InvoiceItemTypeOneTime      InvoiceItemType = "one_time"
-	InvoiceItemTypeSubscription InvoiceItemType = "subscription"
-	InvoiceItemTypeUsage        InvoiceItemType = "usage"
-)
-
-// Valid indicates whether the value is a known member of the InvoiceItemType enum.
-func (e InvoiceItemType) Valid() bool {
-	switch e {
-	case InvoiceItemTypeAdjustment:
-		return true
-	case InvoiceItemTypeCredit:
-		return true
-	case InvoiceItemTypeOneTime:
-		return true
-	case InvoiceItemTypeSubscription:
-		return true
-	case InvoiceItemTypeUsage:
+	case CancellationRequestStatusScheduled:
 		return true
 	default:
 		return false
@@ -279,25 +135,25 @@ func (e InvoiceItemType) Valid() bool {
 
 // Defines values for InvoiceStatus.
 const (
-	InvoiceStatusDraft         InvoiceStatus = "draft"
-	InvoiceStatusOpen          InvoiceStatus = "open"
-	InvoiceStatusPaid          InvoiceStatus = "paid"
-	InvoiceStatusUncollectible InvoiceStatus = "uncollectible"
-	InvoiceStatusVoid          InvoiceStatus = "void"
+	Draft         InvoiceStatus = "draft"
+	Open          InvoiceStatus = "open"
+	Paid          InvoiceStatus = "paid"
+	Uncollectible InvoiceStatus = "uncollectible"
+	Void          InvoiceStatus = "void"
 )
 
 // Valid indicates whether the value is a known member of the InvoiceStatus enum.
 func (e InvoiceStatus) Valid() bool {
 	switch e {
-	case InvoiceStatusDraft:
+	case Draft:
 		return true
-	case InvoiceStatusOpen:
+	case Open:
 		return true
-	case InvoiceStatusPaid:
+	case Paid:
 		return true
-	case InvoiceStatusUncollectible:
+	case Uncollectible:
 		return true
-	case InvoiceStatusVoid:
+	case Void:
 		return true
 	default:
 		return false
@@ -327,202 +183,142 @@ func (e OrderChangeEffective) Valid() bool {
 
 // Defines values for OrderType.
 const (
-	OrderTypeAdopt    OrderType = "adopt"
-	OrderTypeChange   OrderType = "change"
-	OrderTypePurchase OrderType = "purchase"
-	OrderTypeRenew    OrderType = "renew"
+	Adopt    OrderType = "adopt"
+	Change   OrderType = "change"
+	Purchase OrderType = "purchase"
+	Renew    OrderType = "renew"
 )
 
 // Valid indicates whether the value is a known member of the OrderType enum.
 func (e OrderType) Valid() bool {
 	switch e {
-	case OrderTypeAdopt:
+	case Adopt:
 		return true
-	case OrderTypeChange:
+	case Change:
 		return true
-	case OrderTypePurchase:
+	case Purchase:
 		return true
-	case OrderTypeRenew:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for OrderItemPriceType.
-const (
-	OrderItemPriceTypeMetered OrderItemPriceType = "metered"
-	OrderItemPriceTypeOneTime OrderItemPriceType = "one_time"
-	OrderItemPriceTypePrepaid OrderItemPriceType = "prepaid"
-)
-
-// Valid indicates whether the value is a known member of the OrderItemPriceType enum.
-func (e OrderItemPriceType) Valid() bool {
-	switch e {
-	case OrderItemPriceTypeMetered:
-		return true
-	case OrderItemPriceTypeOneTime:
-		return true
-	case OrderItemPriceTypePrepaid:
+	case Renew:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for OrderState.
+// Defines values for OrderItemBillingType.
 const (
-	OrderStateCanceled  OrderState = "canceled"
-	OrderStateFailed    OrderState = "failed"
-	OrderStateFulfilled OrderState = "fulfilled"
-	OrderStatePaid      OrderState = "paid"
-	OrderStatePending   OrderState = "pending"
+	OrderItemBillingTypeOneTime  OrderItemBillingType = "one_time"
+	OrderItemBillingTypePostpaid OrderItemBillingType = "postpaid"
+	OrderItemBillingTypePrepaid  OrderItemBillingType = "prepaid"
 )
 
-// Valid indicates whether the value is a known member of the OrderState enum.
-func (e OrderState) Valid() bool {
+// Valid indicates whether the value is a known member of the OrderItemBillingType enum.
+func (e OrderItemBillingType) Valid() bool {
 	switch e {
-	case OrderStateCanceled:
+	case OrderItemBillingTypeOneTime:
 		return true
-	case OrderStateFailed:
+	case OrderItemBillingTypePostpaid:
 		return true
-	case OrderStateFulfilled:
-		return true
-	case OrderStatePaid:
-		return true
-	case OrderStatePending:
+	case OrderItemBillingTypePrepaid:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for PaymentMethodStatus.
+// Defines values for OrderItemInterval.
 const (
-	PaymentMethodStatusActive  PaymentMethodStatus = "active"
-	PaymentMethodStatusExpired PaymentMethodStatus = "expired"
-	PaymentMethodStatusRemoved PaymentMethodStatus = "removed"
+	OrderItemIntervalDay   OrderItemInterval = "day"
+	OrderItemIntervalMonth OrderItemInterval = "month"
+	OrderItemIntervalNone  OrderItemInterval = "none"
+	OrderItemIntervalYear  OrderItemInterval = "year"
 )
 
-// Valid indicates whether the value is a known member of the PaymentMethodStatus enum.
-func (e PaymentMethodStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the OrderItemInterval enum.
+func (e OrderItemInterval) Valid() bool {
 	switch e {
-	case PaymentMethodStatusActive:
+	case OrderItemIntervalDay:
 		return true
-	case PaymentMethodStatusExpired:
+	case OrderItemIntervalMonth:
 		return true
-	case PaymentMethodStatusRemoved:
+	case OrderItemIntervalNone:
+		return true
+	case OrderItemIntervalYear:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for PaymentStatus.
+// Defines values for OrderItemStatus.
 const (
-	PaymentStatusFailed         PaymentStatus = "failed"
-	PaymentStatusProcessing     PaymentStatus = "processing"
-	PaymentStatusRequiresAction PaymentStatus = "requires_action"
-	PaymentStatusSucceeded      PaymentStatus = "succeeded"
+	OrderItemStatusCanceled  OrderItemStatus = "canceled"
+	OrderItemStatusCompleted OrderItemStatus = "completed"
+	OrderItemStatusFailed    OrderItemStatus = "failed"
+	OrderItemStatusPending   OrderItemStatus = "pending"
 )
 
-// Valid indicates whether the value is a known member of the PaymentStatus enum.
-func (e PaymentStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the OrderItemStatus enum.
+func (e OrderItemStatus) Valid() bool {
 	switch e {
-	case PaymentStatusFailed:
+	case OrderItemStatusCanceled:
 		return true
-	case PaymentStatusProcessing:
+	case OrderItemStatusCompleted:
 		return true
-	case PaymentStatusRequiresAction:
+	case OrderItemStatusFailed:
 		return true
-	case PaymentStatusSucceeded:
+	case OrderItemStatusPending:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for PriceBillingScheme.
+// Defines values for OrderStatus.
 const (
-	PriceBillingSchemePerUnit PriceBillingScheme = "per_unit"
-	PriceBillingSchemeRated   PriceBillingScheme = "rated"
-	PriceBillingSchemeTiered  PriceBillingScheme = "tiered"
+	OrderStatusActive             OrderStatus = "active"
+	OrderStatusCanceled           OrderStatus = "canceled"
+	OrderStatusCompleted          OrderStatus = "completed"
+	OrderStatusFailed             OrderStatus = "failed"
+	OrderStatusPartiallyCompleted OrderStatus = "partially_completed"
+	OrderStatusPending            OrderStatus = "pending"
 )
 
-// Valid indicates whether the value is a known member of the PriceBillingScheme enum.
-func (e PriceBillingScheme) Valid() bool {
+// Valid indicates whether the value is a known member of the OrderStatus enum.
+func (e OrderStatus) Valid() bool {
 	switch e {
-	case PriceBillingSchemePerUnit:
+	case OrderStatusActive:
 		return true
-	case PriceBillingSchemeRated:
+	case OrderStatusCanceled:
 		return true
-	case PriceBillingSchemeTiered:
+	case OrderStatusCompleted:
+		return true
+	case OrderStatusFailed:
+		return true
+	case OrderStatusPartiallyCompleted:
+		return true
+	case OrderStatusPending:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for PricePeriod.
+// Defines values for ProjectBillingAccountStatus.
 const (
-	PricePeriodDay   PricePeriod = "day"
-	PricePeriodMonth PricePeriod = "month"
-	PricePeriodNone  PricePeriod = "none"
-	PricePeriodYear  PricePeriod = "year"
+	ProjectBillingAccountStatusActive    ProjectBillingAccountStatus = "active"
+	ProjectBillingAccountStatusPastDue   ProjectBillingAccountStatus = "past_due"
+	ProjectBillingAccountStatusSuspended ProjectBillingAccountStatus = "suspended"
 )
 
-// Valid indicates whether the value is a known member of the PricePeriod enum.
-func (e PricePeriod) Valid() bool {
+// Valid indicates whether the value is a known member of the ProjectBillingAccountStatus enum.
+func (e ProjectBillingAccountStatus) Valid() bool {
 	switch e {
-	case PricePeriodDay:
+	case ProjectBillingAccountStatusActive:
 		return true
-	case PricePeriodMonth:
+	case ProjectBillingAccountStatusPastDue:
 		return true
-	case PricePeriodNone:
-		return true
-	case PricePeriodYear:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for PriceTiersMode.
-const (
-	PriceTiersModeGraduated PriceTiersMode = "graduated"
-	PriceTiersModeNone      PriceTiersMode = "none"
-	PriceTiersModeVolume    PriceTiersMode = "volume"
-)
-
-// Valid indicates whether the value is a known member of the PriceTiersMode enum.
-func (e PriceTiersMode) Valid() bool {
-	switch e {
-	case PriceTiersModeGraduated:
-		return true
-	case PriceTiersModeNone:
-		return true
-	case PriceTiersModeVolume:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for PriceType.
-const (
-	PriceTypeMetered PriceType = "metered"
-	PriceTypeOneTime PriceType = "one_time"
-	PriceTypePrepaid PriceType = "prepaid"
-)
-
-// Valid indicates whether the value is a known member of the PriceType enum.
-func (e PriceType) Valid() bool {
-	switch e {
-	case PriceTypeMetered:
-		return true
-	case PriceTypeOneTime:
-		return true
-	case PriceTypePrepaid:
+	case ProjectBillingAccountStatusSuspended:
 		return true
 	default:
 		return false
@@ -537,7 +333,6 @@ const (
 	DisableAutoRenew   ProjectClosureItemActions = "disable_auto_renew"
 	ReleaseResource    ProjectClosureItemActions = "release_resource"
 	ResolveFailure     ProjectClosureItemActions = "resolve_failure"
-	SettleUsage        ProjectClosureItemActions = "settle_usage"
 	Wait               ProjectClosureItemActions = "wait"
 )
 
@@ -555,8 +350,6 @@ func (e ProjectClosureItemActions) Valid() bool {
 	case ReleaseResource:
 		return true
 	case ResolveFailure:
-		return true
-	case SettleUsage:
 		return true
 	case Wait:
 		return true
@@ -588,12 +381,11 @@ func (e ProjectClosureItemDisposition) Valid() bool {
 
 // Defines values for ProjectClosureItemType.
 const (
-	ProjectClosureItemTypeActiveResource           ProjectClosureItemType = "active_resource"
-	ProjectClosureItemTypeJob                      ProjectClosureItemType = "job"
-	ProjectClosureItemTypeOrder                    ProjectClosureItemType = "order"
-	ProjectClosureItemTypeSubscriptionCancellation ProjectClosureItemType = "subscription_cancellation"
-	ProjectClosureItemTypeSubscriptionItem         ProjectClosureItemType = "subscription_item"
-	ProjectClosureItemTypeUsageCharge              ProjectClosureItemType = "usage_charge"
+	ProjectClosureItemTypeActiveResource      ProjectClosureItemType = "active_resource"
+	ProjectClosureItemTypeCancellationRequest ProjectClosureItemType = "cancellation_request"
+	ProjectClosureItemTypeJob                 ProjectClosureItemType = "job"
+	ProjectClosureItemTypeOrder               ProjectClosureItemType = "order"
+	ProjectClosureItemTypeSubscription        ProjectClosureItemType = "subscription"
 )
 
 // Valid indicates whether the value is a known member of the ProjectClosureItemType enum.
@@ -601,60 +393,37 @@ func (e ProjectClosureItemType) Valid() bool {
 	switch e {
 	case ProjectClosureItemTypeActiveResource:
 		return true
+	case ProjectClosureItemTypeCancellationRequest:
+		return true
 	case ProjectClosureItemTypeJob:
 		return true
 	case ProjectClosureItemTypeOrder:
 		return true
-	case ProjectClosureItemTypeSubscriptionCancellation:
-		return true
-	case ProjectClosureItemTypeSubscriptionItem:
-		return true
-	case ProjectClosureItemTypeUsageCharge:
+	case ProjectClosureItemTypeSubscription:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for ProjectPayerStatus.
+// Defines values for QuoteLineInterval.
 const (
-	ProjectPayerStatusActive    ProjectPayerStatus = "active"
-	ProjectPayerStatusPastDue   ProjectPayerStatus = "past_due"
-	ProjectPayerStatusSuspended ProjectPayerStatus = "suspended"
+	QuoteLineIntervalDay   QuoteLineInterval = "day"
+	QuoteLineIntervalMonth QuoteLineInterval = "month"
+	QuoteLineIntervalNone  QuoteLineInterval = "none"
+	QuoteLineIntervalYear  QuoteLineInterval = "year"
 )
 
-// Valid indicates whether the value is a known member of the ProjectPayerStatus enum.
-func (e ProjectPayerStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the QuoteLineInterval enum.
+func (e QuoteLineInterval) Valid() bool {
 	switch e {
-	case ProjectPayerStatusActive:
+	case QuoteLineIntervalDay:
 		return true
-	case ProjectPayerStatusPastDue:
+	case QuoteLineIntervalMonth:
 		return true
-	case ProjectPayerStatusSuspended:
+	case QuoteLineIntervalNone:
 		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for PurchaseOperation.
-const (
-	PurchaseOperationDowngrade PurchaseOperation = "downgrade"
-	PurchaseOperationPurchase  PurchaseOperation = "purchase"
-	PurchaseOperationRenew     PurchaseOperation = "renew"
-	PurchaseOperationUpgrade   PurchaseOperation = "upgrade"
-)
-
-// Valid indicates whether the value is a known member of the PurchaseOperation enum.
-func (e PurchaseOperation) Valid() bool {
-	switch e {
-	case PurchaseOperationDowngrade:
-		return true
-	case PurchaseOperationPurchase:
-		return true
-	case PurchaseOperationRenew:
-		return true
-	case PurchaseOperationUpgrade:
+	case QuoteLineIntervalYear:
 		return true
 	default:
 		return false
@@ -663,17 +432,17 @@ func (e PurchaseOperation) Valid() bool {
 
 // Defines values for QuoteLinePriceType.
 const (
-	QuoteLinePriceTypeMetered QuoteLinePriceType = "metered"
-	QuoteLinePriceTypeOneTime QuoteLinePriceType = "one_time"
-	QuoteLinePriceTypePrepaid QuoteLinePriceType = "prepaid"
+	QuoteLinePriceTypeOneTime  QuoteLinePriceType = "one_time"
+	QuoteLinePriceTypePostpaid QuoteLinePriceType = "postpaid"
+	QuoteLinePriceTypePrepaid  QuoteLinePriceType = "prepaid"
 )
 
 // Valid indicates whether the value is a known member of the QuoteLinePriceType enum.
 func (e QuoteLinePriceType) Valid() bool {
 	switch e {
-	case QuoteLinePriceTypeMetered:
-		return true
 	case QuoteLinePriceTypeOneTime:
+		return true
+	case QuoteLinePriceTypePostpaid:
 		return true
 	case QuoteLinePriceTypePrepaid:
 		return true
@@ -712,63 +481,42 @@ func (e QuoteLineResultUnpricedReason) Valid() bool {
 	}
 }
 
-// Defines values for RatePricingModel.
+// Defines values for QuoteRenewalInterval.
 const (
-	RatePricingModelGraduated RatePricingModel = "graduated"
-	RatePricingModelPerUnit   RatePricingModel = "per_unit"
-	RatePricingModelVolume    RatePricingModel = "volume"
+	QuoteRenewalIntervalDay   QuoteRenewalInterval = "day"
+	QuoteRenewalIntervalMonth QuoteRenewalInterval = "month"
+	QuoteRenewalIntervalYear  QuoteRenewalInterval = "year"
 )
 
-// Valid indicates whether the value is a known member of the RatePricingModel enum.
-func (e RatePricingModel) Valid() bool {
+// Valid indicates whether the value is a known member of the QuoteRenewalInterval enum.
+func (e QuoteRenewalInterval) Valid() bool {
 	switch e {
-	case RatePricingModelGraduated:
+	case QuoteRenewalIntervalDay:
 		return true
-	case RatePricingModelPerUnit:
+	case QuoteRenewalIntervalMonth:
 		return true
-	case RatePricingModelVolume:
+	case QuoteRenewalIntervalYear:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for RefundCashDestination.
+// Defines values for QuoteRenewalResultInterval.
 const (
-	RefundCashDestinationBalance RefundCashDestination = "balance"
-	RefundCashDestinationGateway RefundCashDestination = "gateway"
+	QuoteRenewalResultIntervalDay   QuoteRenewalResultInterval = "day"
+	QuoteRenewalResultIntervalMonth QuoteRenewalResultInterval = "month"
+	QuoteRenewalResultIntervalYear  QuoteRenewalResultInterval = "year"
 )
 
-// Valid indicates whether the value is a known member of the RefundCashDestination enum.
-func (e RefundCashDestination) Valid() bool {
+// Valid indicates whether the value is a known member of the QuoteRenewalResultInterval enum.
+func (e QuoteRenewalResultInterval) Valid() bool {
 	switch e {
-	case RefundCashDestinationBalance:
+	case QuoteRenewalResultIntervalDay:
 		return true
-	case RefundCashDestinationGateway:
+	case QuoteRenewalResultIntervalMonth:
 		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for RefundStatus.
-const (
-	RefundStatusFailed     RefundStatus = "failed"
-	RefundStatusPending    RefundStatus = "pending"
-	RefundStatusProcessing RefundStatus = "processing"
-	RefundStatusSucceeded  RefundStatus = "succeeded"
-)
-
-// Valid indicates whether the value is a known member of the RefundStatus enum.
-func (e RefundStatus) Valid() bool {
-	switch e {
-	case RefundStatusFailed:
-		return true
-	case RefundStatusPending:
-		return true
-	case RefundStatusProcessing:
-		return true
-	case RefundStatusSucceeded:
+	case QuoteRenewalResultIntervalYear:
 		return true
 	default:
 		return false
@@ -778,7 +526,7 @@ func (e RefundStatus) Valid() bool {
 // Defines values for RefundPolicy.
 const (
 	RefundPolicyNone     RefundPolicy = "none"
-	RefundPolicyStandard RefundPolicy = "standard"
+	RefundPolicyProrated RefundPolicy = "prorated"
 )
 
 // Valid indicates whether the value is a known member of the RefundPolicy enum.
@@ -786,130 +534,52 @@ func (e RefundPolicy) Valid() bool {
 	switch e {
 	case RefundPolicyNone:
 		return true
-	case RefundPolicyStandard:
+	case RefundPolicyProrated:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for RefundQuoteCashDestination.
+// Defines values for SubscriptionBillingType.
 const (
-	RefundQuoteCashDestinationBalance RefundQuoteCashDestination = "balance"
-	RefundQuoteCashDestinationGateway RefundQuoteCashDestination = "gateway"
+	SubscriptionBillingTypeOneTime  SubscriptionBillingType = "one_time"
+	SubscriptionBillingTypePostpaid SubscriptionBillingType = "postpaid"
+	SubscriptionBillingTypePrepaid  SubscriptionBillingType = "prepaid"
 )
 
-// Valid indicates whether the value is a known member of the RefundQuoteCashDestination enum.
-func (e RefundQuoteCashDestination) Valid() bool {
+// Valid indicates whether the value is a known member of the SubscriptionBillingType enum.
+func (e SubscriptionBillingType) Valid() bool {
 	switch e {
-	case RefundQuoteCashDestinationBalance:
+	case SubscriptionBillingTypeOneTime:
 		return true
-	case RefundQuoteCashDestinationGateway:
+	case SubscriptionBillingTypePostpaid:
+		return true
+	case SubscriptionBillingTypePrepaid:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for RefundSourceType.
+// Defines values for SubscriptionInterval.
 const (
-	Cash    RefundSourceType = "cash"
-	Granted RefundSourceType = "granted"
+	SubscriptionIntervalDay   SubscriptionInterval = "day"
+	SubscriptionIntervalMonth SubscriptionInterval = "month"
+	SubscriptionIntervalNone  SubscriptionInterval = "none"
+	SubscriptionIntervalYear  SubscriptionInterval = "year"
 )
 
-// Valid indicates whether the value is a known member of the RefundSourceType enum.
-func (e RefundSourceType) Valid() bool {
+// Valid indicates whether the value is a known member of the SubscriptionInterval enum.
+func (e SubscriptionInterval) Valid() bool {
 	switch e {
-	case Cash:
+	case SubscriptionIntervalDay:
 		return true
-	case Granted:
+	case SubscriptionIntervalMonth:
 		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for RenewRequestPeriod.
-const (
-	RenewRequestPeriodDay   RenewRequestPeriod = "day"
-	RenewRequestPeriodMonth RenewRequestPeriod = "month"
-	RenewRequestPeriodYear  RenewRequestPeriod = "year"
-)
-
-// Valid indicates whether the value is a known member of the RenewRequestPeriod enum.
-func (e RenewRequestPeriod) Valid() bool {
-	switch e {
-	case RenewRequestPeriodDay:
+	case SubscriptionIntervalNone:
 		return true
-	case RenewRequestPeriodMonth:
-		return true
-	case RenewRequestPeriodYear:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for RenewalPricePeriod.
-const (
-	RenewalPricePeriodDay   RenewalPricePeriod = "day"
-	RenewalPricePeriodMonth RenewalPricePeriod = "month"
-	RenewalPricePeriodYear  RenewalPricePeriod = "year"
-)
-
-// Valid indicates whether the value is a known member of the RenewalPricePeriod enum.
-func (e RenewalPricePeriod) Valid() bool {
-	switch e {
-	case RenewalPricePeriodDay:
-		return true
-	case RenewalPricePeriodMonth:
-		return true
-	case RenewalPricePeriodYear:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ScopePriceEntryPeriod.
-const (
-	ScopePriceEntryPeriodDay   ScopePriceEntryPeriod = "day"
-	ScopePriceEntryPeriodMonth ScopePriceEntryPeriod = "month"
-	ScopePriceEntryPeriodNone  ScopePriceEntryPeriod = "none"
-	ScopePriceEntryPeriodYear  ScopePriceEntryPeriod = "year"
-)
-
-// Valid indicates whether the value is a known member of the ScopePriceEntryPeriod enum.
-func (e ScopePriceEntryPeriod) Valid() bool {
-	switch e {
-	case ScopePriceEntryPeriodDay:
-		return true
-	case ScopePriceEntryPeriodMonth:
-		return true
-	case ScopePriceEntryPeriodNone:
-		return true
-	case ScopePriceEntryPeriodYear:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ScopePriceEntryType.
-const (
-	ScopePriceEntryTypeMetered ScopePriceEntryType = "metered"
-	ScopePriceEntryTypeOneTime ScopePriceEntryType = "one_time"
-	ScopePriceEntryTypePrepaid ScopePriceEntryType = "prepaid"
-)
-
-// Valid indicates whether the value is a known member of the ScopePriceEntryType enum.
-func (e ScopePriceEntryType) Valid() bool {
-	switch e {
-	case ScopePriceEntryTypeMetered:
-		return true
-	case ScopePriceEntryTypeOneTime:
-		return true
-	case ScopePriceEntryTypePrepaid:
+	case SubscriptionIntervalYear:
 		return true
 	default:
 		return false
@@ -943,81 +613,6 @@ func (e SubscriptionStatus) Valid() bool {
 	}
 }
 
-// Defines values for SubscriptionCancellationMode.
-const (
-	SubscriptionCancellationModeImmediate SubscriptionCancellationMode = "immediate"
-	SubscriptionCancellationModePeriodEnd SubscriptionCancellationMode = "period_end"
-)
-
-// Valid indicates whether the value is a known member of the SubscriptionCancellationMode enum.
-func (e SubscriptionCancellationMode) Valid() bool {
-	switch e {
-	case SubscriptionCancellationModeImmediate:
-		return true
-	case SubscriptionCancellationModePeriodEnd:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SubscriptionCancellationStatus.
-const (
-	SubscriptionCancellationStatusCanceled  SubscriptionCancellationStatus = "canceled"
-	SubscriptionCancellationStatusCompleted SubscriptionCancellationStatus = "completed"
-	SubscriptionCancellationStatusFailed    SubscriptionCancellationStatus = "failed"
-	SubscriptionCancellationStatusReleasing SubscriptionCancellationStatus = "releasing"
-	SubscriptionCancellationStatusRequested SubscriptionCancellationStatus = "requested"
-	SubscriptionCancellationStatusScheduled SubscriptionCancellationStatus = "scheduled"
-)
-
-// Valid indicates whether the value is a known member of the SubscriptionCancellationStatus enum.
-func (e SubscriptionCancellationStatus) Valid() bool {
-	switch e {
-	case SubscriptionCancellationStatusCanceled:
-		return true
-	case SubscriptionCancellationStatusCompleted:
-		return true
-	case SubscriptionCancellationStatusFailed:
-		return true
-	case SubscriptionCancellationStatusReleasing:
-		return true
-	case SubscriptionCancellationStatusRequested:
-		return true
-	case SubscriptionCancellationStatusScheduled:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SubscriptionItemStatus.
-const (
-	SubscriptionItemStatusActive     SubscriptionItemStatus = "active"
-	SubscriptionItemStatusCanceled   SubscriptionItemStatus = "canceled"
-	SubscriptionItemStatusPending    SubscriptionItemStatus = "pending"
-	SubscriptionItemStatusSuspended  SubscriptionItemStatus = "suspended"
-	SubscriptionItemStatusTerminated SubscriptionItemStatus = "terminated"
-)
-
-// Valid indicates whether the value is a known member of the SubscriptionItemStatus enum.
-func (e SubscriptionItemStatus) Valid() bool {
-	switch e {
-	case SubscriptionItemStatusActive:
-		return true
-	case SubscriptionItemStatusCanceled:
-		return true
-	case SubscriptionItemStatusPending:
-		return true
-	case SubscriptionItemStatusSuspended:
-		return true
-	case SubscriptionItemStatusTerminated:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for TerminationPolicy.
 const (
 	TerminationPolicyImmediate TerminationPolicy = "immediate"
@@ -1030,102 +625,6 @@ func (e TerminationPolicy) Valid() bool {
 	case TerminationPolicyImmediate:
 		return true
 	case TerminationPolicyPeriodEnd:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for TopUpStatus.
-const (
-	TopUpStatusFailed         TopUpStatus = "failed"
-	TopUpStatusPending        TopUpStatus = "pending"
-	TopUpStatusRequiresAction TopUpStatus = "requires_action"
-	TopUpStatusSucceeded      TopUpStatus = "succeeded"
-)
-
-// Valid indicates whether the value is a known member of the TopUpStatus enum.
-func (e TopUpStatus) Valid() bool {
-	switch e {
-	case TopUpStatusFailed:
-		return true
-	case TopUpStatusPending:
-		return true
-	case TopUpStatusRequiresAction:
-		return true
-	case TopUpStatusSucceeded:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for TransactionType.
-const (
-	TransactionTypeAdjustment TransactionType = "adjustment"
-	TransactionTypePayout     TransactionType = "payout"
-	TransactionTypeRefund     TransactionType = "refund"
-	TransactionTypeTopup      TransactionType = "topup"
-)
-
-// Valid indicates whether the value is a known member of the TransactionType enum.
-func (e TransactionType) Valid() bool {
-	switch e {
-	case TransactionTypeAdjustment:
-		return true
-	case TransactionTypePayout:
-		return true
-	case TransactionTypeRefund:
-		return true
-	case TransactionTypeTopup:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ListAllowancesParamsStatus.
-const (
-	ListAllowancesParamsStatusActive   ListAllowancesParamsStatus = "active"
-	ListAllowancesParamsStatusDepleted ListAllowancesParamsStatus = "depleted"
-	ListAllowancesParamsStatusExpired  ListAllowancesParamsStatus = "expired"
-	ListAllowancesParamsStatusVoided   ListAllowancesParamsStatus = "voided"
-)
-
-// Valid indicates whether the value is a known member of the ListAllowancesParamsStatus enum.
-func (e ListAllowancesParamsStatus) Valid() bool {
-	switch e {
-	case ListAllowancesParamsStatusActive:
-		return true
-	case ListAllowancesParamsStatusDepleted:
-		return true
-	case ListAllowancesParamsStatusExpired:
-		return true
-	case ListAllowancesParamsStatusVoided:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ListCreditGrantsParamsStatus.
-const (
-	ListCreditGrantsParamsStatusActive   ListCreditGrantsParamsStatus = "active"
-	ListCreditGrantsParamsStatusDepleted ListCreditGrantsParamsStatus = "depleted"
-	ListCreditGrantsParamsStatusExpired  ListCreditGrantsParamsStatus = "expired"
-	ListCreditGrantsParamsStatusVoided   ListCreditGrantsParamsStatus = "voided"
-)
-
-// Valid indicates whether the value is a known member of the ListCreditGrantsParamsStatus enum.
-func (e ListCreditGrantsParamsStatus) Valid() bool {
-	switch e {
-	case ListCreditGrantsParamsStatusActive:
-		return true
-	case ListCreditGrantsParamsStatusDepleted:
-		return true
-	case ListCreditGrantsParamsStatusExpired:
-		return true
-	case ListCreditGrantsParamsStatusVoided:
 		return true
 	default:
 		return false
@@ -1153,74 +652,40 @@ func (e ListProjectSpendParamsGroupBy) Valid() bool {
 	}
 }
 
-// Defines values for ListCatalogItemsParamsType.
-const (
-	ListCatalogItemsParamsTypeMetered ListCatalogItemsParamsType = "metered"
-	ListCatalogItemsParamsTypeOneTime ListCatalogItemsParamsType = "one_time"
-	ListCatalogItemsParamsTypePrepaid ListCatalogItemsParamsType = "prepaid"
-)
-
-// Valid indicates whether the value is a known member of the ListCatalogItemsParamsType enum.
-func (e ListCatalogItemsParamsType) Valid() bool {
-	switch e {
-	case ListCatalogItemsParamsTypeMetered:
-		return true
-	case ListCatalogItemsParamsTypeOneTime:
-		return true
-	case ListCatalogItemsParamsTypePrepaid:
-		return true
-	default:
-		return false
-	}
-}
-
-// AccountBalance defines model for AccountBalance.
-type AccountBalance struct {
-	// Accrued Metered usage priced this month but not yet invoiced. It is already committed even
-	// though no invoice exists for it yet.
-	Accrued externalRef0.Money `json:"accrued"`
-
-	// Balance Funds paid in and not yet spent. This is the part that can be refunded. It goes negative when the account owes.
-	Balance          externalRef0.Money `json:"balance"`
-	BillingAccountId int64              `json:"billing_account_id"`
-
-	// Credits Granted funds still unspent, vouchers included. Spendable within whatever each grant
-	// covers, and never withdrawable. Individual grants are listed separately, which is
-	// where a single voucher's remaining amount is read.
-	Credits  externalRef0.Money `json:"credits"`
-	Currency string             `json:"currency"`
-
-	// Spendable `balance` less `accrued` — what is actually available at checkout. It goes negative
-	// when usage has exceeded the balance. Credits are shown separately because each grant
-	// can only pay for what it covers.
-	Spendable externalRef0.Money `json:"spendable"`
+// AccountIdentity defines model for AccountIdentity.
+type AccountIdentity struct {
+	Currency string `json:"currency"`
+	Id       int64  `json:"id"`
+	Name     string `json:"name"`
 }
 
 // ActiveResource A resource currently accruing charges by the second.
 type ActiveResource struct {
-	Dimensions map[string]string `json:"dimensions,omitempty"`
-
-	// LastBilledUntil Charges are settled up to this moment.
-	LastBilledUntil *time.Time `json:"last_billed_until,omitempty"`
+	Dimensions map[string]string  `json:"dimensions,omitempty"`
+	EndedAt    *time.Time         `json:"ended_at,omitempty"`
+	Id         openapi_types.UUID `json:"id"`
 
 	// Meter A catalog object inlined for display.
 	Meter ObjectIdentity `json:"meter"`
 
-	// Product A catalog object inlined for display.
-	Product ObjectIdentity `json:"product"`
+	// MeteredUntil Usage has been generated up to this boundary; it does not imply invoicing or payment.
+	MeteredUntil time.Time `json:"metered_until"`
+	Product      Product   `json:"product"`
 
 	// Quantity How much is held — cores, MiB, cards. Not how much has been used.
 	Quantity   string `json:"quantity"`
 	ResourceId string `json:"resource_id"`
 
 	// ResourceType What it is, as its own service names it.
-	ResourceType *string              `json:"resource_type,omitempty"`
-	StartedAt    time.Time            `json:"started_at"`
-	Status       ActiveResourceStatus `json:"status"`
+	ResourceType   *string              `json:"resource_type,omitempty"`
+	StartedAt      time.Time            `json:"started_at"`
+	StateChangedAt *time.Time           `json:"state_changed_at,omitempty"`
+	Status         ActiveResourceStatus `json:"status"`
 
-	// SubscriptionItemId The metered subscription item charged for this resource; null for shared service usage.
-	SubscriptionItemId *openapi_types.UUID `json:"subscription_item_id,omitempty"`
-	Unit               *string             `json:"unit,omitempty"`
+	// SubscriptionId The postpaid subscription charged for this metering record, including shared services.
+	SubscriptionId openapi_types.UUID `json:"subscription_id"`
+	SuspendedAt    *time.Time         `json:"suspended_at,omitempty"`
+	Unit           *string            `json:"unit,omitempty"`
 }
 
 // ActiveResourceStatus defines model for ActiveResource.Status.
@@ -1234,23 +699,20 @@ type ActiveResourceList struct {
 
 // Allowance defines model for Allowance.
 type Allowance struct {
-	BillingAccountId *int64 `json:"billing_account_id,omitempty"`
+	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
+	Id               openapi_types.UUID `json:"id"`
 
-	// DimensionValues Allowed values for selected meter dimensions, such as region or storage class.
-	// Every specified dimension must match one listed value. Omitted dimensions are
-	// unrestricted. An empty map covers all dimensions of this meter.
-	DimensionValues map[string][]string `json:"dimension_values,omitempty"`
-	Id              openapi_types.UUID  `json:"id"`
+	// IdempotencyKey Optional issuance key, unique within this billing account.
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
 	// Meter A catalog object inlined for display.
 	Meter ObjectIdentity `json:"meter"`
 	Name  string         `json:"name"`
 
-	// Priority Lower is drawn on first. Included quantities sit ahead of purchased packs.
-	Priority *int `json:"priority,omitempty"`
-
-	// Product A catalog object inlined for display.
-	Product ObjectIdentity `json:"product"`
+	// Priority Lower values are consumed first. At equal priority, earlier expiry and then earlier issuance take
+	// precedence.
+	Priority *int    `json:"priority,omitempty"`
+	Product  Product `json:"product"`
 
 	// Quantity How much was granted.
 	Quantity string `json:"quantity"`
@@ -1258,10 +720,11 @@ type Allowance struct {
 	// RemainingQuantity How much is left.
 	RemainingQuantity string `json:"remaining_quantity"`
 
-	// SourceType `included` came with a recurring purchase, `package` was bought on its own such as a
-	// traffic pack, `promotional` was granted.
-	SourceType AllowanceSourceType `json:"source_type"`
-	Status     AllowanceStatus     `json:"status"`
+	// SourceType `included` came with a recurring purchase and ends with its subscription, `promotional` was
+	// granted.
+	SourceType     AllowanceSourceType `json:"source_type"`
+	Status         AllowanceStatus     `json:"status"`
+	SubscriptionId *openapi_types.UUID `json:"subscription_id,omitempty"`
 
 	// Unit The unit it is counted in, such as `MiB`.
 	Unit      *string   `json:"unit,omitempty"`
@@ -1272,30 +735,12 @@ type Allowance struct {
 	ValidUntil *time.Time `json:"valid_until,omitempty"`
 }
 
-// AllowanceSourceType `included` came with a recurring purchase, `package` was bought on its own such as a
-// traffic pack, `promotional` was granted.
+// AllowanceSourceType `included` came with a recurring purchase and ends with its subscription, `promotional` was
+// granted.
 type AllowanceSourceType string
 
 // AllowanceStatus defines model for Allowance.Status.
 type AllowanceStatus string
-
-// AllowanceConsumption defines model for AllowanceConsumption.
-type AllowanceConsumption struct {
-	ConsumedAt time.Time          `json:"consumed_at"`
-	Id         openapi_types.UUID `json:"id"`
-
-	// Meter A catalog object inlined for display.
-	Meter         *ObjectIdentity     `json:"meter,omitempty"`
-	Quantity      string              `json:"quantity"`
-	ReversedAt    *time.Time          `json:"reversed_at,omitempty"`
-	UsageChargeId *openapi_types.UUID `json:"usage_charge_id,omitempty"`
-}
-
-// AllowanceConsumptionList defines model for AllowanceConsumptionList.
-type AllowanceConsumptionList struct {
-	Items      []AllowanceConsumption `json:"items"`
-	TotalCount *int64                 `json:"total_count,omitempty"`
-}
 
 // AllowanceList defines model for AllowanceList.
 type AllowanceList struct {
@@ -1303,340 +748,34 @@ type AllowanceList struct {
 	TotalCount *int64      `json:"total_count,omitempty"`
 }
 
-// Applicability What something may be used for. A field that is absent places no restriction on that
-// dimension; all of them absent means no restriction at all.
-//
-// A line qualifies when it satisfies every field that is set. `min_amount` is then
-// measured against **the qualifying lines only**, not the order total.
-//
-// Entries carry the name to show for them, so that what a credit covers can be displayed
-// without looking each one up.
-type Applicability struct {
-	// FirstPurchaseOnly Restricted to your first purchase of a covered product.
-	FirstPurchaseOnly *bool `json:"first_purchase_only,omitempty"`
-
-	// MaxTermMonths The longest term a purchase may have, in months.
-	MaxTermMonths *int `json:"max_term_months,omitempty"`
-
-	// MinAmount The threshold, measured against the qualifying lines. In the currency of whatever
-	// carries these terms.
-	MinAmount *externalRef0.Money `json:"min_amount,omitempty"`
-
-	// MinTermMonths The shortest term a purchase may have, in months. A purchase with no term, such as
-	// metered usage, never qualifies while this is set.
-	MinTermMonths *int                `json:"min_term_months,omitempty"`
-	Operations    []PurchaseOperation `json:"operations,omitempty"`
-	Plans         []ScopeEntry        `json:"plans,omitempty"`
-	PriceTypes    []string            `json:"price_types,omitempty"`
-	Prices        []ScopePriceEntry   `json:"prices,omitempty"`
-	Products      []ScopeEntry        `json:"products,omitempty"`
-}
-
 // AutoRenewSet defines model for AutoRenewSet.
 type AutoRenewSet struct {
 	AutoRenew bool `json:"auto_renew"`
 }
 
-// BillingAccount defines model for BillingAccount.
-type BillingAccount struct {
-	AddressCity *string `json:"address_city,omitempty"`
-
-	// AddressCountry Two-letter code.
-	AddressCountry    *string   `json:"address_country,omitempty"`
-	AddressLine1      *string   `json:"address_line1,omitempty"`
-	AddressLine2      *string   `json:"address_line2,omitempty"`
-	AddressPostalCode *string   `json:"address_postal_code,omitempty"`
-	AddressState      *string   `json:"address_state,omitempty"`
-	CreatedAt         time.Time `json:"created_at"`
-
-	// Currency Fixed when the account was opened.
-	Currency string `json:"currency"`
-
-	// Email Where invoices are sent.
-	Email *string `json:"email,omitempty"`
-
-	// GraceAmount How far past the suspension threshold this account may go before its resources are
-	// suspended. "0" means none: the account is suspended as soon as it crosses the threshold.
-	GraceAmount *string `json:"grace_amount,omitempty"`
-
-	// GracePeriodSeconds How long this account has to top up after crossing the suspension threshold.
-	// 0 means none. Whichever runs out first — this or grace_amount — ends the grace.
-	GracePeriodSeconds *int64 `json:"grace_period_seconds,omitempty"`
-	Id                 int64  `json:"id"`
-
-	// LegalName The name invoices are made out to. Copied onto each invoice when it is issued.
-	LegalName *string `json:"legal_name,omitempty"`
-
-	// Name What you call this account.
-	Name   *string              `json:"name,omitempty"`
-	Status BillingAccountStatus `json:"status"`
-	TaxId  *string              `json:"tax_id,omitempty"`
+// CancellationRequest A cancellation request for the original purchase. scheduled_at is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
+type CancellationRequest struct {
+	CanceledAt            *time.Time                `json:"canceled_at,omitempty"`
+	CompletedAt           *time.Time                `json:"completed_at,omitempty"`
+	EffectiveAt           *time.Time                `json:"effective_at,omitempty"`
+	FailureCode           *string                   `json:"failure_code,omitempty"`
+	FailureReason         *string                   `json:"failure_reason,omitempty"`
+	ForfeitRemainingValue bool                      `json:"forfeit_remaining_value"`
+	Id                    openapi_types.UUID        `json:"id"`
+	Mode                  CancellationRequestMode   `json:"mode"`
+	Reason                *string                   `json:"reason,omitempty"`
+	ReleaseStartedAt      *time.Time                `json:"release_started_at,omitempty"`
+	RequestedAt           time.Time                 `json:"requested_at"`
+	ScheduledAt           *time.Time                `json:"scheduled_at,omitempty"`
+	Status                CancellationRequestStatus `json:"status"`
+	SubscriptionId        openapi_types.UUID        `json:"subscription_id"`
 }
 
-// BillingAccountStatus defines model for BillingAccount.Status.
-type BillingAccountStatus string
+// CancellationRequestMode defines model for CancellationRequest.Mode.
+type CancellationRequestMode string
 
-// BillingAccountCreate defines model for BillingAccountCreate.
-type BillingAccountCreate struct {
-	Currency  string  `json:"currency"`
-	Email     *string `json:"email,omitempty"`
-	LegalName *string `json:"legal_name,omitempty"`
-	Name      *string `json:"name,omitempty"`
-}
-
-// BillingAccountList defines model for BillingAccountList.
-type BillingAccountList struct {
-	Items      []BillingAccount `json:"items"`
-	TotalCount *int64           `json:"total_count,omitempty"`
-}
-
-// BillingAccountUpdate defines model for BillingAccountUpdate.
-type BillingAccountUpdate struct {
-	AddressCity       *string `json:"address_city,omitempty"`
-	AddressCountry    *string `json:"address_country,omitempty"`
-	AddressLine1      *string `json:"address_line1,omitempty"`
-	AddressLine2      *string `json:"address_line2,omitempty"`
-	AddressPostalCode *string `json:"address_postal_code,omitempty"`
-	AddressState      *string `json:"address_state,omitempty"`
-	Email             *string `json:"email,omitempty"`
-	LegalName         *string `json:"legal_name,omitempty"`
-	Name              *string `json:"name,omitempty"`
-	TaxId             *string `json:"tax_id,omitempty"`
-}
-
-// CatalogItem One sellable thing at one price: the plan, and the price it is sold at in the currency
-// you asked for.
-//
-// Listing plans and then asking for each plan's prices returns the same information, but
-// one request per plan. This flattens the two levels, so that a price list renders from a
-// single request.
-//
-// A plan appears once per price, so a plan sold monthly and yearly appears twice.
-type CatalogItem struct {
-	// Plan A catalog object inlined for display.
-	Plan  ObjectIdentity `json:"plan"`
-	Price Price          `json:"price"`
-
-	// Product A catalog object inlined for display.
-	Product ObjectIdentity `json:"product"`
-}
-
-// CatalogItemList defines model for CatalogItemList.
-type CatalogItemList struct {
-	Items      []CatalogItem `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
-}
-
-// CodePreview defines model for CodePreview.
-type CodePreview struct {
-	// Amount For a fixed-amount discount.
-	Amount *externalRef0.Money `json:"amount,omitempty"`
-
-	// Applicable Whether it applies to the purchase given in `lines`. Absent when no purchase was
-	// given.
-	Applicable *bool `json:"applicable,omitempty"`
-
-	// ApplicableReason Why a code cannot be used. `none` when it can.
-	//
-	// `operation_not_covered` means the code is limited to certain purchase actions — a
-	// first-purchase code presented for a renewal, for example.
-	//
-	// `term_not_covered` means the code is limited to certain term lengths. A purchase with
-	// no term, such as metered usage, is reported the same way.
-	//
-	// `below_minimum` is accompanied by `shortfall`.
-	ApplicableReason *CodeRejection `json:"applicable_reason,omitempty"`
-
-	// AppliesTo What it may be used for. Present whether or not a purchase was given, so that the
-	// terms can be shown before anything is chosen.
-	AppliesTo *Applicability `json:"applies_to,omitempty"`
-	Currency  *string        `json:"currency,omitempty"`
-
-	// EstimatedDiscount What it would take off this purchase. An estimate: the amount is settled at the
-	// moment the order is placed.
-	EstimatedDiscount *externalRef0.Money `json:"estimated_discount,omitempty"`
-
-	// MaxDiscount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	MaxDiscount *externalRef0.Money `json:"max_discount,omitempty"`
-	Name        *string             `json:"name,omitempty"`
-
-	// PercentOff For a percentage discount.
-	PercentOff *string `json:"percent_off,omitempty"`
-
-	// QualifyingAmount The total of the lines that match the restrictions. This is what the threshold is
-	// measured against, not the order total.
-	QualifyingAmount *externalRef0.Money `json:"qualifying_amount,omitempty"`
-
-	// Reason Why a code cannot be used. `none` when it can.
-	//
-	// `operation_not_covered` means the code is limited to certain purchase actions — a
-	// first-purchase code presented for a renewal, for example.
-	//
-	// `term_not_covered` means the code is limited to certain term lengths. A purchase with
-	// no term, such as metered usage, is reported the same way.
-	//
-	// `below_minimum` is accompanied by `shortfall`.
-	Reason *CodeRejection `json:"reason,omitempty"`
-
-	// Shortfall How much more of a qualifying purchase is needed to reach the threshold. `"0"` once
-	// it is met.
-	Shortfall *externalRef0.Money `json:"shortfall,omitempty"`
-
-	// Summary The terms in one sentence, ready to display — for example "Compute, new purchases
-	// only, from 100.00" or "No restriction on product or purchase type".
-	Summary *string `json:"summary,omitempty"`
-
-	// Valid Whether the code itself is usable — it exists, has not expired, has not been used
-	// up, and matches the account's currency. It says nothing about a particular
-	// purchase; `applicable` does.
-	Valid      bool       `json:"valid"`
-	ValidUntil *time.Time `json:"valid_until,omitempty"`
-}
-
-// CodeRejection Why a code cannot be used. `none` when it can.
-//
-// `operation_not_covered` means the code is limited to certain purchase actions — a
-// first-purchase code presented for a renewal, for example.
-//
-// `term_not_covered` means the code is limited to certain term lengths. A purchase with
-// no term, such as metered usage, is reported the same way.
-//
-// `below_minimum` is accompanied by `shortfall`.
-type CodeRejection string
-
-// CodeRequest Give a purchase — `lines`, `changes` or `renewal_of` — to find out whether the code
-// applies to it and what it would take off. Without one the reply describes the code's
-// own terms but cannot say whether it applies, because most codes are restricted to
-// certain items or purchase actions.
-//
-// The purchase action is worked out from what is given rather than taken on trust: a
-// change is an upgrade or a downgrade according to what it costs for the remainder of
-// the period.
-type CodeRequest struct {
-	BillingAccountId int64 `json:"billing_account_id"`
-
-	// Changes Changes to existing subscriptions to test against, in the same shape as a quote.
-	//
-	// Give these rather than declaring an operation: whether a change counts as an
-	// upgrade or a downgrade follows from what it costs, which cannot be determined
-	// without the subscription item and the moment it takes effect.
-	Changes []QuoteChange `json:"changes,omitempty"`
-	Code    string        `json:"code"`
-
-	// Lines New purchases to test against, in the same shape as a quote.
-	Lines []QuoteLine `json:"lines,omitempty"`
-
-	// ProjectId The project the purchase would be for.
-	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
-
-	// RenewalOf Subscription items being renewed, when testing a renewal.
-	RenewalOf []openapi_types.UUID `json:"renewal_of,omitempty"`
-}
-
-// CreditGrant defines model for CreditGrant.
-type CreditGrant struct {
-	// Amount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	Amount externalRef0.Money `json:"amount"`
-
-	// AppliesTo What this credit may pay for. No restrictions means anything on the account.
-	AppliesTo        *Applicability     `json:"applies_to,omitempty"`
-	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
-	Currency         string             `json:"currency"`
-	Id               openapi_types.UUID `json:"id"`
-	Name             string             `json:"name"`
-
-	// RemainingAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	RemainingAmount externalRef0.Money `json:"remaining_amount"`
-
-	// SourceType Where it came from. `voucher` was redeemed from a code and carries its own
-	// restrictions; `manual` was issued directly, typically to put something right.
-	SourceType *CreditGrantSourceType `json:"source_type,omitempty"`
-	Status     CreditGrantStatus      `json:"status"`
-	ValidFrom  time.Time              `json:"valid_from"`
-	ValidUntil *time.Time             `json:"valid_until,omitempty"`
-}
-
-// CreditGrantSourceType Where it came from. `voucher` was redeemed from a code and carries its own
-// restrictions; `manual` was issued directly, typically to put something right.
-type CreditGrantSourceType string
-
-// CreditGrantStatus defines model for CreditGrant.Status.
-type CreditGrantStatus string
-
-// CreditGrantList defines model for CreditGrantList.
-type CreditGrantList struct {
-	Items      []CreditGrant `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
-}
-
-// Discount A coupon held on this account. It applies at checkout without a code.
-type Discount struct {
-	// AmountOff A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	AmountOff *externalRef0.Money `json:"amount_off,omitempty"`
-
-	// AppliesTo What it may be used for. Absent means it applies to anything on the account,
-	// including setup fees and traffic.
-	AppliesTo *Applicability     `json:"applies_to,omitempty"`
-	Currency  *string            `json:"currency,omitempty"`
-	EndedAt   *time.Time         `json:"ended_at,omitempty"`
-	Id        openapi_types.UUID `json:"id"`
-
-	// MaxDiscount Caps a percentage discount.
-	MaxDiscount *externalRef0.Money `json:"max_discount,omitempty"`
-	Name        *string             `json:"name,omitempty"`
-
-	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
-
-	// PercentOff For a percentage discount, out of one hundred.
-	PercentOff *string    `json:"percent_off,omitempty"`
-	StartedAt  *time.Time `json:"started_at,omitempty"`
-}
-
-// DiscountList defines model for DiscountList.
-type DiscountList struct {
-	Items      []Discount `json:"items"`
-	TotalCount *int64     `json:"total_count,omitempty"`
-}
+// CancellationRequestStatus defines model for CancellationRequest.Status.
+type CancellationRequestStatus string
 
 // Entitlement defines model for Entitlement.
 type Entitlement struct {
@@ -1648,26 +787,8 @@ type Entitlement struct {
 
 	// Feature A catalog object inlined for display.
 	Feature ObjectIdentity `json:"feature"`
-
-	// Metered Whether its use is counted. **`false` means no limit** — the plan providing it
-	// grants it without a cap — and `remaining_quantity` should not be read in that case.
-	//
-	// A capped capability whose quantity has run out keeps `metered` true with
-	// `remaining_quantity` of `"0"`. Exhausted and uncapped are therefore always
-	// distinguishable.
-	Metered bool    `json:"metered"`
-	Name    *string `json:"name,omitempty"`
-
-	// Product A catalog object inlined for display.
-	Product ObjectIdentity `json:"product"`
-
-	// RemainingQuantity How much is left, as a decimal string. Meaningful only when `metered` is true.
-	// `"0"` once exhausted, never negative.
-	//
-	// The figure is accurate as of the reply. It is suitable for display and for a soft
-	// warning, and must not be used to enforce a strict limit.
-	RemainingQuantity *string `json:"remaining_quantity,omitempty"`
-	Unit              *string `json:"unit,omitempty"`
+	Name    *string        `json:"name,omitempty"`
+	Product Product        `json:"product"`
 }
 
 // EntitlementList defines model for EntitlementList.
@@ -1679,324 +800,92 @@ type EntitlementList struct {
 // Error defines model for Error.
 type Error = externalRef0.Error
 
-// EstimateRequest defines model for EstimateRequest.
-type EstimateRequest struct {
-	// Currency Must be one the catalogue publishes.
-	Currency string      `json:"currency"`
-	Lines    []QuoteLine `json:"lines"`
-}
-
-// IncludedAllowance defines model for IncludedAllowance.
-type IncludedAllowance struct {
-	// DimensionValues Allowed values for selected meter dimensions, such as region or storage class.
-	// Every specified dimension must match one listed value. Omitted dimensions are
-	// unrestricted. An empty map covers all dimensions of this meter.
-	DimensionValues map[string][]string `json:"dimension_values,omitempty"`
-
-	// Expiry `period_end` lasts as long as the period it came with. `days` lasts a fixed number
-	// of days from purchase. `never` does not lapse.
-	Expiry IncludedAllowanceExpiry `json:"expiry"`
-
-	// Meter A catalog object inlined for display.
-	Meter ObjectIdentity `json:"meter"`
-
-	// Quantity How much is included.
-	Quantity string  `json:"quantity"`
-	Unit     *string `json:"unit,omitempty"`
-
-	// ValidDays Only meaningful when `expiry` is `days`.
-	ValidDays *int `json:"valid_days,omitempty"`
-}
-
-// IncludedAllowanceExpiry `period_end` lasts as long as the period it came with. `days` lasts a fixed number
-// of days from purchase. `never` does not lapse.
-type IncludedAllowanceExpiry string
-
-// IncludedFeature defines model for IncludedFeature.
-type IncludedFeature struct {
-	Description *string `json:"description,omitempty"`
-
-	// Feature A catalog object inlined for display.
-	Feature ObjectIdentity `json:"feature"`
-
-	// IncludedQuantity How much is included, as a decimal string. Present when `unlimited` is false.
-	IncludedQuantity *string `json:"included_quantity,omitempty"`
-	Name             string  `json:"name"`
-
-	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
-
-	// Unit The unit that quantity is counted in, such as `request`.
-	Unit *string `json:"unit,omitempty"`
-
-	// Unlimited Whether this price grants the capability without a cap.
-	//
-	// **This is what says whether it is capped, not the presence of an included
-	// quantity.** A capped capability whose quantity has run out would otherwise be
-	// indistinguishable from one that was never capped.
-	//
-	// `true` for a capability that is simply available or not, with nothing to count.
-	Unlimited bool `json:"unlimited"`
-}
-
-// Invoice defines model for Invoice.
-type Invoice struct {
-	// AmountPaid A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	AmountPaid       *externalRef0.Money `json:"amount_paid,omitempty"`
-	BillingAccountId int64               `json:"billing_account_id"`
-
-	// CreditApplied Paid from credit or a voucher.
-	CreditApplied             *externalRef0.Money `json:"credit_applied,omitempty"`
-	Currency                  string              `json:"currency"`
-	CustomerAddressCity       *string             `json:"customer_address_city,omitempty"`
-	CustomerAddressCountry    *string             `json:"customer_address_country,omitempty"`
-	CustomerAddressLine1      *string             `json:"customer_address_line1,omitempty"`
-	CustomerAddressLine2      *string             `json:"customer_address_line2,omitempty"`
-	CustomerAddressPostalCode *string             `json:"customer_address_postal_code,omitempty"`
-	CustomerAddressState      *string             `json:"customer_address_state,omitempty"`
-	CustomerEmail             *string             `json:"customer_email,omitempty"`
-
-	// CustomerName Who this was billed to, as recorded when the invoice was issued. Later changes to
-	// the account do not alter it.
-	CustomerName  *string `json:"customer_name,omitempty"`
-	CustomerTaxId *string `json:"customer_tax_id,omitempty"`
-
-	// DiscountAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
-	Id             openapi_types.UUID  `json:"id"`
-
-	// Number Numbered per account and per month.
-	Number string `json:"number"`
-
-	// OrderId The purchase that produced this invoice. Absent on usage invoices.
-	OrderId *openapi_types.UUID `json:"order_id,omitempty"`
-	PaidAt  *time.Time          `json:"paid_at,omitempty"`
-
-	// PeriodEnd Exclusive.
-	PeriodEnd   time.Time     `json:"period_end"`
-	PeriodStart time.Time     `json:"period_start"`
-	Status      InvoiceStatus `json:"status"`
-
-	// Subtotal A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	Subtotal *externalRef0.Money `json:"subtotal,omitempty"`
-
-	// TaxAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
-
-	// Total Subtotal less discount, plus tax, less credit applied.
-	Total externalRef0.Money `json:"total"`
-
-	// Type What produced it — metered usage for a period, a purchase, or a correction.
-	Type *InvoiceType `json:"type,omitempty"`
-}
-
-// InvoiceType What produced it — metered usage for a period, a purchase, or a correction.
-type InvoiceType string
-
-// InvoiceItem defines model for InvoiceItem.
-type InvoiceItem struct {
-	// Amount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	Amount   externalRef0.Money `json:"amount"`
-	Currency string             `json:"currency"`
-
-	// DeductedQuantity The part covered by an included allowance, and therefore not charged.
-	DeductedQuantity *string `json:"deducted_quantity,omitempty"`
-
-	// Description The wording as recorded when the invoice was issued. It is not re-translated
-	// afterwards, so that an invoice continues to read as it did when it was sent.
-	Description string `json:"description"`
-
-	// DiscountAmount Discount applied to this line before tax.
-	DiscountAmount *string            `json:"discount_amount,omitempty"`
-	Id             openapi_types.UUID `json:"id"`
-
-	// OrderItemId The original order line. Refunds follow that line's original payment sources.
-	OrderItemId *openapi_types.UUID `json:"order_item_id,omitempty"`
-	PeriodEnd   *time.Time          `json:"period_end,omitempty"`
-	PeriodStart *time.Time          `json:"period_start,omitempty"`
-	ProjectId   *openapi_types.UUID `json:"project_id,omitempty"`
-	Quantity    *string             `json:"quantity,omitempty"`
-	ResourceId  *string             `json:"resource_id,omitempty"`
-
-	// TaxAmount Tax on the discounted line, including tax already included in the price.
-	TaxAmount *string `json:"tax_amount,omitempty"`
-
-	// TaxIncludedAmount The part of tax_amount already included in amount.
-	TaxIncludedAmount *string          `json:"tax_included_amount,omitempty"`
-	Type              *InvoiceItemType `json:"type,omitempty"`
-	Unit              *string          `json:"unit,omitempty"`
-
-	// UnitAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
-}
-
-// InvoiceItemType defines model for InvoiceItem.Type.
-type InvoiceItemType string
-
-// InvoiceItemList defines model for InvoiceItemList.
-type InvoiceItemList struct {
-	Items      []InvoiceItem `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
-}
-
-// InvoiceList defines model for InvoiceList.
-type InvoiceList struct {
-	Items      []Invoice `json:"items"`
-	TotalCount *int64    `json:"total_count,omitempty"`
-}
-
 // InvoiceStatus defines model for InvoiceStatus.
 type InvoiceStatus string
 
+// InvoiceSummary Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
+type InvoiceSummary struct {
+	AmountPaid     string `json:"amount_paid"`
+	AmountRefunded string `json:"amount_refunded"`
+	Currency       string `json:"currency"`
+
+	// DiscountAmount Sum of the line discounts, taken off before tax.
+	DiscountAmount string             `json:"discount_amount"`
+	DueAt          *time.Time         `json:"due_at,omitempty"`
+	Id             openapi_types.UUID `json:"id"`
+	Number         *string            `json:"number,omitempty"`
+	Status         InvoiceStatus      `json:"status"`
+
+	// Subtotal Sum of the line amounts before discounts. Where prices include tax, the tax contained in
+	// each line's discounted amount is taken out here, so that total = subtotal -
+	// discount_amount + tax_amount always holds.
+	Subtotal  string `json:"subtotal"`
+	TaxAmount string `json:"tax_amount"`
+	Total     string `json:"total"`
+}
+
 // ObjectIdentity A catalog object inlined for display.
 type ObjectIdentity struct {
-	Id   openapi_types.UUID `json:"id"`
-	Name string             `json:"name"`
-
-	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
+	Id        openapi_types.UUID `json:"id"`
+	LookupKey *string            `json:"lookup_key,omitempty"`
+	Name      string             `json:"name"`
 }
 
 // Order defines model for Order.
 type Order struct {
-	// Amount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	Amount externalRef0.Money `json:"amount"`
+	Account *AccountIdentity `json:"account,omitempty"`
 
-	// AmountDue What is still outstanding. Zero once paid.
-	AmountDue        *externalRef0.Money `json:"amount_due,omitempty"`
-	BillingAccountId *int64              `json:"billing_account_id,omitempty"`
+	// BillingAccountId The billing account the order was placed with. It does not change when the project is later
+	// linked to another billing account. While this account is suspended or closed the order cannot
+	// be accepted, and a change scheduled for the end of a period is not invoiced and is called off
+	// when the current period ends; such requests fail with BILLING_ACCOUNT_UNAVAILABLE.
+	BillingAccountId *int64  `json:"billing_account_id,omitempty"`
+	CancelReason     *string `json:"cancel_reason,omitempty"`
 
 	// ChangeEffective When a plan change takes effect. `none` on anything that is not a change.
 	//
-	// `period_end` orders stay pending until the current paid period runs out. Renewing in
-	// the meantime moves that moment along with it.
-	ChangeEffective *OrderChangeEffective `json:"change_effective,omitempty"`
-	CreatedAt       time.Time             `json:"created_at"`
-	Currency        string                `json:"currency"`
+	// `period_end` orders stay pending until the first period at the new price is paid. That period
+	// is invoiced shortly before the current paid period ends and starts when it ends; if the
+	// invoice is still unpaid by then, the order is canceled and the subscription renews or ends as
+	// usual. Renewing in the meantime moves all of this along with it.
+	ChangeEffective   *OrderChangeEffective `json:"change_effective,omitempty"`
+	ChangeEffectiveAt *time.Time            `json:"change_effective_at,omitempty"`
 
-	// DiscountAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
+	// Coupon A catalog object inlined for display.
+	Coupon    *ObjectIdentity     `json:"coupon,omitempty"`
+	CouponId  *openapi_types.UUID `json:"coupon_id,omitempty"`
+	CreatedAt time.Time           `json:"created_at"`
+	Currency  string              `json:"currency"`
 
-	// FulfillmentStartedAt When fulfillment began. Funds and sellable quota remain reserved until success or confirmed failure; this order can no longer be canceled.
-	FulfillmentStartedAt *time.Time `json:"fulfillment_started_at,omitempty"`
+	// ExpiresAt Acceptance deadline. Only pending orders expire automatically.
+	ExpiresAt *time.Time         `json:"expires_at,omitempty"`
+	Id        openapi_types.UUID `json:"id"`
 
-	// GrossAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	GrossAmount *externalRef0.Money `json:"gross_amount,omitempty"`
-	Id          openapi_types.UUID  `json:"id"`
+	// Invoice Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
+	Invoice *InvoiceSummary `json:"invoice,omitempty"`
 
 	// Items What was bought. Present on a single order and on every order in a list, so a list
 	// can be rendered without a further request per row.
-	Items []OrderItem `json:"items,omitempty"`
+	Items []OrderItem `json:"items"`
+
+	// PaidWith How the order was paid. Absent until it is paid.
+	PaidWith *PaidWith `json:"paid_with,omitempty"`
 
 	// ProjectId Which project it was bought for. Absent for a purchase made at account level, such
 	// as a membership.
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
 
-	// RefundableAmount What a downgrade gives back. It is returned to the sources that originally paid
-	// rather than deducted from `amount`, so paying with granted credit gives back credit.
-	//
-	// Always "0" on a `period_end` change: nothing is left of the period at its end.
-	RefundableAmount *externalRef0.Money `json:"refundable_amount,omitempty"`
+	// PromotionCode Code text frozen when this order applied the coupon.
+	PromotionCode   *string             `json:"promotion_code,omitempty"`
+	PromotionCodeId *openapi_types.UUID `json:"promotion_code_id,omitempty"`
 
-	// RefundedAmount How much of `refundable_amount` has already gone back.
-	RefundedAmount *externalRef0.Money `json:"refunded_amount,omitempty"`
-
-	// ReservationExpiresAt The deadline to pay and begin fulfillment. Absent after fulfillment starts or the order
-	// ends. Once fulfillment starts, its reservations remain held until success or confirmed failure.
-	ReservationExpiresAt *time.Time `json:"reservation_expires_at,omitempty"`
-	State                OrderState `json:"state"`
-
-	// TaxAmount Total tax after discounts, including any tax already included in the price.
-	TaxAmount *string `json:"tax_amount,omitempty"`
-
-	// TaxIncludedAmount The part of tax_amount already included in gross_amount; it is not charged again.
-	TaxIncludedAmount *string `json:"tax_included_amount,omitempty"`
+	// Status Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is
+	// accepted with items still being set up. `completed` means every item was set up.
+	// `partially_completed` means some items were set up and the others failed and were
+	// refunded to their original payment sources. `failed` means every item failed and the
+	// whole order was refunded. `canceled` means the order was withdrawn before payment and
+	// nothing was charged.
+	Status OrderStatus `json:"status"`
 
 	// Type `adopt` brings a resource that already existed under billing. It charges nothing at
 	// the time and starts billing from the moment agreed.
@@ -2005,15 +894,17 @@ type Order struct {
 
 // OrderChangeEffective When a plan change takes effect. `none` on anything that is not a change.
 //
-// `period_end` orders stay pending until the current paid period runs out. Renewing in
-// the meantime moves that moment along with it.
+// `period_end` orders stay pending until the first period at the new price is paid. That period
+// is invoiced shortly before the current paid period ends and starts when it ends; if the
+// invoice is still unpaid by then, the order is canceled and the subscription renews or ends as
+// usual. Renewing in the meantime moves all of this along with it.
 type OrderChangeEffective string
 
 // OrderType `adopt` brings a resource that already existed under billing. It charges nothing at
 // the time and starts billing from the moment agreed.
 type OrderType string
 
-// OrderItem defines model for OrderItem.
+// OrderItem Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are absent when there is no immediate invoice. Later catalog changes do not reprice this line.
 type OrderItem struct {
 	// Amount A decimal string, in the currency stated alongside it.
 	//
@@ -2024,8 +915,13 @@ type OrderItem struct {
 	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
 	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
 	// through a float.
-	Amount   externalRef0.Money `json:"amount"`
-	Currency string             `json:"currency"`
+	Amount *externalRef0.Money `json:"amount,omitempty"`
+
+	// BillingType The payment timing of the selected price.
+	BillingType        OrderItemBillingType   `json:"billing_type"`
+	CompletesOnPayment bool                   `json:"completes_on_payment"`
+	Configuration      map[string]interface{} `json:"configuration,omitempty"`
+	Currency           string                 `json:"currency"`
 
 	// DiscountAmount A decimal string, in the currency stated alongside it.
 	//
@@ -2047,36 +943,48 @@ type OrderItem struct {
 	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
 	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
 	// through a float.
-	GrossAmount *externalRef0.Money `json:"gross_amount,omitempty"`
-	Id          openapi_types.UUID  `json:"id"`
-	OrderId     *openapi_types.UUID `json:"order_id,omitempty"`
+	GrossAmount   *externalRef0.Money `json:"gross_amount,omitempty"`
+	Id            openapi_types.UUID  `json:"id"`
+	Interval      OrderItemInterval   `json:"interval"`
+	IntervalCount *int                `json:"interval_count,omitempty"`
+	OrderId       *openapi_types.UUID `json:"order_id,omitempty"`
+	PeriodEnd     *time.Time          `json:"period_end,omitempty"`
+	PeriodStart   *time.Time          `json:"period_start,omitempty"`
 
 	// PlanId Which plan was bought.
-	PlanId *openapi_types.UUID `json:"plan_id,omitempty"`
+	PlanId openapi_types.UUID `json:"plan_id"`
 
 	// PlanName What it was called when bought. It does not follow later catalogue renames and is
 	// not translated.
-	PlanName *string            `json:"plan_name,omitempty"`
+	PlanName string             `json:"plan_name"`
+	Position *int               `json:"position,omitempty"`
 	PriceId  openapi_types.UUID `json:"price_id"`
-
-	// PriceType The payment timing of the selected price.
-	PriceType *OrderItemPriceType `json:"price_type,omitempty"`
-
-	// Product A catalog object inlined for display.
-	Product *ObjectIdentity `json:"product,omitempty"`
+	Product  *Product           `json:"product,omitempty"`
 
 	// ProductId Which service this line belongs to.
-	ProductId          *openapi_types.UUID `json:"product_id,omitempty"`
-	Quantity           string              `json:"quantity"`
-	ResourceId         *string             `json:"resource_id,omitempty"`
-	ServicePeriodEnd   *time.Time          `json:"service_period_end,omitempty"`
-	ServicePeriodStart *time.Time          `json:"service_period_start,omitempty"`
+	ProductId       *ProductID `json:"product_id,omitempty"`
+	Quantity        string     `json:"quantity"`
+	RecurringAmount *string    `json:"recurring_amount,omitempty"`
+
+	// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
+	SetupAmount  *string       `json:"setup_amount,omitempty"`
+
+	// Status `pending` is waiting to be set up. `completed` was confirmed by the service.
+	// `failed` was not set up and its amount was refunded to the original payment sources.
+	// `canceled` was withdrawn with its unpaid order. A completed item is ended by canceling
+	// its subscription.
+	Status         OrderItemStatus     `json:"status"`
+	SubscriptionId *openapi_types.UUID `json:"subscription_id,omitempty"`
 
 	// TaxAmount Total tax after discounts, including any tax already included in the price.
 	TaxAmount *string `json:"tax_amount,omitempty"`
 
 	// TaxIncludedAmount The part of tax_amount already included in gross_amount; it is not charged again.
 	TaxIncludedAmount *string `json:"tax_included_amount,omitempty"`
+
+	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	//
@@ -2090,8 +998,11 @@ type OrderItem struct {
 	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 }
 
-// OrderItemPriceType The payment timing of the selected price.
-type OrderItemPriceType string
+// OrderItemBillingType The payment timing of the selected price.
+type OrderItemBillingType string
+
+// OrderItemInterval defines model for OrderItem.Interval.
+type OrderItemInterval string
 
 // OrderItemList defines model for OrderItemList.
 type OrderItemList struct {
@@ -2099,360 +1010,98 @@ type OrderItemList struct {
 	TotalCount *int64      `json:"total_count,omitempty"`
 }
 
+// OrderItemStatus `pending` is waiting to be set up. `completed` was confirmed by the service.
+// `failed` was not set up and its amount was refunded to the original payment sources.
+// `canceled` was withdrawn with its unpaid order. A completed item is ended by canceling
+// its subscription.
+type OrderItemStatus string
+
 // OrderList defines model for OrderList.
 type OrderList struct {
 	Items      []Order `json:"items"`
 	TotalCount *int64  `json:"total_count,omitempty"`
 }
 
-// OrderState defines model for OrderState.
-type OrderState string
+// OrderStatus Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is
+// accepted with items still being set up. `completed` means every item was set up.
+// `partially_completed` means some items were set up and the others failed and were
+// refunded to their original payment sources. `failed` means every item failed and the
+// whole order was refunded. `canceled` means the order was withdrawn before payment and
+// nothing was charged.
+type OrderStatus string
 
-// PayRequest Safe to call again. While an attempt is still with the payment gateway, calling this
-// returns that attempt rather than starting a second one, so a customer who reloads the
-// page is not charged twice.
-//
-// A new attempt is started only once the previous one has failed.
-type PayRequest struct {
-	// PaymentMethodId Which method to charge the remainder to. The default is used when omitted.
+// PaidWith How it was paid, as recorded at the time. It is kept as it was: removing the card afterwards
+// does not change it, and `payment_method_id` may then name a card that no longer exists.
+type PaidWith struct {
+	Brand *string `json:"brand,omitempty"`
+	Last4 *string `json:"last4,omitempty"`
+
+	// MethodType `balance` when the account's balance and credits covered it in full. Otherwise the method used
+	// with the gateway, such as `card`.
+	MethodType string `json:"method_type"`
+
+	// PaymentGateway The gateway that collected it. Absent when `method_type` is `balance`.
+	PaymentGateway *string `json:"payment_gateway,omitempty"`
+
+	// PaymentMethodId The saved payment method that was charged, when one was.
 	PaymentMethodId *openapi_types.UUID `json:"payment_method_id,omitempty"`
-	ReturnUrl       *string             `json:"return_url,omitempty"`
-
-	// UseBalance Whether to apply the account balance first. Set it to `false` to charge the full
-	// amount to a payment method.
-	UseBalance *bool `json:"use_balance,omitempty"`
-}
-
-// PayTogetherRequest Name at least one invoice or order. They must all belong to the same account and share
-// its currency; anything else is refused rather than partly paid.
-type PayTogetherRequest struct {
-	// IdempotencyKey Required when the gateway is involved, because that is where the money moves. The
-	// same key returns the same checkout address instead of opening a second one.
-	IdempotencyKey *string              `json:"idempotency_key,omitempty"`
-	InvoiceIds     []openapi_types.UUID `json:"invoice_ids,omitempty"`
-	OrderIds       []openapi_types.UUID `json:"order_ids,omitempty"`
-	ReturnUrl      *string              `json:"return_url,omitempty"`
-}
-
-// PaymentMethod defines model for PaymentMethod.
-type PaymentMethod struct {
-	BillingAccountId int64               `json:"billing_account_id"`
-	Brand            *string             `json:"brand,omitempty"`
-	ExpMonth         *int                `json:"exp_month,omitempty"`
-	ExpYear          *int                `json:"exp_year,omitempty"`
-	Id               openapi_types.UUID  `json:"id"`
-	IsDefault        bool                `json:"is_default"`
-	Last4            *string             `json:"last4,omitempty"`
-	PaymentGateway   string              `json:"payment_gateway"`
-	Status           PaymentMethodStatus `json:"status"`
-}
-
-// PaymentMethodStatus defines model for PaymentMethod.Status.
-type PaymentMethodStatus string
-
-// PaymentMethodList defines model for PaymentMethodList.
-type PaymentMethodList struct {
-	Items      []PaymentMethod `json:"items"`
-	TotalCount *int64          `json:"total_count,omitempty"`
-}
-
-// PaymentMethodSetup defines model for PaymentMethodSetup.
-type PaymentMethodSetup struct {
-	BillingAccountId int64   `json:"billing_account_id"`
-	ReturnUrl        *string `json:"return_url,omitempty"`
-}
-
-// PaymentMethodSetupResult What the payment gateway's browser library needs in order to collect a card. There is
-// no address to redirect to: the form is rendered in the page, and the card goes straight
-// from the browser to the gateway.
-type PaymentMethodSetupResult struct {
-	// ClientSecret Authorises this one attempt with the gateway, and nothing else. Pass it to the
-	// gateway's library; it is not an API credential and grants no access here.
-	ClientSecret string     `json:"client_secret"`
-	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
-
-	// PublishableKey The gateway's public key to initialise its library with. It differs between test
-	// and live, so read it from here rather than compiling it in.
-	PublishableKey string `json:"publishable_key"`
-
-	// SetupId The gateway's identifier for this attempt. Use it to tell a reloaded page apart
-	// from a second attempt.
-	SetupId string `json:"setup_id"`
-}
-
-// PaymentResult defines model for PaymentResult.
-type PaymentResult struct {
-	// AmountDue What is still outstanding. Zero once the payment succeeds. Unchanged while
-	// `processing`: nothing is collected until the gateway confirms it.
-	AmountDue externalRef0.Money `json:"amount_due"`
-
-	// AmountPaid A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	AmountPaid externalRef0.Money `json:"amount_paid"`
-
-	// BalanceApplied How much came from the account balance. Applied immediately, and released again if
-	// the rest of the payment fails, so a failed card does not leave part of the balance
-	// consumed against an unpaid invoice.
-	BalanceApplied *externalRef0.Money `json:"balance_applied,omitempty"`
-
-	// CheckoutUrl Present with `requires_action`.
-	CheckoutUrl *string `json:"checkout_url,omitempty"`
-
-	// ClientSecret Provider client secret for completing this same payment attempt in the browser.
-	ClientSecret  *string             `json:"client_secret,omitempty"`
-	Currency      string              `json:"currency"`
-	FailureReason *string             `json:"failure_reason,omitempty"`
-	InvoiceId     *openapi_types.UUID `json:"invoice_id,omitempty"`
-	OrderId       *openapi_types.UUID `json:"order_id,omitempty"`
-
-	// PaymentAttemptId This attempt. The same identifier comes back while it is still in flight, which is
-	// how a repeated call is told apart from a genuine second payment.
-	PaymentAttemptId openapi_types.UUID `json:"payment_attempt_id"`
-
-	// PublishableKey Provider publishable key used with client_secret.
-	PublishableKey *string `json:"publishable_key,omitempty"`
-
-	// Retriable Whether paying again is worth attempting. False for a refusal that will keep
-	// happening — a closed account, an amount over a limit — so that a client does not
-	// retry in a loop.
-	Retriable *bool `json:"retriable,omitempty"`
-
-	// RetryAfter The earliest sensible moment to try again. Present when the gateway asked for a
-	// wait.
-	RetryAfter *time.Time `json:"retry_after,omitempty"`
-
-	// Status Where the payment has got to.
-	//
-	// `succeeded` — collected in full. Nothing further is owed.
-	//
-	// `processing` — submitted to the payment gateway and awaiting its answer. **Do not
-	// submit it again**; poll the invoice or order, or wait to be notified. Some methods take
-	// minutes and a few take days.
-	//
-	// `requires_action` — the payer has to finish it at `checkout_url`, typically by
-	// confirming with their bank. It becomes `processing` once they do.
-	//
-	// `failed` — this attempt did not go through. `failure_reason` says why, and paying again
-	// starts a fresh attempt.
-	//
-	// The gateway's own answer is what decides: an attempt is only `succeeded` once the
-	// gateway says so, never because this call returned.
-	Status PaymentStatus `json:"status"`
-}
-
-// PaymentStatus Where the payment has got to.
-//
-// `succeeded` — collected in full. Nothing further is owed.
-//
-// `processing` — submitted to the payment gateway and awaiting its answer. **Do not
-// submit it again**; poll the invoice or order, or wait to be notified. Some methods take
-// minutes and a few take days.
-//
-// `requires_action` — the payer has to finish it at `checkout_url`, typically by
-// confirming with their bank. It becomes `processing` once they do.
-//
-// `failed` — this attempt did not go through. `failure_reason` says why, and paying again
-// starts a fresh attempt.
-//
-// The gateway's own answer is what decides: an attempt is only `succeeded` once the
-// gateway says so, never because this call returned.
-type PaymentStatus string
-
-// Plan defines model for Plan.
-type Plan struct {
-	Description *string `json:"description,omitempty"`
-
-	// DescriptionTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	DescriptionTranslations *externalRef0.Translations `json:"description_translations,omitempty"`
-	Id                      openapi_types.UUID         `json:"id"`
-	Name                    string                     `json:"name"`
-
-	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
-	ProductId        openapi_types.UUID         `json:"product_id"`
-}
-
-// PlanList defines model for PlanList.
-type PlanList struct {
-	Items      []Plan `json:"items"`
-	TotalCount *int64 `json:"total_count,omitempty"`
-}
-
-// Price defines model for Price.
-type Price struct {
-	// Allowances Quantities included when this price is bought — the traffic or requests that are
-	// used before anything is charged for.
-	Allowances []IncludedAllowance `json:"allowances,omitempty"`
-
-	// BillingScheme How the amount is arrived at. `rated` means the rate depends on attributes such as
-	// region or machine type, and is looked up on a price list.
-	BillingScheme PriceBillingScheme `json:"billing_scheme"`
-	Currency      string             `json:"currency"`
-
-	// Features Capabilities that buying this price makes available.
-	Features []IncludedFeature  `json:"features,omitempty"`
-	Id       openapi_types.UUID `json:"id"`
-
-	// MaxQuantity The largest quantity that can be bought. Absent means no upper bound.
-	//
-	// An order beyond it is refused with its own code, apart from the codes for running
-	// out of stock and for exceeding what the infrastructure allows.
-	MaxQuantity *externalRef0.Money `json:"max_quantity,omitempty"`
-
-	// MinQuantity The smallest quantity that can be bought. Absent means no lower bound.
-	MinQuantity *externalRef0.Money `json:"min_quantity,omitempty"`
-	Period      *PricePeriod        `json:"period,omitempty"`
-	PlanId      openapi_types.UUID  `json:"plan_id"`
-	ProductId   *openapi_types.UUID `json:"product_id,omitempty"`
-
-	// QuantityStep Quantities must be a multiple of this. Absent means any quantity within the bounds.
-	QuantityStep *externalRef0.Money `json:"quantity_step,omitempty"`
-
-	// RateCardId For `rated` prices, the price list the rates are read from.
-	RateCardId *openapi_types.UUID `json:"rate_card_id,omitempty"`
-
-	// RefundPolicy none preserves paid amounts when fulfilled service ends. standard applies the documented refund window and change proration rules. Releasing unpaid holds or returning funds for failed fulfillment is separate.
-	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
-
-	// SetupFee A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	SetupFee *externalRef0.Money `json:"setup_fee,omitempty"`
-
-	// Term For prepaid prices, how many periods one purchase covers.
-	Term *int `json:"term,omitempty"`
-
-	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
-	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
-
-	// Tiers Present for `tiered`, in ascending order.
-	Tiers []Tier `json:"tiers,omitempty"`
-
-	// TiersMode `none` for a price that is not tiered, which is most of them.
-	//
-	// Otherwise `graduated` charges each band at its own rate, and `volume` charges
-	// everything at the rate of the band the total falls in.
-	TiersMode *PriceTiersMode `json:"tiers_mode,omitempty"`
-
-	// Type `metered` charges for what is used, `prepaid` buys a period in advance, `one_time`
-	// charges once.
-	Type PriceType `json:"type"`
-
-	// UnitAmount Present for `per_unit`.
-	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
-}
-
-// PriceBillingScheme How the amount is arrived at. `rated` means the rate depends on attributes such as
-// region or machine type, and is looked up on a price list.
-type PriceBillingScheme string
-
-// PricePeriod defines model for Price.Period.
-type PricePeriod string
-
-// PriceTiersMode `none` for a price that is not tiered, which is most of them.
-//
-// Otherwise `graduated` charges each band at its own rate, and `volume` charges
-// everything at the rate of the band the total falls in.
-type PriceTiersMode string
-
-// PriceType `metered` charges for what is used, `prepaid` buys a period in advance, `one_time`
-// charges once.
-type PriceType string
-
-// PriceList defines model for PriceList.
-type PriceList struct {
-	Items      []Price `json:"items"`
-	TotalCount *int64  `json:"total_count,omitempty"`
 }
 
 // Product defines model for Product.
 type Product struct {
 	Description *string `json:"description,omitempty"`
 
-	// DescriptionTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	DescriptionTranslations *externalRef0.Translations `json:"description_translations,omitempty"`
-	Id                      openapi_types.UUID         `json:"id"`
-	Name                    string                     `json:"name"`
-
-	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
+	// Id Immutable platform service identifier, such as compute, canopy or assistant.
+	Id   ProductID `json:"id"`
+	Name string    `json:"name"`
 }
 
-// ProductList defines model for ProductList.
-type ProductList struct {
-	Items      []Product `json:"items"`
-	TotalCount *int64    `json:"total_count,omitempty"`
+// ProductID Immutable platform service identifier, such as compute, canopy or assistant.
+type ProductID = string
+
+// ProjectBillingAccount A narrow view of the project's billing account, restricted to what a project member needs in order
+// to know whether the project's resources will keep running.
+type ProjectBillingAccount struct {
+	// BillingAccountId Identifies the billing account. Use it to link into the billing centre.
+	BillingAccountId int64 `json:"billing_account_id"`
+
+	// Currency Everything this project is charged is in this currency, and it cannot change while
+	// the account exists.
+	Currency string `json:"currency"`
+	Name     string `json:"name"`
+
+	// SpendableAmount What remains to be spent. It already accounts for this month's uninvoiced usage, so
+	// it is what will be available at checkout rather than the balance shown in the
+	// billing centre. It goes negative when usage has exceeded the balance.
+	SpendableAmount externalRef0.Money `json:"spendable_amount"`
+
+	// Status `active` — nothing is owed. `past_due` — the account owes money and resources are
+	// still running. `suspended` — resources have been stopped for non-payment.
+	Status ProjectBillingAccountStatus `json:"status"`
+
+	// SuspendsAt When this project's resources will be stopped unless the account is topped up.
+	// Absent while `status` is `active`.
+	SuspendsAt *time.Time `json:"suspends_at,omitempty"`
 }
 
-// ProjectBinding defines model for ProjectBinding.
-type ProjectBinding struct {
-	AccountName      *string            `json:"account_name,omitempty"`
-	BillingAccountId int64              `json:"billing_account_id"`
-	Currency         string             `json:"currency"`
-	EffectiveFrom    time.Time          `json:"effective_from"`
-	EffectiveTo      *time.Time         `json:"effective_to,omitempty"`
-	ProjectId        openapi_types.UUID `json:"project_id"`
-}
+// ProjectBillingAccountStatus `active` — nothing is owed. `past_due` — the account owes money and resources are
+// still running. `suspended` — resources have been stopped for non-payment.
+type ProjectBillingAccountStatus string
 
-// ProjectBindingList defines model for ProjectBindingList.
-type ProjectBindingList struct {
-	Items      []ProjectBinding `json:"items"`
-	TotalCount *int64           `json:"total_count,omitempty"`
-}
-
-// ProjectClosureItem One outstanding Billing obligation. action_required identifies a supported next step, not authorization to destroy a resource. Items for the same resource must be considered together.
+// ProjectClosureItem One purchase, metered resource or resource operation that has not finished. action_required identifies a supported next step, not authorization to destroy a resource. Items for the same resource must be considered together.
 type ProjectClosureItem struct {
 	Actions []ProjectClosureItemActions `json:"actions"`
 
-	// Cancellation A cancellation request for the original purchase. scheduled_for is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
-	Cancellation          *SubscriptionCancellation     `json:"cancellation,omitempty"`
+	// Cancellation A cancellation request for the original purchase. scheduled_at is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
+	Cancellation          *CancellationRequest          `json:"cancellation,omitempty"`
 	Currency              *string                       `json:"currency,omitempty"`
 	Disposition           ProjectClosureItemDisposition `json:"disposition"`
 	EarliestTerminationAt *time.Time                    `json:"earliest_termination_at,omitempty"`
 	Id                    openapi_types.UUID            `json:"id"`
-	ProductId             *openapi_types.UUID           `json:"product_id,omitempty"`
-	ReasonCode            string                        `json:"reason_code"`
+
+	// ProductId Immutable platform service identifier, such as compute, canopy or assistant.
+	ProductId  *ProductID `json:"product_id,omitempty"`
+	ReasonCode string     `json:"reason_code"`
 
 	// RefundAmount Known refund amount as a decimal string. Absent means a separate quote is required, not zero.
 	RefundAmount *string                `json:"refund_amount,omitempty"`
@@ -2471,7 +1120,7 @@ type ProjectClosureItemType string
 
 // ProjectClosurePreview Read-only, paginated assessment. Does not cancel orders, stop renewals, refund payments or release resources. Concurrent orders or callbacks may change the result; execution must close admission and recheck.
 type ProjectClosurePreview struct {
-	// CanClose True only when the full Billing result, across all pages, has no outstanding obligations. Technical services must independently confirm that all resources are gone.
+	// CanClose True only when the full Billing result, across all pages, has no outstanding items. Technical services must independently confirm that all resources are gone.
 	CanClose    bool                 `json:"can_close"`
 	EvaluatedAt time.Time            `json:"evaluated_at"`
 	Items       []ProjectClosureItem `json:"items"`
@@ -2479,123 +1128,23 @@ type ProjectClosurePreview struct {
 	TotalCount  int64                `json:"total_count"`
 }
 
-// ProjectPayer A narrow view of the paying account, restricted to what a project member needs in order
-// to know whether the project's resources will keep running.
-type ProjectPayer struct {
-	// BillingAccountId Identifies the payer. Use it to link into the billing centre.
-	BillingAccountId int64 `json:"billing_account_id"`
-
-	// Currency Everything this project is charged is in this currency, and it cannot change while
-	// the account exists.
-	Currency string `json:"currency"`
-	Name     string `json:"name"`
-
-	// SpendableAmount What remains to be spent. It already accounts for this month's uninvoiced usage, so
-	// it is what will be available at checkout rather than the cash figure shown in the
-	// billing centre. It goes negative when usage has exceeded the balance.
-	SpendableAmount externalRef0.Money `json:"spendable_amount"`
-
-	// Status `active` — nothing is owed. `past_due` — the account owes money and resources are
-	// still running. `suspended` — resources have been stopped for non-payment.
-	Status ProjectPayerStatus `json:"status"`
-
-	// SuspendsAt When this project's resources will be stopped unless the account is topped up.
-	// Absent while `status` is `active`.
-	SuspendsAt *time.Time `json:"suspends_at,omitempty"`
-}
-
-// ProjectPayerStatus `active` — nothing is owed. `past_due` — the account owes money and resources are
-// still running. `suspended` — resources have been stopped for non-payment.
-type ProjectPayerStatus string
-
-// ProjectPayerSet defines model for ProjectPayerSet.
-type ProjectPayerSet struct {
-	BillingAccountId int64 `json:"billing_account_id"`
-}
-
-// PurchaseOperation Which purchase this applies to. `upgrade` and `downgrade` are told apart by money: a change
-// that costs more for the remainder of the period is an upgrade, one that returns money
-// is a downgrade. A change that costs neither more nor less is neither.
-//
-// `new` means a new purchase as opposed to a renewal or a change. It does not mean the
-// account's first purchase.
-type PurchaseOperation string
-
 // Quote defines model for Quote.
 type Quote struct {
-	Changes  []QuoteChangeResult `json:"changes,omitempty"`
-	Currency string              `json:"currency"`
-	Lines    []QuoteLineResult   `json:"lines,omitempty"`
+	Currency string               `json:"currency"`
+	Lines    []QuoteLineResult    `json:"lines,omitempty"`
+	Renewals []QuoteRenewalResult `json:"renewals,omitempty"`
 
-	// Total What would be owed in total. Amounts to be returned are not netted off it.
+	// Total What would be owed in total, renewals included. Amounts to be returned are not netted
+	// off it.
 	//
 	// Null when any line could not be priced. What would be owed is not knowable then, and a
 	// total that silently left the unpriced lines out would read as a smaller bill rather than
 	// an incomplete one — the per-line `priced` flag is easy to skip, a missing total is not.
 	Total *externalRef0.Money `json:"total,omitempty"`
-
-	// TotalRefundable What would be returned in total.
-	TotalRefundable *externalRef0.Money `json:"total_refundable,omitempty"`
 }
 
-// QuoteChange Estimate a change to a subscription item using a target plan or price.
-type QuoteChange struct {
-	// EffectiveAt When the change would take effect. Defaults to now. Charging is split at this
-	// moment: before it at the old configuration, after it at the new one.
-	EffectiveAt *time.Time          `json:"effective_at,omitempty"`
-	PlanId      *openapi_types.UUID `json:"plan_id,omitempty"`
-	PriceId     *openapi_types.UUID `json:"price_id,omitempty"`
-
-	// Quantity The new quantity. The current one is kept when omitted.
-	Quantity *string `json:"quantity,omitempty"`
-
-	// SubscriptionItemId What is being changed.
-	SubscriptionItemId openapi_types.UUID `json:"subscription_item_id"`
-}
-
-// QuoteChangeResult defines model for QuoteChangeResult.
-type QuoteChangeResult struct {
-	Currency string `json:"currency"`
-	Index    int    `json:"index"`
-
-	// NewCharge What the new configuration costs for the rest of that period.
-	NewCharge *externalRef0.Money `json:"new_charge,omitempty"`
-
-	// PayableNow What would be owed. Zero when the change reduces the price; the difference then
-	// appears in `refundable_amount`.
-	PayableNow externalRef0.Money `json:"payable_now"`
-
-	// PeriodEnd When the current period ends. A change does not move it; the next renewal is
-	// charged at the new price.
-	PeriodEnd *time.Time `json:"period_end,omitempty"`
-	PlanName  *string    `json:"plan_name,omitempty"`
-
-	// PriceId The price that would apply. Always returned.
-	PriceId openapi_types.UUID `json:"price_id"`
-
-	// RefundableAmount What would be returned. It goes back to the sources that originally paid rather
-	// than being offset against `payable_now`, so that a purchase made with credit is
-	// refunded as credit.
-	RefundableAmount   externalRef0.Money `json:"refundable_amount"`
-	SubscriptionItemId openapi_types.UUID `json:"subscription_item_id"`
-
-	// TaxAmount Tax included in the account quote. Absent in public catalogue estimates.
-	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
-
-	// TaxIncludedAmount Tax already included in the displayed price.
-	TaxIncludedAmount *externalRef0.Money `json:"tax_included_amount,omitempty"`
-
-	// UnusedCredit What remains unused of the period already paid for, valued at the price it was
-	// bought at rather than at today's price.
-	UnusedCredit *externalRef0.Money `json:"unused_credit,omitempty"`
-}
-
-// QuoteLine Identify a price directly, or select a price for a plan.
+// QuoteLine Identify a price directly, or select a price for a plan. For each resource give its ID or lookup key, never both. Lookup keys require product_id.
 type QuoteLine struct {
-	// BillingPeriod For prepaid items, such as `1_month` or `1_year`. Required when the item is offered
-	// for more than one period.
-	BillingPeriod *string `json:"billing_period,omitempty"`
-
 	// Dimensions The attributes the price depends on — region, instance type, token class.
 	//
 	// Required when the price draws its rates from a price list, which is how anything
@@ -2609,15 +1158,25 @@ type QuoteLine struct {
 	// DurationSeconds For metered items, how long to price for. This allows an estimate such as "about
 	// this much per month" to be shown before anything exists.
 	DurationSeconds *int64              `json:"duration_seconds,omitempty"`
+	Interval        *QuoteLineInterval  `json:"interval,omitempty"`
+	IntervalCount   *int                `json:"interval_count,omitempty"`
 	MeterId         *openapi_types.UUID `json:"meter_id,omitempty"`
+	MeterLookupKey  *string             `json:"meter_lookup_key,omitempty"`
 	PlanId          *openapi_types.UUID `json:"plan_id,omitempty"`
+	PlanLookupKey   *string             `json:"plan_lookup_key,omitempty"`
 	PriceId         *openapi_types.UUID `json:"price_id,omitempty"`
+	PriceLookupKey  *string             `json:"price_lookup_key,omitempty"`
 
 	// PriceType Narrows the selection when a plan offers more than one billing type.
 	PriceType *QuoteLinePriceType `json:"price_type,omitempty"`
-	ProductId *openapi_types.UUID `json:"product_id,omitempty"`
-	Quantity  string              `json:"quantity"`
+
+	// ProductId Immutable platform service identifier, such as compute, canopy or assistant.
+	ProductId *ProductID `json:"product_id,omitempty"`
+	Quantity  string     `json:"quantity"`
 }
+
+// QuoteLineInterval defines model for QuoteLine.Interval.
+type QuoteLineInterval string
 
 // QuoteLinePriceType Narrows the selection when a plan offers more than one billing type.
 type QuoteLinePriceType string
@@ -2681,284 +1240,66 @@ type QuoteLineResult struct {
 // at the moment asked about.
 type QuoteLineResultUnpricedReason string
 
-// QuoteRequest Give `lines` to price new purchases, or `changes` to price alterations to what is
-// already running. Both may appear in one request; the total covers everything.
-type QuoteRequest struct {
-	Changes []QuoteChange `json:"changes,omitempty"`
-	Lines   []QuoteLine   `json:"lines,omitempty"`
+// QuoteRenewal Price renewing a prepaid subscription. Give `price_id`, or `interval` with
+// `interval_count`, to renew for another term at the price currently sold for it. Naming
+// the current term, or giving neither, renews at the agreed amount.
+type QuoteRenewal struct {
+	Interval      *QuoteRenewalInterval `json:"interval,omitempty"`
+	IntervalCount *int                  `json:"interval_count,omitempty"`
+
+	// Periods How many consecutive periods to renew for.
+	Periods        *int                `json:"periods,omitempty"`
+	PriceId        *openapi_types.UUID `json:"price_id,omitempty"`
+	SubscriptionId openapi_types.UUID  `json:"subscription_id"`
 }
 
-// Rate defines model for Rate.
-type Rate struct {
-	Currency string `json:"currency"`
+// QuoteRenewalInterval defines model for QuoteRenewal.Interval.
+type QuoteRenewalInterval string
 
-	// Dimensions The attributes this rate applies to, such as region and machine type.
-	Dimensions    map[string]string `json:"dimensions"`
-	EffectiveFrom time.Time         `json:"effective_from"`
-	EffectiveTo   *time.Time        `json:"effective_to,omitempty"`
-
-	// Meter A catalog object inlined for display.
-	Meter        ObjectIdentity   `json:"meter"`
-	PricingModel RatePricingModel `json:"pricing_model"`
-
-	// Tiers Present for `graduated` and `volume`, in ascending order.
-	Tiers []Tier `json:"tiers,omitempty"`
-
-	// Unit The unit readings arrive in, such as `core-second`.
-	Unit *string `json:"unit,omitempty"`
-
-	// UnitAmount Present for `per_unit`. Tiered rates carry their amounts on the tiers.
-	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
-
-	// UnitQuantity How many measured units one amount covers. An hourly rate on a per-second meter is
-	// `"3600"`.
-	UnitQuantity *string `json:"unit_quantity,omitempty"`
-}
-
-// RatePricingModel defines model for Rate.PricingModel.
-type RatePricingModel string
-
-// RateList defines model for RateList.
-type RateList struct {
-	Items      []Rate `json:"items"`
-	TotalCount *int64 `json:"total_count,omitempty"`
-}
-
-// Refund defines model for Refund.
-type Refund struct {
-	BillingAccountId *int64 `json:"billing_account_id,omitempty"`
-
-	// CashDestination Where the cash went.
-	CashDestination *RefundCashDestination `json:"cash_destination,omitempty"`
-	CreatedAt       time.Time              `json:"created_at"`
-	Currency        string                 `json:"currency"`
-	Id              openapi_types.UUID     `json:"id"`
-	InvoiceId       *openapi_types.UUID    `json:"invoice_id,omitempty"`
-	OrderId         *openapi_types.UUID    `json:"order_id,omitempty"`
-	Reason          *string                `json:"reason,omitempty"`
-
-	// RequestedAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	RequestedAmount externalRef0.Money `json:"requested_amount"`
-
-	// SettledAmount What has actually been returned.
-	SettledAmount *externalRef0.Money `json:"settled_amount,omitempty"`
-
-	// Status `pending` — accepted, not yet sent to the payment gateway. `processing` — with the
-	// gateway and awaiting its answer, which takes days for some methods. Neither is
-	// final, and neither means the money has moved.
-	Status RefundStatus `json:"status"`
-}
-
-// RefundCashDestination Where the cash went.
-type RefundCashDestination string
-
-// RefundStatus `pending` — accepted, not yet sent to the payment gateway. `processing` — with the
-// gateway and awaiting its answer, which takes days for some methods. Neither is
-// final, and neither means the money has moved.
-type RefundStatus string
-
-// RefundList defines model for RefundList.
-type RefundList struct {
-	Items      []Refund `json:"items"`
-	TotalCount *int64   `json:"total_count,omitempty"`
-}
-
-// RefundPolicy none preserves paid amounts when fulfilled service ends. standard applies the documented refund window and change proration rules. Releasing unpaid holds or returning funds for failed fulfillment is separate.
-type RefundPolicy string
-
-// RefundQuote What a full refund would return, and where each part of it would go.
-type RefundQuote struct {
-	// CashDestination Where the cash part would go. `gateway` returns it to the method it was paid
-	// with; `balance` credits the account instead, which is the answer whenever the cash
-	// came from more than one place or never went through a gateway at all.
-	CashDestination RefundQuoteCashDestination `json:"cash_destination"`
-	Currency        string                     `json:"currency"`
-
-	// RefundableAmount The most that can still be returned, before any fee.
-	RefundableAmount externalRef0.Money `json:"refundable_amount"`
-
-	// SelfServiceUntil The last moment a refund can be asked for here. Measured from when the purchase was
-	// paid for, not from today. Absent when this cannot be refunded without support at
-	// all — metered usage, for one, which is never self-service.
-	SelfServiceUntil *time.Time `json:"self_service_until,omitempty"`
-
-	// Sources How `refundable_amount` splits by where the money came from. The amounts sum to it.
-	//
-	// Show this rather than a single figure. A part returned as credit or as a voucher
-	// does not appear on a card statement, so a customer told only the net amount will
-	// ask why less than that arrived.
-	Sources []RefundSource `json:"sources"`
-}
-
-// RefundQuoteCashDestination Where the cash part would go. `gateway` returns it to the method it was paid
-// with; `balance` credits the account instead, which is the answer whenever the cash
-// came from more than one place or never went through a gateway at all.
-type RefundQuoteCashDestination string
-
-// RefundRequest Name exactly one of the three targets. Naming none leaves the amount undecided;
-// naming two leaves it ambiguous, and both would have to be resolved by guessing.
-type RefundRequest struct {
-	// Amount How much to give back. Absent asks for everything still refundable on the target.
-	//
-	// More than what remains is refused rather than reduced to the remainder: a caller
-	// asking for more than it can have has miscounted, and quietly giving it less
-	// hides that.
-	Amount         *externalRef0.Money `json:"amount,omitempty"`
-	IdempotencyKey string              `json:"idempotency_key"`
-	InvoiceId      *openapi_types.UUID `json:"invoice_id,omitempty"`
-	OrderId        *openapi_types.UUID `json:"order_id,omitempty"`
-	Reason         string              `json:"reason"`
-
-	// SubscriptionPeriodId The period to end early. Use this to give back a prepaid term that still has
-	// time left on it.
-	SubscriptionPeriodId *openapi_types.UUID `json:"subscription_period_id,omitempty"`
-}
-
-// RefundSource defines model for RefundSource.
-type RefundSource struct {
-	// Amount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
+// QuoteRenewalResult What renewing would charge. Renewing the same subscription for the same term and number
+// of periods charges exactly `total`, unless prices or the discounts the account holds
+// change in between.
+type QuoteRenewalResult struct {
+	// Amount The price of the periods before the discounts the account holds. A discount the
+	// subscription already carries is reflected here. Contains tax only where the price
+	// itself includes it.
 	Amount externalRef0.Money `json:"amount"`
 
-	// Type Where this part of the money came from, and therefore where it returns to. Only
-	// `cash` can reach a card or a spendable balance. Granted funds return to the grant
-	// that issued them and never become cash.
-	Type RefundSourceType `json:"type"`
+	// DiscountAmount The reduction from a discount the account holds.
+	DiscountAmount externalRef0.Money `json:"discount_amount"`
+
+	// Index Which renewal of the request this answers.
+	Index         int                        `json:"index"`
+	Interval      QuoteRenewalResultInterval `json:"interval"`
+	IntervalCount int                        `json:"interval_count"`
+	Periods       int                        `json:"periods"`
+
+	// PriceId The price the renewal is charged under.
+	PriceId        openapi_types.UUID `json:"price_id"`
+	SubscriptionId openapi_types.UUID `json:"subscription_id"`
+
+	// TaxAmount Tax on the discounted amount.
+	TaxAmount externalRef0.Money `json:"tax_amount"`
+
+	// TaxIncludedAmount The part of `tax_amount` already contained in `amount`.
+	TaxIncludedAmount externalRef0.Money `json:"tax_included_amount"`
+
+	// Total What renewing would charge: `amount` less `discount_amount`, plus `tax_amount`, less
+	// `tax_included_amount`.
+	Total externalRef0.Money `json:"total"`
 }
 
-// RefundSourceType Where this part of the money came from, and therefore where it returns to. Only
-// `cash` can reach a card or a spendable balance. Granted funds return to the grant
-// that issued them and never become cash.
-type RefundSourceType string
+// QuoteRenewalResultInterval defines model for QuoteRenewalResult.Interval.
+type QuoteRenewalResultInterval string
 
-// RenewRequest defines model for RenewRequest.
-type RenewRequest struct {
-	IdempotencyKey  string              `json:"idempotency_key"`
-	PaymentMethodId *openapi_types.UUID `json:"payment_method_id,omitempty"`
-
-	// Period The unit `term` counts in.
-	Period *RenewRequestPeriod `json:"period,omitempty"`
-
-	// Periods How many further periods to buy, each at the price this item already bills at.
-	//
-	// Buying twelve monthly periods is not the same as buying one yearly term: a longer
-	// term is usually sold at a lower price, and that price is only reached by naming the
-	// term. Use `term` and `period` for that.
-	Periods   *int    `json:"periods,omitempty"`
-	ReturnUrl *string `json:"return_url,omitempty"`
-
-	// Term Renew for a term of this length instead, at the price currently sold for it. Give
-	// `period` with it.
-	//
-	// Leaving both out renews at the price this item already bills at, which a later price
-	// change does not affect. Naming a term that differs from the current one is a fresh
-	// choice, so it is bought at today's price. Naming the current term changes nothing.
-	//
-	// List the terms on offer with the renewal prices operation.
-	Term       *int  `json:"term,omitempty"`
-	UseBalance *bool `json:"use_balance,omitempty"`
+// QuoteRequest Specify lines for new purchases and renewals for existing subscriptions. The total includes all requested items.
+type QuoteRequest struct {
+	Lines    []QuoteLine    `json:"lines,omitempty"`
+	Renewals []QuoteRenewal `json:"renewals,omitempty"`
 }
 
-// RenewRequestPeriod The unit `term` counts in.
-type RenewRequestPeriod string
-
-// RenewalPrice defines model for RenewalPrice.
-type RenewalPrice struct {
-	// Amount What renewing for this term costs, for the quantity held.
-	Amount   *externalRef0.Money `json:"amount,omitempty"`
-	Currency *string             `json:"currency,omitempty"`
-
-	// Current The term this item already bills at. Renewing for it uses the price bought
-	// originally, so a later price change does not affect it.
-	Current bool               `json:"current"`
-	Period  RenewalPricePeriod `json:"period"`
-	PriceId openapi_types.UUID `json:"price_id"`
-
-	// Term How many periods one renewal covers.
-	Term int `json:"term"`
-}
-
-// RenewalPricePeriod defines model for RenewalPrice.Period.
-type RenewalPricePeriod string
-
-// RenewalPriceList defines model for RenewalPriceList.
-type RenewalPriceList struct {
-	Items []RenewalPrice `json:"items"`
-}
-
-// ScopeEntry One catalogue entry named by a scope, with the name to show for it.
-//
-// `excluded` marks an entry the scope rules out: it never qualifies, even when another
-// field includes it.
-type ScopeEntry struct {
-	Excluded bool               `json:"excluded"`
-	Id       openapi_types.UUID `json:"id"`
-	Name     *string            `json:"name,omitempty"`
-
-	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
-}
-
-// ScopePriceEntry One price named by a scope. Prices have no name, so the terms are given instead —
-// a scope limited to a price is usually limiting to one billing period.
-type ScopePriceEntry struct {
-	Currency *string                `json:"currency,omitempty"`
-	Excluded bool                   `json:"excluded"`
-	Id       openapi_types.UUID     `json:"id"`
-	Period   *ScopePriceEntryPeriod `json:"period,omitempty"`
-
-	// Term How many periods one purchase covers.
-	Term *int                 `json:"term,omitempty"`
-	Type *ScopePriceEntryType `json:"type,omitempty"`
-
-	// UnitAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
-}
-
-// ScopePriceEntryPeriod defines model for ScopePriceEntry.Period.
-type ScopePriceEntryPeriod string
-
-// ScopePriceEntryType defines model for ScopePriceEntry.Type.
-type ScopePriceEntryType string
-
-// SettleResult defines model for SettleResult.
-type SettleResult struct {
-	Currency  string              `json:"currency"`
-	InvoiceId *openapi_types.UUID `json:"invoice_id,omitempty"`
-
-	// InvoicedAmount Zero when there was nothing outstanding, in which case no invoice is created.
-	InvoicedAmount externalRef0.Money `json:"invoiced_amount"`
-}
+// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+type RefundPolicy string
 
 // SpendRow defines model for SpendRow.
 type SpendRow struct {
@@ -2975,9 +1316,7 @@ type SpendRow struct {
 	Currency string              `json:"currency"`
 	PlanId   *openapi_types.UUID `json:"plan_id,omitempty"`
 	PlanName *string             `json:"plan_name,omitempty"`
-
-	// Product A catalog object inlined for display.
-	Product *ObjectIdentity `json:"product,omitempty"`
+	Product  *Product            `json:"product,omitempty"`
 
 	// ResourceId Present only when grouped by resource.
 	ResourceId *string `json:"resource_id,omitempty"`
@@ -2993,85 +1332,73 @@ type SpendRowList struct {
 	TotalCount *int64             `json:"total_count,omitempty"`
 }
 
-// Subscription defines model for Subscription.
+// Subscription An independently billed purchase. Fixed renewals use the agreed recurring_amount and interval; already paid periods retain their original value. Technical state belongs to the owning service.
 type Subscription struct {
-	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
-	Id               openapi_types.UUID `json:"id"`
-	ItemCount        *int64             `json:"item_count,omitempty"`
+	Account   AccountIdentity `json:"account"`
+	AutoRenew bool            `json:"auto_renew"`
 
-	// Product A catalog object inlined for display.
-	Product   *ObjectIdentity    `json:"product,omitempty"`
-	ProductId openapi_types.UUID `json:"product_id"`
+	// BillingAccountId The billing account that made the purchase. Renewals of a project subscription are charged to the project's current billing account.
+	BillingAccountId   int64                   `json:"billing_account_id"`
+	BillingCycleAnchor *time.Time              `json:"billing_cycle_anchor,omitempty"`
+	BillingType        SubscriptionBillingType `json:"billing_type"`
+
+	// CancellationRequest A cancellation request for the original purchase. scheduled_at is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
+	CancellationRequest *CancellationRequest `json:"cancellation_request,omitempty"`
+
+	// Coupon A catalog object inlined for display.
+	Coupon                      *ObjectIdentity      `json:"coupon,omitempty"`
+	CouponId                    *openapi_types.UUID  `json:"coupon_id,omitempty"`
+	CreatedAt                   *time.Time           `json:"created_at,omitempty"`
+	Currency                    string               `json:"currency"`
+	DiscountedRenewalsRemaining *int                 `json:"discounted_renewals_remaining,omitempty"`
+	EndedAt                     *time.Time           `json:"ended_at,omitempty"`
+	Id                          openapi_types.UUID   `json:"id"`
+	Interval                    SubscriptionInterval `json:"interval"`
+	IntervalCount               *int                 `json:"interval_count,omitempty"`
+	OrderItemId                 *openapi_types.UUID  `json:"order_item_id,omitempty"`
+
+	// PaidUntil Present for prepaid items. Absent for metered ones, which have no end date.
+	PaidUntil *time.Time `json:"paid_until,omitempty"`
+
+	// PaidWith How the purchase, or the latest renewal paid with a saved card, was paid. Automatic renewal
+	// tries this card after the account's balance and credits, and the account's default card after
+	// that.
+	PaidWith *PaidWith          `json:"paid_with,omitempty"`
+	PlanId   openapi_types.UUID `json:"plan_id"`
+	PlanName string             `json:"plan_name"`
+	PriceId  openapi_types.UUID `json:"price_id"`
+	Product  Product            `json:"product"`
+
+	// ProductId Immutable platform service identifier, such as compute, canopy or assistant.
+	ProductId ProductID `json:"product_id"`
 
 	// ProjectId Which project this is for. Absent when it was bought at account level, such as a
 	// membership, which belongs to no single project.
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
+	Quantity  string              `json:"quantity"`
 
-	// Status `pending` is a subscription created by an order that has not completed, so it
-	// appears in the list before anything under it is running.
-	Status SubscriptionStatus `json:"status"`
+	// RecurringAmount Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Absent for other billing types.
+	RecurringAmount *string `json:"recurring_amount,omitempty"`
+
+	// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+	RefundPolicy           *RefundPolicy       `json:"refund_policy,omitempty"`
+	ReplacesSubscriptionId *openapi_types.UUID `json:"replaces_subscription_id,omitempty"`
+	StartedAt              *time.Time          `json:"started_at,omitempty"`
+	Status                 SubscriptionStatus  `json:"status"`
+	SuspendReason          *string             `json:"suspend_reason,omitempty"`
+
+	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
 }
 
-// SubscriptionStatus `pending` is a subscription created by an order that has not completed, so it
-// appears in the list before anything under it is running.
+// SubscriptionBillingType defines model for Subscription.BillingType.
+type SubscriptionBillingType string
+
+// SubscriptionInterval defines model for Subscription.Interval.
+type SubscriptionInterval string
+
+// SubscriptionStatus defines model for Subscription.Status.
 type SubscriptionStatus string
-
-// SubscriptionCancellation A cancellation request for the original purchase. scheduled_for is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
-type SubscriptionCancellation struct {
-	CanceledAt            *time.Time                     `json:"canceled_at,omitempty"`
-	CompletedAt           *time.Time                     `json:"completed_at,omitempty"`
-	EffectiveAt           *time.Time                     `json:"effective_at,omitempty"`
-	FailureCode           *string                        `json:"failure_code,omitempty"`
-	FailureReason         *string                        `json:"failure_reason,omitempty"`
-	ForfeitRemainingValue bool                           `json:"forfeit_remaining_value"`
-	Id                    openapi_types.UUID             `json:"id"`
-	Mode                  SubscriptionCancellationMode   `json:"mode"`
-	ReleaseStartedAt      *time.Time                     `json:"release_started_at,omitempty"`
-	RequestedAt           time.Time                      `json:"requested_at"`
-	ScheduledFor          *time.Time                     `json:"scheduled_for,omitempty"`
-	Status                SubscriptionCancellationStatus `json:"status"`
-	SubscriptionItemId    openapi_types.UUID             `json:"subscription_item_id"`
-}
-
-// SubscriptionCancellationMode defines model for SubscriptionCancellation.Mode.
-type SubscriptionCancellationMode string
-
-// SubscriptionCancellationStatus defines model for SubscriptionCancellation.Status.
-type SubscriptionCancellationStatus string
-
-// SubscriptionItem defines model for SubscriptionItem.
-type SubscriptionItem struct {
-	AutoRenew *bool              `json:"auto_renew,omitempty"`
-	EndedAt   *time.Time         `json:"ended_at,omitempty"`
-	Id        openapi_types.UUID `json:"id"`
-
-	// PaidUntil Present for prepaid items. Absent for metered ones, which have no end date.
-	PaidUntil *time.Time         `json:"paid_until,omitempty"`
-	PlanId    openapi_types.UUID `json:"plan_id"`
-	PlanName  *string            `json:"plan_name,omitempty"`
-	PriceId   openapi_types.UUID `json:"price_id"`
-
-	// Product A catalog object inlined for display.
-	Product *ObjectIdentity `json:"product,omitempty"`
-
-	// ProjectId Which project this is for. Absent when it was bought at account level, such as a
-	// membership, which belongs to no single project.
-	ProjectId      *openapi_types.UUID    `json:"project_id,omitempty"`
-	Quantity       string                 `json:"quantity"`
-	ResourceId     *string                `json:"resource_id,omitempty"`
-	StartedAt      *time.Time             `json:"started_at,omitempty"`
-	Status         SubscriptionItemStatus `json:"status"`
-	SubscriptionId *openapi_types.UUID    `json:"subscription_id,omitempty"`
-}
-
-// SubscriptionItemStatus defines model for SubscriptionItem.Status.
-type SubscriptionItemStatus string
-
-// SubscriptionItemList defines model for SubscriptionItemList.
-type SubscriptionItemList struct {
-	Items      []SubscriptionItem `json:"items"`
-	TotalCount *int64             `json:"total_count,omitempty"`
-}
 
 // SubscriptionList defines model for SubscriptionList.
 type SubscriptionList struct {
@@ -3081,147 +1408,6 @@ type SubscriptionList struct {
 
 // TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
 type TerminationPolicy string
-
-// Tier defines model for Tier.
-type Tier struct {
-	// FlatAmount Charged once when this band is reached, in addition to the per-unit amount.
-	FlatAmount *externalRef0.Money `json:"flat_amount,omitempty"`
-
-	// UnitAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	UnitAmount externalRef0.Money `json:"unit_amount"`
-
-	// UpTo The upper bound of this band. Null on the last band, which has no bound.
-	UpTo *string `json:"up_to,omitempty"`
-}
-
-// TopUp defines model for TopUp.
-type TopUp struct {
-	// Amount What is credited to the account, in the account's own currency.
-	Amount           externalRef0.Money `json:"amount"`
-	BillingAccountId int64              `json:"billing_account_id"`
-
-	// CheckoutUrl Where the payer completes the payment. Absent once it has completed.
-	CheckoutUrl *string `json:"checkout_url,omitempty"`
-
-	// ClientSecret Provider client secret for completing this same payment attempt in the browser.
-	ClientSecret *string   `json:"client_secret,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
-	Currency     string    `json:"currency"`
-
-	// FailureReason Why it did not go through. Present with `failed`.
-	FailureReason *string            `json:"failure_reason,omitempty"`
-	Id            openapi_types.UUID `json:"id"`
-
-	// PaymentGateway Which payment gateway collected it.
-	PaymentGateway *string `json:"payment_gateway,omitempty"`
-
-	// PresentmentAmount What was charged, in `presentment_currency`. It will not equal `amount`, and it is
-	// the figure that appears on the payer's card or wallet statement.
-	PresentmentAmount *externalRef0.Money `json:"presentment_amount,omitempty"`
-
-	// PresentmentCurrency The currency the payer was actually charged in, when the checkout page collected a
-	// local one. Absent when it was the same as the account's.
-	PresentmentCurrency *string `json:"presentment_currency,omitempty"`
-
-	// PublishableKey Provider publishable key used with client_secret.
-	PublishableKey *string `json:"publishable_key,omitempty"`
-
-	// RemainingAmount How much of this top-up has not been spent yet. This is the part that can still be
-	// returned to where it was paid from.
-	RemainingAmount *externalRef0.Money `json:"remaining_amount,omitempty"`
-
-	// SettledAt When the funds arrived. Later than `created_at` — by days for a bank transfer — so
-	// reconciling against a statement uses this rather than the moment it was started.
-	// Absent until the payment completes.
-	SettledAt *time.Time `json:"settled_at,omitempty"`
-
-	// Status `pending` until the payment gateway confirms. The balance increases on `succeeded`.
-	//
-	// A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying
-	// so. Nothing was charged in that case.
-	Status TopUpStatus `json:"status"`
-}
-
-// TopUpStatus `pending` until the payment gateway confirms. The balance increases on `succeeded`.
-//
-// A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying
-// so. Nothing was charged in that case.
-type TopUpStatus string
-
-// TopUpCreate defines model for TopUpCreate.
-type TopUpCreate struct {
-	// Amount In the account's currency, and no finer than that currency's smallest unit:
-	// two decimals for most, none for the yen. A finer amount is refused here rather
-	// than at the checkout page, where the payer would see the gateway's own wording
-	// instead of an explanation.
-	//
-	// There is a minimum, which differs by currency. Below it the gateway's fee
-	// exceeds the top-up itself, so such a payment costs more to accept than it brings.
-	// The minimum in force is returned with the rejection.
-	Amount           externalRef0.Money `json:"amount"`
-	BillingAccountId int64              `json:"billing_account_id"`
-
-	// IdempotencyKey Retrying with the same key returns the original top-up rather than starting a
-	// second one.
-	IdempotencyKey string `json:"idempotency_key"`
-
-	// PaymentMethodId Charge a saved method instead of opening a checkout page.
-	PaymentMethodId *openapi_types.UUID `json:"payment_method_id,omitempty"`
-
-	// ReturnUrl Where to send the payer after checkout.
-	ReturnUrl *string `json:"return_url,omitempty"`
-}
-
-// TopUpList defines model for TopUpList.
-type TopUpList struct {
-	Items      []TopUp `json:"items"`
-	TotalCount *int64  `json:"total_count,omitempty"`
-}
-
-// Transaction A batch of money that has arrived in the account, and how much of it is still unspent.
-//
-// It says nothing about how the money got here — that is a top-up, which carries the gateway,
-// the checkout and the outcome. One top-up settles into one batch.
-//
-// Only settled money is here. Something still waiting on a gateway is a pending top-up.
-type Transaction struct {
-	// Amount Signed. Positive adds to the balance, negative takes from it.
-	Amount           externalRef0.Money `json:"amount"`
-	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
-	CreatedAt        time.Time          `json:"created_at"`
-	Currency         string             `json:"currency"`
-	Id               openapi_types.UUID `json:"id"`
-	Reason           *string            `json:"reason,omitempty"`
-
-	// RemainingAmount How much of this batch has not been spent yet. Zero on negative batches.
-	RemainingAmount externalRef0.Money `json:"remaining_amount"`
-
-	// Type What moved the money. These are the events that change the account's cash balance.
-	//
-	// Charges for usage are not here: they appear among the charges and on invoices. Nor is
-	// what an order drew from the balance — the order itself records that.
-	Type TransactionType `json:"type"`
-}
-
-// TransactionList defines model for TransactionList.
-type TransactionList struct {
-	Items      []Transaction `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
-}
-
-// TransactionType What moved the money. These are the events that change the account's cash balance.
-//
-// Charges for usage are not here: they appear among the charges and on invoices. Nor is
-// what an order drew from the balance — the order itself records that.
-type TransactionType string
 
 // UsageCharge defines model for UsageCharge.
 type UsageCharge struct {
@@ -3251,18 +1437,17 @@ type UsageCharge struct {
 	InvoiceId *openapi_types.UUID `json:"invoice_id,omitempty"`
 
 	// Meter A catalog object inlined for display.
-	Meter ObjectIdentity `json:"meter"`
-
-	// Product A catalog object inlined for display.
-	Product   ObjectIdentity      `json:"product"`
+	Meter     ObjectIdentity      `json:"meter"`
+	Product   Product             `json:"product"`
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
 
 	// Quantity What was charged for — the gross quantity less the part covered.
 	Quantity string `json:"quantity"`
 
 	// ResourceId Which resource this was charged for. Empty for charges not tied to one.
-	ResourceId *string `json:"resource_id,omitempty"`
-	Unit       *string `json:"unit,omitempty"`
+	ResourceId     *string             `json:"resource_id,omitempty"`
+	SubscriptionId *openapi_types.UUID `json:"subscription_id,omitempty"`
+	Unit           *string             `json:"unit,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	//
@@ -3286,26 +1471,11 @@ type UsageChargeList struct {
 	TotalCount *int64        `json:"total_count,omitempty"`
 }
 
-// AccountId defines model for AccountId.
-type AccountId = int64
-
-// AccountIdQuery defines model for AccountIdQuery.
-type AccountIdQuery = int64
-
 // From defines model for From.
 type From = time.Time
 
 // FromRequired defines model for FromRequired.
 type FromRequired = time.Time
-
-// IfNoneMatch defines model for IfNoneMatch.
-type IfNoneMatch = string
-
-// InvoiceId defines model for InvoiceId.
-type InvoiceId = openapi_types.UUID
-
-// ItemId defines model for ItemId.
-type ItemId = openapi_types.UUID
 
 // OrderId defines model for OrderId.
 type OrderId = openapi_types.UUID
@@ -3316,275 +1486,17 @@ type Page = int32
 // PageSize defines model for PageSize.
 type PageSize = int32
 
-// PaymentMethodId defines model for PaymentMethodId.
-type PaymentMethodId = openapi_types.UUID
-
-// PlanId defines model for PlanId.
-type PlanId = openapi_types.UUID
-
-// ProductId defines model for ProductId.
-type ProductId = openapi_types.UUID
-
 // ProjectId defines model for ProjectId.
 type ProjectId = openapi_types.UUID
 
-// RateCardId defines model for RateCardId.
-type RateCardId = openapi_types.UUID
+// SubscriptionId defines model for SubscriptionId.
+type SubscriptionId = openapi_types.UUID
 
 // To defines model for To.
 type To = time.Time
 
 // ToRequired defines model for ToRequired.
 type ToRequired = time.Time
-
-// ListAllowancesParams defines parameters for ListAllowances.
-type ListAllowancesParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-
-	// MeterId Filter by ID or lookup key. A lookup key is scoped to the product.
-	MeterId   *openapi_types.UUID         `form:"meter_id,omitempty" json:"meter_id,omitempty"`
-	Status    *ListAllowancesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
-	ProductId *openapi_types.UUID         `form:"product_id,omitempty" json:"product_id,omitempty"`
-}
-
-// ListAllowancesParamsStatus defines parameters for ListAllowances.
-type ListAllowancesParamsStatus string
-
-// ListAllowanceConsumptionsParams defines parameters for ListAllowanceConsumptions.
-type ListAllowanceConsumptionsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
-// ListBillingAccountsParams defines parameters for ListBillingAccounts.
-type ListBillingAccountsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
-// ListCreditGrantsParams defines parameters for ListCreditGrants.
-type ListCreditGrantsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery               `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	Status           *ListCreditGrantsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
-}
-
-// ListCreditGrantsParamsStatus defines parameters for ListCreditGrants.
-type ListCreditGrantsParamsStatus string
-
-// ListAccountDiscountsParams defines parameters for ListAccountDiscounts.
-type ListAccountDiscountsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-}
-
-// ListEntitlementsParams defines parameters for ListEntitlements.
-type ListEntitlementsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-
-	// ProjectId Restrict to one project. Anything bought at account level, such as a membership,
-	// appears regardless.
-	ProjectId *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// ListInvoicesParams defines parameters for ListInvoices.
-type ListInvoicesParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	Status           *InvoiceStatus  `form:"status,omitempty" json:"status,omitempty"`
-	From             *From           `form:"from,omitempty" json:"from,omitempty"`
-
-	// To Exclusive.
-	To *To `form:"to,omitempty" json:"to,omitempty"`
-}
-
-// ListInvoiceItemsParams defines parameters for ListInvoiceItems.
-type ListInvoiceItemsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
-// ListOrdersParams defines parameters for ListOrders.
-type ListOrdersParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery     `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	ProjectId        *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
-	State            *OrderState         `form:"state,omitempty" json:"state,omitempty"`
-	From             *From               `form:"from,omitempty" json:"from,omitempty"`
-
-	// To Exclusive.
-	To *To `form:"to,omitempty" json:"to,omitempty"`
-}
-
-// ListOrderItemsParams defines parameters for ListOrderItems.
-type ListOrderItemsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
-// ListPaymentMethodsParams defines parameters for ListPaymentMethods.
-type ListPaymentMethodsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-}
-
-// ListPaidProjectsParams defines parameters for ListPaidProjects.
-type ListPaidProjectsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize         *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-	BillingAccountId *int64    `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-}
-
-// GetAccountProjectClosurePreviewParams defines parameters for GetAccountProjectClosurePreview.
-type GetAccountProjectClosurePreviewParams struct {
-	Page     *int `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
-// ListRefundsParams defines parameters for ListRefunds.
-type ListRefundsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-}
-
-// ListSubscriptionItemsParams defines parameters for ListSubscriptionItems.
-type ListSubscriptionItemsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery     `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	ProjectId        *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
-	ExpiringBefore   *time.Time          `form:"expiring_before,omitempty" json:"expiring_before,omitempty"`
-}
-
-// ListSubscriptionsParams defines parameters for ListSubscriptions.
-type ListSubscriptionsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery     `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	ProjectId        *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
-}
-
-// ListTopUpsParams defines parameters for ListTopUps.
-type ListTopUpsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-}
-
-// ListTransactionsParams defines parameters for ListTransactions.
-type ListTransactionsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	From             *From           `form:"from,omitempty" json:"from,omitempty"`
-
-	// To Exclusive.
-	To *To `form:"to,omitempty" json:"to,omitempty"`
-}
-
-// ListUsageChargesParams defines parameters for ListUsageCharges.
-type ListUsageChargesParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery     `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	ProjectId        *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
-	ProductId        *openapi_types.UUID `form:"product_id,omitempty" json:"product_id,omitempty"`
-	ResourceId       *string             `form:"resource_id,omitempty" json:"resource_id,omitempty"`
-	From             *From               `form:"from,omitempty" json:"from,omitempty"`
-
-	// To Exclusive.
-	To *To `form:"to,omitempty" json:"to,omitempty"`
-}
 
 // ListProjectActiveResourcesParams defines parameters for ListProjectActiveResources.
 type ListProjectActiveResourcesParams struct {
@@ -3606,7 +1518,7 @@ type ListProjectAllowancesParams struct {
 
 	// MeterId Filter by ID or lookup key. A lookup key is scoped to the product.
 	MeterId   *openapi_types.UUID `form:"meter_id,omitempty" json:"meter_id,omitempty"`
-	ProductId *openapi_types.UUID `form:"product_id,omitempty" json:"product_id,omitempty"`
+	ProductId *ProductID          `form:"product_id,omitempty" json:"product_id,omitempty"`
 }
 
 // GetProjectClosurePreviewParams defines parameters for GetProjectClosurePreview.
@@ -3624,7 +1536,7 @@ type ListProjectEntitlementsParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 
 	// ProductId Filter by ID or lookup key. A lookup key is scoped to the product.
-	ProductId *openapi_types.UUID `form:"product_id,omitempty" json:"product_id,omitempty"`
+	ProductId *ProductID `form:"product_id,omitempty" json:"product_id,omitempty"`
 }
 
 // ListProjectOrdersParams defines parameters for ListProjectOrders.
@@ -3633,9 +1545,9 @@ type ListProjectOrdersParams struct {
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
 	// PageSize How many per page, 100 at most.
-	PageSize *PageSize   `form:"page_size,omitempty" json:"page_size,omitempty"`
-	State    *OrderState `form:"state,omitempty" json:"state,omitempty"`
-	From     *From       `form:"from,omitempty" json:"from,omitempty"`
+	PageSize *PageSize    `form:"page_size,omitempty" json:"page_size,omitempty"`
+	Status   *OrderStatus `form:"status,omitempty" json:"status,omitempty"`
+	From     *From        `form:"from,omitempty" json:"from,omitempty"`
 
 	// To Exclusive.
 	To *To `form:"to,omitempty" json:"to,omitempty"`
@@ -3663,8 +1575,8 @@ type ListProjectSpendParams struct {
 	// the owning service and not here.
 	GroupBy *ListProjectSpendParamsGroupBy `form:"group_by,omitempty" json:"group_by,omitempty"`
 
-	// ProductId Filter by ID or lookup key. A lookup key is scoped to the product.
-	ProductId *openapi_types.UUID `form:"product_id,omitempty" json:"product_id,omitempty"`
+	// ProductId Filter by the fixed platform service ID.
+	ProductId *ProductID `form:"product_id,omitempty" json:"product_id,omitempty"`
 
 	// Page 1-based page number; the first page when omitted.
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
@@ -3676,18 +1588,10 @@ type ListProjectSpendParams struct {
 // ListProjectSpendParamsGroupBy defines parameters for ListProjectSpend.
 type ListProjectSpendParamsGroupBy string
 
-// ListProjectSubscriptionItemsParams defines parameters for ListProjectSubscriptionItems.
-type ListProjectSubscriptionItemsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize       *PageSize  `form:"page_size,omitempty" json:"page_size,omitempty"`
-	ExpiringBefore *time.Time `form:"expiring_before,omitempty" json:"expiring_before,omitempty"`
-}
-
 // ListProjectSubscriptionsParams defines parameters for ListProjectSubscriptions.
 type ListProjectSubscriptionsParams struct {
+	ExpiringBefore *time.Time `form:"expiring_before,omitempty" json:"expiring_before,omitempty"`
+
 	// Page 1-based page number; the first page when omitted.
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
@@ -3701,11 +1605,11 @@ type ListProjectUsageChargesParams struct {
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
 	// PageSize How many per page, 100 at most.
-	PageSize   *PageSize           `form:"page_size,omitempty" json:"page_size,omitempty"`
-	ResourceId *string             `form:"resource_id,omitempty" json:"resource_id,omitempty"`
-	ProductId  *openapi_types.UUID `form:"product_id,omitempty" json:"product_id,omitempty"`
+	PageSize   *PageSize  `form:"page_size,omitempty" json:"page_size,omitempty"`
+	ResourceId *string    `form:"resource_id,omitempty" json:"resource_id,omitempty"`
+	ProductId  *ProductID `form:"product_id,omitempty" json:"product_id,omitempty"`
 
-	// MeterId Filter by ID or lookup key. A lookup key is scoped to the product.
+	// MeterId Filter by the meter UUID.
 	MeterId *openapi_types.UUID `form:"meter_id,omitempty" json:"meter_id,omitempty"`
 	From    *From               `form:"from,omitempty" json:"from,omitempty"`
 
@@ -3713,169 +1617,11 @@ type ListProjectUsageChargesParams struct {
 	To *To `form:"to,omitempty" json:"to,omitempty"`
 }
 
-// ListCatalogItemsParams defines parameters for ListCatalogItems.
-type ListCatalogItemsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// Currency ISO 4217, three uppercase letters.
-	Currency  string              `form:"currency" json:"currency"`
-	ProductId *openapi_types.UUID `form:"product_id,omitempty" json:"product_id,omitempty"`
-
-	// Type Narrows to one payment timing.
-	Type *ListCatalogItemsParamsType `form:"type,omitempty" json:"type,omitempty"`
-
-	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
-	// answer is `304` with no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
-	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
-}
-
-// ListCatalogItemsParamsType defines parameters for ListCatalogItems.
-type ListCatalogItemsParamsType string
-
-// GetCatalogPlanParams defines parameters for GetCatalogPlan.
-type GetCatalogPlanParams struct {
-	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
-	// answer is `304` with no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
-	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
-}
-
-// ListPricesParams defines parameters for ListPrices.
-type ListPricesParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-	Currency *string   `form:"currency,omitempty" json:"currency,omitempty"`
-
-	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
-	// answer is `304` with no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
-	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
-}
-
-// GetCatalogPriceParams defines parameters for GetCatalogPrice.
-type GetCatalogPriceParams struct {
-	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
-	// answer is `304` with no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
-	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
-}
-
-// ListProductsParams defines parameters for ListProducts.
-type ListProductsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
-	// answer is `304` with no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
-	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
-}
-
-// GetCatalogProductParams defines parameters for GetCatalogProduct.
-type GetCatalogProductParams struct {
-	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
-	// answer is `304` with no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
-	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
-}
-
-// ListPlansParams defines parameters for ListPlans.
-type ListPlansParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
-	// answer is `304` with no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
-	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
-}
-
-// ListRatesParams defines parameters for ListRates.
-type ListRatesParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// MeterId Filter by ID or lookup key. A lookup key is scoped to the product.
-	MeterId *openapi_types.UUID `form:"meter_id,omitempty" json:"meter_id,omitempty"`
-
-	// At Return the rates in effect at this moment. Defaults to now.
-	At *time.Time `form:"at,omitempty" json:"at,omitempty"`
-
-	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
-	// answer is `304` with no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
-	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
-}
-
-// CreateBillingAccountJSONRequestBody defines body for CreateBillingAccount for application/json ContentType.
-type CreateBillingAccountJSONRequestBody = BillingAccountCreate
-
-// UpdateBillingAccountJSONRequestBody defines body for UpdateBillingAccount for application/json ContentType.
-type UpdateBillingAccountJSONRequestBody = BillingAccountUpdate
-
-// PreviewCodeJSONRequestBody defines body for PreviewCode for application/json ContentType.
-type PreviewCodeJSONRequestBody = CodeRequest
-
-// PayInvoiceJSONRequestBody defines body for PayInvoice for application/json ContentType.
-type PayInvoiceJSONRequestBody = PayRequest
-
-// PayOrderJSONRequestBody defines body for PayOrder for application/json ContentType.
-type PayOrderJSONRequestBody = PayRequest
-
-// CreatePaymentMethodSetupJSONRequestBody defines body for CreatePaymentMethodSetup for application/json ContentType.
-type CreatePaymentMethodSetupJSONRequestBody = PaymentMethodSetup
-
-// PayTogetherJSONRequestBody defines body for PayTogether for application/json ContentType.
-type PayTogetherJSONRequestBody = PayTogetherRequest
-
-// SetProjectPayerJSONRequestBody defines body for SetProjectPayer for application/json ContentType.
-type SetProjectPayerJSONRequestBody = ProjectPayerSet
-
-// RequestRefundJSONRequestBody defines body for RequestRefund for application/json ContentType.
-type RequestRefundJSONRequestBody = RefundRequest
-
-// SetAutoRenewJSONRequestBody defines body for SetAutoRenew for application/json ContentType.
-type SetAutoRenewJSONRequestBody = AutoRenewSet
-
-// RenewSubscriptionItemJSONRequestBody defines body for RenewSubscriptionItem for application/json ContentType.
-type RenewSubscriptionItemJSONRequestBody = RenewRequest
-
-// CreateTopUpJSONRequestBody defines body for CreateTopUp for application/json ContentType.
-type CreateTopUpJSONRequestBody = TopUpCreate
-
 // CreateProjectQuoteJSONRequestBody defines body for CreateProjectQuote for application/json ContentType.
 type CreateProjectQuoteJSONRequestBody = QuoteRequest
 
 // SetProjectAutoRenewJSONRequestBody defines body for SetProjectAutoRenew for application/json ContentType.
 type SetProjectAutoRenewJSONRequestBody = AutoRenewSet
-
-// CreateEstimateJSONRequestBody defines body for CreateEstimate for application/json ContentType.
-type CreateEstimateJSONRequestBody = EstimateRequest
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -3951,590 +1697,6 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListAllowances List allowances
-	//
-	// A quantity rather than an amount of money: bytes, seconds or tokens that are used before
-	// anything is charged for.
-	//
-	// Usage draws on these first and is only charged once they are exhausted. Where several
-	// apply, they are drawn on in a fixed order: lower `priority` first, then whichever
-	// expires soonest, then whichever was granted first. Included quantities therefore go
-	// before purchased packs, and a pack that is about to expire goes before one that is not.
-	//
-	// An unused quantity is lost when it expires; it is not refunded and does not carry over.
-	//
-	// Quantities belong to the account and are shared by every project it pays for.
-	//
-	// Corresponds with GET /account/v1/allowances (the `ListAllowances` operationId).
-	ListAllowances(ctx context.Context, params *ListAllowancesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListAllowanceConsumptions List allowance consumptions
-	//
-	// Each entry names the charge it covered, so the granted amount, what has been used and
-	// what remains all reconcile.
-	//
-	// Corresponds with GET /account/v1/allowances/{allowanceId}/consumptions (the `ListAllowanceConsumptions` operationId).
-	ListAllowanceConsumptions(ctx context.Context, allowanceId openapi_types.UUID, params *ListAllowanceConsumptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListBillingAccounts List billing accounts
-	//
-	// Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
-	ListBillingAccounts(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateBillingAccountWithBody Create billing account
-	//
-	// The currency is chosen here and cannot be changed afterwards. Everything charged to the
-	// account — prices, orders, invoices, balance — is denominated in it.
-	//
-	// One person may hold several accounts, for example a personal one and one for a team.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
-	CreateBillingAccountWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateBillingAccount Create billing account
-	//
-	// The currency is chosen here and cannot be changed afterwards. Everything charged to the
-	// account — prices, orders, invoices, balance — is denominated in it.
-	//
-	// One person may hold several accounts, for example a personal one and one for a team.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
-	CreateBillingAccount(ctx context.Context, body CreateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetBillingAccount Get billing account
-	//
-	// Corresponds with GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId).
-	GetBillingAccount(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateBillingAccountWithBody Update billing account
-	//
-	// The legal name, address and tax identifier are copied onto each invoice when it is
-	// issued. Changing them here affects invoices issued afterwards, not those already sent.
-	//
-	// The currency cannot be changed.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
-	UpdateBillingAccountWithBody(ctx context.Context, accountId AccountId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateBillingAccount Update billing account
-	//
-	// The legal name, address and tax identifier are copied onto each invoice when it is
-	// issued. Changing them here affects invoices issued afterwards, not those already sent.
-	//
-	// The currency cannot be changed.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
-	UpdateBillingAccount(ctx context.Context, accountId AccountId, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetAccountBalance Get account balance
-	//
-	// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
-	GetAccountBalance(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PreviewCodeWithBody Preview code
-	//
-	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
-	// before they commit.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
-	PreviewCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PreviewCode Preview code
-	//
-	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
-	// before they commit.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
-	PreviewCode(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListCreditGrants List credit grants
-	//
-	// Each grant shows what remains and what it may be used for. Credit is spent before cash
-	// and cannot be withdrawn.
-	//
-	// Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
-	ListCreditGrants(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListAccountDiscounts List the coupons held on this account
-	//
-	// Coupons placed on the account directly, which apply at checkout without a code being
-	// entered. A coupon reached through a code is not listed here.
-	//
-	// Corresponds with GET /account/v1/discounts (the `ListAccountDiscounts` operationId).
-	ListAccountDiscounts(ctx context.Context, params *ListAccountDiscountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListEntitlements List entitlements
-	//
-	// Capabilities that come with what has been bought. A capability that is not held simply
-	// does not appear, so that "this does not exist" and "this has not been bought" cannot be
-	// confused.
-	//
-	// Derived from live subscriptions rather than stored, so this always agrees with what is
-	// being paid for. It stops being listed as soon as the subscription providing it ends.
-	//
-	// Corresponds with GET /account/v1/entitlements (the `ListEntitlements` operationId).
-	ListEntitlements(ctx context.Context, params *ListEntitlementsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListInvoices List invoices
-	//
-	// Corresponds with GET /account/v1/invoices (the `ListInvoices` operationId).
-	ListInvoices(ctx context.Context, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetInvoice Get invoice
-	//
-	// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
-	GetInvoice(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListInvoiceItems List invoice items
-	//
-	// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
-	ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PayInvoiceWithBody Pay invoice
-	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
-	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the gateway confirms it.
-	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-	PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PayInvoice Pay invoice
-	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
-	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the gateway confirms it.
-	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-	PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetInvoiceRefundQuote Get invoice refund quote
-	//
-	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
-	// answer follows from what has been paid and what has already been returned, so it may
-	// be read as often as required.
-	//
-	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
-	// invoice already refunded in full.
-	//
-	// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
-	GetInvoiceRefundQuote(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListOrders List orders
-	//
-	// An order in `pending` still owes money; `amount_due` states how much and
-	// `reservation_expires_at` states how long it can still be paid.
-	//
-	// Corresponds with GET /account/v1/orders (the `ListOrders` operationId).
-	ListOrders(ctx context.Context, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetOrder Get order
-	//
-	// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
-	GetOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CancelScheduledChange Cancel scheduled change
-	//
-	// Only for a change scheduled for the end of the period, and only while it is still
-	// pending. An immediate change has already happened by the time it is placed, and there is
-	// nothing to call off.
-	//
-	// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
-	// subscription keeps running on what it is on now, and the item is free to be changed again.
-	//
-	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
-	CancelScheduledChange(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListOrderItems List order items
-	//
-	// One entry per item bought, with the price charged and the period it covers.
-	//
-	// Corresponds with GET /account/v1/orders/{orderId}/items (the `ListOrderItems` operationId).
-	ListOrderItems(ctx context.Context, orderId OrderId, params *ListOrderItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PayOrderWithBody Pay order
-	//
-	// Use this to resume an order whose checkout was interrupted.
-	//
-	// An order reserves both funds and stock for a limited time. Once that reservation expires
-	// the order can no longer be paid and must be placed again; `reservation_expires_at` on the
-	// order states when.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
-	PayOrderWithBody(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PayOrder Pay order
-	//
-	// Use this to resume an order whose checkout was interrupted.
-	//
-	// An order reserves both funds and stock for a limited time. Once that reservation expires
-	// the order can no longer be paid and must be placed again; `reservation_expires_at` on the
-	// order states when.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
-	PayOrder(ctx context.Context, orderId OrderId, body PayOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetOrderRefundQuote Get order refund quote
-	//
-	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
-	// answer follows from what has been paid and what has already been returned, so it may
-	// be read as often as required.
-	//
-	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
-	// order already refunded in full.
-	//
-	// Refunding an order also ends what it bought and reclaims whatever it provisioned. That
-	// is not reflected in the amounts here.
-	//
-	// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
-	GetOrderRefundQuote(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListPaymentMethods List payment methods
-	//
-	// Corresponds with GET /account/v1/payment-methods (the `ListPaymentMethods` operationId).
-	ListPaymentMethods(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreatePaymentMethodSetupWithBody Create payment method setup
-	//
-	// Returns what is needed to hand the browser over to the payment gateway's own card
-	// form. Nothing is charged, and the method appears in the list once the gateway
-	// confirms it.
-	//
-	// Card numbers are never sent to or stored by this service.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
-	CreatePaymentMethodSetupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreatePaymentMethodSetup Create payment method setup
-	//
-	// Returns what is needed to hand the browser over to the payment gateway's own card
-	// form. Nothing is charged, and the method appears in the list once the gateway
-	// confirms it.
-	//
-	// Card numbers are never sent to or stored by this service.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
-	CreatePaymentMethodSetup(ctx context.Context, body CreatePaymentMethodSetupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeletePaymentMethod Delete payment method
-	//
-	// Refused when it is the only method on an account that has resources billed by the hour,
-	// as there would be nothing left to charge when the balance runs out.
-	//
-	// Corresponds with DELETE /account/v1/payment-methods/{paymentMethodId} (the `DeletePaymentMethod` operationId).
-	DeletePaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetDefaultPaymentMethod Set default payment method
-	//
-	// Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
-	SetDefaultPaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PayTogetherWithBody Pay together
-	//
-	// All of them or none. Nothing is settled unless everything named here can be, so a
-	// partial result is not a state this can leave behind.
-	//
-	// The balance is not split across the two cases: either it covers the whole total and
-	// everything is settled from it, or it is left untouched and the full total is collected
-	// through the gateway. It is never partly spent against an unpaid remainder.
-	//
-	// When the gateway is needed, this returns a checkout address and settles nothing.
-	// Call it again once the payment has landed — the balance then covers the total and the
-	// same call settles everything.
-	//
-	// Anything already paid is skipped rather than refused, so a repeated call after a
-	// partial success is safe.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
-	PayTogetherWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PayTogether Pay together
-	//
-	// All of them or none. Nothing is settled unless everything named here can be, so a
-	// partial result is not a state this can leave behind.
-	//
-	// The balance is not split across the two cases: either it covers the whole total and
-	// everything is settled from it, or it is left untouched and the full total is collected
-	// through the gateway. It is never partly spent against an unpaid remainder.
-	//
-	// When the gateway is needed, this returns a checkout address and settles nothing.
-	// Call it again once the payment has landed — the balance then covers the total and the
-	// same call settles everything.
-	//
-	// Anything already paid is skipped rather than refused, so a repeated call after a
-	// partial success is safe.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
-	PayTogether(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListPaidProjects List paid projects
-	//
-	// Corresponds with GET /account/v1/projects (the `ListPaidProjects` operationId).
-	ListPaidProjects(ctx context.Context, params *ListPaidProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UnbindProjectPayer Unbind project payer
-	//
-	// Permitted only when the project has nothing left to charge: no resources accruing
-	// charges, no subscriptions still running, no usage awaiting invoicing, and no unpaid
-	// invoice on the account.
-	//
-	// Usage that has not yet been invoiced is settled by calling
-	// `POST /account/v1/projects/{projectId}/billing-account/settle` first.
-	//
-	// After this the project cannot create resources until an account is chosen again.
-	//
-	// Corresponds with DELETE /account/v1/projects/{projectId}/billing-account (the `UnbindProjectPayer` operationId).
-	UnbindProjectPayer(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// FindProjectPayer Find project payer
-	//
-	// Returns 404 when no account pays for it. No resources can be created until one does.
-	//
-	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `FindProjectPayer` operationId).
-	FindProjectPayer(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetProjectPayerWithBody Set project payer
-	//
-	// Charges already recorded remain with the account that was paying when they occurred, and
-	// are still invoiced to it. Metered resources are settled up to the moment of the change.
-	//
-	// Periods already paid for are unaffected; renewals are charged to the new account.
-	//
-	// The request is refused while the current account has an unpaid invoice, and — once the
-	// project holds subscriptions — while the new account uses a different currency.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
-	SetProjectPayerWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetProjectPayer Set project payer
-	//
-	// Charges already recorded remain with the account that was paying when they occurred, and
-	// are still invoiced to it. Metered resources are settled up to the moment of the change.
-	//
-	// Periods already paid for are unaffected; renewals are charged to the new account.
-	//
-	// The request is refused while the current account has an unpaid invoice, and — once the
-	// project holds subscriptions — while the new account uses a different currency.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
-	SetProjectPayer(ctx context.Context, projectId ProjectId, body SetProjectPayerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SettleProjectUsage Settle project usage
-	//
-	// Metered usage is normally invoiced at the end of the month. This issues an invoice for
-	// everything charged to the project so far, to the account currently paying for it.
-	//
-	// Use it before unbinding a project, or to obtain a settled figure part-way through a
-	// month. Calling it again when nothing is outstanding has no effect.
-	//
-	// Corresponds with POST /account/v1/projects/{projectId}/billing-account/settle (the `SettleProjectUsage` operationId).
-	SettleProjectUsage(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetAccountProjectClosurePreview Preview project closure
-	//
-	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
-	//
-	// Corresponds with GET /account/v1/projects/{projectId}/closure-preview (the `GetAccountProjectClosurePreview` operationId).
-	GetAccountProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListRefunds List refunds
-	//
-	// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
-	ListRefunds(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RequestRefundWithBody Request refund
-	//
-	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
-	// difference from letting a period lapse: a lapsed period keeps the machine around
-	// for a while so that topping up brings it back, whereas a refund returns the money
-	// and therefore cannot leave the thing running.
-	//
-	// What can be refunded, for how long, and how much, is decided here rather than by
-	// the caller. A request outside those bounds is refused with the reason.
-	//
-	// The money goes back the way it came: card charges to the card, balance to the
-	// balance, credit to credit. A grant never turns into cash.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
-	RequestRefundWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RequestRefund Request refund
-	//
-	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
-	// difference from letting a period lapse: a lapsed period keeps the machine around
-	// for a while so that topping up brings it back, whereas a refund returns the money
-	// and therefore cannot leave the thing running.
-	//
-	// What can be refunded, for how long, and how much, is decided here rather than by
-	// the caller. A request outside those bounds is refused with the reason.
-	//
-	// The money goes back the way it came: card charges to the card, balance to the
-	// balance, credit to credit. A grant never turns into cash.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
-	RequestRefund(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSubscriptionItems List subscription items
-	//
-	// Corresponds with GET /account/v1/subscription-items (the `ListSubscriptionItems` operationId).
-	ListSubscriptionItems(ctx context.Context, params *ListSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetAutoRenewWithBody Set auto renew
-	//
-	// When on, the account balance is charged at the renewal date. Turning it off lets the
-	// current period run to its end and stops the resource afterwards.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
-	SetAutoRenewWithBody(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetAutoRenew Set auto renew
-	//
-	// When on, the account balance is charged at the renewal date. Turning it off lets the
-	// current period run to its end and stops the resource afterwards.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
-	SetAutoRenew(ctx context.Context, itemId ItemId, body SetAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RenewSubscriptionItemWithBody Renew subscription item
-	//
-	// Extends the paid period from its current end, not from today, so renewing early does not
-	// shorten what has already been paid for.
-	//
-	// The price charged is the one in effect at the moment of renewal, which may differ from
-	// what was paid for the current period.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
-	RenewSubscriptionItemWithBody(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RenewSubscriptionItem Renew subscription item
-	//
-	// Extends the paid period from its current end, not from today, so renewing early does not
-	// shorten what has already been paid for.
-	//
-	// The price charged is the one in effect at the moment of renewal, which may differ from
-	// what was paid for the current period.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
-	RenewSubscriptionItem(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListRenewalPrices List the terms this item can be renewed for
-	//
-	// Every term on offer with what it costs, in one request: a renewal form needs the whole
-	// ladder to render, and asking once per term is a request per row.
-	//
-	// Prices agreed for this account are reflected. The term this item already bills at is
-	// marked `current`: renewing for it is not affected by a later price change, while any
-	// other term is bought at today's price.
-	//
-	// Corresponds with GET /account/v1/subscription-items/{itemId}/renewal-prices (the `ListRenewalPrices` operationId).
-	ListRenewalPrices(ctx context.Context, itemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSubscriptions List subscriptions
-	//
-	// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
-	ListSubscriptions(ctx context.Context, params *ListSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListTopUps List top ups
-	//
-	// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
-	ListTopUps(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateTopUpWithBody Create top up
-	//
-	// Returns a checkout address. The balance increases when the payment gateway confirms the
-	// payment, which may be after this call returns.
-	//
-	// The amount is in the account's currency. A checkout page may present a local currency;
-	// the amount credited to the account is the one requested here.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
-	CreateTopUpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateTopUp Create top up
-	//
-	// Returns a checkout address. The balance increases when the payment gateway confirms the
-	// payment, which may be after this call returns.
-	//
-	// The amount is in the account's currency. A checkout page may present a local currency;
-	// the amount credited to the account is the one requested here.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
-	CreateTopUp(ctx context.Context, body CreateTopUpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetTopUp Get top up
-	//
-	// Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
-	GetTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListTransactions List transactions
-	//
-	// Corresponds with GET /account/v1/transactions (the `ListTransactions` operationId).
-	ListTransactions(ctx context.Context, params *ListTransactionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListUsageCharges List usage charges
-	//
-	// Includes charges that have not been invoiced yet, which is how the current month's
-	// spending is seen before the invoice is issued.
-	//
-	// Corresponds with GET /account/v1/usage-charges (the `ListUsageCharges` operationId).
-	ListUsageCharges(ctx context.Context, params *ListUsageChargesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListProjectActiveResources List project active resources
 	//
 	// A resource that is running but does not appear here is not being charged for.
@@ -4544,7 +1706,7 @@ type ClientInterface interface {
 
 	// ListProjectAllowances List project allowances
 	//
-	// These belong to the paying account and are shared with every other project it pays for,
+	// These belong to the project's billing account and are shared with every other project linked to it,
 	// so what is left here may be consumed elsewhere.
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/allowances (the `ListProjectAllowances` operationId).
@@ -4552,11 +1714,11 @@ type ClientInterface interface {
 
 	// GetProjectBillingAccount Get project billing account
 	//
-	// Returns the payer's identity, its currency, and how much can still be spent. Cards,
+	// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
 	// invoices and transaction history are not included; they belong to the account owner
 	// and are reached through `/account/v1/`.
 	//
-	// Returns 404 when no account pays for this project. Resources cannot be created in that
+	// Returns 404 when the project has no billing account. Resources cannot be created in that
 	// state.
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
@@ -4564,14 +1726,14 @@ type ClientInterface interface {
 
 	// GetProjectClosurePreview Preview project closure
 	//
-	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Charges already incurred remain owed by the billing account that was linked when they occurred and do not prevent closure. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
 	GetProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectEntitlements List project entitlements
 	//
-	// Includes capabilities bought for this project and those the paying account holds at
+	// Includes capabilities bought for this project and those the project's billing account holds at
 	// account level.
 	//
 	// Where a capability counts uses, `remaining_quantity` states how much is left. Whether
@@ -4601,14 +1763,18 @@ type ClientInterface interface {
 
 	// CreateProjectQuoteWithBody Quote for a project
 	//
-	// Priced in the paying account's currency, and at any rate negotiated for that account.
+	// Priced in the project billing account's currency, and at any rate negotiated for that account.
 	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
 	//
 	// Prices may change between quoting and ordering. An order is charged at the price in
 	// effect when it is placed, so a quote should be refreshed before a final confirmation is
 	// shown.
 	//
-	// Returns 404 when no account pays for this project.
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+	// named, with the discounts the account holds, and with tax.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed
+	// does not belong to this project.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -4617,14 +1783,18 @@ type ClientInterface interface {
 
 	// CreateProjectQuote Quote for a project
 	//
-	// Priced in the paying account's currency, and at any rate negotiated for that account.
+	// Priced in the project billing account's currency, and at any rate negotiated for that account.
 	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
 	//
 	// Prices may change between quoting and ordering. An order is charged at the price in
 	// effect when it is placed, so a quote should be refreshed before a final confirmation is
 	// shown.
 	//
-	// Returns 404 when no account pays for this project.
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+	// named, with the discounts the account holds, and with tax.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed
+	// does not belong to this project.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -4641,35 +1811,30 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/spend (the `ListProjectSpend` operationId).
 	ListProjectSpend(ctx context.Context, projectId ProjectId, params *ListProjectSpendParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectSubscriptionItems List project subscription items
-	//
-	// Corresponds with GET /api/v1/projects/{projectId}/subscription-items (the `ListProjectSubscriptionItems` operationId).
-	ListProjectSubscriptionItems(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetProjectAutoRenewWithBody Set project auto renew
-	//
-	// Automatic renewal draws on the paying account's balance, which a project member may
-	// commit. Paying by card requires the account owner and is done from the billing centre.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
-	SetProjectAutoRenewWithBody(ctx context.Context, projectId ProjectId, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SetProjectAutoRenew Set project auto renew
-	//
-	// Automatic renewal draws on the paying account's balance, which a project member may
-	// commit. Paying by card requires the account owner and is done from the billing centre.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
-	SetProjectAutoRenew(ctx context.Context, projectId ProjectId, itemId ItemId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListProjectSubscriptions List project subscriptions
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/subscriptions (the `ListProjectSubscriptions` operationId).
 	ListProjectSubscriptions(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetProjectAutoRenewWithBody Set project auto renew
+	//
+	// Automatic renewal draws on the project billing account's balance, which a project member may
+	// commit. Paying by card requires the account owner and is done from the billing centre.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
+	SetProjectAutoRenewWithBody(ctx context.Context, projectId ProjectId, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetProjectAutoRenew Set project auto renew
+	//
+	// Automatic renewal draws on the project billing account's balance, which a project member may
+	// commit. Paying by card requires the account owner and is done from the billing centre.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
+	SetProjectAutoRenew(ctx context.Context, projectId ProjectId, subscriptionId SubscriptionId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectUsageCharges List project usage charges
 	//
@@ -4678,1255 +1843,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/usage-charges (the `ListProjectUsageCharges` operationId).
 	ListProjectUsageCharges(ctx context.Context, projectId ProjectId, params *ListProjectUsageChargesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateEstimateWithBody Estimate a basket
-	//
-	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
-	// called as often as required.
-	//
-	// `POST` is used because the set of items to price does not fit in a query string. There is
-	// no corresponding `GET`, and no estimate is stored to retrieve.
-	//
-	// An account holding a negotiated agreement may be charged less than this. Tax and
-	// discounts are not included.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
-	CreateEstimateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateEstimate Estimate a basket
-	//
-	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
-	// called as often as required.
-	//
-	// `POST` is used because the set of items to price does not fit in a query string. There is
-	// no corresponding `GET`, and no estimate is stored to retrieve.
-	//
-	// An account holding a negotiated agreement may be charged less than this. Tax and
-	// discounts are not included.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
-	CreateEstimate(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListCatalogItems List what is on sale, with prices
-	//
-	// Every sellable thing and what it costs, in one request. A plan appears once per price.
-	//
-	// `currency` is required: a plan has a price in each currency it is sold in, so "what does
-	// this cost" has no answer without one.
-	//
-	// Retired prices are left out. Existing subscriptions still reference them, so this is not
-	// the place to look up what an existing purchase is paying.
-	//
-	// Corresponds with GET /catalog/v1/items (the `ListCatalogItems` operationId).
-	ListCatalogItems(ctx context.Context, params *ListCatalogItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetCatalogPlan Get a sellable item
-	//
-	// Resolves a stored identifier into something that can be displayed. Returns items that are
-	// no longer on sale: an existing purchase still refers to one.
-	//
-	// Corresponds with GET /catalog/v1/plans/{planId} (the `GetCatalogPlan` operationId).
-	GetCatalogPlan(ctx context.Context, planId openapi_types.UUID, params *GetCatalogPlanParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListPrices List catalog prices
-	//
-	// Public list prices only. An account holding a negotiated agreement may be charged less;
-	// it is never charged more.
-	//
-	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
-	ListPrices(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetCatalogPrice Get a price
-	//
-	// Returns retired prices. An existing subscription still bills at the price it was bought
-	// at, so this is how to show what that purchase is paying.
-	//
-	// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetCatalogPrice` operationId).
-	GetCatalogPrice(ctx context.Context, priceId openapi_types.UUID, params *GetCatalogPriceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListProducts List catalog products
-	//
-	// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
-	ListProducts(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetCatalogProduct Get a service
-	//
-	// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or
-	// the terms of a credit — into something that can be displayed.
-	//
-	// Corresponds with GET /catalog/v1/products/{productId} (the `GetCatalogProduct` operationId).
-	GetCatalogProduct(ctx context.Context, productId openapi_types.UUID, params *GetCatalogProductParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListPlans List catalog plans
-	//
-	// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListPlans` operationId).
-	ListPlans(ctx context.Context, productId ProductId, params *ListPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListRates List catalog rates
-	//
-	// Only public price lists are readable here. A list written for a single agreement is not,
-	// and its identifier cannot be used to reach it.
-	//
-	// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
-	ListRates(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-}
-
-// ListAllowances List allowances
-//
-// A quantity rather than an amount of money: bytes, seconds or tokens that are used before
-// anything is charged for.
-//
-// Usage draws on these first and is only charged once they are exhausted. Where several
-// apply, they are drawn on in a fixed order: lower `priority` first, then whichever
-// expires soonest, then whichever was granted first. Included quantities therefore go
-// before purchased packs, and a pack that is about to expire goes before one that is not.
-//
-// An unused quantity is lost when it expires; it is not refunded and does not carry over.
-//
-// Quantities belong to the account and are shared by every project it pays for.
-//
-// Corresponds with GET /account/v1/allowances (the `ListAllowances` operationId).
-func (c *Client) ListAllowances(ctx context.Context, params *ListAllowancesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAllowancesRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListAllowanceConsumptions List allowance consumptions
-//
-// Each entry names the charge it covered, so the granted amount, what has been used and
-// what remains all reconcile.
-//
-// Corresponds with GET /account/v1/allowances/{allowanceId}/consumptions (the `ListAllowanceConsumptions` operationId).
-func (c *Client) ListAllowanceConsumptions(ctx context.Context, allowanceId openapi_types.UUID, params *ListAllowanceConsumptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAllowanceConsumptionsRequest(c.Server, allowanceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListBillingAccounts List billing accounts
-//
-// Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
-func (c *Client) ListBillingAccounts(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListBillingAccountsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateBillingAccountWithBody Create billing account
-//
-// The currency is chosen here and cannot be changed afterwards. Everything charged to the
-// account — prices, orders, invoices, balance — is denominated in it.
-//
-// One person may hold several accounts, for example a personal one and one for a team.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
-func (c *Client) CreateBillingAccountWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBillingAccountRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateBillingAccount Create billing account
-//
-// The currency is chosen here and cannot be changed afterwards. Everything charged to the
-// account — prices, orders, invoices, balance — is denominated in it.
-//
-// One person may hold several accounts, for example a personal one and one for a team.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
-func (c *Client) CreateBillingAccount(ctx context.Context, body CreateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBillingAccountRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetBillingAccount Get billing account
-//
-// Corresponds with GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId).
-func (c *Client) GetBillingAccount(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetBillingAccountRequest(c.Server, accountId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// UpdateBillingAccountWithBody Update billing account
-//
-// The legal name, address and tax identifier are copied onto each invoice when it is
-// issued. Changing them here affects invoices issued afterwards, not those already sent.
-//
-// The currency cannot be changed.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
-func (c *Client) UpdateBillingAccountWithBody(ctx context.Context, accountId AccountId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateBillingAccountRequestWithBody(c.Server, accountId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// UpdateBillingAccount Update billing account
-//
-// The legal name, address and tax identifier are copied onto each invoice when it is
-// issued. Changing them here affects invoices issued afterwards, not those already sent.
-//
-// The currency cannot be changed.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
-func (c *Client) UpdateBillingAccount(ctx context.Context, accountId AccountId, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateBillingAccountRequest(c.Server, accountId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetAccountBalance Get account balance
-//
-// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
-func (c *Client) GetAccountBalance(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAccountBalanceRequest(c.Server, accountId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PreviewCodeWithBody Preview code
-//
-// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
-// before they commit.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
-func (c *Client) PreviewCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPreviewCodeRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PreviewCode Preview code
-//
-// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
-// before they commit.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
-func (c *Client) PreviewCode(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPreviewCodeRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListCreditGrants List credit grants
-//
-// Each grant shows what remains and what it may be used for. Credit is spent before cash
-// and cannot be withdrawn.
-//
-// Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
-func (c *Client) ListCreditGrants(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCreditGrantsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListAccountDiscounts List the coupons held on this account
-//
-// Coupons placed on the account directly, which apply at checkout without a code being
-// entered. A coupon reached through a code is not listed here.
-//
-// Corresponds with GET /account/v1/discounts (the `ListAccountDiscounts` operationId).
-func (c *Client) ListAccountDiscounts(ctx context.Context, params *ListAccountDiscountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAccountDiscountsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListEntitlements List entitlements
-//
-// Capabilities that come with what has been bought. A capability that is not held simply
-// does not appear, so that "this does not exist" and "this has not been bought" cannot be
-// confused.
-//
-// Derived from live subscriptions rather than stored, so this always agrees with what is
-// being paid for. It stops being listed as soon as the subscription providing it ends.
-//
-// Corresponds with GET /account/v1/entitlements (the `ListEntitlements` operationId).
-func (c *Client) ListEntitlements(ctx context.Context, params *ListEntitlementsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListEntitlementsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListInvoices List invoices
-//
-// Corresponds with GET /account/v1/invoices (the `ListInvoices` operationId).
-func (c *Client) ListInvoices(ctx context.Context, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListInvoicesRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetInvoice Get invoice
-//
-// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
-func (c *Client) GetInvoice(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetInvoiceRequest(c.Server, invoiceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListInvoiceItems List invoice items
-//
-// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
-func (c *Client) ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListInvoiceItemsRequest(c.Server, invoiceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PayInvoiceWithBody Pay invoice
-//
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
-//
-// Returns a checkout address when the gateway requires the cardholder to confirm the
-// payment; the invoice is marked paid once the gateway confirms it.
-//
-// Calling this on an invoice that is already paid returns the invoice unchanged.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-func (c *Client) PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPayInvoiceRequestWithBody(c.Server, invoiceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PayInvoice Pay invoice
-//
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
-//
-// Returns a checkout address when the gateway requires the cardholder to confirm the
-// payment; the invoice is marked paid once the gateway confirms it.
-//
-// Calling this on an invoice that is already paid returns the invoice unchanged.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-func (c *Client) PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPayInvoiceRequest(c.Server, invoiceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetInvoiceRefundQuote Get invoice refund quote
-//
-// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
-// answer follows from what has been paid and what has already been returned, so it may
-// be read as often as required.
-//
-// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
-// invoice already refunded in full.
-//
-// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
-func (c *Client) GetInvoiceRefundQuote(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetInvoiceRefundQuoteRequest(c.Server, invoiceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListOrders List orders
-//
-// An order in `pending` still owes money; `amount_due` states how much and
-// `reservation_expires_at` states how long it can still be paid.
-//
-// Corresponds with GET /account/v1/orders (the `ListOrders` operationId).
-func (c *Client) ListOrders(ctx context.Context, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListOrdersRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetOrder Get order
-//
-// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
-func (c *Client) GetOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetOrderRequest(c.Server, orderId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CancelScheduledChange Cancel scheduled change
-//
-// Only for a change scheduled for the end of the period, and only while it is still
-// pending. An immediate change has already happened by the time it is placed, and there is
-// nothing to call off.
-//
-// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
-// subscription keeps running on what it is on now, and the item is free to be changed again.
-//
-// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
-func (c *Client) CancelScheduledChange(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCancelScheduledChangeRequest(c.Server, orderId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListOrderItems List order items
-//
-// One entry per item bought, with the price charged and the period it covers.
-//
-// Corresponds with GET /account/v1/orders/{orderId}/items (the `ListOrderItems` operationId).
-func (c *Client) ListOrderItems(ctx context.Context, orderId OrderId, params *ListOrderItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListOrderItemsRequest(c.Server, orderId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PayOrderWithBody Pay order
-//
-// Use this to resume an order whose checkout was interrupted.
-//
-// An order reserves both funds and stock for a limited time. Once that reservation expires
-// the order can no longer be paid and must be placed again; `reservation_expires_at` on the
-// order states when.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
-func (c *Client) PayOrderWithBody(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPayOrderRequestWithBody(c.Server, orderId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PayOrder Pay order
-//
-// Use this to resume an order whose checkout was interrupted.
-//
-// An order reserves both funds and stock for a limited time. Once that reservation expires
-// the order can no longer be paid and must be placed again; `reservation_expires_at` on the
-// order states when.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
-func (c *Client) PayOrder(ctx context.Context, orderId OrderId, body PayOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPayOrderRequest(c.Server, orderId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetOrderRefundQuote Get order refund quote
-//
-// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
-// answer follows from what has been paid and what has already been returned, so it may
-// be read as often as required.
-//
-// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
-// order already refunded in full.
-//
-// Refunding an order also ends what it bought and reclaims whatever it provisioned. That
-// is not reflected in the amounts here.
-//
-// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
-func (c *Client) GetOrderRefundQuote(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetOrderRefundQuoteRequest(c.Server, orderId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListPaymentMethods List payment methods
-//
-// Corresponds with GET /account/v1/payment-methods (the `ListPaymentMethods` operationId).
-func (c *Client) ListPaymentMethods(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPaymentMethodsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreatePaymentMethodSetupWithBody Create payment method setup
-//
-// Returns what is needed to hand the browser over to the payment gateway's own card
-// form. Nothing is charged, and the method appears in the list once the gateway
-// confirms it.
-//
-// Card numbers are never sent to or stored by this service.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
-func (c *Client) CreatePaymentMethodSetupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePaymentMethodSetupRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreatePaymentMethodSetup Create payment method setup
-//
-// Returns what is needed to hand the browser over to the payment gateway's own card
-// form. Nothing is charged, and the method appears in the list once the gateway
-// confirms it.
-//
-// Card numbers are never sent to or stored by this service.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
-func (c *Client) CreatePaymentMethodSetup(ctx context.Context, body CreatePaymentMethodSetupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePaymentMethodSetupRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DeletePaymentMethod Delete payment method
-//
-// Refused when it is the only method on an account that has resources billed by the hour,
-// as there would be nothing left to charge when the balance runs out.
-//
-// Corresponds with DELETE /account/v1/payment-methods/{paymentMethodId} (the `DeletePaymentMethod` operationId).
-func (c *Client) DeletePaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePaymentMethodRequest(c.Server, paymentMethodId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// SetDefaultPaymentMethod Set default payment method
-//
-// Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
-func (c *Client) SetDefaultPaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetDefaultPaymentMethodRequest(c.Server, paymentMethodId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PayTogetherWithBody Pay together
-//
-// All of them or none. Nothing is settled unless everything named here can be, so a
-// partial result is not a state this can leave behind.
-//
-// The balance is not split across the two cases: either it covers the whole total and
-// everything is settled from it, or it is left untouched and the full total is collected
-// through the gateway. It is never partly spent against an unpaid remainder.
-//
-// When the gateway is needed, this returns a checkout address and settles nothing.
-// Call it again once the payment has landed — the balance then covers the total and the
-// same call settles everything.
-//
-// Anything already paid is skipped rather than refused, so a repeated call after a
-// partial success is safe.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
-func (c *Client) PayTogetherWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPayTogetherRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PayTogether Pay together
-//
-// All of them or none. Nothing is settled unless everything named here can be, so a
-// partial result is not a state this can leave behind.
-//
-// The balance is not split across the two cases: either it covers the whole total and
-// everything is settled from it, or it is left untouched and the full total is collected
-// through the gateway. It is never partly spent against an unpaid remainder.
-//
-// When the gateway is needed, this returns a checkout address and settles nothing.
-// Call it again once the payment has landed — the balance then covers the total and the
-// same call settles everything.
-//
-// Anything already paid is skipped rather than refused, so a repeated call after a
-// partial success is safe.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
-func (c *Client) PayTogether(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPayTogetherRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListPaidProjects List paid projects
-//
-// Corresponds with GET /account/v1/projects (the `ListPaidProjects` operationId).
-func (c *Client) ListPaidProjects(ctx context.Context, params *ListPaidProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPaidProjectsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// UnbindProjectPayer Unbind project payer
-//
-// Permitted only when the project has nothing left to charge: no resources accruing
-// charges, no subscriptions still running, no usage awaiting invoicing, and no unpaid
-// invoice on the account.
-//
-// Usage that has not yet been invoiced is settled by calling
-// `POST /account/v1/projects/{projectId}/billing-account/settle` first.
-//
-// After this the project cannot create resources until an account is chosen again.
-//
-// Corresponds with DELETE /account/v1/projects/{projectId}/billing-account (the `UnbindProjectPayer` operationId).
-func (c *Client) UnbindProjectPayer(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUnbindProjectPayerRequest(c.Server, projectId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// FindProjectPayer Find project payer
-//
-// Returns 404 when no account pays for it. No resources can be created until one does.
-//
-// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `FindProjectPayer` operationId).
-func (c *Client) FindProjectPayer(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewFindProjectPayerRequest(c.Server, projectId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// SetProjectPayerWithBody Set project payer
-//
-// Charges already recorded remain with the account that was paying when they occurred, and
-// are still invoiced to it. Metered resources are settled up to the moment of the change.
-//
-// Periods already paid for are unaffected; renewals are charged to the new account.
-//
-// The request is refused while the current account has an unpaid invoice, and — once the
-// project holds subscriptions — while the new account uses a different currency.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
-func (c *Client) SetProjectPayerWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetProjectPayerRequestWithBody(c.Server, projectId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// SetProjectPayer Set project payer
-//
-// Charges already recorded remain with the account that was paying when they occurred, and
-// are still invoiced to it. Metered resources are settled up to the moment of the change.
-//
-// Periods already paid for are unaffected; renewals are charged to the new account.
-//
-// The request is refused while the current account has an unpaid invoice, and — once the
-// project holds subscriptions — while the new account uses a different currency.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
-func (c *Client) SetProjectPayer(ctx context.Context, projectId ProjectId, body SetProjectPayerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetProjectPayerRequest(c.Server, projectId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// SettleProjectUsage Settle project usage
-//
-// Metered usage is normally invoiced at the end of the month. This issues an invoice for
-// everything charged to the project so far, to the account currently paying for it.
-//
-// Use it before unbinding a project, or to obtain a settled figure part-way through a
-// month. Calling it again when nothing is outstanding has no effect.
-//
-// Corresponds with POST /account/v1/projects/{projectId}/billing-account/settle (the `SettleProjectUsage` operationId).
-func (c *Client) SettleProjectUsage(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSettleProjectUsageRequest(c.Server, projectId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetAccountProjectClosurePreview Preview project closure
-//
-// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
-//
-// Corresponds with GET /account/v1/projects/{projectId}/closure-preview (the `GetAccountProjectClosurePreview` operationId).
-func (c *Client) GetAccountProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAccountProjectClosurePreviewRequest(c.Server, projectId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListRefunds List refunds
-//
-// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
-func (c *Client) ListRefunds(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRefundsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RequestRefundWithBody Request refund
-//
-// Refunding ends the subscription and reclaims whatever it provisioned. That is the
-// difference from letting a period lapse: a lapsed period keeps the machine around
-// for a while so that topping up brings it back, whereas a refund returns the money
-// and therefore cannot leave the thing running.
-//
-// What can be refunded, for how long, and how much, is decided here rather than by
-// the caller. A request outside those bounds is refused with the reason.
-//
-// The money goes back the way it came: card charges to the card, balance to the
-// balance, credit to credit. A grant never turns into cash.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
-func (c *Client) RequestRefundWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRequestRefundRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RequestRefund Request refund
-//
-// Refunding ends the subscription and reclaims whatever it provisioned. That is the
-// difference from letting a period lapse: a lapsed period keeps the machine around
-// for a while so that topping up brings it back, whereas a refund returns the money
-// and therefore cannot leave the thing running.
-//
-// What can be refunded, for how long, and how much, is decided here rather than by
-// the caller. A request outside those bounds is refused with the reason.
-//
-// The money goes back the way it came: card charges to the card, balance to the
-// balance, credit to credit. A grant never turns into cash.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
-func (c *Client) RequestRefund(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRequestRefundRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListSubscriptionItems List subscription items
-//
-// Corresponds with GET /account/v1/subscription-items (the `ListSubscriptionItems` operationId).
-func (c *Client) ListSubscriptionItems(ctx context.Context, params *ListSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSubscriptionItemsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// SetAutoRenewWithBody Set auto renew
-//
-// When on, the account balance is charged at the renewal date. Turning it off lets the
-// current period run to its end and stops the resource afterwards.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
-func (c *Client) SetAutoRenewWithBody(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetAutoRenewRequestWithBody(c.Server, itemId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// SetAutoRenew Set auto renew
-//
-// When on, the account balance is charged at the renewal date. Turning it off lets the
-// current period run to its end and stops the resource afterwards.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
-func (c *Client) SetAutoRenew(ctx context.Context, itemId ItemId, body SetAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetAutoRenewRequest(c.Server, itemId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RenewSubscriptionItemWithBody Renew subscription item
-//
-// Extends the paid period from its current end, not from today, so renewing early does not
-// shorten what has already been paid for.
-//
-// The price charged is the one in effect at the moment of renewal, which may differ from
-// what was paid for the current period.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
-func (c *Client) RenewSubscriptionItemWithBody(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenewSubscriptionItemRequestWithBody(c.Server, itemId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RenewSubscriptionItem Renew subscription item
-//
-// Extends the paid period from its current end, not from today, so renewing early does not
-// shorten what has already been paid for.
-//
-// The price charged is the one in effect at the moment of renewal, which may differ from
-// what was paid for the current period.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
-func (c *Client) RenewSubscriptionItem(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenewSubscriptionItemRequest(c.Server, itemId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListRenewalPrices List the terms this item can be renewed for
-//
-// Every term on offer with what it costs, in one request: a renewal form needs the whole
-// ladder to render, and asking once per term is a request per row.
-//
-// Prices agreed for this account are reflected. The term this item already bills at is
-// marked `current`: renewing for it is not affected by a later price change, while any
-// other term is bought at today's price.
-//
-// Corresponds with GET /account/v1/subscription-items/{itemId}/renewal-prices (the `ListRenewalPrices` operationId).
-func (c *Client) ListRenewalPrices(ctx context.Context, itemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRenewalPricesRequest(c.Server, itemId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListSubscriptions List subscriptions
-//
-// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
-func (c *Client) ListSubscriptions(ctx context.Context, params *ListSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSubscriptionsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListTopUps List top ups
-//
-// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
-func (c *Client) ListTopUps(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTopUpsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateTopUpWithBody Create top up
-//
-// Returns a checkout address. The balance increases when the payment gateway confirms the
-// payment, which may be after this call returns.
-//
-// The amount is in the account's currency. A checkout page may present a local currency;
-// the amount credited to the account is the one requested here.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
-func (c *Client) CreateTopUpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateTopUpRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateTopUp Create top up
-//
-// Returns a checkout address. The balance increases when the payment gateway confirms the
-// payment, which may be after this call returns.
-//
-// The amount is in the account's currency. A checkout page may present a local currency;
-// the amount credited to the account is the one requested here.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
-func (c *Client) CreateTopUp(ctx context.Context, body CreateTopUpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateTopUpRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetTopUp Get top up
-//
-// Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
-func (c *Client) GetTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTopUpRequest(c.Server, topUpId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListTransactions List transactions
-//
-// Corresponds with GET /account/v1/transactions (the `ListTransactions` operationId).
-func (c *Client) ListTransactions(ctx context.Context, params *ListTransactionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTransactionsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListUsageCharges List usage charges
-//
-// Includes charges that have not been invoiced yet, which is how the current month's
-// spending is seen before the invoice is issued.
-//
-// Corresponds with GET /account/v1/usage-charges (the `ListUsageCharges` operationId).
-func (c *Client) ListUsageCharges(ctx context.Context, params *ListUsageChargesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListUsageChargesRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
 }
 
 // ListProjectActiveResources List project active resources
@@ -5948,7 +1864,7 @@ func (c *Client) ListProjectActiveResources(ctx context.Context, projectId Proje
 
 // ListProjectAllowances List project allowances
 //
-// These belong to the paying account and are shared with every other project it pays for,
+// These belong to the project's billing account and are shared with every other project linked to it,
 // so what is left here may be consumed elsewhere.
 //
 // Corresponds with GET /api/v1/projects/{projectId}/allowances (the `ListProjectAllowances` operationId).
@@ -5966,11 +1882,11 @@ func (c *Client) ListProjectAllowances(ctx context.Context, projectId ProjectId,
 
 // GetProjectBillingAccount Get project billing account
 //
-// Returns the payer's identity, its currency, and how much can still be spent. Cards,
+// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
 // invoices and transaction history are not included; they belong to the account owner
 // and are reached through `/account/v1/`.
 //
-// Returns 404 when no account pays for this project. Resources cannot be created in that
+// Returns 404 when the project has no billing account. Resources cannot be created in that
 // state.
 //
 // Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
@@ -5988,7 +1904,7 @@ func (c *Client) GetProjectBillingAccount(ctx context.Context, projectId Project
 
 // GetProjectClosurePreview Preview project closure
 //
-// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Charges already incurred remain owed by the billing account that was linked when they occurred and do not prevent closure. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
 //
 // Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
 func (c *Client) GetProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6005,7 +1921,7 @@ func (c *Client) GetProjectClosurePreview(ctx context.Context, projectId openapi
 
 // ListProjectEntitlements List project entitlements
 //
-// Includes capabilities bought for this project and those the paying account holds at
+// Includes capabilities bought for this project and those the project's billing account holds at
 // account level.
 //
 // Where a capability counts uses, `remaining_quantity` states how much is left. Whether
@@ -6075,14 +1991,18 @@ func (c *Client) ListProjectOrderItems(ctx context.Context, projectId ProjectId,
 
 // CreateProjectQuoteWithBody Quote for a project
 //
-// Priced in the paying account's currency, and at any rate negotiated for that account.
+// Priced in the project billing account's currency, and at any rate negotiated for that account.
 // Nothing is reserved and nothing is recorded, so this may be called as often as required.
 //
 // Prices may change between quoting and ordering. An order is charged at the price in
 // effect when it is placed, so a quote should be refreshed before a final confirmation is
 // shown.
 //
-// Returns 404 when no account pays for this project.
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+// named, with the discounts the account holds, and with tax.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed
+// does not belong to this project.
 //
 // Takes any type of body and a specified content type.
 //
@@ -6101,14 +2021,18 @@ func (c *Client) CreateProjectQuoteWithBody(ctx context.Context, projectId Proje
 
 // CreateProjectQuote Quote for a project
 //
-// Priced in the paying account's currency, and at any rate negotiated for that account.
+// Priced in the project billing account's currency, and at any rate negotiated for that account.
 // Nothing is reserved and nothing is recorded, so this may be called as often as required.
 //
 // Prices may change between quoting and ordering. An order is charged at the price in
 // effect when it is placed, so a quote should be refreshed before a final confirmation is
 // shown.
 //
-// Returns 404 when no account pays for this project.
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+// named, with the discounts the account holds, and with tax.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed
+// does not belong to this project.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -6145,11 +2069,11 @@ func (c *Client) ListProjectSpend(ctx context.Context, projectId ProjectId, para
 	return c.Client.Do(req)
 }
 
-// ListProjectSubscriptionItems List project subscription items
+// ListProjectSubscriptions List project subscriptions
 //
-// Corresponds with GET /api/v1/projects/{projectId}/subscription-items (the `ListProjectSubscriptionItems` operationId).
-func (c *Client) ListProjectSubscriptionItems(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListProjectSubscriptionItemsRequest(c.Server, projectId, params)
+// Corresponds with GET /api/v1/projects/{projectId}/subscriptions (the `ListProjectSubscriptions` operationId).
+func (c *Client) ListProjectSubscriptions(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectSubscriptionsRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6162,14 +2086,14 @@ func (c *Client) ListProjectSubscriptionItems(ctx context.Context, projectId Pro
 
 // SetProjectAutoRenewWithBody Set project auto renew
 //
-// Automatic renewal draws on the paying account's balance, which a project member may
+// Automatic renewal draws on the project billing account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
-func (c *Client) SetProjectAutoRenewWithBody(ctx context.Context, projectId ProjectId, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetProjectAutoRenewRequestWithBody(c.Server, projectId, itemId, contentType, body)
+// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
+func (c *Client) SetProjectAutoRenewWithBody(ctx context.Context, projectId ProjectId, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetProjectAutoRenewRequestWithBody(c.Server, projectId, subscriptionId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6182,29 +2106,14 @@ func (c *Client) SetProjectAutoRenewWithBody(ctx context.Context, projectId Proj
 
 // SetProjectAutoRenew Set project auto renew
 //
-// Automatic renewal draws on the paying account's balance, which a project member may
+// Automatic renewal draws on the project billing account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
-func (c *Client) SetProjectAutoRenew(ctx context.Context, projectId ProjectId, itemId ItemId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetProjectAutoRenewRequest(c.Server, projectId, itemId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListProjectSubscriptions List project subscriptions
-//
-// Corresponds with GET /api/v1/projects/{projectId}/subscriptions (the `ListProjectSubscriptions` operationId).
-func (c *Client) ListProjectSubscriptions(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListProjectSubscriptionsRequest(c.Server, projectId, params)
+// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
+func (c *Client) SetProjectAutoRenew(ctx context.Context, projectId ProjectId, subscriptionId SubscriptionId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetProjectAutoRenewRequest(c.Server, projectId, subscriptionId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6231,2913 +2140,6 @@ func (c *Client) ListProjectUsageCharges(ctx context.Context, projectId ProjectI
 		return nil, err
 	}
 	return c.Client.Do(req)
-}
-
-// CreateEstimateWithBody Estimate a basket
-//
-// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
-// called as often as required.
-//
-// `POST` is used because the set of items to price does not fit in a query string. There is
-// no corresponding `GET`, and no estimate is stored to retrieve.
-//
-// An account holding a negotiated agreement may be charged less than this. Tax and
-// discounts are not included.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
-func (c *Client) CreateEstimateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEstimateRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateEstimate Estimate a basket
-//
-// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
-// called as often as required.
-//
-// `POST` is used because the set of items to price does not fit in a query string. There is
-// no corresponding `GET`, and no estimate is stored to retrieve.
-//
-// An account holding a negotiated agreement may be charged less than this. Tax and
-// discounts are not included.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
-func (c *Client) CreateEstimate(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateEstimateRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListCatalogItems List what is on sale, with prices
-//
-// Every sellable thing and what it costs, in one request. A plan appears once per price.
-//
-// `currency` is required: a plan has a price in each currency it is sold in, so "what does
-// this cost" has no answer without one.
-//
-// Retired prices are left out. Existing subscriptions still reference them, so this is not
-// the place to look up what an existing purchase is paying.
-//
-// Corresponds with GET /catalog/v1/items (the `ListCatalogItems` operationId).
-func (c *Client) ListCatalogItems(ctx context.Context, params *ListCatalogItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCatalogItemsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetCatalogPlan Get a sellable item
-//
-// Resolves a stored identifier into something that can be displayed. Returns items that are
-// no longer on sale: an existing purchase still refers to one.
-//
-// Corresponds with GET /catalog/v1/plans/{planId} (the `GetCatalogPlan` operationId).
-func (c *Client) GetCatalogPlan(ctx context.Context, planId openapi_types.UUID, params *GetCatalogPlanParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCatalogPlanRequest(c.Server, planId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListPrices List catalog prices
-//
-// Public list prices only. An account holding a negotiated agreement may be charged less;
-// it is never charged more.
-//
-// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
-func (c *Client) ListPrices(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPricesRequest(c.Server, planId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetCatalogPrice Get a price
-//
-// Returns retired prices. An existing subscription still bills at the price it was bought
-// at, so this is how to show what that purchase is paying.
-//
-// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetCatalogPrice` operationId).
-func (c *Client) GetCatalogPrice(ctx context.Context, priceId openapi_types.UUID, params *GetCatalogPriceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCatalogPriceRequest(c.Server, priceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListProducts List catalog products
-//
-// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
-func (c *Client) ListProducts(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListProductsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetCatalogProduct Get a service
-//
-// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or
-// the terms of a credit — into something that can be displayed.
-//
-// Corresponds with GET /catalog/v1/products/{productId} (the `GetCatalogProduct` operationId).
-func (c *Client) GetCatalogProduct(ctx context.Context, productId openapi_types.UUID, params *GetCatalogProductParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCatalogProductRequest(c.Server, productId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListPlans List catalog plans
-//
-// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListPlans` operationId).
-func (c *Client) ListPlans(ctx context.Context, productId ProductId, params *ListPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPlansRequest(c.Server, productId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListRates List catalog rates
-//
-// Only public price lists are readable here. A list written for a single agreement is not,
-// and its identifier cannot be used to reach it.
-//
-// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
-func (c *Client) ListRates(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRatesRequest(c.Server, rateCardId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// NewListAllowancesRequest constructs an http.Request for the ListAllowances method
-func NewListAllowancesRequest(server string, params *ListAllowancesParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/allowances")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.MeterId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "meter_id", *params.MeterId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ProductId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListAllowanceConsumptionsRequest constructs an http.Request for the ListAllowanceConsumptions method
-func NewListAllowanceConsumptionsRequest(server string, allowanceId openapi_types.UUID, params *ListAllowanceConsumptionsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "allowanceId", allowanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/allowances/%s/consumptions", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListBillingAccountsRequest constructs an http.Request for the ListBillingAccounts method
-func NewListBillingAccountsRequest(server string, params *ListBillingAccountsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/billing-accounts")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateBillingAccountRequest calls the generic CreateBillingAccount builder with application/json body
-func NewCreateBillingAccountRequest(server string, body CreateBillingAccountJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateBillingAccountRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateBillingAccountRequestWithBody constructs an http.Request for the CreateBillingAccount method, with any body, and a specified content type
-func NewCreateBillingAccountRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/billing-accounts")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetBillingAccountRequest constructs an http.Request for the GetBillingAccount method
-func NewGetBillingAccountRequest(server string, accountId AccountId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountId", accountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateBillingAccountRequest calls the generic UpdateBillingAccount builder with application/json body
-func NewUpdateBillingAccountRequest(server string, accountId AccountId, body UpdateBillingAccountJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateBillingAccountRequestWithBody(server, accountId, "application/json", bodyReader)
-}
-
-// NewUpdateBillingAccountRequestWithBody constructs an http.Request for the UpdateBillingAccount method, with any body, and a specified content type
-func NewUpdateBillingAccountRequestWithBody(server string, accountId AccountId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountId", accountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetAccountBalanceRequest constructs an http.Request for the GetAccountBalance method
-func NewGetAccountBalanceRequest(server string, accountId AccountId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountId", accountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/balance", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPreviewCodeRequest calls the generic PreviewCode builder with application/json body
-func NewPreviewCodeRequest(server string, body PreviewCodeJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPreviewCodeRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewPreviewCodeRequestWithBody constructs an http.Request for the PreviewCode method, with any body, and a specified content type
-func NewPreviewCodeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/codes/preview")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListCreditGrantsRequest constructs an http.Request for the ListCreditGrants method
-func NewListCreditGrantsRequest(server string, params *ListCreditGrantsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/credit-grants")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListAccountDiscountsRequest constructs an http.Request for the ListAccountDiscounts method
-func NewListAccountDiscountsRequest(server string, params *ListAccountDiscountsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/discounts")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListEntitlementsRequest constructs an http.Request for the ListEntitlements method
-func NewListEntitlementsRequest(server string, params *ListEntitlementsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/entitlements")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListInvoicesRequest constructs an http.Request for the ListInvoices method
-func NewListInvoicesRequest(server string, params *ListInvoicesParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/invoices")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.From != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.To != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetInvoiceRequest constructs an http.Request for the GetInvoice method
-func NewGetInvoiceRequest(server string, invoiceId InvoiceId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invoiceId", invoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/invoices/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListInvoiceItemsRequest constructs an http.Request for the ListInvoiceItems method
-func NewListInvoiceItemsRequest(server string, invoiceId InvoiceId, params *ListInvoiceItemsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invoiceId", invoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/invoices/%s/items", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPayInvoiceRequest calls the generic PayInvoice builder with application/json body
-func NewPayInvoiceRequest(server string, invoiceId InvoiceId, body PayInvoiceJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPayInvoiceRequestWithBody(server, invoiceId, "application/json", bodyReader)
-}
-
-// NewPayInvoiceRequestWithBody constructs an http.Request for the PayInvoice method, with any body, and a specified content type
-func NewPayInvoiceRequestWithBody(server string, invoiceId InvoiceId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invoiceId", invoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/invoices/%s/pay", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetInvoiceRefundQuoteRequest constructs an http.Request for the GetInvoiceRefundQuote method
-func NewGetInvoiceRefundQuoteRequest(server string, invoiceId InvoiceId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invoiceId", invoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/invoices/%s/refund-quote", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListOrdersRequest constructs an http.Request for the ListOrders method
-func NewListOrdersRequest(server string, params *ListOrdersParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/orders")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.State != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.From != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.To != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetOrderRequest constructs an http.Request for the GetOrder method
-func NewGetOrderRequest(server string, orderId OrderId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/orders/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCancelScheduledChangeRequest constructs an http.Request for the CancelScheduledChange method
-func NewCancelScheduledChangeRequest(server string, orderId OrderId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/orders/%s/cancel", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListOrderItemsRequest constructs an http.Request for the ListOrderItems method
-func NewListOrderItemsRequest(server string, orderId OrderId, params *ListOrderItemsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/orders/%s/items", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPayOrderRequest calls the generic PayOrder builder with application/json body
-func NewPayOrderRequest(server string, orderId OrderId, body PayOrderJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPayOrderRequestWithBody(server, orderId, "application/json", bodyReader)
-}
-
-// NewPayOrderRequestWithBody constructs an http.Request for the PayOrder method, with any body, and a specified content type
-func NewPayOrderRequestWithBody(server string, orderId OrderId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/orders/%s/pay", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetOrderRefundQuoteRequest constructs an http.Request for the GetOrderRefundQuote method
-func NewGetOrderRefundQuoteRequest(server string, orderId OrderId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/orders/%s/refund-quote", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListPaymentMethodsRequest constructs an http.Request for the ListPaymentMethods method
-func NewListPaymentMethodsRequest(server string, params *ListPaymentMethodsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/payment-methods")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreatePaymentMethodSetupRequest calls the generic CreatePaymentMethodSetup builder with application/json body
-func NewCreatePaymentMethodSetupRequest(server string, body CreatePaymentMethodSetupJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreatePaymentMethodSetupRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreatePaymentMethodSetupRequestWithBody constructs an http.Request for the CreatePaymentMethodSetup method, with any body, and a specified content type
-func NewCreatePaymentMethodSetupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/payment-methods/setup")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeletePaymentMethodRequest constructs an http.Request for the DeletePaymentMethod method
-func NewDeletePaymentMethodRequest(server string, paymentMethodId PaymentMethodId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "paymentMethodId", paymentMethodId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/payment-methods/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewSetDefaultPaymentMethodRequest constructs an http.Request for the SetDefaultPaymentMethod method
-func NewSetDefaultPaymentMethodRequest(server string, paymentMethodId PaymentMethodId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "paymentMethodId", paymentMethodId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/payment-methods/%s/default", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPayTogetherRequest calls the generic PayTogether builder with application/json body
-func NewPayTogetherRequest(server string, body PayTogetherJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPayTogetherRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewPayTogetherRequestWithBody constructs an http.Request for the PayTogether method, with any body, and a specified content type
-func NewPayTogetherRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/payments")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListPaidProjectsRequest constructs an http.Request for the ListPaidProjects method
-func NewListPaidProjectsRequest(server string, params *ListPaidProjectsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/projects")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUnbindProjectPayerRequest constructs an http.Request for the UnbindProjectPayer method
-func NewUnbindProjectPayerRequest(server string, projectId ProjectId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/projects/%s/billing-account", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewFindProjectPayerRequest constructs an http.Request for the FindProjectPayer method
-func NewFindProjectPayerRequest(server string, projectId ProjectId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/projects/%s/billing-account", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewSetProjectPayerRequest calls the generic SetProjectPayer builder with application/json body
-func NewSetProjectPayerRequest(server string, projectId ProjectId, body SetProjectPayerJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewSetProjectPayerRequestWithBody(server, projectId, "application/json", bodyReader)
-}
-
-// NewSetProjectPayerRequestWithBody constructs an http.Request for the SetProjectPayer method, with any body, and a specified content type
-func NewSetProjectPayerRequestWithBody(server string, projectId ProjectId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/projects/%s/billing-account", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewSettleProjectUsageRequest constructs an http.Request for the SettleProjectUsage method
-func NewSettleProjectUsageRequest(server string, projectId ProjectId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/projects/%s/billing-account/settle", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetAccountProjectClosurePreviewRequest constructs an http.Request for the GetAccountProjectClosurePreview method
-func NewGetAccountProjectClosurePreviewRequest(server string, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/projects/%s/closure-preview", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListRefundsRequest constructs an http.Request for the ListRefunds method
-func NewListRefundsRequest(server string, params *ListRefundsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/refunds")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewRequestRefundRequest calls the generic RequestRefund builder with application/json body
-func NewRequestRefundRequest(server string, body RequestRefundJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRequestRefundRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewRequestRefundRequestWithBody constructs an http.Request for the RequestRefund method, with any body, and a specified content type
-func NewRequestRefundRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/refunds")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListSubscriptionItemsRequest constructs an http.Request for the ListSubscriptionItems method
-func NewListSubscriptionItemsRequest(server string, params *ListSubscriptionItemsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/subscription-items")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ExpiringBefore != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "expiring_before", *params.ExpiringBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewSetAutoRenewRequest calls the generic SetAutoRenew builder with application/json body
-func NewSetAutoRenewRequest(server string, itemId ItemId, body SetAutoRenewJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewSetAutoRenewRequestWithBody(server, itemId, "application/json", bodyReader)
-}
-
-// NewSetAutoRenewRequestWithBody constructs an http.Request for the SetAutoRenew method, with any body, and a specified content type
-func NewSetAutoRenewRequestWithBody(server string, itemId ItemId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "itemId", itemId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/subscription-items/%s/auto-renew", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRenewSubscriptionItemRequest calls the generic RenewSubscriptionItem builder with application/json body
-func NewRenewSubscriptionItemRequest(server string, itemId ItemId, body RenewSubscriptionItemJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRenewSubscriptionItemRequestWithBody(server, itemId, "application/json", bodyReader)
-}
-
-// NewRenewSubscriptionItemRequestWithBody constructs an http.Request for the RenewSubscriptionItem method, with any body, and a specified content type
-func NewRenewSubscriptionItemRequestWithBody(server string, itemId ItemId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "itemId", itemId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/subscription-items/%s/renew", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListRenewalPricesRequest constructs an http.Request for the ListRenewalPrices method
-func NewListRenewalPricesRequest(server string, itemId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "itemId", itemId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/subscription-items/%s/renewal-prices", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListSubscriptionsRequest constructs an http.Request for the ListSubscriptions method
-func NewListSubscriptionsRequest(server string, params *ListSubscriptionsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/subscriptions")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListTopUpsRequest constructs an http.Request for the ListTopUps method
-func NewListTopUpsRequest(server string, params *ListTopUpsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/top-ups")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateTopUpRequest calls the generic CreateTopUp builder with application/json body
-func NewCreateTopUpRequest(server string, body CreateTopUpJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateTopUpRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateTopUpRequestWithBody constructs an http.Request for the CreateTopUp method, with any body, and a specified content type
-func NewCreateTopUpRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/top-ups")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetTopUpRequest constructs an http.Request for the GetTopUp method
-func NewGetTopUpRequest(server string, topUpId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "topUpId", topUpId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/top-ups/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListTransactionsRequest constructs an http.Request for the ListTransactions method
-func NewListTransactionsRequest(server string, params *ListTransactionsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/transactions")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.From != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.To != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListUsageChargesRequest constructs an http.Request for the ListUsageCharges method
-func NewListUsageChargesRequest(server string, params *ListUsageChargesParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/usage-charges")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ProjectId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ProductId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ResourceId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "resource_id", *params.ResourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.From != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.To != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
 }
 
 // NewListProjectActiveResourcesRequest constructs an http.Request for the ListProjectActiveResources method
@@ -9298,7 +2300,7 @@ func NewListProjectAllowancesRequest(server string, projectId ProjectId, params 
 
 		if params.ProductId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9490,7 +2492,7 @@ func NewListProjectEntitlementsRequest(server string, projectId ProjectId, param
 
 		if params.ProductId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9573,9 +2575,9 @@ func NewListProjectOrdersRequest(server string, projectId ProjectId, params *Lis
 
 		}
 
-		if params.State != nil {
+		if params.Status != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9856,7 +2858,7 @@ func NewListProjectSpendRequest(server string, projectId ProjectId, params *List
 
 		if params.ProductId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9900,145 +2902,6 @@ func NewListProjectSpendRequest(server string, projectId ProjectId, params *List
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewListProjectSubscriptionItemsRequest constructs an http.Request for the ListProjectSubscriptionItems method
-func NewListProjectSubscriptionItemsRequest(server string, projectId ProjectId, params *ListProjectSubscriptionItemsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/projects/%s/subscription-items", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.ExpiringBefore != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "expiring_before", *params.ExpiringBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewSetProjectAutoRenewRequest calls the generic SetProjectAutoRenew builder with application/json body
-func NewSetProjectAutoRenewRequest(server string, projectId ProjectId, itemId ItemId, body SetProjectAutoRenewJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewSetProjectAutoRenewRequestWithBody(server, projectId, itemId, "application/json", bodyReader)
-}
-
-// NewSetProjectAutoRenewRequestWithBody constructs an http.Request for the SetProjectAutoRenew method, with any body, and a specified content type
-func NewSetProjectAutoRenewRequestWithBody(server string, projectId ProjectId, itemId ItemId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "itemId", itemId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/projects/%s/subscription-items/%s/auto-renew", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -10078,6 +2941,18 @@ func NewListProjectSubscriptionsRequest(server string, projectId ProjectId, para
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
+		if params.ExpiringBefore != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "expiring_before", *params.ExpiringBefore, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Page != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
@@ -10112,6 +2987,60 @@ func NewListProjectSubscriptionsRequest(server string, projectId ProjectId, para
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewSetProjectAutoRenewRequest calls the generic SetProjectAutoRenew builder with application/json body
+func NewSetProjectAutoRenewRequest(server string, projectId ProjectId, subscriptionId SubscriptionId, body SetProjectAutoRenewJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetProjectAutoRenewRequestWithBody(server, projectId, subscriptionId, "application/json", bodyReader)
+}
+
+// NewSetProjectAutoRenewRequestWithBody constructs an http.Request for the SetProjectAutoRenew method, with any body, and a specified content type
+func NewSetProjectAutoRenewRequestWithBody(server string, projectId ProjectId, subscriptionId SubscriptionId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "subscriptionId", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/auto-renew", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -10189,7 +3118,7 @@ func NewListProjectUsageChargesRequest(server string, projectId ProjectId, param
 
 		if params.ProductId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -10249,687 +3178,6 @@ func NewListProjectUsageChargesRequest(server string, projectId ProjectId, param
 	return req, nil
 }
 
-// NewCreateEstimateRequest calls the generic CreateEstimate builder with application/json body
-func NewCreateEstimateRequest(server string, body CreateEstimateJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateEstimateRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateEstimateRequestWithBody constructs an http.Request for the CreateEstimate method, with any body, and a specified content type
-func NewCreateEstimateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/estimates")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListCatalogItemsRequest constructs an http.Request for the ListCatalogItems method
-func NewListCatalogItemsRequest(server string, params *ListCatalogItemsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/items")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "currency", params.Currency, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-			return nil, err
-		} else {
-			for _, qp := range strings.Split(queryFrag, "&") {
-				rawQueryFragments = append(rawQueryFragments, qp)
-			}
-		}
-
-		if params.ProductId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Type != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "type", *params.Type, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.IfNoneMatch != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("If-None-Match", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
-// NewGetCatalogPlanRequest constructs an http.Request for the GetCatalogPlan method
-func NewGetCatalogPlanRequest(server string, planId openapi_types.UUID, params *GetCatalogPlanParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "planId", planId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/plans/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.IfNoneMatch != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("If-None-Match", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
-// NewListPricesRequest constructs an http.Request for the ListPrices method
-func NewListPricesRequest(server string, planId PlanId, params *ListPricesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "planId", planId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/plans/%s/prices", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Currency != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "currency", *params.Currency, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.IfNoneMatch != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("If-None-Match", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
-// NewGetCatalogPriceRequest constructs an http.Request for the GetCatalogPrice method
-func NewGetCatalogPriceRequest(server string, priceId openapi_types.UUID, params *GetCatalogPriceParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "priceId", priceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/prices/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.IfNoneMatch != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("If-None-Match", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
-// NewListProductsRequest constructs an http.Request for the ListProducts method
-func NewListProductsRequest(server string, params *ListProductsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/products")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.IfNoneMatch != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("If-None-Match", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
-// NewGetCatalogProductRequest constructs an http.Request for the GetCatalogProduct method
-func NewGetCatalogProductRequest(server string, productId openapi_types.UUID, params *GetCatalogProductParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "productId", productId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/products/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.IfNoneMatch != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("If-None-Match", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
-// NewListPlansRequest constructs an http.Request for the ListPlans method
-func NewListPlansRequest(server string, productId ProductId, params *ListPlansParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "productId", productId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/products/%s/plans", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.IfNoneMatch != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("If-None-Match", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
-// NewListRatesRequest constructs an http.Request for the ListRates method
-func NewListRatesRequest(server string, rateCardId RateCardId, params *ListRatesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "rateCardId", rateCardId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/catalog/v1/rate-cards/%s/rules", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.MeterId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "meter_id", *params.MeterId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.At != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "at", *params.At, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.IfNoneMatch != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("If-None-Match", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -10974,656 +3222,6 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListAllowancesWithResponse List allowances
-	//
-	// A quantity rather than an amount of money: bytes, seconds or tokens that are used before
-	// anything is charged for.
-	//
-	// Usage draws on these first and is only charged once they are exhausted. Where several
-	// apply, they are drawn on in a fixed order: lower `priority` first, then whichever
-	// expires soonest, then whichever was granted first. Included quantities therefore go
-	// before purchased packs, and a pack that is about to expire goes before one that is not.
-	//
-	// An unused quantity is lost when it expires; it is not refunded and does not carry over.
-	//
-	// Quantities belong to the account and are shared by every project it pays for.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/allowances (the `ListAllowances` operationId).
-	ListAllowancesWithResponse(ctx context.Context, params *ListAllowancesParams, reqEditors ...RequestEditorFn) (*ListAllowancesResponse, error)
-
-	// ListAllowanceConsumptionsWithResponse List allowance consumptions
-	//
-	// Each entry names the charge it covered, so the granted amount, what has been used and
-	// what remains all reconcile.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/allowances/{allowanceId}/consumptions (the `ListAllowanceConsumptions` operationId).
-	ListAllowanceConsumptionsWithResponse(ctx context.Context, allowanceId openapi_types.UUID, params *ListAllowanceConsumptionsParams, reqEditors ...RequestEditorFn) (*ListAllowanceConsumptionsResponse, error)
-
-	// ListBillingAccountsWithResponse List billing accounts
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
-	ListBillingAccountsWithResponse(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*ListBillingAccountsResponse, error)
-
-	// CreateBillingAccountWithBodyWithResponse Create billing account
-	//
-	// The currency is chosen here and cannot be changed afterwards. Everything charged to the
-	// account — prices, orders, invoices, balance — is denominated in it.
-	//
-	// One person may hold several accounts, for example a personal one and one for a team.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
-	CreateBillingAccountWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBillingAccountResponse, error)
-
-	// CreateBillingAccountWithResponse Create billing account
-	//
-	// The currency is chosen here and cannot be changed afterwards. Everything charged to the
-	// account — prices, orders, invoices, balance — is denominated in it.
-	//
-	// One person may hold several accounts, for example a personal one and one for a team.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
-	CreateBillingAccountWithResponse(ctx context.Context, body CreateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBillingAccountResponse, error)
-
-	// GetBillingAccountWithResponse Get billing account
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId).
-	GetBillingAccountWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetBillingAccountResponse, error)
-
-	// UpdateBillingAccountWithBodyWithResponse Update billing account
-	//
-	// The legal name, address and tax identifier are copied onto each invoice when it is
-	// issued. Changing them here affects invoices issued afterwards, not those already sent.
-	//
-	// The currency cannot be changed.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
-	UpdateBillingAccountWithBodyWithResponse(ctx context.Context, accountId AccountId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error)
-
-	// UpdateBillingAccountWithResponse Update billing account
-	//
-	// The legal name, address and tax identifier are copied onto each invoice when it is
-	// issued. Changing them here affects invoices issued afterwards, not those already sent.
-	//
-	// The currency cannot be changed.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
-	UpdateBillingAccountWithResponse(ctx context.Context, accountId AccountId, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error)
-
-	// GetAccountBalanceWithResponse Get account balance
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
-	GetAccountBalanceWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetAccountBalanceResponse, error)
-
-	// PreviewCodeWithBodyWithResponse Preview code
-	//
-	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
-	// before they commit.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
-	PreviewCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewCodeResponse, error)
-
-	// PreviewCodeWithResponse Preview code
-	//
-	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
-	// before they commit.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
-	PreviewCodeWithResponse(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewCodeResponse, error)
-
-	// ListCreditGrantsWithResponse List credit grants
-	//
-	// Each grant shows what remains and what it may be used for. Credit is spent before cash
-	// and cannot be withdrawn.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
-	ListCreditGrantsWithResponse(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*ListCreditGrantsResponse, error)
-
-	// ListAccountDiscountsWithResponse List the coupons held on this account
-	//
-	// Coupons placed on the account directly, which apply at checkout without a code being
-	// entered. A coupon reached through a code is not listed here.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/discounts (the `ListAccountDiscounts` operationId).
-	ListAccountDiscountsWithResponse(ctx context.Context, params *ListAccountDiscountsParams, reqEditors ...RequestEditorFn) (*ListAccountDiscountsResponse, error)
-
-	// ListEntitlementsWithResponse List entitlements
-	//
-	// Capabilities that come with what has been bought. A capability that is not held simply
-	// does not appear, so that "this does not exist" and "this has not been bought" cannot be
-	// confused.
-	//
-	// Derived from live subscriptions rather than stored, so this always agrees with what is
-	// being paid for. It stops being listed as soon as the subscription providing it ends.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/entitlements (the `ListEntitlements` operationId).
-	ListEntitlementsWithResponse(ctx context.Context, params *ListEntitlementsParams, reqEditors ...RequestEditorFn) (*ListEntitlementsResponse, error)
-
-	// ListInvoicesWithResponse List invoices
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/invoices (the `ListInvoices` operationId).
-	ListInvoicesWithResponse(ctx context.Context, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*ListInvoicesResponse, error)
-
-	// GetInvoiceWithResponse Get invoice
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
-	GetInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceResponse, error)
-
-	// ListInvoiceItemsWithResponse List invoice items
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
-	ListInvoiceItemsWithResponse(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*ListInvoiceItemsResponse, error)
-
-	// PayInvoiceWithBodyWithResponse Pay invoice
-	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
-	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the gateway confirms it.
-	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-	PayInvoiceWithBodyWithResponse(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error)
-
-	// PayInvoiceWithResponse Pay invoice
-	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
-	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the gateway confirms it.
-	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-	PayInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error)
-
-	// GetInvoiceRefundQuoteWithResponse Get invoice refund quote
-	//
-	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
-	// answer follows from what has been paid and what has already been returned, so it may
-	// be read as often as required.
-	//
-	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
-	// invoice already refunded in full.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
-	GetInvoiceRefundQuoteWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceRefundQuoteResponse, error)
-
-	// ListOrdersWithResponse List orders
-	//
-	// An order in `pending` still owes money; `amount_due` states how much and
-	// `reservation_expires_at` states how long it can still be paid.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/orders (the `ListOrders` operationId).
-	ListOrdersWithResponse(ctx context.Context, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error)
-
-	// GetOrderWithResponse Get order
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
-	GetOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderResponse, error)
-
-	// CancelScheduledChangeWithResponse Cancel scheduled change
-	//
-	// Only for a change scheduled for the end of the period, and only while it is still
-	// pending. An immediate change has already happened by the time it is placed, and there is
-	// nothing to call off.
-	//
-	// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
-	// subscription keeps running on what it is on now, and the item is free to be changed again.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
-	CancelScheduledChangeWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*CancelScheduledChangeResponse, error)
-
-	// ListOrderItemsWithResponse List order items
-	//
-	// One entry per item bought, with the price charged and the period it covers.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/orders/{orderId}/items (the `ListOrderItems` operationId).
-	ListOrderItemsWithResponse(ctx context.Context, orderId OrderId, params *ListOrderItemsParams, reqEditors ...RequestEditorFn) (*ListOrderItemsResponse, error)
-
-	// PayOrderWithBodyWithResponse Pay order
-	//
-	// Use this to resume an order whose checkout was interrupted.
-	//
-	// An order reserves both funds and stock for a limited time. Once that reservation expires
-	// the order can no longer be paid and must be placed again; `reservation_expires_at` on the
-	// order states when.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
-	PayOrderWithBodyWithResponse(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayOrderResponse, error)
-
-	// PayOrderWithResponse Pay order
-	//
-	// Use this to resume an order whose checkout was interrupted.
-	//
-	// An order reserves both funds and stock for a limited time. Once that reservation expires
-	// the order can no longer be paid and must be placed again; `reservation_expires_at` on the
-	// order states when.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
-	PayOrderWithResponse(ctx context.Context, orderId OrderId, body PayOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PayOrderResponse, error)
-
-	// GetOrderRefundQuoteWithResponse Get order refund quote
-	//
-	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
-	// answer follows from what has been paid and what has already been returned, so it may
-	// be read as often as required.
-	//
-	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
-	// order already refunded in full.
-	//
-	// Refunding an order also ends what it bought and reclaims whatever it provisioned. That
-	// is not reflected in the amounts here.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
-	GetOrderRefundQuoteWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderRefundQuoteResponse, error)
-
-	// ListPaymentMethodsWithResponse List payment methods
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/payment-methods (the `ListPaymentMethods` operationId).
-	ListPaymentMethodsWithResponse(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*ListPaymentMethodsResponse, error)
-
-	// CreatePaymentMethodSetupWithBodyWithResponse Create payment method setup
-	//
-	// Returns what is needed to hand the browser over to the payment gateway's own card
-	// form. Nothing is charged, and the method appears in the list once the gateway
-	// confirms it.
-	//
-	// Card numbers are never sent to or stored by this service.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
-	CreatePaymentMethodSetupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePaymentMethodSetupResponse, error)
-
-	// CreatePaymentMethodSetupWithResponse Create payment method setup
-	//
-	// Returns what is needed to hand the browser over to the payment gateway's own card
-	// form. Nothing is charged, and the method appears in the list once the gateway
-	// confirms it.
-	//
-	// Card numbers are never sent to or stored by this service.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
-	CreatePaymentMethodSetupWithResponse(ctx context.Context, body CreatePaymentMethodSetupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePaymentMethodSetupResponse, error)
-
-	// DeletePaymentMethodWithResponse Delete payment method
-	//
-	// Refused when it is the only method on an account that has resources billed by the hour,
-	// as there would be nothing left to charge when the balance runs out.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with DELETE /account/v1/payment-methods/{paymentMethodId} (the `DeletePaymentMethod` operationId).
-	DeletePaymentMethodWithResponse(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*DeletePaymentMethodResponse, error)
-
-	// SetDefaultPaymentMethodWithResponse Set default payment method
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
-	SetDefaultPaymentMethodWithResponse(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*SetDefaultPaymentMethodResponse, error)
-
-	// PayTogetherWithBodyWithResponse Pay together
-	//
-	// All of them or none. Nothing is settled unless everything named here can be, so a
-	// partial result is not a state this can leave behind.
-	//
-	// The balance is not split across the two cases: either it covers the whole total and
-	// everything is settled from it, or it is left untouched and the full total is collected
-	// through the gateway. It is never partly spent against an unpaid remainder.
-	//
-	// When the gateway is needed, this returns a checkout address and settles nothing.
-	// Call it again once the payment has landed — the balance then covers the total and the
-	// same call settles everything.
-	//
-	// Anything already paid is skipped rather than refused, so a repeated call after a
-	// partial success is safe.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
-	PayTogetherWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error)
-
-	// PayTogetherWithResponse Pay together
-	//
-	// All of them or none. Nothing is settled unless everything named here can be, so a
-	// partial result is not a state this can leave behind.
-	//
-	// The balance is not split across the two cases: either it covers the whole total and
-	// everything is settled from it, or it is left untouched and the full total is collected
-	// through the gateway. It is never partly spent against an unpaid remainder.
-	//
-	// When the gateway is needed, this returns a checkout address and settles nothing.
-	// Call it again once the payment has landed — the balance then covers the total and the
-	// same call settles everything.
-	//
-	// Anything already paid is skipped rather than refused, so a repeated call after a
-	// partial success is safe.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
-	PayTogetherWithResponse(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error)
-
-	// ListPaidProjectsWithResponse List paid projects
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/projects (the `ListPaidProjects` operationId).
-	ListPaidProjectsWithResponse(ctx context.Context, params *ListPaidProjectsParams, reqEditors ...RequestEditorFn) (*ListPaidProjectsResponse, error)
-
-	// UnbindProjectPayerWithResponse Unbind project payer
-	//
-	// Permitted only when the project has nothing left to charge: no resources accruing
-	// charges, no subscriptions still running, no usage awaiting invoicing, and no unpaid
-	// invoice on the account.
-	//
-	// Usage that has not yet been invoiced is settled by calling
-	// `POST /account/v1/projects/{projectId}/billing-account/settle` first.
-	//
-	// After this the project cannot create resources until an account is chosen again.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with DELETE /account/v1/projects/{projectId}/billing-account (the `UnbindProjectPayer` operationId).
-	UnbindProjectPayerWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*UnbindProjectPayerResponse, error)
-
-	// FindProjectPayerWithResponse Find project payer
-	//
-	// Returns 404 when no account pays for it. No resources can be created until one does.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `FindProjectPayer` operationId).
-	FindProjectPayerWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*FindProjectPayerResponse, error)
-
-	// SetProjectPayerWithBodyWithResponse Set project payer
-	//
-	// Charges already recorded remain with the account that was paying when they occurred, and
-	// are still invoiced to it. Metered resources are settled up to the moment of the change.
-	//
-	// Periods already paid for are unaffected; renewals are charged to the new account.
-	//
-	// The request is refused while the current account has an unpaid invoice, and — once the
-	// project holds subscriptions — while the new account uses a different currency.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
-	SetProjectPayerWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectPayerResponse, error)
-
-	// SetProjectPayerWithResponse Set project payer
-	//
-	// Charges already recorded remain with the account that was paying when they occurred, and
-	// are still invoiced to it. Metered resources are settled up to the moment of the change.
-	//
-	// Periods already paid for are unaffected; renewals are charged to the new account.
-	//
-	// The request is refused while the current account has an unpaid invoice, and — once the
-	// project holds subscriptions — while the new account uses a different currency.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
-	SetProjectPayerWithResponse(ctx context.Context, projectId ProjectId, body SetProjectPayerJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectPayerResponse, error)
-
-	// SettleProjectUsageWithResponse Settle project usage
-	//
-	// Metered usage is normally invoiced at the end of the month. This issues an invoice for
-	// everything charged to the project so far, to the account currently paying for it.
-	//
-	// Use it before unbinding a project, or to obtain a settled figure part-way through a
-	// month. Calling it again when nothing is outstanding has no effect.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/projects/{projectId}/billing-account/settle (the `SettleProjectUsage` operationId).
-	SettleProjectUsageWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*SettleProjectUsageResponse, error)
-
-	// GetAccountProjectClosurePreviewWithResponse Preview project closure
-	//
-	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/projects/{projectId}/closure-preview (the `GetAccountProjectClosurePreview` operationId).
-	GetAccountProjectClosurePreviewWithResponse(ctx context.Context, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*GetAccountProjectClosurePreviewResponse, error)
-
-	// ListRefundsWithResponse List refunds
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
-	ListRefundsWithResponse(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*ListRefundsResponse, error)
-
-	// RequestRefundWithBodyWithResponse Request refund
-	//
-	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
-	// difference from letting a period lapse: a lapsed period keeps the machine around
-	// for a while so that topping up brings it back, whereas a refund returns the money
-	// and therefore cannot leave the thing running.
-	//
-	// What can be refunded, for how long, and how much, is decided here rather than by
-	// the caller. A request outside those bounds is refused with the reason.
-	//
-	// The money goes back the way it came: card charges to the card, balance to the
-	// balance, credit to credit. A grant never turns into cash.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
-	RequestRefundWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error)
-
-	// RequestRefundWithResponse Request refund
-	//
-	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
-	// difference from letting a period lapse: a lapsed period keeps the machine around
-	// for a while so that topping up brings it back, whereas a refund returns the money
-	// and therefore cannot leave the thing running.
-	//
-	// What can be refunded, for how long, and how much, is decided here rather than by
-	// the caller. A request outside those bounds is refused with the reason.
-	//
-	// The money goes back the way it came: card charges to the card, balance to the
-	// balance, credit to credit. A grant never turns into cash.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
-	RequestRefundWithResponse(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error)
-
-	// ListSubscriptionItemsWithResponse List subscription items
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/subscription-items (the `ListSubscriptionItems` operationId).
-	ListSubscriptionItemsWithResponse(ctx context.Context, params *ListSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*ListSubscriptionItemsResponse, error)
-
-	// SetAutoRenewWithBodyWithResponse Set auto renew
-	//
-	// When on, the account balance is charged at the renewal date. Turning it off lets the
-	// current period run to its end and stops the resource afterwards.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
-	SetAutoRenewWithBodyWithResponse(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAutoRenewResponse, error)
-
-	// SetAutoRenewWithResponse Set auto renew
-	//
-	// When on, the account balance is charged at the renewal date. Turning it off lets the
-	// current period run to its end and stops the resource afterwards.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
-	SetAutoRenewWithResponse(ctx context.Context, itemId ItemId, body SetAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAutoRenewResponse, error)
-
-	// RenewSubscriptionItemWithBodyWithResponse Renew subscription item
-	//
-	// Extends the paid period from its current end, not from today, so renewing early does not
-	// shorten what has already been paid for.
-	//
-	// The price charged is the one in effect at the moment of renewal, which may differ from
-	// what was paid for the current period.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
-	RenewSubscriptionItemWithBodyWithResponse(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewSubscriptionItemResponse, error)
-
-	// RenewSubscriptionItemWithResponse Renew subscription item
-	//
-	// Extends the paid period from its current end, not from today, so renewing early does not
-	// shorten what has already been paid for.
-	//
-	// The price charged is the one in effect at the moment of renewal, which may differ from
-	// what was paid for the current period.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
-	RenewSubscriptionItemWithResponse(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewSubscriptionItemResponse, error)
-
-	// ListRenewalPricesWithResponse List the terms this item can be renewed for
-	//
-	// Every term on offer with what it costs, in one request: a renewal form needs the whole
-	// ladder to render, and asking once per term is a request per row.
-	//
-	// Prices agreed for this account are reflected. The term this item already bills at is
-	// marked `current`: renewing for it is not affected by a later price change, while any
-	// other term is bought at today's price.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/subscription-items/{itemId}/renewal-prices (the `ListRenewalPrices` operationId).
-	ListRenewalPricesWithResponse(ctx context.Context, itemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRenewalPricesResponse, error)
-
-	// ListSubscriptionsWithResponse List subscriptions
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
-	ListSubscriptionsWithResponse(ctx context.Context, params *ListSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListSubscriptionsResponse, error)
-
-	// ListTopUpsWithResponse List top ups
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
-	ListTopUpsWithResponse(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error)
-
-	// CreateTopUpWithBodyWithResponse Create top up
-	//
-	// Returns a checkout address. The balance increases when the payment gateway confirms the
-	// payment, which may be after this call returns.
-	//
-	// The amount is in the account's currency. A checkout page may present a local currency;
-	// the amount credited to the account is the one requested here.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
-	CreateTopUpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTopUpResponse, error)
-
-	// CreateTopUpWithResponse Create top up
-	//
-	// Returns a checkout address. The balance increases when the payment gateway confirms the
-	// payment, which may be after this call returns.
-	//
-	// The amount is in the account's currency. A checkout page may present a local currency;
-	// the amount credited to the account is the one requested here.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
-	CreateTopUpWithResponse(ctx context.Context, body CreateTopUpJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTopUpResponse, error)
-
-	// GetTopUpWithResponse Get top up
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
-	GetTopUpWithResponse(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetTopUpResponse, error)
-
-	// ListTransactionsWithResponse List transactions
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/transactions (the `ListTransactions` operationId).
-	ListTransactionsWithResponse(ctx context.Context, params *ListTransactionsParams, reqEditors ...RequestEditorFn) (*ListTransactionsResponse, error)
-
-	// ListUsageChargesWithResponse List usage charges
-	//
-	// Includes charges that have not been invoiced yet, which is how the current month's
-	// spending is seen before the invoice is issued.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/usage-charges (the `ListUsageCharges` operationId).
-	ListUsageChargesWithResponse(ctx context.Context, params *ListUsageChargesParams, reqEditors ...RequestEditorFn) (*ListUsageChargesResponse, error)
-
 	// ListProjectActiveResourcesWithResponse List project active resources
 	//
 	// A resource that is running but does not appear here is not being charged for.
@@ -11635,7 +3233,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListProjectAllowancesWithResponse List project allowances
 	//
-	// These belong to the paying account and are shared with every other project it pays for,
+	// These belong to the project's billing account and are shared with every other project linked to it,
 	// so what is left here may be consumed elsewhere.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -11645,11 +3243,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetProjectBillingAccountWithResponse Get project billing account
 	//
-	// Returns the payer's identity, its currency, and how much can still be spent. Cards,
+	// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
 	// invoices and transaction history are not included; they belong to the account owner
 	// and are reached through `/account/v1/`.
 	//
-	// Returns 404 when no account pays for this project. Resources cannot be created in that
+	// Returns 404 when the project has no billing account. Resources cannot be created in that
 	// state.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -11659,7 +3257,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetProjectClosurePreviewWithResponse Preview project closure
 	//
-	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Charges already incurred remain owed by the billing account that was linked when they occurred and do not prevent closure. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11668,7 +3266,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListProjectEntitlementsWithResponse List project entitlements
 	//
-	// Includes capabilities bought for this project and those the paying account holds at
+	// Includes capabilities bought for this project and those the project's billing account holds at
 	// account level.
 	//
 	// Where a capability counts uses, `remaining_quantity` states how much is left. Whether
@@ -11706,14 +3304,18 @@ type ClientWithResponsesInterface interface {
 
 	// CreateProjectQuoteWithBodyWithResponse Quote for a project
 	//
-	// Priced in the paying account's currency, and at any rate negotiated for that account.
+	// Priced in the project billing account's currency, and at any rate negotiated for that account.
 	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
 	//
 	// Prices may change between quoting and ordering. An order is charged at the price in
 	// effect when it is placed, so a quote should be refreshed before a final confirmation is
 	// shown.
 	//
-	// Returns 404 when no account pays for this project.
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+	// named, with the discounts the account holds, and with tax.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed
+	// does not belong to this project.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11722,14 +3324,18 @@ type ClientWithResponsesInterface interface {
 
 	// CreateProjectQuoteWithResponse Quote for a project
 	//
-	// Priced in the paying account's currency, and at any rate negotiated for that account.
+	// Priced in the project billing account's currency, and at any rate negotiated for that account.
 	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
 	//
 	// Prices may change between quoting and ordering. An order is charged at the price in
 	// effect when it is placed, so a quote should be refreshed before a final confirmation is
 	// shown.
 	//
-	// Returns 404 when no account pays for this project.
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+	// named, with the discounts the account holds, and with tax.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed
+	// does not belong to this project.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11748,39 +3354,32 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/spend (the `ListProjectSpend` operationId).
 	ListProjectSpendWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectSpendParams, reqEditors ...RequestEditorFn) (*ListProjectSpendResponse, error)
 
-	// ListProjectSubscriptionItemsWithResponse List project subscription items
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/projects/{projectId}/subscription-items (the `ListProjectSubscriptionItems` operationId).
-	ListProjectSubscriptionItemsWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*ListProjectSubscriptionItemsResponse, error)
-
-	// SetProjectAutoRenewWithBodyWithResponse Set project auto renew
-	//
-	// Automatic renewal draws on the paying account's balance, which a project member may
-	// commit. Paying by card requires the account owner and is done from the billing centre.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
-	SetProjectAutoRenewWithBodyWithResponse(ctx context.Context, projectId ProjectId, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error)
-
-	// SetProjectAutoRenewWithResponse Set project auto renew
-	//
-	// Automatic renewal draws on the paying account's balance, which a project member may
-	// commit. Paying by card requires the account owner and is done from the billing centre.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
-	SetProjectAutoRenewWithResponse(ctx context.Context, projectId ProjectId, itemId ItemId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error)
-
 	// ListProjectSubscriptionsWithResponse List project subscriptions
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/subscriptions (the `ListProjectSubscriptions` operationId).
 	ListProjectSubscriptionsWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListProjectSubscriptionsResponse, error)
+
+	// SetProjectAutoRenewWithBodyWithResponse Set project auto renew
+	//
+	// Automatic renewal draws on the project billing account's balance, which a project member may
+	// commit. Paying by card requires the account owner and is done from the billing centre.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
+	SetProjectAutoRenewWithBodyWithResponse(ctx context.Context, projectId ProjectId, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error)
+
+	// SetProjectAutoRenewWithResponse Set project auto renew
+	//
+	// Automatic renewal draws on the project billing account's balance, which a project member may
+	// commit. Paying by card requires the account owner and is done from the billing centre.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
+	SetProjectAutoRenewWithResponse(ctx context.Context, projectId ProjectId, subscriptionId SubscriptionId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error)
 
 	// ListProjectUsageChargesWithResponse List project usage charges
 	//
@@ -11791,2263 +3390,6 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/usage-charges (the `ListProjectUsageCharges` operationId).
 	ListProjectUsageChargesWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectUsageChargesParams, reqEditors ...RequestEditorFn) (*ListProjectUsageChargesResponse, error)
-
-	// CreateEstimateWithBodyWithResponse Estimate a basket
-	//
-	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
-	// called as often as required.
-	//
-	// `POST` is used because the set of items to price does not fit in a query string. There is
-	// no corresponding `GET`, and no estimate is stored to retrieve.
-	//
-	// An account holding a negotiated agreement may be charged less than this. Tax and
-	// discounts are not included.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
-	CreateEstimateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEstimateResponse, error)
-
-	// CreateEstimateWithResponse Estimate a basket
-	//
-	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
-	// called as often as required.
-	//
-	// `POST` is used because the set of items to price does not fit in a query string. There is
-	// no corresponding `GET`, and no estimate is stored to retrieve.
-	//
-	// An account holding a negotiated agreement may be charged less than this. Tax and
-	// discounts are not included.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
-	CreateEstimateWithResponse(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEstimateResponse, error)
-
-	// ListCatalogItemsWithResponse List what is on sale, with prices
-	//
-	// Every sellable thing and what it costs, in one request. A plan appears once per price.
-	//
-	// `currency` is required: a plan has a price in each currency it is sold in, so "what does
-	// this cost" has no answer without one.
-	//
-	// Retired prices are left out. Existing subscriptions still reference them, so this is not
-	// the place to look up what an existing purchase is paying.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /catalog/v1/items (the `ListCatalogItems` operationId).
-	ListCatalogItemsWithResponse(ctx context.Context, params *ListCatalogItemsParams, reqEditors ...RequestEditorFn) (*ListCatalogItemsResponse, error)
-
-	// GetCatalogPlanWithResponse Get a sellable item
-	//
-	// Resolves a stored identifier into something that can be displayed. Returns items that are
-	// no longer on sale: an existing purchase still refers to one.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /catalog/v1/plans/{planId} (the `GetCatalogPlan` operationId).
-	GetCatalogPlanWithResponse(ctx context.Context, planId openapi_types.UUID, params *GetCatalogPlanParams, reqEditors ...RequestEditorFn) (*GetCatalogPlanResponse, error)
-
-	// ListPricesWithResponse List catalog prices
-	//
-	// Public list prices only. An account holding a negotiated agreement may be charged less;
-	// it is never charged more.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
-	ListPricesWithResponse(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*ListPricesResponse, error)
-
-	// GetCatalogPriceWithResponse Get a price
-	//
-	// Returns retired prices. An existing subscription still bills at the price it was bought
-	// at, so this is how to show what that purchase is paying.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetCatalogPrice` operationId).
-	GetCatalogPriceWithResponse(ctx context.Context, priceId openapi_types.UUID, params *GetCatalogPriceParams, reqEditors ...RequestEditorFn) (*GetCatalogPriceResponse, error)
-
-	// ListProductsWithResponse List catalog products
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
-	ListProductsWithResponse(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*ListProductsResponse, error)
-
-	// GetCatalogProductWithResponse Get a service
-	//
-	// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or
-	// the terms of a credit — into something that can be displayed.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /catalog/v1/products/{productId} (the `GetCatalogProduct` operationId).
-	GetCatalogProductWithResponse(ctx context.Context, productId openapi_types.UUID, params *GetCatalogProductParams, reqEditors ...RequestEditorFn) (*GetCatalogProductResponse, error)
-
-	// ListPlansWithResponse List catalog plans
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListPlans` operationId).
-	ListPlansWithResponse(ctx context.Context, productId ProductId, params *ListPlansParams, reqEditors ...RequestEditorFn) (*ListPlansResponse, error)
-
-	// ListRatesWithResponse List catalog rates
-	//
-	// Only public price lists are readable here. A list written for a single agreement is not,
-	// and its identifier cannot be used to reach it.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
-	ListRatesWithResponse(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*ListRatesResponse, error)
-}
-
-type ListAllowancesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AllowanceList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListAllowancesResponse) GetJSON200() *AllowanceList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListAllowancesResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListAllowancesResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListAllowancesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListAllowancesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAllowancesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListAllowanceConsumptionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AllowanceConsumptionList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListAllowanceConsumptionsResponse) GetJSON200() *AllowanceConsumptionList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListAllowanceConsumptionsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListAllowanceConsumptionsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListAllowanceConsumptionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListAllowanceConsumptionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAllowanceConsumptionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListBillingAccountsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *BillingAccountList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListBillingAccountsResponse) GetJSON200() *BillingAccountList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListBillingAccountsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListBillingAccountsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListBillingAccountsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListBillingAccountsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListBillingAccountsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateBillingAccountResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *BillingAccount
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateBillingAccountResponse) GetJSON201() *BillingAccount {
-	return r.JSON201
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateBillingAccountResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateBillingAccountResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateBillingAccountResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateBillingAccountResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateBillingAccountResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetBillingAccountResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *BillingAccount
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetBillingAccountResponse) GetJSON200() *BillingAccount {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetBillingAccountResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetBillingAccountResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetBillingAccountResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetBillingAccountResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetBillingAccountResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateBillingAccountResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *BillingAccount
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r UpdateBillingAccountResponse) GetJSON200() *BillingAccount {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r UpdateBillingAccountResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r UpdateBillingAccountResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateBillingAccountResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateBillingAccountResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateBillingAccountResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetAccountBalanceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AccountBalance
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetAccountBalanceResponse) GetJSON200() *AccountBalance {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetAccountBalanceResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetAccountBalanceResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAccountBalanceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAccountBalanceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetAccountBalanceResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PreviewCodeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CodePreview
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r PreviewCodeResponse) GetJSON200() *CodePreview {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r PreviewCodeResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r PreviewCodeResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r PreviewCodeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PreviewCodeResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PreviewCodeResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListCreditGrantsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CreditGrantList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListCreditGrantsResponse) GetJSON200() *CreditGrantList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListCreditGrantsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListCreditGrantsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListCreditGrantsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListCreditGrantsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListCreditGrantsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListAccountDiscountsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *DiscountList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListAccountDiscountsResponse) GetJSON200() *DiscountList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListAccountDiscountsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListAccountDiscountsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListAccountDiscountsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListAccountDiscountsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAccountDiscountsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListEntitlementsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *EntitlementList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListEntitlementsResponse) GetJSON200() *EntitlementList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListEntitlementsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListEntitlementsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListEntitlementsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListEntitlementsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListEntitlementsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListInvoicesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *InvoiceList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListInvoicesResponse) GetJSON200() *InvoiceList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListInvoicesResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListInvoicesResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListInvoicesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListInvoicesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListInvoicesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetInvoiceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Invoice
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetInvoiceResponse) GetJSON200() *Invoice {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetInvoiceResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetInvoiceResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetInvoiceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetInvoiceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetInvoiceResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListInvoiceItemsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *InvoiceItemList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListInvoiceItemsResponse) GetJSON200() *InvoiceItemList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListInvoiceItemsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListInvoiceItemsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListInvoiceItemsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListInvoiceItemsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListInvoiceItemsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PayInvoiceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PaymentResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r PayInvoiceResponse) GetJSON200() *PaymentResult {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r PayInvoiceResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r PayInvoiceResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r PayInvoiceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PayInvoiceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PayInvoiceResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetInvoiceRefundQuoteResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *RefundQuote
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetInvoiceRefundQuoteResponse) GetJSON200() *RefundQuote {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetInvoiceRefundQuoteResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetInvoiceRefundQuoteResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetInvoiceRefundQuoteResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetInvoiceRefundQuoteResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetInvoiceRefundQuoteResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListOrdersResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *OrderList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListOrdersResponse) GetJSON200() *OrderList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListOrdersResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListOrdersResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListOrdersResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListOrdersResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListOrdersResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetOrderResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Order
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetOrderResponse) GetJSON200() *Order {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetOrderResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetOrderResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetOrderResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetOrderResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetOrderResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CancelScheduledChangeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Order
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CancelScheduledChangeResponse) GetJSON200() *Order {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CancelScheduledChangeResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CancelScheduledChangeResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CancelScheduledChangeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CancelScheduledChangeResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CancelScheduledChangeResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListOrderItemsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *OrderItemList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListOrderItemsResponse) GetJSON200() *OrderItemList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListOrderItemsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListOrderItemsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListOrderItemsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListOrderItemsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListOrderItemsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PayOrderResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PaymentResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r PayOrderResponse) GetJSON200() *PaymentResult {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r PayOrderResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r PayOrderResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r PayOrderResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PayOrderResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PayOrderResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetOrderRefundQuoteResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *RefundQuote
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetOrderRefundQuoteResponse) GetJSON200() *RefundQuote {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetOrderRefundQuoteResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetOrderRefundQuoteResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetOrderRefundQuoteResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetOrderRefundQuoteResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetOrderRefundQuoteResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListPaymentMethodsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PaymentMethodList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListPaymentMethodsResponse) GetJSON200() *PaymentMethodList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListPaymentMethodsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListPaymentMethodsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListPaymentMethodsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListPaymentMethodsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListPaymentMethodsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreatePaymentMethodSetupResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PaymentMethodSetupResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreatePaymentMethodSetupResponse) GetJSON201() *PaymentMethodSetupResult {
-	return r.JSON201
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreatePaymentMethodSetupResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreatePaymentMethodSetupResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreatePaymentMethodSetupResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreatePaymentMethodSetupResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreatePaymentMethodSetupResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeletePaymentMethodResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DeletePaymentMethodResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DeletePaymentMethodResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DeletePaymentMethodResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeletePaymentMethodResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeletePaymentMethodResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type SetDefaultPaymentMethodResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PaymentMethod
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SetDefaultPaymentMethodResponse) GetJSON200() *PaymentMethod {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r SetDefaultPaymentMethodResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r SetDefaultPaymentMethodResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r SetDefaultPaymentMethodResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SetDefaultPaymentMethodResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SetDefaultPaymentMethodResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PayTogetherResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PaymentResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r PayTogetherResponse) GetJSON200() *PaymentResult {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r PayTogetherResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r PayTogetherResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r PayTogetherResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PayTogetherResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PayTogetherResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListPaidProjectsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectBindingList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListPaidProjectsResponse) GetJSON200() *ProjectBindingList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListPaidProjectsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListPaidProjectsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListPaidProjectsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListPaidProjectsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListPaidProjectsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UnbindProjectPayerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r UnbindProjectPayerResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r UnbindProjectPayerResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r UnbindProjectPayerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UnbindProjectPayerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UnbindProjectPayerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type FindProjectPayerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectBinding
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r FindProjectPayerResponse) GetJSON200() *ProjectBinding {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r FindProjectPayerResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r FindProjectPayerResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r FindProjectPayerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r FindProjectPayerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r FindProjectPayerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type SetProjectPayerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectBinding
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SetProjectPayerResponse) GetJSON200() *ProjectBinding {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r SetProjectPayerResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r SetProjectPayerResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r SetProjectPayerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SetProjectPayerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SetProjectPayerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type SettleProjectUsageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SettleResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SettleProjectUsageResponse) GetJSON200() *SettleResult {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r SettleProjectUsageResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r SettleProjectUsageResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r SettleProjectUsageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SettleProjectUsageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SettleProjectUsageResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetAccountProjectClosurePreviewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectClosurePreview
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetAccountProjectClosurePreviewResponse) GetJSON200() *ProjectClosurePreview {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetAccountProjectClosurePreviewResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetAccountProjectClosurePreviewResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAccountProjectClosurePreviewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAccountProjectClosurePreviewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetAccountProjectClosurePreviewResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListRefundsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *RefundList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListRefundsResponse) GetJSON200() *RefundList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListRefundsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListRefundsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRefundsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRefundsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRefundsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RequestRefundResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *Refund
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r RequestRefundResponse) GetJSON201() *Refund {
-	return r.JSON201
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RequestRefundResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RequestRefundResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RequestRefundResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RequestRefundResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RequestRefundResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListSubscriptionItemsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SubscriptionItemList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListSubscriptionItemsResponse) GetJSON200() *SubscriptionItemList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListSubscriptionItemsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListSubscriptionItemsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSubscriptionItemsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSubscriptionItemsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSubscriptionItemsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type SetAutoRenewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SubscriptionItem
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SetAutoRenewResponse) GetJSON200() *SubscriptionItem {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r SetAutoRenewResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r SetAutoRenewResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r SetAutoRenewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SetAutoRenewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SetAutoRenewResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RenewSubscriptionItemResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PaymentResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RenewSubscriptionItemResponse) GetJSON200() *PaymentResult {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RenewSubscriptionItemResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RenewSubscriptionItemResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RenewSubscriptionItemResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RenewSubscriptionItemResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RenewSubscriptionItemResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListRenewalPricesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *RenewalPriceList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListRenewalPricesResponse) GetJSON200() *RenewalPriceList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListRenewalPricesResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListRenewalPricesResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRenewalPricesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRenewalPricesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRenewalPricesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListSubscriptionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SubscriptionList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListSubscriptionsResponse) GetJSON200() *SubscriptionList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListSubscriptionsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListSubscriptionsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSubscriptionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSubscriptionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSubscriptionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListTopUpsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *TopUpList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListTopUpsResponse) GetJSON200() *TopUpList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListTopUpsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListTopUpsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListTopUpsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListTopUpsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListTopUpsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateTopUpResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *TopUp
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateTopUpResponse) GetJSON201() *TopUp {
-	return r.JSON201
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateTopUpResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateTopUpResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateTopUpResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateTopUpResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateTopUpResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetTopUpResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *TopUp
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetTopUpResponse) GetJSON200() *TopUp {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetTopUpResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetTopUpResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetTopUpResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetTopUpResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetTopUpResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListTransactionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *TransactionList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListTransactionsResponse) GetJSON200() *TransactionList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListTransactionsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListTransactionsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListTransactionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListTransactionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListTransactionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListUsageChargesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *UsageChargeList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListUsageChargesResponse) GetJSON200() *UsageChargeList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListUsageChargesResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListUsageChargesResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListUsageChargesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListUsageChargesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListUsageChargesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
 }
 
 type ListProjectActiveResourcesResponse struct {
@@ -14150,13 +3492,13 @@ type GetProjectBillingAccountResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectPayer
+	JSON200 *ProjectBillingAccount
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetProjectBillingAccountResponse) GetJSON200() *ProjectPayer {
+func (r GetProjectBillingAccountResponse) GetJSON200() *ProjectBillingAccount {
 	return r.JSON200
 }
 
@@ -14530,102 +3872,6 @@ func (r ListProjectSpendResponse) ContentType() string {
 	return ""
 }
 
-type ListProjectSubscriptionItemsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SubscriptionItemList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListProjectSubscriptionItemsResponse) GetJSON200() *SubscriptionItemList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListProjectSubscriptionItemsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListProjectSubscriptionItemsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListProjectSubscriptionItemsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListProjectSubscriptionItemsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListProjectSubscriptionItemsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type SetProjectAutoRenewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SubscriptionItem
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SetProjectAutoRenewResponse) GetJSON200() *SubscriptionItem {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r SetProjectAutoRenewResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r SetProjectAutoRenewResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r SetProjectAutoRenewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SetProjectAutoRenewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SetProjectAutoRenewResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListProjectSubscriptionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -14668,6 +3914,54 @@ func (r ListProjectSubscriptionsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListProjectSubscriptionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetProjectAutoRenewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Subscription
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetProjectAutoRenewResponse) GetJSON200() *Subscription {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SetProjectAutoRenewResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetProjectAutoRenewResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetProjectAutoRenewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetProjectAutoRenewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetProjectAutoRenewResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -14722,1486 +4016,6 @@ func (r ListProjectUsageChargesResponse) ContentType() string {
 	return ""
 }
 
-type CreateEstimateResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Quote
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CreateEstimateResponse) GetJSON200() *Quote {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateEstimateResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateEstimateResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateEstimateResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateEstimateResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateEstimateResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListCatalogItemsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CatalogItemList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListCatalogItemsResponse) GetJSON200() *CatalogItemList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListCatalogItemsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListCatalogItemsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListCatalogItemsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListCatalogItemsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListCatalogItemsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetCatalogPlanResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Plan
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetCatalogPlanResponse) GetJSON200() *Plan {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetCatalogPlanResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetCatalogPlanResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetCatalogPlanResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetCatalogPlanResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetCatalogPlanResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-// ListPricesResponse200Headers the declared response headers of an HTTP 200 response for ListPrices
-type ListPricesResponse200Headers struct {
-	ETag *string
-}
-
-// ListPricesResponse304Headers the declared response headers of an HTTP 304 response for ListPrices
-type ListPricesResponse304Headers struct {
-	ETag *string
-}
-
-type ListPricesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PriceList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-	// Headers200 the parsed response headers for an HTTP 200 response
-	Headers200 *ListPricesResponse200Headers
-	// Headers304 the parsed response headers for an HTTP 304 response
-	Headers304 *ListPricesResponse304Headers
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListPricesResponse) GetJSON200() *PriceList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListPricesResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListPricesResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListPricesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListPricesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListPricesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetCatalogPriceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Price
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetCatalogPriceResponse) GetJSON200() *Price {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetCatalogPriceResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetCatalogPriceResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetCatalogPriceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetCatalogPriceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetCatalogPriceResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-// ListProductsResponse200Headers the declared response headers of an HTTP 200 response for ListProducts
-type ListProductsResponse200Headers struct {
-	ETag *string
-}
-
-// ListProductsResponse304Headers the declared response headers of an HTTP 304 response for ListProducts
-type ListProductsResponse304Headers struct {
-	ETag *string
-}
-
-type ListProductsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProductList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-	// Headers200 the parsed response headers for an HTTP 200 response
-	Headers200 *ListProductsResponse200Headers
-	// Headers304 the parsed response headers for an HTTP 304 response
-	Headers304 *ListProductsResponse304Headers
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListProductsResponse) GetJSON200() *ProductList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListProductsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListProductsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListProductsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListProductsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListProductsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetCatalogProductResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Product
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetCatalogProductResponse) GetJSON200() *Product {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetCatalogProductResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetCatalogProductResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetCatalogProductResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetCatalogProductResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetCatalogProductResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-// ListPlansResponse200Headers the declared response headers of an HTTP 200 response for ListPlans
-type ListPlansResponse200Headers struct {
-	ETag *string
-}
-
-// ListPlansResponse304Headers the declared response headers of an HTTP 304 response for ListPlans
-type ListPlansResponse304Headers struct {
-	ETag *string
-}
-
-type ListPlansResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PlanList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-	// Headers200 the parsed response headers for an HTTP 200 response
-	Headers200 *ListPlansResponse200Headers
-	// Headers304 the parsed response headers for an HTTP 304 response
-	Headers304 *ListPlansResponse304Headers
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListPlansResponse) GetJSON200() *PlanList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListPlansResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListPlansResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListPlansResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListPlansResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListPlansResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-// ListRatesResponse200Headers the declared response headers of an HTTP 200 response for ListRates
-type ListRatesResponse200Headers struct {
-	ETag *string
-}
-
-// ListRatesResponse304Headers the declared response headers of an HTTP 304 response for ListRates
-type ListRatesResponse304Headers struct {
-	ETag *string
-}
-
-type ListRatesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *RateList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-	// Headers200 the parsed response headers for an HTTP 200 response
-	Headers200 *ListRatesResponse200Headers
-	// Headers304 the parsed response headers for an HTTP 304 response
-	Headers304 *ListRatesResponse304Headers
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListRatesResponse) GetJSON200() *RateList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListRatesResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListRatesResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListRatesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListRatesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListRatesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-// ListAllowancesWithResponse List allowances
-//
-// A quantity rather than an amount of money: bytes, seconds or tokens that are used before
-// anything is charged for.
-//
-// Usage draws on these first and is only charged once they are exhausted. Where several
-// apply, they are drawn on in a fixed order: lower `priority` first, then whichever
-// expires soonest, then whichever was granted first. Included quantities therefore go
-// before purchased packs, and a pack that is about to expire goes before one that is not.
-//
-// An unused quantity is lost when it expires; it is not refunded and does not carry over.
-//
-// Quantities belong to the account and are shared by every project it pays for.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/allowances (the `ListAllowances` operationId).
-func (c *ClientWithResponses) ListAllowancesWithResponse(ctx context.Context, params *ListAllowancesParams, reqEditors ...RequestEditorFn) (*ListAllowancesResponse, error) {
-	rsp, err := c.ListAllowances(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListAllowancesResponse(rsp)
-}
-
-// ListAllowanceConsumptionsWithResponse List allowance consumptions
-//
-// Each entry names the charge it covered, so the granted amount, what has been used and
-// what remains all reconcile.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/allowances/{allowanceId}/consumptions (the `ListAllowanceConsumptions` operationId).
-func (c *ClientWithResponses) ListAllowanceConsumptionsWithResponse(ctx context.Context, allowanceId openapi_types.UUID, params *ListAllowanceConsumptionsParams, reqEditors ...RequestEditorFn) (*ListAllowanceConsumptionsResponse, error) {
-	rsp, err := c.ListAllowanceConsumptions(ctx, allowanceId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListAllowanceConsumptionsResponse(rsp)
-}
-
-// ListBillingAccountsWithResponse List billing accounts
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
-func (c *ClientWithResponses) ListBillingAccountsWithResponse(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*ListBillingAccountsResponse, error) {
-	rsp, err := c.ListBillingAccounts(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListBillingAccountsResponse(rsp)
-}
-
-// CreateBillingAccountWithBodyWithResponse Create billing account
-//
-// The currency is chosen here and cannot be changed afterwards. Everything charged to the
-// account — prices, orders, invoices, balance — is denominated in it.
-//
-// One person may hold several accounts, for example a personal one and one for a team.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
-func (c *ClientWithResponses) CreateBillingAccountWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBillingAccountResponse, error) {
-	rsp, err := c.CreateBillingAccountWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateBillingAccountResponse(rsp)
-}
-
-// CreateBillingAccountWithResponse Create billing account
-//
-// The currency is chosen here and cannot be changed afterwards. Everything charged to the
-// account — prices, orders, invoices, balance — is denominated in it.
-//
-// One person may hold several accounts, for example a personal one and one for a team.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
-func (c *ClientWithResponses) CreateBillingAccountWithResponse(ctx context.Context, body CreateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBillingAccountResponse, error) {
-	rsp, err := c.CreateBillingAccount(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateBillingAccountResponse(rsp)
-}
-
-// GetBillingAccountWithResponse Get billing account
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId).
-func (c *ClientWithResponses) GetBillingAccountWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetBillingAccountResponse, error) {
-	rsp, err := c.GetBillingAccount(ctx, accountId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetBillingAccountResponse(rsp)
-}
-
-// UpdateBillingAccountWithBodyWithResponse Update billing account
-//
-// The legal name, address and tax identifier are copied onto each invoice when it is
-// issued. Changing them here affects invoices issued afterwards, not those already sent.
-//
-// The currency cannot be changed.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
-func (c *ClientWithResponses) UpdateBillingAccountWithBodyWithResponse(ctx context.Context, accountId AccountId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error) {
-	rsp, err := c.UpdateBillingAccountWithBody(ctx, accountId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateBillingAccountResponse(rsp)
-}
-
-// UpdateBillingAccountWithResponse Update billing account
-//
-// The legal name, address and tax identifier are copied onto each invoice when it is
-// issued. Changing them here affects invoices issued afterwards, not those already sent.
-//
-// The currency cannot be changed.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
-func (c *ClientWithResponses) UpdateBillingAccountWithResponse(ctx context.Context, accountId AccountId, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error) {
-	rsp, err := c.UpdateBillingAccount(ctx, accountId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateBillingAccountResponse(rsp)
-}
-
-// GetAccountBalanceWithResponse Get account balance
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
-func (c *ClientWithResponses) GetAccountBalanceWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetAccountBalanceResponse, error) {
-	rsp, err := c.GetAccountBalance(ctx, accountId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAccountBalanceResponse(rsp)
-}
-
-// PreviewCodeWithBodyWithResponse Preview code
-//
-// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
-// before they commit.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
-func (c *ClientWithResponses) PreviewCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewCodeResponse, error) {
-	rsp, err := c.PreviewCodeWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePreviewCodeResponse(rsp)
-}
-
-// PreviewCodeWithResponse Preview code
-//
-// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
-// before they commit.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
-func (c *ClientWithResponses) PreviewCodeWithResponse(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewCodeResponse, error) {
-	rsp, err := c.PreviewCode(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePreviewCodeResponse(rsp)
-}
-
-// ListCreditGrantsWithResponse List credit grants
-//
-// Each grant shows what remains and what it may be used for. Credit is spent before cash
-// and cannot be withdrawn.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
-func (c *ClientWithResponses) ListCreditGrantsWithResponse(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*ListCreditGrantsResponse, error) {
-	rsp, err := c.ListCreditGrants(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListCreditGrantsResponse(rsp)
-}
-
-// ListAccountDiscountsWithResponse List the coupons held on this account
-//
-// Coupons placed on the account directly, which apply at checkout without a code being
-// entered. A coupon reached through a code is not listed here.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/discounts (the `ListAccountDiscounts` operationId).
-func (c *ClientWithResponses) ListAccountDiscountsWithResponse(ctx context.Context, params *ListAccountDiscountsParams, reqEditors ...RequestEditorFn) (*ListAccountDiscountsResponse, error) {
-	rsp, err := c.ListAccountDiscounts(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListAccountDiscountsResponse(rsp)
-}
-
-// ListEntitlementsWithResponse List entitlements
-//
-// Capabilities that come with what has been bought. A capability that is not held simply
-// does not appear, so that "this does not exist" and "this has not been bought" cannot be
-// confused.
-//
-// Derived from live subscriptions rather than stored, so this always agrees with what is
-// being paid for. It stops being listed as soon as the subscription providing it ends.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/entitlements (the `ListEntitlements` operationId).
-func (c *ClientWithResponses) ListEntitlementsWithResponse(ctx context.Context, params *ListEntitlementsParams, reqEditors ...RequestEditorFn) (*ListEntitlementsResponse, error) {
-	rsp, err := c.ListEntitlements(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListEntitlementsResponse(rsp)
-}
-
-// ListInvoicesWithResponse List invoices
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/invoices (the `ListInvoices` operationId).
-func (c *ClientWithResponses) ListInvoicesWithResponse(ctx context.Context, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*ListInvoicesResponse, error) {
-	rsp, err := c.ListInvoices(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListInvoicesResponse(rsp)
-}
-
-// GetInvoiceWithResponse Get invoice
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
-func (c *ClientWithResponses) GetInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceResponse, error) {
-	rsp, err := c.GetInvoice(ctx, invoiceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetInvoiceResponse(rsp)
-}
-
-// ListInvoiceItemsWithResponse List invoice items
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
-func (c *ClientWithResponses) ListInvoiceItemsWithResponse(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*ListInvoiceItemsResponse, error) {
-	rsp, err := c.ListInvoiceItems(ctx, invoiceId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListInvoiceItemsResponse(rsp)
-}
-
-// PayInvoiceWithBodyWithResponse Pay invoice
-//
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
-//
-// Returns a checkout address when the gateway requires the cardholder to confirm the
-// payment; the invoice is marked paid once the gateway confirms it.
-//
-// Calling this on an invoice that is already paid returns the invoice unchanged.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-func (c *ClientWithResponses) PayInvoiceWithBodyWithResponse(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error) {
-	rsp, err := c.PayInvoiceWithBody(ctx, invoiceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePayInvoiceResponse(rsp)
-}
-
-// PayInvoiceWithResponse Pay invoice
-//
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
-//
-// Returns a checkout address when the gateway requires the cardholder to confirm the
-// payment; the invoice is marked paid once the gateway confirms it.
-//
-// Calling this on an invoice that is already paid returns the invoice unchanged.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-func (c *ClientWithResponses) PayInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error) {
-	rsp, err := c.PayInvoice(ctx, invoiceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePayInvoiceResponse(rsp)
-}
-
-// GetInvoiceRefundQuoteWithResponse Get invoice refund quote
-//
-// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
-// answer follows from what has been paid and what has already been returned, so it may
-// be read as often as required.
-//
-// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
-// invoice already refunded in full.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
-func (c *ClientWithResponses) GetInvoiceRefundQuoteWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceRefundQuoteResponse, error) {
-	rsp, err := c.GetInvoiceRefundQuote(ctx, invoiceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetInvoiceRefundQuoteResponse(rsp)
-}
-
-// ListOrdersWithResponse List orders
-//
-// An order in `pending` still owes money; `amount_due` states how much and
-// `reservation_expires_at` states how long it can still be paid.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/orders (the `ListOrders` operationId).
-func (c *ClientWithResponses) ListOrdersWithResponse(ctx context.Context, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error) {
-	rsp, err := c.ListOrders(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListOrdersResponse(rsp)
-}
-
-// GetOrderWithResponse Get order
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
-func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderResponse, error) {
-	rsp, err := c.GetOrder(ctx, orderId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetOrderResponse(rsp)
-}
-
-// CancelScheduledChangeWithResponse Cancel scheduled change
-//
-// Only for a change scheduled for the end of the period, and only while it is still
-// pending. An immediate change has already happened by the time it is placed, and there is
-// nothing to call off.
-//
-// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
-// subscription keeps running on what it is on now, and the item is free to be changed again.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
-func (c *ClientWithResponses) CancelScheduledChangeWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*CancelScheduledChangeResponse, error) {
-	rsp, err := c.CancelScheduledChange(ctx, orderId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCancelScheduledChangeResponse(rsp)
-}
-
-// ListOrderItemsWithResponse List order items
-//
-// One entry per item bought, with the price charged and the period it covers.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/orders/{orderId}/items (the `ListOrderItems` operationId).
-func (c *ClientWithResponses) ListOrderItemsWithResponse(ctx context.Context, orderId OrderId, params *ListOrderItemsParams, reqEditors ...RequestEditorFn) (*ListOrderItemsResponse, error) {
-	rsp, err := c.ListOrderItems(ctx, orderId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListOrderItemsResponse(rsp)
-}
-
-// PayOrderWithBodyWithResponse Pay order
-//
-// Use this to resume an order whose checkout was interrupted.
-//
-// An order reserves both funds and stock for a limited time. Once that reservation expires
-// the order can no longer be paid and must be placed again; `reservation_expires_at` on the
-// order states when.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
-func (c *ClientWithResponses) PayOrderWithBodyWithResponse(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayOrderResponse, error) {
-	rsp, err := c.PayOrderWithBody(ctx, orderId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePayOrderResponse(rsp)
-}
-
-// PayOrderWithResponse Pay order
-//
-// Use this to resume an order whose checkout was interrupted.
-//
-// An order reserves both funds and stock for a limited time. Once that reservation expires
-// the order can no longer be paid and must be placed again; `reservation_expires_at` on the
-// order states when.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
-func (c *ClientWithResponses) PayOrderWithResponse(ctx context.Context, orderId OrderId, body PayOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PayOrderResponse, error) {
-	rsp, err := c.PayOrder(ctx, orderId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePayOrderResponse(rsp)
-}
-
-// GetOrderRefundQuoteWithResponse Get order refund quote
-//
-// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
-// answer follows from what has been paid and what has already been returned, so it may
-// be read as often as required.
-//
-// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
-// order already refunded in full.
-//
-// Refunding an order also ends what it bought and reclaims whatever it provisioned. That
-// is not reflected in the amounts here.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
-func (c *ClientWithResponses) GetOrderRefundQuoteWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderRefundQuoteResponse, error) {
-	rsp, err := c.GetOrderRefundQuote(ctx, orderId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetOrderRefundQuoteResponse(rsp)
-}
-
-// ListPaymentMethodsWithResponse List payment methods
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/payment-methods (the `ListPaymentMethods` operationId).
-func (c *ClientWithResponses) ListPaymentMethodsWithResponse(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*ListPaymentMethodsResponse, error) {
-	rsp, err := c.ListPaymentMethods(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListPaymentMethodsResponse(rsp)
-}
-
-// CreatePaymentMethodSetupWithBodyWithResponse Create payment method setup
-//
-// Returns what is needed to hand the browser over to the payment gateway's own card
-// form. Nothing is charged, and the method appears in the list once the gateway
-// confirms it.
-//
-// Card numbers are never sent to or stored by this service.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
-func (c *ClientWithResponses) CreatePaymentMethodSetupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePaymentMethodSetupResponse, error) {
-	rsp, err := c.CreatePaymentMethodSetupWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreatePaymentMethodSetupResponse(rsp)
-}
-
-// CreatePaymentMethodSetupWithResponse Create payment method setup
-//
-// Returns what is needed to hand the browser over to the payment gateway's own card
-// form. Nothing is charged, and the method appears in the list once the gateway
-// confirms it.
-//
-// Card numbers are never sent to or stored by this service.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
-func (c *ClientWithResponses) CreatePaymentMethodSetupWithResponse(ctx context.Context, body CreatePaymentMethodSetupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePaymentMethodSetupResponse, error) {
-	rsp, err := c.CreatePaymentMethodSetup(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreatePaymentMethodSetupResponse(rsp)
-}
-
-// DeletePaymentMethodWithResponse Delete payment method
-//
-// Refused when it is the only method on an account that has resources billed by the hour,
-// as there would be nothing left to charge when the balance runs out.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with DELETE /account/v1/payment-methods/{paymentMethodId} (the `DeletePaymentMethod` operationId).
-func (c *ClientWithResponses) DeletePaymentMethodWithResponse(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*DeletePaymentMethodResponse, error) {
-	rsp, err := c.DeletePaymentMethod(ctx, paymentMethodId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeletePaymentMethodResponse(rsp)
-}
-
-// SetDefaultPaymentMethodWithResponse Set default payment method
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
-func (c *ClientWithResponses) SetDefaultPaymentMethodWithResponse(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*SetDefaultPaymentMethodResponse, error) {
-	rsp, err := c.SetDefaultPaymentMethod(ctx, paymentMethodId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetDefaultPaymentMethodResponse(rsp)
-}
-
-// PayTogetherWithBodyWithResponse Pay together
-//
-// All of them or none. Nothing is settled unless everything named here can be, so a
-// partial result is not a state this can leave behind.
-//
-// The balance is not split across the two cases: either it covers the whole total and
-// everything is settled from it, or it is left untouched and the full total is collected
-// through the gateway. It is never partly spent against an unpaid remainder.
-//
-// When the gateway is needed, this returns a checkout address and settles nothing.
-// Call it again once the payment has landed — the balance then covers the total and the
-// same call settles everything.
-//
-// Anything already paid is skipped rather than refused, so a repeated call after a
-// partial success is safe.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
-func (c *ClientWithResponses) PayTogetherWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error) {
-	rsp, err := c.PayTogetherWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePayTogetherResponse(rsp)
-}
-
-// PayTogetherWithResponse Pay together
-//
-// All of them or none. Nothing is settled unless everything named here can be, so a
-// partial result is not a state this can leave behind.
-//
-// The balance is not split across the two cases: either it covers the whole total and
-// everything is settled from it, or it is left untouched and the full total is collected
-// through the gateway. It is never partly spent against an unpaid remainder.
-//
-// When the gateway is needed, this returns a checkout address and settles nothing.
-// Call it again once the payment has landed — the balance then covers the total and the
-// same call settles everything.
-//
-// Anything already paid is skipped rather than refused, so a repeated call after a
-// partial success is safe.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
-func (c *ClientWithResponses) PayTogetherWithResponse(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error) {
-	rsp, err := c.PayTogether(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePayTogetherResponse(rsp)
-}
-
-// ListPaidProjectsWithResponse List paid projects
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/projects (the `ListPaidProjects` operationId).
-func (c *ClientWithResponses) ListPaidProjectsWithResponse(ctx context.Context, params *ListPaidProjectsParams, reqEditors ...RequestEditorFn) (*ListPaidProjectsResponse, error) {
-	rsp, err := c.ListPaidProjects(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListPaidProjectsResponse(rsp)
-}
-
-// UnbindProjectPayerWithResponse Unbind project payer
-//
-// Permitted only when the project has nothing left to charge: no resources accruing
-// charges, no subscriptions still running, no usage awaiting invoicing, and no unpaid
-// invoice on the account.
-//
-// Usage that has not yet been invoiced is settled by calling
-// `POST /account/v1/projects/{projectId}/billing-account/settle` first.
-//
-// After this the project cannot create resources until an account is chosen again.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with DELETE /account/v1/projects/{projectId}/billing-account (the `UnbindProjectPayer` operationId).
-func (c *ClientWithResponses) UnbindProjectPayerWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*UnbindProjectPayerResponse, error) {
-	rsp, err := c.UnbindProjectPayer(ctx, projectId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUnbindProjectPayerResponse(rsp)
-}
-
-// FindProjectPayerWithResponse Find project payer
-//
-// Returns 404 when no account pays for it. No resources can be created until one does.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `FindProjectPayer` operationId).
-func (c *ClientWithResponses) FindProjectPayerWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*FindProjectPayerResponse, error) {
-	rsp, err := c.FindProjectPayer(ctx, projectId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseFindProjectPayerResponse(rsp)
-}
-
-// SetProjectPayerWithBodyWithResponse Set project payer
-//
-// Charges already recorded remain with the account that was paying when they occurred, and
-// are still invoiced to it. Metered resources are settled up to the moment of the change.
-//
-// Periods already paid for are unaffected; renewals are charged to the new account.
-//
-// The request is refused while the current account has an unpaid invoice, and — once the
-// project holds subscriptions — while the new account uses a different currency.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
-func (c *ClientWithResponses) SetProjectPayerWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectPayerResponse, error) {
-	rsp, err := c.SetProjectPayerWithBody(ctx, projectId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetProjectPayerResponse(rsp)
-}
-
-// SetProjectPayerWithResponse Set project payer
-//
-// Charges already recorded remain with the account that was paying when they occurred, and
-// are still invoiced to it. Metered resources are settled up to the moment of the change.
-//
-// Periods already paid for are unaffected; renewals are charged to the new account.
-//
-// The request is refused while the current account has an unpaid invoice, and — once the
-// project holds subscriptions — while the new account uses a different currency.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
-func (c *ClientWithResponses) SetProjectPayerWithResponse(ctx context.Context, projectId ProjectId, body SetProjectPayerJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectPayerResponse, error) {
-	rsp, err := c.SetProjectPayer(ctx, projectId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetProjectPayerResponse(rsp)
-}
-
-// SettleProjectUsageWithResponse Settle project usage
-//
-// Metered usage is normally invoiced at the end of the month. This issues an invoice for
-// everything charged to the project so far, to the account currently paying for it.
-//
-// Use it before unbinding a project, or to obtain a settled figure part-way through a
-// month. Calling it again when nothing is outstanding has no effect.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/projects/{projectId}/billing-account/settle (the `SettleProjectUsage` operationId).
-func (c *ClientWithResponses) SettleProjectUsageWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*SettleProjectUsageResponse, error) {
-	rsp, err := c.SettleProjectUsage(ctx, projectId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSettleProjectUsageResponse(rsp)
-}
-
-// GetAccountProjectClosurePreviewWithResponse Preview project closure
-//
-// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/projects/{projectId}/closure-preview (the `GetAccountProjectClosurePreview` operationId).
-func (c *ClientWithResponses) GetAccountProjectClosurePreviewWithResponse(ctx context.Context, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*GetAccountProjectClosurePreviewResponse, error) {
-	rsp, err := c.GetAccountProjectClosurePreview(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAccountProjectClosurePreviewResponse(rsp)
-}
-
-// ListRefundsWithResponse List refunds
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
-func (c *ClientWithResponses) ListRefundsWithResponse(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*ListRefundsResponse, error) {
-	rsp, err := c.ListRefunds(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRefundsResponse(rsp)
-}
-
-// RequestRefundWithBodyWithResponse Request refund
-//
-// Refunding ends the subscription and reclaims whatever it provisioned. That is the
-// difference from letting a period lapse: a lapsed period keeps the machine around
-// for a while so that topping up brings it back, whereas a refund returns the money
-// and therefore cannot leave the thing running.
-//
-// What can be refunded, for how long, and how much, is decided here rather than by
-// the caller. A request outside those bounds is refused with the reason.
-//
-// The money goes back the way it came: card charges to the card, balance to the
-// balance, credit to credit. A grant never turns into cash.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
-func (c *ClientWithResponses) RequestRefundWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error) {
-	rsp, err := c.RequestRefundWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRequestRefundResponse(rsp)
-}
-
-// RequestRefundWithResponse Request refund
-//
-// Refunding ends the subscription and reclaims whatever it provisioned. That is the
-// difference from letting a period lapse: a lapsed period keeps the machine around
-// for a while so that topping up brings it back, whereas a refund returns the money
-// and therefore cannot leave the thing running.
-//
-// What can be refunded, for how long, and how much, is decided here rather than by
-// the caller. A request outside those bounds is refused with the reason.
-//
-// The money goes back the way it came: card charges to the card, balance to the
-// balance, credit to credit. A grant never turns into cash.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
-func (c *ClientWithResponses) RequestRefundWithResponse(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error) {
-	rsp, err := c.RequestRefund(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRequestRefundResponse(rsp)
-}
-
-// ListSubscriptionItemsWithResponse List subscription items
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/subscription-items (the `ListSubscriptionItems` operationId).
-func (c *ClientWithResponses) ListSubscriptionItemsWithResponse(ctx context.Context, params *ListSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*ListSubscriptionItemsResponse, error) {
-	rsp, err := c.ListSubscriptionItems(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSubscriptionItemsResponse(rsp)
-}
-
-// SetAutoRenewWithBodyWithResponse Set auto renew
-//
-// When on, the account balance is charged at the renewal date. Turning it off lets the
-// current period run to its end and stops the resource afterwards.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
-func (c *ClientWithResponses) SetAutoRenewWithBodyWithResponse(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAutoRenewResponse, error) {
-	rsp, err := c.SetAutoRenewWithBody(ctx, itemId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetAutoRenewResponse(rsp)
-}
-
-// SetAutoRenewWithResponse Set auto renew
-//
-// When on, the account balance is charged at the renewal date. Turning it off lets the
-// current period run to its end and stops the resource afterwards.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
-func (c *ClientWithResponses) SetAutoRenewWithResponse(ctx context.Context, itemId ItemId, body SetAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAutoRenewResponse, error) {
-	rsp, err := c.SetAutoRenew(ctx, itemId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetAutoRenewResponse(rsp)
-}
-
-// RenewSubscriptionItemWithBodyWithResponse Renew subscription item
-//
-// Extends the paid period from its current end, not from today, so renewing early does not
-// shorten what has already been paid for.
-//
-// The price charged is the one in effect at the moment of renewal, which may differ from
-// what was paid for the current period.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
-func (c *ClientWithResponses) RenewSubscriptionItemWithBodyWithResponse(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewSubscriptionItemResponse, error) {
-	rsp, err := c.RenewSubscriptionItemWithBody(ctx, itemId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRenewSubscriptionItemResponse(rsp)
-}
-
-// RenewSubscriptionItemWithResponse Renew subscription item
-//
-// Extends the paid period from its current end, not from today, so renewing early does not
-// shorten what has already been paid for.
-//
-// The price charged is the one in effect at the moment of renewal, which may differ from
-// what was paid for the current period.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
-func (c *ClientWithResponses) RenewSubscriptionItemWithResponse(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewSubscriptionItemResponse, error) {
-	rsp, err := c.RenewSubscriptionItem(ctx, itemId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRenewSubscriptionItemResponse(rsp)
-}
-
-// ListRenewalPricesWithResponse List the terms this item can be renewed for
-//
-// Every term on offer with what it costs, in one request: a renewal form needs the whole
-// ladder to render, and asking once per term is a request per row.
-//
-// Prices agreed for this account are reflected. The term this item already bills at is
-// marked `current`: renewing for it is not affected by a later price change, while any
-// other term is bought at today's price.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/subscription-items/{itemId}/renewal-prices (the `ListRenewalPrices` operationId).
-func (c *ClientWithResponses) ListRenewalPricesWithResponse(ctx context.Context, itemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRenewalPricesResponse, error) {
-	rsp, err := c.ListRenewalPrices(ctx, itemId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRenewalPricesResponse(rsp)
-}
-
-// ListSubscriptionsWithResponse List subscriptions
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
-func (c *ClientWithResponses) ListSubscriptionsWithResponse(ctx context.Context, params *ListSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListSubscriptionsResponse, error) {
-	rsp, err := c.ListSubscriptions(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSubscriptionsResponse(rsp)
-}
-
-// ListTopUpsWithResponse List top ups
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
-func (c *ClientWithResponses) ListTopUpsWithResponse(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error) {
-	rsp, err := c.ListTopUps(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListTopUpsResponse(rsp)
-}
-
-// CreateTopUpWithBodyWithResponse Create top up
-//
-// Returns a checkout address. The balance increases when the payment gateway confirms the
-// payment, which may be after this call returns.
-//
-// The amount is in the account's currency. A checkout page may present a local currency;
-// the amount credited to the account is the one requested here.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
-func (c *ClientWithResponses) CreateTopUpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTopUpResponse, error) {
-	rsp, err := c.CreateTopUpWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateTopUpResponse(rsp)
-}
-
-// CreateTopUpWithResponse Create top up
-//
-// Returns a checkout address. The balance increases when the payment gateway confirms the
-// payment, which may be after this call returns.
-//
-// The amount is in the account's currency. A checkout page may present a local currency;
-// the amount credited to the account is the one requested here.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
-func (c *ClientWithResponses) CreateTopUpWithResponse(ctx context.Context, body CreateTopUpJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTopUpResponse, error) {
-	rsp, err := c.CreateTopUp(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateTopUpResponse(rsp)
-}
-
-// GetTopUpWithResponse Get top up
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
-func (c *ClientWithResponses) GetTopUpWithResponse(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetTopUpResponse, error) {
-	rsp, err := c.GetTopUp(ctx, topUpId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetTopUpResponse(rsp)
-}
-
-// ListTransactionsWithResponse List transactions
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/transactions (the `ListTransactions` operationId).
-func (c *ClientWithResponses) ListTransactionsWithResponse(ctx context.Context, params *ListTransactionsParams, reqEditors ...RequestEditorFn) (*ListTransactionsResponse, error) {
-	rsp, err := c.ListTransactions(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListTransactionsResponse(rsp)
-}
-
-// ListUsageChargesWithResponse List usage charges
-//
-// Includes charges that have not been invoiced yet, which is how the current month's
-// spending is seen before the invoice is issued.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/usage-charges (the `ListUsageCharges` operationId).
-func (c *ClientWithResponses) ListUsageChargesWithResponse(ctx context.Context, params *ListUsageChargesParams, reqEditors ...RequestEditorFn) (*ListUsageChargesResponse, error) {
-	rsp, err := c.ListUsageCharges(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListUsageChargesResponse(rsp)
-}
-
 // ListProjectActiveResourcesWithResponse List project active resources
 //
 // A resource that is running but does not appear here is not being charged for.
@@ -16219,7 +4033,7 @@ func (c *ClientWithResponses) ListProjectActiveResourcesWithResponse(ctx context
 
 // ListProjectAllowancesWithResponse List project allowances
 //
-// These belong to the paying account and are shared with every other project it pays for,
+// These belong to the project's billing account and are shared with every other project linked to it,
 // so what is left here may be consumed elsewhere.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -16235,11 +4049,11 @@ func (c *ClientWithResponses) ListProjectAllowancesWithResponse(ctx context.Cont
 
 // GetProjectBillingAccountWithResponse Get project billing account
 //
-// Returns the payer's identity, its currency, and how much can still be spent. Cards,
+// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
 // invoices and transaction history are not included; they belong to the account owner
 // and are reached through `/account/v1/`.
 //
-// Returns 404 when no account pays for this project. Resources cannot be created in that
+// Returns 404 when the project has no billing account. Resources cannot be created in that
 // state.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -16255,7 +4069,7 @@ func (c *ClientWithResponses) GetProjectBillingAccountWithResponse(ctx context.C
 
 // GetProjectClosurePreviewWithResponse Preview project closure
 //
-// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Charges already incurred remain owed by the billing account that was linked when they occurred and do not prevent closure. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16270,7 +4084,7 @@ func (c *ClientWithResponses) GetProjectClosurePreviewWithResponse(ctx context.C
 
 // ListProjectEntitlementsWithResponse List project entitlements
 //
-// Includes capabilities bought for this project and those the paying account holds at
+// Includes capabilities bought for this project and those the project's billing account holds at
 // account level.
 //
 // Where a capability counts uses, `remaining_quantity` states how much is left. Whether
@@ -16332,14 +4146,18 @@ func (c *ClientWithResponses) ListProjectOrderItemsWithResponse(ctx context.Cont
 
 // CreateProjectQuoteWithBodyWithResponse Quote for a project
 //
-// Priced in the paying account's currency, and at any rate negotiated for that account.
+// Priced in the project billing account's currency, and at any rate negotiated for that account.
 // Nothing is reserved and nothing is recorded, so this may be called as often as required.
 //
 // Prices may change between quoting and ordering. An order is charged at the price in
 // effect when it is placed, so a quote should be refreshed before a final confirmation is
 // shown.
 //
-// Returns 404 when no account pays for this project.
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+// named, with the discounts the account holds, and with tax.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed
+// does not belong to this project.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16354,14 +4172,18 @@ func (c *ClientWithResponses) CreateProjectQuoteWithBodyWithResponse(ctx context
 
 // CreateProjectQuoteWithResponse Quote for a project
 //
-// Priced in the paying account's currency, and at any rate negotiated for that account.
+// Priced in the project billing account's currency, and at any rate negotiated for that account.
 // Nothing is reserved and nothing is recorded, so this may be called as often as required.
 //
 // Prices may change between quoting and ordering. An order is charged at the price in
 // effect when it is placed, so a quote should be refreshed before a final confirmation is
 // shown.
 //
-// Returns 404 when no account pays for this project.
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+// named, with the discounts the account holds, and with tax.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed
+// does not belong to this project.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16392,51 +4214,6 @@ func (c *ClientWithResponses) ListProjectSpendWithResponse(ctx context.Context, 
 	return ParseListProjectSpendResponse(rsp)
 }
 
-// ListProjectSubscriptionItemsWithResponse List project subscription items
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/projects/{projectId}/subscription-items (the `ListProjectSubscriptionItems` operationId).
-func (c *ClientWithResponses) ListProjectSubscriptionItemsWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*ListProjectSubscriptionItemsResponse, error) {
-	rsp, err := c.ListProjectSubscriptionItems(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListProjectSubscriptionItemsResponse(rsp)
-}
-
-// SetProjectAutoRenewWithBodyWithResponse Set project auto renew
-//
-// Automatic renewal draws on the paying account's balance, which a project member may
-// commit. Paying by card requires the account owner and is done from the billing centre.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
-func (c *ClientWithResponses) SetProjectAutoRenewWithBodyWithResponse(ctx context.Context, projectId ProjectId, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error) {
-	rsp, err := c.SetProjectAutoRenewWithBody(ctx, projectId, itemId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetProjectAutoRenewResponse(rsp)
-}
-
-// SetProjectAutoRenewWithResponse Set project auto renew
-//
-// Automatic renewal draws on the paying account's balance, which a project member may
-// commit. Paying by card requires the account owner and is done from the billing centre.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
-func (c *ClientWithResponses) SetProjectAutoRenewWithResponse(ctx context.Context, projectId ProjectId, itemId ItemId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error) {
-	rsp, err := c.SetProjectAutoRenew(ctx, projectId, itemId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSetProjectAutoRenewResponse(rsp)
-}
-
 // ListProjectSubscriptionsWithResponse List project subscriptions
 //
 // Returns a wrapper object for the known response body format(s).
@@ -16448,6 +4225,38 @@ func (c *ClientWithResponses) ListProjectSubscriptionsWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseListProjectSubscriptionsResponse(rsp)
+}
+
+// SetProjectAutoRenewWithBodyWithResponse Set project auto renew
+//
+// Automatic renewal draws on the project billing account's balance, which a project member may
+// commit. Paying by card requires the account owner and is done from the billing centre.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
+func (c *ClientWithResponses) SetProjectAutoRenewWithBodyWithResponse(ctx context.Context, projectId ProjectId, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error) {
+	rsp, err := c.SetProjectAutoRenewWithBody(ctx, projectId, subscriptionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetProjectAutoRenewResponse(rsp)
+}
+
+// SetProjectAutoRenewWithResponse Set project auto renew
+//
+// Automatic renewal draws on the project billing account's balance, which a project member may
+// commit. Paying by card requires the account owner and is done from the billing centre.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
+func (c *ClientWithResponses) SetProjectAutoRenewWithResponse(ctx context.Context, projectId ProjectId, subscriptionId SubscriptionId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error) {
+	rsp, err := c.SetProjectAutoRenew(ctx, projectId, subscriptionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetProjectAutoRenewResponse(rsp)
 }
 
 // ListProjectUsageChargesWithResponse List project usage charges
@@ -16464,1654 +4273,6 @@ func (c *ClientWithResponses) ListProjectUsageChargesWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseListProjectUsageChargesResponse(rsp)
-}
-
-// CreateEstimateWithBodyWithResponse Estimate a basket
-//
-// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
-// called as often as required.
-//
-// `POST` is used because the set of items to price does not fit in a query string. There is
-// no corresponding `GET`, and no estimate is stored to retrieve.
-//
-// An account holding a negotiated agreement may be charged less than this. Tax and
-// discounts are not included.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
-func (c *ClientWithResponses) CreateEstimateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEstimateResponse, error) {
-	rsp, err := c.CreateEstimateWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateEstimateResponse(rsp)
-}
-
-// CreateEstimateWithResponse Estimate a basket
-//
-// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
-// called as often as required.
-//
-// `POST` is used because the set of items to price does not fit in a query string. There is
-// no corresponding `GET`, and no estimate is stored to retrieve.
-//
-// An account holding a negotiated agreement may be charged less than this. Tax and
-// discounts are not included.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
-func (c *ClientWithResponses) CreateEstimateWithResponse(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEstimateResponse, error) {
-	rsp, err := c.CreateEstimate(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateEstimateResponse(rsp)
-}
-
-// ListCatalogItemsWithResponse List what is on sale, with prices
-//
-// Every sellable thing and what it costs, in one request. A plan appears once per price.
-//
-// `currency` is required: a plan has a price in each currency it is sold in, so "what does
-// this cost" has no answer without one.
-//
-// Retired prices are left out. Existing subscriptions still reference them, so this is not
-// the place to look up what an existing purchase is paying.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /catalog/v1/items (the `ListCatalogItems` operationId).
-func (c *ClientWithResponses) ListCatalogItemsWithResponse(ctx context.Context, params *ListCatalogItemsParams, reqEditors ...RequestEditorFn) (*ListCatalogItemsResponse, error) {
-	rsp, err := c.ListCatalogItems(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListCatalogItemsResponse(rsp)
-}
-
-// GetCatalogPlanWithResponse Get a sellable item
-//
-// Resolves a stored identifier into something that can be displayed. Returns items that are
-// no longer on sale: an existing purchase still refers to one.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /catalog/v1/plans/{planId} (the `GetCatalogPlan` operationId).
-func (c *ClientWithResponses) GetCatalogPlanWithResponse(ctx context.Context, planId openapi_types.UUID, params *GetCatalogPlanParams, reqEditors ...RequestEditorFn) (*GetCatalogPlanResponse, error) {
-	rsp, err := c.GetCatalogPlan(ctx, planId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetCatalogPlanResponse(rsp)
-}
-
-// ListPricesWithResponse List catalog prices
-//
-// Public list prices only. An account holding a negotiated agreement may be charged less;
-// it is never charged more.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
-func (c *ClientWithResponses) ListPricesWithResponse(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*ListPricesResponse, error) {
-	rsp, err := c.ListPrices(ctx, planId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListPricesResponse(rsp)
-}
-
-// GetCatalogPriceWithResponse Get a price
-//
-// Returns retired prices. An existing subscription still bills at the price it was bought
-// at, so this is how to show what that purchase is paying.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetCatalogPrice` operationId).
-func (c *ClientWithResponses) GetCatalogPriceWithResponse(ctx context.Context, priceId openapi_types.UUID, params *GetCatalogPriceParams, reqEditors ...RequestEditorFn) (*GetCatalogPriceResponse, error) {
-	rsp, err := c.GetCatalogPrice(ctx, priceId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetCatalogPriceResponse(rsp)
-}
-
-// ListProductsWithResponse List catalog products
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
-func (c *ClientWithResponses) ListProductsWithResponse(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*ListProductsResponse, error) {
-	rsp, err := c.ListProducts(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListProductsResponse(rsp)
-}
-
-// GetCatalogProductWithResponse Get a service
-//
-// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or
-// the terms of a credit — into something that can be displayed.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /catalog/v1/products/{productId} (the `GetCatalogProduct` operationId).
-func (c *ClientWithResponses) GetCatalogProductWithResponse(ctx context.Context, productId openapi_types.UUID, params *GetCatalogProductParams, reqEditors ...RequestEditorFn) (*GetCatalogProductResponse, error) {
-	rsp, err := c.GetCatalogProduct(ctx, productId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetCatalogProductResponse(rsp)
-}
-
-// ListPlansWithResponse List catalog plans
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListPlans` operationId).
-func (c *ClientWithResponses) ListPlansWithResponse(ctx context.Context, productId ProductId, params *ListPlansParams, reqEditors ...RequestEditorFn) (*ListPlansResponse, error) {
-	rsp, err := c.ListPlans(ctx, productId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListPlansResponse(rsp)
-}
-
-// ListRatesWithResponse List catalog rates
-//
-// Only public price lists are readable here. A list written for a single agreement is not,
-// and its identifier cannot be used to reach it.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
-func (c *ClientWithResponses) ListRatesWithResponse(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*ListRatesResponse, error) {
-	rsp, err := c.ListRates(ctx, rateCardId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListRatesResponse(rsp)
-}
-
-// ParseListAllowancesResponse parses an HTTP response from a ListAllowancesWithResponse call
-func ParseListAllowancesResponse(rsp *http.Response) (*ListAllowancesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListAllowancesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AllowanceList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListAllowanceConsumptionsResponse parses an HTTP response from a ListAllowanceConsumptionsWithResponse call
-func ParseListAllowanceConsumptionsResponse(rsp *http.Response) (*ListAllowanceConsumptionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListAllowanceConsumptionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AllowanceConsumptionList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListBillingAccountsResponse parses an HTTP response from a ListBillingAccountsWithResponse call
-func ParseListBillingAccountsResponse(rsp *http.Response) (*ListBillingAccountsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListBillingAccountsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest BillingAccountList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateBillingAccountResponse parses an HTTP response from a CreateBillingAccountWithResponse call
-func ParseCreateBillingAccountResponse(rsp *http.Response) (*CreateBillingAccountResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateBillingAccountResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest BillingAccount
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetBillingAccountResponse parses an HTTP response from a GetBillingAccountWithResponse call
-func ParseGetBillingAccountResponse(rsp *http.Response) (*GetBillingAccountResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetBillingAccountResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest BillingAccount
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateBillingAccountResponse parses an HTTP response from a UpdateBillingAccountWithResponse call
-func ParseUpdateBillingAccountResponse(rsp *http.Response) (*UpdateBillingAccountResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateBillingAccountResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest BillingAccount
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetAccountBalanceResponse parses an HTTP response from a GetAccountBalanceWithResponse call
-func ParseGetAccountBalanceResponse(rsp *http.Response) (*GetAccountBalanceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAccountBalanceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AccountBalance
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePreviewCodeResponse parses an HTTP response from a PreviewCodeWithResponse call
-func ParsePreviewCodeResponse(rsp *http.Response) (*PreviewCodeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PreviewCodeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CodePreview
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListCreditGrantsResponse parses an HTTP response from a ListCreditGrantsWithResponse call
-func ParseListCreditGrantsResponse(rsp *http.Response) (*ListCreditGrantsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListCreditGrantsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CreditGrantList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListAccountDiscountsResponse parses an HTTP response from a ListAccountDiscountsWithResponse call
-func ParseListAccountDiscountsResponse(rsp *http.Response) (*ListAccountDiscountsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListAccountDiscountsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DiscountList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListEntitlementsResponse parses an HTTP response from a ListEntitlementsWithResponse call
-func ParseListEntitlementsResponse(rsp *http.Response) (*ListEntitlementsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListEntitlementsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest EntitlementList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListInvoicesResponse parses an HTTP response from a ListInvoicesWithResponse call
-func ParseListInvoicesResponse(rsp *http.Response) (*ListInvoicesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListInvoicesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InvoiceList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetInvoiceResponse parses an HTTP response from a GetInvoiceWithResponse call
-func ParseGetInvoiceResponse(rsp *http.Response) (*GetInvoiceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetInvoiceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Invoice
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListInvoiceItemsResponse parses an HTTP response from a ListInvoiceItemsWithResponse call
-func ParseListInvoiceItemsResponse(rsp *http.Response) (*ListInvoiceItemsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListInvoiceItemsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InvoiceItemList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePayInvoiceResponse parses an HTTP response from a PayInvoiceWithResponse call
-func ParsePayInvoiceResponse(rsp *http.Response) (*PayInvoiceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PayInvoiceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PaymentResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetInvoiceRefundQuoteResponse parses an HTTP response from a GetInvoiceRefundQuoteWithResponse call
-func ParseGetInvoiceRefundQuoteResponse(rsp *http.Response) (*GetInvoiceRefundQuoteResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetInvoiceRefundQuoteResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RefundQuote
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListOrdersResponse parses an HTTP response from a ListOrdersWithResponse call
-func ParseListOrdersResponse(rsp *http.Response) (*ListOrdersResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListOrdersResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest OrderList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetOrderResponse parses an HTTP response from a GetOrderWithResponse call
-func ParseGetOrderResponse(rsp *http.Response) (*GetOrderResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetOrderResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Order
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCancelScheduledChangeResponse parses an HTTP response from a CancelScheduledChangeWithResponse call
-func ParseCancelScheduledChangeResponse(rsp *http.Response) (*CancelScheduledChangeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CancelScheduledChangeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Order
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListOrderItemsResponse parses an HTTP response from a ListOrderItemsWithResponse call
-func ParseListOrderItemsResponse(rsp *http.Response) (*ListOrderItemsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListOrderItemsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest OrderItemList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePayOrderResponse parses an HTTP response from a PayOrderWithResponse call
-func ParsePayOrderResponse(rsp *http.Response) (*PayOrderResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PayOrderResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PaymentResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetOrderRefundQuoteResponse parses an HTTP response from a GetOrderRefundQuoteWithResponse call
-func ParseGetOrderRefundQuoteResponse(rsp *http.Response) (*GetOrderRefundQuoteResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetOrderRefundQuoteResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RefundQuote
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListPaymentMethodsResponse parses an HTTP response from a ListPaymentMethodsWithResponse call
-func ParseListPaymentMethodsResponse(rsp *http.Response) (*ListPaymentMethodsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListPaymentMethodsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PaymentMethodList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreatePaymentMethodSetupResponse parses an HTTP response from a CreatePaymentMethodSetupWithResponse call
-func ParseCreatePaymentMethodSetupResponse(rsp *http.Response) (*CreatePaymentMethodSetupResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreatePaymentMethodSetupResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PaymentMethodSetupResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeletePaymentMethodResponse parses an HTTP response from a DeletePaymentMethodWithResponse call
-func ParseDeletePaymentMethodResponse(rsp *http.Response) (*DeletePaymentMethodResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeletePaymentMethodResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case rsp.StatusCode == 204:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseSetDefaultPaymentMethodResponse parses an HTTP response from a SetDefaultPaymentMethodWithResponse call
-func ParseSetDefaultPaymentMethodResponse(rsp *http.Response) (*SetDefaultPaymentMethodResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SetDefaultPaymentMethodResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PaymentMethod
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePayTogetherResponse parses an HTTP response from a PayTogetherWithResponse call
-func ParsePayTogetherResponse(rsp *http.Response) (*PayTogetherResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PayTogetherResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PaymentResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListPaidProjectsResponse parses an HTTP response from a ListPaidProjectsWithResponse call
-func ParseListPaidProjectsResponse(rsp *http.Response) (*ListPaidProjectsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListPaidProjectsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectBindingList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUnbindProjectPayerResponse parses an HTTP response from a UnbindProjectPayerWithResponse call
-func ParseUnbindProjectPayerResponse(rsp *http.Response) (*UnbindProjectPayerResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UnbindProjectPayerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case rsp.StatusCode == 204:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseFindProjectPayerResponse parses an HTTP response from a FindProjectPayerWithResponse call
-func ParseFindProjectPayerResponse(rsp *http.Response) (*FindProjectPayerResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &FindProjectPayerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectBinding
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseSetProjectPayerResponse parses an HTTP response from a SetProjectPayerWithResponse call
-func ParseSetProjectPayerResponse(rsp *http.Response) (*SetProjectPayerResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SetProjectPayerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectBinding
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseSettleProjectUsageResponse parses an HTTP response from a SettleProjectUsageWithResponse call
-func ParseSettleProjectUsageResponse(rsp *http.Response) (*SettleProjectUsageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SettleProjectUsageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SettleResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetAccountProjectClosurePreviewResponse parses an HTTP response from a GetAccountProjectClosurePreviewWithResponse call
-func ParseGetAccountProjectClosurePreviewResponse(rsp *http.Response) (*GetAccountProjectClosurePreviewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAccountProjectClosurePreviewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectClosurePreview
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListRefundsResponse parses an HTTP response from a ListRefundsWithResponse call
-func ParseListRefundsResponse(rsp *http.Response) (*ListRefundsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRefundsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RefundList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRequestRefundResponse parses an HTTP response from a RequestRefundWithResponse call
-func ParseRequestRefundResponse(rsp *http.Response) (*RequestRefundResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RequestRefundResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest Refund
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSubscriptionItemsResponse parses an HTTP response from a ListSubscriptionItemsWithResponse call
-func ParseListSubscriptionItemsResponse(rsp *http.Response) (*ListSubscriptionItemsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSubscriptionItemsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SubscriptionItemList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseSetAutoRenewResponse parses an HTTP response from a SetAutoRenewWithResponse call
-func ParseSetAutoRenewResponse(rsp *http.Response) (*SetAutoRenewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SetAutoRenewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SubscriptionItem
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRenewSubscriptionItemResponse parses an HTTP response from a RenewSubscriptionItemWithResponse call
-func ParseRenewSubscriptionItemResponse(rsp *http.Response) (*RenewSubscriptionItemResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RenewSubscriptionItemResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PaymentResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListRenewalPricesResponse parses an HTTP response from a ListRenewalPricesWithResponse call
-func ParseListRenewalPricesResponse(rsp *http.Response) (*ListRenewalPricesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRenewalPricesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RenewalPriceList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSubscriptionsResponse parses an HTTP response from a ListSubscriptionsWithResponse call
-func ParseListSubscriptionsResponse(rsp *http.Response) (*ListSubscriptionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSubscriptionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SubscriptionList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListTopUpsResponse parses an HTTP response from a ListTopUpsWithResponse call
-func ParseListTopUpsResponse(rsp *http.Response) (*ListTopUpsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListTopUpsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TopUpList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateTopUpResponse parses an HTTP response from a CreateTopUpWithResponse call
-func ParseCreateTopUpResponse(rsp *http.Response) (*CreateTopUpResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateTopUpResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest TopUp
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetTopUpResponse parses an HTTP response from a GetTopUpWithResponse call
-func ParseGetTopUpResponse(rsp *http.Response) (*GetTopUpResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetTopUpResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TopUp
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListTransactionsResponse parses an HTTP response from a ListTransactionsWithResponse call
-func ParseListTransactionsResponse(rsp *http.Response) (*ListTransactionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListTransactionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TransactionList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListUsageChargesResponse parses an HTTP response from a ListUsageChargesWithResponse call
-func ParseListUsageChargesResponse(rsp *http.Response) (*ListUsageChargesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListUsageChargesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest UsageChargeList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
 }
 
 // ParseListProjectActiveResourcesResponse parses an HTTP response from a ListProjectActiveResourcesWithResponse call
@@ -18195,7 +4356,7 @@ func ParseGetProjectBillingAccountResponse(rsp *http.Response) (*GetProjectBilli
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectPayer
+		var dest ProjectBillingAccount
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -18444,22 +4605,22 @@ func ParseListProjectSpendResponse(rsp *http.Response) (*ListProjectSpendRespons
 	return response, nil
 }
 
-// ParseListProjectSubscriptionItemsResponse parses an HTTP response from a ListProjectSubscriptionItemsWithResponse call
-func ParseListProjectSubscriptionItemsResponse(rsp *http.Response) (*ListProjectSubscriptionItemsResponse, error) {
+// ParseListProjectSubscriptionsResponse parses an HTTP response from a ListProjectSubscriptionsWithResponse call
+func ParseListProjectSubscriptionsResponse(rsp *http.Response) (*ListProjectSubscriptionsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListProjectSubscriptionItemsResponse{
+	response := &ListProjectSubscriptionsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SubscriptionItemList
+		var dest SubscriptionList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -18492,40 +4653,7 @@ func ParseSetProjectAutoRenewResponse(rsp *http.Response) (*SetProjectAutoRenewR
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SubscriptionItem
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListProjectSubscriptionsResponse parses an HTTP response from a ListProjectSubscriptionsWithResponse call
-func ParseListProjectSubscriptionsResponse(rsp *http.Response) (*ListProjectSubscriptionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListProjectSubscriptionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SubscriptionList
+		var dest Subscription
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -18571,419 +4699,6 @@ func ParseListProjectUsageChargesResponse(rsp *http.Response) (*ListProjectUsage
 		}
 		response.JSONDefault = &dest
 
-	}
-
-	return response, nil
-}
-
-// ParseCreateEstimateResponse parses an HTTP response from a CreateEstimateWithResponse call
-func ParseCreateEstimateResponse(rsp *http.Response) (*CreateEstimateResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateEstimateResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Quote
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListCatalogItemsResponse parses an HTTP response from a ListCatalogItemsWithResponse call
-func ParseListCatalogItemsResponse(rsp *http.Response) (*ListCatalogItemsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListCatalogItemsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CatalogItemList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case rsp.StatusCode == 304:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetCatalogPlanResponse parses an HTTP response from a GetCatalogPlanWithResponse call
-func ParseGetCatalogPlanResponse(rsp *http.Response) (*GetCatalogPlanResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetCatalogPlanResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Plan
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case rsp.StatusCode == 304:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListPricesResponse parses an HTTP response from a ListPricesWithResponse call
-func ParseListPricesResponse(rsp *http.Response) (*ListPricesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListPricesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PriceList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case rsp.StatusCode == 304:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	switch {
-	case rsp.StatusCode == 200:
-		var headers ListPricesResponse200Headers
-		if values := rsp.Header.Values("ETag"); len(values) > 0 {
-			var value string
-			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			}
-			headers.ETag = &value
-		}
-		response.Headers200 = &headers
-	case rsp.StatusCode == 304:
-		var headers ListPricesResponse304Headers
-		if values := rsp.Header.Values("ETag"); len(values) > 0 {
-			var value string
-			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			}
-			headers.ETag = &value
-		}
-		response.Headers304 = &headers
-	}
-
-	return response, nil
-}
-
-// ParseGetCatalogPriceResponse parses an HTTP response from a GetCatalogPriceWithResponse call
-func ParseGetCatalogPriceResponse(rsp *http.Response) (*GetCatalogPriceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetCatalogPriceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Price
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case rsp.StatusCode == 304:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListProductsResponse parses an HTTP response from a ListProductsWithResponse call
-func ParseListProductsResponse(rsp *http.Response) (*ListProductsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListProductsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProductList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case rsp.StatusCode == 304:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	switch {
-	case rsp.StatusCode == 200:
-		var headers ListProductsResponse200Headers
-		if values := rsp.Header.Values("ETag"); len(values) > 0 {
-			var value string
-			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			}
-			headers.ETag = &value
-		}
-		response.Headers200 = &headers
-	case rsp.StatusCode == 304:
-		var headers ListProductsResponse304Headers
-		if values := rsp.Header.Values("ETag"); len(values) > 0 {
-			var value string
-			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			}
-			headers.ETag = &value
-		}
-		response.Headers304 = &headers
-	}
-
-	return response, nil
-}
-
-// ParseGetCatalogProductResponse parses an HTTP response from a GetCatalogProductWithResponse call
-func ParseGetCatalogProductResponse(rsp *http.Response) (*GetCatalogProductResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetCatalogProductResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Product
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case rsp.StatusCode == 304:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListPlansResponse parses an HTTP response from a ListPlansWithResponse call
-func ParseListPlansResponse(rsp *http.Response) (*ListPlansResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListPlansResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PlanList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case rsp.StatusCode == 304:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	switch {
-	case rsp.StatusCode == 200:
-		var headers ListPlansResponse200Headers
-		if values := rsp.Header.Values("ETag"); len(values) > 0 {
-			var value string
-			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			}
-			headers.ETag = &value
-		}
-		response.Headers200 = &headers
-	case rsp.StatusCode == 304:
-		var headers ListPlansResponse304Headers
-		if values := rsp.Header.Values("ETag"); len(values) > 0 {
-			var value string
-			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			}
-			headers.ETag = &value
-		}
-		response.Headers304 = &headers
-	}
-
-	return response, nil
-}
-
-// ParseListRatesResponse parses an HTTP response from a ListRatesWithResponse call
-func ParseListRatesResponse(rsp *http.Response) (*ListRatesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListRatesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RateList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case rsp.StatusCode == 304:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	switch {
-	case rsp.StatusCode == 200:
-		var headers ListRatesResponse200Headers
-		if values := rsp.Header.Values("ETag"); len(values) > 0 {
-			var value string
-			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			}
-			headers.ETag = &value
-		}
-		response.Headers200 = &headers
-	case rsp.StatusCode == 304:
-		var headers ListRatesResponse304Headers
-		if values := rsp.Header.Values("ETag"); len(values) > 0 {
-			var value string
-			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			}
-			headers.ETag = &value
-		}
-		response.Headers304 = &headers
 	}
 
 	return response, nil
