@@ -182,11 +182,14 @@ type BackupResource struct {
 	// The subscriptions a cancellation through Billing has to cover to release this backup: its own.
 	// Subscriptions that have ended are not listed, and the list is empty when no subscription pays for
 	// any of them.
-	ReleaseSubscriptionIds []uuid.UUID                  `json:"release_subscription_ids"`
-	AccessState            NilBackupResourceAccessState `json:"access_state"`
-	Task                   NilTask                      `json:"task"`
-	Generation             int64                        `json:"generation"`
-	ObservedAt             NilDateTime                  `json:"observed_at"`
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet  []ReleaseSetItem             `json:"release_set"`
+	AccessState NilBackupResourceAccessState `json:"access_state"`
+	Task        NilTask                      `json:"task"`
+	Generation  int64                        `json:"generation"`
+	ObservedAt  NilDateTime                  `json:"observed_at"`
 	// Availability zone of the source disk. A restore may target another zone in the same region.
 	SourceAvailabilityZoneID uuid.UUID `json:"source_availability_zone_id"`
 }
@@ -244,6 +247,11 @@ func (s *BackupResource) GetSubscriptionItemID() NilUUID {
 // GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
 func (s *BackupResource) GetReleaseSubscriptionIds() []uuid.UUID {
 	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *BackupResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
 }
 
 // GetAccessState returns the value of AccessState.
@@ -324,6 +332,11 @@ func (s *BackupResource) SetSubscriptionItemID(val NilUUID) {
 // SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
 func (s *BackupResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
 	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *BackupResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 // SetAccessState sets the value of AccessState.
@@ -1537,12 +1550,15 @@ type DiskResource struct {
 	// those of its snapshots. A system disk is released only with its instance, so for a system disk the
 	// list is that of the instance. Subscriptions that have ended are not listed, and the list is empty
 	// when no subscription pays for any of them.
-	ReleaseSubscriptionIds []uuid.UUID                `json:"release_subscription_ids"`
-	AccessState            NilDiskResourceAccessState `json:"access_state"`
-	Task                   NilTask                    `json:"task"`
-	Attachment             OptNilDiskAttachment       `json:"attachment"`
-	Generation             int64                      `json:"generation"`
-	ObservedAt             NilDateTime                `json:"observed_at"`
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet  []ReleaseSetItem           `json:"release_set"`
+	AccessState NilDiskResourceAccessState `json:"access_state"`
+	Task        NilTask                    `json:"task"`
+	Attachment  OptNilDiskAttachment       `json:"attachment"`
+	Generation  int64                      `json:"generation"`
+	ObservedAt  NilDateTime                `json:"observed_at"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -1613,6 +1629,11 @@ func (s *DiskResource) GetSubscriptionItemID() NilUUID {
 // GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
 func (s *DiskResource) GetReleaseSubscriptionIds() []uuid.UUID {
 	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *DiskResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
 }
 
 // GetAccessState returns the value of AccessState.
@@ -1708,6 +1729,11 @@ func (s *DiskResource) SetSubscriptionItemID(val NilUUID) {
 // SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
 func (s *DiskResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
 	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *DiskResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 // SetAccessState sets the value of AccessState.
@@ -2300,7 +2326,10 @@ type FloatingIPResource struct {
 	// The subscriptions a cancellation through Billing has to cover to release this address: the
 	// subscriptions of the address and of its bandwidth. Subscriptions that have ended are not listed, and
 	// the list is empty when no subscription pays for any of them.
-	ReleaseSubscriptionIds      []uuid.UUID                               `json:"release_subscription_ids"`
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet                  []ReleaseSetItem                          `json:"release_set"`
 	AccessState                 NilFloatingIPResourceAccessState          `json:"access_state"`
 	Task                        NilTask                                   `json:"task"`
 	BandwidthOrderID            NilUUID                                   `json:"bandwidth_order_id"`
@@ -2360,6 +2389,11 @@ func (s *FloatingIPResource) GetSubscriptionItemID() NilUUID {
 // GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
 func (s *FloatingIPResource) GetReleaseSubscriptionIds() []uuid.UUID {
 	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *FloatingIPResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
 }
 
 // GetAccessState returns the value of AccessState.
@@ -2455,6 +2489,11 @@ func (s *FloatingIPResource) SetSubscriptionItemID(val NilUUID) {
 // SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
 func (s *FloatingIPResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
 	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *FloatingIPResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 // SetAccessState sets the value of AccessState.
@@ -3293,8 +3332,11 @@ type InstanceResource struct {
 	// The subscriptions a cancellation through Billing has to cover to release this instance: its own,
 	// those of the disks deleted with it, and those of the snapshots of those disks. Subscriptions that
 	// have ended are not listed, and the list is empty when no subscription pays for any of them.
-	ReleaseSubscriptionIds []uuid.UUID                    `json:"release_subscription_ids"`
-	AccessState            NilInstanceResourceAccessState `json:"access_state"`
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet  []ReleaseSetItem               `json:"release_set"`
+	AccessState NilInstanceResourceAccessState `json:"access_state"`
 	// Non-empty when the instance was created from a disk you already had, instead of from an image.
 	SourceDiskID NilUUID `json:"source_disk_id"`
 }
@@ -3447,6 +3489,11 @@ func (s *InstanceResource) GetSubscriptionItemID() NilUUID {
 // GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
 func (s *InstanceResource) GetReleaseSubscriptionIds() []uuid.UUID {
 	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *InstanceResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
 }
 
 // GetAccessState returns the value of AccessState.
@@ -3607,6 +3654,11 @@ func (s *InstanceResource) SetSubscriptionItemID(val NilUUID) {
 // SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
 func (s *InstanceResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
 	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *InstanceResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 // SetAccessState sets the value of AccessState.
@@ -7090,11 +7142,14 @@ type PrivateImageResource struct {
 	// The subscriptions a cancellation through Billing has to cover to release this private image: its
 	// own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays
 	// for any of them.
-	ReleaseSubscriptionIds []uuid.UUID                        `json:"release_subscription_ids"`
-	AccessState            NilPrivateImageResourceAccessState `json:"access_state"`
-	Task                   NilTask                            `json:"task"`
-	Generation             int64                              `json:"generation"`
-	ObservedAt             NilDateTime                        `json:"observed_at"`
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet  []ReleaseSetItem                   `json:"release_set"`
+	AccessState NilPrivateImageResourceAccessState `json:"access_state"`
+	Task        NilTask                            `json:"task"`
+	Generation  int64                              `json:"generation"`
+	ObservedAt  NilDateTime                        `json:"observed_at"`
 }
 
 // GetArchitecture returns the value of Architecture.
@@ -7190,6 +7245,11 @@ func (s *PrivateImageResource) GetSubscriptionItemID() NilUUID {
 // GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
 func (s *PrivateImageResource) GetReleaseSubscriptionIds() []uuid.UUID {
 	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *PrivateImageResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
 }
 
 // GetAccessState returns the value of AccessState.
@@ -7305,6 +7365,11 @@ func (s *PrivateImageResource) SetSubscriptionItemID(val NilUUID) {
 // SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
 func (s *PrivateImageResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
 	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *PrivateImageResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 // SetAccessState sets the value of AccessState.
@@ -7805,6 +7870,142 @@ func (s *RegionResource) SetCode(val string) {
 // SetID sets the value of ID.
 func (s *RegionResource) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// A resource a release set releases.
+// Ref: #/components/schemas/ReleaseResource
+type ReleaseResource struct {
+	Type ReleaseResourceType `json:"type"`
+	ID   uuid.UUID           `json:"id"`
+	// The resource's name. A floating IP is named by its address.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *ReleaseResource) GetType() ReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *ReleaseResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *ReleaseResource) SetType(val ReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *ReleaseResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type ReleaseResourceType string
+
+const (
+	ReleaseResourceTypeInstance     ReleaseResourceType = "instance"
+	ReleaseResourceTypeDisk         ReleaseResourceType = "disk"
+	ReleaseResourceTypeSnapshot     ReleaseResourceType = "snapshot"
+	ReleaseResourceTypeBackup       ReleaseResourceType = "backup"
+	ReleaseResourceTypePrivateImage ReleaseResourceType = "private_image"
+	ReleaseResourceTypeFloatingIP   ReleaseResourceType = "floating_ip"
+)
+
+// AllValues returns all ReleaseResourceType values.
+func (ReleaseResourceType) AllValues() []ReleaseResourceType {
+	return []ReleaseResourceType{
+		ReleaseResourceTypeInstance,
+		ReleaseResourceTypeDisk,
+		ReleaseResourceTypeSnapshot,
+		ReleaseResourceTypeBackup,
+		ReleaseResourceTypePrivateImage,
+		ReleaseResourceTypeFloatingIP,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ReleaseResourceTypeInstance:
+		return []byte(s), nil
+	case ReleaseResourceTypeDisk:
+		return []byte(s), nil
+	case ReleaseResourceTypeSnapshot:
+		return []byte(s), nil
+	case ReleaseResourceTypeBackup:
+		return []byte(s), nil
+	case ReleaseResourceTypePrivateImage:
+		return []byte(s), nil
+	case ReleaseResourceTypeFloatingIP:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ReleaseResourceType) UnmarshalText(data []byte) error {
+	switch ReleaseResourceType(data) {
+	case ReleaseResourceTypeInstance:
+		*s = ReleaseResourceTypeInstance
+		return nil
+	case ReleaseResourceTypeDisk:
+		*s = ReleaseResourceTypeDisk
+		return nil
+	case ReleaseResourceTypeSnapshot:
+		*s = ReleaseResourceTypeSnapshot
+		return nil
+	case ReleaseResourceTypeBackup:
+		*s = ReleaseResourceTypeBackup
+		return nil
+	case ReleaseResourceTypePrivateImage:
+		*s = ReleaseResourceTypePrivateImage
+		return nil
+	case ReleaseResourceTypeFloatingIP:
+		*s = ReleaseResourceTypeFloatingIP
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One subscription of a release set and the resource it pays for. An address and its bandwidth are two
+// subscriptions of the same floating IP.
+// Ref: #/components/schemas/ReleaseSetItem
+type ReleaseSetItem struct {
+	SubscriptionID uuid.UUID       `json:"subscription_id"`
+	Resource       ReleaseResource `json:"resource"`
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *ReleaseSetItem) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetResource returns the value of Resource.
+func (s *ReleaseSetItem) GetResource() ReleaseResource {
+	return s.Resource
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *ReleaseSetItem) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetResource sets the value of Resource.
+func (s *ReleaseSetItem) SetResource(val ReleaseResource) {
+	s.Resource = val
 }
 
 // Ref: #/components/schemas/RenameBackupRequestBody
@@ -8657,11 +8858,14 @@ type SnapshotResource struct {
 	// The subscriptions a cancellation through Billing has to cover to release this snapshot: its own.
 	// Subscriptions that have ended are not listed, and the list is empty when no subscription pays for
 	// any of them.
-	ReleaseSubscriptionIds []uuid.UUID                    `json:"release_subscription_ids"`
-	AccessState            NilSnapshotResourceAccessState `json:"access_state"`
-	Task                   NilTask                        `json:"task"`
-	Generation             int64                          `json:"generation"`
-	ObservedAt             NilDateTime                    `json:"observed_at"`
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet  []ReleaseSetItem               `json:"release_set"`
+	AccessState NilSnapshotResourceAccessState `json:"access_state"`
+	Task        NilTask                        `json:"task"`
+	Generation  int64                          `json:"generation"`
+	ObservedAt  NilDateTime                    `json:"observed_at"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -8722,6 +8926,11 @@ func (s *SnapshotResource) GetSubscriptionItemID() NilUUID {
 // GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
 func (s *SnapshotResource) GetReleaseSubscriptionIds() []uuid.UUID {
 	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *SnapshotResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
 }
 
 // GetAccessState returns the value of AccessState.
@@ -8802,6 +9011,11 @@ func (s *SnapshotResource) SetSubscriptionItemID(val NilUUID) {
 // SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
 func (s *SnapshotResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
 	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *SnapshotResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 // SetAccessState sets the value of AccessState.

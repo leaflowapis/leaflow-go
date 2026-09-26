@@ -748,6 +748,36 @@ func (e PrivateNetworkResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for ReleaseResourceType.
+const (
+	Backup       ReleaseResourceType = "backup"
+	Disk         ReleaseResourceType = "disk"
+	FloatingIp   ReleaseResourceType = "floating_ip"
+	Instance     ReleaseResourceType = "instance"
+	PrivateImage ReleaseResourceType = "private_image"
+	Snapshot     ReleaseResourceType = "snapshot"
+)
+
+// Valid indicates whether the value is a known member of the ReleaseResourceType enum.
+func (e ReleaseResourceType) Valid() bool {
+	switch e {
+	case Backup:
+		return true
+	case Disk:
+		return true
+	case FloatingIp:
+		return true
+	case Instance:
+		return true
+	case PrivateImage:
+		return true
+	case Snapshot:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SecurityRuleResourceDirection.
 const (
 	SecurityRuleResourceDirectionEgress  SecurityRuleResourceDirection = "egress"
@@ -910,6 +940,9 @@ type BackupResource struct {
 	OrderId     *openapi_types.UUID        `json:"order_id"`
 	PriceId     *openapi_types.UUID        `json:"price_id"`
 	RegionId    openapi_types.UUID         `json:"region_id"`
+
+	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
 
 	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this backup: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
@@ -1144,6 +1177,9 @@ type DiskResource struct {
 	PriceId    *openapi_types.UUID `json:"price_id"`
 	RegionId   openapi_types.UUID  `json:"region_id"`
 
+	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
+
 	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this disk: its own and those of its snapshots. A system disk is released only with its instance, so for a system disk the list is that of the instance. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 	SizeGb                 int64                `json:"size_gb"`
@@ -1236,6 +1272,9 @@ type FloatingIPResource struct {
 	OrderId                     *openapi_types.UUID                     `json:"order_id"`
 	PriceId                     *openapi_types.UUID                     `json:"price_id"`
 	RegionId                    openapi_types.UUID                      `json:"region_id"`
+
+	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
 
 	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this address: the subscriptions of the address and of its bandwidth. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []openapi_types.UUID     `json:"release_subscription_ids"`
@@ -1378,6 +1417,9 @@ type InstanceResource struct {
 	// PublicIps Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound
 	PublicIps []string           `json:"public_ips"`
 	RegionId  openapi_types.UUID `json:"region_id"`
+
+	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
 
 	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this instance: its own, those of the disks deleted with it, and those of the snapshots of those disks. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []openapi_types.UUID  `json:"release_subscription_ids"`
@@ -1732,6 +1774,9 @@ type PrivateImageResource struct {
 	PriceId    *openapi_types.UUID `json:"price_id"`
 	RegionId   openapi_types.UUID  `json:"region_id"`
 
+	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
+
 	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this private image: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 
@@ -1827,6 +1872,25 @@ type RegionResource struct {
 
 	// Name Display name for this place, shown to tenants (Hong Kong). The stable handle is code.
 	Name string `json:"name"`
+}
+
+// ReleaseResource A resource a release set releases.
+type ReleaseResource struct {
+	Id openapi_types.UUID `json:"id"`
+
+	// Name The resource's name. A floating IP is named by its address.
+	Name string              `json:"name"`
+	Type ReleaseResourceType `json:"type"`
+}
+
+// ReleaseResourceType defines model for ReleaseResource.Type.
+type ReleaseResourceType string
+
+// ReleaseSetItem One subscription of a release set and the resource it pays for. An address and its bandwidth are two subscriptions of the same floating IP.
+type ReleaseSetItem struct {
+	// Resource A resource a release set releases.
+	Resource       ReleaseResource    `json:"resource"`
+	SubscriptionId openapi_types.UUID `json:"subscription_id"`
 }
 
 // RenameBackupRequestBody defines model for RenameBackupRequestBody.
@@ -2034,6 +2098,9 @@ type SnapshotResource struct {
 	OrderId            *openapi_types.UUID `json:"order_id"`
 	PriceId            *openapi_types.UUID `json:"price_id"`
 	RegionId           openapi_types.UUID  `json:"region_id"`
+
+	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
 
 	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this snapshot: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
