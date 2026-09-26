@@ -6,12 +6,10 @@ package billingaccountv1server
 type OperationName = string
 
 const (
-	CancelCancellationRequestOperation   OperationName = "CancelCancellationRequest"
 	CancelOrderOperation                 OperationName = "CancelOrder"
 	CancelTopUpOperation                 OperationName = "CancelTopUp"
 	CreateBillingAccountOperation        OperationName = "CreateBillingAccount"
 	CreateCancellationOperation          OperationName = "CreateCancellation"
-	CreateCancellationRequestOperation   OperationName = "CreateCancellationRequest"
 	CreatePaymentMethodSetupOperation    OperationName = "CreatePaymentMethodSetup"
 	CreateQuoteOperation                 OperationName = "CreateQuote"
 	CreateRenewalOrderOperation          OperationName = "CreateRenewalOrder"
@@ -21,7 +19,6 @@ const (
 	GetAccountMeteredUsageOperation      OperationName = "GetAccountMeteredUsage"
 	GetBillingAccountOperation           OperationName = "GetBillingAccount"
 	GetCancellationOperation             OperationName = "GetCancellation"
-	GetCancellationRequestOperation      OperationName = "GetCancellationRequest"
 	GetInvoiceOperation                  OperationName = "GetInvoice"
 	GetOrderOperation                    OperationName = "GetOrder"
 	GetProjectBillingAccountOperation    OperationName = "GetProjectBillingAccount"
@@ -49,7 +46,6 @@ const (
 	ListUsageChargesOperation            OperationName = "ListUsageCharges"
 	PayInvoiceOperation                  OperationName = "PayInvoice"
 	PayTogetherOperation                 OperationName = "PayTogether"
-	PreviewCancellationOperation         OperationName = "PreviewCancellation"
 	PreviewInvoicePaymentOperation       OperationName = "PreviewInvoicePayment"
 	PreviewPayTogetherOperation          OperationName = "PreviewPayTogether"
 	PreviewPromotionCodeOperation        OperationName = "PreviewPromotionCode"

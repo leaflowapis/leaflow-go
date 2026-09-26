@@ -3,14 +3,6 @@
 package billingaccountv1server
 
 // setDefaults set default value of fields.
-func (s *CancellationRequestCreate) setDefaults() {
-	{
-		val := bool(false)
-		s.ForfeitRemainingValue.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
 func (s *PayRequest) setDefaults() {
 	{
 		val := bool(true)

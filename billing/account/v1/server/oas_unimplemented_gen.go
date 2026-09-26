@@ -13,19 +13,6 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
-// CancelCancellationRequest implements cancel-cancellation-request operation.
-//
-// Allowed only before release starts. Does not resume a previously suspended subscription.
-//
-// Use withdraw-cancellation, which withdraws the whole cancellation.
-//
-// Deprecated: schema marks this operation as deprecated.
-//
-// POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel
-func (UnimplementedHandler) CancelCancellationRequest(ctx context.Context, params CancelCancellationRequestParams) (r *CancellationRequest, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CancelOrder implements cancel-order operation.
 //
 // Withdraws an order that is not paid in full, and tells the service that placed it, so that nothing
@@ -119,20 +106,6 @@ func (UnimplementedHandler) CreateBillingAccount(ctx context.Context, req *Billi
 //
 // POST /account/v1/cancellations
 func (UnimplementedHandler) CreateCancellation(ctx context.Context, req *CancellationCreate) (r CreateCancellationRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateCancellationRequest implements create-cancellation-request operation.
-//
-// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual
-// end is confirmed by the owning service. Refund processing is separate.
-//
-// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-//
-// Deprecated: schema marks this operation as deprecated.
-//
-// POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests
-func (UnimplementedHandler) CreateCancellationRequest(ctx context.Context, req *CancellationRequestCreate, params CreateCancellationRequestParams) (r *CancellationRequest, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -246,17 +219,6 @@ func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBil
 //
 // GET /account/v1/cancellations/{cancellationId}
 func (UnimplementedHandler) GetCancellation(ctx context.Context, params GetCancellationParams) (r *Cancellation, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetCancellationRequest implements get-cancellation-request operation.
-//
-// Use get-cancellation.
-//
-// Deprecated: schema marks this operation as deprecated.
-//
-// GET /account/v1/cancellation-requests/{cancellationRequestId}
-func (UnimplementedHandler) GetCancellationRequest(ctx context.Context, params GetCancellationRequestParams) (r *CancellationRequest, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -548,19 +510,6 @@ func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayRequest, p
 //
 // POST /account/v1/payments
 func (UnimplementedHandler) PayTogether(ctx context.Context, req *PayTogetherRequest) (r *PaymentResult, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// PreviewCancellation implements preview-cancellation operation.
-//
-// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
-//
-// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
-//
-// Deprecated: schema marks this operation as deprecated.
-//
-// GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview
-func (UnimplementedHandler) PreviewCancellation(ctx context.Context, params PreviewCancellationParams) (r *CancellationPreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

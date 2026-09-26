@@ -38,20 +38,6 @@ func encodeCreateCancellationRequest(
 	return nil
 }
 
-func encodeCreateCancellationRequestRequest(
-	req *CancellationRequestCreate,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeCreatePaymentMethodSetupRequest(
 	req *PaymentMethodSetup,
 	r *http.Request,

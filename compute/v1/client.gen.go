@@ -2943,6 +2943,8 @@ type ClientInterface interface {
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 	//
+	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
+	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 	DetachDisk(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -4613,6 +4615,8 @@ func (c *Client) AttachDisk(ctx context.Context, instanceId openapi_types.UUID, 
 // DetachDisk Detach a disk
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
+//
+// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 func (c *Client) DetachDisk(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -10958,6 +10962,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 	//
+	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
@@ -17105,6 +17111,8 @@ func (c *ClientWithResponses) AttachDiskWithResponse(ctx context.Context, instan
 // DetachDiskWithResponse Detach a disk
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
+//
+// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
 //
 // Returns a wrapper object for the known response body format(s).
 //

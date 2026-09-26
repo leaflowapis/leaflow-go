@@ -8,16 +8,6 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
-	// CancelCancellationRequest implements cancel-cancellation-request operation.
-	//
-	// Allowed only before release starts. Does not resume a previously suspended subscription.
-	//
-	// Use withdraw-cancellation, which withdraws the whole cancellation.
-	//
-	// Deprecated: schema marks this operation as deprecated.
-	//
-	// POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel
-	CancelCancellationRequest(ctx context.Context, params CancelCancellationRequestParams) (*CancellationRequest, error)
 	// CancelOrder implements cancel-order operation.
 	//
 	// Withdraws an order that is not paid in full, and tells the service that placed it, so that nothing
@@ -102,17 +92,6 @@ type Handler interface {
 	//
 	// POST /account/v1/cancellations
 	CreateCancellation(ctx context.Context, req *CancellationCreate) (CreateCancellationRes, error)
-	// CreateCancellationRequest implements create-cancellation-request operation.
-	//
-	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual
-	// end is confirmed by the owning service. Refund processing is separate.
-	//
-	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-	//
-	// Deprecated: schema marks this operation as deprecated.
-	//
-	// POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests
-	CreateCancellationRequest(ctx context.Context, req *CancellationRequestCreate, params CreateCancellationRequestParams) (*CancellationRequest, error)
 	// CreatePaymentMethodSetup implements create-payment-method-setup operation.
 	//
 	// Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
@@ -199,14 +178,6 @@ type Handler interface {
 	//
 	// GET /account/v1/cancellations/{cancellationId}
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
-	// GetCancellationRequest implements get-cancellation-request operation.
-	//
-	// Use get-cancellation.
-	//
-	// Deprecated: schema marks this operation as deprecated.
-	//
-	// GET /account/v1/cancellation-requests/{cancellationRequestId}
-	GetCancellationRequest(ctx context.Context, params GetCancellationRequestParams) (*CancellationRequest, error)
 	// GetInvoice implements get-invoice operation.
 	//
 	// Get invoice.
@@ -417,16 +388,6 @@ type Handler interface {
 	//
 	// POST /account/v1/payments
 	PayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentResult, error)
-	// PreviewCancellation implements preview-cancellation operation.
-	//
-	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
-	//
-	// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
-	//
-	// Deprecated: schema marks this operation as deprecated.
-	//
-	// GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview
-	PreviewCancellation(ctx context.Context, params PreviewCancellationParams) (*CancellationPreview, error)
 	// PreviewInvoicePayment implements preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from

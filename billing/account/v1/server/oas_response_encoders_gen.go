@@ -12,19 +12,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func encodeCancelCancellationRequestResponse(response *CancellationRequest, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeCancelOrderResponse(response CancelOrderRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *Order:
@@ -129,19 +116,6 @@ func encodeCreateCancellationResponse(response CreateCancellationRes, w http.Res
 	default:
 		return errors.Errorf("unexpected response type: %T", response)
 	}
-}
-
-func encodeCreateCancellationRequestResponse(response *CancellationRequest, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
 }
 
 func encodeCreatePaymentMethodSetupResponse(response *PaymentMethodSetupResult, w http.ResponseWriter, span trace.Span) error {
@@ -260,19 +234,6 @@ func encodeGetBillingAccountResponse(response *BillingAccount, w http.ResponseWr
 }
 
 func encodeGetCancellationResponse(response *Cancellation, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetCancellationRequestResponse(response *CancellationRequest, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -624,19 +585,6 @@ func encodePayInvoiceResponse(response *PaymentResult, w http.ResponseWriter, sp
 }
 
 func encodePayTogetherResponse(response *PaymentResult, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodePreviewCancellationResponse(response *CancellationPreview, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

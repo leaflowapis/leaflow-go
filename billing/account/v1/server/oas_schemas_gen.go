@@ -1556,65 +1556,6 @@ func (s *CancellationOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/CancellationPreview
-type CancellationPreview struct {
-	SubscriptionID   uuid.UUID         `json:"subscription_id"`
-	Mode             TerminationPolicy `json:"mode"`
-	ScheduledAt      OptDateTime       `json:"scheduled_at"`
-	RefundableAmount string            `json:"refundable_amount"`
-	Currency         string            `json:"currency"`
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *CancellationPreview) GetSubscriptionID() uuid.UUID {
-	return s.SubscriptionID
-}
-
-// GetMode returns the value of Mode.
-func (s *CancellationPreview) GetMode() TerminationPolicy {
-	return s.Mode
-}
-
-// GetScheduledAt returns the value of ScheduledAt.
-func (s *CancellationPreview) GetScheduledAt() OptDateTime {
-	return s.ScheduledAt
-}
-
-// GetRefundableAmount returns the value of RefundableAmount.
-func (s *CancellationPreview) GetRefundableAmount() string {
-	return s.RefundableAmount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *CancellationPreview) GetCurrency() string {
-	return s.Currency
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *CancellationPreview) SetSubscriptionID(val uuid.UUID) {
-	s.SubscriptionID = val
-}
-
-// SetMode sets the value of Mode.
-func (s *CancellationPreview) SetMode(val TerminationPolicy) {
-	s.Mode = val
-}
-
-// SetScheduledAt sets the value of ScheduledAt.
-func (s *CancellationPreview) SetScheduledAt(val OptDateTime) {
-	s.ScheduledAt = val
-}
-
-// SetRefundableAmount sets the value of RefundableAmount.
-func (s *CancellationPreview) SetRefundableAmount(val string) {
-	s.RefundableAmount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *CancellationPreview) SetCurrency(val string) {
-	s.Currency = val
-}
-
 // What the cancellation would return, subscription by subscription and in total, as of now. Give
 // `proration_date` and `refundable_amount` when creating the cancellation.
 //
@@ -2101,43 +2042,6 @@ func (s *CancellationRequest) SetFailureCode(val OptString) {
 // SetFailureReason sets the value of FailureReason.
 func (s *CancellationRequest) SetFailureReason(val OptString) {
 	s.FailureReason = val
-}
-
-// Ref: #/components/schemas/CancellationRequestCreate
-type CancellationRequestCreate struct {
-	Mode                  OptTerminationPolicy `json:"mode"`
-	ForfeitRemainingValue OptBool              `json:"forfeit_remaining_value"`
-	Reason                string               `json:"reason"`
-}
-
-// GetMode returns the value of Mode.
-func (s *CancellationRequestCreate) GetMode() OptTerminationPolicy {
-	return s.Mode
-}
-
-// GetForfeitRemainingValue returns the value of ForfeitRemainingValue.
-func (s *CancellationRequestCreate) GetForfeitRemainingValue() OptBool {
-	return s.ForfeitRemainingValue
-}
-
-// GetReason returns the value of Reason.
-func (s *CancellationRequestCreate) GetReason() string {
-	return s.Reason
-}
-
-// SetMode sets the value of Mode.
-func (s *CancellationRequestCreate) SetMode(val OptTerminationPolicy) {
-	s.Mode = val
-}
-
-// SetForfeitRemainingValue sets the value of ForfeitRemainingValue.
-func (s *CancellationRequestCreate) SetForfeitRemainingValue(val OptBool) {
-	s.ForfeitRemainingValue = val
-}
-
-// SetReason sets the value of Reason.
-func (s *CancellationRequestCreate) SetReason(val string) {
-	s.Reason = val
 }
 
 type CancellationRequestMode string

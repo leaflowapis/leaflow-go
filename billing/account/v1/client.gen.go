@@ -1589,17 +1589,6 @@ type CancellationList struct {
 	TotalCount *int64         `json:"total_count,omitempty"`
 }
 
-// CancellationPreview defines model for CancellationPreview.
-type CancellationPreview struct {
-	Currency string `json:"currency"`
-
-	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
-	Mode             TerminationPolicy  `json:"mode"`
-	RefundableAmount string             `json:"refundable_amount"`
-	ScheduledAt      *time.Time         `json:"scheduled_at,omitempty"`
-	SubscriptionId   openapi_types.UUID `json:"subscription_id"`
-}
-
 // CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now. Give
 // `proration_date` and `refundable_amount` when creating the cancellation.
 //
@@ -1798,15 +1787,6 @@ type CancellationRequestMode string
 
 // CancellationRequestStatus defines model for CancellationRequest.Status.
 type CancellationRequestStatus string
-
-// CancellationRequestCreate defines model for CancellationRequestCreate.
-type CancellationRequestCreate struct {
-	ForfeitRemainingValue *bool `json:"forfeit_remaining_value,omitempty"`
-
-	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
-	Mode   *TerminationPolicy `json:"mode,omitempty"`
-	Reason string             `json:"reason"`
-}
 
 // CreditGrant defines model for CreditGrant.
 type CreditGrant struct {
@@ -3494,9 +3474,6 @@ type AccountIdQuery = int64
 // CancellationId defines model for CancellationId.
 type CancellationId = openapi_types.UUID
 
-// CancellationRequestId defines model for CancellationRequestId.
-type CancellationRequestId = openapi_types.UUID
-
 // From defines model for From.
 type From = time.Time
 
@@ -3820,11 +3797,6 @@ type CreateQuoteJSONRequestBody = QuoteRequest
 // SetAutoRenewJSONRequestBody defines body for SetAutoRenew for application/json ContentType.
 type SetAutoRenewJSONRequestBody = AutoRenewSet
 
-// CreateCancellationRequestJSONRequestBody defines body for CreateCancellationRequest for application/json ContentType.
-//
-// Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-type CreateCancellationRequestJSONRequestBody = CancellationRequestCreate
-
 // RenewSubscriptionJSONRequestBody defines body for RenewSubscription for application/json ContentType.
 type RenewSubscriptionJSONRequestBody = RenewRequest
 
@@ -4002,26 +3974,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
 	ListPaymentOptions(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetCancellationRequest Get cancellation request
-	//
-	// Use get-cancellation.
-	//
-	// Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GetCancellationRequest(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CancelCancellationRequest Cancel a cancellation request
-	//
-	// Allowed only before release starts. Does not resume a previously suspended subscription.
-	//
-	// Use withdraw-cancellation, which withdraws the whole cancellation.
-	//
-	// Corresponds with POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel (the `CancelCancellationRequest` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	CancelCancellationRequest(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCancellations List cancellations
 	//
@@ -4557,43 +4509,6 @@ type ClientInterface interface {
 	// Corresponds with PUT /account/v1/subscriptions/{subscriptionId}/auto-renew (the `SetAutoRenew` operationId).
 	SetAutoRenew(ctx context.Context, subscriptionId SubscriptionId, body SetAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PreviewCancellation Preview cancellation
-	//
-	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
-	//
-	// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
-	//
-	// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	PreviewCancellation(ctx context.Context, subscriptionId SubscriptionId, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateCancellationRequestWithBody Request subscription cancellation
-	//
-	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
-	//
-	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	CreateCancellationRequestWithBody(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateCancellationRequest Request subscription cancellation
-	//
-	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
-	//
-	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	CreateCancellationRequest(ctx context.Context, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// RenewSubscriptionWithBody Renew subscription
 	//
 	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
@@ -4930,44 +4845,6 @@ func (c *Client) GetAccountMeteredUsage(ctx context.Context, accountId AccountId
 // Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
 func (c *Client) ListPaymentOptions(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPaymentOptionsRequest(c.Server, accountId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetCancellationRequest Get cancellation request
-//
-// Use get-cancellation.
-//
-// Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *Client) GetCancellationRequest(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCancellationRequestRequest(c.Server, cancellationRequestId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CancelCancellationRequest Cancel a cancellation request
-//
-// Allowed only before release starts. Does not resume a previously suspended subscription.
-//
-// Use withdraw-cancellation, which withdraws the whole cancellation.
-//
-// Corresponds with POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel (the `CancelCancellationRequest` operationId).
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *Client) CancelCancellationRequest(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCancelCancellationRequestRequest(c.Server, cancellationRequestId)
 	if err != nil {
 		return nil, err
 	}
@@ -5932,70 +5809,6 @@ func (c *Client) SetAutoRenew(ctx context.Context, subscriptionId SubscriptionId
 	return c.Client.Do(req)
 }
 
-// PreviewCancellation Preview cancellation
-//
-// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
-//
-// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
-//
-// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *Client) PreviewCancellation(ctx context.Context, subscriptionId SubscriptionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPreviewCancellationRequest(c.Server, subscriptionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateCancellationRequestWithBody Request subscription cancellation
-//
-// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
-//
-// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *Client) CreateCancellationRequestWithBody(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateCancellationRequestRequestWithBody(c.Server, subscriptionId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateCancellationRequest Request subscription cancellation
-//
-// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
-//
-// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *Client) CreateCancellationRequest(ctx context.Context, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateCancellationRequestRequest(c.Server, subscriptionId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // RenewSubscriptionWithBody Renew subscription
 //
 // Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
@@ -6662,74 +6475,6 @@ func NewListPaymentOptionsRequest(server string, accountId AccountId) (*http.Req
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetCancellationRequestRequest constructs an http.Request for the GetCancellationRequest method
-func NewGetCancellationRequestRequest(server string, cancellationRequestId CancellationRequestId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "cancellationRequestId", cancellationRequestId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/cancellation-requests/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCancelCancellationRequestRequest constructs an http.Request for the CancelCancellationRequest method
-func NewCancelCancellationRequestRequest(server string, cancellationRequestId CancellationRequestId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "cancellationRequestId", cancellationRequestId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/cancellation-requests/%s/cancel", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -8664,87 +8409,6 @@ func NewSetAutoRenewRequestWithBody(server string, subscriptionId SubscriptionId
 	return req, nil
 }
 
-// NewPreviewCancellationRequest constructs an http.Request for the PreviewCancellation method
-func NewPreviewCancellationRequest(server string, subscriptionId SubscriptionId) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "subscriptionId", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/subscriptions/%s/cancellation-preview", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateCancellationRequestRequest calls the generic CreateCancellationRequest builder with application/json body
-func NewCreateCancellationRequestRequest(server string, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateCancellationRequestRequestWithBody(server, subscriptionId, "application/json", bodyReader)
-}
-
-// NewCreateCancellationRequestRequestWithBody constructs an http.Request for the CreateCancellationRequest method, with any body, and a specified content type
-func NewCreateCancellationRequestRequestWithBody(server string, subscriptionId SubscriptionId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "subscriptionId", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/subscriptions/%s/cancellation-requests", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewRenewSubscriptionRequest calls the generic RenewSubscription builder with application/json body
 func NewRenewSubscriptionRequest(server string, subscriptionId SubscriptionId, body RenewSubscriptionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -9462,30 +9126,6 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
 	ListPaymentOptionsWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*ListPaymentOptionsResponse, error)
 
-	// GetCancellationRequestWithResponse Get cancellation request
-	//
-	// Use get-cancellation.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GetCancellationRequestWithResponse(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*GetCancellationRequestResponse, error)
-
-	// CancelCancellationRequestWithResponse Cancel a cancellation request
-	//
-	// Allowed only before release starts. Does not resume a previously suspended subscription.
-	//
-	// Use withdraw-cancellation, which withdraws the whole cancellation.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel (the `CancelCancellationRequest` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	CancelCancellationRequestWithResponse(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*CancelCancellationRequestResponse, error)
-
 	// ListCancellationsWithResponse List cancellations
 	//
 	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
@@ -10068,45 +9708,6 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /account/v1/subscriptions/{subscriptionId}/auto-renew (the `SetAutoRenew` operationId).
 	SetAutoRenewWithResponse(ctx context.Context, subscriptionId SubscriptionId, body SetAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAutoRenewResponse, error)
 
-	// PreviewCancellationWithResponse Preview cancellation
-	//
-	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
-	//
-	// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	PreviewCancellationWithResponse(ctx context.Context, subscriptionId SubscriptionId, reqEditors ...RequestEditorFn) (*PreviewCancellationResponse, error)
-
-	// CreateCancellationRequestWithBodyWithResponse Request subscription cancellation
-	//
-	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
-	//
-	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	CreateCancellationRequestWithBodyWithResponse(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationRequestResponse, error)
-
-	// CreateCancellationRequestWithResponse Request subscription cancellation
-	//
-	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
-	//
-	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	CreateCancellationRequestWithResponse(ctx context.Context, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationRequestResponse, error)
-
 	// RenewSubscriptionWithBodyWithResponse Renew subscription
 	//
 	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
@@ -10648,102 +10249,6 @@ func (r ListPaymentOptionsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListPaymentOptionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetCancellationRequestResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CancellationRequest
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetCancellationRequestResponse) GetJSON200() *CancellationRequest {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetCancellationRequestResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetCancellationRequestResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetCancellationRequestResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetCancellationRequestResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetCancellationRequestResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CancelCancellationRequestResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CancellationRequest
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CancelCancellationRequestResponse) GetJSON200() *CancellationRequest {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CancelCancellationRequestResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CancelCancellationRequestResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CancelCancellationRequestResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CancelCancellationRequestResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CancelCancellationRequestResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12334,102 +11839,6 @@ func (r SetAutoRenewResponse) ContentType() string {
 	return ""
 }
 
-type PreviewCancellationResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CancellationPreview
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r PreviewCancellationResponse) GetJSON200() *CancellationPreview {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r PreviewCancellationResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r PreviewCancellationResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r PreviewCancellationResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PreviewCancellationResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PreviewCancellationResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateCancellationRequestResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *CancellationRequest
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateCancellationRequestResponse) GetJSON201() *CancellationRequest {
-	return r.JSON201
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateCancellationRequestResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateCancellationRequestResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateCancellationRequestResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateCancellationRequestResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateCancellationRequestResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type RenewSubscriptionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -13048,42 +12457,6 @@ func (c *ClientWithResponses) ListPaymentOptionsWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseListPaymentOptionsResponse(rsp)
-}
-
-// GetCancellationRequestWithResponse Get cancellation request
-//
-// Use get-cancellation.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
-//
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *ClientWithResponses) GetCancellationRequestWithResponse(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*GetCancellationRequestResponse, error) {
-	rsp, err := c.GetCancellationRequest(ctx, cancellationRequestId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetCancellationRequestResponse(rsp)
-}
-
-// CancelCancellationRequestWithResponse Cancel a cancellation request
-//
-// Allowed only before release starts. Does not resume a previously suspended subscription.
-//
-// Use withdraw-cancellation, which withdraws the whole cancellation.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel (the `CancelCancellationRequest` operationId).
-//
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *ClientWithResponses) CancelCancellationRequestWithResponse(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*CancelCancellationRequestResponse, error) {
-	rsp, err := c.CancelCancellationRequest(ctx, cancellationRequestId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCancelCancellationRequestResponse(rsp)
 }
 
 // ListCancellationsWithResponse List cancellations
@@ -13920,62 +13293,6 @@ func (c *ClientWithResponses) SetAutoRenewWithResponse(ctx context.Context, subs
 	return ParseSetAutoRenewResponse(rsp)
 }
 
-// PreviewCancellationWithResponse Preview cancellation
-//
-// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
-//
-// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
-//
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *ClientWithResponses) PreviewCancellationWithResponse(ctx context.Context, subscriptionId SubscriptionId, reqEditors ...RequestEditorFn) (*PreviewCancellationResponse, error) {
-	rsp, err := c.PreviewCancellation(ctx, subscriptionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePreviewCancellationResponse(rsp)
-}
-
-// CreateCancellationRequestWithBodyWithResponse Request subscription cancellation
-//
-// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
-//
-// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
-//
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *ClientWithResponses) CreateCancellationRequestWithBodyWithResponse(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationRequestResponse, error) {
-	rsp, err := c.CreateCancellationRequestWithBody(ctx, subscriptionId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateCancellationRequestResponse(rsp)
-}
-
-// CreateCancellationRequestWithResponse Request subscription cancellation
-//
-// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
-//
-// Use create-cancellation, which ends the subscriptions released together and checks the refund.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *ClientWithResponses) CreateCancellationRequestWithResponse(ctx context.Context, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationRequestResponse, error) {
-	rsp, err := c.CreateCancellationRequest(ctx, subscriptionId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateCancellationRequestResponse(rsp)
-}
-
 // RenewSubscriptionWithBodyWithResponse Renew subscription
 //
 // Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
@@ -14457,72 +13774,6 @@ func ParseListPaymentOptionsResponse(rsp *http.Response) (*ListPaymentOptionsRes
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PaymentOptionList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetCancellationRequestResponse parses an HTTP response from a GetCancellationRequestWithResponse call
-func ParseGetCancellationRequestResponse(rsp *http.Response) (*GetCancellationRequestResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetCancellationRequestResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CancellationRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCancelCancellationRequestResponse parses an HTTP response from a CancelCancellationRequestWithResponse call
-func ParseCancelCancellationRequestResponse(rsp *http.Response) (*CancelCancellationRequestResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CancelCancellationRequestResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CancellationRequest
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -15622,72 +14873,6 @@ func ParseSetAutoRenewResponse(rsp *http.Response) (*SetAutoRenewResponse, error
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePreviewCancellationResponse parses an HTTP response from a PreviewCancellationWithResponse call
-func ParsePreviewCancellationResponse(rsp *http.Response) (*PreviewCancellationResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PreviewCancellationResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CancellationPreview
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateCancellationRequestResponse parses an HTTP response from a CreateCancellationRequestWithResponse call
-func ParseCreateCancellationRequestResponse(rsp *http.Response) (*CreateCancellationRequestResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateCancellationRequestResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest CancellationRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
