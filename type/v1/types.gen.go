@@ -39,6 +39,36 @@ func (e AttachmentState) Valid() bool {
 	}
 }
 
+// Defines values for PurchaseQuoteLineUnpricedReason.
+const (
+	NoDimensions    PurchaseQuoteLineUnpricedReason = "no_dimensions"
+	NoEffectiveRule PurchaseQuoteLineUnpricedReason = "no_effective_rule"
+	NoMeter         PurchaseQuoteLineUnpricedReason = "no_meter"
+	NoPrice         PurchaseQuoteLineUnpricedReason = "no_price"
+	NoRateCard      PurchaseQuoteLineUnpricedReason = "no_rate_card"
+	None            PurchaseQuoteLineUnpricedReason = "none"
+)
+
+// Valid indicates whether the value is a known member of the PurchaseQuoteLineUnpricedReason enum.
+func (e PurchaseQuoteLineUnpricedReason) Valid() bool {
+	switch e {
+	case NoDimensions:
+		return true
+	case NoEffectiveRule:
+		return true
+	case NoMeter:
+		return true
+	case NoPrice:
+		return true
+	case NoRateCard:
+		return true
+	case None:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ReclamationStateStatus.
 const (
 	Deleted    ReclamationStateStatus = "deleted"
@@ -233,6 +263,42 @@ type PlacedOrder struct {
 	// OrderId The order, including for purchases without an immediate charge. Payment alone does not imply that the service has completed delivery.
 	OrderId openapi_types.UUID `json:"order_id"`
 }
+
+// PurchaseQuote What a purchase would be charged, priced as a service would order it, without ordering anything. Nothing is reserved and nothing is recorded.
+type PurchaseQuote struct {
+	Currency string `json:"currency"`
+
+	// Lines One line for each item the purchase would order, in the order it would order them.
+	Lines []PurchaseQuoteLine `json:"lines"`
+
+	// Total What would be owed for the whole purchase. Null when any line could not be priced: what would be owed is not knowable then.
+	Total *Money `json:"total"`
+}
+
+// PurchaseQuoteLine defines model for PurchaseQuoteLine.
+type PurchaseQuoteLine struct {
+	// Amount Not rounded. Round only for display.
+	Amount   *Money `json:"amount"`
+	Currency string `json:"currency"`
+	PlanName string `json:"plan_name"`
+
+	// PriceId The price selected, including when the request left the choice to the service. Order with this price.
+	PriceId *openapi_types.UUID `json:"price_id"`
+
+	// Priced Whether a price was found for this line. When false, `price_id`, `unit_amount` and `amount` are null and `unpriced_reason` states what is missing.
+	Priced bool `json:"priced"`
+
+	// Quantity The quantity priced.
+	Quantity   string `json:"quantity"`
+	TaxAmount  *Money `json:"tax_amount"`
+	UnitAmount *Money `json:"unit_amount"`
+
+	// UnpricedReason Why no price was found; `none` while `priced` is true.
+	UnpricedReason PurchaseQuoteLineUnpricedReason `json:"unpriced_reason"`
+}
+
+// PurchaseQuoteLineUnpricedReason Why no price was found; `none` while `priced` is true.
+type PurchaseQuoteLineUnpricedReason string
 
 // ReclamationState defines model for ReclamationState.
 type ReclamationState struct {
