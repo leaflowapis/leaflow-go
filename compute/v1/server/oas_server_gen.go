@@ -170,8 +170,9 @@ type Handler interface {
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
-	// subscription ends.
+	// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+	// `release_subscription_ids`.
 	//
 	// DELETE /api/v1/backups/{backupId}
 	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
@@ -180,8 +181,9 @@ type Handler interface {
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
-	// ends.
+	// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+	// `release_subscription_ids`.
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
@@ -196,7 +198,8 @@ type Handler interface {
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
 	// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-	// resource. It is released when its subscription ends.
+	// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
+	// through Billing, the same set as its `release_subscription_ids`.
 	//
 	// DELETE /api/v1/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
@@ -221,8 +224,9 @@ type Handler interface {
 	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
-	// ends.
+	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+	// `release_subscription_ids`.
 	//
 	// DELETE /api/v1/private-images/{privateImageId}
 	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
@@ -255,8 +259,9 @@ type Handler interface {
 	// DeleteSnapshot implements delete-snapshot operation.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
-	// subscription ends.
+	// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+	// `release_subscription_ids`.
 	//
 	// DELETE /api/v1/snapshots/{snapshotId}
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
@@ -616,7 +621,8 @@ type Handler interface {
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
 	// bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
-	// released when its subscriptions end.
+	// released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same
+	// set as its `release_subscription_ids`.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
 	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error)

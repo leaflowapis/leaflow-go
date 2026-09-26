@@ -82,6 +82,108 @@ func (e BillingAccountStatus) Valid() bool {
 	}
 }
 
+// Defines values for CancellationOrigin.
+const (
+	CancellationOriginCustomer        CancellationOrigin = "customer"
+	CancellationOriginOperator        CancellationOrigin = "operator"
+	CancellationOriginProjectDeletion CancellationOrigin = "project_deletion"
+)
+
+// Valid indicates whether the value is a known member of the CancellationOrigin enum.
+func (e CancellationOrigin) Valid() bool {
+	switch e {
+	case CancellationOriginCustomer:
+		return true
+	case CancellationOriginOperator:
+		return true
+	case CancellationOriginProjectDeletion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancellationStatus.
+const (
+	CancellationStatusCanceled  CancellationStatus = "canceled"
+	CancellationStatusCompleted CancellationStatus = "completed"
+	CancellationStatusFailed    CancellationStatus = "failed"
+	CancellationStatusReleasing CancellationStatus = "releasing"
+	CancellationStatusRequested CancellationStatus = "requested"
+	CancellationStatusScheduled CancellationStatus = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the CancellationStatus enum.
+func (e CancellationStatus) Valid() bool {
+	switch e {
+	case CancellationStatusCanceled:
+		return true
+	case CancellationStatusCompleted:
+		return true
+	case CancellationStatusFailed:
+		return true
+	case CancellationStatusReleasing:
+		return true
+	case CancellationStatusRequested:
+		return true
+	case CancellationStatusScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancellationItemStatus.
+const (
+	CancellationItemStatusCanceled  CancellationItemStatus = "canceled"
+	CancellationItemStatusCompleted CancellationItemStatus = "completed"
+	CancellationItemStatusFailed    CancellationItemStatus = "failed"
+	CancellationItemStatusReleasing CancellationItemStatus = "releasing"
+	CancellationItemStatusRequested CancellationItemStatus = "requested"
+	CancellationItemStatusScheduled CancellationItemStatus = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the CancellationItemStatus enum.
+func (e CancellationItemStatus) Valid() bool {
+	switch e {
+	case CancellationItemStatusCanceled:
+		return true
+	case CancellationItemStatusCompleted:
+		return true
+	case CancellationItemStatusFailed:
+		return true
+	case CancellationItemStatusReleasing:
+		return true
+	case CancellationItemStatusRequested:
+		return true
+	case CancellationItemStatusScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancellationRefundPreviewItemBillingType.
+const (
+	CancellationRefundPreviewItemBillingTypeOneTime  CancellationRefundPreviewItemBillingType = "one_time"
+	CancellationRefundPreviewItemBillingTypePostpaid CancellationRefundPreviewItemBillingType = "postpaid"
+	CancellationRefundPreviewItemBillingTypePrepaid  CancellationRefundPreviewItemBillingType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the CancellationRefundPreviewItemBillingType enum.
+func (e CancellationRefundPreviewItemBillingType) Valid() bool {
+	switch e {
+	case CancellationRefundPreviewItemBillingTypeOneTime:
+		return true
+	case CancellationRefundPreviewItemBillingTypePostpaid:
+		return true
+	case CancellationRefundPreviewItemBillingTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CancellationRequestMode.
 const (
 	CancellationRequestModeImmediate CancellationRequestMode = "immediate"
@@ -246,28 +348,28 @@ func (e InvoiceItemType) Valid() bool {
 
 // Defines values for InvoiceStatus.
 const (
-	Draft         InvoiceStatus = "draft"
-	Open          InvoiceStatus = "open"
-	Paid          InvoiceStatus = "paid"
-	Refunded      InvoiceStatus = "refunded"
-	Uncollectible InvoiceStatus = "uncollectible"
-	Void          InvoiceStatus = "void"
+	InvoiceStatusDraft         InvoiceStatus = "draft"
+	InvoiceStatusOpen          InvoiceStatus = "open"
+	InvoiceStatusPaid          InvoiceStatus = "paid"
+	InvoiceStatusRefunded      InvoiceStatus = "refunded"
+	InvoiceStatusUncollectible InvoiceStatus = "uncollectible"
+	InvoiceStatusVoid          InvoiceStatus = "void"
 )
 
 // Valid indicates whether the value is a known member of the InvoiceStatus enum.
 func (e InvoiceStatus) Valid() bool {
 	switch e {
-	case Draft:
+	case InvoiceStatusDraft:
 		return true
-	case Open:
+	case InvoiceStatusOpen:
 		return true
-	case Paid:
+	case InvoiceStatusPaid:
 		return true
-	case Refunded:
+	case InvoiceStatusRefunded:
 		return true
-	case Uncollectible:
+	case InvoiceStatusUncollectible:
 		return true
-	case Void:
+	case InvoiceStatusVoid:
 		return true
 	default:
 		return false
@@ -780,43 +882,43 @@ func (e RefundPolicy) Valid() bool {
 
 // Defines values for RefundReason.
 const (
-	ChangeCanceled       RefundReason = "change_canceled"
-	ChangeExpired        RefundReason = "change_expired"
-	DowngradeDifference  RefundReason = "downgrade_difference"
-	FuturePeriodCanceled RefundReason = "future_period_canceled"
-	Operator             RefundReason = "operator"
-	OrderCanceled        RefundReason = "order_canceled"
-	OrderExpired         RefundReason = "order_expired"
-	PaymentNotApplied    RefundReason = "payment_not_applied"
-	ProvisioningFailed   RefundReason = "provisioning_failed"
-	SubscriptionCanceled RefundReason = "subscription_canceled"
-	UsageTrueUp          RefundReason = "usage_true_up"
+	RefundReasonChangeCanceled       RefundReason = "change_canceled"
+	RefundReasonChangeExpired        RefundReason = "change_expired"
+	RefundReasonDowngradeDifference  RefundReason = "downgrade_difference"
+	RefundReasonFuturePeriodCanceled RefundReason = "future_period_canceled"
+	RefundReasonOperator             RefundReason = "operator"
+	RefundReasonOrderCanceled        RefundReason = "order_canceled"
+	RefundReasonOrderExpired         RefundReason = "order_expired"
+	RefundReasonPaymentNotApplied    RefundReason = "payment_not_applied"
+	RefundReasonProvisioningFailed   RefundReason = "provisioning_failed"
+	RefundReasonSubscriptionCanceled RefundReason = "subscription_canceled"
+	RefundReasonUsageTrueUp          RefundReason = "usage_true_up"
 )
 
 // Valid indicates whether the value is a known member of the RefundReason enum.
 func (e RefundReason) Valid() bool {
 	switch e {
-	case ChangeCanceled:
+	case RefundReasonChangeCanceled:
 		return true
-	case ChangeExpired:
+	case RefundReasonChangeExpired:
 		return true
-	case DowngradeDifference:
+	case RefundReasonDowngradeDifference:
 		return true
-	case FuturePeriodCanceled:
+	case RefundReasonFuturePeriodCanceled:
 		return true
-	case Operator:
+	case RefundReasonOperator:
 		return true
-	case OrderCanceled:
+	case RefundReasonOrderCanceled:
 		return true
-	case OrderExpired:
+	case RefundReasonOrderExpired:
 		return true
-	case PaymentNotApplied:
+	case RefundReasonPaymentNotApplied:
 		return true
-	case ProvisioningFailed:
+	case RefundReasonProvisioningFailed:
 		return true
-	case SubscriptionCanceled:
+	case RefundReasonSubscriptionCanceled:
 		return true
-	case UsageTrueUp:
+	case RefundReasonUsageTrueUp:
 		return true
 	default:
 		return false
@@ -1096,6 +1198,39 @@ func (e ListAllowancesParamsStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListCancellationsParamsStatus.
+const (
+	ListCancellationsParamsStatusCanceled  ListCancellationsParamsStatus = "canceled"
+	ListCancellationsParamsStatusCompleted ListCancellationsParamsStatus = "completed"
+	ListCancellationsParamsStatusFailed    ListCancellationsParamsStatus = "failed"
+	ListCancellationsParamsStatusOpen      ListCancellationsParamsStatus = "open"
+	ListCancellationsParamsStatusReleasing ListCancellationsParamsStatus = "releasing"
+	ListCancellationsParamsStatusRequested ListCancellationsParamsStatus = "requested"
+	ListCancellationsParamsStatusScheduled ListCancellationsParamsStatus = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the ListCancellationsParamsStatus enum.
+func (e ListCancellationsParamsStatus) Valid() bool {
+	switch e {
+	case ListCancellationsParamsStatusCanceled:
+		return true
+	case ListCancellationsParamsStatusCompleted:
+		return true
+	case ListCancellationsParamsStatusFailed:
+		return true
+	case ListCancellationsParamsStatusOpen:
+		return true
+	case ListCancellationsParamsStatusReleasing:
+		return true
+	case ListCancellationsParamsStatusRequested:
+		return true
+	case ListCancellationsParamsStatusScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListCreditGrantsParamsStatus.
 const (
 	ListCreditGrantsParamsStatusActive   ListCreditGrantsParamsStatus = "active"
@@ -1319,6 +1454,99 @@ type BillingAccountUpdate struct {
 	TaxId             *string `json:"tax_id,omitempty"`
 }
 
+// Cancellation One cancellation of a set of subscriptions of one service, released together at one time.
+//
+//   - `requested`: `immediate`, release has not begun.
+//   - `scheduled`: `period_end`, waiting for `scheduled_at`.
+//   - `releasing`: release has begun; it can no longer be withdrawn.
+//   - `completed`: every subscription has ended and its refund has been made.
+//   - `canceled`: withdrawn before release began; the subscriptions continue.
+//   - `failed`: the service could not carry it out, for the reason in `failure_code`; the
+//     subscriptions continue and can be canceled again.
+type Cancellation struct {
+	CanceledAt  *time.Time `json:"canceled_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	Currency    string     `json:"currency"`
+
+	// ExpectedRefundableAmount The refund confirmed when it was created. Absent when the platform created it.
+	ExpectedRefundableAmount *externalRef0.Money `json:"expected_refundable_amount,omitempty"`
+
+	// FailureCode Present with `failed`. A code of the service that provides the resources, such as a disk
+	// that can only be released with its server. Clients map it to their own wording.
+	FailureCode *string            `json:"failure_code,omitempty"`
+	Id          openapi_types.UUID `json:"id"`
+	Items       []CancellationItem `json:"items"`
+
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// Origin Who asked for it. `project_deletion` means the project was deleted.
+	Origin CancellationOrigin `json:"origin"`
+
+	// ProrationDate For `immediate`, the second the refund is computed as of.
+	ProrationDate *time.Time         `json:"proration_date,omitempty"`
+	RequestedAt   time.Time          `json:"requested_at"`
+	ScheduledAt   *time.Time         `json:"scheduled_at,omitempty"`
+	Status        CancellationStatus `json:"status"`
+}
+
+// CancellationOrigin Who asked for it. `project_deletion` means the project was deleted.
+type CancellationOrigin string
+
+// CancellationStatus defines model for Cancellation.Status.
+type CancellationStatus string
+
+// CancellationCreate defines model for CancellationCreate.
+type CancellationCreate struct {
+	// ExpectedRefundableAmount The `refundable_amount` of the preview. The cancellation is refused when the refund differs.
+	ExpectedRefundableAmount string `json:"expected_refundable_amount"`
+
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// ProrationDate For `immediate`, the `proration_date` of the preview: a whole second, not in the future and
+	// at most ten minutes old. The refund is computed as of it. Now when omitted.
+	ProrationDate *time.Time `json:"proration_date,omitempty"`
+
+	// Reason A note from the account holder. It is kept with the cancellation and not shown elsewhere.
+	Reason *string `json:"reason,omitempty"`
+
+	// SubscriptionIds As in the preview.
+	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
+}
+
+// CancellationItem One subscription of the cancellation.
+type CancellationItem struct {
+	// BalanceAmount Present with `completed`. The part of the refund returned to the account balance.
+	BalanceAmount *externalRef0.Money `json:"balance_amount,omitempty"`
+
+	// CreditAmount Present with `completed`. The part restored to the credit grants that paid.
+	CreditAmount *externalRef0.Money `json:"credit_amount,omitempty"`
+
+	// EffectiveAt When the service ended, as confirmed by the service that provides it.
+	EffectiveAt *time.Time `json:"effective_at,omitempty"`
+
+	// GatewayAmount Present with `completed`. The part returned to the payment method it was paid with.
+	GatewayAmount *externalRef0.Money `json:"gateway_amount,omitempty"`
+
+	// Id The cancellation request of this subscription, the same as `Subscription.cancellation_request.id`.
+	Id               openapi_types.UUID     `json:"id"`
+	PlanId           openapi_types.UUID     `json:"plan_id"`
+	PlanName         string                 `json:"plan_name"`
+	ReleaseStartedAt *time.Time             `json:"release_started_at,omitempty"`
+	Status           CancellationItemStatus `json:"status"`
+	SubscriptionId   openapi_types.UUID     `json:"subscription_id"`
+}
+
+// CancellationItemStatus defines model for CancellationItem.Status.
+type CancellationItemStatus string
+
+// CancellationList defines model for CancellationList.
+type CancellationList struct {
+	Items      []Cancellation `json:"items"`
+	TotalCount *int64         `json:"total_count,omitempty"`
+}
+
 // CancellationPreview defines model for CancellationPreview.
 type CancellationPreview struct {
 	Currency string `json:"currency"`
@@ -1330,9 +1558,192 @@ type CancellationPreview struct {
 	SubscriptionId   openapi_types.UUID `json:"subscription_id"`
 }
 
+// CancellationPreviewRequest defines model for CancellationPreviewRequest.
+type CancellationPreviewRequest struct {
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// SubscriptionIds The subscriptions to end together, all of one service. Every subscription released with a resource must be included.
+	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
+}
+
+// CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now.
+//
+//   - `unused_amount`: before tax, the value of the paid service still unused, whatever the refund
+//     terms say.
+//   - `refundable_amount`: what is returned the way it was paid, including the tax paid on it;
+//     `refund_amount` plus `credit_amount`.
+//   - `refund_amount`: the part returned to the balance or to the payment method.
+//   - `credit_amount`: the part restored to the credit grants that paid.
+//   - `tax_amount`: the tax included in `refundable_amount`.
+//   - `forfeited_amount`: before tax, the part of `unused_amount` the refund terms do not return.
+//
+// Postpaid and one-time subscriptions show zero; usage until release is charged as usual.
+type CancellationRefundPreview struct {
+	// CreditAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	CreditAmount externalRef0.Money `json:"credit_amount"`
+	Currency     string             `json:"currency"`
+
+	// ForfeitedAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	ForfeitedAmount externalRef0.Money              `json:"forfeited_amount"`
+	Items           []CancellationRefundPreviewItem `json:"items"`
+
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// ProrationDate For `immediate`, the second the refund is computed as of. Give it when creating the cancellation.
+	ProrationDate *time.Time `json:"proration_date,omitempty"`
+
+	// RefundAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RefundAmount externalRef0.Money `json:"refund_amount"`
+
+	// RefundableAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RefundableAmount externalRef0.Money `json:"refundable_amount"`
+
+	// ScheduledAt For `period_end`, when release begins, the end of the paid terms.
+	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
+
+	// TaxAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	TaxAmount externalRef0.Money `json:"tax_amount"`
+
+	// UnusedAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnusedAmount externalRef0.Money `json:"unused_amount"`
+}
+
+// CancellationRefundPreviewItem One subscription of the preview. The amounts mean what they mean in the preview.
+type CancellationRefundPreviewItem struct {
+	BillingType CancellationRefundPreviewItemBillingType `json:"billing_type"`
+
+	// CreditAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	CreditAmount externalRef0.Money `json:"credit_amount"`
+
+	// ForfeitedAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	ForfeitedAmount externalRef0.Money `json:"forfeited_amount"`
+	PlanId          openapi_types.UUID `json:"plan_id"`
+	PlanName        string             `json:"plan_name"`
+
+	// Project The project and its current name, for display. Absent for a purchase at account level, and when the project details cannot be read at the moment.
+	Project *externalRef0.NamedIdentity `json:"project,omitempty"`
+
+	// RefundAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RefundAmount externalRef0.Money `json:"refund_amount"`
+
+	// RefundableAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RefundableAmount externalRef0.Money `json:"refundable_amount"`
+	SubscriptionId   openapi_types.UUID `json:"subscription_id"`
+
+	// TaxAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	TaxAmount externalRef0.Money `json:"tax_amount"`
+
+	// UnusedAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnusedAmount externalRef0.Money `json:"unused_amount"`
+}
+
+// CancellationRefundPreviewItemBillingType defines model for CancellationRefundPreviewItem.BillingType.
+type CancellationRefundPreviewItemBillingType string
+
 // CancellationRequest A cancellation request for the original purchase. scheduled_at is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
 type CancellationRequest struct {
-	CanceledAt            *time.Time                `json:"canceled_at,omitempty"`
+	CanceledAt *time.Time `json:"canceled_at,omitempty"`
+
+	// CancellationId The cancellation this request belongs to, with the other subscriptions released together.
+	CancellationId        *openapi_types.UUID       `json:"cancellation_id,omitempty"`
 	CompletedAt           *time.Time                `json:"completed_at,omitempty"`
 	EffectiveAt           *time.Time                `json:"effective_at,omitempty"`
 	FailureCode           *string                   `json:"failure_code,omitempty"`
@@ -2463,7 +2874,7 @@ type Refund struct {
 	// - `provisioning_failed`: the purchase could not be delivered.
 	// - `order_expired`: the order expired after part of it had been paid.
 	// - `order_canceled`: the account holder canceled the order after part of it had been paid.
-	// - `change_canceled`: a scheduled change was withdrawn after it had been paid.
+	// - `change_canceled`: a scheduled change was withdrawn after part of it had been paid.
 	// - `change_expired`: a scheduled change could not take effect before its time passed.
 	// - `subscription_canceled`: the subscription was canceled and its unused value returned under
 	//   its refund terms.
@@ -2529,7 +2940,7 @@ type RefundPolicy string
 //   - `provisioning_failed`: the purchase could not be delivered.
 //   - `order_expired`: the order expired after part of it had been paid.
 //   - `order_canceled`: the account holder canceled the order after part of it had been paid.
-//   - `change_canceled`: a scheduled change was withdrawn after it had been paid.
+//   - `change_canceled`: a scheduled change was withdrawn after part of it had been paid.
 //   - `change_expired`: a scheduled change could not take effect before its time passed.
 //   - `subscription_canceled`: the subscription was canceled and its unused value returned under
 //     its refund terms.
@@ -2981,6 +3392,9 @@ type AccountId = int64
 // AccountIdQuery defines model for AccountIdQuery.
 type AccountIdQuery = int64
 
+// CancellationId defines model for CancellationId.
+type CancellationId = openapi_types.UUID
+
 // CancellationRequestId defines model for CancellationRequestId.
 type CancellationRequestId = openapi_types.UUID
 
@@ -3039,6 +3453,27 @@ type ListBillingAccountsParams struct {
 	// PageSize How many per page, 100 at most.
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
+
+// ListCancellationsParams defines parameters for ListCancellations.
+type ListCancellationsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many per page, 100 at most.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
+	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
+
+	// SubscriptionId Only cancellations that include this subscription.
+	SubscriptionId *openapi_types.UUID `form:"subscription_id,omitempty" json:"subscription_id,omitempty"`
+
+	// Status Only cancellations in this status. `open` means requested, scheduled or releasing.
+	Status *ListCancellationsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// ListCancellationsParamsStatus defines parameters for ListCancellations.
+type ListCancellationsParamsStatus string
 
 // ListCreditGrantsParams defines parameters for ListCreditGrants.
 type ListCreditGrantsParams struct {
@@ -3259,6 +3694,12 @@ type CreateBillingAccountJSONRequestBody = BillingAccountCreate
 // UpdateBillingAccountJSONRequestBody defines body for UpdateBillingAccount for application/json ContentType.
 type UpdateBillingAccountJSONRequestBody = BillingAccountUpdate
 
+// CreateCancellationJSONRequestBody defines body for CreateCancellation for application/json ContentType.
+type CreateCancellationJSONRequestBody = CancellationCreate
+
+// CreateCancellationPreviewJSONRequestBody defines body for CreateCancellationPreview for application/json ContentType.
+type CreateCancellationPreviewJSONRequestBody = CancellationPreviewRequest
+
 // PayInvoiceJSONRequestBody defines body for PayInvoice for application/json ContentType.
 type PayInvoiceJSONRequestBody = PayRequest
 
@@ -3281,6 +3722,8 @@ type PreviewPromotionCodeJSONRequestBody = PromotionCodePreviewRequest
 type SetAutoRenewJSONRequestBody = AutoRenewSet
 
 // CreateCancellationRequestJSONRequestBody defines body for CreateCancellationRequest for application/json ContentType.
+//
+// Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 type CreateCancellationRequestJSONRequestBody = CancellationRequestCreate
 
 // RenewSubscriptionJSONRequestBody defines body for RenewSubscription for application/json ContentType.
@@ -3463,15 +3906,166 @@ type ClientInterface interface {
 
 	// GetCancellationRequest Get cancellation request
 	//
+	// Use get-cancellation.
+	//
 	// Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	GetCancellationRequest(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CancelCancellationRequest Cancel a cancellation request
 	//
 	// Allowed only before release starts. Does not resume a previously suspended subscription.
 	//
+	// Use withdraw-cancellation, which withdraws the whole cancellation.
+	//
 	// Corresponds with POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel (the `CancelCancellationRequest` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CancelCancellationRequest(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListCancellations List cancellations
+	//
+	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
+	//
+	// Corresponds with GET /account/v1/cancellations (the `ListCancellations` operationId).
+	ListCancellations(ctx context.Context, params *ListCancellationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateCancellationWithBody Cancel subscriptions
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it,
+	// such as a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+	// unused value is returned the way it was paid, under the refund terms agreed when each
+	// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+	// amount confirmed here is the amount returned: prepaid service used while the resources are
+	// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+	// resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+	// `immediate` unless its termination terms allow only the end of the paid term and that term has
+	// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+	// time.
+	//
+	// Refused with:
+	// - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+	//   acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+	//   account and currency;
+	// - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	// - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//   `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+	//   both carry `meta.subscription_id`;
+	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//   different times;
+	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+	//   is in progress;
+	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//   `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that
+	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+	// still waiting for payment are canceled along with it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
+	CreateCancellationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateCancellation Cancel subscriptions
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it,
+	// such as a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+	// unused value is returned the way it was paid, under the refund terms agreed when each
+	// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+	// amount confirmed here is the amount returned: prepaid service used while the resources are
+	// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+	// resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+	// `immediate` unless its termination terms allow only the end of the paid term and that term has
+	// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+	// time.
+	//
+	// Refused with:
+	// - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+	//   acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+	//   account and currency;
+	// - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	// - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//   `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+	//   both carry `meta.subscription_id`;
+	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//   different times;
+	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+	//   is in progress;
+	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//   `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that
+	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+	// still waiting for payment are canceled along with it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
+	CreateCancellation(ctx context.Context, body CreateCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateCancellationPreviewWithBody Preview a cancellation
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms
+	// agreed when each was bought. This request does not create a resource: nothing is recorded or
+	// reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
+	CreateCancellationPreviewWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateCancellationPreview Preview a cancellation
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms
+	// agreed when each was bought. This request does not create a resource: nothing is recorded or
+	// reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
+	CreateCancellationPreview(ctx context.Context, body CreateCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCancellation Get a cancellation
+	//
+	// Corresponds with GET /account/v1/cancellations/{cancellationId} (the `GetCancellation` operationId).
+	GetCancellation(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// WithdrawCancellation Withdraw a cancellation
+	//
+	// Withdraws the whole cancellation while none of its resources has begun to be released; the
+	// subscriptions continue as before. After that it is refused with 409
+	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	//
+	// Corresponds with POST /account/v1/cancellations/{cancellationId}/withdraw (the `WithdrawCancellation` operationId).
+	WithdrawCancellation(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCreditGrants List credit grants
 	//
@@ -3846,25 +4440,37 @@ type ClientInterface interface {
 	//
 	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 	//
+	// Use create-cancellation-preview, which previews the subscriptions released together.
+	//
 	// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	PreviewCancellation(ctx context.Context, subscriptionId SubscriptionId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateCancellationRequestWithBody Request subscription cancellation
 	//
 	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
 	//
+	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CreateCancellationRequestWithBody(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateCancellationRequest Request subscription cancellation
 	//
 	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
 	//
+	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CreateCancellationRequest(ctx context.Context, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenewSubscriptionWithBody Renew subscription
@@ -4215,7 +4821,10 @@ func (c *Client) ListPaymentOptions(ctx context.Context, accountId AccountId, re
 
 // GetCancellationRequest Get cancellation request
 //
+// Use get-cancellation.
+//
 // Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *Client) GetCancellationRequest(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCancellationRequestRequest(c.Server, cancellationRequestId)
 	if err != nil {
@@ -4232,9 +4841,225 @@ func (c *Client) GetCancellationRequest(ctx context.Context, cancellationRequest
 //
 // Allowed only before release starts. Does not resume a previously suspended subscription.
 //
+// Use withdraw-cancellation, which withdraws the whole cancellation.
+//
 // Corresponds with POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel (the `CancelCancellationRequest` operationId).
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *Client) CancelCancellationRequest(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelCancellationRequestRequest(c.Server, cancellationRequestId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListCancellations List cancellations
+//
+// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
+//
+// Corresponds with GET /account/v1/cancellations (the `ListCancellations` operationId).
+func (c *Client) ListCancellations(ctx context.Context, params *ListCancellationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCancellationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateCancellationWithBody Cancel subscriptions
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it,
+// such as a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+// unused value is returned the way it was paid, under the refund terms agreed when each
+// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+// amount confirmed here is the amount returned: prepaid service used while the resources are
+// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+// resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+// `immediate` unless its termination terms allow only the end of the paid term and that term has
+// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+// time.
+//
+// Refused with:
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+//     acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+//     account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+//     both carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+//     is in progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that
+// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+// still waiting for payment are canceled along with it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
+func (c *Client) CreateCancellationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCancellationRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateCancellation Cancel subscriptions
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it,
+// such as a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+// unused value is returned the way it was paid, under the refund terms agreed when each
+// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+// amount confirmed here is the amount returned: prepaid service used while the resources are
+// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+// resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+// `immediate` unless its termination terms allow only the end of the paid term and that term has
+// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+// time.
+//
+// Refused with:
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+//     acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+//     account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+//     both carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+//     is in progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that
+// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+// still waiting for payment are canceled along with it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
+func (c *Client) CreateCancellation(ctx context.Context, body CreateCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCancellationRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateCancellationPreviewWithBody Preview a cancellation
+//
+// What canceling these subscriptions together would return, computed now under the refund terms
+// agreed when each was bought. This request does not create a resource: nothing is recorded or
+// reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
+func (c *Client) CreateCancellationPreviewWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCancellationPreviewRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateCancellationPreview Preview a cancellation
+//
+// What canceling these subscriptions together would return, computed now under the refund terms
+// agreed when each was bought. This request does not create a resource: nothing is recorded or
+// reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
+func (c *Client) CreateCancellationPreview(ctx context.Context, body CreateCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateCancellationPreviewRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCancellation Get a cancellation
+//
+// Corresponds with GET /account/v1/cancellations/{cancellationId} (the `GetCancellation` operationId).
+func (c *Client) GetCancellation(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCancellationRequest(c.Server, cancellationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// WithdrawCancellation Withdraw a cancellation
+//
+// Withdraws the whole cancellation while none of its resources has begun to be released; the
+// subscriptions continue as before. After that it is refused with 409
+// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+//
+// Corresponds with POST /account/v1/cancellations/{cancellationId}/withdraw (the `WithdrawCancellation` operationId).
+func (c *Client) WithdrawCancellation(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWithdrawCancellationRequest(c.Server, cancellationId)
 	if err != nil {
 		return nil, err
 	}
@@ -4968,7 +5793,10 @@ func (c *Client) SetAutoRenew(ctx context.Context, subscriptionId SubscriptionId
 //
 // Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 //
+// Use create-cancellation-preview, which previews the subscriptions released together.
+//
 // Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *Client) PreviewCancellation(ctx context.Context, subscriptionId SubscriptionId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPreviewCancellationRequest(c.Server, subscriptionId)
 	if err != nil {
@@ -4985,9 +5813,12 @@ func (c *Client) PreviewCancellation(ctx context.Context, subscriptionId Subscri
 //
 // Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
 //
+// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *Client) CreateCancellationRequestWithBody(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateCancellationRequestRequestWithBody(c.Server, subscriptionId, contentType, body)
 	if err != nil {
@@ -5004,9 +5835,12 @@ func (c *Client) CreateCancellationRequestWithBody(ctx context.Context, subscrip
 //
 // Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
 //
+// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *Client) CreateCancellationRequest(ctx context.Context, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateCancellationRequestRequest(c.Server, subscriptionId, body)
 	if err != nil {
@@ -5743,6 +6577,256 @@ func NewCancelCancellationRequestRequest(server string, cancellationRequestId Ca
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/cancellation-requests/%s/cancel", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListCancellationsRequest constructs an http.Request for the ListCancellations method
+func NewListCancellationsRequest(server string, params *ListCancellationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/cancellations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.BillingAccountId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SubscriptionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "subscription_id", *params.SubscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateCancellationRequest calls the generic CreateCancellation builder with application/json body
+func NewCreateCancellationRequest(server string, body CreateCancellationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateCancellationRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateCancellationRequestWithBody constructs an http.Request for the CreateCancellation method, with any body, and a specified content type
+func NewCreateCancellationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/cancellations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateCancellationPreviewRequest calls the generic CreateCancellationPreview builder with application/json body
+func NewCreateCancellationPreviewRequest(server string, body CreateCancellationPreviewJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateCancellationPreviewRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateCancellationPreviewRequestWithBody constructs an http.Request for the CreateCancellationPreview method, with any body, and a specified content type
+func NewCreateCancellationPreviewRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/cancellations/preview")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetCancellationRequest constructs an http.Request for the GetCancellation method
+func NewGetCancellationRequest(server string, cancellationId CancellationId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "cancellationId", cancellationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/cancellations/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewWithdrawCancellationRequest constructs an http.Request for the WithdrawCancellation method
+func NewWithdrawCancellationRequest(server string, cancellationId CancellationId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "cancellationId", cancellationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/cancellations/%s/withdraw", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8237,19 +9321,176 @@ type ClientWithResponsesInterface interface {
 
 	// GetCancellationRequestWithResponse Get cancellation request
 	//
+	// Use get-cancellation.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	GetCancellationRequestWithResponse(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*GetCancellationRequestResponse, error)
 
 	// CancelCancellationRequestWithResponse Cancel a cancellation request
 	//
 	// Allowed only before release starts. Does not resume a previously suspended subscription.
 	//
+	// Use withdraw-cancellation, which withdraws the whole cancellation.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel (the `CancelCancellationRequest` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CancelCancellationRequestWithResponse(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*CancelCancellationRequestResponse, error)
+
+	// ListCancellationsWithResponse List cancellations
+	//
+	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/cancellations (the `ListCancellations` operationId).
+	ListCancellationsWithResponse(ctx context.Context, params *ListCancellationsParams, reqEditors ...RequestEditorFn) (*ListCancellationsResponse, error)
+
+	// CreateCancellationWithBodyWithResponse Cancel subscriptions
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it,
+	// such as a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+	// unused value is returned the way it was paid, under the refund terms agreed when each
+	// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+	// amount confirmed here is the amount returned: prepaid service used while the resources are
+	// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+	// resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+	// `immediate` unless its termination terms allow only the end of the paid term and that term has
+	// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+	// time.
+	//
+	// Refused with:
+	// - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+	//   acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+	//   account and currency;
+	// - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	// - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//   `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+	//   both carry `meta.subscription_id`;
+	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//   different times;
+	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+	//   is in progress;
+	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//   `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that
+	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+	// still waiting for payment are canceled along with it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
+	CreateCancellationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationResponse, error)
+
+	// CreateCancellationWithResponse Cancel subscriptions
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it,
+	// such as a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+	// unused value is returned the way it was paid, under the refund terms agreed when each
+	// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+	// amount confirmed here is the amount returned: prepaid service used while the resources are
+	// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+	// resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+	// `immediate` unless its termination terms allow only the end of the paid term and that term has
+	// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+	// time.
+	//
+	// Refused with:
+	// - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+	//   acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+	//   account and currency;
+	// - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	// - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//   `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+	//   both carry `meta.subscription_id`;
+	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//   different times;
+	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+	//   is in progress;
+	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//   `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that
+	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+	// still waiting for payment are canceled along with it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
+	CreateCancellationWithResponse(ctx context.Context, body CreateCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationResponse, error)
+
+	// CreateCancellationPreviewWithBodyWithResponse Preview a cancellation
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms
+	// agreed when each was bought. This request does not create a resource: nothing is recorded or
+	// reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
+	CreateCancellationPreviewWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationPreviewResponse, error)
+
+	// CreateCancellationPreviewWithResponse Preview a cancellation
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms
+	// agreed when each was bought. This request does not create a resource: nothing is recorded or
+	// reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
+	CreateCancellationPreviewWithResponse(ctx context.Context, body CreateCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationPreviewResponse, error)
+
+	// GetCancellationWithResponse Get a cancellation
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/cancellations/{cancellationId} (the `GetCancellation` operationId).
+	GetCancellationWithResponse(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*GetCancellationResponse, error)
+
+	// WithdrawCancellationWithResponse Withdraw a cancellation
+	//
+	// Withdraws the whole cancellation while none of its resources has begun to be released; the
+	// subscriptions continue as before. After that it is refused with 409
+	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/cancellations/{cancellationId}/withdraw (the `WithdrawCancellation` operationId).
+	WithdrawCancellationWithResponse(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*WithdrawCancellationResponse, error)
 
 	// ListCreditGrantsWithResponse List credit grants
 	//
@@ -8666,27 +9907,39 @@ type ClientWithResponsesInterface interface {
 	//
 	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 	//
+	// Use create-cancellation-preview, which previews the subscriptions released together.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	PreviewCancellationWithResponse(ctx context.Context, subscriptionId SubscriptionId, reqEditors ...RequestEditorFn) (*PreviewCancellationResponse, error)
 
 	// CreateCancellationRequestWithBodyWithResponse Request subscription cancellation
 	//
 	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
 	//
+	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CreateCancellationRequestWithBodyWithResponse(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationRequestResponse, error)
 
 	// CreateCancellationRequestWithResponse Request subscription cancellation
 	//
 	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
 	//
+	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
+	//
+	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CreateCancellationRequestWithResponse(ctx context.Context, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationRequestResponse, error)
 
 	// RenewSubscriptionWithBodyWithResponse Renew subscription
@@ -9326,6 +10579,253 @@ func (r CancelCancellationRequestResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CancelCancellationRequestResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListCancellationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CancellationList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListCancellationsResponse) GetJSON200() *CancellationList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListCancellationsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListCancellationsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCancellationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCancellationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCancellationsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateCancellationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Cancellation
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Cancellation
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateCancellationResponse) GetJSON200() *Cancellation {
+	return r.JSON200
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateCancellationResponse) GetJSON201() *Cancellation {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateCancellationResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateCancellationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateCancellationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateCancellationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateCancellationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateCancellationPreviewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CancellationRefundPreview
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateCancellationPreviewResponse) GetJSON200() *CancellationRefundPreview {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateCancellationPreviewResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateCancellationPreviewResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateCancellationPreviewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateCancellationPreviewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateCancellationPreviewResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetCancellationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Cancellation
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCancellationResponse) GetJSON200() *Cancellation {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetCancellationResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCancellationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCancellationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCancellationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCancellationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type WithdrawCancellationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Cancellation
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r WithdrawCancellationResponse) GetJSON200() *Cancellation {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WithdrawCancellationResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r WithdrawCancellationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r WithdrawCancellationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r WithdrawCancellationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r WithdrawCancellationResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11387,9 +12887,13 @@ func (c *ClientWithResponses) ListPaymentOptionsWithResponse(ctx context.Context
 
 // GetCancellationRequestWithResponse Get cancellation request
 //
+// Use get-cancellation.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
+//
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *ClientWithResponses) GetCancellationRequestWithResponse(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*GetCancellationRequestResponse, error) {
 	rsp, err := c.GetCancellationRequest(ctx, cancellationRequestId, reqEditors...)
 	if err != nil {
@@ -11402,15 +12906,210 @@ func (c *ClientWithResponses) GetCancellationRequestWithResponse(ctx context.Con
 //
 // Allowed only before release starts. Does not resume a previously suspended subscription.
 //
+// Use withdraw-cancellation, which withdraws the whole cancellation.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel (the `CancelCancellationRequest` operationId).
+//
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *ClientWithResponses) CancelCancellationRequestWithResponse(ctx context.Context, cancellationRequestId CancellationRequestId, reqEditors ...RequestEditorFn) (*CancelCancellationRequestResponse, error) {
 	rsp, err := c.CancelCancellationRequest(ctx, cancellationRequestId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCancelCancellationRequestResponse(rsp)
+}
+
+// ListCancellationsWithResponse List cancellations
+//
+// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/cancellations (the `ListCancellations` operationId).
+func (c *ClientWithResponses) ListCancellationsWithResponse(ctx context.Context, params *ListCancellationsParams, reqEditors ...RequestEditorFn) (*ListCancellationsResponse, error) {
+	rsp, err := c.ListCancellations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCancellationsResponse(rsp)
+}
+
+// CreateCancellationWithBodyWithResponse Cancel subscriptions
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it,
+// such as a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+// unused value is returned the way it was paid, under the refund terms agreed when each
+// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+// amount confirmed here is the amount returned: prepaid service used while the resources are
+// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+// resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+// `immediate` unless its termination terms allow only the end of the paid term and that term has
+// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+// time.
+//
+// Refused with:
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+//     acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+//     account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+//     both carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+//     is in progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that
+// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+// still waiting for payment are canceled along with it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
+func (c *ClientWithResponses) CreateCancellationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationResponse, error) {
+	rsp, err := c.CreateCancellationWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateCancellationResponse(rsp)
+}
+
+// CreateCancellationWithResponse Cancel subscriptions
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it,
+// such as a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+// unused value is returned the way it was paid, under the refund terms agreed when each
+// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+// amount confirmed here is the amount returned: prepaid service used while the resources are
+// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+// resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+// `immediate` unless its termination terms allow only the end of the paid term and that term has
+// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+// time.
+//
+// Refused with:
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+//     acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+//     account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+//     both carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+//     is in progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that
+// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+// still waiting for payment are canceled along with it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
+func (c *ClientWithResponses) CreateCancellationWithResponse(ctx context.Context, body CreateCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationResponse, error) {
+	rsp, err := c.CreateCancellation(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateCancellationResponse(rsp)
+}
+
+// CreateCancellationPreviewWithBodyWithResponse Preview a cancellation
+//
+// What canceling these subscriptions together would return, computed now under the refund terms
+// agreed when each was bought. This request does not create a resource: nothing is recorded or
+// reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
+func (c *ClientWithResponses) CreateCancellationPreviewWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationPreviewResponse, error) {
+	rsp, err := c.CreateCancellationPreviewWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateCancellationPreviewResponse(rsp)
+}
+
+// CreateCancellationPreviewWithResponse Preview a cancellation
+//
+// What canceling these subscriptions together would return, computed now under the refund terms
+// agreed when each was bought. This request does not create a resource: nothing is recorded or
+// reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
+func (c *ClientWithResponses) CreateCancellationPreviewWithResponse(ctx context.Context, body CreateCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationPreviewResponse, error) {
+	rsp, err := c.CreateCancellationPreview(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateCancellationPreviewResponse(rsp)
+}
+
+// GetCancellationWithResponse Get a cancellation
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/cancellations/{cancellationId} (the `GetCancellation` operationId).
+func (c *ClientWithResponses) GetCancellationWithResponse(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*GetCancellationResponse, error) {
+	rsp, err := c.GetCancellation(ctx, cancellationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCancellationResponse(rsp)
+}
+
+// WithdrawCancellationWithResponse Withdraw a cancellation
+//
+// Withdraws the whole cancellation while none of its resources has begun to be released; the
+// subscriptions continue as before. After that it is refused with 409
+// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/cancellations/{cancellationId}/withdraw (the `WithdrawCancellation` operationId).
+func (c *ClientWithResponses) WithdrawCancellationWithResponse(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*WithdrawCancellationResponse, error) {
+	rsp, err := c.WithdrawCancellation(ctx, cancellationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWithdrawCancellationResponse(rsp)
 }
 
 // ListCreditGrantsWithResponse List credit grants
@@ -12038,9 +13737,13 @@ func (c *ClientWithResponses) SetAutoRenewWithResponse(ctx context.Context, subs
 //
 // Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 //
+// Use create-cancellation-preview, which previews the subscriptions released together.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
+//
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *ClientWithResponses) PreviewCancellationWithResponse(ctx context.Context, subscriptionId SubscriptionId, reqEditors ...RequestEditorFn) (*PreviewCancellationResponse, error) {
 	rsp, err := c.PreviewCancellation(ctx, subscriptionId, reqEditors...)
 	if err != nil {
@@ -12053,9 +13756,13 @@ func (c *ClientWithResponses) PreviewCancellationWithResponse(ctx context.Contex
 //
 // Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
 //
+// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
+//
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *ClientWithResponses) CreateCancellationRequestWithBodyWithResponse(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationRequestResponse, error) {
 	rsp, err := c.CreateCancellationRequestWithBody(ctx, subscriptionId, contentType, body, reqEditors...)
 	if err != nil {
@@ -12068,9 +13775,12 @@ func (c *ClientWithResponses) CreateCancellationRequestWithBodyWithResponse(ctx 
 //
 // Ends the whole subscription under confirmed terms. The request does not itself stop service; actual end is confirmed by the owning service. Refund processing is separate.
 //
+// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests (the `CreateCancellationRequest` operationId).
+// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 func (c *ClientWithResponses) CreateCancellationRequestWithResponse(ctx context.Context, subscriptionId SubscriptionId, body CreateCancellationRequestJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationRequestResponse, error) {
 	rsp, err := c.CreateCancellationRequest(ctx, subscriptionId, body, reqEditors...)
 	if err != nil {
@@ -12626,6 +14336,178 @@ func ParseCancelCancellationRequestResponse(rsp *http.Response) (*CancelCancella
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest CancellationRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListCancellationsResponse parses an HTTP response from a ListCancellationsWithResponse call
+func ParseListCancellationsResponse(rsp *http.Response) (*ListCancellationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCancellationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CancellationList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateCancellationResponse parses an HTTP response from a CreateCancellationWithResponse call
+func ParseCreateCancellationResponse(rsp *http.Response) (*CreateCancellationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateCancellationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Cancellation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Cancellation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateCancellationPreviewResponse parses an HTTP response from a CreateCancellationPreviewWithResponse call
+func ParseCreateCancellationPreviewResponse(rsp *http.Response) (*CreateCancellationPreviewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateCancellationPreviewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CancellationRefundPreview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetCancellationResponse parses an HTTP response from a GetCancellationWithResponse call
+func ParseGetCancellationResponse(rsp *http.Response) (*GetCancellationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCancellationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Cancellation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseWithdrawCancellationResponse parses an HTTP response from a WithdrawCancellationWithResponse call
+func ParseWithdrawCancellationResponse(rsp *http.Response) (*WithdrawCancellationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &WithdrawCancellationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Cancellation
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

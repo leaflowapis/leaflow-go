@@ -1066,6 +1066,496 @@ func (s *BillingAccountUpdate) SetTaxID(val OptString) {
 	s.TaxID = val
 }
 
+// One cancellation of a set of subscriptions of one service, released together at one time.
+//
+//   - `requested`: `immediate`, release has not begun.
+//   - `scheduled`: `period_end`, waiting for `scheduled_at`.
+//   - `releasing`: release has begun; it can no longer be withdrawn.
+//   - `completed`: every subscription has ended and its refund has been made.
+//   - `canceled`: withdrawn before release began; the subscriptions continue.
+//   - `failed`: the service could not carry it out, for the reason in `failure_code`; the subscriptions
+//     continue and can be canceled again.
+//
+// Ref: #/components/schemas/Cancellation
+type Cancellation struct {
+	ID          uuid.UUID          `json:"id"`
+	Status      CancellationStatus `json:"status"`
+	Mode        TerminationPolicy  `json:"mode"`
+	ScheduledAt OptDateTime        `json:"scheduled_at"`
+	// For `immediate`, the second the refund is computed as of.
+	ProrationDate OptDateTime `json:"proration_date"`
+	// Who asked for it. `project_deletion` means the project was deleted.
+	Origin   CancellationOrigin `json:"origin"`
+	Currency string             `json:"currency"`
+	// The refund confirmed when it was created. Absent when the platform created it.
+	ExpectedRefundableAmount OptMoney `json:"expected_refundable_amount"`
+	// Present with `failed`. A code of the service that provides the resources, such as a disk that can
+	// only be released with its server. Clients map it to their own wording.
+	FailureCode OptString          `json:"failure_code"`
+	RequestedAt time.Time          `json:"requested_at"`
+	CompletedAt OptDateTime        `json:"completed_at"`
+	CanceledAt  OptDateTime        `json:"canceled_at"`
+	Items       []CancellationItem `json:"items"`
+}
+
+// GetID returns the value of ID.
+func (s *Cancellation) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetStatus returns the value of Status.
+func (s *Cancellation) GetStatus() CancellationStatus {
+	return s.Status
+}
+
+// GetMode returns the value of Mode.
+func (s *Cancellation) GetMode() TerminationPolicy {
+	return s.Mode
+}
+
+// GetScheduledAt returns the value of ScheduledAt.
+func (s *Cancellation) GetScheduledAt() OptDateTime {
+	return s.ScheduledAt
+}
+
+// GetProrationDate returns the value of ProrationDate.
+func (s *Cancellation) GetProrationDate() OptDateTime {
+	return s.ProrationDate
+}
+
+// GetOrigin returns the value of Origin.
+func (s *Cancellation) GetOrigin() CancellationOrigin {
+	return s.Origin
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Cancellation) GetCurrency() string {
+	return s.Currency
+}
+
+// GetExpectedRefundableAmount returns the value of ExpectedRefundableAmount.
+func (s *Cancellation) GetExpectedRefundableAmount() OptMoney {
+	return s.ExpectedRefundableAmount
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *Cancellation) GetFailureCode() OptString {
+	return s.FailureCode
+}
+
+// GetRequestedAt returns the value of RequestedAt.
+func (s *Cancellation) GetRequestedAt() time.Time {
+	return s.RequestedAt
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *Cancellation) GetCompletedAt() OptDateTime {
+	return s.CompletedAt
+}
+
+// GetCanceledAt returns the value of CanceledAt.
+func (s *Cancellation) GetCanceledAt() OptDateTime {
+	return s.CanceledAt
+}
+
+// GetItems returns the value of Items.
+func (s *Cancellation) GetItems() []CancellationItem {
+	return s.Items
+}
+
+// SetID sets the value of ID.
+func (s *Cancellation) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Cancellation) SetStatus(val CancellationStatus) {
+	s.Status = val
+}
+
+// SetMode sets the value of Mode.
+func (s *Cancellation) SetMode(val TerminationPolicy) {
+	s.Mode = val
+}
+
+// SetScheduledAt sets the value of ScheduledAt.
+func (s *Cancellation) SetScheduledAt(val OptDateTime) {
+	s.ScheduledAt = val
+}
+
+// SetProrationDate sets the value of ProrationDate.
+func (s *Cancellation) SetProrationDate(val OptDateTime) {
+	s.ProrationDate = val
+}
+
+// SetOrigin sets the value of Origin.
+func (s *Cancellation) SetOrigin(val CancellationOrigin) {
+	s.Origin = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Cancellation) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetExpectedRefundableAmount sets the value of ExpectedRefundableAmount.
+func (s *Cancellation) SetExpectedRefundableAmount(val OptMoney) {
+	s.ExpectedRefundableAmount = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *Cancellation) SetFailureCode(val OptString) {
+	s.FailureCode = val
+}
+
+// SetRequestedAt sets the value of RequestedAt.
+func (s *Cancellation) SetRequestedAt(val time.Time) {
+	s.RequestedAt = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *Cancellation) SetCompletedAt(val OptDateTime) {
+	s.CompletedAt = val
+}
+
+// SetCanceledAt sets the value of CanceledAt.
+func (s *Cancellation) SetCanceledAt(val OptDateTime) {
+	s.CanceledAt = val
+}
+
+// SetItems sets the value of Items.
+func (s *Cancellation) SetItems(val []CancellationItem) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/CancellationCreate
+type CancellationCreate struct {
+	// As in the preview.
+	SubscriptionIds []uuid.UUID       `json:"subscription_ids"`
+	Mode            TerminationPolicy `json:"mode"`
+	// For `immediate`, the `proration_date` of the preview: a whole second, not in the future and at most
+	// ten minutes old. The refund is computed as of it. Now when omitted.
+	ProrationDate OptDateTime `json:"proration_date"`
+	// The `refundable_amount` of the preview. The cancellation is refused when the refund differs.
+	ExpectedRefundableAmount string `json:"expected_refundable_amount"`
+	// A note from the account holder. It is kept with the cancellation and not shown elsewhere.
+	Reason OptString `json:"reason"`
+}
+
+// GetSubscriptionIds returns the value of SubscriptionIds.
+func (s *CancellationCreate) GetSubscriptionIds() []uuid.UUID {
+	return s.SubscriptionIds
+}
+
+// GetMode returns the value of Mode.
+func (s *CancellationCreate) GetMode() TerminationPolicy {
+	return s.Mode
+}
+
+// GetProrationDate returns the value of ProrationDate.
+func (s *CancellationCreate) GetProrationDate() OptDateTime {
+	return s.ProrationDate
+}
+
+// GetExpectedRefundableAmount returns the value of ExpectedRefundableAmount.
+func (s *CancellationCreate) GetExpectedRefundableAmount() string {
+	return s.ExpectedRefundableAmount
+}
+
+// GetReason returns the value of Reason.
+func (s *CancellationCreate) GetReason() OptString {
+	return s.Reason
+}
+
+// SetSubscriptionIds sets the value of SubscriptionIds.
+func (s *CancellationCreate) SetSubscriptionIds(val []uuid.UUID) {
+	s.SubscriptionIds = val
+}
+
+// SetMode sets the value of Mode.
+func (s *CancellationCreate) SetMode(val TerminationPolicy) {
+	s.Mode = val
+}
+
+// SetProrationDate sets the value of ProrationDate.
+func (s *CancellationCreate) SetProrationDate(val OptDateTime) {
+	s.ProrationDate = val
+}
+
+// SetExpectedRefundableAmount sets the value of ExpectedRefundableAmount.
+func (s *CancellationCreate) SetExpectedRefundableAmount(val string) {
+	s.ExpectedRefundableAmount = val
+}
+
+// SetReason sets the value of Reason.
+func (s *CancellationCreate) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// One subscription of the cancellation.
+// Ref: #/components/schemas/CancellationItem
+type CancellationItem struct {
+	// The cancellation request of this subscription, the same as `Subscription.cancellation_request.id`.
+	ID               uuid.UUID              `json:"id"`
+	SubscriptionID   uuid.UUID              `json:"subscription_id"`
+	PlanID           uuid.UUID              `json:"plan_id"`
+	PlanName         string                 `json:"plan_name"`
+	Status           CancellationItemStatus `json:"status"`
+	ReleaseStartedAt OptDateTime            `json:"release_started_at"`
+	// When the service ended, as confirmed by the service that provides it.
+	EffectiveAt OptDateTime `json:"effective_at"`
+	// Present with `completed`. The part of the refund returned to the account balance.
+	BalanceAmount OptMoney `json:"balance_amount"`
+	// Present with `completed`. The part restored to the credit grants that paid.
+	CreditAmount OptMoney `json:"credit_amount"`
+	// Present with `completed`. The part returned to the payment method it was paid with.
+	GatewayAmount OptMoney `json:"gateway_amount"`
+}
+
+// GetID returns the value of ID.
+func (s *CancellationItem) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *CancellationItem) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *CancellationItem) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *CancellationItem) GetPlanName() string {
+	return s.PlanName
+}
+
+// GetStatus returns the value of Status.
+func (s *CancellationItem) GetStatus() CancellationItemStatus {
+	return s.Status
+}
+
+// GetReleaseStartedAt returns the value of ReleaseStartedAt.
+func (s *CancellationItem) GetReleaseStartedAt() OptDateTime {
+	return s.ReleaseStartedAt
+}
+
+// GetEffectiveAt returns the value of EffectiveAt.
+func (s *CancellationItem) GetEffectiveAt() OptDateTime {
+	return s.EffectiveAt
+}
+
+// GetBalanceAmount returns the value of BalanceAmount.
+func (s *CancellationItem) GetBalanceAmount() OptMoney {
+	return s.BalanceAmount
+}
+
+// GetCreditAmount returns the value of CreditAmount.
+func (s *CancellationItem) GetCreditAmount() OptMoney {
+	return s.CreditAmount
+}
+
+// GetGatewayAmount returns the value of GatewayAmount.
+func (s *CancellationItem) GetGatewayAmount() OptMoney {
+	return s.GatewayAmount
+}
+
+// SetID sets the value of ID.
+func (s *CancellationItem) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *CancellationItem) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *CancellationItem) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *CancellationItem) SetPlanName(val string) {
+	s.PlanName = val
+}
+
+// SetStatus sets the value of Status.
+func (s *CancellationItem) SetStatus(val CancellationItemStatus) {
+	s.Status = val
+}
+
+// SetReleaseStartedAt sets the value of ReleaseStartedAt.
+func (s *CancellationItem) SetReleaseStartedAt(val OptDateTime) {
+	s.ReleaseStartedAt = val
+}
+
+// SetEffectiveAt sets the value of EffectiveAt.
+func (s *CancellationItem) SetEffectiveAt(val OptDateTime) {
+	s.EffectiveAt = val
+}
+
+// SetBalanceAmount sets the value of BalanceAmount.
+func (s *CancellationItem) SetBalanceAmount(val OptMoney) {
+	s.BalanceAmount = val
+}
+
+// SetCreditAmount sets the value of CreditAmount.
+func (s *CancellationItem) SetCreditAmount(val OptMoney) {
+	s.CreditAmount = val
+}
+
+// SetGatewayAmount sets the value of GatewayAmount.
+func (s *CancellationItem) SetGatewayAmount(val OptMoney) {
+	s.GatewayAmount = val
+}
+
+type CancellationItemStatus string
+
+const (
+	CancellationItemStatusRequested CancellationItemStatus = "requested"
+	CancellationItemStatusScheduled CancellationItemStatus = "scheduled"
+	CancellationItemStatusReleasing CancellationItemStatus = "releasing"
+	CancellationItemStatusCompleted CancellationItemStatus = "completed"
+	CancellationItemStatusCanceled  CancellationItemStatus = "canceled"
+	CancellationItemStatusFailed    CancellationItemStatus = "failed"
+)
+
+// AllValues returns all CancellationItemStatus values.
+func (CancellationItemStatus) AllValues() []CancellationItemStatus {
+	return []CancellationItemStatus{
+		CancellationItemStatusRequested,
+		CancellationItemStatusScheduled,
+		CancellationItemStatusReleasing,
+		CancellationItemStatusCompleted,
+		CancellationItemStatusCanceled,
+		CancellationItemStatusFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationItemStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationItemStatusRequested:
+		return []byte(s), nil
+	case CancellationItemStatusScheduled:
+		return []byte(s), nil
+	case CancellationItemStatusReleasing:
+		return []byte(s), nil
+	case CancellationItemStatusCompleted:
+		return []byte(s), nil
+	case CancellationItemStatusCanceled:
+		return []byte(s), nil
+	case CancellationItemStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationItemStatus) UnmarshalText(data []byte) error {
+	switch CancellationItemStatus(data) {
+	case CancellationItemStatusRequested:
+		*s = CancellationItemStatusRequested
+		return nil
+	case CancellationItemStatusScheduled:
+		*s = CancellationItemStatusScheduled
+		return nil
+	case CancellationItemStatusReleasing:
+		*s = CancellationItemStatusReleasing
+		return nil
+	case CancellationItemStatusCompleted:
+		*s = CancellationItemStatusCompleted
+		return nil
+	case CancellationItemStatusCanceled:
+		*s = CancellationItemStatusCanceled
+		return nil
+	case CancellationItemStatusFailed:
+		*s = CancellationItemStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/CancellationList
+type CancellationList struct {
+	Items      []Cancellation `json:"items"`
+	TotalCount OptInt64       `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *CancellationList) GetItems() []Cancellation {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CancellationList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *CancellationList) SetItems(val []Cancellation) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CancellationList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// Who asked for it. `project_deletion` means the project was deleted.
+type CancellationOrigin string
+
+const (
+	CancellationOriginCustomer        CancellationOrigin = "customer"
+	CancellationOriginOperator        CancellationOrigin = "operator"
+	CancellationOriginProjectDeletion CancellationOrigin = "project_deletion"
+)
+
+// AllValues returns all CancellationOrigin values.
+func (CancellationOrigin) AllValues() []CancellationOrigin {
+	return []CancellationOrigin{
+		CancellationOriginCustomer,
+		CancellationOriginOperator,
+		CancellationOriginProjectDeletion,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationOrigin) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationOriginCustomer:
+		return []byte(s), nil
+	case CancellationOriginOperator:
+		return []byte(s), nil
+	case CancellationOriginProjectDeletion:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationOrigin) UnmarshalText(data []byte) error {
+	switch CancellationOrigin(data) {
+	case CancellationOriginCustomer:
+		*s = CancellationOriginCustomer
+		return nil
+	case CancellationOriginOperator:
+		*s = CancellationOriginOperator
+		return nil
+	case CancellationOriginProjectDeletion:
+		*s = CancellationOriginProjectDeletion
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/CancellationPreview
 type CancellationPreview struct {
 	SubscriptionID   uuid.UUID         `json:"subscription_id"`
@@ -1125,11 +1615,356 @@ func (s *CancellationPreview) SetCurrency(val string) {
 	s.Currency = val
 }
 
+// Ref: #/components/schemas/CancellationPreviewRequest
+type CancellationPreviewRequest struct {
+	// The subscriptions to end together, all of one service. Every subscription released with a resource
+	// must be included.
+	SubscriptionIds []uuid.UUID       `json:"subscription_ids"`
+	Mode            TerminationPolicy `json:"mode"`
+}
+
+// GetSubscriptionIds returns the value of SubscriptionIds.
+func (s *CancellationPreviewRequest) GetSubscriptionIds() []uuid.UUID {
+	return s.SubscriptionIds
+}
+
+// GetMode returns the value of Mode.
+func (s *CancellationPreviewRequest) GetMode() TerminationPolicy {
+	return s.Mode
+}
+
+// SetSubscriptionIds sets the value of SubscriptionIds.
+func (s *CancellationPreviewRequest) SetSubscriptionIds(val []uuid.UUID) {
+	s.SubscriptionIds = val
+}
+
+// SetMode sets the value of Mode.
+func (s *CancellationPreviewRequest) SetMode(val TerminationPolicy) {
+	s.Mode = val
+}
+
+// What the cancellation would return, subscription by subscription and in total, as of now.
+//
+//   - `unused_amount`: before tax, the value of the paid service still unused, whatever the refund
+//     terms say.
+//   - `refundable_amount`: what is returned the way it was paid, including the tax paid on it;
+//     `refund_amount` plus `credit_amount`.
+//   - `refund_amount`: the part returned to the balance or to the payment method.
+//   - `credit_amount`: the part restored to the credit grants that paid.
+//   - `tax_amount`: the tax included in `refundable_amount`.
+//   - `forfeited_amount`: before tax, the part of `unused_amount` the refund terms do not return.
+//
+// Postpaid and one-time subscriptions show zero; usage until release is charged as usual.
+// Ref: #/components/schemas/CancellationRefundPreview
+type CancellationRefundPreview struct {
+	Mode TerminationPolicy `json:"mode"`
+	// For `period_end`, when release begins, the end of the paid terms.
+	ScheduledAt OptDateTime `json:"scheduled_at"`
+	// For `immediate`, the second the refund is computed as of. Give it when creating the cancellation.
+	ProrationDate    OptDateTime                     `json:"proration_date"`
+	Currency         string                          `json:"currency"`
+	UnusedAmount     Money                           `json:"unused_amount"`
+	RefundableAmount Money                           `json:"refundable_amount"`
+	RefundAmount     Money                           `json:"refund_amount"`
+	CreditAmount     Money                           `json:"credit_amount"`
+	TaxAmount        Money                           `json:"tax_amount"`
+	ForfeitedAmount  Money                           `json:"forfeited_amount"`
+	Items            []CancellationRefundPreviewItem `json:"items"`
+}
+
+// GetMode returns the value of Mode.
+func (s *CancellationRefundPreview) GetMode() TerminationPolicy {
+	return s.Mode
+}
+
+// GetScheduledAt returns the value of ScheduledAt.
+func (s *CancellationRefundPreview) GetScheduledAt() OptDateTime {
+	return s.ScheduledAt
+}
+
+// GetProrationDate returns the value of ProrationDate.
+func (s *CancellationRefundPreview) GetProrationDate() OptDateTime {
+	return s.ProrationDate
+}
+
+// GetCurrency returns the value of Currency.
+func (s *CancellationRefundPreview) GetCurrency() string {
+	return s.Currency
+}
+
+// GetUnusedAmount returns the value of UnusedAmount.
+func (s *CancellationRefundPreview) GetUnusedAmount() Money {
+	return s.UnusedAmount
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *CancellationRefundPreview) GetRefundableAmount() Money {
+	return s.RefundableAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *CancellationRefundPreview) GetRefundAmount() Money {
+	return s.RefundAmount
+}
+
+// GetCreditAmount returns the value of CreditAmount.
+func (s *CancellationRefundPreview) GetCreditAmount() Money {
+	return s.CreditAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *CancellationRefundPreview) GetTaxAmount() Money {
+	return s.TaxAmount
+}
+
+// GetForfeitedAmount returns the value of ForfeitedAmount.
+func (s *CancellationRefundPreview) GetForfeitedAmount() Money {
+	return s.ForfeitedAmount
+}
+
+// GetItems returns the value of Items.
+func (s *CancellationRefundPreview) GetItems() []CancellationRefundPreviewItem {
+	return s.Items
+}
+
+// SetMode sets the value of Mode.
+func (s *CancellationRefundPreview) SetMode(val TerminationPolicy) {
+	s.Mode = val
+}
+
+// SetScheduledAt sets the value of ScheduledAt.
+func (s *CancellationRefundPreview) SetScheduledAt(val OptDateTime) {
+	s.ScheduledAt = val
+}
+
+// SetProrationDate sets the value of ProrationDate.
+func (s *CancellationRefundPreview) SetProrationDate(val OptDateTime) {
+	s.ProrationDate = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *CancellationRefundPreview) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetUnusedAmount sets the value of UnusedAmount.
+func (s *CancellationRefundPreview) SetUnusedAmount(val Money) {
+	s.UnusedAmount = val
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *CancellationRefundPreview) SetRefundableAmount(val Money) {
+	s.RefundableAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *CancellationRefundPreview) SetRefundAmount(val Money) {
+	s.RefundAmount = val
+}
+
+// SetCreditAmount sets the value of CreditAmount.
+func (s *CancellationRefundPreview) SetCreditAmount(val Money) {
+	s.CreditAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *CancellationRefundPreview) SetTaxAmount(val Money) {
+	s.TaxAmount = val
+}
+
+// SetForfeitedAmount sets the value of ForfeitedAmount.
+func (s *CancellationRefundPreview) SetForfeitedAmount(val Money) {
+	s.ForfeitedAmount = val
+}
+
+// SetItems sets the value of Items.
+func (s *CancellationRefundPreview) SetItems(val []CancellationRefundPreviewItem) {
+	s.Items = val
+}
+
+// One subscription of the preview. The amounts mean what they mean in the preview.
+// Ref: #/components/schemas/CancellationRefundPreviewItem
+type CancellationRefundPreviewItem struct {
+	SubscriptionID uuid.UUID `json:"subscription_id"`
+	PlanID         uuid.UUID `json:"plan_id"`
+	PlanName       string    `json:"plan_name"`
+	// The project and its current name, for display. Absent for a purchase at account level, and when the
+	// project details cannot be read at the moment.
+	Project          OptNilNamedIdentity                      `json:"project"`
+	BillingType      CancellationRefundPreviewItemBillingType `json:"billing_type"`
+	UnusedAmount     Money                                    `json:"unused_amount"`
+	RefundableAmount Money                                    `json:"refundable_amount"`
+	RefundAmount     Money                                    `json:"refund_amount"`
+	CreditAmount     Money                                    `json:"credit_amount"`
+	TaxAmount        Money                                    `json:"tax_amount"`
+	ForfeitedAmount  Money                                    `json:"forfeited_amount"`
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *CancellationRefundPreviewItem) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *CancellationRefundPreviewItem) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *CancellationRefundPreviewItem) GetPlanName() string {
+	return s.PlanName
+}
+
+// GetProject returns the value of Project.
+func (s *CancellationRefundPreviewItem) GetProject() OptNilNamedIdentity {
+	return s.Project
+}
+
+// GetBillingType returns the value of BillingType.
+func (s *CancellationRefundPreviewItem) GetBillingType() CancellationRefundPreviewItemBillingType {
+	return s.BillingType
+}
+
+// GetUnusedAmount returns the value of UnusedAmount.
+func (s *CancellationRefundPreviewItem) GetUnusedAmount() Money {
+	return s.UnusedAmount
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *CancellationRefundPreviewItem) GetRefundableAmount() Money {
+	return s.RefundableAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *CancellationRefundPreviewItem) GetRefundAmount() Money {
+	return s.RefundAmount
+}
+
+// GetCreditAmount returns the value of CreditAmount.
+func (s *CancellationRefundPreviewItem) GetCreditAmount() Money {
+	return s.CreditAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *CancellationRefundPreviewItem) GetTaxAmount() Money {
+	return s.TaxAmount
+}
+
+// GetForfeitedAmount returns the value of ForfeitedAmount.
+func (s *CancellationRefundPreviewItem) GetForfeitedAmount() Money {
+	return s.ForfeitedAmount
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *CancellationRefundPreviewItem) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *CancellationRefundPreviewItem) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *CancellationRefundPreviewItem) SetPlanName(val string) {
+	s.PlanName = val
+}
+
+// SetProject sets the value of Project.
+func (s *CancellationRefundPreviewItem) SetProject(val OptNilNamedIdentity) {
+	s.Project = val
+}
+
+// SetBillingType sets the value of BillingType.
+func (s *CancellationRefundPreviewItem) SetBillingType(val CancellationRefundPreviewItemBillingType) {
+	s.BillingType = val
+}
+
+// SetUnusedAmount sets the value of UnusedAmount.
+func (s *CancellationRefundPreviewItem) SetUnusedAmount(val Money) {
+	s.UnusedAmount = val
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *CancellationRefundPreviewItem) SetRefundableAmount(val Money) {
+	s.RefundableAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *CancellationRefundPreviewItem) SetRefundAmount(val Money) {
+	s.RefundAmount = val
+}
+
+// SetCreditAmount sets the value of CreditAmount.
+func (s *CancellationRefundPreviewItem) SetCreditAmount(val Money) {
+	s.CreditAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *CancellationRefundPreviewItem) SetTaxAmount(val Money) {
+	s.TaxAmount = val
+}
+
+// SetForfeitedAmount sets the value of ForfeitedAmount.
+func (s *CancellationRefundPreviewItem) SetForfeitedAmount(val Money) {
+	s.ForfeitedAmount = val
+}
+
+type CancellationRefundPreviewItemBillingType string
+
+const (
+	CancellationRefundPreviewItemBillingTypePostpaid CancellationRefundPreviewItemBillingType = "postpaid"
+	CancellationRefundPreviewItemBillingTypePrepaid  CancellationRefundPreviewItemBillingType = "prepaid"
+	CancellationRefundPreviewItemBillingTypeOneTime  CancellationRefundPreviewItemBillingType = "one_time"
+)
+
+// AllValues returns all CancellationRefundPreviewItemBillingType values.
+func (CancellationRefundPreviewItemBillingType) AllValues() []CancellationRefundPreviewItemBillingType {
+	return []CancellationRefundPreviewItemBillingType{
+		CancellationRefundPreviewItemBillingTypePostpaid,
+		CancellationRefundPreviewItemBillingTypePrepaid,
+		CancellationRefundPreviewItemBillingTypeOneTime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationRefundPreviewItemBillingType) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationRefundPreviewItemBillingTypePostpaid:
+		return []byte(s), nil
+	case CancellationRefundPreviewItemBillingTypePrepaid:
+		return []byte(s), nil
+	case CancellationRefundPreviewItemBillingTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationRefundPreviewItemBillingType) UnmarshalText(data []byte) error {
+	switch CancellationRefundPreviewItemBillingType(data) {
+	case CancellationRefundPreviewItemBillingTypePostpaid:
+		*s = CancellationRefundPreviewItemBillingTypePostpaid
+		return nil
+	case CancellationRefundPreviewItemBillingTypePrepaid:
+		*s = CancellationRefundPreviewItemBillingTypePrepaid
+		return nil
+	case CancellationRefundPreviewItemBillingTypeOneTime:
+		*s = CancellationRefundPreviewItemBillingTypeOneTime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // A cancellation request for the original purchase. scheduled_at is the intended time; effective_at is
 // the confirmed end of service. The request alone does not stop metering or issue a refund.
 // Ref: #/components/schemas/CancellationRequest
 type CancellationRequest struct {
-	Reason                OptString                 `json:"reason"`
+	Reason OptString `json:"reason"`
+	// The cancellation this request belongs to, with the other subscriptions released together.
+	CancellationID        OptUUID                   `json:"cancellation_id"`
 	ID                    uuid.UUID                 `json:"id"`
 	SubscriptionID        uuid.UUID                 `json:"subscription_id"`
 	Status                CancellationRequestStatus `json:"status"`
@@ -1148,6 +1983,11 @@ type CancellationRequest struct {
 // GetReason returns the value of Reason.
 func (s *CancellationRequest) GetReason() OptString {
 	return s.Reason
+}
+
+// GetCancellationID returns the value of CancellationID.
+func (s *CancellationRequest) GetCancellationID() OptUUID {
+	return s.CancellationID
 }
 
 // GetID returns the value of ID.
@@ -1218,6 +2058,11 @@ func (s *CancellationRequest) GetFailureReason() OptString {
 // SetReason sets the value of Reason.
 func (s *CancellationRequest) SetReason(val OptString) {
 	s.Reason = val
+}
+
+// SetCancellationID sets the value of CancellationID.
+func (s *CancellationRequest) SetCancellationID(val OptUUID) {
+	s.CancellationID = val
 }
 
 // SetID sets the value of ID.
@@ -1431,6 +2276,83 @@ func (s *CancellationRequestStatus) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+type CancellationStatus string
+
+const (
+	CancellationStatusRequested CancellationStatus = "requested"
+	CancellationStatusScheduled CancellationStatus = "scheduled"
+	CancellationStatusReleasing CancellationStatus = "releasing"
+	CancellationStatusCompleted CancellationStatus = "completed"
+	CancellationStatusCanceled  CancellationStatus = "canceled"
+	CancellationStatusFailed    CancellationStatus = "failed"
+)
+
+// AllValues returns all CancellationStatus values.
+func (CancellationStatus) AllValues() []CancellationStatus {
+	return []CancellationStatus{
+		CancellationStatusRequested,
+		CancellationStatusScheduled,
+		CancellationStatusReleasing,
+		CancellationStatusCompleted,
+		CancellationStatusCanceled,
+		CancellationStatusFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationStatusRequested:
+		return []byte(s), nil
+	case CancellationStatusScheduled:
+		return []byte(s), nil
+	case CancellationStatusReleasing:
+		return []byte(s), nil
+	case CancellationStatusCompleted:
+		return []byte(s), nil
+	case CancellationStatusCanceled:
+		return []byte(s), nil
+	case CancellationStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationStatus) UnmarshalText(data []byte) error {
+	switch CancellationStatus(data) {
+	case CancellationStatusRequested:
+		*s = CancellationStatusRequested
+		return nil
+	case CancellationStatusScheduled:
+		*s = CancellationStatusScheduled
+		return nil
+	case CancellationStatusReleasing:
+		*s = CancellationStatusReleasing
+		return nil
+	case CancellationStatusCompleted:
+		*s = CancellationStatusCompleted
+		return nil
+	case CancellationStatusCanceled:
+		*s = CancellationStatusCanceled
+		return nil
+	case CancellationStatusFailed:
+		*s = CancellationStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type CreateCancellationCreated Cancellation
+
+func (*CreateCancellationCreated) createCancellationRes() {}
+
+type CreateCancellationOK Cancellation
+
+func (*CreateCancellationOK) createCancellationRes() {}
 
 // Ref: #/components/schemas/CreditGrant
 type CreditGrant struct {
@@ -3235,6 +4157,82 @@ func (s *ListAllowancesStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+type ListCancellationsStatus string
+
+const (
+	ListCancellationsStatusOpen      ListCancellationsStatus = "open"
+	ListCancellationsStatusRequested ListCancellationsStatus = "requested"
+	ListCancellationsStatusScheduled ListCancellationsStatus = "scheduled"
+	ListCancellationsStatusReleasing ListCancellationsStatus = "releasing"
+	ListCancellationsStatusCompleted ListCancellationsStatus = "completed"
+	ListCancellationsStatusCanceled  ListCancellationsStatus = "canceled"
+	ListCancellationsStatusFailed    ListCancellationsStatus = "failed"
+)
+
+// AllValues returns all ListCancellationsStatus values.
+func (ListCancellationsStatus) AllValues() []ListCancellationsStatus {
+	return []ListCancellationsStatus{
+		ListCancellationsStatusOpen,
+		ListCancellationsStatusRequested,
+		ListCancellationsStatusScheduled,
+		ListCancellationsStatusReleasing,
+		ListCancellationsStatusCompleted,
+		ListCancellationsStatusCanceled,
+		ListCancellationsStatusFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ListCancellationsStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ListCancellationsStatusOpen:
+		return []byte(s), nil
+	case ListCancellationsStatusRequested:
+		return []byte(s), nil
+	case ListCancellationsStatusScheduled:
+		return []byte(s), nil
+	case ListCancellationsStatusReleasing:
+		return []byte(s), nil
+	case ListCancellationsStatusCompleted:
+		return []byte(s), nil
+	case ListCancellationsStatusCanceled:
+		return []byte(s), nil
+	case ListCancellationsStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListCancellationsStatus) UnmarshalText(data []byte) error {
+	switch ListCancellationsStatus(data) {
+	case ListCancellationsStatusOpen:
+		*s = ListCancellationsStatusOpen
+		return nil
+	case ListCancellationsStatusRequested:
+		*s = ListCancellationsStatusRequested
+		return nil
+	case ListCancellationsStatusScheduled:
+		*s = ListCancellationsStatusScheduled
+		return nil
+	case ListCancellationsStatusReleasing:
+		*s = ListCancellationsStatusReleasing
+		return nil
+	case ListCancellationsStatusCompleted:
+		*s = ListCancellationsStatusCompleted
+		return nil
+	case ListCancellationsStatusCanceled:
+		*s = ListCancellationsStatusCanceled
+		return nil
+	case ListCancellationsStatusFailed:
+		*s = ListCancellationsStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type ListCreditGrantsStatus string
 
 const (
@@ -4102,6 +5100,52 @@ func (o OptListAllowancesStatus) Get() (v ListAllowancesStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptListAllowancesStatus) Or(d ListAllowancesStatus) ListAllowancesStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptListCancellationsStatus returns new OptListCancellationsStatus with value set to v.
+func NewOptListCancellationsStatus(v ListCancellationsStatus) OptListCancellationsStatus {
+	return OptListCancellationsStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListCancellationsStatus is optional ListCancellationsStatus.
+type OptListCancellationsStatus struct {
+	Value ListCancellationsStatus
+	Set   bool
+}
+
+// IsSet returns true if OptListCancellationsStatus was set.
+func (o OptListCancellationsStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListCancellationsStatus) Reset() {
+	var v ListCancellationsStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListCancellationsStatus) SetTo(v ListCancellationsStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListCancellationsStatus) Get() (v ListCancellationsStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListCancellationsStatus) Or(d ListCancellationsStatus) ListCancellationsStatus {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9311,7 +10355,7 @@ func (s *RefundPolicy) UnmarshalText(data []byte) error {
 //   - `provisioning_failed`: the purchase could not be delivered.
 //   - `order_expired`: the order expired after part of it had been paid.
 //   - `order_canceled`: the account holder canceled the order after part of it had been paid.
-//   - `change_canceled`: a scheduled change was withdrawn after it had been paid.
+//   - `change_canceled`: a scheduled change was withdrawn after part of it had been paid.
 //   - `change_expired`: a scheduled change could not take effect before its time passed.
 //   - `subscription_canceled`: the subscription was canceled and its unused value returned under its
 //     refund terms.

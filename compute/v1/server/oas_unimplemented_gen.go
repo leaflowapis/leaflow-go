@@ -226,8 +226,9 @@ func (UnimplementedHandler) CreateSubnet(ctx context.Context, req *CreateSubnetR
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a
-// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
-// subscription ends.
+// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/backups/{backupId}
 func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBackupParams) (r DeleteBackupRes, _ error) {
@@ -239,8 +240,9 @@ func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBacku
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
-// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
-// ends.
+// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/disks/{diskId}
 func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskParams) (r DeleteDiskRes, _ error) {
@@ -258,7 +260,8 @@ func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskPar
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
 // that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-// resource. It is released when its subscription ends.
+// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
+// through Billing, the same set as its `release_subscription_ids`.
 //
 // DELETE /api/v1/instances/{instanceId}
 func (UnimplementedHandler) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (r DeleteInstanceRes, _ error) {
@@ -292,8 +295,9 @@ func (UnimplementedHandler) DeletePort(ctx context.Context, params DeletePortPar
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-// pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
-// ends.
+// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/private-images/{privateImageId}
 func (UnimplementedHandler) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (r DeletePrivateImageRes, _ error) {
@@ -341,8 +345,9 @@ func (UnimplementedHandler) DeleteSecurityGroupRule(ctx context.Context, params 
 // DeleteSnapshot implements delete-snapshot operation.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a
-// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
-// subscription ends.
+// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (r DeleteSnapshotRes, _ error) {
@@ -843,7 +848,8 @@ func (UnimplementedHandler) RejectPeering(ctx context.Context, params RejectPeer
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
 // bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
-// released when its subscriptions end.
+// released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same
+// set as its `release_subscription_ids`.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (UnimplementedHandler) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (r ReleaseFloatingIPRes, _ error) {

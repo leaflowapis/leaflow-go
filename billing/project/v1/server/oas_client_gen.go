@@ -29,6 +29,59 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// CreateProjectCancellation invokes create-project-cancellation operation.
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
+	// a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
+	// value is returned the way it was paid, under the refund terms agreed when each subscription was
+	// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
+	// is the amount returned: prepaid service used while the resources are being released is not deducted
+	// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
+	// unless its termination terms allow only the end of the paid term and that term has not ended yet.
+	// For `period_end` the paid terms of all the subscriptions must end at the same time.
+	//
+	// Refused with:
+	//
+	//  - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
+	//    (`meta.field`), or the subscriptions do not all belong to one service, project, account and
+	//    currency;
+	//  - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	//  - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//    `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
+	//    carry `meta.subscription_id`;
+	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//    different times;
+	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
+	//    progress;
+	//  - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//    `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
+	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
+	// payment are canceled along with it.
+	//
+	// POST /api/v1/projects/{projectId}/cancellations
+	CreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (CreateProjectCancellationRes, error)
+	// CreateProjectCancellationPreview invokes create-project-cancellation-preview operation.
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms agreed
+	// when each was bought. This request does not create a resource: nothing is recorded or reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// POST /api/v1/projects/{projectId}/cancellations/preview
+	CreateProjectCancellationPreview(ctx context.Context, request *CancellationPreviewRequest, params CreateProjectCancellationPreviewParams) (*CancellationRefundPreview, error)
 	// CreateProjectQuote invokes create-project-quote operation.
 	//
 	// Priced in the project billing account's currency, and at any rate negotiated for that account.
@@ -55,6 +108,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/projects/{projectId}/billing-account
 	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectBillingAccount, error)
+	// GetProjectCancellation invokes get-project-cancellation operation.
+	//
+	// Get a cancellation.
+	//
+	// GET /api/v1/projects/{projectId}/cancellations/{cancellationId}
+	GetProjectCancellation(ctx context.Context, params GetProjectCancellationParams) (*Cancellation, error)
 	// GetProjectOrder invokes get-project-order operation.
 	//
 	// Get project order.
@@ -74,6 +133,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/projects/{projectId}/allowances
 	ListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (*AllowanceList, error)
+	// ListProjectCancellations invokes list-project-cancellations operation.
+	//
+	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
+	// for a subscription.
+	//
+	// GET /api/v1/projects/{projectId}/cancellations
+	ListProjectCancellations(ctx context.Context, params ListProjectCancellationsParams) (*CancellationList, error)
 	// ListProjectEntitlements invokes list-project-entitlements operation.
 	//
 	// Includes capabilities bought for this project and those the project's billing account holds at
@@ -127,6 +193,14 @@ type Invoker interface {
 	//
 	// PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew
 	SetProjectAutoRenew(ctx context.Context, request *AutoRenewSet, params SetProjectAutoRenewParams) (*Subscription, error)
+	// WithdrawProjectCancellation invokes withdraw-project-cancellation operation.
+	//
+	// Withdraws the whole cancellation while none of its resources has begun to be released; the
+	// subscriptions continue as before. After that it is refused with 409 `BILLING_CANCELLATION_CONFLICT`.
+	// Withdrawing one that is already withdrawn returns it unchanged.
+	//
+	// POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw
+	WithdrawProjectCancellation(ctx context.Context, params WithdrawProjectCancellationParams) (*Cancellation, error)
 }
 
 // Client implements OAS client.
@@ -168,6 +242,317 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
+}
+
+// CreateProjectCancellation invokes create-project-cancellation operation.
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
+// a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
+// value is returned the way it was paid, under the refund terms agreed when each subscription was
+// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
+// is the amount returned: prepaid service used while the resources are being released is not deducted
+// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
+// unless its termination terms allow only the end of the paid term and that term has not ended yet.
+// For `period_end` the paid terms of all the subscriptions must end at the same time.
+//
+// Refused with:
+//
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
+//     (`meta.field`), or the subscriptions do not all belong to one service, project, account and
+//     currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
+//     carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
+//     progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
+// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
+// payment are canceled along with it.
+//
+// POST /api/v1/projects/{projectId}/cancellations
+func (c *Client) CreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (CreateProjectCancellationRes, error) {
+	res, err := c.sendCreateProjectCancellation(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (res CreateProjectCancellationRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-project-cancellation"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateProjectCancellationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/cancellations"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateProjectCancellationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateProjectCancellationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateProjectCancellationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateProjectCancellationPreview invokes create-project-cancellation-preview operation.
+//
+// What canceling these subscriptions together would return, computed now under the refund terms agreed
+// when each was bought. This request does not create a resource: nothing is recorded or reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// POST /api/v1/projects/{projectId}/cancellations/preview
+func (c *Client) CreateProjectCancellationPreview(ctx context.Context, request *CancellationPreviewRequest, params CreateProjectCancellationPreviewParams) (*CancellationRefundPreview, error) {
+	res, err := c.sendCreateProjectCancellationPreview(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateProjectCancellationPreview(ctx context.Context, request *CancellationPreviewRequest, params CreateProjectCancellationPreviewParams) (res *CancellationRefundPreview, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-project-cancellation-preview"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations/preview"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateProjectCancellationPreviewOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/cancellations/preview"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateProjectCancellationPreviewRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateProjectCancellationPreviewOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateProjectCancellationPreviewResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
 }
 
 // CreateProjectQuote invokes create-project-quote operation.
@@ -444,6 +829,156 @@ func (c *Client) sendGetProjectBillingAccount(ctx context.Context, params GetPro
 
 	stage = "DecodeResponse"
 	result, err := decodeGetProjectBillingAccountResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetProjectCancellation invokes get-project-cancellation operation.
+//
+// Get a cancellation.
+//
+// GET /api/v1/projects/{projectId}/cancellations/{cancellationId}
+func (c *Client) GetProjectCancellation(ctx context.Context, params GetProjectCancellationParams) (*Cancellation, error) {
+	res, err := c.sendGetProjectCancellation(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetProjectCancellation(ctx context.Context, params GetProjectCancellationParams) (res *Cancellation, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-project-cancellation"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations/{cancellationId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectCancellationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/cancellations/"
+	{
+		// Encode "cancellationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "cancellationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CancellationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetProjectCancellationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetProjectCancellationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -989,6 +1524,211 @@ func (c *Client) sendListProjectAllowances(ctx context.Context, params ListProje
 
 	stage = "DecodeResponse"
 	result, err := decodeListProjectAllowancesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectCancellations invokes list-project-cancellations operation.
+//
+// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
+// for a subscription.
+//
+// GET /api/v1/projects/{projectId}/cancellations
+func (c *Client) ListProjectCancellations(ctx context.Context, params ListProjectCancellationsParams) (*CancellationList, error) {
+	res, err := c.sendListProjectCancellations(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectCancellations(ctx context.Context, params ListProjectCancellationsParams) (res *CancellationList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-cancellations"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectCancellationsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/cancellations"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "subscription_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "subscription_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.SubscriptionID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListProjectCancellationsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListProjectCancellationsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2434,6 +3174,159 @@ func (c *Client) sendSetProjectAutoRenew(ctx context.Context, request *AutoRenew
 
 	stage = "DecodeResponse"
 	result, err := decodeSetProjectAutoRenewResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// WithdrawProjectCancellation invokes withdraw-project-cancellation operation.
+//
+// Withdraws the whole cancellation while none of its resources has begun to be released; the
+// subscriptions continue as before. After that it is refused with 409 `BILLING_CANCELLATION_CONFLICT`.
+// Withdrawing one that is already withdrawn returns it unchanged.
+//
+// POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw
+func (c *Client) WithdrawProjectCancellation(ctx context.Context, params WithdrawProjectCancellationParams) (*Cancellation, error) {
+	res, err := c.sendWithdrawProjectCancellation(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendWithdrawProjectCancellation(ctx context.Context, params WithdrawProjectCancellationParams) (res *Cancellation, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("withdraw-project-cancellation"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, WithdrawProjectCancellationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/cancellations/"
+	{
+		// Encode "cancellationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "cancellationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CancellationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/withdraw"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, WithdrawProjectCancellationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeWithdrawProjectCancellationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

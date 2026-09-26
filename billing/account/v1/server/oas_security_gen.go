@@ -41,6 +41,8 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	CancelOrderOperation:                 []string{},
 	CancelTopUpOperation:                 []string{},
 	CreateBillingAccountOperation:        []string{},
+	CreateCancellationOperation:          []string{},
+	CreateCancellationPreviewOperation:   []string{},
 	CreateCancellationRequestOperation:   []string{},
 	CreatePaymentMethodSetupOperation:    []string{},
 	CreateRenewalOrderOperation:          []string{},
@@ -49,6 +51,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	GetAccountBalanceOperation:           []string{},
 	GetAccountMeteredUsageOperation:      []string{},
 	GetBillingAccountOperation:           []string{},
+	GetCancellationOperation:             []string{},
 	GetCancellationRequestOperation:      []string{},
 	GetInvoiceOperation:                  []string{},
 	GetOrderOperation:                    []string{},
@@ -59,6 +62,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	ListAllowancesOperation:              []string{},
 	ListBillingAccountProjectsOperation:  []string{},
 	ListBillingAccountsOperation:         []string{},
+	ListCancellationsOperation:           []string{},
 	ListCreditGrantsOperation:            []string{},
 	ListCurrenciesOperation:              []string{},
 	ListEntitlementsOperation:            []string{},
@@ -86,6 +90,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	SetProjectBillingAccountOperation:    []string{},
 	UnlinkProjectBillingAccountOperation: []string{},
 	UpdateBillingAccountOperation:        []string{},
+	WithdrawCancellationOperation:        []string{},
 }
 
 // GetRolesForAccessTokenAuth returns the required roles for the given operation.

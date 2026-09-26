@@ -138,6 +138,17 @@ func (s *BackupResource) Validate() error {
 		})
 	}
 	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.AccessState.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -1137,6 +1148,17 @@ func (s *DiskResource) Validate() error {
 		})
 	}
 	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.AccessState.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -1385,6 +1407,17 @@ func (s *FloatingIPResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "status",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
 			Error: err,
 		})
 	}
@@ -2141,6 +2174,17 @@ func (s *InstanceResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "task",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
 			Error: err,
 		})
 	}
@@ -3492,6 +3536,17 @@ func (s *PrivateImageResource) Validate() error {
 		})
 	}
 	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.AccessState.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -4499,6 +4554,17 @@ func (s *SnapshotResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "status",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
 			Error: err,
 		})
 	}

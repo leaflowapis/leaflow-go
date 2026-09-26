@@ -12,6 +12,10 @@ type Handler interface {
 	//
 	// Allowed only before release starts. Does not resume a previously suspended subscription.
 	//
+	// Use withdraw-cancellation, which withdraws the whole cancellation.
+	//
+	// Deprecated: schema marks this operation as deprecated.
+	//
 	// POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel
 	CancelCancellationRequest(ctx context.Context, params CancelCancellationRequestParams) (*CancellationRequest, error)
 	// CancelOrder implements cancel-order operation.
@@ -56,10 +60,67 @@ type Handler interface {
 	//
 	// POST /account/v1/billing-accounts
 	CreateBillingAccount(ctx context.Context, req *BillingAccountCreate) (*BillingAccount, error)
+	// CreateCancellation implements create-cancellation operation.
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
+	// a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
+	// value is returned the way it was paid, under the refund terms agreed when each subscription was
+	// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
+	// is the amount returned: prepaid service used while the resources are being released is not deducted
+	// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
+	// unless its termination terms allow only the end of the paid term and that term has not ended yet.
+	// For `period_end` the paid terms of all the subscriptions must end at the same time.
+	//
+	// Refused with:
+	//
+	//  - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
+	//    (`meta.field`), or the subscriptions do not all belong to one service, project, account and
+	//    currency;
+	//  - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	//  - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//    `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
+	//    carry `meta.subscription_id`;
+	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//    different times;
+	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
+	//    progress;
+	//  - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//    `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
+	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
+	// payment are canceled along with it.
+	//
+	// POST /account/v1/cancellations
+	CreateCancellation(ctx context.Context, req *CancellationCreate) (CreateCancellationRes, error)
+	// CreateCancellationPreview implements create-cancellation-preview operation.
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms agreed
+	// when each was bought. This request does not create a resource: nothing is recorded or reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// POST /account/v1/cancellations/preview
+	CreateCancellationPreview(ctx context.Context, req *CancellationPreviewRequest) (*CancellationRefundPreview, error)
 	// CreateCancellationRequest implements create-cancellation-request operation.
 	//
 	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual
 	// end is confirmed by the owning service. Refund processing is separate.
+	//
+	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+	//
+	// Deprecated: schema marks this operation as deprecated.
 	//
 	// POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests
 	CreateCancellationRequest(ctx context.Context, req *CancellationRequestCreate, params CreateCancellationRequestParams) (*CancellationRequest, error)
@@ -120,9 +181,17 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountId}
 	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
+	// GetCancellation implements get-cancellation operation.
+	//
+	// Get a cancellation.
+	//
+	// GET /account/v1/cancellations/{cancellationId}
+	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
 	// GetCancellationRequest implements get-cancellation-request operation.
 	//
-	// Get cancellation request.
+	// Use get-cancellation.
+	//
+	// Deprecated: schema marks this operation as deprecated.
 	//
 	// GET /account/v1/cancellation-requests/{cancellationRequestId}
 	GetCancellationRequest(ctx context.Context, params GetCancellationRequestParams) (*CancellationRequest, error)
@@ -193,6 +262,13 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
+	// ListCancellations implements list-cancellations operation.
+	//
+	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
+	// for a subscription.
+	//
+	// GET /account/v1/cancellations
+	ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error)
 	// ListCreditGrants implements list-credit-grants operation.
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before the balance and
@@ -333,6 +409,10 @@ type Handler interface {
 	//
 	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 	//
+	// Use create-cancellation-preview, which previews the subscriptions released together.
+	//
+	// Deprecated: schema marks this operation as deprecated.
+	//
 	// GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview
 	PreviewCancellation(ctx context.Context, params PreviewCancellationParams) (*CancellationPreview, error)
 	// PreviewInvoicePayment implements preview-invoice-payment operation.
@@ -433,6 +513,14 @@ type Handler interface {
 	//
 	// PATCH /account/v1/billing-accounts/{accountId}
 	UpdateBillingAccount(ctx context.Context, req *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
+	// WithdrawCancellation implements withdraw-cancellation operation.
+	//
+	// Withdraws the whole cancellation while none of its resources has begun to be released; the
+	// subscriptions continue as before. After that it is refused with 409 `BILLING_CANCELLATION_CONFLICT`.
+	// Withdrawing one that is already withdrawn returns it unchanged.
+	//
+	// POST /account/v1/cancellations/{cancellationId}/withdraw
+	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

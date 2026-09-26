@@ -9,6 +9,10 @@ type CancelTopUpRes interface {
 	cancelTopUpRes()
 }
 
+type CreateCancellationRes interface {
+	createCancellationRes()
+}
+
 type CreateRenewalOrderRes interface {
 	createRenewalOrderRes()
 }

@@ -85,6 +85,108 @@ func (e AllowanceStatus) Valid() bool {
 	}
 }
 
+// Defines values for CancellationOrigin.
+const (
+	Customer        CancellationOrigin = "customer"
+	Operator        CancellationOrigin = "operator"
+	ProjectDeletion CancellationOrigin = "project_deletion"
+)
+
+// Valid indicates whether the value is a known member of the CancellationOrigin enum.
+func (e CancellationOrigin) Valid() bool {
+	switch e {
+	case Customer:
+		return true
+	case Operator:
+		return true
+	case ProjectDeletion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancellationStatus.
+const (
+	CancellationStatusCanceled  CancellationStatus = "canceled"
+	CancellationStatusCompleted CancellationStatus = "completed"
+	CancellationStatusFailed    CancellationStatus = "failed"
+	CancellationStatusReleasing CancellationStatus = "releasing"
+	CancellationStatusRequested CancellationStatus = "requested"
+	CancellationStatusScheduled CancellationStatus = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the CancellationStatus enum.
+func (e CancellationStatus) Valid() bool {
+	switch e {
+	case CancellationStatusCanceled:
+		return true
+	case CancellationStatusCompleted:
+		return true
+	case CancellationStatusFailed:
+		return true
+	case CancellationStatusReleasing:
+		return true
+	case CancellationStatusRequested:
+		return true
+	case CancellationStatusScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancellationItemStatus.
+const (
+	CancellationItemStatusCanceled  CancellationItemStatus = "canceled"
+	CancellationItemStatusCompleted CancellationItemStatus = "completed"
+	CancellationItemStatusFailed    CancellationItemStatus = "failed"
+	CancellationItemStatusReleasing CancellationItemStatus = "releasing"
+	CancellationItemStatusRequested CancellationItemStatus = "requested"
+	CancellationItemStatusScheduled CancellationItemStatus = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the CancellationItemStatus enum.
+func (e CancellationItemStatus) Valid() bool {
+	switch e {
+	case CancellationItemStatusCanceled:
+		return true
+	case CancellationItemStatusCompleted:
+		return true
+	case CancellationItemStatusFailed:
+		return true
+	case CancellationItemStatusReleasing:
+		return true
+	case CancellationItemStatusRequested:
+		return true
+	case CancellationItemStatusScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CancellationRefundPreviewItemBillingType.
+const (
+	CancellationRefundPreviewItemBillingTypeOneTime  CancellationRefundPreviewItemBillingType = "one_time"
+	CancellationRefundPreviewItemBillingTypePostpaid CancellationRefundPreviewItemBillingType = "postpaid"
+	CancellationRefundPreviewItemBillingTypePrepaid  CancellationRefundPreviewItemBillingType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the CancellationRefundPreviewItemBillingType enum.
+func (e CancellationRefundPreviewItemBillingType) Valid() bool {
+	switch e {
+	case CancellationRefundPreviewItemBillingTypeOneTime:
+		return true
+	case CancellationRefundPreviewItemBillingTypePostpaid:
+		return true
+	case CancellationRefundPreviewItemBillingTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CancellationRequestMode.
 const (
 	CancellationRequestModeImmediate CancellationRequestMode = "immediate"
@@ -135,28 +237,28 @@ func (e CancellationRequestStatus) Valid() bool {
 
 // Defines values for InvoiceStatus.
 const (
-	Draft         InvoiceStatus = "draft"
-	Open          InvoiceStatus = "open"
-	Paid          InvoiceStatus = "paid"
-	Refunded      InvoiceStatus = "refunded"
-	Uncollectible InvoiceStatus = "uncollectible"
-	Void          InvoiceStatus = "void"
+	InvoiceStatusDraft         InvoiceStatus = "draft"
+	InvoiceStatusOpen          InvoiceStatus = "open"
+	InvoiceStatusPaid          InvoiceStatus = "paid"
+	InvoiceStatusRefunded      InvoiceStatus = "refunded"
+	InvoiceStatusUncollectible InvoiceStatus = "uncollectible"
+	InvoiceStatusVoid          InvoiceStatus = "void"
 )
 
 // Valid indicates whether the value is a known member of the InvoiceStatus enum.
 func (e InvoiceStatus) Valid() bool {
 	switch e {
-	case Draft:
+	case InvoiceStatusDraft:
 		return true
-	case Open:
+	case InvoiceStatusOpen:
 		return true
-	case Paid:
+	case InvoiceStatusPaid:
 		return true
-	case Refunded:
+	case InvoiceStatusRefunded:
 		return true
-	case Uncollectible:
+	case InvoiceStatusUncollectible:
 		return true
-	case Void:
+	case InvoiceStatusVoid:
 		return true
 	default:
 		return false
@@ -553,6 +655,39 @@ func (e TerminationPolicy) Valid() bool {
 	}
 }
 
+// Defines values for ListProjectCancellationsParamsStatus.
+const (
+	ListProjectCancellationsParamsStatusCanceled  ListProjectCancellationsParamsStatus = "canceled"
+	ListProjectCancellationsParamsStatusCompleted ListProjectCancellationsParamsStatus = "completed"
+	ListProjectCancellationsParamsStatusFailed    ListProjectCancellationsParamsStatus = "failed"
+	ListProjectCancellationsParamsStatusOpen      ListProjectCancellationsParamsStatus = "open"
+	ListProjectCancellationsParamsStatusReleasing ListProjectCancellationsParamsStatus = "releasing"
+	ListProjectCancellationsParamsStatusRequested ListProjectCancellationsParamsStatus = "requested"
+	ListProjectCancellationsParamsStatusScheduled ListProjectCancellationsParamsStatus = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the ListProjectCancellationsParamsStatus enum.
+func (e ListProjectCancellationsParamsStatus) Valid() bool {
+	switch e {
+	case ListProjectCancellationsParamsStatusCanceled:
+		return true
+	case ListProjectCancellationsParamsStatusCompleted:
+		return true
+	case ListProjectCancellationsParamsStatusFailed:
+		return true
+	case ListProjectCancellationsParamsStatusOpen:
+		return true
+	case ListProjectCancellationsParamsStatusReleasing:
+		return true
+	case ListProjectCancellationsParamsStatusRequested:
+		return true
+	case ListProjectCancellationsParamsStatusScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListProjectSpendParamsGroupBy.
 const (
 	ListProjectSpendParamsGroupByPlan     ListProjectSpendParamsGroupBy = "plan"
@@ -675,9 +810,285 @@ type AutoRenewSet struct {
 	AutoRenew bool `json:"auto_renew"`
 }
 
+// Cancellation One cancellation of a set of subscriptions of one service, released together at one time.
+//
+//   - `requested`: `immediate`, release has not begun.
+//   - `scheduled`: `period_end`, waiting for `scheduled_at`.
+//   - `releasing`: release has begun; it can no longer be withdrawn.
+//   - `completed`: every subscription has ended and its refund has been made.
+//   - `canceled`: withdrawn before release began; the subscriptions continue.
+//   - `failed`: the service could not carry it out, for the reason in `failure_code`; the
+//     subscriptions continue and can be canceled again.
+type Cancellation struct {
+	CanceledAt  *time.Time `json:"canceled_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	Currency    string     `json:"currency"`
+
+	// ExpectedRefundableAmount The refund confirmed when it was created. Absent when the platform created it.
+	ExpectedRefundableAmount *externalRef0.Money `json:"expected_refundable_amount,omitempty"`
+
+	// FailureCode Present with `failed`. A code of the service that provides the resources, such as a disk
+	// that can only be released with its server. Clients map it to their own wording.
+	FailureCode *string            `json:"failure_code,omitempty"`
+	Id          openapi_types.UUID `json:"id"`
+	Items       []CancellationItem `json:"items"`
+
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// Origin Who asked for it. `project_deletion` means the project was deleted.
+	Origin CancellationOrigin `json:"origin"`
+
+	// ProrationDate For `immediate`, the second the refund is computed as of.
+	ProrationDate *time.Time         `json:"proration_date,omitempty"`
+	RequestedAt   time.Time          `json:"requested_at"`
+	ScheduledAt   *time.Time         `json:"scheduled_at,omitempty"`
+	Status        CancellationStatus `json:"status"`
+}
+
+// CancellationOrigin Who asked for it. `project_deletion` means the project was deleted.
+type CancellationOrigin string
+
+// CancellationStatus defines model for Cancellation.Status.
+type CancellationStatus string
+
+// CancellationCreate defines model for CancellationCreate.
+type CancellationCreate struct {
+	// ExpectedRefundableAmount The `refundable_amount` of the preview. The cancellation is refused when the refund differs.
+	ExpectedRefundableAmount string `json:"expected_refundable_amount"`
+
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// ProrationDate For `immediate`, the `proration_date` of the preview: a whole second, not in the future and
+	// at most ten minutes old. The refund is computed as of it. Now when omitted.
+	ProrationDate *time.Time `json:"proration_date,omitempty"`
+
+	// Reason A note from the account holder. It is kept with the cancellation and not shown elsewhere.
+	Reason *string `json:"reason,omitempty"`
+
+	// SubscriptionIds As in the preview.
+	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
+}
+
+// CancellationItem One subscription of the cancellation.
+type CancellationItem struct {
+	// BalanceAmount Present with `completed`. The part of the refund returned to the account balance.
+	BalanceAmount *externalRef0.Money `json:"balance_amount,omitempty"`
+
+	// CreditAmount Present with `completed`. The part restored to the credit grants that paid.
+	CreditAmount *externalRef0.Money `json:"credit_amount,omitempty"`
+
+	// EffectiveAt When the service ended, as confirmed by the service that provides it.
+	EffectiveAt *time.Time `json:"effective_at,omitempty"`
+
+	// GatewayAmount Present with `completed`. The part returned to the payment method it was paid with.
+	GatewayAmount *externalRef0.Money `json:"gateway_amount,omitempty"`
+
+	// Id The cancellation request of this subscription, the same as `Subscription.cancellation_request.id`.
+	Id               openapi_types.UUID     `json:"id"`
+	PlanId           openapi_types.UUID     `json:"plan_id"`
+	PlanName         string                 `json:"plan_name"`
+	ReleaseStartedAt *time.Time             `json:"release_started_at,omitempty"`
+	Status           CancellationItemStatus `json:"status"`
+	SubscriptionId   openapi_types.UUID     `json:"subscription_id"`
+}
+
+// CancellationItemStatus defines model for CancellationItem.Status.
+type CancellationItemStatus string
+
+// CancellationList defines model for CancellationList.
+type CancellationList struct {
+	Items      []Cancellation `json:"items"`
+	TotalCount *int64         `json:"total_count,omitempty"`
+}
+
+// CancellationPreviewRequest defines model for CancellationPreviewRequest.
+type CancellationPreviewRequest struct {
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// SubscriptionIds The subscriptions to end together, all of one service. Every subscription released with a resource must be included.
+	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
+}
+
+// CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now.
+//
+//   - `unused_amount`: before tax, the value of the paid service still unused, whatever the refund
+//     terms say.
+//   - `refundable_amount`: what is returned the way it was paid, including the tax paid on it;
+//     `refund_amount` plus `credit_amount`.
+//   - `refund_amount`: the part returned to the balance or to the payment method.
+//   - `credit_amount`: the part restored to the credit grants that paid.
+//   - `tax_amount`: the tax included in `refundable_amount`.
+//   - `forfeited_amount`: before tax, the part of `unused_amount` the refund terms do not return.
+//
+// Postpaid and one-time subscriptions show zero; usage until release is charged as usual.
+type CancellationRefundPreview struct {
+	// CreditAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	CreditAmount externalRef0.Money `json:"credit_amount"`
+	Currency     string             `json:"currency"`
+
+	// ForfeitedAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	ForfeitedAmount externalRef0.Money              `json:"forfeited_amount"`
+	Items           []CancellationRefundPreviewItem `json:"items"`
+
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// ProrationDate For `immediate`, the second the refund is computed as of. Give it when creating the cancellation.
+	ProrationDate *time.Time `json:"proration_date,omitempty"`
+
+	// RefundAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RefundAmount externalRef0.Money `json:"refund_amount"`
+
+	// RefundableAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RefundableAmount externalRef0.Money `json:"refundable_amount"`
+
+	// ScheduledAt For `period_end`, when release begins, the end of the paid terms.
+	ScheduledAt *time.Time `json:"scheduled_at,omitempty"`
+
+	// TaxAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	TaxAmount externalRef0.Money `json:"tax_amount"`
+
+	// UnusedAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnusedAmount externalRef0.Money `json:"unused_amount"`
+}
+
+// CancellationRefundPreviewItem One subscription of the preview. The amounts mean what they mean in the preview.
+type CancellationRefundPreviewItem struct {
+	BillingType CancellationRefundPreviewItemBillingType `json:"billing_type"`
+
+	// CreditAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	CreditAmount externalRef0.Money `json:"credit_amount"`
+
+	// ForfeitedAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	ForfeitedAmount externalRef0.Money `json:"forfeited_amount"`
+	PlanId          openapi_types.UUID `json:"plan_id"`
+	PlanName        string             `json:"plan_name"`
+
+	// Project The project and its current name, for display. Absent for a purchase at account level, and when the project details cannot be read at the moment.
+	Project *externalRef0.NamedIdentity `json:"project,omitempty"`
+
+	// RefundAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RefundAmount externalRef0.Money `json:"refund_amount"`
+
+	// RefundableAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RefundableAmount externalRef0.Money `json:"refundable_amount"`
+	SubscriptionId   openapi_types.UUID `json:"subscription_id"`
+
+	// TaxAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	TaxAmount externalRef0.Money `json:"tax_amount"`
+
+	// UnusedAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnusedAmount externalRef0.Money `json:"unused_amount"`
+}
+
+// CancellationRefundPreviewItemBillingType defines model for CancellationRefundPreviewItem.BillingType.
+type CancellationRefundPreviewItemBillingType string
+
 // CancellationRequest A cancellation request for the original purchase. scheduled_at is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
 type CancellationRequest struct {
-	CanceledAt            *time.Time                `json:"canceled_at,omitempty"`
+	CanceledAt *time.Time `json:"canceled_at,omitempty"`
+
+	// CancellationId The cancellation this request belongs to, with the other subscriptions released together.
+	CancellationId        *openapi_types.UUID       `json:"cancellation_id,omitempty"`
 	CompletedAt           *time.Time                `json:"completed_at,omitempty"`
 	EffectiveAt           *time.Time                `json:"effective_at,omitempty"`
 	FailureCode           *string                   `json:"failure_code,omitempty"`
@@ -1388,6 +1799,9 @@ type UsageChargeList struct {
 	TotalCount *int64        `json:"total_count,omitempty"`
 }
 
+// CancellationId defines model for CancellationId.
+type CancellationId = openapi_types.UUID
+
 // From defines model for From.
 type From = time.Time
 
@@ -1437,6 +1851,24 @@ type ListProjectAllowancesParams struct {
 	MeterId   *openapi_types.UUID `form:"meter_id,omitempty" json:"meter_id,omitempty"`
 	ProductId *ProductID          `form:"product_id,omitempty" json:"product_id,omitempty"`
 }
+
+// ListProjectCancellationsParams defines parameters for ListProjectCancellations.
+type ListProjectCancellationsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many per page, 100 at most.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// SubscriptionId Only cancellations that include this subscription.
+	SubscriptionId *openapi_types.UUID `form:"subscription_id,omitempty" json:"subscription_id,omitempty"`
+
+	// Status Only cancellations in this status. `open` means requested, scheduled or releasing.
+	Status *ListProjectCancellationsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// ListProjectCancellationsParamsStatus defines parameters for ListProjectCancellations.
+type ListProjectCancellationsParamsStatus string
 
 // ListProjectEntitlementsParams defines parameters for ListProjectEntitlements.
 type ListProjectEntitlementsParams struct {
@@ -1527,6 +1959,12 @@ type ListProjectUsageChargesParams struct {
 	// To Exclusive.
 	To *To `form:"to,omitempty" json:"to,omitempty"`
 }
+
+// CreateProjectCancellationJSONRequestBody defines body for CreateProjectCancellation for application/json ContentType.
+type CreateProjectCancellationJSONRequestBody = CancellationCreate
+
+// CreateProjectCancellationPreviewJSONRequestBody defines body for CreateProjectCancellationPreview for application/json ContentType.
+type CreateProjectCancellationPreviewJSONRequestBody = CancellationPreviewRequest
 
 // CreateProjectQuoteJSONRequestBody defines body for CreateProjectQuote for application/json ContentType.
 type CreateProjectQuoteJSONRequestBody = QuoteRequest
@@ -1634,6 +2072,149 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 	GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListProjectCancellations List cancellations
+	//
+	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
+	//
+	// Corresponds with GET /api/v1/projects/{projectId}/cancellations (the `ListProjectCancellations` operationId).
+	ListProjectCancellations(ctx context.Context, projectId ProjectId, params *ListProjectCancellationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateProjectCancellationWithBody Cancel subscriptions
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it,
+	// such as a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+	// unused value is returned the way it was paid, under the refund terms agreed when each
+	// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+	// amount confirmed here is the amount returned: prepaid service used while the resources are
+	// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+	// resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+	// `immediate` unless its termination terms allow only the end of the paid term and that term has
+	// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+	// time.
+	//
+	// Refused with:
+	// - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+	//   acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+	//   account and currency;
+	// - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	// - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//   `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+	//   both carry `meta.subscription_id`;
+	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//   different times;
+	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+	//   is in progress;
+	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//   `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that
+	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+	// still waiting for payment are canceled along with it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
+	CreateProjectCancellationWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateProjectCancellation Cancel subscriptions
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it,
+	// such as a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+	// unused value is returned the way it was paid, under the refund terms agreed when each
+	// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+	// amount confirmed here is the amount returned: prepaid service used while the resources are
+	// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+	// resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+	// `immediate` unless its termination terms allow only the end of the paid term and that term has
+	// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+	// time.
+	//
+	// Refused with:
+	// - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+	//   acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+	//   account and currency;
+	// - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	// - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//   `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+	//   both carry `meta.subscription_id`;
+	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//   different times;
+	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+	//   is in progress;
+	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//   `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that
+	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+	// still waiting for payment are canceled along with it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
+	CreateProjectCancellation(ctx context.Context, projectId ProjectId, body CreateProjectCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateProjectCancellationPreviewWithBody Preview a cancellation
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms
+	// agreed when each was bought. This request does not create a resource: nothing is recorded or
+	// reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
+	CreateProjectCancellationPreviewWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateProjectCancellationPreview Preview a cancellation
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms
+	// agreed when each was bought. This request does not create a resource: nothing is recorded or
+	// reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
+	CreateProjectCancellationPreview(ctx context.Context, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProjectCancellation Get a cancellation
+	//
+	// Corresponds with GET /api/v1/projects/{projectId}/cancellations/{cancellationId} (the `GetProjectCancellation` operationId).
+	GetProjectCancellation(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// WithdrawProjectCancellation Withdraw a cancellation
+	//
+	// Withdraws the whole cancellation while none of its resources has begun to be released; the
+	// subscriptions continue as before. After that it is refused with 409
+	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw (the `WithdrawProjectCancellation` operationId).
+	WithdrawProjectCancellation(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectEntitlements List project entitlements
 	//
@@ -1796,6 +2377,219 @@ func (c *Client) ListProjectAllowances(ctx context.Context, projectId ProjectId,
 // Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 func (c *Client) GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectBillingAccountRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListProjectCancellations List cancellations
+//
+// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
+//
+// Corresponds with GET /api/v1/projects/{projectId}/cancellations (the `ListProjectCancellations` operationId).
+func (c *Client) ListProjectCancellations(ctx context.Context, projectId ProjectId, params *ListProjectCancellationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectCancellationsRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateProjectCancellationWithBody Cancel subscriptions
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it,
+// such as a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+// unused value is returned the way it was paid, under the refund terms agreed when each
+// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+// amount confirmed here is the amount returned: prepaid service used while the resources are
+// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+// resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+// `immediate` unless its termination terms allow only the end of the paid term and that term has
+// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+// time.
+//
+// Refused with:
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+//     acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+//     account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+//     both carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+//     is in progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that
+// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+// still waiting for payment are canceled along with it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
+func (c *Client) CreateProjectCancellationWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectCancellationRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateProjectCancellation Cancel subscriptions
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it,
+// such as a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+// unused value is returned the way it was paid, under the refund terms agreed when each
+// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+// amount confirmed here is the amount returned: prepaid service used while the resources are
+// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+// resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+// `immediate` unless its termination terms allow only the end of the paid term and that term has
+// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+// time.
+//
+// Refused with:
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+//     acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+//     account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+//     both carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+//     is in progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that
+// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+// still waiting for payment are canceled along with it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
+func (c *Client) CreateProjectCancellation(ctx context.Context, projectId ProjectId, body CreateProjectCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectCancellationRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateProjectCancellationPreviewWithBody Preview a cancellation
+//
+// What canceling these subscriptions together would return, computed now under the refund terms
+// agreed when each was bought. This request does not create a resource: nothing is recorded or
+// reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
+func (c *Client) CreateProjectCancellationPreviewWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectCancellationPreviewRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateProjectCancellationPreview Preview a cancellation
+//
+// What canceling these subscriptions together would return, computed now under the refund terms
+// agreed when each was bought. This request does not create a resource: nothing is recorded or
+// reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
+func (c *Client) CreateProjectCancellationPreview(ctx context.Context, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateProjectCancellationPreviewRequest(c.Server, projectId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProjectCancellation Get a cancellation
+//
+// Corresponds with GET /api/v1/projects/{projectId}/cancellations/{cancellationId} (the `GetProjectCancellation` operationId).
+func (c *Client) GetProjectCancellation(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectCancellationRequest(c.Server, projectId, cancellationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// WithdrawProjectCancellation Withdraw a cancellation
+//
+// Withdraws the whole cancellation while none of its resources has begun to be released; the
+// subscriptions continue as before. After that it is refused with 409
+// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw (the `WithdrawProjectCancellation` operationId).
+func (c *Client) WithdrawProjectCancellation(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewWithdrawProjectCancellationRequest(c.Server, projectId, cancellationId)
 	if err != nil {
 		return nil, err
 	}
@@ -2238,6 +3032,279 @@ func NewGetProjectBillingAccountRequest(server string, projectId ProjectId) (*ht
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListProjectCancellationsRequest constructs an http.Request for the ListProjectCancellations method
+func NewListProjectCancellationsRequest(server string, projectId ProjectId, params *ListProjectCancellationsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/projects/%s/cancellations", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SubscriptionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "subscription_id", *params.SubscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateProjectCancellationRequest calls the generic CreateProjectCancellation builder with application/json body
+func NewCreateProjectCancellationRequest(server string, projectId ProjectId, body CreateProjectCancellationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateProjectCancellationRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewCreateProjectCancellationRequestWithBody constructs an http.Request for the CreateProjectCancellation method, with any body, and a specified content type
+func NewCreateProjectCancellationRequestWithBody(server string, projectId ProjectId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/projects/%s/cancellations", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateProjectCancellationPreviewRequest calls the generic CreateProjectCancellationPreview builder with application/json body
+func NewCreateProjectCancellationPreviewRequest(server string, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateProjectCancellationPreviewRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewCreateProjectCancellationPreviewRequestWithBody constructs an http.Request for the CreateProjectCancellationPreview method, with any body, and a specified content type
+func NewCreateProjectCancellationPreviewRequestWithBody(server string, projectId ProjectId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/projects/%s/cancellations/preview", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetProjectCancellationRequest constructs an http.Request for the GetProjectCancellation method
+func NewGetProjectCancellationRequest(server string, projectId ProjectId, cancellationId CancellationId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "cancellationId", cancellationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/projects/%s/cancellations/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewWithdrawProjectCancellationRequest constructs an http.Request for the WithdrawProjectCancellation method
+func NewWithdrawProjectCancellationRequest(server string, projectId ProjectId, cancellationId CancellationId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "cancellationId", cancellationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/projects/%s/cancellations/%s/withdraw", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3069,6 +4136,155 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 	GetProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectBillingAccountResponse, error)
 
+	// ListProjectCancellationsWithResponse List cancellations
+	//
+	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/projects/{projectId}/cancellations (the `ListProjectCancellations` operationId).
+	ListProjectCancellationsWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectCancellationsParams, reqEditors ...RequestEditorFn) (*ListProjectCancellationsResponse, error)
+
+	// CreateProjectCancellationWithBodyWithResponse Cancel subscriptions
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it,
+	// such as a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+	// unused value is returned the way it was paid, under the refund terms agreed when each
+	// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+	// amount confirmed here is the amount returned: prepaid service used while the resources are
+	// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+	// resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+	// `immediate` unless its termination terms allow only the end of the paid term and that term has
+	// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+	// time.
+	//
+	// Refused with:
+	// - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+	//   acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+	//   account and currency;
+	// - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	// - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//   `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+	//   both carry `meta.subscription_id`;
+	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//   different times;
+	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+	//   is in progress;
+	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//   `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that
+	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+	// still waiting for payment are canceled along with it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
+	CreateProjectCancellationWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectCancellationResponse, error)
+
+	// CreateProjectCancellationWithResponse Cancel subscriptions
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it,
+	// such as a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+	// unused value is returned the way it was paid, under the refund terms agreed when each
+	// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+	// amount confirmed here is the amount returned: prepaid service used while the resources are
+	// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+	// resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+	// `immediate` unless its termination terms allow only the end of the paid term and that term has
+	// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+	// time.
+	//
+	// Refused with:
+	// - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+	//   acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+	//   account and currency;
+	// - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	// - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//   `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+	//   both carry `meta.subscription_id`;
+	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//   different times;
+	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+	//   is in progress;
+	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//   `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that
+	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+	// still waiting for payment are canceled along with it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
+	CreateProjectCancellationWithResponse(ctx context.Context, projectId ProjectId, body CreateProjectCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectCancellationResponse, error)
+
+	// CreateProjectCancellationPreviewWithBodyWithResponse Preview a cancellation
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms
+	// agreed when each was bought. This request does not create a resource: nothing is recorded or
+	// reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
+	CreateProjectCancellationPreviewWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectCancellationPreviewResponse, error)
+
+	// CreateProjectCancellationPreviewWithResponse Preview a cancellation
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms
+	// agreed when each was bought. This request does not create a resource: nothing is recorded or
+	// reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
+	CreateProjectCancellationPreviewWithResponse(ctx context.Context, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectCancellationPreviewResponse, error)
+
+	// GetProjectCancellationWithResponse Get a cancellation
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/projects/{projectId}/cancellations/{cancellationId} (the `GetProjectCancellation` operationId).
+	GetProjectCancellationWithResponse(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*GetProjectCancellationResponse, error)
+
+	// WithdrawProjectCancellationWithResponse Withdraw a cancellation
+	//
+	// Withdraws the whole cancellation while none of its resources has begun to be released; the
+	// subscriptions continue as before. After that it is refused with 409
+	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw (the `WithdrawProjectCancellation` operationId).
+	WithdrawProjectCancellationWithResponse(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*WithdrawProjectCancellationResponse, error)
+
 	// ListProjectEntitlementsWithResponse List project entitlements
 	//
 	// Includes capabilities bought for this project and those the project's billing account holds at
@@ -3335,6 +4551,253 @@ func (r GetProjectBillingAccountResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetProjectBillingAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListProjectCancellationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CancellationList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListProjectCancellationsResponse) GetJSON200() *CancellationList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListProjectCancellationsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListProjectCancellationsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListProjectCancellationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListProjectCancellationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListProjectCancellationsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateProjectCancellationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Cancellation
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Cancellation
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateProjectCancellationResponse) GetJSON200() *Cancellation {
+	return r.JSON200
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateProjectCancellationResponse) GetJSON201() *Cancellation {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateProjectCancellationResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateProjectCancellationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateProjectCancellationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateProjectCancellationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateProjectCancellationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateProjectCancellationPreviewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CancellationRefundPreview
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateProjectCancellationPreviewResponse) GetJSON200() *CancellationRefundPreview {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateProjectCancellationPreviewResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateProjectCancellationPreviewResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateProjectCancellationPreviewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateProjectCancellationPreviewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateProjectCancellationPreviewResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetProjectCancellationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Cancellation
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProjectCancellationResponse) GetJSON200() *Cancellation {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetProjectCancellationResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProjectCancellationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectCancellationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectCancellationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProjectCancellationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type WithdrawProjectCancellationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Cancellation
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r WithdrawProjectCancellationResponse) GetJSON200() *Cancellation {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r WithdrawProjectCancellationResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r WithdrawProjectCancellationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r WithdrawProjectCancellationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r WithdrawProjectCancellationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r WithdrawProjectCancellationResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3824,6 +5287,197 @@ func (c *ClientWithResponses) GetProjectBillingAccountWithResponse(ctx context.C
 	return ParseGetProjectBillingAccountResponse(rsp)
 }
 
+// ListProjectCancellationsWithResponse List cancellations
+//
+// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way for a subscription.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/projects/{projectId}/cancellations (the `ListProjectCancellations` operationId).
+func (c *ClientWithResponses) ListProjectCancellationsWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectCancellationsParams, reqEditors ...RequestEditorFn) (*ListProjectCancellationsResponse, error) {
+	rsp, err := c.ListProjectCancellations(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListProjectCancellationsResponse(rsp)
+}
+
+// CreateProjectCancellationWithBodyWithResponse Cancel subscriptions
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it,
+// such as a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+// unused value is returned the way it was paid, under the refund terms agreed when each
+// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+// amount confirmed here is the amount returned: prepaid service used while the resources are
+// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+// resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+// `immediate` unless its termination terms allow only the end of the paid term and that term has
+// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+// time.
+//
+// Refused with:
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+//     acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+//     account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+//     both carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+//     is in progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that
+// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+// still waiting for payment are canceled along with it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
+func (c *ClientWithResponses) CreateProjectCancellationWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectCancellationResponse, error) {
+	rsp, err := c.CreateProjectCancellationWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProjectCancellationResponse(rsp)
+}
+
+// CreateProjectCancellationWithResponse Cancel subscriptions
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it,
+// such as a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the
+// unused value is returned the way it was paid, under the refund terms agreed when each
+// subscription was bought. For `immediate` the refund is computed as of `proration_date`, so the
+// amount confirmed here is the amount returned: prepaid service used while the resources are
+// being released is not deducted from it. Usage of a postpaid subscription is charged until its
+// resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and
+// `immediate` unless its termination terms allow only the end of the paid term and that term has
+// not ended yet. For `period_end` the paid terms of all the subscriptions must end at the same
+// time.
+//
+// Refused with:
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not
+//     acceptable (`meta.field`), or the subscriptions do not all belong to one service, project,
+//     account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms;
+//     both carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
+//     is in progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that
+// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
+// still waiting for payment are canceled along with it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
+func (c *ClientWithResponses) CreateProjectCancellationWithResponse(ctx context.Context, projectId ProjectId, body CreateProjectCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectCancellationResponse, error) {
+	rsp, err := c.CreateProjectCancellation(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProjectCancellationResponse(rsp)
+}
+
+// CreateProjectCancellationPreviewWithBodyWithResponse Preview a cancellation
+//
+// What canceling these subscriptions together would return, computed now under the refund terms
+// agreed when each was bought. This request does not create a resource: nothing is recorded or
+// reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
+func (c *ClientWithResponses) CreateProjectCancellationPreviewWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectCancellationPreviewResponse, error) {
+	rsp, err := c.CreateProjectCancellationPreviewWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProjectCancellationPreviewResponse(rsp)
+}
+
+// CreateProjectCancellationPreviewWithResponse Preview a cancellation
+//
+// What canceling these subscriptions together would return, computed now under the refund terms
+// agreed when each was bought. This request does not create a resource: nothing is recorded or
+// reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
+func (c *ClientWithResponses) CreateProjectCancellationPreviewWithResponse(ctx context.Context, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectCancellationPreviewResponse, error) {
+	rsp, err := c.CreateProjectCancellationPreview(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateProjectCancellationPreviewResponse(rsp)
+}
+
+// GetProjectCancellationWithResponse Get a cancellation
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/projects/{projectId}/cancellations/{cancellationId} (the `GetProjectCancellation` operationId).
+func (c *ClientWithResponses) GetProjectCancellationWithResponse(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*GetProjectCancellationResponse, error) {
+	rsp, err := c.GetProjectCancellation(ctx, projectId, cancellationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectCancellationResponse(rsp)
+}
+
+// WithdrawProjectCancellationWithResponse Withdraw a cancellation
+//
+// Withdraws the whole cancellation while none of its resources has begun to be released; the
+// subscriptions continue as before. After that it is refused with 409
+// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw (the `WithdrawProjectCancellation` operationId).
+func (c *ClientWithResponses) WithdrawProjectCancellationWithResponse(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*WithdrawProjectCancellationResponse, error) {
+	rsp, err := c.WithdrawProjectCancellation(ctx, projectId, cancellationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseWithdrawProjectCancellationResponse(rsp)
+}
+
 // ListProjectEntitlementsWithResponse List project entitlements
 //
 // Includes capabilities bought for this project and those the project's billing account holds at
@@ -4099,6 +5753,178 @@ func ParseGetProjectBillingAccountResponse(rsp *http.Response) (*GetProjectBilli
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ProjectBillingAccount
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListProjectCancellationsResponse parses an HTTP response from a ListProjectCancellationsWithResponse call
+func ParseListProjectCancellationsResponse(rsp *http.Response) (*ListProjectCancellationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListProjectCancellationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CancellationList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateProjectCancellationResponse parses an HTTP response from a CreateProjectCancellationWithResponse call
+func ParseCreateProjectCancellationResponse(rsp *http.Response) (*CreateProjectCancellationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateProjectCancellationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Cancellation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Cancellation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateProjectCancellationPreviewResponse parses an HTTP response from a CreateProjectCancellationPreviewWithResponse call
+func ParseCreateProjectCancellationPreviewResponse(rsp *http.Response) (*CreateProjectCancellationPreviewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateProjectCancellationPreviewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CancellationRefundPreview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectCancellationResponse parses an HTTP response from a GetProjectCancellationWithResponse call
+func ParseGetProjectCancellationResponse(rsp *http.Response) (*GetProjectCancellationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectCancellationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Cancellation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseWithdrawProjectCancellationResponse parses an HTTP response from a WithdrawProjectCancellationWithResponse call
+func ParseWithdrawProjectCancellationResponse(rsp *http.Response) (*WithdrawProjectCancellationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &WithdrawProjectCancellationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Cancellation
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

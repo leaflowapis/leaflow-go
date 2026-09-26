@@ -665,6 +665,14 @@ func (s *BackupResource) encodeFields(e *jx.Encoder) {
 		s.SubscriptionItemID.Encode(e)
 	}
 	{
+		e.FieldStart("release_subscription_ids")
+		e.ArrStart()
+		for _, elem := range s.ReleaseSubscriptionIds {
+			json.EncodeUUID(e, elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("access_state")
 		s.AccessState.Encode(e)
 	}
@@ -686,7 +694,7 @@ func (s *BackupResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfBackupResource = [15]string{
+var jsonFieldsNameOfBackupResource = [16]string{
 	0:  "created_at",
 	1:  "id",
 	2:  "name",
@@ -697,11 +705,12 @@ var jsonFieldsNameOfBackupResource = [15]string{
 	7:  "order_id",
 	8:  "price_id",
 	9:  "subscription_item_id",
-	10: "access_state",
-	11: "task",
-	12: "generation",
-	13: "observed_at",
-	14: "source_availability_zone_id",
+	10: "release_subscription_ids",
+	11: "access_state",
+	12: "task",
+	13: "generation",
+	14: "observed_at",
+	15: "source_availability_zone_id",
 }
 
 // Decode decodes BackupResource from json.
@@ -825,8 +834,28 @@ func (s *BackupResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"subscription_item_id\"")
 			}
-		case "access_state":
+		case "release_subscription_ids":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				s.ReleaseSubscriptionIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ReleaseSubscriptionIds = append(s.ReleaseSubscriptionIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"release_subscription_ids\"")
+			}
+		case "access_state":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.AccessState.Decode(d); err != nil {
 					return err
@@ -836,7 +865,7 @@ func (s *BackupResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access_state\"")
 			}
 		case "task":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.Task.Decode(d); err != nil {
 					return err
@@ -846,7 +875,7 @@ func (s *BackupResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"task\"")
 			}
 		case "generation":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int64()
 				s.Generation = int64(v)
@@ -858,7 +887,7 @@ func (s *BackupResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"generation\"")
 			}
 		case "observed_at":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.ObservedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -868,7 +897,7 @@ func (s *BackupResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"observed_at\"")
 			}
 		case "source_availability_zone_id":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.SourceAvailabilityZoneID = v
@@ -890,7 +919,7 @@ func (s *BackupResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3846,6 +3875,14 @@ func (s *DiskResource) encodeFields(e *jx.Encoder) {
 		s.SubscriptionItemID.Encode(e)
 	}
 	{
+		e.FieldStart("release_subscription_ids")
+		e.ArrStart()
+		for _, elem := range s.ReleaseSubscriptionIds {
+			json.EncodeUUID(e, elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("access_state")
 		s.AccessState.Encode(e)
 	}
@@ -3869,7 +3906,7 @@ func (s *DiskResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfDiskResource = [18]string{
+var jsonFieldsNameOfDiskResource = [19]string{
 	0:  "availability_zone_id",
 	1:  "created_at",
 	2:  "disk_type_id",
@@ -3883,11 +3920,12 @@ var jsonFieldsNameOfDiskResource = [18]string{
 	10: "order_id",
 	11: "price_id",
 	12: "subscription_item_id",
-	13: "access_state",
-	14: "task",
-	15: "attachment",
-	16: "generation",
-	17: "observed_at",
+	13: "release_subscription_ids",
+	14: "access_state",
+	15: "task",
+	16: "attachment",
+	17: "generation",
+	18: "observed_at",
 }
 
 // Decode decodes DiskResource from json.
@@ -4043,8 +4081,28 @@ func (s *DiskResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"subscription_item_id\"")
 			}
-		case "access_state":
+		case "release_subscription_ids":
 			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				s.ReleaseSubscriptionIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ReleaseSubscriptionIds = append(s.ReleaseSubscriptionIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"release_subscription_ids\"")
+			}
+		case "access_state":
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.AccessState.Decode(d); err != nil {
 					return err
@@ -4054,7 +4112,7 @@ func (s *DiskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access_state\"")
 			}
 		case "task":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.Task.Decode(d); err != nil {
 					return err
@@ -4074,7 +4132,7 @@ func (s *DiskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"attachment\"")
 			}
 		case "generation":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := d.Int64()
 				s.Generation = int64(v)
@@ -4086,7 +4144,7 @@ func (s *DiskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"generation\"")
 			}
 		case "observed_at":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.ObservedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -4106,8 +4164,8 @@ func (s *DiskResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
 		0b11111111,
-		0b01111111,
-		0b00000011,
+		0b11111111,
+		0b00000110,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5149,6 +5207,14 @@ func (s *FloatingIPResource) encodeFields(e *jx.Encoder) {
 		s.SubscriptionItemID.Encode(e)
 	}
 	{
+		e.FieldStart("release_subscription_ids")
+		e.ArrStart()
+		for _, elem := range s.ReleaseSubscriptionIds {
+			json.EncodeUUID(e, elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("access_state")
 		s.AccessState.Encode(e)
 	}
@@ -5186,7 +5252,7 @@ func (s *FloatingIPResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfFloatingIPResource = [18]string{
+var jsonFieldsNameOfFloatingIPResource = [19]string{
 	0:  "address",
 	1:  "bandwidth_mbps",
 	2:  "created_at",
@@ -5196,15 +5262,16 @@ var jsonFieldsNameOfFloatingIPResource = [18]string{
 	6:  "order_id",
 	7:  "price_id",
 	8:  "subscription_item_id",
-	9:  "access_state",
-	10: "task",
-	11: "bandwidth_order_id",
-	12: "bandwidth_price_id",
-	13: "bandwidth_subscription_item_id",
-	14: "bandwidth_access_state",
-	15: "generation",
-	16: "observed_at",
-	17: "binding",
+	9:  "release_subscription_ids",
+	10: "access_state",
+	11: "task",
+	12: "bandwidth_order_id",
+	13: "bandwidth_price_id",
+	14: "bandwidth_subscription_item_id",
+	15: "bandwidth_access_state",
+	16: "generation",
+	17: "observed_at",
+	18: "binding",
 }
 
 // Decode decodes FloatingIPResource from json.
@@ -5314,8 +5381,28 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"subscription_item_id\"")
 			}
-		case "access_state":
+		case "release_subscription_ids":
 			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				s.ReleaseSubscriptionIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ReleaseSubscriptionIds = append(s.ReleaseSubscriptionIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"release_subscription_ids\"")
+			}
+		case "access_state":
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.AccessState.Decode(d); err != nil {
 					return err
@@ -5325,7 +5412,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access_state\"")
 			}
 		case "task":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.Task.Decode(d); err != nil {
 					return err
@@ -5335,7 +5422,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"task\"")
 			}
 		case "bandwidth_order_id":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.BandwidthOrderID.Decode(d); err != nil {
 					return err
@@ -5345,7 +5432,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"bandwidth_order_id\"")
 			}
 		case "bandwidth_price_id":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.BandwidthPriceID.Decode(d); err != nil {
 					return err
@@ -5355,7 +5442,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"bandwidth_price_id\"")
 			}
 		case "bandwidth_subscription_item_id":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.BandwidthSubscriptionItemID.Decode(d); err != nil {
 					return err
@@ -5365,7 +5452,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"bandwidth_subscription_item_id\"")
 			}
 		case "bandwidth_access_state":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.BandwidthAccessState.Decode(d); err != nil {
 					return err
@@ -5375,7 +5462,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"bandwidth_access_state\"")
 			}
 		case "generation":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := d.Int64()
 				s.Generation = int64(v)
@@ -5387,7 +5474,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"generation\"")
 			}
 		case "observed_at":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.ObservedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -5397,7 +5484,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"observed_at\"")
 			}
 		case "binding":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.Binding.Decode(d); err != nil {
 					return err
@@ -5418,7 +5505,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000011,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -7058,6 +7145,14 @@ func (s *InstanceResource) encodeFields(e *jx.Encoder) {
 		s.SubscriptionItemID.Encode(e)
 	}
 	{
+		e.FieldStart("release_subscription_ids")
+		e.ArrStart()
+		for _, elem := range s.ReleaseSubscriptionIds {
+			json.EncodeUUID(e, elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("access_state")
 		s.AccessState.Encode(e)
 	}
@@ -7067,7 +7162,7 @@ func (s *InstanceResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfInstanceResource = [31]string{
+var jsonFieldsNameOfInstanceResource = [32]string{
 	0:  "availability_zone_id",
 	1:  "created_at",
 	2:  "hostname",
@@ -7097,8 +7192,9 @@ var jsonFieldsNameOfInstanceResource = [31]string{
 	26: "order_id",
 	27: "price_id",
 	28: "subscription_item_id",
-	29: "access_state",
-	30: "source_disk_id",
+	29: "release_subscription_ids",
+	30: "access_state",
+	31: "source_disk_id",
 }
 
 // Decode decodes InstanceResource from json.
@@ -7449,8 +7545,28 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"subscription_item_id\"")
 			}
-		case "access_state":
+		case "release_subscription_ids":
 			requiredBitSet[3] |= 1 << 5
+			if err := func() error {
+				s.ReleaseSubscriptionIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ReleaseSubscriptionIds = append(s.ReleaseSubscriptionIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"release_subscription_ids\"")
+			}
+		case "access_state":
+			requiredBitSet[3] |= 1 << 6
 			if err := func() error {
 				if err := s.AccessState.Decode(d); err != nil {
 					return err
@@ -7460,7 +7576,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access_state\"")
 			}
 		case "source_disk_id":
-			requiredBitSet[3] |= 1 << 6
+			requiredBitSet[3] |= 1 << 7
 			if err := func() error {
 				if err := s.SourceDiskID.Decode(d); err != nil {
 					return err
@@ -7482,7 +7598,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 		0b11111111,
 		0b11111111,
 		0b11111111,
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12995,6 +13111,14 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 		s.SubscriptionItemID.Encode(e)
 	}
 	{
+		e.FieldStart("release_subscription_ids")
+		e.ArrStart()
+		for _, elem := range s.ReleaseSubscriptionIds {
+			json.EncodeUUID(e, elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("access_state")
 		s.AccessState.Encode(e)
 	}
@@ -13012,7 +13136,7 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrivateImageResource = [22]string{
+var jsonFieldsNameOfPrivateImageResource = [23]string{
 	0:  "architecture",
 	1:  "created_at",
 	2:  "failure",
@@ -13031,10 +13155,11 @@ var jsonFieldsNameOfPrivateImageResource = [22]string{
 	15: "order_id",
 	16: "price_id",
 	17: "subscription_item_id",
-	18: "access_state",
-	19: "task",
-	20: "generation",
-	21: "observed_at",
+	18: "release_subscription_ids",
+	19: "access_state",
+	20: "task",
+	21: "generation",
+	22: "observed_at",
 }
 
 // Decode decodes PrivateImageResource from json.
@@ -13250,8 +13375,28 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"subscription_item_id\"")
 			}
-		case "access_state":
+		case "release_subscription_ids":
 			requiredBitSet[2] |= 1 << 2
+			if err := func() error {
+				s.ReleaseSubscriptionIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ReleaseSubscriptionIds = append(s.ReleaseSubscriptionIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"release_subscription_ids\"")
+			}
+		case "access_state":
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				if err := s.AccessState.Decode(d); err != nil {
 					return err
@@ -13261,7 +13406,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access_state\"")
 			}
 		case "task":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				if err := s.Task.Decode(d); err != nil {
 					return err
@@ -13271,7 +13416,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"task\"")
 			}
 		case "generation":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int64()
 				s.Generation = int64(v)
@@ -13283,7 +13428,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"generation\"")
 			}
 		case "observed_at":
-			requiredBitSet[2] |= 1 << 5
+			requiredBitSet[2] |= 1 << 6
 			if err := func() error {
 				if err := s.ObservedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -13304,7 +13449,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -17524,6 +17669,14 @@ func (s *SnapshotResource) encodeFields(e *jx.Encoder) {
 		s.SubscriptionItemID.Encode(e)
 	}
 	{
+		e.FieldStart("release_subscription_ids")
+		e.ArrStart()
+		for _, elem := range s.ReleaseSubscriptionIds {
+			json.EncodeUUID(e, elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("access_state")
 		s.AccessState.Encode(e)
 	}
@@ -17541,7 +17694,7 @@ func (s *SnapshotResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSnapshotResource = [15]string{
+var jsonFieldsNameOfSnapshotResource = [16]string{
 	0:  "availability_zone_id",
 	1:  "created_at",
 	2:  "disk_id",
@@ -17553,10 +17706,11 @@ var jsonFieldsNameOfSnapshotResource = [15]string{
 	8:  "order_id",
 	9:  "price_id",
 	10: "subscription_item_id",
-	11: "access_state",
-	12: "task",
-	13: "generation",
-	14: "observed_at",
+	11: "release_subscription_ids",
+	12: "access_state",
+	13: "task",
+	14: "generation",
+	15: "observed_at",
 }
 
 // Decode decodes SnapshotResource from json.
@@ -17692,8 +17846,28 @@ func (s *SnapshotResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"subscription_item_id\"")
 			}
-		case "access_state":
+		case "release_subscription_ids":
 			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				s.ReleaseSubscriptionIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ReleaseSubscriptionIds = append(s.ReleaseSubscriptionIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"release_subscription_ids\"")
+			}
+		case "access_state":
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.AccessState.Decode(d); err != nil {
 					return err
@@ -17703,7 +17877,7 @@ func (s *SnapshotResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access_state\"")
 			}
 		case "task":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.Task.Decode(d); err != nil {
 					return err
@@ -17713,7 +17887,7 @@ func (s *SnapshotResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"task\"")
 			}
 		case "generation":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := d.Int64()
 				s.Generation = int64(v)
@@ -17725,7 +17899,7 @@ func (s *SnapshotResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"generation\"")
 			}
 		case "observed_at":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.ObservedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -17745,7 +17919,7 @@ func (s *SnapshotResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

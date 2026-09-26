@@ -44,18 +44,23 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 
 // operationRolesScopedTokenAuth is a private map storing roles per operation.
 var operationRolesScopedTokenAuth = map[string][]string{
-	CreateProjectQuoteOperation:         []string{},
-	GetProjectBillingAccountOperation:   []string{},
-	GetProjectOrderOperation:            []string{},
-	ListProjectActiveResourcesOperation: []string{},
-	ListProjectAllowancesOperation:      []string{},
-	ListProjectEntitlementsOperation:    []string{},
-	ListProjectOrderItemsOperation:      []string{},
-	ListProjectOrdersOperation:          []string{},
-	ListProjectSpendOperation:           []string{},
-	ListProjectSubscriptionsOperation:   []string{},
-	ListProjectUsageChargesOperation:    []string{},
-	SetProjectAutoRenewOperation:        []string{},
+	CreateProjectCancellationOperation:        []string{},
+	CreateProjectCancellationPreviewOperation: []string{},
+	CreateProjectQuoteOperation:               []string{},
+	GetProjectBillingAccountOperation:         []string{},
+	GetProjectCancellationOperation:           []string{},
+	GetProjectOrderOperation:                  []string{},
+	ListProjectActiveResourcesOperation:       []string{},
+	ListProjectAllowancesOperation:            []string{},
+	ListProjectCancellationsOperation:         []string{},
+	ListProjectEntitlementsOperation:          []string{},
+	ListProjectOrderItemsOperation:            []string{},
+	ListProjectOrdersOperation:                []string{},
+	ListProjectSpendOperation:                 []string{},
+	ListProjectSubscriptionsOperation:         []string{},
+	ListProjectUsageChargesOperation:          []string{},
+	SetProjectAutoRenewOperation:              []string{},
+	WithdrawProjectCancellationOperation:      []string{},
 }
 
 // GetRolesForScopedTokenAuth returns the required roles for the given operation.

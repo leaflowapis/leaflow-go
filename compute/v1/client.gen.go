@@ -911,6 +911,9 @@ type BackupResource struct {
 	PriceId     *openapi_types.UUID        `json:"price_id"`
 	RegionId    openapi_types.UUID         `json:"region_id"`
 
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this backup: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
+
 	// SizeGb Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this
 	SizeGb int64 `json:"size_gb"`
 
@@ -1134,16 +1137,19 @@ type DiskResource struct {
 	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the
 	// note on the resize endpoint: growing a disk that is attached is refused, precisely because
 	// the new figure would not take effect until it was attached again.
-	Iops               *int64              `json:"iops"`
-	Name               string              `json:"name"`
-	ObservedAt         *time.Time          `json:"observed_at"`
-	OrderId            *openapi_types.UUID `json:"order_id"`
-	PriceId            *openapi_types.UUID `json:"price_id"`
-	RegionId           openapi_types.UUID  `json:"region_id"`
-	SizeGb             int64               `json:"size_gb"`
-	Status             DiskResourceStatus  `json:"status"`
-	SubscriptionItemId *openapi_types.UUID `json:"subscription_item_id"`
-	Task               *Task               `json:"task"`
+	Iops       *int64              `json:"iops"`
+	Name       string              `json:"name"`
+	ObservedAt *time.Time          `json:"observed_at"`
+	OrderId    *openapi_types.UUID `json:"order_id"`
+	PriceId    *openapi_types.UUID `json:"price_id"`
+	RegionId   openapi_types.UUID  `json:"region_id"`
+
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this disk: its own and those of its snapshots. A system disk is released only with its instance, so for a system disk the list is that of the instance. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
+	SizeGb                 int64                `json:"size_gb"`
+	Status                 DiskResourceStatus   `json:"status"`
+	SubscriptionItemId     *openapi_types.UUID  `json:"subscription_item_id"`
+	Task                   *Task                `json:"task"`
 
 	// ThroughputBytesPerSec Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited
 	ThroughputBytesPerSec *int64 `json:"throughput_bytes_per_sec"`
@@ -1230,9 +1236,12 @@ type FloatingIPResource struct {
 	OrderId                     *openapi_types.UUID                     `json:"order_id"`
 	PriceId                     *openapi_types.UUID                     `json:"price_id"`
 	RegionId                    openapi_types.UUID                      `json:"region_id"`
-	Status                      FloatingIPResourceStatus                `json:"status"`
-	SubscriptionItemId          *openapi_types.UUID                     `json:"subscription_item_id"`
-	Task                        *Task                                   `json:"task"`
+
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this address: the subscriptions of the address and of its bandwidth. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	ReleaseSubscriptionIds []openapi_types.UUID     `json:"release_subscription_ids"`
+	Status                 FloatingIPResourceStatus `json:"status"`
+	SubscriptionItemId     *openapi_types.UUID      `json:"subscription_item_id"`
+	Task                   *Task                    `json:"task"`
 }
 
 // FloatingIPResourceAccessState defines model for FloatingIPResource.AccessState.
@@ -1367,9 +1376,12 @@ type InstanceResource struct {
 	PrivateNetworkId *openapi_types.UUID `json:"private_network_id"`
 
 	// PublicIps Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound
-	PublicIps    []string              `json:"public_ips"`
-	RegionId     openapi_types.UUID    `json:"region_id"`
-	Restrictions []InstanceRestriction `json:"restrictions"`
+	PublicIps []string           `json:"public_ips"`
+	RegionId  openapi_types.UUID `json:"region_id"`
+
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this instance: its own, those of the disks deleted with it, and those of the snapshots of those disks. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	ReleaseSubscriptionIds []openapi_types.UUID  `json:"release_subscription_ids"`
+	Restrictions           []InstanceRestriction `json:"restrictions"`
 
 	// SourceDiskId Non-empty when the instance was created from a disk you already had, instead of from an image
 	SourceDiskId       *openapi_types.UUID    `json:"source_disk_id"`
@@ -1720,6 +1732,9 @@ type PrivateImageResource struct {
 	PriceId    *openapi_types.UUID `json:"price_id"`
 	RegionId   openapi_types.UUID  `json:"region_id"`
 
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this private image: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
+
 	// SizeBytes Storage occupied by the image; 0 until the capture completes
 	SizeBytes int64 `json:"size_bytes"`
 
@@ -2019,6 +2034,9 @@ type SnapshotResource struct {
 	OrderId            *openapi_types.UUID `json:"order_id"`
 	PriceId            *openapi_types.UUID `json:"price_id"`
 	RegionId           openapi_types.UUID  `json:"region_id"`
+
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this snapshot: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 
 	// SizeGb Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller
 	SizeGb             int64                  `json:"size_gb"`
@@ -2405,7 +2423,7 @@ type ClientInterface interface {
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 	DeleteBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2500,7 +2518,7 @@ type ClientInterface interface {
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
 	DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2621,7 +2639,7 @@ type ClientInterface interface {
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released when its subscriptions end.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 	ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2733,7 +2751,7 @@ type ClientInterface interface {
 	//
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId} (the `DeleteInstance` operationId).
 	DeleteInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3246,7 +3264,7 @@ type ClientInterface interface {
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
 	DeletePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3531,7 +3549,7 @@ type ClientInterface interface {
 
 	// DeleteSnapshot Delete a snapshot
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 	DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3626,7 +3644,7 @@ func (c *Client) CreateBackup(ctx context.Context, body CreateBackupJSONRequestB
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 func (c *Client) DeleteBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3831,7 +3849,7 @@ func (c *Client) CreateDisk(ctx context.Context, body CreateDiskJSONRequestBody,
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
 func (c *Client) DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4062,7 +4080,7 @@ func (c *Client) AllocateFloatingIp(ctx context.Context, body AllocateFloatingIp
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released when its subscriptions end.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 func (c *Client) ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4294,7 +4312,7 @@ func (c *Client) LaunchInstance(ctx context.Context, body LaunchInstanceJSONRequ
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId} (the `DeleteInstance` operationId).
 func (c *Client) DeleteInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5317,7 +5335,7 @@ func (c *Client) CreatePrivateImage(ctx context.Context, body CreatePrivateImage
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
 func (c *Client) DeletePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5992,7 +6010,7 @@ func (c *Client) CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequ
 
 // DeleteSnapshot Delete a snapshot
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 func (c *Client) DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -10382,7 +10400,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10487,7 +10505,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10614,7 +10632,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released when its subscriptions end.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10738,7 +10756,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11289,7 +11307,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11616,7 +11634,7 @@ type ClientWithResponsesInterface interface {
 
 	// DeleteSnapshotWithResponse Delete a snapshot
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its subscription ends.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -16260,7 +16278,7 @@ func (c *ClientWithResponses) CreateBackupWithResponse(ctx context.Context, body
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16431,7 +16449,7 @@ func (c *ClientWithResponses) CreateDiskWithResponse(ctx context.Context, body C
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16624,7 +16642,7 @@ func (c *ClientWithResponses) AllocateFloatingIpWithResponse(ctx context.Context
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released when its subscriptions end.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16820,7 +16838,7 @@ func (c *ClientWithResponses) LaunchInstanceWithResponse(ctx context.Context, bo
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17677,7 +17695,7 @@ func (c *ClientWithResponses) CreatePrivateImageWithResponse(ctx context.Context
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18238,7 +18256,7 @@ func (c *ClientWithResponses) CreateSnapshotWithResponse(ctx context.Context, bo
 
 // DeleteSnapshotWithResponse Delete a snapshot
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its subscription ends.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Returns a wrapper object for the known response body format(s).
 //

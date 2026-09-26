@@ -33,6 +33,10 @@ type Invoker interface {
 	//
 	// Allowed only before release starts. Does not resume a previously suspended subscription.
 	//
+	// Use withdraw-cancellation, which withdraws the whole cancellation.
+	//
+	// Deprecated: schema marks this operation as deprecated.
+	//
 	// POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel
 	CancelCancellationRequest(ctx context.Context, params CancelCancellationRequestParams) (*CancellationRequest, error)
 	// CancelOrder invokes cancel-order operation.
@@ -77,10 +81,67 @@ type Invoker interface {
 	//
 	// POST /account/v1/billing-accounts
 	CreateBillingAccount(ctx context.Context, request *BillingAccountCreate) (*BillingAccount, error)
+	// CreateCancellation invokes create-cancellation operation.
+	//
+	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+	// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
+	// a server with the disks deleted along with it, or an address with its bandwidth.
+	//
+	// The service that provides the resources releases them: at once for `immediate`, or at
+	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
+	// value is returned the way it was paid, under the refund terms agreed when each subscription was
+	// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
+	// is the amount returned: prepaid service used while the resources are being released is not deducted
+	// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
+	//
+	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
+	// unless its termination terms allow only the end of the paid term and that term has not ended yet.
+	// For `period_end` the paid terms of all the subscriptions must end at the same time.
+	//
+	// Refused with:
+	//
+	//  - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
+	//    (`meta.field`), or the subscriptions do not all belong to one service, project, account and
+	//    currency;
+	//  - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+	//  - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+	//    `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
+	//    carry `meta.subscription_id`;
+	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+	//    different times;
+	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
+	//    progress;
+	//  - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+	//    `expected_refundable_amount`; preview again.
+	//
+	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
+	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
+	// payment are canceled along with it.
+	//
+	// POST /account/v1/cancellations
+	CreateCancellation(ctx context.Context, request *CancellationCreate) (CreateCancellationRes, error)
+	// CreateCancellationPreview invokes create-cancellation-preview operation.
+	//
+	// What canceling these subscriptions together would return, computed now under the refund terms agreed
+	// when each was bought. This request does not create a resource: nothing is recorded or reserved.
+	//
+	// It is refused with the same errors as creating the cancellation, except that the amount is not
+	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+	//
+	// POST /account/v1/cancellations/preview
+	CreateCancellationPreview(ctx context.Context, request *CancellationPreviewRequest) (*CancellationRefundPreview, error)
 	// CreateCancellationRequest invokes create-cancellation-request operation.
 	//
 	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual
 	// end is confirmed by the owning service. Refund processing is separate.
+	//
+	// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+	//
+	// Deprecated: schema marks this operation as deprecated.
 	//
 	// POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests
 	CreateCancellationRequest(ctx context.Context, request *CancellationRequestCreate, params CreateCancellationRequestParams) (*CancellationRequest, error)
@@ -141,9 +202,17 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountId}
 	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
+	// GetCancellation invokes get-cancellation operation.
+	//
+	// Get a cancellation.
+	//
+	// GET /account/v1/cancellations/{cancellationId}
+	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
 	// GetCancellationRequest invokes get-cancellation-request operation.
 	//
-	// Get cancellation request.
+	// Use get-cancellation.
+	//
+	// Deprecated: schema marks this operation as deprecated.
 	//
 	// GET /account/v1/cancellation-requests/{cancellationRequestId}
 	GetCancellationRequest(ctx context.Context, params GetCancellationRequestParams) (*CancellationRequest, error)
@@ -214,6 +283,13 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
+	// ListCancellations invokes list-cancellations operation.
+	//
+	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
+	// for a subscription.
+	//
+	// GET /account/v1/cancellations
+	ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error)
 	// ListCreditGrants invokes list-credit-grants operation.
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before the balance and
@@ -354,6 +430,10 @@ type Invoker interface {
 	//
 	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 	//
+	// Use create-cancellation-preview, which previews the subscriptions released together.
+	//
+	// Deprecated: schema marks this operation as deprecated.
+	//
 	// GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview
 	PreviewCancellation(ctx context.Context, params PreviewCancellationParams) (*CancellationPreview, error)
 	// PreviewInvoicePayment invokes preview-invoice-payment operation.
@@ -454,6 +534,14 @@ type Invoker interface {
 	//
 	// PATCH /account/v1/billing-accounts/{accountId}
 	UpdateBillingAccount(ctx context.Context, request *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
+	// WithdrawCancellation invokes withdraw-cancellation operation.
+	//
+	// Withdraws the whole cancellation while none of its resources has begun to be released; the
+	// subscriptions continue as before. After that it is refused with 409 `BILLING_CANCELLATION_CONFLICT`.
+	// Withdrawing one that is already withdrawn returns it unchanged.
+	//
+	// POST /account/v1/cancellations/{cancellationId}/withdraw
+	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)
 }
 
 // Client implements OAS client.
@@ -500,6 +588,10 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // CancelCancellationRequest invokes cancel-cancellation-request operation.
 //
 // Allowed only before release starts. Does not resume a previously suspended subscription.
+//
+// Use withdraw-cancellation, which withdraws the whole cancellation.
+//
+// Deprecated: schema marks this operation as deprecated.
 //
 // POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel
 func (c *Client) CancelCancellationRequest(ctx context.Context, params CancelCancellationRequestParams) (*CancellationRequest, error) {
@@ -1033,10 +1125,287 @@ func (c *Client) sendCreateBillingAccount(ctx context.Context, request *BillingA
 	return result, nil
 }
 
+// CreateCancellation invokes create-cancellation operation.
+//
+// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
+// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
+// a server with the disks deleted along with it, or an address with its bandwidth.
+//
+// The service that provides the resources releases them: at once for `immediate`, or at
+// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
+// value is returned the way it was paid, under the refund terms agreed when each subscription was
+// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
+// is the amount returned: prepaid service used while the resources are being released is not deducted
+// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
+//
+// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
+// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
+// unless its termination terms allow only the end of the paid term and that term has not ended yet.
+// For `period_end` the paid terms of all the subscriptions must end at the same time.
+//
+// Refused with:
+//
+//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
+//     (`meta.field`), or the subscriptions do not all belong to one service, project, account and
+//     currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
+//     carry `meta.subscription_id`;
+//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
+//     different times;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
+//     progress;
+//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
+//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
+//     `expected_refundable_amount`; preview again.
+//
+// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
+// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
+// payment are canceled along with it.
+//
+// POST /account/v1/cancellations
+func (c *Client) CreateCancellation(ctx context.Context, request *CancellationCreate) (CreateCancellationRes, error) {
+	res, err := c.sendCreateCancellation(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateCancellation(ctx context.Context, request *CancellationCreate) (res CreateCancellationRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-cancellation"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/cancellations"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateCancellationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/cancellations"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateCancellationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, CreateCancellationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateCancellationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateCancellationPreview invokes create-cancellation-preview operation.
+//
+// What canceling these subscriptions together would return, computed now under the refund terms agreed
+// when each was bought. This request does not create a resource: nothing is recorded or reserved.
+//
+// It is refused with the same errors as creating the cancellation, except that the amount is not
+// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
+//
+// POST /account/v1/cancellations/preview
+func (c *Client) CreateCancellationPreview(ctx context.Context, request *CancellationPreviewRequest) (*CancellationRefundPreview, error) {
+	res, err := c.sendCreateCancellationPreview(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateCancellationPreview(ctx context.Context, request *CancellationPreviewRequest) (res *CancellationRefundPreview, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-cancellation-preview"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/cancellations/preview"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateCancellationPreviewOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/cancellations/preview"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateCancellationPreviewRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, CreateCancellationPreviewOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateCancellationPreviewResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateCancellationRequest invokes create-cancellation-request operation.
 //
 // Ends the whole subscription under confirmed terms. The request does not itself stop service; actual
 // end is confirmed by the owning service. Refund processing is separate.
+//
+// Use create-cancellation, which ends the subscriptions released together and checks the refund.
+//
+// Deprecated: schema marks this operation as deprecated.
 //
 // POST /account/v1/subscriptions/{subscriptionId}/cancellation-requests
 func (c *Client) CreateCancellationRequest(ctx context.Context, request *CancellationRequestCreate, params CreateCancellationRequestParams) (*CancellationRequest, error) {
@@ -2077,9 +2446,142 @@ func (c *Client) sendGetBillingAccount(ctx context.Context, params GetBillingAcc
 	return result, nil
 }
 
+// GetCancellation invokes get-cancellation operation.
+//
+// Get a cancellation.
+//
+// GET /account/v1/cancellations/{cancellationId}
+func (c *Client) GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error) {
+	res, err := c.sendGetCancellation(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetCancellation(ctx context.Context, params GetCancellationParams) (res *Cancellation, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-cancellation"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/cancellations/{cancellationId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetCancellationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/cancellations/"
+	{
+		// Encode "cancellationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "cancellationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CancellationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, GetCancellationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetCancellationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetCancellationRequest invokes get-cancellation-request operation.
 //
-// Get cancellation request.
+// Use get-cancellation.
+//
+// Deprecated: schema marks this operation as deprecated.
 //
 // GET /account/v1/cancellation-requests/{cancellationRequestId}
 func (c *Client) GetCancellationRequest(ctx context.Context, params GetCancellationRequestParams) (*CancellationRequest, error) {
@@ -3579,6 +4081,209 @@ func (c *Client) sendListBillingAccounts(ctx context.Context, params ListBilling
 
 	stage = "DecodeResponse"
 	result, err := decodeListBillingAccountsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListCancellations invokes list-cancellations operation.
+//
+// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
+// for a subscription.
+//
+// GET /account/v1/cancellations
+func (c *Client) ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error) {
+	res, err := c.sendListCancellations(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListCancellations(ctx context.Context, params ListCancellationsParams) (res *CancellationList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-cancellations"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/cancellations"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCancellationsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/cancellations"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "subscription_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "subscription_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.SubscriptionID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListCancellationsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCancellationsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6632,6 +7337,10 @@ func (c *Client) sendPayTogether(ctx context.Context, request *PayTogetherReques
 //
 // Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 //
+// Use create-cancellation-preview, which previews the subscriptions released together.
+//
+// Deprecated: schema marks this operation as deprecated.
+//
 // GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview
 func (c *Client) PreviewCancellation(ctx context.Context, params PreviewCancellationParams) (*CancellationPreview, error) {
 	res, err := c.sendPreviewCancellation(ctx, params)
@@ -8002,6 +8711,140 @@ func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *BillingA
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateBillingAccountResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// WithdrawCancellation invokes withdraw-cancellation operation.
+//
+// Withdraws the whole cancellation while none of its resources has begun to be released; the
+// subscriptions continue as before. After that it is refused with 409 `BILLING_CANCELLATION_CONFLICT`.
+// Withdrawing one that is already withdrawn returns it unchanged.
+//
+// POST /account/v1/cancellations/{cancellationId}/withdraw
+func (c *Client) WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error) {
+	res, err := c.sendWithdrawCancellation(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendWithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (res *Cancellation, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("withdraw-cancellation"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/cancellations/{cancellationId}/withdraw"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, WithdrawCancellationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/cancellations/"
+	{
+		// Encode "cancellationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "cancellationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CancellationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/withdraw"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, WithdrawCancellationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeWithdrawCancellationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

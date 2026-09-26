@@ -3598,8 +3598,9 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a
-// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
-// subscription ends.
+// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/backups/{backupId}
 func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3802,8 +3803,9 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
-// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
-// ends.
+// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/disks/{diskId}
 func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4012,7 +4014,8 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
 // that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-// resource. It is released when its subscription ends.
+// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
+// through Billing, the same set as its `release_subscription_ids`.
 //
 // DELETE /api/v1/instances/{instanceId}
 func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4619,8 +4622,9 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-// pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
-// ends.
+// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/private-images/{privateImageId}
 func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5631,8 +5635,9 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 // handleDeleteSnapshotRequest handles delete-snapshot operation.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a
-// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
-// subscription ends.
+// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15195,7 +15200,8 @@ func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w 
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
 // bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
-// released when its subscriptions end.
+// released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same
+// set as its `release_subscription_ids`.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
