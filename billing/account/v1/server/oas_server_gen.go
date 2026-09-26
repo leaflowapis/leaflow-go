@@ -258,7 +258,7 @@ type Handler interface {
 	ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error)
 	// ListRefunds implements list-refunds operation.
 	//
-	// List refunds.
+	// Newest first.
 	//
 	// GET /account/v1/refunds
 	ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error)

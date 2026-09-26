@@ -3299,6 +3299,17 @@ func (s *Refund) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if err := s.Reason.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "reason",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -3361,6 +3372,35 @@ func (s RefundPolicy) Validate() error {
 	case "none":
 		return nil
 	case "prorated":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s RefundReason) Validate() error {
+	switch s {
+	case "provisioning_failed":
+		return nil
+	case "order_expired":
+		return nil
+	case "order_canceled":
+		return nil
+	case "change_canceled":
+		return nil
+	case "change_expired":
+		return nil
+	case "subscription_canceled":
+		return nil
+	case "future_period_canceled":
+		return nil
+	case "downgrade_difference":
+		return nil
+	case "usage_true_up":
+		return nil
+	case "payment_not_applied":
+		return nil
+	case "operator":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -4162,6 +4202,24 @@ func (s *Transaction) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if value, ok := s.RefundDestination.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "refund_destination",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.Status.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -4252,6 +4310,19 @@ func (s *TransactionList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s TransactionRefundDestination) Validate() error {
+	switch s {
+	case "balance":
+		return nil
+	case "credit":
+		return nil
+	case "gateway":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s TransactionStatus) Validate() error {

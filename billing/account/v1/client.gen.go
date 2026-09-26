@@ -720,16 +720,16 @@ func (e QuoteLinePriceType) Valid() bool {
 
 // Defines values for RefundDestination.
 const (
-	Balance RefundDestination = "balance"
-	Gateway RefundDestination = "gateway"
+	RefundDestinationBalance RefundDestination = "balance"
+	RefundDestinationGateway RefundDestination = "gateway"
 )
 
 // Valid indicates whether the value is a known member of the RefundDestination enum.
 func (e RefundDestination) Valid() bool {
 	switch e {
-	case Balance:
+	case RefundDestinationBalance:
 		return true
-	case Gateway:
+	case RefundDestinationGateway:
 		return true
 	default:
 		return false
@@ -772,6 +772,51 @@ func (e RefundPolicy) Valid() bool {
 	case RefundPolicyNone:
 		return true
 	case RefundPolicyProrated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RefundReason.
+const (
+	ChangeCanceled       RefundReason = "change_canceled"
+	ChangeExpired        RefundReason = "change_expired"
+	DowngradeDifference  RefundReason = "downgrade_difference"
+	FuturePeriodCanceled RefundReason = "future_period_canceled"
+	Operator             RefundReason = "operator"
+	OrderCanceled        RefundReason = "order_canceled"
+	OrderExpired         RefundReason = "order_expired"
+	PaymentNotApplied    RefundReason = "payment_not_applied"
+	ProvisioningFailed   RefundReason = "provisioning_failed"
+	SubscriptionCanceled RefundReason = "subscription_canceled"
+	UsageTrueUp          RefundReason = "usage_true_up"
+)
+
+// Valid indicates whether the value is a known member of the RefundReason enum.
+func (e RefundReason) Valid() bool {
+	switch e {
+	case ChangeCanceled:
+		return true
+	case ChangeExpired:
+		return true
+	case DowngradeDifference:
+		return true
+	case FuturePeriodCanceled:
+		return true
+	case Operator:
+		return true
+	case OrderCanceled:
+		return true
+	case OrderExpired:
+		return true
+	case PaymentNotApplied:
+		return true
+	case ProvisioningFailed:
+		return true
+	case SubscriptionCanceled:
+		return true
+	case UsageTrueUp:
 		return true
 	default:
 		return false
@@ -949,6 +994,27 @@ func (e TopUpStatus) Valid() bool {
 	case TopUpStatusPending:
 		return true
 	case TopUpStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TransactionRefundDestination.
+const (
+	TransactionRefundDestinationBalance TransactionRefundDestination = "balance"
+	TransactionRefundDestinationCredit  TransactionRefundDestination = "credit"
+	TransactionRefundDestinationGateway TransactionRefundDestination = "gateway"
+)
+
+// Valid indicates whether the value is a known member of the TransactionRefundDestination enum.
+func (e TransactionRefundDestination) Valid() bool {
+	switch e {
+	case TransactionRefundDestinationBalance:
+		return true
+	case TransactionRefundDestinationCredit:
+		return true
+	case TransactionRefundDestinationGateway:
 		return true
 	default:
 		return false
@@ -2353,34 +2419,65 @@ type QuoteLinePriceType string
 
 // Refund defines model for Refund.
 type Refund struct {
-	// Amount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	Amount                externalRef0.Money  `json:"amount"`
+	// Amount The whole refund. Equals balance_amount plus credit_amount plus gateway_amount.
+	Amount externalRef0.Money `json:"amount"`
+
+	// BalanceAmount The part returned to the account balance.
+	BalanceAmount         externalRef0.Money  `json:"balance_amount"`
 	BillingAccountId      *int64              `json:"billing_account_id,omitempty"`
 	CancellationRequestId *openapi_types.UUID `json:"cancellation_request_id,omitempty"`
 	CreatedAt             time.Time           `json:"created_at"`
-	Currency              string              `json:"currency"`
 
-	// Destination Where the refunded money went — back to the account balance, or back to the payment method it came from.
-	Destination *RefundDestination  `json:"destination,omitempty"`
-	Id          openapi_types.UUID  `json:"id"`
-	InvoiceId   *openapi_types.UUID `json:"invoice_id,omitempty"`
-	OrderId     *openapi_types.UUID `json:"order_id,omitempty"`
-	Reason      *string             `json:"reason,omitempty"`
+	// CreditAmount The part restored to the credit grants that paid for it.
+	CreditAmount externalRef0.Money `json:"credit_amount"`
+	Currency     string             `json:"currency"`
+
+	// Destination Use balance_amount, credit_amount and gateway_amount, which also show a refund split between several destinations.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Destination *RefundDestination `json:"destination,omitempty"`
+
+	// GatewayAmount The part returned to the payment method it was paid with.
+	GatewayAmount externalRef0.Money  `json:"gateway_amount"`
+	Id            openapi_types.UUID  `json:"id"`
+	InvoiceId     *openapi_types.UUID `json:"invoice_id,omitempty"`
+
+	// OrderId The order the refund belongs to: the order that caused it, such as a downgrade, otherwise
+	// the order of the refunded invoice. Null for refunds of top-ups and of usage invoices.
+	OrderId *openapi_types.UUID `json:"order_id,omitempty"`
+
+	// Reason Why the refund was made. Clients map the code to their own wording. More codes may be added;
+	// treat an unknown code as a refund without a stated reason.
+	//
+	// - `provisioning_failed`: the purchase could not be delivered.
+	// - `order_expired`: the order expired after part of it had been paid.
+	// - `order_canceled`: the account holder canceled the order after part of it had been paid.
+	// - `change_canceled`: a scheduled change was withdrawn after it had been paid.
+	// - `change_expired`: a scheduled change could not take effect before its time passed.
+	// - `subscription_canceled`: the subscription was canceled and its unused value returned under
+	//   its refund terms.
+	// - `future_period_canceled`: a renewal that had not started yet was withdrawn.
+	// - `downgrade_difference`: the unused value above the new price after a downgrade.
+	// - `usage_true_up`: usage priced again over the whole month cost less than was charged.
+	// - `payment_not_applied`: a payment arrived after its invoice could no longer be paid.
+	// - `operator`: made by the platform operator.
+	Reason RefundReason `json:"reason"`
 
 	// SettledAmount What has actually been returned.
 	SettledAmount *externalRef0.Money `json:"settled_amount,omitempty"`
 
-	// Status Summary of the related refund transactions. Succeeded only when every part succeeds.
-	// Pending and processing do not mean funds have been returned. Partial success remains
-	// visible in settled_amount and transactions, including when another part has failed.
+	// SettledAt When the last part was returned. Present with `succeeded`.
+	SettledAt *time.Time `json:"settled_at,omitempty"`
+
+	// Status Summary of the parts in `transactions`.
+	//
+	// - `pending`: nothing has been returned yet, and at least one part is in progress.
+	// - `processing`: some parts have been returned, and at least one is still in progress.
+	// - `succeeded`: every part has been returned.
+	// - `failed`: no part is in progress and at least one has failed. What was returned is in
+	//   settled_amount.
+	//
+	// Returns to the balance and to credit grants complete shortly after the refund is made; a
+	// return to a payment method completes when the gateway confirms it.
 	Status        RefundStatus        `json:"status"`
 	TransactionId *openapi_types.UUID `json:"transaction_id,omitempty"`
 
@@ -2388,12 +2485,21 @@ type Refund struct {
 	Transactions []Transaction `json:"transactions"`
 }
 
-// RefundDestination Where the refunded money went — back to the account balance, or back to the payment method it came from.
+// RefundDestination Use balance_amount, credit_amount and gateway_amount, which also show a refund split between several destinations.
+//
+// Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 type RefundDestination string
 
-// RefundStatus Summary of the related refund transactions. Succeeded only when every part succeeds.
-// Pending and processing do not mean funds have been returned. Partial success remains
-// visible in settled_amount and transactions, including when another part has failed.
+// RefundStatus Summary of the parts in `transactions`.
+//
+//   - `pending`: nothing has been returned yet, and at least one part is in progress.
+//   - `processing`: some parts have been returned, and at least one is still in progress.
+//   - `succeeded`: every part has been returned.
+//   - `failed`: no part is in progress and at least one has failed. What was returned is in
+//     settled_amount.
+//
+// Returns to the balance and to credit grants complete shortly after the refund is made; a
+// return to a payment method completes when the gateway confirms it.
 type RefundStatus string
 
 // RefundList defines model for RefundList.
@@ -2404,6 +2510,23 @@ type RefundList struct {
 
 // RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
 type RefundPolicy string
+
+// RefundReason Why the refund was made. Clients map the code to their own wording. More codes may be added;
+// treat an unknown code as a refund without a stated reason.
+//
+//   - `provisioning_failed`: the purchase could not be delivered.
+//   - `order_expired`: the order expired after part of it had been paid.
+//   - `order_canceled`: the account holder canceled the order after part of it had been paid.
+//   - `change_canceled`: a scheduled change was withdrawn after it had been paid.
+//   - `change_expired`: a scheduled change could not take effect before its time passed.
+//   - `subscription_canceled`: the subscription was canceled and its unused value returned under
+//     its refund terms.
+//   - `future_period_canceled`: a renewal that had not started yet was withdrawn.
+//   - `downgrade_difference`: the unused value above the new price after a downgrade.
+//   - `usage_true_up`: usage priced again over the whole month cost less than was charged.
+//   - `payment_not_applied`: a payment arrived after its invoice could no longer be paid.
+//   - `operator`: made by the platform operator.
+type RefundReason string
 
 // RenewRequest defines model for RenewRequest.
 type RenewRequest struct {
@@ -2696,7 +2819,10 @@ type TopUpList struct {
 
 // Transaction A funds operation. Each payment has one source; refunds identify the original successful transaction. Unknown gateway results remain pending. Payments from the balance or a gateway are distinct from credit-grant payments.
 type Transaction struct {
-	// Amount Signed. Positive adds to the balance, negative takes from it.
+	// Amount Signed by type: positive for `topup` and `payment`, negative for `refund` and `payout`.
+	// An `adjustment` is positive when it adds to the balance and negative when it takes from
+	// it. For the other types the sign does not tell the effect on the balance: a payment from
+	// the balance lowers it, while a payment by gateway or by credit leaves it unchanged.
 	Amount           externalRef0.Money `json:"amount"`
 	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
 
@@ -2705,7 +2831,9 @@ type Transaction struct {
 	CreatedAt          time.Time                  `json:"created_at"`
 
 	// CreditGrant A catalog object inlined for display.
-	CreditGrant   *ObjectIdentity     `json:"credit_grant,omitempty"`
+	CreditGrant *ObjectIdentity `json:"credit_grant,omitempty"`
+
+	// CreditGrantId The credit grant that paid, or for a refund, the credit grant restored.
 	CreditGrantId *openapi_types.UUID `json:"credit_grant_id,omitempty"`
 	Currency      string              `json:"currency"`
 
@@ -2721,9 +2849,17 @@ type Transaction struct {
 	MethodType     *string             `json:"method_type,omitempty"`
 	PaymentGateway *string             `json:"payment_gateway,omitempty"`
 	Reason         *string             `json:"reason,omitempty"`
-	RefundId       *openapi_types.UUID `json:"refund_id,omitempty"`
 
-	// RemainingAmount How much of this batch has not been spent yet. Zero on negative batches.
+	// RefundDestination Present on refunds. Where this part of the refund goes.
+	//
+	// - `balance`: back to the account balance.
+	// - `credit`: back to the credit grant that paid, which keeps its original expiry.
+	// - `gateway`: back to the payment method it was paid with.
+	RefundDestination *TransactionRefundDestination `json:"refund_destination,omitempty"`
+	RefundId          *openapi_types.UUID           `json:"refund_id,omitempty"`
+
+	// RemainingAmount How much of this transaction is still available in the balance. Only top-ups, positive
+	// adjustments and gateway payments later returned to the balance can be non-zero.
 	RemainingAmount externalRef0.Money `json:"remaining_amount"`
 	SettledAt       *time.Time         `json:"settled_at,omitempty"`
 
@@ -2736,6 +2872,13 @@ type Transaction struct {
 	// Type topup adds to the balance; payment settles an invoice; refund returns original funds; payout withdraws from the balance; adjustment changes the balance with an audit reason.
 	Type TransactionType `json:"type"`
 }
+
+// TransactionRefundDestination Present on refunds. Where this part of the refund goes.
+//
+// - `balance`: back to the account balance.
+// - `credit`: back to the credit grant that paid, which keeps its original expiry.
+// - `gateway`: back to the payment method it was paid with.
+type TransactionRefundDestination string
 
 // TransactionStatus `failed` means the operation did not succeed; for a gateway payment, that the gateway declined
 // it. `canceled` means a gateway payment was withdrawn without collecting money. After either,
@@ -3023,6 +3166,14 @@ type ListRefundsParams struct {
 
 	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
 	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
+
+	// InvoiceId Only the refunds of this invoice.
+	InvoiceId *openapi_types.UUID `form:"invoice_id,omitempty" json:"invoice_id,omitempty"`
+
+	// OrderId Only the refunds that belong to this order: those of its invoice, such as the refund of a
+	// purchase that could not be delivered, and those it caused on an earlier invoice, such as
+	// the difference returned after a downgrade.
+	OrderId *openapi_types.UUID `form:"order_id,omitempty" json:"order_id,omitempty"`
 }
 
 // ListSubscriptionsParams defines parameters for ListSubscriptions.
@@ -3634,6 +3785,8 @@ type ClientInterface interface {
 	PreviewPromotionCode(ctx context.Context, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRefunds List refunds
+	//
+	// Newest first.
 	//
 	// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
 	ListRefunds(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4673,6 +4826,8 @@ func (c *Client) PreviewPromotionCode(ctx context.Context, body PreviewPromotion
 }
 
 // ListRefunds List refunds
+//
+// Newest first.
 //
 // Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
 func (c *Client) ListRefunds(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6987,6 +7142,30 @@ func NewListRefundsRequest(server string, params *ListRefundsParams) (*http.Requ
 
 		}
 
+		if params.InvoiceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "invoice_id", *params.InvoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.OrderId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "order_id", *params.OrderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -8358,6 +8537,8 @@ type ClientWithResponsesInterface interface {
 	PreviewPromotionCodeWithResponse(ctx context.Context, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewPromotionCodeResponse, error)
 
 	// ListRefundsWithResponse List refunds
+	//
+	// Newest first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11667,6 +11848,8 @@ func (c *ClientWithResponses) PreviewPromotionCodeWithResponse(ctx context.Conte
 }
 
 // ListRefundsWithResponse List refunds
+//
+// Newest first.
 //
 // Returns a wrapper object for the known response body format(s).
 //

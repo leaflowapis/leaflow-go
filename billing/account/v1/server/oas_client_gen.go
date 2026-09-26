@@ -279,7 +279,7 @@ type Invoker interface {
 	ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error)
 	// ListRefunds invokes list-refunds operation.
 	//
-	// List refunds.
+	// Newest first.
 	//
 	// GET /account/v1/refunds
 	ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error)
@@ -5163,7 +5163,7 @@ func (c *Client) sendListPaymentOptions(ctx context.Context, params ListPaymentO
 
 // ListRefunds invokes list-refunds operation.
 //
-// List refunds.
+// Newest first.
 //
 // GET /account/v1/refunds
 func (c *Client) ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error) {
@@ -5259,6 +5259,40 @@ func (c *Client) sendListRefunds(ctx context.Context, params ListRefundsParams) 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.BillingAccountID.Get(); ok {
 				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "invoice_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "invoice_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.InvoiceID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "order_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "order_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.OrderID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {

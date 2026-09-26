@@ -6444,7 +6444,7 @@ func (s *Server) handleListPaymentOptionsRequest(args [1]string, argsEscaped boo
 
 // handleListRefundsRequest handles list-refunds operation.
 //
-// List refunds.
+// Newest first.
 //
 // GET /account/v1/refunds
 func (s *Server) handleListRefundsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6599,6 +6599,14 @@ func (s *Server) handleListRefundsRequest(args [0]string, argsEscaped bool, w ht
 					Name: "billing_account_id",
 					In:   "query",
 				}: params.BillingAccountID,
+				{
+					Name: "invoice_id",
+					In:   "query",
+				}: params.InvoiceID,
+				{
+					Name: "order_id",
+					In:   "query",
+				}: params.OrderID,
 			},
 			Raw: r,
 		}

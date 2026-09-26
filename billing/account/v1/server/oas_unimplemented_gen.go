@@ -356,7 +356,7 @@ func (UnimplementedHandler) ListPaymentOptions(ctx context.Context, params ListP
 
 // ListRefunds implements list-refunds operation.
 //
-// List refunds.
+// Newest first.
 //
 // GET /account/v1/refunds
 func (UnimplementedHandler) ListRefunds(ctx context.Context, params ListRefundsParams) (r *RefundList, _ error) {

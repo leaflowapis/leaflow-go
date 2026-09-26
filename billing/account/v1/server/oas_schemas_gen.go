@@ -5434,6 +5434,52 @@ func (o OptTerminationPolicy) Or(d TerminationPolicy) TerminationPolicy {
 	return d
 }
 
+// NewOptTransactionRefundDestination returns new OptTransactionRefundDestination with value set to v.
+func NewOptTransactionRefundDestination(v TransactionRefundDestination) OptTransactionRefundDestination {
+	return OptTransactionRefundDestination{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTransactionRefundDestination is optional TransactionRefundDestination.
+type OptTransactionRefundDestination struct {
+	Value TransactionRefundDestination
+	Set   bool
+}
+
+// IsSet returns true if OptTransactionRefundDestination was set.
+func (o OptTransactionRefundDestination) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTransactionRefundDestination) Reset() {
+	var v TransactionRefundDestination
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTransactionRefundDestination) SetTo(v TransactionRefundDestination) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTransactionRefundDestination) Get() (v TransactionRefundDestination, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTransactionRefundDestination) Or(d TransactionRefundDestination) TransactionRefundDestination {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptTransactionStatus returns new OptTransactionStatus with value set to v.
 func NewOptTransactionStatus(v TransactionStatus) OptTransactionStatus {
 	return OptTransactionStatus{
@@ -8924,19 +8970,39 @@ type Refund struct {
 	ID               uuid.UUID     `json:"id"`
 	BillingAccountID OptInt64      `json:"billing_account_id"`
 	InvoiceID        OptNilUUID    `json:"invoice_id"`
-	OrderID          OptNilUUID    `json:"order_id"`
-	Amount           Money         `json:"amount"`
+	// The order the refund belongs to: the order that caused it, such as a downgrade, otherwise the order
+	// of the refunded invoice. Null for refunds of top-ups and of usage invoices.
+	OrderID OptNilUUID `json:"order_id"`
+	// The whole refund. Equals balance_amount plus credit_amount plus gateway_amount.
+	Amount Money `json:"amount"`
+	// The part returned to the account balance.
+	BalanceAmount Money `json:"balance_amount"`
+	// The part restored to the credit grants that paid for it.
+	CreditAmount Money `json:"credit_amount"`
+	// The part returned to the payment method it was paid with.
+	GatewayAmount Money `json:"gateway_amount"`
 	// What has actually been returned.
 	SettledAmount OptMoney `json:"settled_amount"`
 	Currency      string   `json:"currency"`
-	// Where the refunded money went — back to the account balance, or back to the payment method it came
-	// from.
+	// Use balance_amount, credit_amount and gateway_amount, which also show a refund split between several
+	// destinations.
+	//
+	// Deprecated: schema marks this property as deprecated.
 	Destination OptRefundDestination `json:"destination"`
-	// Summary of the related refund transactions. Succeeded only when every part succeeds. Pending and
-	// processing do not mean funds have been returned. Partial success remains visible in settled_amount
-	// and transactions, including when another part has failed.
-	Status    RefundStatus `json:"status"`
-	Reason    OptString    `json:"reason"`
+	// Summary of the parts in `transactions`.
+	//
+	//  - `pending`: nothing has been returned yet, and at least one part is in progress.
+	//  - `processing`: some parts have been returned, and at least one is still in progress.
+	//  - `succeeded`: every part has been returned.
+	//  - `failed`: no part is in progress and at least one has failed. What was returned is in
+	//    settled_amount.
+	//
+	// Returns to the balance and to credit grants complete shortly after the refund is made; a return to a
+	// payment method completes when the gateway confirms it.
+	Status RefundStatus `json:"status"`
+	// When the last part was returned. Present with `succeeded`.
+	SettledAt OptDateTime  `json:"settled_at"`
+	Reason    RefundReason `json:"reason"`
 	CreatedAt time.Time    `json:"created_at"`
 }
 
@@ -8980,6 +9046,21 @@ func (s *Refund) GetAmount() Money {
 	return s.Amount
 }
 
+// GetBalanceAmount returns the value of BalanceAmount.
+func (s *Refund) GetBalanceAmount() Money {
+	return s.BalanceAmount
+}
+
+// GetCreditAmount returns the value of CreditAmount.
+func (s *Refund) GetCreditAmount() Money {
+	return s.CreditAmount
+}
+
+// GetGatewayAmount returns the value of GatewayAmount.
+func (s *Refund) GetGatewayAmount() Money {
+	return s.GatewayAmount
+}
+
 // GetSettledAmount returns the value of SettledAmount.
 func (s *Refund) GetSettledAmount() OptMoney {
 	return s.SettledAmount
@@ -9000,8 +9081,13 @@ func (s *Refund) GetStatus() RefundStatus {
 	return s.Status
 }
 
+// GetSettledAt returns the value of SettledAt.
+func (s *Refund) GetSettledAt() OptDateTime {
+	return s.SettledAt
+}
+
 // GetReason returns the value of Reason.
-func (s *Refund) GetReason() OptString {
+func (s *Refund) GetReason() RefundReason {
 	return s.Reason
 }
 
@@ -9050,6 +9136,21 @@ func (s *Refund) SetAmount(val Money) {
 	s.Amount = val
 }
 
+// SetBalanceAmount sets the value of BalanceAmount.
+func (s *Refund) SetBalanceAmount(val Money) {
+	s.BalanceAmount = val
+}
+
+// SetCreditAmount sets the value of CreditAmount.
+func (s *Refund) SetCreditAmount(val Money) {
+	s.CreditAmount = val
+}
+
+// SetGatewayAmount sets the value of GatewayAmount.
+func (s *Refund) SetGatewayAmount(val Money) {
+	s.GatewayAmount = val
+}
+
 // SetSettledAmount sets the value of SettledAmount.
 func (s *Refund) SetSettledAmount(val OptMoney) {
 	s.SettledAmount = val
@@ -9070,8 +9171,13 @@ func (s *Refund) SetStatus(val RefundStatus) {
 	s.Status = val
 }
 
+// SetSettledAt sets the value of SettledAt.
+func (s *Refund) SetSettledAt(val OptDateTime) {
+	s.SettledAt = val
+}
+
 // SetReason sets the value of Reason.
-func (s *Refund) SetReason(val OptString) {
+func (s *Refund) SetReason(val RefundReason) {
 	s.Reason = val
 }
 
@@ -9080,8 +9186,10 @@ func (s *Refund) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// Where the refunded money went — back to the account balance, or back to the payment method it came
-// from.
+// Use balance_amount, credit_amount and gateway_amount, which also show a refund split between several
+// destinations.
+//
+// Deprecated: schema marks this type as deprecated.
 type RefundDestination string
 
 const (
@@ -9193,9 +9301,137 @@ func (s *RefundPolicy) UnmarshalText(data []byte) error {
 	}
 }
 
-// Summary of the related refund transactions. Succeeded only when every part succeeds. Pending and
-// processing do not mean funds have been returned. Partial success remains visible in settled_amount
-// and transactions, including when another part has failed.
+// Why the refund was made. Clients map the code to their own wording. More codes may be added; treat
+// an unknown code as a refund without a stated reason.
+//
+//   - `provisioning_failed`: the purchase could not be delivered.
+//   - `order_expired`: the order expired after part of it had been paid.
+//   - `order_canceled`: the account holder canceled the order after part of it had been paid.
+//   - `change_canceled`: a scheduled change was withdrawn after it had been paid.
+//   - `change_expired`: a scheduled change could not take effect before its time passed.
+//   - `subscription_canceled`: the subscription was canceled and its unused value returned under its
+//     refund terms.
+//   - `future_period_canceled`: a renewal that had not started yet was withdrawn.
+//   - `downgrade_difference`: the unused value above the new price after a downgrade.
+//   - `usage_true_up`: usage priced again over the whole month cost less than was charged.
+//   - `payment_not_applied`: a payment arrived after its invoice could no longer be paid.
+//   - `operator`: made by the platform operator.
+//
+// Ref: #/components/schemas/RefundReason
+type RefundReason string
+
+const (
+	RefundReasonProvisioningFailed   RefundReason = "provisioning_failed"
+	RefundReasonOrderExpired         RefundReason = "order_expired"
+	RefundReasonOrderCanceled        RefundReason = "order_canceled"
+	RefundReasonChangeCanceled       RefundReason = "change_canceled"
+	RefundReasonChangeExpired        RefundReason = "change_expired"
+	RefundReasonSubscriptionCanceled RefundReason = "subscription_canceled"
+	RefundReasonFuturePeriodCanceled RefundReason = "future_period_canceled"
+	RefundReasonDowngradeDifference  RefundReason = "downgrade_difference"
+	RefundReasonUsageTrueUp          RefundReason = "usage_true_up"
+	RefundReasonPaymentNotApplied    RefundReason = "payment_not_applied"
+	RefundReasonOperator             RefundReason = "operator"
+)
+
+// AllValues returns all RefundReason values.
+func (RefundReason) AllValues() []RefundReason {
+	return []RefundReason{
+		RefundReasonProvisioningFailed,
+		RefundReasonOrderExpired,
+		RefundReasonOrderCanceled,
+		RefundReasonChangeCanceled,
+		RefundReasonChangeExpired,
+		RefundReasonSubscriptionCanceled,
+		RefundReasonFuturePeriodCanceled,
+		RefundReasonDowngradeDifference,
+		RefundReasonUsageTrueUp,
+		RefundReasonPaymentNotApplied,
+		RefundReasonOperator,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RefundReason) MarshalText() ([]byte, error) {
+	switch s {
+	case RefundReasonProvisioningFailed:
+		return []byte(s), nil
+	case RefundReasonOrderExpired:
+		return []byte(s), nil
+	case RefundReasonOrderCanceled:
+		return []byte(s), nil
+	case RefundReasonChangeCanceled:
+		return []byte(s), nil
+	case RefundReasonChangeExpired:
+		return []byte(s), nil
+	case RefundReasonSubscriptionCanceled:
+		return []byte(s), nil
+	case RefundReasonFuturePeriodCanceled:
+		return []byte(s), nil
+	case RefundReasonDowngradeDifference:
+		return []byte(s), nil
+	case RefundReasonUsageTrueUp:
+		return []byte(s), nil
+	case RefundReasonPaymentNotApplied:
+		return []byte(s), nil
+	case RefundReasonOperator:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RefundReason) UnmarshalText(data []byte) error {
+	switch RefundReason(data) {
+	case RefundReasonProvisioningFailed:
+		*s = RefundReasonProvisioningFailed
+		return nil
+	case RefundReasonOrderExpired:
+		*s = RefundReasonOrderExpired
+		return nil
+	case RefundReasonOrderCanceled:
+		*s = RefundReasonOrderCanceled
+		return nil
+	case RefundReasonChangeCanceled:
+		*s = RefundReasonChangeCanceled
+		return nil
+	case RefundReasonChangeExpired:
+		*s = RefundReasonChangeExpired
+		return nil
+	case RefundReasonSubscriptionCanceled:
+		*s = RefundReasonSubscriptionCanceled
+		return nil
+	case RefundReasonFuturePeriodCanceled:
+		*s = RefundReasonFuturePeriodCanceled
+		return nil
+	case RefundReasonDowngradeDifference:
+		*s = RefundReasonDowngradeDifference
+		return nil
+	case RefundReasonUsageTrueUp:
+		*s = RefundReasonUsageTrueUp
+		return nil
+	case RefundReasonPaymentNotApplied:
+		*s = RefundReasonPaymentNotApplied
+		return nil
+	case RefundReasonOperator:
+		*s = RefundReasonOperator
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Summary of the parts in `transactions`.
+//
+//   - `pending`: nothing has been returned yet, and at least one part is in progress.
+//   - `processing`: some parts have been returned, and at least one is still in progress.
+//   - `succeeded`: every part has been returned.
+//   - `failed`: no part is in progress and at least one has failed. What was returned is in
+//     settled_amount.
+//
+// Returns to the balance and to credit grants complete shortly after the refund is made; a return to a
+// payment method completes when the gateway confirms it.
 type RefundStatus string
 
 const (
@@ -10794,11 +11030,18 @@ func (s *TopUpStatus) UnmarshalText(data []byte) error {
 // distinct from credit-grant payments.
 // Ref: #/components/schemas/Transaction
 type Transaction struct {
-	InvoiceID     OptUUID           `json:"invoice_id"`
-	TransactionID OptUUID           `json:"transaction_id"`
+	InvoiceID     OptUUID `json:"invoice_id"`
+	TransactionID OptUUID `json:"transaction_id"`
+	// The credit grant that paid, or for a refund, the credit grant restored.
 	CreditGrantID OptUUID           `json:"credit_grant_id"`
 	CreditGrant   OptObjectIdentity `json:"credit_grant"`
 	RefundID      OptUUID           `json:"refund_id"`
+	// Present on refunds. Where this part of the refund goes.
+	//
+	//  - `balance`: back to the account balance.
+	//  - `credit`: back to the credit grant that paid, which keeps its original expiry.
+	//  - `gateway`: back to the payment method it was paid with.
+	RefundDestination OptTransactionRefundDestination `json:"refund_destination"`
 	// `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
 	// `canceled` means a gateway payment was withdrawn without collecting money. After either, an invoice
 	// the payment was meant to pay remains open for another payment.
@@ -10817,9 +11060,13 @@ type Transaction struct {
 	ID               uuid.UUID       `json:"id"`
 	BillingAccountID OptInt64        `json:"billing_account_id"`
 	Type             TransactionType `json:"type"`
-	// Signed. Positive adds to the balance, negative takes from it.
+	// Signed by type: positive for `topup` and `payment`, negative for `refund` and `payout`. An
+	// `adjustment` is positive when it adds to the balance and negative when it takes from it. For the
+	// other types the sign does not tell the effect on the balance: a payment from the balance lowers it,
+	// while a payment by gateway or by credit leaves it unchanged.
 	Amount Money `json:"amount"`
-	// How much of this batch has not been spent yet. Zero on negative batches.
+	// How much of this transaction is still available in the balance. Only top-ups, positive adjustments
+	// and gateway payments later returned to the balance can be non-zero.
 	RemainingAmount Money     `json:"remaining_amount"`
 	Currency        string    `json:"currency"`
 	Reason          OptString `json:"reason"`
@@ -10849,6 +11096,11 @@ func (s *Transaction) GetCreditGrant() OptObjectIdentity {
 // GetRefundID returns the value of RefundID.
 func (s *Transaction) GetRefundID() OptUUID {
 	return s.RefundID
+}
+
+// GetRefundDestination returns the value of RefundDestination.
+func (s *Transaction) GetRefundDestination() OptTransactionRefundDestination {
+	return s.RefundDestination
 }
 
 // GetStatus returns the value of Status.
@@ -10946,6 +11198,11 @@ func (s *Transaction) SetRefundID(val OptUUID) {
 	s.RefundID = val
 }
 
+// SetRefundDestination sets the value of RefundDestination.
+func (s *Transaction) SetRefundDestination(val OptTransactionRefundDestination) {
+	s.RefundDestination = val
+}
+
 // SetStatus sets the value of Status.
 func (s *Transaction) SetStatus(val OptTransactionStatus) {
 	s.Status = val
@@ -11040,6 +11297,59 @@ func (s *TransactionList) SetItems(val []Transaction) {
 // SetTotalCount sets the value of TotalCount.
 func (s *TransactionList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
+}
+
+// Present on refunds. Where this part of the refund goes.
+//
+//   - `balance`: back to the account balance.
+//   - `credit`: back to the credit grant that paid, which keeps its original expiry.
+//   - `gateway`: back to the payment method it was paid with.
+type TransactionRefundDestination string
+
+const (
+	TransactionRefundDestinationBalance TransactionRefundDestination = "balance"
+	TransactionRefundDestinationCredit  TransactionRefundDestination = "credit"
+	TransactionRefundDestinationGateway TransactionRefundDestination = "gateway"
+)
+
+// AllValues returns all TransactionRefundDestination values.
+func (TransactionRefundDestination) AllValues() []TransactionRefundDestination {
+	return []TransactionRefundDestination{
+		TransactionRefundDestinationBalance,
+		TransactionRefundDestinationCredit,
+		TransactionRefundDestinationGateway,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TransactionRefundDestination) MarshalText() ([]byte, error) {
+	switch s {
+	case TransactionRefundDestinationBalance:
+		return []byte(s), nil
+	case TransactionRefundDestinationCredit:
+		return []byte(s), nil
+	case TransactionRefundDestinationGateway:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TransactionRefundDestination) UnmarshalText(data []byte) error {
+	switch TransactionRefundDestination(data) {
+	case TransactionRefundDestinationBalance:
+		*s = TransactionRefundDestinationBalance
+		return nil
+	case TransactionRefundDestinationCredit:
+		*s = TransactionRefundDestinationCredit
+		return nil
+	case TransactionRefundDestinationGateway:
+		*s = TransactionRefundDestinationGateway
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
