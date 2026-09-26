@@ -724,6 +724,9 @@ type Error = externalRef0.Error
 
 // InvoiceStatus `refunded` means the invoice was paid and has since been refunded in full; a partial refund
 // leaves it `paid`, with the refunded part in `amount_refunded`.
+//
+// `void` means the invoice will not be paid and holds no money: nothing was paid, or its order
+// failed or was canceled and everything paid toward it has been returned.
 type InvoiceStatus string
 
 // InvoiceSummary Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
@@ -740,6 +743,9 @@ type InvoiceSummary struct {
 
 	// Status `refunded` means the invoice was paid and has since been refunded in full; a partial refund
 	// leaves it `paid`, with the refunded part in `amount_refunded`.
+	//
+	// `void` means the invoice will not be paid and holds no money: nothing was paid, or its order
+	// failed or was canceled and everything paid toward it has been returned.
 	Status InvoiceStatus `json:"status"`
 
 	// Subtotal Sum of the line amounts before discounts. Where prices include tax, the tax contained in

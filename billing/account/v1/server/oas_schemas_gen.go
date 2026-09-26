@@ -2926,6 +2926,10 @@ func (s *InvoiceList) SetTotalCount(val OptInt64) {
 //
 // `refunded` means the invoice was paid and has since been refunded in full; a partial refund leaves
 // it `paid`, with the refunded part in `amount_refunded`.
+//
+// `void` means the invoice will not be paid and holds no money: nothing was paid, or its order failed
+// or was canceled and everything paid toward it has been returned, as `amount_paid` and
+// `amount_refunded` show.
 // Ref: #/components/schemas/InvoiceStatus
 type InvoiceStatus string
 

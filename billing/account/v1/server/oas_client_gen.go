@@ -40,8 +40,9 @@ type Invoker interface {
 	// Withdraws an order that is not paid in full, and tells the service that placed it, so that nothing
 	// is delivered. An order with nothing paid becomes `canceled` and its invoice is voided. What was
 	// already paid toward it, from credit grants or the balance, is returned the way it was paid, and the
-	// order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`. Canceling an order
-	// that is already canceled or failed returns it unchanged.
+	// order becomes `failed`; its invoice is voided once everything paid has been returned. Either way
+	// `cancel_reason` is `requested_by_customer`. Canceling an order that is already canceled or failed
+	// returns it unchanged.
 	//
 	// Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
 	// `BILLING_ORDER_ALREADY_ACCEPTED` once the order has been accepted, `BILLING_ORDER_PAYMENT_IN_FLIGHT`
@@ -327,7 +328,10 @@ type Invoker interface {
 	// Returns a checkout address when the gateway requires the cardholder to confirm the payment; the
 	// invoice is marked paid once the gateway confirms it.
 	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
+	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice is
+	// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
+	// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
+	// has passed, with `BILLING_ORDER_EXPIRED`.
 	//
 	// POST /account/v1/invoices/{invoiceId}/pay
 	PayInvoice(ctx context.Context, request OptPayRequest, params PayInvoiceParams) (*PaymentResult, error)
@@ -340,8 +344,9 @@ type Invoker interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover them all,
 	// the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. Invoices that are
 	// already paid are not charged again. An invoice with an online payment still in progress is refused
-	// with `BILLING_PAYMENT_PENDING`, and an order whose payment deadline has passed with
-	// `BILLING_ORDER_EXPIRED`.
+	// with `BILLING_PAYMENT_PENDING`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, an order that has
+	// failed or was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose
+	// payment deadline has passed with `BILLING_ORDER_EXPIRED`.
 	//
 	// POST /account/v1/payments
 	PayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentResult, error)
@@ -384,10 +389,17 @@ type Invoker interface {
 	PreviewPromotionCode(ctx context.Context, request *PromotionCodePreviewRequest) (*PromotionCodePreview, error)
 	// RenewSubscription invokes renew-subscription operation.
 	//
-	// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval
-	// selects a current price and freezes new terms on the order, applied only after fulfillment. Existing
-	// paid periods keep their value. Save order_id before submitting and query the order after an unknown
-	// outcome; duplicate creation conflicts.
+	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+	// once. A changed interval selects a current price and freezes new terms on the order, applied only
+	// after fulfillment. Existing paid periods keep their value.
+	//
+	// Without `payment_method_id`, the renewal is paid from credit grants and the balance as `use_credits`
+	// and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+	// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order and
+	// pay its invoice instead.
+	//
+	// Save order_id before submitting and query the order after an unknown outcome; duplicate creation
+	// conflicts.
 	//
 	// POST /account/v1/subscriptions/{subscriptionId}/renew
 	RenewSubscription(ctx context.Context, request *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error)
@@ -622,8 +634,9 @@ func (c *Client) sendCancelCancellationRequest(ctx context.Context, params Cance
 // Withdraws an order that is not paid in full, and tells the service that placed it, so that nothing
 // is delivered. An order with nothing paid becomes `canceled` and its invoice is voided. What was
 // already paid toward it, from credit grants or the balance, is returned the way it was paid, and the
-// order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`. Canceling an order
-// that is already canceled or failed returns it unchanged.
+// order becomes `failed`; its invoice is voided once everything paid has been returned. Either way
+// `cancel_reason` is `requested_by_customer`. Canceling an order that is already canceled or failed
+// returns it unchanged.
 //
 // Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
 // `BILLING_ORDER_ALREADY_ACCEPTED` once the order has been accepted, `BILLING_ORDER_PAYMENT_IN_FLIGHT`
@@ -6354,7 +6367,10 @@ func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageCharg
 // Returns a checkout address when the gateway requires the cardholder to confirm the payment; the
 // invoice is marked paid once the gateway confirms it.
 //
-// Calling this on an invoice that is already paid returns the invoice unchanged.
+// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice is
+// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
+// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
+// has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // POST /account/v1/invoices/{invoiceId}/pay
 func (c *Client) PayInvoice(ctx context.Context, request OptPayRequest, params PayInvoiceParams) (*PaymentResult, error) {
@@ -6496,8 +6512,9 @@ func (c *Client) sendPayInvoice(ctx context.Context, request OptPayRequest, para
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover them all,
 // the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. Invoices that are
 // already paid are not charged again. An invoice with an online payment still in progress is refused
-// with `BILLING_PAYMENT_PENDING`, and an order whose payment deadline has passed with
-// `BILLING_ORDER_EXPIRED`.
+// with `BILLING_PAYMENT_PENDING`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, an order that has
+// failed or was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose
+// payment deadline has passed with `BILLING_ORDER_EXPIRED`.
 //
 // POST /account/v1/payments
 func (c *Client) PayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentResult, error) {
@@ -7160,10 +7177,17 @@ func (c *Client) sendPreviewPromotionCode(ctx context.Context, request *Promotio
 
 // RenewSubscription invokes renew-subscription operation.
 //
-// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval
-// selects a current price and freezes new terms on the order, applied only after fulfillment. Existing
-// paid periods keep their value. Save order_id before submitting and query the order after an unknown
-// outcome; duplicate creation conflicts.
+// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+// once. A changed interval selects a current price and freezes new terms on the order, applied only
+// after fulfillment. Existing paid periods keep their value.
+//
+// Without `payment_method_id`, the renewal is paid from credit grants and the balance as `use_credits`
+// and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order and
+// pay its invoice instead.
+//
+// Save order_id before submitting and query the order after an unknown outcome; duplicate creation
+// conflicts.
 //
 // POST /account/v1/subscriptions/{subscriptionId}/renew
 func (c *Client) RenewSubscription(ctx context.Context, request *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error) {

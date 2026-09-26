@@ -1561,6 +1561,10 @@ type Invoice struct {
 	//
 	// `refunded` means the invoice was paid and has since been refunded in full; a partial refund
 	// leaves it `paid`, with the refunded part in `amount_refunded`.
+	//
+	// `void` means the invoice will not be paid and holds no money: nothing was paid, or its order
+	// failed or was canceled and everything paid toward it has been returned, as `amount_paid` and
+	// `amount_refunded` show.
 	Status InvoiceStatus `json:"status"`
 
 	// Subtotal Sum of the line amounts before discounts. Where prices include tax, the tax contained in
@@ -1671,6 +1675,10 @@ type InvoiceList struct {
 //
 // `refunded` means the invoice was paid and has since been refunded in full; a partial refund
 // leaves it `paid`, with the refunded part in `amount_refunded`.
+//
+// `void` means the invoice will not be paid and holds no money: nothing was paid, or its order
+// failed or was canceled and everything paid toward it has been returned, as `amount_paid` and
+// `amount_refunded` show.
 type InvoiceStatus string
 
 // InvoiceSummary Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
@@ -1691,6 +1699,10 @@ type InvoiceSummary struct {
 	//
 	// `refunded` means the invoice was paid and has since been refunded in full; a partial refund
 	// leaves it `paid`, with the refunded part in `amount_refunded`.
+	//
+	// `void` means the invoice will not be paid and holds no money: nothing was paid, or its order
+	// failed or was canceled and everything paid toward it has been returned, as `amount_paid` and
+	// `amount_refunded` show.
 	Status InvoiceStatus `json:"status"`
 
 	// Subtotal Sum of the line amounts before discounts. Where prices include tax, the tax contained in
@@ -3520,7 +3532,10 @@ type ClientInterface interface {
 	// Returns a checkout address when the gateway requires the cardholder to confirm the
 	// payment; the invoice is marked paid once the gateway confirms it.
 	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
+	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
+	// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3535,7 +3550,10 @@ type ClientInterface interface {
 	// Returns a checkout address when the gateway requires the cardholder to confirm the
 	// payment; the invoice is marked paid once the gateway confirms it.
 	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
+	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
+	// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3572,7 +3590,8 @@ type ClientInterface interface {
 	// Withdraws an order that is not paid in full, and tells the service that placed it, so that
 	// nothing is delivered. An order with nothing paid becomes `canceled` and its invoice is voided.
 	// What was already paid toward it, from credit grants or the balance, is returned the way it was
-	// paid, and the order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`.
+	// paid, and the order becomes `failed`; its invoice is voided once everything paid has been
+	// returned. Either way `cancel_reason` is `requested_by_customer`.
 	// Canceling an order that is already canceled or failed returns it unchanged.
 	//
 	// Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
@@ -3644,8 +3663,10 @@ type ClientInterface interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover
 	// them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 	// Invoices that are already paid are not charged again. An invoice with an online payment
-	// still in progress is refused with `BILLING_PAYMENT_PENDING`, and an order whose payment
-	// deadline has passed with `BILLING_ORDER_EXPIRED`.
+	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+	// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
+	// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
+	// passed with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3661,8 +3682,10 @@ type ClientInterface interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover
 	// them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 	// Invoices that are already paid are not charged again. An invoice with an online payment
-	// still in progress is refused with `BILLING_PAYMENT_PENDING`, and an order whose payment
-	// deadline has passed with `BILLING_ORDER_EXPIRED`.
+	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+	// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
+	// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
+	// passed with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3846,7 +3869,17 @@ type ClientInterface interface {
 
 	// RenewSubscriptionWithBody Renew subscription
 	//
-	// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval selects a current price and freezes new terms on the order, applied only after fulfillment. Existing paid periods keep their value. Save order_id before submitting and query the order after an unknown outcome; duplicate creation conflicts.
+	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+	// once. A changed interval selects a current price and freezes new terms on the order, applied
+	// only after fulfillment. Existing paid periods keep their value.
+	//
+	// Without `payment_method_id`, the renewal is paid from credit grants and the balance as
+	// `use_credits` and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+	// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order
+	// and pay its invoice instead.
+	//
+	// Save order_id before submitting and query the order after an unknown outcome; duplicate
+	// creation conflicts.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3855,7 +3888,17 @@ type ClientInterface interface {
 
 	// RenewSubscription Renew subscription
 	//
-	// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval selects a current price and freezes new terms on the order, applied only after fulfillment. Existing paid periods keep their value. Save order_id before submitting and query the order after an unknown outcome; duplicate creation conflicts.
+	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+	// once. A changed interval selects a current price and freezes new terms on the order, applied
+	// only after fulfillment. Existing paid periods keep their value.
+	//
+	// Without `payment_method_id`, the renewal is paid from credit grants and the balance as
+	// `use_credits` and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+	// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order
+	// and pay its invoice instead.
+	//
+	// Save order_id before submitting and query the order after an unknown outcome; duplicate
+	// creation conflicts.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -4331,7 +4374,10 @@ func (c *Client) ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, para
 // Returns a checkout address when the gateway requires the cardholder to confirm the
 // payment; the invoice is marked paid once the gateway confirms it.
 //
-// Calling this on an invoice that is already paid returns the invoice unchanged.
+// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
+// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4356,7 +4402,10 @@ func (c *Client) PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, co
 // Returns a checkout address when the gateway requires the cardholder to confirm the
 // payment; the invoice is marked paid once the gateway confirms it.
 //
-// Calling this on an invoice that is already paid returns the invoice unchanged.
+// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
+// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4433,7 +4482,8 @@ func (c *Client) GetOrder(ctx context.Context, orderId OrderId, reqEditors ...Re
 // Withdraws an order that is not paid in full, and tells the service that placed it, so that
 // nothing is delivered. An order with nothing paid becomes `canceled` and its invoice is voided.
 // What was already paid toward it, from credit grants or the balance, is returned the way it was
-// paid, and the order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`.
+// paid, and the order becomes `failed`; its invoice is voided once everything paid has been
+// returned. Either way `cancel_reason` is `requested_by_customer`.
 // Canceling an order that is already canceled or failed returns it unchanged.
 //
 // Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
@@ -4575,8 +4625,10 @@ func (c *Client) SetDefaultPaymentMethod(ctx context.Context, paymentMethodId Pa
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover
 // them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 // Invoices that are already paid are not charged again. An invoice with an online payment
-// still in progress is refused with `BILLING_PAYMENT_PENDING`, and an order whose payment
-// deadline has passed with `BILLING_ORDER_EXPIRED`.
+// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
+// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
+// passed with `BILLING_ORDER_EXPIRED`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4602,8 +4654,10 @@ func (c *Client) PayTogetherWithBody(ctx context.Context, contentType string, bo
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover
 // them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 // Invoices that are already paid are not charged again. An invoice with an online payment
-// still in progress is refused with `BILLING_PAYMENT_PENDING`, and an order whose payment
-// deadline has passed with `BILLING_ORDER_EXPIRED`.
+// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
+// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
+// passed with `BILLING_ORDER_EXPIRED`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4967,7 +5021,17 @@ func (c *Client) CreateCancellationRequest(ctx context.Context, subscriptionId S
 
 // RenewSubscriptionWithBody Renew subscription
 //
-// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval selects a current price and freezes new terms on the order, applied only after fulfillment. Existing paid periods keep their value. Save order_id before submitting and query the order after an unknown outcome; duplicate creation conflicts.
+// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+// once. A changed interval selects a current price and freezes new terms on the order, applied
+// only after fulfillment. Existing paid periods keep their value.
+//
+// Without `payment_method_id`, the renewal is paid from credit grants and the balance as
+// `use_credits` and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order
+// and pay its invoice instead.
+//
+// Save order_id before submitting and query the order after an unknown outcome; duplicate
+// creation conflicts.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4986,7 +5050,17 @@ func (c *Client) RenewSubscriptionWithBody(ctx context.Context, subscriptionId S
 
 // RenewSubscription Renew subscription
 //
-// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval selects a current price and freezes new terms on the order, applied only after fulfillment. Existing paid periods keep their value. Save order_id before submitting and query the order after an unknown outcome; duplicate creation conflicts.
+// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+// once. A changed interval selects a current price and freezes new terms on the order, applied
+// only after fulfillment. Existing paid periods keep their value.
+//
+// Without `payment_method_id`, the renewal is paid from credit grants and the balance as
+// `use_credits` and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order
+// and pay its invoice instead.
+//
+// Save order_id before submitting and query the order after an unknown outcome; duplicate
+// creation conflicts.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8250,7 +8324,10 @@ type ClientWithResponsesInterface interface {
 	// Returns a checkout address when the gateway requires the cardholder to confirm the
 	// payment; the invoice is marked paid once the gateway confirms it.
 	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
+	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
+	// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -8265,7 +8342,10 @@ type ClientWithResponsesInterface interface {
 	// Returns a checkout address when the gateway requires the cardholder to confirm the
 	// payment; the invoice is marked paid once the gateway confirms it.
 	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged.
+	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
+	// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -8308,7 +8388,8 @@ type ClientWithResponsesInterface interface {
 	// Withdraws an order that is not paid in full, and tells the service that placed it, so that
 	// nothing is delivered. An order with nothing paid becomes `canceled` and its invoice is voided.
 	// What was already paid toward it, from credit grants or the balance, is returned the way it was
-	// paid, and the order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`.
+	// paid, and the order becomes `failed`; its invoice is voided once everything paid has been
+	// returned. Either way `cancel_reason` is `requested_by_customer`.
 	// Canceling an order that is already canceled or failed returns it unchanged.
 	//
 	// Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
@@ -8390,8 +8471,10 @@ type ClientWithResponsesInterface interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover
 	// them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 	// Invoices that are already paid are not charged again. An invoice with an online payment
-	// still in progress is refused with `BILLING_PAYMENT_PENDING`, and an order whose payment
-	// deadline has passed with `BILLING_ORDER_EXPIRED`.
+	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+	// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
+	// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
+	// passed with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -8407,8 +8490,10 @@ type ClientWithResponsesInterface interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover
 	// them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 	// Invoices that are already paid are not charged again. An invoice with an online payment
-	// still in progress is refused with `BILLING_PAYMENT_PENDING`, and an order whose payment
-	// deadline has passed with `BILLING_ORDER_EXPIRED`.
+	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+	// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
+	// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
+	// passed with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -8606,7 +8691,17 @@ type ClientWithResponsesInterface interface {
 
 	// RenewSubscriptionWithBodyWithResponse Renew subscription
 	//
-	// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval selects a current price and freezes new terms on the order, applied only after fulfillment. Existing paid periods keep their value. Save order_id before submitting and query the order after an unknown outcome; duplicate creation conflicts.
+	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+	// once. A changed interval selects a current price and freezes new terms on the order, applied
+	// only after fulfillment. Existing paid periods keep their value.
+	//
+	// Without `payment_method_id`, the renewal is paid from credit grants and the balance as
+	// `use_credits` and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+	// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order
+	// and pay its invoice instead.
+	//
+	// Save order_id before submitting and query the order after an unknown outcome; duplicate
+	// creation conflicts.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -8615,7 +8710,17 @@ type ClientWithResponsesInterface interface {
 
 	// RenewSubscriptionWithResponse Renew subscription
 	//
-	// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval selects a current price and freezes new terms on the order, applied only after fulfillment. Existing paid periods keep their value. Save order_id before submitting and query the order after an unknown outcome; duplicate creation conflicts.
+	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+	// once. A changed interval selects a current price and freezes new terms on the order, applied
+	// only after fulfillment. Existing paid periods keep their value.
+	//
+	// Without `payment_method_id`, the renewal is paid from credit grants and the balance as
+	// `use_credits` and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+	// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order
+	// and pay its invoice instead.
+	//
+	// Save order_id before submitting and query the order after an unknown outcome; duplicate
+	// creation conflicts.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11423,7 +11528,10 @@ func (c *ClientWithResponses) ListInvoiceItemsWithResponse(ctx context.Context, 
 // Returns a checkout address when the gateway requires the cardholder to confirm the
 // payment; the invoice is marked paid once the gateway confirms it.
 //
-// Calling this on an invoice that is already paid returns the invoice unchanged.
+// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
+// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -11444,7 +11552,10 @@ func (c *ClientWithResponses) PayInvoiceWithBodyWithResponse(ctx context.Context
 // Returns a checkout address when the gateway requires the cardholder to confirm the
 // payment; the invoice is marked paid once the gateway confirms it.
 //
-// Calling this on an invoice that is already paid returns the invoice unchanged.
+// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
+// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -11511,7 +11622,8 @@ func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, orderId 
 // Withdraws an order that is not paid in full, and tells the service that placed it, so that
 // nothing is delivered. An order with nothing paid becomes `canceled` and its invoice is voided.
 // What was already paid toward it, from credit grants or the balance, is returned the way it was
-// paid, and the order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`.
+// paid, and the order becomes `failed`; its invoice is voided once everything paid has been
+// returned. Either way `cancel_reason` is `requested_by_customer`.
 // Canceling an order that is already canceled or failed returns it unchanged.
 //
 // Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
@@ -11635,8 +11747,10 @@ func (c *ClientWithResponses) SetDefaultPaymentMethodWithResponse(ctx context.Co
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover
 // them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 // Invoices that are already paid are not charged again. An invoice with an online payment
-// still in progress is refused with `BILLING_PAYMENT_PENDING`, and an order whose payment
-// deadline has passed with `BILLING_ORDER_EXPIRED`.
+// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
+// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
+// passed with `BILLING_ORDER_EXPIRED`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -11658,8 +11772,10 @@ func (c *ClientWithResponses) PayTogetherWithBodyWithResponse(ctx context.Contex
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover
 // them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 // Invoices that are already paid are not charged again. An invoice with an online payment
-// still in progress is refused with `BILLING_PAYMENT_PENDING`, and an order whose payment
-// deadline has passed with `BILLING_ORDER_EXPIRED`.
+// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
+// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
+// passed with `BILLING_ORDER_EXPIRED`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -11965,7 +12081,17 @@ func (c *ClientWithResponses) CreateCancellationRequestWithResponse(ctx context.
 
 // RenewSubscriptionWithBodyWithResponse Renew subscription
 //
-// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval selects a current price and freezes new terms on the order, applied only after fulfillment. Existing paid periods keep their value. Save order_id before submitting and query the order after an unknown outcome; duplicate creation conflicts.
+// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+// once. A changed interval selects a current price and freezes new terms on the order, applied
+// only after fulfillment. Existing paid periods keep their value.
+//
+// Without `payment_method_id`, the renewal is paid from credit grants and the balance as
+// `use_credits` and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order
+// and pay its invoice instead.
+//
+// Save order_id before submitting and query the order after an unknown outcome; duplicate
+// creation conflicts.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -11980,7 +12106,17 @@ func (c *ClientWithResponses) RenewSubscriptionWithBodyWithResponse(ctx context.
 
 // RenewSubscriptionWithResponse Renew subscription
 //
-// Purchases prepaid periods from paid_until using the agreed recurring amount. A changed interval selects a current price and freezes new terms on the order, applied only after fulfillment. Existing paid periods keep their value. Save order_id before submitting and query the order after an unknown outcome; duplicate creation conflicts.
+// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
+// once. A changed interval selects a current price and freezes new terms on the order, applied
+// only after fulfillment. Existing paid periods keep their value.
+//
+// Without `payment_method_id`, the renewal is paid from credit grants and the balance as
+// `use_credits` and `use_balance` allow; when they cannot pay it all, the renewal is refused with
+// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order
+// and pay its invoice instead.
+//
+// Save order_id before submitting and query the order after an unknown outcome; duplicate
+// creation conflicts.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
