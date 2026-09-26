@@ -2269,15 +2269,7 @@ type OrderType string
 
 // OrderItem Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are absent when there is no immediate invoice. Later catalog changes do not reprice this line.
 type OrderItem struct {
-	// Amount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
+	// Amount `gross_amount` less `discount_amount`.
 	Amount *externalRef0.Money `json:"amount,omitempty"`
 
 	// BillingType The payment timing of the selected price.
@@ -2286,26 +2278,22 @@ type OrderItem struct {
 	Configuration      map[string]interface{} `json:"configuration,omitempty"`
 	Currency           string                 `json:"currency"`
 
-	// DiscountAmount A decimal string, in the currency stated alongside it.
+	// DiscountAmount The reduction on this line: from the coupon the order uses and, for a renewal at the agreed terms,
+	// from the discount the subscription carries.
 	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
+	// A carried discount is part of the agreed amount. It is listed here, and `gross_amount` is then
+	// `unit_amount` times `quantity`, except in two cases where `gross_amount` is the agreed amount and
+	// the carried discount is already reflected in it: the renewal order also uses a coupon the account
+	// holds, or the account's tax rate is inclusive.
 	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
 
-	// GrossAmount A decimal string, in the currency stated alongside it.
+	// GrossAmount Before discounts: the price applied to the quantity, which for a per-unit price is `unit_amount`
+	// times `quantity`; a minimum charge can make it higher. For a change that takes effect at once it is
+	// the prorated difference. The setup fee is not part of it; see `setup_amount`.
 	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
+	// Under an inclusive tax rate it includes tax, as the price does, and the included part is
+	// `tax_included_amount`. A renewal at the agreed terms is the exception: the agreed amount excludes
+	// tax, and tax is added to it.
 	GrossAmount   *externalRef0.Money `json:"gross_amount,omitempty"`
 	Id            openapi_types.UUID  `json:"id"`
 	Interval      OrderItemInterval   `json:"interval"`
@@ -2349,15 +2337,9 @@ type OrderItem struct {
 	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
 	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
 
-	// UnitAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
+	// UnitAmount The unit amount of the price this line is charged under. Absent for a tiered price, which has no
+	// single unit amount, and for a change that takes effect at once, which is charged the prorated
+	// difference.
 	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 }
 

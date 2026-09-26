@@ -7154,16 +7154,34 @@ type OrderItem struct {
 	// Which plan was bought.
 	PlanID uuid.UUID `json:"plan_id"`
 	// What it was called when bought. It does not follow later catalogue renames and is not translated.
-	PlanName       string          `json:"plan_name"`
-	Quantity       string          `json:"quantity"`
-	UnitAmount     OptMoney        `json:"unit_amount"`
-	GrossAmount    OptMoney        `json:"gross_amount"`
-	DiscountAmount OptMoney        `json:"discount_amount"`
-	Amount         OptMoney        `json:"amount"`
-	Currency       string          `json:"currency"`
-	PeriodStart    OptNilDateTime  `json:"period_start"`
-	PeriodEnd      OptNilDateTime  `json:"period_end"`
-	Status         OrderItemStatus `json:"status"`
+	PlanName string `json:"plan_name"`
+	Quantity string `json:"quantity"`
+	// The unit amount of the price this line is charged under. Absent for a tiered price, which has no
+	// single unit amount, and for a change that takes effect at once, which is charged the prorated
+	// difference.
+	UnitAmount OptMoney `json:"unit_amount"`
+	// Before discounts: the price applied to the quantity, which for a per-unit price is `unit_amount`
+	// times `quantity`; a minimum charge can make it higher. For a change that takes effect at once it is
+	// the prorated difference. The setup fee is not part of it; see `setup_amount`.
+	//
+	// Under an inclusive tax rate it includes tax, as the price does, and the included part is
+	// `tax_included_amount`. A renewal at the agreed terms is the exception: the agreed amount excludes
+	// tax, and tax is added to it.
+	GrossAmount OptMoney `json:"gross_amount"`
+	// The reduction on this line: from the coupon the order uses and, for a renewal at the agreed terms,
+	// from the discount the subscription carries.
+	//
+	// A carried discount is part of the agreed amount. It is listed here, and `gross_amount` is then
+	// `unit_amount` times `quantity`, except in two cases where `gross_amount` is the agreed amount and
+	// the carried discount is already reflected in it: the renewal order also uses a coupon the account
+	// holds, or the account's tax rate is inclusive.
+	DiscountAmount OptMoney `json:"discount_amount"`
+	// `gross_amount` less `discount_amount`.
+	Amount      OptMoney        `json:"amount"`
+	Currency    string          `json:"currency"`
+	PeriodStart OptNilDateTime  `json:"period_start"`
+	PeriodEnd   OptNilDateTime  `json:"period_end"`
+	Status      OrderItemStatus `json:"status"`
 }
 
 // GetPosition returns the value of Position.
