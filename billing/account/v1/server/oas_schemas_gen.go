@@ -2547,7 +2547,11 @@ type InvoiceItem struct {
 	ID          uuid.UUID          `json:"id"`
 	Type        OptInvoiceItemType `json:"type"`
 	ProjectID   OptNilUUID         `json:"project_id"`
-	ResourceID  OptString          `json:"resource_id"`
+	// The project the charge was for and its current name, for display. Absent when the line is not for a
+	// project, and when the project no longer exists or its details cannot be read at the moment;
+	// `project_id` still identifies it then.
+	Project    OptNilNamedIdentity `json:"project"`
+	ResourceID OptString           `json:"resource_id"`
 	// The wording as recorded when the invoice was issued. It is not re-translated afterwards, so that an
 	// invoice continues to read as it did when it was sent.
 	Description string    `json:"description"`
@@ -2605,6 +2609,11 @@ func (s *InvoiceItem) GetType() OptInvoiceItemType {
 // GetProjectID returns the value of ProjectID.
 func (s *InvoiceItem) GetProjectID() OptNilUUID {
 	return s.ProjectID
+}
+
+// GetProject returns the value of Project.
+func (s *InvoiceItem) GetProject() OptNilNamedIdentity {
+	return s.Project
 }
 
 // GetResourceID returns the value of ResourceID.
@@ -2700,6 +2709,11 @@ func (s *InvoiceItem) SetType(val OptInvoiceItemType) {
 // SetProjectID sets the value of ProjectID.
 func (s *InvoiceItem) SetProjectID(val OptNilUUID) {
 	s.ProjectID = val
+}
+
+// SetProject sets the value of Project.
+func (s *InvoiceItem) SetProject(val OptNilNamedIdentity) {
+	s.Project = val
 }
 
 // SetResourceID sets the value of ResourceID.
@@ -2869,6 +2883,9 @@ func (s *InvoiceList) SetTotalCount(val OptInt64) {
 // A usage invoice stays `draft` through its month: each charge is added to it as it is priced and paid
 // from credits and balance as it goes. It is issued at the end of the month, becoming `paid` when
 // everything was covered and `open` when something is still owed.
+//
+// `refunded` means the invoice was paid and has since been refunded in full; a partial refund leaves
+// it `paid`, with the refunded part in `amount_refunded`.
 // Ref: #/components/schemas/InvoiceStatus
 type InvoiceStatus string
 
@@ -2876,6 +2893,7 @@ const (
 	InvoiceStatusDraft         InvoiceStatus = "draft"
 	InvoiceStatusOpen          InvoiceStatus = "open"
 	InvoiceStatusPaid          InvoiceStatus = "paid"
+	InvoiceStatusRefunded      InvoiceStatus = "refunded"
 	InvoiceStatusVoid          InvoiceStatus = "void"
 	InvoiceStatusUncollectible InvoiceStatus = "uncollectible"
 )
@@ -2886,6 +2904,7 @@ func (InvoiceStatus) AllValues() []InvoiceStatus {
 		InvoiceStatusDraft,
 		InvoiceStatusOpen,
 		InvoiceStatusPaid,
+		InvoiceStatusRefunded,
 		InvoiceStatusVoid,
 		InvoiceStatusUncollectible,
 	}
@@ -2899,6 +2918,8 @@ func (s InvoiceStatus) MarshalText() ([]byte, error) {
 	case InvoiceStatusOpen:
 		return []byte(s), nil
 	case InvoiceStatusPaid:
+		return []byte(s), nil
+	case InvoiceStatusRefunded:
 		return []byte(s), nil
 	case InvoiceStatusVoid:
 		return []byte(s), nil
@@ -2920,6 +2941,9 @@ func (s *InvoiceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case InvoiceStatusPaid:
 		*s = InvoiceStatusPaid
+		return nil
+	case InvoiceStatusRefunded:
+		*s = InvoiceStatusRefunded
 		return nil
 	case InvoiceStatusVoid:
 		*s = InvoiceStatusVoid
@@ -3223,6 +3247,40 @@ func (s *ListCreditGrantsStatus) UnmarshalText(data []byte) error {
 }
 
 type Money string
+
+// Which object this is, together with what a person currently calls it.
+//
+// The name is for display. It is chosen by whoever owns the object, it changes, it is not unique
+// between objects, and it may be empty when nobody has named it yet — so it must not be used to
+// address, match or deduplicate anything. Addressing is by id.
+//
+// This differs from an identity carrying a lookup key: a lookup key is written once by an operator, is
+// unique, and can be used to fetch the object. A name cannot.
+// Ref: #/components/schemas/NamedIdentity
+type NamedIdentity struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// GetID returns the value of ID.
+func (s *NamedIdentity) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *NamedIdentity) GetName() string {
+	return s.Name
+}
+
+// SetID sets the value of ID.
+func (s *NamedIdentity) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *NamedIdentity) SetName(val string) {
+	s.Name = val
+}
 
 // A catalog object inlined for display.
 // Ref: #/components/schemas/ObjectIdentity
@@ -4128,6 +4186,74 @@ func (o OptNilInt) Get() (v int, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilNamedIdentity returns new OptNilNamedIdentity with value set to v.
+func NewOptNilNamedIdentity(v NamedIdentity) OptNilNamedIdentity {
+	return OptNilNamedIdentity{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilNamedIdentity is optional nullable NamedIdentity.
+type OptNilNamedIdentity struct {
+	Value NamedIdentity
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilNamedIdentity was set.
+func (o OptNilNamedIdentity) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilNamedIdentity) Reset() {
+	var v NamedIdentity
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilNamedIdentity) SetTo(v NamedIdentity) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilNamedIdentity) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilNamedIdentity) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v NamedIdentity
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilNamedIdentity) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilNamedIdentity) Get() (v NamedIdentity, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilNamedIdentity) Or(d NamedIdentity) NamedIdentity {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5322,6 +5448,10 @@ type Order struct {
 	ID                uuid.UUID          `json:"id"`
 	// Which project it was bought for. Absent for a purchase made at account level, such as a membership.
 	ProjectID OptNilUUID `json:"project_id"`
+	// The project and its current name, for display. Absent for a purchase at account level, and when the
+	// project no longer exists or its details cannot be read at the moment; `project_id` still identifies
+	// it then.
+	Project OptNilNamedIdentity `json:"project"`
 	// The billing account the order was placed with. It does not change when the project is later linked
 	// to another billing account. While this account is suspended or closed the order cannot be accepted,
 	// and a change scheduled for the end of a period is not invoiced and is called off when the current
@@ -5400,6 +5530,11 @@ func (s *Order) GetID() uuid.UUID {
 // GetProjectID returns the value of ProjectID.
 func (s *Order) GetProjectID() OptNilUUID {
 	return s.ProjectID
+}
+
+// GetProject returns the value of Project.
+func (s *Order) GetProject() OptNilNamedIdentity {
+	return s.Project
 }
 
 // GetBillingAccountID returns the value of BillingAccountID.
@@ -5495,6 +5630,11 @@ func (s *Order) SetID(val uuid.UUID) {
 // SetProjectID sets the value of ProjectID.
 func (s *Order) SetProjectID(val OptNilUUID) {
 	s.ProjectID = val
+}
+
+// SetProject sets the value of Project.
+func (s *Order) SetProject(val OptNilNamedIdentity) {
+	s.Project = val
 }
 
 // SetBillingAccountID sets the value of BillingAccountID.
@@ -7509,17 +7649,25 @@ type ProductID string
 
 // Ref: #/components/schemas/ProjectBillingInfo
 type ProjectBillingInfo struct {
-	ProjectID        uuid.UUID      `json:"project_id"`
-	BillingAccountID int64          `json:"billing_account_id"`
-	AccountName      OptString      `json:"account_name"`
-	Currency         string         `json:"currency"`
-	EffectiveFrom    time.Time      `json:"effective_from"`
-	EffectiveTo      OptNilDateTime `json:"effective_to"`
+	ProjectID uuid.UUID `json:"project_id"`
+	// The project and its current name, for display. Absent when the project no longer exists or its
+	// details cannot be read at the moment; `project_id` still identifies it.
+	Project          OptNilNamedIdentity `json:"project"`
+	BillingAccountID int64               `json:"billing_account_id"`
+	AccountName      OptString           `json:"account_name"`
+	Currency         string              `json:"currency"`
+	EffectiveFrom    time.Time           `json:"effective_from"`
+	EffectiveTo      OptNilDateTime      `json:"effective_to"`
 }
 
 // GetProjectID returns the value of ProjectID.
 func (s *ProjectBillingInfo) GetProjectID() uuid.UUID {
 	return s.ProjectID
+}
+
+// GetProject returns the value of Project.
+func (s *ProjectBillingInfo) GetProject() OptNilNamedIdentity {
+	return s.Project
 }
 
 // GetBillingAccountID returns the value of BillingAccountID.
@@ -7550,6 +7698,11 @@ func (s *ProjectBillingInfo) GetEffectiveTo() OptNilDateTime {
 // SetProjectID sets the value of ProjectID.
 func (s *ProjectBillingInfo) SetProjectID(val uuid.UUID) {
 	s.ProjectID = val
+}
+
+// SetProject sets the value of Project.
+func (s *ProjectBillingInfo) SetProject(val OptNilNamedIdentity) {
+	s.Project = val
 }
 
 // SetBillingAccountID sets the value of BillingAccountID.
@@ -9088,11 +9241,15 @@ type Subscription struct {
 	// Which project this is for. Absent when it was bought at account level, such as a membership, which
 	// belongs to no single project.
 	ProjectID OptNilUUID `json:"project_id"`
-	Product   Product    `json:"product"`
-	PlanID    uuid.UUID  `json:"plan_id"`
-	PlanName  string     `json:"plan_name"`
-	PriceID   uuid.UUID  `json:"price_id"`
-	Quantity  string     `json:"quantity"`
+	// The project and its current name, for display. Absent for a purchase at account level, and when the
+	// project no longer exists or its details cannot be read at the moment; `project_id` still identifies
+	// it then.
+	Project  OptNilNamedIdentity `json:"project"`
+	Product  Product             `json:"product"`
+	PlanID   uuid.UUID           `json:"plan_id"`
+	PlanName string              `json:"plan_name"`
+	PriceID  uuid.UUID           `json:"price_id"`
+	Quantity string              `json:"quantity"`
 	// Present for prepaid items. Absent for metered ones, which have no end date.
 	PaidUntil OptNilDateTime     `json:"paid_until"`
 	AutoRenew bool               `json:"auto_renew"`
@@ -9209,6 +9366,11 @@ func (s *Subscription) GetProductID() ProductID {
 // GetProjectID returns the value of ProjectID.
 func (s *Subscription) GetProjectID() OptNilUUID {
 	return s.ProjectID
+}
+
+// GetProject returns the value of Project.
+func (s *Subscription) GetProject() OptNilNamedIdentity {
+	return s.Project
 }
 
 // GetProduct returns the value of Product.
@@ -9369,6 +9531,11 @@ func (s *Subscription) SetProductID(val ProductID) {
 // SetProjectID sets the value of ProjectID.
 func (s *Subscription) SetProjectID(val OptNilUUID) {
 	s.ProjectID = val
+}
+
+// SetProject sets the value of Project.
+func (s *Subscription) SetProject(val OptNilNamedIdentity) {
+	s.Project = val
 }
 
 // SetProduct sets the value of Product.
@@ -10541,7 +10708,10 @@ type UsageCharge struct {
 	SubscriptionID OptUUID   `json:"subscription_id"`
 	ID             uuid.UUID `json:"id"`
 	ProjectID      OptUUID   `json:"project_id"`
-	Product        Product   `json:"product"`
+	// The project and its current name, for display. Absent when the project no longer exists or its
+	// details cannot be read at the moment; `project_id` still identifies it.
+	Project OptNilNamedIdentity `json:"project"`
+	Product Product             `json:"product"`
 	// Which resource this was charged for. Empty for charges not tied to one.
 	ResourceID OptString      `json:"resource_id"`
 	Meter      ObjectIdentity `json:"meter"`
@@ -10579,6 +10749,11 @@ func (s *UsageCharge) GetID() uuid.UUID {
 // GetProjectID returns the value of ProjectID.
 func (s *UsageCharge) GetProjectID() OptUUID {
 	return s.ProjectID
+}
+
+// GetProject returns the value of Project.
+func (s *UsageCharge) GetProject() OptNilNamedIdentity {
+	return s.Project
 }
 
 // GetProduct returns the value of Product.
@@ -10669,6 +10844,11 @@ func (s *UsageCharge) SetID(val uuid.UUID) {
 // SetProjectID sets the value of ProjectID.
 func (s *UsageCharge) SetProjectID(val OptUUID) {
 	s.ProjectID = val
+}
+
+// SetProject sets the value of Project.
+func (s *UsageCharge) SetProject(val OptNilNamedIdentity) {
+	s.Project = val
 }
 
 // SetProduct sets the value of Product.

@@ -249,6 +249,7 @@ const (
 	Draft         InvoiceStatus = "draft"
 	Open          InvoiceStatus = "open"
 	Paid          InvoiceStatus = "paid"
+	Refunded      InvoiceStatus = "refunded"
 	Uncollectible InvoiceStatus = "uncollectible"
 	Void          InvoiceStatus = "void"
 )
@@ -261,6 +262,8 @@ func (e InvoiceStatus) Valid() bool {
 	case Open:
 		return true
 	case Paid:
+		return true
+	case Refunded:
 		return true
 	case Uncollectible:
 		return true
@@ -1452,6 +1455,9 @@ type Invoice struct {
 	// Status A usage invoice stays `draft` through its month: each charge is added to it as it is priced
 	// and paid from credits and balance as it goes. It is issued at the end of the month, becoming
 	// `paid` when everything was covered and `open` when something is still owed.
+	//
+	// `refunded` means the invoice was paid and has since been refunded in full; a partial refund
+	// leaves it `paid`, with the refunded part in `amount_refunded`.
 	Status InvoiceStatus `json:"status"`
 
 	// Subtotal Sum of the line amounts before discounts. Where prices include tax, the tax contained in
@@ -1507,13 +1513,18 @@ type InvoiceItem struct {
 	Id             openapi_types.UUID `json:"id"`
 
 	// OrderItemId The original order line. Refunds follow that line's original payment sources.
-	OrderItemId     *openapi_types.UUID `json:"order_item_id,omitempty"`
-	PeriodEnd       *time.Time          `json:"period_end,omitempty"`
-	PeriodStart     *time.Time          `json:"period_start,omitempty"`
-	ProjectId       *openapi_types.UUID `json:"project_id,omitempty"`
-	Quantity        *string             `json:"quantity,omitempty"`
-	RecurringAmount *string             `json:"recurring_amount,omitempty"`
-	ResourceId      *string             `json:"resource_id,omitempty"`
+	OrderItemId *openapi_types.UUID `json:"order_item_id,omitempty"`
+	PeriodEnd   *time.Time          `json:"period_end,omitempty"`
+	PeriodStart *time.Time          `json:"period_start,omitempty"`
+
+	// Project The project the charge was for and its current name, for display. Absent when the line is
+	// not for a project, and when the project no longer exists or its details cannot be read at
+	// the moment; `project_id` still identifies it then.
+	Project         *externalRef0.NamedIdentity `json:"project,omitempty"`
+	ProjectId       *openapi_types.UUID         `json:"project_id,omitempty"`
+	Quantity        *string                     `json:"quantity,omitempty"`
+	RecurringAmount *string                     `json:"recurring_amount,omitempty"`
+	ResourceId      *string                     `json:"resource_id,omitempty"`
 
 	// TaxAmount Tax on the discounted line, including tax already included in the price.
 	TaxAmount *string `json:"tax_amount,omitempty"`
@@ -1554,6 +1565,9 @@ type InvoiceList struct {
 // InvoiceStatus A usage invoice stays `draft` through its month: each charge is added to it as it is priced
 // and paid from credits and balance as it goes. It is issued at the end of the month, becoming
 // `paid` when everything was covered and `open` when something is still owed.
+//
+// `refunded` means the invoice was paid and has since been refunded in full; a partial refund
+// leaves it `paid`, with the refunded part in `amount_refunded`.
 type InvoiceStatus string
 
 // InvoiceSummary Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
@@ -1571,6 +1585,9 @@ type InvoiceSummary struct {
 	// Status A usage invoice stays `draft` through its month: each charge is added to it as it is priced
 	// and paid from credits and balance as it goes. It is issued at the end of the month, becoming
 	// `paid` when everything was covered and `open` when something is still owed.
+	//
+	// `refunded` means the invoice was paid and has since been refunded in full; a partial refund
+	// leaves it `paid`, with the refunded part in `amount_refunded`.
 	Status InvoiceStatus `json:"status"`
 
 	// Subtotal Sum of the line amounts before discounts. Where prices include tax, the tax contained in
@@ -1627,6 +1644,11 @@ type Order struct {
 
 	// PaidWith How the order was paid. Absent until it is paid.
 	PaidWith *PaidWith `json:"paid_with,omitempty"`
+
+	// Project The project and its current name, for display. Absent for a purchase at account level,
+	// and when the project no longer exists or its details cannot be read at the moment;
+	// `project_id` still identifies it then.
+	Project *externalRef0.NamedIdentity `json:"project,omitempty"`
 
 	// ProjectId Which project it was bought for. Absent for a purchase made at account level, such
 	// as a membership.
@@ -2043,12 +2065,16 @@ type ProductID = string
 
 // ProjectBillingInfo defines model for ProjectBillingInfo.
 type ProjectBillingInfo struct {
-	AccountName      *string            `json:"account_name,omitempty"`
-	BillingAccountId int64              `json:"billing_account_id"`
-	Currency         string             `json:"currency"`
-	EffectiveFrom    time.Time          `json:"effective_from"`
-	EffectiveTo      *time.Time         `json:"effective_to,omitempty"`
-	ProjectId        openapi_types.UUID `json:"project_id"`
+	AccountName      *string    `json:"account_name,omitempty"`
+	BillingAccountId int64      `json:"billing_account_id"`
+	Currency         string     `json:"currency"`
+	EffectiveFrom    time.Time  `json:"effective_from"`
+	EffectiveTo      *time.Time `json:"effective_to,omitempty"`
+
+	// Project The project and its current name, for display. Absent when the project no longer exists or its
+	// details cannot be read at the moment; `project_id` still identifies it.
+	Project   *externalRef0.NamedIdentity `json:"project,omitempty"`
+	ProjectId openapi_types.UUID          `json:"project_id"`
 }
 
 // ProjectBillingInfoList defines model for ProjectBillingInfoList.
@@ -2357,6 +2383,11 @@ type Subscription struct {
 	// ProductId Immutable platform service identifier, such as compute, canopy or assistant.
 	ProductId ProductID `json:"product_id"`
 
+	// Project The project and its current name, for display. Absent for a purchase at account level,
+	// and when the project no longer exists or its details cannot be read at the moment;
+	// `project_id` still identifies it then.
+	Project *externalRef0.NamedIdentity `json:"project,omitempty"`
+
 	// ProjectId Which project this is for. Absent when it was bought at account level, such as a
 	// membership, which belongs to no single project.
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
@@ -2604,9 +2635,13 @@ type UsageCharge struct {
 	InvoiceItemId *openapi_types.UUID `json:"invoice_item_id,omitempty"`
 
 	// Meter A catalog object inlined for display.
-	Meter     ObjectIdentity      `json:"meter"`
-	Product   Product             `json:"product"`
-	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
+	Meter   ObjectIdentity `json:"meter"`
+	Product Product        `json:"product"`
+
+	// Project The project and its current name, for display. Absent when the project no longer exists or its
+	// details cannot be read at the moment; `project_id` still identifies it.
+	Project   *externalRef0.NamedIdentity `json:"project,omitempty"`
+	ProjectId *openapi_types.UUID         `json:"project_id,omitempty"`
 
 	// Quantity What was charged for — the gross quantity less the part covered.
 	Quantity string `json:"quantity"`
