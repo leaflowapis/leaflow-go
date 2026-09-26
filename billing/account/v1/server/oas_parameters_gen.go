@@ -81,6 +81,71 @@ func decodeCancelCancellationRequestParams(args [1]string, argsEscaped bool, r *
 	return params, nil
 }
 
+// CancelOrderParams is parameters of cancel-order operation.
+type CancelOrderParams struct {
+	OrderId uuid.UUID
+}
+
+func unpackCancelOrderParams(packed middleware.Parameters) (params CancelOrderParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "orderId",
+			In:   "path",
+		}
+		params.OrderId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCancelOrderParams(args [1]string, argsEscaped bool, r *http.Request) (params CancelOrderParams, _ error) {
+	// Decode path: orderId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "orderId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrderId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "orderId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CancelTopUpParams is parameters of cancel-top-up operation.
 type CancelTopUpParams struct {
 	TopUpId uuid.UUID
@@ -211,6 +276,71 @@ func decodeCreateCancellationRequestParams(args [1]string, argsEscaped bool, r *
 	return params, nil
 }
 
+// CreateRenewalOrderParams is parameters of create-renewal-order operation.
+type CreateRenewalOrderParams struct {
+	SubscriptionId uuid.UUID
+}
+
+func unpackCreateRenewalOrderParams(packed middleware.Parameters) (params CreateRenewalOrderParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "subscriptionId",
+			In:   "path",
+		}
+		params.SubscriptionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateRenewalOrderParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateRenewalOrderParams, _ error) {
+	// Decode path: subscriptionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "subscriptionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.SubscriptionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subscriptionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeletePaymentMethodParams is parameters of delete-payment-method operation.
 type DeletePaymentMethodParams struct {
 	PaymentMethodId uuid.UUID
@@ -293,6 +423,71 @@ func unpackGetAccountBalanceParams(packed middleware.Parameters) (params GetAcco
 }
 
 func decodeGetAccountBalanceParams(args [1]string, argsEscaped bool, r *http.Request) (params GetAccountBalanceParams, _ error) {
+	// Decode path: accountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetAccountMeteredUsageParams is parameters of get-account-metered-usage operation.
+type GetAccountMeteredUsageParams struct {
+	AccountId int64
+}
+
+func unpackGetAccountMeteredUsageParams(packed middleware.Parameters) (params GetAccountMeteredUsageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
+	return params
+}
+
+func decodeGetAccountMeteredUsageParams(args [1]string, argsEscaped bool, r *http.Request) (params GetAccountMeteredUsageParams, _ error) {
 	// Decode path: accountId.
 	if err := func() error {
 		param := args[0]
@@ -5735,6 +5930,186 @@ func decodePreviewCancellationParams(args [1]string, argsEscaped bool, r *http.R
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "subscriptionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PreviewInvoicePaymentParams is parameters of preview-invoice-payment operation.
+type PreviewInvoicePaymentParams struct {
+	// As in paying. True when omitted.
+	UseBalance OptBool `json:",omitempty,omitzero"`
+	// As in paying. True when omitted.
+	UseCredits OptBool `json:",omitempty,omitzero"`
+	InvoiceId  uuid.UUID
+}
+
+func unpackPreviewInvoicePaymentParams(packed middleware.Parameters) (params PreviewInvoicePaymentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "use_balance",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.UseBalance = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "use_credits",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.UseCredits = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "invoiceId",
+			In:   "path",
+		}
+		params.InvoiceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodePreviewInvoicePaymentParams(args [1]string, argsEscaped bool, r *http.Request) (params PreviewInvoicePaymentParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Set default value for query: use_balance.
+	{
+		val := bool(true)
+		params.UseBalance.SetTo(val)
+	}
+	// Decode query: use_balance.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "use_balance",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotUseBalanceVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotUseBalanceVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.UseBalance.SetTo(paramsDotUseBalanceVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "use_balance",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: use_credits.
+	{
+		val := bool(true)
+		params.UseCredits.SetTo(val)
+	}
+	// Decode query: use_credits.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "use_credits",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotUseCreditsVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotUseCreditsVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.UseCredits.SetTo(paramsDotUseCreditsVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "use_credits",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode path: invoiceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "invoiceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.InvoiceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "invoiceId",
 			In:   "path",
 			Err:  err,
 		}

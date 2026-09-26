@@ -32,4 +32,16 @@ func (s *RenewRequest) setDefaults() {
 		val := bool(true)
 		s.UseBalance.SetTo(val)
 	}
+	{
+		val := bool(true)
+		s.UseCredits.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *RenewalOrderRequest) setDefaults() {
+	{
+		val := int(1)
+		s.Periods.SetTo(val)
+	}
 }

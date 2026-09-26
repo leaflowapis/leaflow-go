@@ -52,6 +52,20 @@ func encodeCreatePaymentMethodSetupRequest(
 	return nil
 }
 
+func encodeCreateRenewalOrderRequest(
+	req *RenewalOrderRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateTopUpRequest(
 	req *TopUpCreate,
 	r *http.Request,
@@ -87,6 +101,20 @@ func encodePayInvoiceRequest(
 }
 
 func encodePayTogetherRequest(
+	req *PayTogetherRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePreviewPayTogetherRequest(
 	req *PayTogetherRequest,
 	r *http.Request,
 ) error {

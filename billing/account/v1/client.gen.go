@@ -799,6 +799,27 @@ func (e RenewRequestInterval) Valid() bool {
 	}
 }
 
+// Defines values for RenewalOrderRequestInterval.
+const (
+	RenewalOrderRequestIntervalDay   RenewalOrderRequestInterval = "day"
+	RenewalOrderRequestIntervalMonth RenewalOrderRequestInterval = "month"
+	RenewalOrderRequestIntervalYear  RenewalOrderRequestInterval = "year"
+)
+
+// Valid indicates whether the value is a known member of the RenewalOrderRequestInterval enum.
+func (e RenewalOrderRequestInterval) Valid() bool {
+	switch e {
+	case RenewalOrderRequestIntervalDay:
+		return true
+	case RenewalOrderRequestIntervalMonth:
+		return true
+	case RenewalOrderRequestIntervalYear:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RenewalPriceInterval.
 const (
 	RenewalPriceIntervalDay   RenewalPriceInterval = "day"
@@ -1142,6 +1163,22 @@ type Applicability struct {
 	PriceTypes    []string            `json:"price_types,omitempty"`
 	Prices        []PriceOption       `json:"prices,omitempty"`
 	Products      []Product           `json:"products,omitempty"`
+}
+
+// AppliedCredit A credit grant and what it would pay.
+type AppliedCredit struct {
+	// Amount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount        externalRef0.Money `json:"amount"`
+	CreditGrantId openapi_types.UUID `json:"credit_grant_id"`
+	Name          string             `json:"name"`
 }
 
 // AutoRenewSet defines model for AutoRenewSet.
@@ -1598,6 +1635,30 @@ type InvoiceSummary struct {
 	Total     string `json:"total"`
 }
 
+// MeteredUsage defines model for MeteredUsage.
+type MeteredUsage struct {
+	// ActiveResourceCount Resources still metered in the projects the account currently pays for.
+	ActiveResourceCount int `json:"active_resource_count"`
+
+	// Amount Usage priced in the window, before tax and before credit grants. Usage not yet priced is not included.
+	Amount externalRef0.Money `json:"amount"`
+
+	// AverageDailyAmount `amount` per day. Over the window, or over the part of it since the account's usage began
+	// when that is shorter, counting at least one day.
+	AverageDailyAmount externalRef0.Money `json:"average_daily_amount"`
+	BillingAccountId   int64              `json:"billing_account_id"`
+	Currency           string             `json:"currency"`
+
+	// PostpaidSubscriptionCount Subscriptions billed by usage that the account currently pays for and that have not ended.
+	PostpaidSubscriptionCount int `json:"postpaid_subscription_count"`
+
+	// WindowEnd The end of those seven days, the time usage was last priced.
+	WindowEnd time.Time `json:"window_end"`
+
+	// WindowStart The start of the seven days the amounts cover.
+	WindowStart time.Time `json:"window_start"`
+}
+
 // ObjectIdentity A catalog object inlined for display.
 type ObjectIdentity struct {
 	Id        openapi_types.UUID `json:"id"`
@@ -1941,6 +2002,69 @@ type PaymentOptionMethod struct {
 	// Reusable Whether a method of this type can be saved with create-payment-method-setup and charged later
 	// without the customer present. Methods that are not reusable are paid anew each time.
 	Reusable bool `json:"reusable"`
+}
+
+// PaymentPreview What paying would take, computed as paying computes it. Nothing is charged or reserved.
+type PaymentPreview struct {
+	// AmountDue What is outstanding before paying.
+	AmountDue externalRef0.Money `json:"amount_due"`
+
+	// BalanceAfter The available balance after paying.
+	BalanceAfter externalRef0.Money `json:"balance_after"`
+
+	// BalanceApplied What the balance would pay.
+	BalanceApplied externalRef0.Money `json:"balance_applied"`
+
+	// CreditApplied What credit grants would pay. Grants restricted to other purchases pay nothing here.
+	CreditApplied externalRef0.Money `json:"credit_applied"`
+
+	// CreditGrants The credit grants that would pay, in the order they would be used.
+	CreditGrants []AppliedCredit `json:"credit_grants"`
+	Currency     string          `json:"currency"`
+
+	// GatewayAmount What would remain to be paid online. Paying without a gateway is refused with `BILLING_INSUFFICIENT_FUNDS` while this is above zero.
+	GatewayAmount externalRef0.Money `json:"gateway_amount"`
+
+	// Invoices Paying together only. Each invoice, in the order it would be paid.
+	Invoices []PaymentPreviewInvoice `json:"invoices,omitempty"`
+}
+
+// PaymentPreviewInvoice defines model for PaymentPreviewInvoice.
+type PaymentPreviewInvoice struct {
+	// AmountDue A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	AmountDue externalRef0.Money `json:"amount_due"`
+
+	// BalanceApplied A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	BalanceApplied externalRef0.Money `json:"balance_applied"`
+
+	// CreditApplied A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	CreditApplied externalRef0.Money  `json:"credit_applied"`
+	InvoiceId     openapi_types.UUID  `json:"invoice_id"`
+	OrderId       *openapi_types.UUID `json:"order_id,omitempty"`
 }
 
 // PaymentResult defines model for PaymentResult.
@@ -2305,13 +2429,36 @@ type RenewRequest struct {
 	// Buying twelve monthly periods is not the same as buying one yearly term: a longer
 	// term is usually sold at a lower price, and that price is only reached by naming the
 	// interval. Use `interval_count` and `interval` for that.
-	Periods    *int    `json:"periods,omitempty"`
-	ReturnUrl  *string `json:"return_url,omitempty"`
-	UseBalance *bool   `json:"use_balance,omitempty"`
+	Periods   *int    `json:"periods,omitempty"`
+	ReturnUrl *string `json:"return_url,omitempty"`
+
+	// UseBalance Whether to pay from the balance, with or without `payment_method_id`.
+	UseBalance *bool `json:"use_balance,omitempty"`
+
+	// UseCredits Whether to pay from eligible credit grants before the balance.
+	UseCredits *bool `json:"use_credits,omitempty"`
 }
 
 // RenewRequestInterval The unit interval_count counts in.
 type RenewRequestInterval string
+
+// RenewalOrderRequest The periods and price of the renewal, chosen as in renewing.
+type RenewalOrderRequest struct {
+	// Interval As in renewing.
+	Interval *RenewalOrderRequestInterval `json:"interval,omitempty"`
+
+	// IntervalCount As in renewing.
+	IntervalCount *int `json:"interval_count,omitempty"`
+
+	// OrderId Purchase ID saved before submitting. Duplicate creation conflicts; query this order after an unknown result.
+	OrderId openapi_types.UUID `json:"order_id"`
+
+	// Periods As in renewing.
+	Periods *int `json:"periods,omitempty"`
+}
+
+// RenewalOrderRequestInterval As in renewing.
+type RenewalOrderRequestInterval string
 
 // RenewalPrice defines model for RenewalPrice.
 type RenewalPrice struct {
@@ -2808,6 +2955,15 @@ type ListInvoiceItemsParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
+// PreviewInvoicePaymentParams defines parameters for PreviewInvoicePayment.
+type PreviewInvoicePaymentParams struct {
+	// UseBalance As in paying. True when omitted.
+	UseBalance *bool `form:"use_balance,omitempty" json:"use_balance,omitempty"`
+
+	// UseCredits As in paying. True when omitted.
+	UseCredits *bool `form:"use_credits,omitempty" json:"use_credits,omitempty"`
+}
+
 // ListOrdersParams defines parameters for ListOrders.
 type ListOrdersParams struct {
 	// Page 1-based page number; the first page when omitted.
@@ -2949,6 +3105,9 @@ type CreatePaymentMethodSetupJSONRequestBody = PaymentMethodSetup
 // PayTogetherJSONRequestBody defines body for PayTogether for application/json ContentType.
 type PayTogetherJSONRequestBody = PayTogetherRequest
 
+// PreviewPayTogetherJSONRequestBody defines body for PreviewPayTogether for application/json ContentType.
+type PreviewPayTogetherJSONRequestBody = PayTogetherRequest
+
 // SetProjectBillingAccountJSONRequestBody defines body for SetProjectBillingAccount for application/json ContentType.
 type SetProjectBillingAccountJSONRequestBody = ProjectBillingInfoSet
 
@@ -2963,6 +3122,9 @@ type CreateCancellationRequestJSONRequestBody = CancellationRequestCreate
 
 // RenewSubscriptionJSONRequestBody defines body for RenewSubscription for application/json ContentType.
 type RenewSubscriptionJSONRequestBody = RenewRequest
+
+// CreateRenewalOrderJSONRequestBody defines body for CreateRenewalOrder for application/json ContentType.
+type CreateRenewalOrderJSONRequestBody = RenewalOrderRequest
 
 // CreateTopUpJSONRequestBody defines body for CreateTopUp for application/json ContentType.
 type CreateTopUpJSONRequestBody = TopUpCreate
@@ -3117,6 +3279,15 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
 	GetAccountBalance(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAccountMeteredUsage Get account metered usage
+	//
+	// Whether the account has anything billed by usage, and what that usage has cost over the last
+	// seven days. Usage is paid from the balance, so this tells how much of the balance it is likely
+	// to need: the balance divided by `average_daily_amount` is roughly how many days it lasts.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountId}/metered-usage (the `GetAccountMeteredUsage` operationId).
+	GetAccountMeteredUsage(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListPaymentOptions List payment options
 	//
 	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
@@ -3220,6 +3391,19 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
 	PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PreviewInvoicePayment Preview invoice payment
+	//
+	// What paying this invoice now would take from credit grants, from the balance and, for the rest,
+	// from a payment gateway. It is computed as paying computes it, so paying with the same options
+	// straight afterwards takes exactly these amounts unless the account's funds change in between.
+	// Nothing is charged, reserved or created.
+	//
+	// Refused with the same errors as paying, except that insufficient funds are not an error here:
+	// they show as a `gateway_amount` above zero.
+	//
+	// Corresponds with GET /account/v1/invoices/{invoiceId}/payment-preview (the `PreviewInvoicePayment` operationId).
+	PreviewInvoicePayment(ctx context.Context, invoiceId InvoiceId, params *PreviewInvoicePaymentParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListOrders List orders
 	//
 	// Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means accepted, not delivered. Only pending orders expire at expires_at.
@@ -3231,6 +3415,23 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
 	GetOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelOrder Cancel order
+	//
+	// Withdraws an order that is not paid in full, and tells the service that placed it, so that
+	// nothing is delivered. An order with nothing paid becomes `canceled` and its invoice is voided.
+	// What was already paid toward it, from credit grants or the balance, is returned the way it was
+	// paid, and the order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`.
+	// Canceling an order that is already canceled or failed returns it unchanged.
+	//
+	// Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
+	// `BILLING_ORDER_ALREADY_ACCEPTED` once the order has been accepted,
+	// `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for it is in progress, and
+	// `BILLING_SCHEDULED_CHANGE_NOT_CANCELABLE` for a change that takes effect at the end of the
+	// period, which only the service that placed it can call off.
+	//
+	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelOrder` operationId).
+	CancelOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOrderItems List order items
 	//
@@ -3316,6 +3517,36 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
 	PayTogether(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewPayTogetherWithBody Preview paying together
+	//
+	// What paying these invoices together now would take from credit grants and from the balance,
+	// invoice by invoice in the order they would be paid. It is computed as paying together computes
+	// it. Nothing is charged, reserved or created.
+	//
+	// Refused with the same errors as paying together, except that insufficient funds are not an
+	// error here: they show as a `gateway_amount` above zero, and paying together would then be
+	// refused with `BILLING_INSUFFICIENT_FUNDS`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
+	PreviewPayTogetherWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewPayTogether Preview paying together
+	//
+	// What paying these invoices together now would take from credit grants and from the balance,
+	// invoice by invoice in the order they would be paid. It is computed as paying together computes
+	// it. Nothing is charged, reserved or created.
+	//
+	// Refused with the same errors as paying together, except that insufficient funds are not an
+	// error here: they show as a `gateway_amount` above zero, and paying together would then be
+	// refused with `BILLING_INSUFFICIENT_FUNDS`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
+	PreviewPayTogether(ctx context.Context, body PreviewPayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListBillingAccountProjects List projects linked to billing accounts
 	//
@@ -3477,6 +3708,38 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renew (the `RenewSubscription` operationId).
 	RenewSubscription(ctx context.Context, subscriptionId SubscriptionId, body RenewSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRenewalOrderWithBody Create renewal order
+	//
+	// Places a renewal order and issues its invoice without charging anything; pay the invoice to
+	// renew. The periods and price are chosen as for renewing. The order can be paid until the
+	// current paid period ends, and never after the end of the first period it renews; unpaid by
+	// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
+	// this order instead of placing another.
+	//
+	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
+	// second time conflicts.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renewal-orders (the `CreateRenewalOrder` operationId).
+	CreateRenewalOrderWithBody(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRenewalOrder Create renewal order
+	//
+	// Places a renewal order and issues its invoice without charging anything; pay the invoice to
+	// renew. The periods and price are chosen as for renewing. The order can be paid until the
+	// current paid period ends, and never after the end of the first period it renews; unpaid by
+	// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
+	// this order instead of placing another.
+	//
+	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
+	// second time conflicts.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renewal-orders (the `CreateRenewalOrder` operationId).
+	CreateRenewalOrder(ctx context.Context, subscriptionId SubscriptionId, body CreateRenewalOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRenewalPrices List the terms this item can be renewed for
 	//
@@ -3715,6 +3978,25 @@ func (c *Client) GetAccountBalance(ctx context.Context, accountId AccountId, req
 	return c.Client.Do(req)
 }
 
+// GetAccountMeteredUsage Get account metered usage
+//
+// Whether the account has anything billed by usage, and what that usage has cost over the last
+// seven days. Usage is paid from the balance, so this tells how much of the balance it is likely
+// to need: the balance divided by `average_daily_amount` is roughly how many days it lasts.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountId}/metered-usage (the `GetAccountMeteredUsage` operationId).
+func (c *Client) GetAccountMeteredUsage(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccountMeteredUsageRequest(c.Server, accountId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListPaymentOptions List payment options
 //
 // Lists the payment gateways and methods that currently accept payment in this account's currency, the
@@ -3938,6 +4220,29 @@ func (c *Client) PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayIn
 	return c.Client.Do(req)
 }
 
+// PreviewInvoicePayment Preview invoice payment
+//
+// What paying this invoice now would take from credit grants, from the balance and, for the rest,
+// from a payment gateway. It is computed as paying computes it, so paying with the same options
+// straight afterwards takes exactly these amounts unless the account's funds change in between.
+// Nothing is charged, reserved or created.
+//
+// Refused with the same errors as paying, except that insufficient funds are not an error here:
+// they show as a `gateway_amount` above zero.
+//
+// Corresponds with GET /account/v1/invoices/{invoiceId}/payment-preview (the `PreviewInvoicePayment` operationId).
+func (c *Client) PreviewInvoicePayment(ctx context.Context, invoiceId InvoiceId, params *PreviewInvoicePaymentParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewInvoicePaymentRequest(c.Server, invoiceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListOrders List orders
 //
 // Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means accepted, not delivered. Only pending orders expire at expires_at.
@@ -3960,6 +4265,33 @@ func (c *Client) ListOrders(ctx context.Context, params *ListOrdersParams, reqEd
 // Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
 func (c *Client) GetOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOrderRequest(c.Server, orderId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CancelOrder Cancel order
+//
+// Withdraws an order that is not paid in full, and tells the service that placed it, so that
+// nothing is delivered. An order with nothing paid becomes `canceled` and its invoice is voided.
+// What was already paid toward it, from credit grants or the balance, is returned the way it was
+// paid, and the order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`.
+// Canceling an order that is already canceled or failed returns it unchanged.
+//
+// Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
+// `BILLING_ORDER_ALREADY_ACCEPTED` once the order has been accepted,
+// `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for it is in progress, and
+// `BILLING_SCHEDULED_CHANGE_NOT_CANCELABLE` for a change that takes effect at the end of the
+// period, which only the service that placed it can call off.
+//
+// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelOrder` operationId).
+func (c *Client) CancelOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelOrderRequest(c.Server, orderId)
 	if err != nil {
 		return nil, err
 	}
@@ -4125,6 +4457,56 @@ func (c *Client) PayTogetherWithBody(ctx context.Context, contentType string, bo
 // Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
 func (c *Client) PayTogether(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPayTogetherRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewPayTogetherWithBody Preview paying together
+//
+// What paying these invoices together now would take from credit grants and from the balance,
+// invoice by invoice in the order they would be paid. It is computed as paying together computes
+// it. Nothing is charged, reserved or created.
+//
+// Refused with the same errors as paying together, except that insufficient funds are not an
+// error here: they show as a `gateway_amount` above zero, and paying together would then be
+// refused with `BILLING_INSUFFICIENT_FUNDS`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
+func (c *Client) PreviewPayTogetherWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewPayTogetherRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewPayTogether Preview paying together
+//
+// What paying these invoices together now would take from credit grants and from the balance,
+// invoice by invoice in the order they would be paid. It is computed as paying together computes
+// it. Nothing is charged, reserved or created.
+//
+// Refused with the same errors as paying together, except that insufficient funds are not an
+// error here: they show as a `gateway_amount` above zero, and paying together would then be
+// refused with `BILLING_INSUFFICIENT_FUNDS`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
+func (c *Client) PreviewPayTogether(ctx context.Context, body PreviewPayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewPayTogetherRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4456,6 +4838,58 @@ func (c *Client) RenewSubscriptionWithBody(ctx context.Context, subscriptionId S
 // Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renew (the `RenewSubscription` operationId).
 func (c *Client) RenewSubscription(ctx context.Context, subscriptionId SubscriptionId, body RenewSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRenewSubscriptionRequest(c.Server, subscriptionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateRenewalOrderWithBody Create renewal order
+//
+// Places a renewal order and issues its invoice without charging anything; pay the invoice to
+// renew. The periods and price are chosen as for renewing. The order can be paid until the
+// current paid period ends, and never after the end of the first period it renews; unpaid by
+// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
+// this order instead of placing another.
+//
+// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
+// second time conflicts.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renewal-orders (the `CreateRenewalOrder` operationId).
+func (c *Client) CreateRenewalOrderWithBody(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRenewalOrderRequestWithBody(c.Server, subscriptionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateRenewalOrder Create renewal order
+//
+// Places a renewal order and issues its invoice without charging anything; pay the invoice to
+// renew. The periods and price are chosen as for renewing. The order can be paid until the
+// current paid period ends, and never after the end of the first period it renews; unpaid by
+// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
+// this order instead of placing another.
+//
+// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
+// second time conflicts.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renewal-orders (the `CreateRenewalOrder` operationId).
+func (c *Client) CreateRenewalOrder(ctx context.Context, subscriptionId SubscriptionId, body CreateRenewalOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRenewalOrderRequest(c.Server, subscriptionId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4944,6 +5378,40 @@ func NewGetAccountBalanceRequest(server string, accountId AccountId) (*http.Requ
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/balance", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAccountMeteredUsageRequest constructs an http.Request for the GetAccountMeteredUsage method
+func NewGetAccountMeteredUsageRequest(server string, accountId AccountId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountId", accountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/metered-usage", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -5616,6 +6084,79 @@ func NewPayInvoiceRequestWithBody(server string, invoiceId InvoiceId, contentTyp
 	return req, nil
 }
 
+// NewPreviewInvoicePaymentRequest constructs an http.Request for the PreviewInvoicePayment method
+func NewPreviewInvoicePaymentRequest(server string, invoiceId InvoiceId, params *PreviewInvoicePaymentParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invoiceId", invoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/invoices/%s/payment-preview", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.UseBalance != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "use_balance", *params.UseBalance, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.UseCredits != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "use_credits", *params.UseCredits, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListOrdersRequest constructs an http.Request for the ListOrders method
 func NewListOrdersRequest(server string, params *ListOrdersParams) (*http.Request, error) {
 	var err error
@@ -5769,6 +6310,40 @@ func NewGetOrderRequest(server string, orderId OrderId) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCancelOrderRequest constructs an http.Request for the CancelOrder method
+func NewCancelOrderRequest(server string, orderId OrderId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/orders/%s/cancel", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -6056,6 +6631,46 @@ func NewPayTogetherRequestWithBody(server string, contentType string, body io.Re
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/payments")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPreviewPayTogetherRequest calls the generic PreviewPayTogether builder with application/json body
+func NewPreviewPayTogetherRequest(server string, body PreviewPayTogetherJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPreviewPayTogetherRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPreviewPayTogetherRequestWithBody constructs an http.Request for the PreviewPayTogether method, with any body, and a specified content type
+func NewPreviewPayTogetherRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/payments/preview")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -6697,6 +7312,53 @@ func NewRenewSubscriptionRequestWithBody(server string, subscriptionId Subscript
 	return req, nil
 }
 
+// NewCreateRenewalOrderRequest calls the generic CreateRenewalOrder builder with application/json body
+func NewCreateRenewalOrderRequest(server string, subscriptionId SubscriptionId, body CreateRenewalOrderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateRenewalOrderRequestWithBody(server, subscriptionId, "application/json", bodyReader)
+}
+
+// NewCreateRenewalOrderRequestWithBody constructs an http.Request for the CreateRenewalOrder method, with any body, and a specified content type
+func NewCreateRenewalOrderRequestWithBody(server string, subscriptionId SubscriptionId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "subscriptionId", subscriptionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/subscriptions/%s/renewal-orders", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListRenewalPricesRequest constructs an http.Request for the ListRenewalPrices method
 func NewListRenewalPricesRequest(server string, subscriptionId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -7297,6 +7959,17 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
 	GetAccountBalanceWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetAccountBalanceResponse, error)
 
+	// GetAccountMeteredUsageWithResponse Get account metered usage
+	//
+	// Whether the account has anything billed by usage, and what that usage has cost over the last
+	// seven days. Usage is paid from the balance, so this tells how much of the balance it is likely
+	// to need: the balance divided by `average_daily_amount` is roughly how many days it lasts.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountId}/metered-usage (the `GetAccountMeteredUsage` operationId).
+	GetAccountMeteredUsageWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetAccountMeteredUsageResponse, error)
+
 	// ListPaymentOptionsWithResponse List payment options
 	//
 	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
@@ -7420,6 +8093,21 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
 	PayInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error)
 
+	// PreviewInvoicePaymentWithResponse Preview invoice payment
+	//
+	// What paying this invoice now would take from credit grants, from the balance and, for the rest,
+	// from a payment gateway. It is computed as paying computes it, so paying with the same options
+	// straight afterwards takes exactly these amounts unless the account's funds change in between.
+	// Nothing is charged, reserved or created.
+	//
+	// Refused with the same errors as paying, except that insufficient funds are not an error here:
+	// they show as a `gateway_amount` above zero.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/invoices/{invoiceId}/payment-preview (the `PreviewInvoicePayment` operationId).
+	PreviewInvoicePaymentWithResponse(ctx context.Context, invoiceId InvoiceId, params *PreviewInvoicePaymentParams, reqEditors ...RequestEditorFn) (*PreviewInvoicePaymentResponse, error)
+
 	// ListOrdersWithResponse List orders
 	//
 	// Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means accepted, not delivered. Only pending orders expire at expires_at.
@@ -7435,6 +8123,25 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
 	GetOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderResponse, error)
+
+	// CancelOrderWithResponse Cancel order
+	//
+	// Withdraws an order that is not paid in full, and tells the service that placed it, so that
+	// nothing is delivered. An order with nothing paid becomes `canceled` and its invoice is voided.
+	// What was already paid toward it, from credit grants or the balance, is returned the way it was
+	// paid, and the order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`.
+	// Canceling an order that is already canceled or failed returns it unchanged.
+	//
+	// Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
+	// `BILLING_ORDER_ALREADY_ACCEPTED` once the order has been accepted,
+	// `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for it is in progress, and
+	// `BILLING_SCHEDULED_CHANGE_NOT_CANCELABLE` for a change that takes effect at the end of the
+	// period, which only the service that placed it can call off.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelOrder` operationId).
+	CancelOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*CancelOrderResponse, error)
 
 	// ListOrderItemsWithResponse List order items
 	//
@@ -7528,6 +8235,36 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
 	PayTogetherWithResponse(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error)
+
+	// PreviewPayTogetherWithBodyWithResponse Preview paying together
+	//
+	// What paying these invoices together now would take from credit grants and from the balance,
+	// invoice by invoice in the order they would be paid. It is computed as paying together computes
+	// it. Nothing is charged, reserved or created.
+	//
+	// Refused with the same errors as paying together, except that insufficient funds are not an
+	// error here: they show as a `gateway_amount` above zero, and paying together would then be
+	// refused with `BILLING_INSUFFICIENT_FUNDS`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
+	PreviewPayTogetherWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewPayTogetherResponse, error)
+
+	// PreviewPayTogetherWithResponse Preview paying together
+	//
+	// What paying these invoices together now would take from credit grants and from the balance,
+	// invoice by invoice in the order they would be paid. It is computed as paying together computes
+	// it. Nothing is charged, reserved or created.
+	//
+	// Refused with the same errors as paying together, except that insufficient funds are not an
+	// error here: they show as a `gateway_amount` above zero, and paying together would then be
+	// refused with `BILLING_INSUFFICIENT_FUNDS`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
+	PreviewPayTogetherWithResponse(ctx context.Context, body PreviewPayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewPayTogetherResponse, error)
 
 	// ListBillingAccountProjectsWithResponse List projects linked to billing accounts
 	//
@@ -7703,6 +8440,38 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renew (the `RenewSubscription` operationId).
 	RenewSubscriptionWithResponse(ctx context.Context, subscriptionId SubscriptionId, body RenewSubscriptionJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewSubscriptionResponse, error)
+
+	// CreateRenewalOrderWithBodyWithResponse Create renewal order
+	//
+	// Places a renewal order and issues its invoice without charging anything; pay the invoice to
+	// renew. The periods and price are chosen as for renewing. The order can be paid until the
+	// current paid period ends, and never after the end of the first period it renews; unpaid by
+	// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
+	// this order instead of placing another.
+	//
+	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
+	// second time conflicts.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renewal-orders (the `CreateRenewalOrder` operationId).
+	CreateRenewalOrderWithBodyWithResponse(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRenewalOrderResponse, error)
+
+	// CreateRenewalOrderWithResponse Create renewal order
+	//
+	// Places a renewal order and issues its invoice without charging anything; pay the invoice to
+	// renew. The periods and price are chosen as for renewing. The order can be paid until the
+	// current paid period ends, and never after the end of the first period it renews; unpaid by
+	// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
+	// this order instead of placing another.
+	//
+	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
+	// second time conflicts.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renewal-orders (the `CreateRenewalOrder` operationId).
+	CreateRenewalOrderWithResponse(ctx context.Context, subscriptionId SubscriptionId, body CreateRenewalOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRenewalOrderResponse, error)
 
 	// ListRenewalPricesWithResponse List the terms this item can be renewed for
 	//
@@ -8079,6 +8848,54 @@ func (r GetAccountBalanceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetAccountBalanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetAccountMeteredUsageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *MeteredUsage
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAccountMeteredUsageResponse) GetJSON200() *MeteredUsage {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetAccountMeteredUsageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAccountMeteredUsageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccountMeteredUsageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccountMeteredUsageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAccountMeteredUsageResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -8613,6 +9430,54 @@ func (r PayInvoiceResponse) ContentType() string {
 	return ""
 }
 
+type PreviewInvoicePaymentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PaymentPreview
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PreviewInvoicePaymentResponse) GetJSON200() *PaymentPreview {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PreviewInvoicePaymentResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PreviewInvoicePaymentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PreviewInvoicePaymentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PreviewInvoicePaymentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PreviewInvoicePaymentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListOrdersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -8703,6 +9568,61 @@ func (r GetOrderResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetOrderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CancelOrderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Order
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CancelOrderResponse) GetJSON200() *Order {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CancelOrderResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CancelOrderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CancelOrderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelOrderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelOrderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelOrderResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -8984,6 +9904,54 @@ func (r PayTogetherResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PayTogetherResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PreviewPayTogetherResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PaymentPreview
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PreviewPayTogetherResponse) GetJSON200() *PaymentPreview {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PreviewPayTogetherResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PreviewPayTogetherResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PreviewPayTogetherResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PreviewPayTogetherResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PreviewPayTogetherResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -9566,6 +10534,61 @@ func (r RenewSubscriptionResponse) ContentType() string {
 	return ""
 }
 
+type CreateRenewalOrderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Order
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateRenewalOrderResponse) GetJSON200() *Order {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateRenewalOrderResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateRenewalOrderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateRenewalOrderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateRenewalOrderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateRenewalOrderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateRenewalOrderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRenewalPricesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -10041,6 +11064,23 @@ func (c *ClientWithResponses) GetAccountBalanceWithResponse(ctx context.Context,
 	return ParseGetAccountBalanceResponse(rsp)
 }
 
+// GetAccountMeteredUsageWithResponse Get account metered usage
+//
+// Whether the account has anything billed by usage, and what that usage has cost over the last
+// seven days. Usage is paid from the balance, so this tells how much of the balance it is likely
+// to need: the balance divided by `average_daily_amount` is roughly how many days it lasts.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountId}/metered-usage (the `GetAccountMeteredUsage` operationId).
+func (c *ClientWithResponses) GetAccountMeteredUsageWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetAccountMeteredUsageResponse, error) {
+	rsp, err := c.GetAccountMeteredUsage(ctx, accountId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccountMeteredUsageResponse(rsp)
+}
+
 // ListPaymentOptionsWithResponse List payment options
 //
 // Lists the payment gateways and methods that currently accept payment in this account's currency, the
@@ -10236,6 +11276,27 @@ func (c *ClientWithResponses) PayInvoiceWithResponse(ctx context.Context, invoic
 	return ParsePayInvoiceResponse(rsp)
 }
 
+// PreviewInvoicePaymentWithResponse Preview invoice payment
+//
+// What paying this invoice now would take from credit grants, from the balance and, for the rest,
+// from a payment gateway. It is computed as paying computes it, so paying with the same options
+// straight afterwards takes exactly these amounts unless the account's funds change in between.
+// Nothing is charged, reserved or created.
+//
+// Refused with the same errors as paying, except that insufficient funds are not an error here:
+// they show as a `gateway_amount` above zero.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/invoices/{invoiceId}/payment-preview (the `PreviewInvoicePayment` operationId).
+func (c *ClientWithResponses) PreviewInvoicePaymentWithResponse(ctx context.Context, invoiceId InvoiceId, params *PreviewInvoicePaymentParams, reqEditors ...RequestEditorFn) (*PreviewInvoicePaymentResponse, error) {
+	rsp, err := c.PreviewInvoicePayment(ctx, invoiceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewInvoicePaymentResponse(rsp)
+}
+
 // ListOrdersWithResponse List orders
 //
 // Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means accepted, not delivered. Only pending orders expire at expires_at.
@@ -10262,6 +11323,31 @@ func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, orderId 
 		return nil, err
 	}
 	return ParseGetOrderResponse(rsp)
+}
+
+// CancelOrderWithResponse Cancel order
+//
+// Withdraws an order that is not paid in full, and tells the service that placed it, so that
+// nothing is delivered. An order with nothing paid becomes `canceled` and its invoice is voided.
+// What was already paid toward it, from credit grants or the balance, is returned the way it was
+// paid, and the order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`.
+// Canceling an order that is already canceled or failed returns it unchanged.
+//
+// Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
+// `BILLING_ORDER_ALREADY_ACCEPTED` once the order has been accepted,
+// `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for it is in progress, and
+// `BILLING_SCHEDULED_CHANGE_NOT_CANCELABLE` for a change that takes effect at the end of the
+// period, which only the service that placed it can call off.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelOrder` operationId).
+func (c *ClientWithResponses) CancelOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*CancelOrderResponse, error) {
+	rsp, err := c.CancelOrder(ctx, orderId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelOrderResponse(rsp)
 }
 
 // ListOrderItemsWithResponse List order items
@@ -10403,6 +11489,48 @@ func (c *ClientWithResponses) PayTogetherWithResponse(ctx context.Context, body 
 		return nil, err
 	}
 	return ParsePayTogetherResponse(rsp)
+}
+
+// PreviewPayTogetherWithBodyWithResponse Preview paying together
+//
+// What paying these invoices together now would take from credit grants and from the balance,
+// invoice by invoice in the order they would be paid. It is computed as paying together computes
+// it. Nothing is charged, reserved or created.
+//
+// Refused with the same errors as paying together, except that insufficient funds are not an
+// error here: they show as a `gateway_amount` above zero, and paying together would then be
+// refused with `BILLING_INSUFFICIENT_FUNDS`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
+func (c *ClientWithResponses) PreviewPayTogetherWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewPayTogetherResponse, error) {
+	rsp, err := c.PreviewPayTogetherWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewPayTogetherResponse(rsp)
+}
+
+// PreviewPayTogetherWithResponse Preview paying together
+//
+// What paying these invoices together now would take from credit grants and from the balance,
+// invoice by invoice in the order they would be paid. It is computed as paying together computes
+// it. Nothing is charged, reserved or created.
+//
+// Refused with the same errors as paying together, except that insufficient funds are not an
+// error here: they show as a `gateway_amount` above zero, and paying together would then be
+// refused with `BILLING_INSUFFICIENT_FUNDS`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
+func (c *ClientWithResponses) PreviewPayTogetherWithResponse(ctx context.Context, body PreviewPayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewPayTogetherResponse, error) {
+	rsp, err := c.PreviewPayTogether(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewPayTogetherResponse(rsp)
 }
 
 // ListBillingAccountProjectsWithResponse List projects linked to billing accounts
@@ -10680,6 +11808,50 @@ func (c *ClientWithResponses) RenewSubscriptionWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseRenewSubscriptionResponse(rsp)
+}
+
+// CreateRenewalOrderWithBodyWithResponse Create renewal order
+//
+// Places a renewal order and issues its invoice without charging anything; pay the invoice to
+// renew. The periods and price are chosen as for renewing. The order can be paid until the
+// current paid period ends, and never after the end of the first period it renews; unpaid by
+// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
+// this order instead of placing another.
+//
+// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
+// second time conflicts.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renewal-orders (the `CreateRenewalOrder` operationId).
+func (c *ClientWithResponses) CreateRenewalOrderWithBodyWithResponse(ctx context.Context, subscriptionId SubscriptionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRenewalOrderResponse, error) {
+	rsp, err := c.CreateRenewalOrderWithBody(ctx, subscriptionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRenewalOrderResponse(rsp)
+}
+
+// CreateRenewalOrderWithResponse Create renewal order
+//
+// Places a renewal order and issues its invoice without charging anything; pay the invoice to
+// renew. The periods and price are chosen as for renewing. The order can be paid until the
+// current paid period ends, and never after the end of the first period it renews; unpaid by
+// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
+// this order instead of placing another.
+//
+// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
+// second time conflicts.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/subscriptions/{subscriptionId}/renewal-orders (the `CreateRenewalOrder` operationId).
+func (c *ClientWithResponses) CreateRenewalOrderWithResponse(ctx context.Context, subscriptionId SubscriptionId, body CreateRenewalOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRenewalOrderResponse, error) {
+	rsp, err := c.CreateRenewalOrder(ctx, subscriptionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRenewalOrderResponse(rsp)
 }
 
 // ListRenewalPricesWithResponse List the terms this item can be renewed for
@@ -11003,6 +12175,39 @@ func ParseGetAccountBalanceResponse(rsp *http.Response) (*GetAccountBalanceRespo
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AccountBalance
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAccountMeteredUsageResponse parses an HTTP response from a GetAccountMeteredUsageWithResponse call
+func ParseGetAccountMeteredUsageResponse(rsp *http.Response) (*GetAccountMeteredUsageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccountMeteredUsageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MeteredUsage
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -11383,6 +12588,39 @@ func ParsePayInvoiceResponse(rsp *http.Response) (*PayInvoiceResponse, error) {
 	return response, nil
 }
 
+// ParsePreviewInvoicePaymentResponse parses an HTTP response from a PreviewInvoicePaymentWithResponse call
+func ParsePreviewInvoicePaymentResponse(rsp *http.Response) (*PreviewInvoicePaymentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PreviewInvoicePaymentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaymentPreview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListOrdersResponse parses an HTTP response from a ListOrdersWithResponse call
 func ParseListOrdersResponse(rsp *http.Response) (*ListOrdersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -11436,6 +12674,46 @@ func ParseGetOrderResponse(rsp *http.Response) (*GetOrderResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelOrderResponse parses an HTTP response from a CancelOrderWithResponse call
+func ParseCancelOrderResponse(rsp *http.Response) (*CancelOrderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Order
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -11626,6 +12904,39 @@ func ParsePayTogetherResponse(rsp *http.Response) (*PayTogetherResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PaymentResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePreviewPayTogetherResponse parses an HTTP response from a PreviewPayTogetherWithResponse call
+func ParsePreviewPayTogetherResponse(rsp *http.Response) (*PreviewPayTogetherResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PreviewPayTogetherResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaymentPreview
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -12018,6 +13329,46 @@ func ParseRenewSubscriptionResponse(rsp *http.Response) (*RenewSubscriptionRespo
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PaymentResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateRenewalOrderResponse parses an HTTP response from a CreateRenewalOrderWithResponse call
+func ParseCreateRenewalOrderResponse(rsp *http.Response) (*CreateRenewalOrderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRenewalOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Order
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

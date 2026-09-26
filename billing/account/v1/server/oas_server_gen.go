@@ -14,6 +14,22 @@ type Handler interface {
 	//
 	// POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel
 	CancelCancellationRequest(ctx context.Context, params CancelCancellationRequestParams) (*CancellationRequest, error)
+	// CancelOrder implements cancel-order operation.
+	//
+	// Withdraws an order that is not paid in full, and tells the service that placed it, so that nothing
+	// is delivered. An order with nothing paid becomes `canceled` and its invoice is voided. What was
+	// already paid toward it, from credit grants or the balance, is returned the way it was paid, and the
+	// order becomes `failed`. Either way `cancel_reason` is `requested_by_customer`. Canceling an order
+	// that is already canceled or failed returns it unchanged.
+	//
+	// Refused with 409 and `BILLING_PAID_ORDER_NOT_CANCELABLE` once the invoice is paid in full,
+	// `BILLING_ORDER_ALREADY_ACCEPTED` once the order has been accepted, `BILLING_ORDER_PAYMENT_IN_FLIGHT`
+	// while an online payment for it is in progress, and `BILLING_SCHEDULED_CHANGE_NOT_CANCELABLE` for a
+	// change that takes effect at the end of the period, which only the service that placed it can call
+	// off.
+	//
+	// POST /account/v1/orders/{orderId}/cancel
+	CancelOrder(ctx context.Context, params CancelOrderParams) (CancelOrderRes, error)
 	// CancelTopUp implements cancel-top-up operation.
 	//
 	// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
@@ -55,6 +71,19 @@ type Handler interface {
 	//
 	// POST /account/v1/payment-methods/setup
 	CreatePaymentMethodSetup(ctx context.Context, req *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
+	// CreateRenewalOrder implements create-renewal-order operation.
+	//
+	// Places a renewal order and issues its invoice without charging anything; pay the invoice to renew.
+	// The periods and price are chosen as for renewing. The order can be paid until the current paid
+	// period ends, and never after the end of the first period it renews; unpaid by then, it is canceled.
+	// While auto-renew is on, the renewal due at the end of the period pays this order instead of placing
+	// another.
+	//
+	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a second
+	// time conflicts.
+	//
+	// POST /account/v1/subscriptions/{subscriptionId}/renewal-orders
+	CreateRenewalOrder(ctx context.Context, req *RenewalOrderRequest, params CreateRenewalOrderParams) (CreateRenewalOrderRes, error)
 	// CreateTopUp implements create-top-up operation.
 	//
 	// Creates a top-up for an account owned by the authenticated user and returns its payment information.
@@ -76,6 +105,14 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
+	// GetAccountMeteredUsage implements get-account-metered-usage operation.
+	//
+	// Whether the account has anything billed by usage, and what that usage has cost over the last seven
+	// days. Usage is paid from the balance, so this tells how much of the balance it is likely to need:
+	// the balance divided by `average_daily_amount` is roughly how many days it lasts.
+	//
+	// GET /account/v1/billing-accounts/{accountId}/metered-usage
+	GetAccountMeteredUsage(ctx context.Context, params GetAccountMeteredUsageParams) (*MeteredUsage, error)
 	// GetBillingAccount implements get-billing-account operation.
 	//
 	// Get billing account.
@@ -293,6 +330,30 @@ type Handler interface {
 	//
 	// GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview
 	PreviewCancellation(ctx context.Context, params PreviewCancellationParams) (*CancellationPreview, error)
+	// PreviewInvoicePayment implements preview-invoice-payment operation.
+	//
+	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from
+	// a payment gateway. It is computed as paying computes it, so paying with the same options straight
+	// afterwards takes exactly these amounts unless the account's funds change in between. Nothing is
+	// charged, reserved or created.
+	//
+	// Refused with the same errors as paying, except that insufficient funds are not an error here: they
+	// show as a `gateway_amount` above zero.
+	//
+	// GET /account/v1/invoices/{invoiceId}/payment-preview
+	PreviewInvoicePayment(ctx context.Context, params PreviewInvoicePaymentParams) (*PaymentPreview, error)
+	// PreviewPayTogether implements preview-pay-together operation.
+	//
+	// What paying these invoices together now would take from credit grants and from the balance, invoice
+	// by invoice in the order they would be paid. It is computed as paying together computes it. Nothing
+	// is charged, reserved or created.
+	//
+	// Refused with the same errors as paying together, except that insufficient funds are not an error
+	// here: they show as a `gateway_amount` above zero, and paying together would then be refused with
+	// `BILLING_INSUFFICIENT_FUNDS`.
+	//
+	// POST /account/v1/payments/preview
+	PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentPreview, error)
 	// PreviewPromotionCode implements preview-promotion-code operation.
 	//
 	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they

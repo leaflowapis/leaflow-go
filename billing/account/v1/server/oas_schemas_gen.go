@@ -588,6 +588,44 @@ func (s *Applicability) SetMaxTermMonths(val OptInt) {
 	s.MaxTermMonths = val
 }
 
+// A credit grant and what it would pay.
+// Ref: #/components/schemas/AppliedCredit
+type AppliedCredit struct {
+	CreditGrantID uuid.UUID `json:"credit_grant_id"`
+	Name          string    `json:"name"`
+	Amount        Money     `json:"amount"`
+}
+
+// GetCreditGrantID returns the value of CreditGrantID.
+func (s *AppliedCredit) GetCreditGrantID() uuid.UUID {
+	return s.CreditGrantID
+}
+
+// GetName returns the value of Name.
+func (s *AppliedCredit) GetName() string {
+	return s.Name
+}
+
+// GetAmount returns the value of Amount.
+func (s *AppliedCredit) GetAmount() Money {
+	return s.Amount
+}
+
+// SetCreditGrantID sets the value of CreditGrantID.
+func (s *AppliedCredit) SetCreditGrantID(val uuid.UUID) {
+	s.CreditGrantID = val
+}
+
+// SetName sets the value of Name.
+func (s *AppliedCredit) SetName(val string) {
+	s.Name = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *AppliedCredit) SetAmount(val Money) {
+	s.Amount = val
+}
+
 // Ref: #/components/schemas/AutoRenewSet
 type AutoRenewSet struct {
 	AutoRenew bool `json:"auto_renew"`
@@ -2164,8 +2202,10 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-func (*Error) cancelTopUpRes()       {}
-func (*Error) renewSubscriptionRes() {}
+func (*Error) cancelOrderRes()        {}
+func (*Error) cancelTopUpRes()        {}
+func (*Error) createRenewalOrderRes() {}
+func (*Error) renewSubscriptionRes()  {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
@@ -3244,6 +3284,106 @@ func (s *ListCreditGrantsStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/MeteredUsage
+type MeteredUsage struct {
+	BillingAccountID int64  `json:"billing_account_id"`
+	Currency         string `json:"currency"`
+	// Resources still metered in the projects the account currently pays for.
+	ActiveResourceCount int `json:"active_resource_count"`
+	// Subscriptions billed by usage that the account currently pays for and that have not ended.
+	PostpaidSubscriptionCount int `json:"postpaid_subscription_count"`
+	// The start of the seven days the amounts cover.
+	WindowStart time.Time `json:"window_start"`
+	// The end of those seven days, the time usage was last priced.
+	WindowEnd time.Time `json:"window_end"`
+	// Usage priced in the window, before tax and before credit grants. Usage not yet priced is not
+	// included.
+	Amount Money `json:"amount"`
+	// `amount` per day. Over the window, or over the part of it since the account's usage began when that
+	// is shorter, counting at least one day.
+	AverageDailyAmount Money `json:"average_daily_amount"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *MeteredUsage) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *MeteredUsage) GetCurrency() string {
+	return s.Currency
+}
+
+// GetActiveResourceCount returns the value of ActiveResourceCount.
+func (s *MeteredUsage) GetActiveResourceCount() int {
+	return s.ActiveResourceCount
+}
+
+// GetPostpaidSubscriptionCount returns the value of PostpaidSubscriptionCount.
+func (s *MeteredUsage) GetPostpaidSubscriptionCount() int {
+	return s.PostpaidSubscriptionCount
+}
+
+// GetWindowStart returns the value of WindowStart.
+func (s *MeteredUsage) GetWindowStart() time.Time {
+	return s.WindowStart
+}
+
+// GetWindowEnd returns the value of WindowEnd.
+func (s *MeteredUsage) GetWindowEnd() time.Time {
+	return s.WindowEnd
+}
+
+// GetAmount returns the value of Amount.
+func (s *MeteredUsage) GetAmount() Money {
+	return s.Amount
+}
+
+// GetAverageDailyAmount returns the value of AverageDailyAmount.
+func (s *MeteredUsage) GetAverageDailyAmount() Money {
+	return s.AverageDailyAmount
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *MeteredUsage) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *MeteredUsage) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetActiveResourceCount sets the value of ActiveResourceCount.
+func (s *MeteredUsage) SetActiveResourceCount(val int) {
+	s.ActiveResourceCount = val
+}
+
+// SetPostpaidSubscriptionCount sets the value of PostpaidSubscriptionCount.
+func (s *MeteredUsage) SetPostpaidSubscriptionCount(val int) {
+	s.PostpaidSubscriptionCount = val
+}
+
+// SetWindowStart sets the value of WindowStart.
+func (s *MeteredUsage) SetWindowStart(val time.Time) {
+	s.WindowStart = val
+}
+
+// SetWindowEnd sets the value of WindowEnd.
+func (s *MeteredUsage) SetWindowEnd(val time.Time) {
+	s.WindowEnd = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *MeteredUsage) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetAverageDailyAmount sets the value of AverageDailyAmount.
+func (s *MeteredUsage) SetAverageDailyAmount(val Money) {
+	s.AverageDailyAmount = val
 }
 
 type Money string
@@ -5156,6 +5296,52 @@ func (o OptRenewRequestInterval) Or(d RenewRequestInterval) RenewRequestInterval
 	return d
 }
 
+// NewOptRenewalOrderRequestInterval returns new OptRenewalOrderRequestInterval with value set to v.
+func NewOptRenewalOrderRequestInterval(v RenewalOrderRequestInterval) OptRenewalOrderRequestInterval {
+	return OptRenewalOrderRequestInterval{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptRenewalOrderRequestInterval is optional RenewalOrderRequestInterval.
+type OptRenewalOrderRequestInterval struct {
+	Value RenewalOrderRequestInterval
+	Set   bool
+}
+
+// IsSet returns true if OptRenewalOrderRequestInterval was set.
+func (o OptRenewalOrderRequestInterval) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptRenewalOrderRequestInterval) Reset() {
+	var v RenewalOrderRequestInterval
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptRenewalOrderRequestInterval) SetTo(v RenewalOrderRequestInterval) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptRenewalOrderRequestInterval) Get() (v RenewalOrderRequestInterval, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptRenewalOrderRequestInterval) Or(d RenewalOrderRequestInterval) RenewalOrderRequestInterval {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -5676,6 +5862,9 @@ func (s *Order) SetCreatedAt(val time.Time) {
 func (s *Order) SetItems(val []OrderItem) {
 	s.Items = val
 }
+
+func (*Order) cancelOrderRes()        {}
+func (*Order) createRenewalOrderRes() {}
 
 // When a plan change takes effect. `none` on anything that is not a change.
 //
@@ -7079,6 +7268,166 @@ func (s *PaymentOptionMethod) SetMethodType(val string) {
 // SetReusable sets the value of Reusable.
 func (s *PaymentOptionMethod) SetReusable(val bool) {
 	s.Reusable = val
+}
+
+// What paying would take, computed as paying computes it. Nothing is charged or reserved.
+// Ref: #/components/schemas/PaymentPreview
+type PaymentPreview struct {
+	Currency string `json:"currency"`
+	// What is outstanding before paying.
+	AmountDue Money `json:"amount_due"`
+	// What credit grants would pay. Grants restricted to other purchases pay nothing here.
+	CreditApplied Money `json:"credit_applied"`
+	// The credit grants that would pay, in the order they would be used.
+	CreditGrants []AppliedCredit `json:"credit_grants"`
+	// What the balance would pay.
+	BalanceApplied Money `json:"balance_applied"`
+	// What would remain to be paid online. Paying without a gateway is refused with
+	// `BILLING_INSUFFICIENT_FUNDS` while this is above zero.
+	GatewayAmount Money `json:"gateway_amount"`
+	// The available balance after paying.
+	BalanceAfter Money `json:"balance_after"`
+	// Paying together only. Each invoice, in the order it would be paid.
+	Invoices []PaymentPreviewInvoice `json:"invoices"`
+}
+
+// GetCurrency returns the value of Currency.
+func (s *PaymentPreview) GetCurrency() string {
+	return s.Currency
+}
+
+// GetAmountDue returns the value of AmountDue.
+func (s *PaymentPreview) GetAmountDue() Money {
+	return s.AmountDue
+}
+
+// GetCreditApplied returns the value of CreditApplied.
+func (s *PaymentPreview) GetCreditApplied() Money {
+	return s.CreditApplied
+}
+
+// GetCreditGrants returns the value of CreditGrants.
+func (s *PaymentPreview) GetCreditGrants() []AppliedCredit {
+	return s.CreditGrants
+}
+
+// GetBalanceApplied returns the value of BalanceApplied.
+func (s *PaymentPreview) GetBalanceApplied() Money {
+	return s.BalanceApplied
+}
+
+// GetGatewayAmount returns the value of GatewayAmount.
+func (s *PaymentPreview) GetGatewayAmount() Money {
+	return s.GatewayAmount
+}
+
+// GetBalanceAfter returns the value of BalanceAfter.
+func (s *PaymentPreview) GetBalanceAfter() Money {
+	return s.BalanceAfter
+}
+
+// GetInvoices returns the value of Invoices.
+func (s *PaymentPreview) GetInvoices() []PaymentPreviewInvoice {
+	return s.Invoices
+}
+
+// SetCurrency sets the value of Currency.
+func (s *PaymentPreview) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetAmountDue sets the value of AmountDue.
+func (s *PaymentPreview) SetAmountDue(val Money) {
+	s.AmountDue = val
+}
+
+// SetCreditApplied sets the value of CreditApplied.
+func (s *PaymentPreview) SetCreditApplied(val Money) {
+	s.CreditApplied = val
+}
+
+// SetCreditGrants sets the value of CreditGrants.
+func (s *PaymentPreview) SetCreditGrants(val []AppliedCredit) {
+	s.CreditGrants = val
+}
+
+// SetBalanceApplied sets the value of BalanceApplied.
+func (s *PaymentPreview) SetBalanceApplied(val Money) {
+	s.BalanceApplied = val
+}
+
+// SetGatewayAmount sets the value of GatewayAmount.
+func (s *PaymentPreview) SetGatewayAmount(val Money) {
+	s.GatewayAmount = val
+}
+
+// SetBalanceAfter sets the value of BalanceAfter.
+func (s *PaymentPreview) SetBalanceAfter(val Money) {
+	s.BalanceAfter = val
+}
+
+// SetInvoices sets the value of Invoices.
+func (s *PaymentPreview) SetInvoices(val []PaymentPreviewInvoice) {
+	s.Invoices = val
+}
+
+// Ref: #/components/schemas/PaymentPreviewInvoice
+type PaymentPreviewInvoice struct {
+	InvoiceID      uuid.UUID  `json:"invoice_id"`
+	OrderID        OptNilUUID `json:"order_id"`
+	AmountDue      Money      `json:"amount_due"`
+	CreditApplied  Money      `json:"credit_applied"`
+	BalanceApplied Money      `json:"balance_applied"`
+}
+
+// GetInvoiceID returns the value of InvoiceID.
+func (s *PaymentPreviewInvoice) GetInvoiceID() uuid.UUID {
+	return s.InvoiceID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *PaymentPreviewInvoice) GetOrderID() OptNilUUID {
+	return s.OrderID
+}
+
+// GetAmountDue returns the value of AmountDue.
+func (s *PaymentPreviewInvoice) GetAmountDue() Money {
+	return s.AmountDue
+}
+
+// GetCreditApplied returns the value of CreditApplied.
+func (s *PaymentPreviewInvoice) GetCreditApplied() Money {
+	return s.CreditApplied
+}
+
+// GetBalanceApplied returns the value of BalanceApplied.
+func (s *PaymentPreviewInvoice) GetBalanceApplied() Money {
+	return s.BalanceApplied
+}
+
+// SetInvoiceID sets the value of InvoiceID.
+func (s *PaymentPreviewInvoice) SetInvoiceID(val uuid.UUID) {
+	s.InvoiceID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *PaymentPreviewInvoice) SetOrderID(val OptNilUUID) {
+	s.OrderID = val
+}
+
+// SetAmountDue sets the value of AmountDue.
+func (s *PaymentPreviewInvoice) SetAmountDue(val Money) {
+	s.AmountDue = val
+}
+
+// SetCreditApplied sets the value of CreditApplied.
+func (s *PaymentPreviewInvoice) SetCreditApplied(val Money) {
+	s.CreditApplied = val
+}
+
+// SetBalanceApplied sets the value of BalanceApplied.
+func (s *PaymentPreviewInvoice) SetBalanceApplied(val Money) {
+	s.BalanceApplied = val
 }
 
 // Ref: #/components/schemas/PaymentResult
@@ -8925,8 +9274,11 @@ type RenewRequest struct {
 	// The unit interval_count counts in.
 	Interval        OptRenewRequestInterval `json:"interval"`
 	PaymentMethodID OptUUID                 `json:"payment_method_id"`
-	UseBalance      OptBool                 `json:"use_balance"`
-	ReturnURL       OptString               `json:"return_url"`
+	// Whether to pay from the balance, with or without `payment_method_id`.
+	UseBalance OptBool `json:"use_balance"`
+	// Whether to pay from eligible credit grants before the balance.
+	UseCredits OptBool   `json:"use_credits"`
+	ReturnURL  OptString `json:"return_url"`
 }
 
 // GetOrderID returns the value of OrderID.
@@ -8957,6 +9309,11 @@ func (s *RenewRequest) GetPaymentMethodID() OptUUID {
 // GetUseBalance returns the value of UseBalance.
 func (s *RenewRequest) GetUseBalance() OptBool {
 	return s.UseBalance
+}
+
+// GetUseCredits returns the value of UseCredits.
+func (s *RenewRequest) GetUseCredits() OptBool {
+	return s.UseCredits
 }
 
 // GetReturnURL returns the value of ReturnURL.
@@ -8992,6 +9349,11 @@ func (s *RenewRequest) SetPaymentMethodID(val OptUUID) {
 // SetUseBalance sets the value of UseBalance.
 func (s *RenewRequest) SetUseBalance(val OptBool) {
 	s.UseBalance = val
+}
+
+// SetUseCredits sets the value of UseCredits.
+func (s *RenewRequest) SetUseCredits(val OptBool) {
+	s.UseCredits = val
 }
 
 // SetReturnURL sets the value of ReturnURL.
@@ -9042,6 +9404,109 @@ func (s *RenewRequestInterval) UnmarshalText(data []byte) error {
 		return nil
 	case RenewRequestIntervalYear:
 		*s = RenewRequestIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The periods and price of the renewal, chosen as in renewing.
+// Ref: #/components/schemas/RenewalOrderRequest
+type RenewalOrderRequest struct {
+	// Purchase ID saved before submitting. Duplicate creation conflicts; query this order after an unknown
+	// result.
+	OrderID uuid.UUID `json:"order_id"`
+	// As in renewing.
+	Periods OptInt `json:"periods"`
+	// As in renewing.
+	IntervalCount OptInt `json:"interval_count"`
+	// As in renewing.
+	Interval OptRenewalOrderRequestInterval `json:"interval"`
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *RenewalOrderRequest) GetOrderID() uuid.UUID {
+	return s.OrderID
+}
+
+// GetPeriods returns the value of Periods.
+func (s *RenewalOrderRequest) GetPeriods() OptInt {
+	return s.Periods
+}
+
+// GetIntervalCount returns the value of IntervalCount.
+func (s *RenewalOrderRequest) GetIntervalCount() OptInt {
+	return s.IntervalCount
+}
+
+// GetInterval returns the value of Interval.
+func (s *RenewalOrderRequest) GetInterval() OptRenewalOrderRequestInterval {
+	return s.Interval
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *RenewalOrderRequest) SetOrderID(val uuid.UUID) {
+	s.OrderID = val
+}
+
+// SetPeriods sets the value of Periods.
+func (s *RenewalOrderRequest) SetPeriods(val OptInt) {
+	s.Periods = val
+}
+
+// SetIntervalCount sets the value of IntervalCount.
+func (s *RenewalOrderRequest) SetIntervalCount(val OptInt) {
+	s.IntervalCount = val
+}
+
+// SetInterval sets the value of Interval.
+func (s *RenewalOrderRequest) SetInterval(val OptRenewalOrderRequestInterval) {
+	s.Interval = val
+}
+
+// As in renewing.
+type RenewalOrderRequestInterval string
+
+const (
+	RenewalOrderRequestIntervalDay   RenewalOrderRequestInterval = "day"
+	RenewalOrderRequestIntervalMonth RenewalOrderRequestInterval = "month"
+	RenewalOrderRequestIntervalYear  RenewalOrderRequestInterval = "year"
+)
+
+// AllValues returns all RenewalOrderRequestInterval values.
+func (RenewalOrderRequestInterval) AllValues() []RenewalOrderRequestInterval {
+	return []RenewalOrderRequestInterval{
+		RenewalOrderRequestIntervalDay,
+		RenewalOrderRequestIntervalMonth,
+		RenewalOrderRequestIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RenewalOrderRequestInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case RenewalOrderRequestIntervalDay:
+		return []byte(s), nil
+	case RenewalOrderRequestIntervalMonth:
+		return []byte(s), nil
+	case RenewalOrderRequestIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RenewalOrderRequestInterval) UnmarshalText(data []byte) error {
+	switch RenewalOrderRequestInterval(data) {
+	case RenewalOrderRequestIntervalDay:
+		*s = RenewalOrderRequestIntervalDay
+		return nil
+	case RenewalOrderRequestIntervalMonth:
+		*s = RenewalOrderRequestIntervalMonth
+		return nil
+	case RenewalOrderRequestIntervalYear:
+		*s = RenewalOrderRequestIntervalYear
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
