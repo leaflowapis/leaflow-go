@@ -7317,9 +7317,15 @@ func (s *Server) handlePayInvoiceRequest(args [1]string, argsEscaped bool, w htt
 
 // handlePayTogetherRequest handles pay-together operation.
 //
-// Pays outstanding invoices, including invoices associated with the listed orders. Gateway collection
-// creates a top-up transaction applied to the original invoices. Paid invoices are not charged again.
-// Unknown gateway results remain pending and are recovered through the original transaction and task.
+// Pays outstanding invoices, including the invoices of the listed orders, from the account's eligible
+// credit grants and then its balance. No payment gateway is used; an invoice to be paid online is paid
+// on its own.
+//
+// Either every invoice is paid or none is. When the credit grants and balance cannot cover them all,
+// the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. Invoices that are
+// already paid are not charged again. An invoice with an online payment still in progress is refused
+// with `BILLING_PAYMENT_PENDING`, and an order whose payment deadline has passed with
+// `BILLING_ORDER_EXPIRED`.
 //
 // POST /account/v1/payments
 func (s *Server) handlePayTogetherRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
