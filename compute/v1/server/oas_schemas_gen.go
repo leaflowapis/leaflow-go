@@ -2199,7 +2199,6 @@ func (s *Error) SetStatus(val int64) {
 func (*Error) allocateFloatingIPRes()     {}
 func (*Error) attachDiskRes()             {}
 func (*Error) attachPortRes()             {}
-func (*Error) confirmInstanceResizeRes()  {}
 func (*Error) createBackupRes()           {}
 func (*Error) createDiskRes()             {}
 func (*Error) createPrivateImageRes()     {}
@@ -2218,7 +2217,6 @@ func (*Error) resizeDiskRes()             {}
 func (*Error) resizeInstanceRes()         {}
 func (*Error) restoreBackupRes()          {}
 func (*Error) revertDiskRes()             {}
-func (*Error) revertInstanceResizeRes()   {}
 func (*Error) setFloatingIPBandwidthRes() {}
 func (*Error) startInstanceRes()          {}
 func (*Error) stopInstanceRes()           {}
@@ -3785,7 +3783,6 @@ const (
 	InstanceResourceStatusShelved          InstanceResourceStatus = "shelved"
 	InstanceResourceStatusShelvedOffloaded InstanceResourceStatus = "shelved_offloaded"
 	InstanceResourceStatusRescued          InstanceResourceStatus = "rescued"
-	InstanceResourceStatusResized          InstanceResourceStatus = "resized"
 	InstanceResourceStatusDeleting         InstanceResourceStatus = "deleting"
 	InstanceResourceStatusDeleted          InstanceResourceStatus = "deleted"
 	InstanceResourceStatusError            InstanceResourceStatus = "error"
@@ -3804,7 +3801,6 @@ func (InstanceResourceStatus) AllValues() []InstanceResourceStatus {
 		InstanceResourceStatusShelved,
 		InstanceResourceStatusShelvedOffloaded,
 		InstanceResourceStatusRescued,
-		InstanceResourceStatusResized,
 		InstanceResourceStatusDeleting,
 		InstanceResourceStatusDeleted,
 		InstanceResourceStatusError,
@@ -3832,8 +3828,6 @@ func (s InstanceResourceStatus) MarshalText() ([]byte, error) {
 	case InstanceResourceStatusShelvedOffloaded:
 		return []byte(s), nil
 	case InstanceResourceStatusRescued:
-		return []byte(s), nil
-	case InstanceResourceStatusResized:
 		return []byte(s), nil
 	case InstanceResourceStatusDeleting:
 		return []byte(s), nil
@@ -3877,9 +3871,6 @@ func (s *InstanceResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case InstanceResourceStatusRescued:
 		*s = InstanceResourceStatusRescued
-		return nil
-	case InstanceResourceStatusResized:
-		*s = InstanceResourceStatusResized
 		return nil
 	case InstanceResourceStatusDeleting:
 		*s = InstanceResourceStatusDeleting
@@ -9099,22 +9090,20 @@ func (s *Task) SetCompletedAt(val NilDateTime) {
 	s.CompletedAt = val
 }
 
-func (*Task) attachDiskRes()            {}
-func (*Task) attachPortRes()            {}
-func (*Task) confirmInstanceResizeRes() {}
-func (*Task) deleteBackupRes()          {}
-func (*Task) deleteDiskRes()            {}
-func (*Task) deleteInstanceRes()        {}
-func (*Task) deletePrivateImageRes()    {}
-func (*Task) deleteSnapshotRes()        {}
-func (*Task) detachDiskRes()            {}
-func (*Task) detachPortRes()            {}
-func (*Task) rebootInstanceRes()        {}
-func (*Task) releaseFloatingIPRes()     {}
-func (*Task) revertDiskRes()            {}
-func (*Task) revertInstanceResizeRes()  {}
-func (*Task) startInstanceRes()         {}
-func (*Task) stopInstanceRes()          {}
+func (*Task) attachDiskRes()         {}
+func (*Task) attachPortRes()         {}
+func (*Task) deleteBackupRes()       {}
+func (*Task) deleteDiskRes()         {}
+func (*Task) deleteInstanceRes()     {}
+func (*Task) deletePrivateImageRes() {}
+func (*Task) deleteSnapshotRes()     {}
+func (*Task) detachDiskRes()         {}
+func (*Task) detachPortRes()         {}
+func (*Task) rebootInstanceRes()     {}
+func (*Task) releaseFloatingIPRes()  {}
+func (*Task) revertDiskRes()         {}
+func (*Task) startInstanceRes()      {}
+func (*Task) stopInstanceRes()       {}
 
 type TaskState string
 

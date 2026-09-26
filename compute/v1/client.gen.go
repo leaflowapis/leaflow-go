@@ -470,7 +470,6 @@ const (
 	InstanceResourceStatusPaused           InstanceResourceStatus = "paused"
 	InstanceResourceStatusPending          InstanceResourceStatus = "pending"
 	InstanceResourceStatusRescued          InstanceResourceStatus = "rescued"
-	InstanceResourceStatusResized          InstanceResourceStatus = "resized"
 	InstanceResourceStatusShelved          InstanceResourceStatus = "shelved"
 	InstanceResourceStatusShelvedOffloaded InstanceResourceStatus = "shelved_offloaded"
 	InstanceResourceStatusStopped          InstanceResourceStatus = "stopped"
@@ -496,8 +495,6 @@ func (e InstanceResourceStatus) Valid() bool {
 	case InstanceResourceStatusPending:
 		return true
 	case InstanceResourceStatusRescued:
-		return true
-	case InstanceResourceStatusResized:
 		return true
 	case InstanceResourceStatusShelved:
 		return true
@@ -2194,18 +2191,6 @@ type RebootInstanceParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
-// ConfirmInstanceResizeParams defines parameters for ConfirmInstanceResize.
-type ConfirmInstanceResizeParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// RevertInstanceResizeParams defines parameters for RevertInstanceResize.
-type RevertInstanceResizeParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // StartInstanceParams defines parameters for StartInstance.
 type StartInstanceParams struct {
 	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
@@ -3205,6 +3190,8 @@ type ClientInterface interface {
 	//
 	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
 	//
+	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
@@ -3216,30 +3203,14 @@ type ClientInterface interface {
 	//
 	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
 	//
+	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 	ResizeInstance(ctx context.Context, instanceId openapi_types.UUID, body ResizeInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ConfirmInstanceResize Confirm a resize
-	//
-	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
-	//
-	// Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
-	ConfirmInstanceResize(ctx context.Context, instanceId openapi_types.UUID, params *ConfirmInstanceResizeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RevertInstanceResize Revert a resize
-	//
-	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
-	//
-	// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
-	RevertInstanceResize(ctx context.Context, instanceId openapi_types.UUID, params *RevertInstanceResizeParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartInstanceWithBody Start an instance
 	//
@@ -5150,6 +5121,8 @@ func (c *Client) RebuildInstance(ctx context.Context, instanceId openapi_types.U
 //
 // Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
 //
+// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
@@ -5171,6 +5144,8 @@ func (c *Client) ResizeInstanceWithBody(ctx context.Context, instanceId openapi_
 //
 // Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
 //
+// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type.
@@ -5178,44 +5153,6 @@ func (c *Client) ResizeInstanceWithBody(ctx context.Context, instanceId openapi_
 // Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 func (c *Client) ResizeInstance(ctx context.Context, instanceId openapi_types.UUID, body ResizeInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewResizeInstanceRequest(c.Server, instanceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ConfirmInstanceResize Confirm a resize
-//
-// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
-//
-// Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
-func (c *Client) ConfirmInstanceResize(ctx context.Context, instanceId openapi_types.UUID, params *ConfirmInstanceResizeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewConfirmInstanceResizeRequest(c.Server, instanceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RevertInstanceResize Revert a resize
-//
-// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
-//
-// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
-func (c *Client) RevertInstanceResize(ctx context.Context, instanceId openapi_types.UUID, params *RevertInstanceResizeParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRevertInstanceResizeRequest(c.Server, instanceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8653,100 +8590,6 @@ func NewResizeInstanceRequestWithBody(server string, instanceId openapi_types.UU
 	return req, nil
 }
 
-// NewConfirmInstanceResizeRequest constructs an http.Request for the ConfirmInstanceResize method
-func NewConfirmInstanceResizeRequest(server string, instanceId openapi_types.UUID, params *ConfirmInstanceResizeParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/instances/%s/resize/confirm", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
-	return req, nil
-}
-
-// NewRevertInstanceResizeRequest constructs an http.Request for the RevertInstanceResize method
-func NewRevertInstanceResizeRequest(server string, instanceId openapi_types.UUID, params *RevertInstanceResizeParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/instances/%s/resize/revert", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
-	return req, nil
-}
-
 // NewStartInstanceRequest calls the generic StartInstance builder with application/json body
 func NewStartInstanceRequest(server string, instanceId openapi_types.UUID, params *StartInstanceParams, body StartInstanceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -11712,6 +11555,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
 	//
+	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -11723,34 +11568,14 @@ type ClientWithResponsesInterface interface {
 	//
 	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
 	//
+	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 	ResizeInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ResizeInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ResizeInstanceResponse, error)
-
-	// ConfirmInstanceResizeWithResponse Confirm a resize
-	//
-	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
-	ConfirmInstanceResizeWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *ConfirmInstanceResizeParams, reqEditors ...RequestEditorFn) (*ConfirmInstanceResizeResponse, error)
-
-	// RevertInstanceResizeWithResponse Revert a resize
-	//
-	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
-	RevertInstanceResizeWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RevertInstanceResizeParams, reqEditors ...RequestEditorFn) (*RevertInstanceResizeResponse, error)
 
 	// StartInstanceWithBodyWithResponse Start an instance
 	//
@@ -14661,116 +14486,6 @@ func (r ResizeInstanceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ResizeInstanceResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ConfirmInstanceResizeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
-	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r ConfirmInstanceResizeResponse) GetJSON202() *Task {
-	return r.JSON202
-}
-
-// GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r ConfirmInstanceResizeResponse) GetJSON409() *Error {
-	return r.JSON409
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ConfirmInstanceResizeResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ConfirmInstanceResizeResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ConfirmInstanceResizeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ConfirmInstanceResizeResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ConfirmInstanceResizeResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RevertInstanceResizeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
-	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r RevertInstanceResizeResponse) GetJSON202() *Task {
-	return r.JSON202
-}
-
-// GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r RevertInstanceResizeResponse) GetJSON409() *Error {
-	return r.JSON409
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RevertInstanceResizeResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RevertInstanceResizeResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RevertInstanceResizeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RevertInstanceResizeResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RevertInstanceResizeResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18302,6 +18017,8 @@ func (c *ClientWithResponses) RebuildInstanceWithResponse(ctx context.Context, i
 //
 // Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
 //
+// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -18319,6 +18036,8 @@ func (c *ClientWithResponses) ResizeInstanceWithBodyWithResponse(ctx context.Con
 //
 // Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an uncertain response.
 //
+// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -18330,40 +18049,6 @@ func (c *ClientWithResponses) ResizeInstanceWithResponse(ctx context.Context, in
 		return nil, err
 	}
 	return ParseResizeInstanceResponse(rsp)
-}
-
-// ConfirmInstanceResizeWithResponse Confirm a resize
-//
-// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
-func (c *ClientWithResponses) ConfirmInstanceResizeWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *ConfirmInstanceResizeParams, reqEditors ...RequestEditorFn) (*ConfirmInstanceResizeResponse, error) {
-	rsp, err := c.ConfirmInstanceResize(ctx, instanceId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseConfirmInstanceResizeResponse(rsp)
-}
-
-// RevertInstanceResizeWithResponse Revert a resize
-//
-// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
-func (c *ClientWithResponses) RevertInstanceResizeWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RevertInstanceResizeParams, reqEditors ...RequestEditorFn) (*RevertInstanceResizeResponse, error) {
-	rsp, err := c.RevertInstanceResize(ctx, instanceId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRevertInstanceResizeResponse(rsp)
 }
 
 // StartInstanceWithBodyWithResponse Start an instance
@@ -20950,86 +20635,6 @@ func ParseResizeInstanceResponse(rsp *http.Response) (*ResizeInstanceResponse, e
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest PurchaseResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseConfirmInstanceResizeResponse parses an HTTP response from a ConfirmInstanceResizeWithResponse call
-func ParseConfirmInstanceResizeResponse(rsp *http.Response) (*ConfirmInstanceResizeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ConfirmInstanceResizeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRevertInstanceResizeResponse parses an HTTP response from a RevertInstanceResizeWithResponse call
-func ParseRevertInstanceResizeResponse(rsp *http.Response) (*RevertInstanceResizeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RevertInstanceResizeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

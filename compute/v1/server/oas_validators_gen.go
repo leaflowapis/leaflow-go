@@ -2271,8 +2271,6 @@ func (s InstanceResourceStatus) Validate() error {
 		return nil
 	case "rescued":
 		return nil
-	case "resized":
-		return nil
 	case "deleting":
 		return nil
 	case "deleted":

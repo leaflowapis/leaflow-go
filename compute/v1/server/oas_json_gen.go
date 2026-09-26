@@ -7765,8 +7765,6 @@ func (s *InstanceResourceStatus) Decode(d *jx.Decoder) error {
 		*s = InstanceResourceStatusShelvedOffloaded
 	case InstanceResourceStatusRescued:
 		*s = InstanceResourceStatusRescued
-	case InstanceResourceStatusResized:
-		*s = InstanceResourceStatusResized
 	case InstanceResourceStatusDeleting:
 		*s = InstanceResourceStatusDeleting
 	case InstanceResourceStatusDeleted:

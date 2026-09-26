@@ -83,19 +83,6 @@ func (UnimplementedHandler) BindFloatingIP(ctx context.Context, req *BindFloatin
 	return r, ht.ErrNotImplemented
 }
 
-// ConfirmInstanceResize implements confirm-instance-resize operation.
-//
-// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
-// effect and is billed from then on.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
-// POST /api/v1/instances/{instanceId}/resize/confirm
-func (UnimplementedHandler) ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (r ConfirmInstanceResizeRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateBackup implements create-backup operation.
 //
 // A backup is a complete copy of a disk held in separate storage: it remains restorable after the
@@ -1026,6 +1013,10 @@ func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskReque
 // invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
 // uncertain response.
 //
+// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
+// completed resize is final and cannot be reverted; to return to the previous type, submit another
+// resize.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
 //
@@ -1067,19 +1058,6 @@ func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBacku
 //
 // POST /api/v1/disks/{diskId}/revert
 func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (r RevertDiskRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RevertInstanceResize implements revert-instance-resize operation.
-//
-// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
-// unaffected by the resize.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
-// POST /api/v1/instances/{instanceId}/resize/revert
-func (UnimplementedHandler) RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (r RevertInstanceResizeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

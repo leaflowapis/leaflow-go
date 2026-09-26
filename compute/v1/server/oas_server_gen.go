@@ -60,16 +60,6 @@ type Handler interface {
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/binding
 	BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (*FloatingIPResource, error)
-	// ConfirmInstanceResize implements confirm-instance-resize operation.
-	//
-	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
-	// effect and is billed from then on.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
-	// POST /api/v1/instances/{instanceId}/resize/confirm
-	ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (ConfirmInstanceResizeRes, error)
 	// CreateBackup implements create-backup operation.
 	//
 	// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
@@ -766,6 +756,10 @@ type Handler interface {
 	// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
 	// uncertain response.
 	//
+	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
+	// completed resize is final and cannot be reverted; to return to the previous type, submit another
+	// resize.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 	// and terminal outcomes.
 	//
@@ -801,16 +795,6 @@ type Handler interface {
 	//
 	// POST /api/v1/disks/{diskId}/revert
 	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
-	// RevertInstanceResize implements revert-instance-resize operation.
-	//
-	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
-	// unaffected by the resize.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
-	// POST /api/v1/instances/{instanceId}/resize/revert
-	RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (RevertInstanceResizeRes, error)
 	// RunInstanceCommand implements run-instance-command operation.
 	//
 	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no

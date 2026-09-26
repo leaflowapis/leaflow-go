@@ -13,10 +13,6 @@ type AttachPortRes interface {
 	attachPortRes()
 }
 
-type ConfirmInstanceResizeRes interface {
-	confirmInstanceResizeRes()
-}
-
 type CreateBackupRes interface {
 	createBackupRes()
 }
@@ -87,10 +83,6 @@ type RestoreBackupRes interface {
 
 type RevertDiskRes interface {
 	revertDiskRes()
-}
-
-type RevertInstanceResizeRes interface {
-	revertInstanceResizeRes()
 }
 
 type SetFloatingIPBandwidthRes interface {

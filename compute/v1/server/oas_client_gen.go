@@ -81,16 +81,6 @@ type Invoker interface {
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/binding
 	BindFloatingIP(ctx context.Context, request *BindFloatingIPRequestBody, params BindFloatingIPParams) (*FloatingIPResource, error)
-	// ConfirmInstanceResize invokes confirm-instance-resize operation.
-	//
-	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
-	// effect and is billed from then on.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
-	// POST /api/v1/instances/{instanceId}/resize/confirm
-	ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (ConfirmInstanceResizeRes, error)
 	// CreateBackup invokes create-backup operation.
 	//
 	// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
@@ -787,6 +777,10 @@ type Invoker interface {
 	// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
 	// uncertain response.
 	//
+	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
+	// completed resize is final and cannot be reverted; to return to the previous type, submit another
+	// resize.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 	// and terminal outcomes.
 	//
@@ -822,16 +816,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/disks/{diskId}/revert
 	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
-	// RevertInstanceResize invokes revert-instance-resize operation.
-	//
-	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
-	// unaffected by the resize.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
-	// POST /api/v1/instances/{instanceId}/resize/revert
-	RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (RevertInstanceResizeRes, error)
 	// RunInstanceCommand invokes run-instance-command operation.
 	//
 	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
@@ -1804,156 +1788,6 @@ func (c *Client) sendBindFloatingIP(ctx context.Context, request *BindFloatingIP
 
 	stage = "DecodeResponse"
 	result, err := decodeBindFloatingIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ConfirmInstanceResize invokes confirm-instance-resize operation.
-//
-// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
-// effect and is billed from then on.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
-// POST /api/v1/instances/{instanceId}/resize/confirm
-func (c *Client) ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (ConfirmInstanceResizeRes, error) {
-	res, err := c.sendConfirmInstanceResize(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (res ConfirmInstanceResizeRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("confirm-instance-resize"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/resize/confirm"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ConfirmInstanceResizeOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/instances/"
-	{
-		// Encode "instanceId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "instanceId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/resize/confirm"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ConfirmInstanceResizeOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeConfirmInstanceResizeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -12915,6 +12749,10 @@ func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestB
 // invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
 // uncertain response.
 //
+// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
+// completed resize is final and cannot be reverted; to return to the previous type, submit another
+// resize.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
 //
@@ -13344,156 +13182,6 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 
 	stage = "DecodeResponse"
 	result, err := decodeRevertDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RevertInstanceResize invokes revert-instance-resize operation.
-//
-// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
-// unaffected by the resize.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
-// POST /api/v1/instances/{instanceId}/resize/revert
-func (c *Client) RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (RevertInstanceResizeRes, error) {
-	res, err := c.sendRevertInstanceResize(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendRevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (res RevertInstanceResizeRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("revert-instance-resize"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/resize/revert"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RevertInstanceResizeOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/instances/"
-	{
-		// Encode "instanceId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "instanceId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/resize/revert"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RevertInstanceResizeOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRevertInstanceResizeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
