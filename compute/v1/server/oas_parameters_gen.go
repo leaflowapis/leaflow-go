@@ -665,6 +665,71 @@ func decodeDeleteDiskParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// DeleteImageParams is parameters of delete-image operation.
+type DeleteImageParams struct {
+	ImageId uuid.UUID
+}
+
+func unpackDeleteImageParams(packed middleware.Parameters) (params DeleteImageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "imageId",
+			In:   "path",
+		}
+		params.ImageId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeleteImageParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteImageParams, _ error) {
+	// Decode path: imageId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "imageId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ImageId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "imageId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteInstanceParams is parameters of delete-instance operation.
 type DeleteInstanceParams struct {
 	InstanceId uuid.UUID
@@ -853,71 +918,6 @@ func decodeDeletePortParams(args [1]string, argsEscaped bool, r *http.Request) (
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "portId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// DeletePrivateImageParams is parameters of delete-private-image operation.
-type DeletePrivateImageParams struct {
-	PrivateImageId uuid.UUID
-}
-
-func unpackDeletePrivateImageParams(packed middleware.Parameters) (params DeletePrivateImageParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "privateImageId",
-			In:   "path",
-		}
-		params.PrivateImageId = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodeDeletePrivateImageParams(args [1]string, argsEscaped bool, r *http.Request) (params DeletePrivateImageParams, _ error) {
-	// Decode path: privateImageId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "privateImageId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.PrivateImageId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "privateImageId",
 			In:   "path",
 			Err:  err,
 		}
@@ -2218,6 +2218,71 @@ func decodeGetFloatingIPParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
+// GetImageParams is parameters of get-image operation.
+type GetImageParams struct {
+	ImageId uuid.UUID
+}
+
+func unpackGetImageParams(packed middleware.Parameters) (params GetImageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "imageId",
+			In:   "path",
+		}
+		params.ImageId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetImageParams(args [1]string, argsEscaped bool, r *http.Request) (params GetImageParams, _ error) {
+	// Decode path: imageId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "imageId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ImageId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "imageId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetInstanceParams is parameters of get-instance operation.
 type GetInstanceParams struct {
 	InstanceId uuid.UUID
@@ -2489,71 +2554,6 @@ func decodeGetPeeringParams(args [1]string, argsEscaped bool, r *http.Request) (
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "peeringId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// GetPrivateImageParams is parameters of get-private-image operation.
-type GetPrivateImageParams struct {
-	PrivateImageId uuid.UUID
-}
-
-func unpackGetPrivateImageParams(packed middleware.Parameters) (params GetPrivateImageParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "privateImageId",
-			In:   "path",
-		}
-		params.PrivateImageId = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodeGetPrivateImageParams(args [1]string, argsEscaped bool, r *http.Request) (params GetPrivateImageParams, _ error) {
-	// Decode path: privateImageId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "privateImageId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.PrivateImageId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "privateImageId",
 			In:   "path",
 			Err:  err,
 		}
@@ -3243,9 +3243,12 @@ func decodeListDisksParams(args [0]string, argsEscaped bool, r *http.Request) (p
 
 // ListImagesParams is parameters of list-images operation.
 type ListImagesParams struct {
-	RegionID uuid.UUID
-	Page     OptInt64 `json:",omitempty,omitzero"`
-	PageSize OptInt64 `json:",omitempty,omitzero"`
+	// Return only the images of this region.
+	RegionID OptUUID `json:",omitempty,omitzero"`
+	// Return only public or only private images. Both are returned when omitted.
+	Visibility OptImageVisibility `json:",omitempty,omitzero"`
+	Page       OptInt64           `json:",omitempty,omitzero"`
+	PageSize   OptInt64           `json:",omitempty,omitzero"`
 }
 
 func unpackListImagesParams(packed middleware.Parameters) (params ListImagesParams) {
@@ -3254,7 +3257,18 @@ func unpackListImagesParams(packed middleware.Parameters) (params ListImagesPara
 			Name: "region_id",
 			In:   "query",
 		}
-		params.RegionID = packed[key].(uuid.UUID)
+		if v, ok := packed[key]; ok {
+			params.RegionID = v.(OptUUID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "visibility",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Visibility = v.(OptImageVisibility)
+		}
 	}
 	{
 		key := middleware.ParameterKey{
@@ -3289,28 +3303,89 @@ func decodeListImagesParams(args [0]string, argsEscaped bool, r *http.Request) (
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
+				var paramsDotRegionIDVal uuid.UUID
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToUUID(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotRegionIDVal = c
+					return nil
+				}(); err != nil {
 					return err
 				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.RegionID = c
+				params.RegionID.SetTo(paramsDotRegionIDVal)
 				return nil
 			}); err != nil {
 				return err
 			}
-		} else {
-			return err
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "region_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: visibility.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "visibility",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotVisibilityVal ImageVisibility
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVisibilityVal = ImageVisibility(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Visibility.SetTo(paramsDotVisibilityVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Visibility.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "visibility",
 			In:   "query",
 			Err:  err,
 		}
@@ -5038,233 +5113,6 @@ func decodeListPeeringsParams(args [0]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
-// ListPrivateImagesParams is parameters of list-private-images operation.
-type ListPrivateImagesParams struct {
-	// Return only the images of this region. An image can only be used in the region that holds it.
-	RegionID OptUUID  `json:",omitempty,omitzero"`
-	Page     OptInt64 `json:",omitempty,omitzero"`
-	PageSize OptInt64 `json:",omitempty,omitzero"`
-}
-
-func unpackListPrivateImagesParams(packed middleware.Parameters) (params ListPrivateImagesParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "region_id",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptUUID)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "page",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Page = v.(OptInt64)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "page_size",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.PageSize = v.(OptInt64)
-		}
-	}
-	return params
-}
-
-func decodeListPrivateImagesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListPrivateImagesParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode query: region_id.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal uuid.UUID
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToUUID(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotRegionIDVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.RegionID.SetTo(paramsDotRegionIDVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "region_id",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Set default value for query: page.
-	{
-		val := int64(1)
-		params.Page.SetTo(val)
-	}
-	// Decode query: page.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageVal int64
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt64(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPageVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Page.SetTo(paramsDotPageVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Page.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        false,
-							Max:           0,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "page",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Set default value for query: page_size.
-	{
-		val := int64(50)
-		params.PageSize.SetTo(val)
-	}
-	// Decode query: page_size.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageSizeVal int64
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt64(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPageSizeVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.PageSize.SetTo(paramsDotPageSizeVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.PageSize.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        true,
-							Max:           200,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "page_size",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // ListPrivateNetworksParams is parameters of list-private-networks operation.
 type ListPrivateNetworksParams struct {
 	// Returns every region when omitted.
@@ -6161,6 +6009,71 @@ func decodeRenameDiskParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// RenameImageParams is parameters of rename-image operation.
+type RenameImageParams struct {
+	ImageId uuid.UUID
+}
+
+func unpackRenameImageParams(packed middleware.Parameters) (params RenameImageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "imageId",
+			In:   "path",
+		}
+		params.ImageId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRenameImageParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameImageParams, _ error) {
+	// Decode path: imageId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "imageId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ImageId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "imageId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RenameInstanceParams is parameters of rename-instance operation.
 type RenameInstanceParams struct {
 	InstanceId uuid.UUID
@@ -6219,71 +6132,6 @@ func decodeRenameInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "instanceId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RenamePrivateImageParams is parameters of rename-private-image operation.
-type RenamePrivateImageParams struct {
-	PrivateImageId uuid.UUID
-}
-
-func unpackRenamePrivateImageParams(packed middleware.Parameters) (params RenamePrivateImageParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "privateImageId",
-			In:   "path",
-		}
-		params.PrivateImageId = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodeRenamePrivateImageParams(args [1]string, argsEscaped bool, r *http.Request) (params RenamePrivateImageParams, _ error) {
-	// Decode path: privateImageId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "privateImageId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.PrivateImageId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "privateImageId",
 			In:   "path",
 			Err:  err,
 		}

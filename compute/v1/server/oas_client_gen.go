@@ -86,8 +86,25 @@ type Invoker interface {
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
 	// track the returned task.
 	//
+	// The backup is billed for its size, at the backup price of its region. Obtain a price with
+	// `create-backup-quote` first.
+	//
 	// POST /api/v1/backups
 	CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (*PurchaseResult, error)
+	// CreateBackupQuote invokes create-backup-quote operation.
+	//
+	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing
+	// is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's
+	// backup offering is selected; the returned line names it, and that `price_id` is the one to order
+	// with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+	// is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// POST /api/v1/backups/quote
+	CreateBackupQuote(ctx context.Context, request *CreateBackupQuoteRequestBody) (*PurchaseQuote, error)
 	// CreateDisk invokes create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -99,24 +116,11 @@ type Invoker interface {
 	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (*PurchaseResult, error)
-	// CreatePeering invokes create-peering operation.
+	// CreateImage invokes create-image operation.
 	//
-	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
-	// before any connectivity is created. Does not change security groups or provide transitive routing.
-	//
-	// POST /api/v1/peerings
-	CreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (*PeeringResource, error)
-	// CreatePort invokes create-port operation.
-	//
-	// The new network interface is not attached to any instance. Primary network interfaces are not
-	// created here; they are created with the instance.
-	//
-	// POST /api/v1/ports
-	CreatePort(ctx context.Context, request *CreatePortRequestBody) (*PortResource, error)
-	// CreatePrivateImage invokes create-private-image operation.
-	//
-	// Captured from the system disk of the instance; data disks are not included. The resulting image can
-	// create instances and rebuild them, and remains usable after the source instance is released.
+	// Creates a private image of this project from the system disk of the instance; data disks are not
+	// included. The resulting image can create instances and rebuild them, and remains usable after the
+	// source instance is released.
 	//
 	// The image reflects the moment the capture started. Later changes to the instance are not included.
 	//
@@ -134,8 +138,39 @@ type Invoker interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// POST /api/v1/private-images
-	CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (*PurchaseResult, error)
+	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a
+	// price with `create-image-quote` first.
+	//
+	// POST /api/v1/images
+	CreateImage(ctx context.Context, request *CreateImageRequestBody) (*PurchaseResult, error)
+	// CreateImageQuote invokes create-image-quote operation.
+	//
+	// Prices the capture `create-image` would order for the same instance, without ordering anything.
+	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the system disk, which is the most the image can occupy. When
+	// `price_id` is omitted, a price of the region's private image offering is selected; the returned line
+	// names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+	// is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// POST /api/v1/images/quote
+	CreateImageQuote(ctx context.Context, request *CreateImageQuoteRequestBody) (*PurchaseQuote, error)
+	// CreatePeering invokes create-peering operation.
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+	// before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// POST /api/v1/peerings
+	CreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (*PeeringResource, error)
+	// CreatePort invokes create-port operation.
+	//
+	// The new network interface is not attached to any instance. Primary network interfaces are not
+	// created here; they are created with the instance.
+	//
+	// POST /api/v1/ports
+	CreatePort(ctx context.Context, request *CreatePortRequestBody) (*PortResource, error)
 	// CreatePrivateNetwork invokes create-private-network operation.
 	//
 	// Creates a network, a router and a default security group in one call. The default security group
@@ -208,6 +243,22 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
+	// DeleteImage invokes delete-image operation.
+	//
+	// Only a private image of this project can be deleted; any other image is reported as not found.
+	//
+	// Deletion is rejected while instances created from the image still exist, as they need it in order to
+	// be rebuilt.
+	//
+	// An image whose capture has not finished can be deleted; the capture is aborted.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
+	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+	// `release_subscription_ids`.
+	//
+	// DELETE /api/v1/images/{imageId}
+	DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error)
 	// DeleteInstance invokes delete-instance operation.
 	//
 	// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
@@ -237,20 +288,6 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/ports/{portId}
 	DeletePort(ctx context.Context, params DeletePortParams) error
-	// DeletePrivateImage invokes delete-private-image operation.
-	//
-	// Deletion is rejected while instances created from the image still exist, as they need it in order to
-	// be rebuilt.
-	//
-	// An image whose capture has not finished can be deleted; the capture is aborted.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
-	//
-	// DELETE /api/v1/private-images/{privateImageId}
-	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
 	// DeletePrivateNetwork invokes delete-private-network operation.
 	//
 	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
@@ -360,6 +397,14 @@ type Invoker interface {
 	//
 	// GET /api/v1/floating-ips/{floatingIpId}
 	GetFloatingIP(ctx context.Context, params GetFloatingIPParams) (*FloatingIPResource, error)
+	// GetImage invokes get-image operation.
+	//
+	// Returns a public image, or a private image of this project; any other image is reported as not
+	// found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the
+	// reason.
+	//
+	// GET /api/v1/images/{imageId}
+	GetImage(ctx context.Context, params GetImageParams) (*ImageResource, error)
 	// GetInstance invokes get-instance operation.
 	//
 	// Queries the current state of the instance, which makes it slower but more accurate than the list
@@ -383,12 +428,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/peerings/{peeringId}
 	GetPeering(ctx context.Context, params GetPeeringParams) (*PeeringResource, error)
-	// GetPrivateImage invokes get-private-image operation.
-	//
-	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
-	//
-	// GET /api/v1/private-images/{privateImageId}
-	GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (*PrivateImageResource, error)
 	// GetPrivateNetwork invokes get-private-network operation.
 	//
 	// Retrieve a private network.
@@ -427,10 +466,10 @@ type Invoker interface {
 	// submit a new purchase after paying. After an uncertain response, look the order up before submitting
 	// again.
 	//
-	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
-	// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
-	// boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-	// own subscription items on the same order.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id.
+	// Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing
+	// disks retain their own subscription. Instances, disks and public IPs keep their own subscription
+	// items on the same order.
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance
 	// of that request is released, the order fails, and any payment for it is refunded. Each instance is
@@ -481,12 +520,18 @@ type Invoker interface {
 	ListFloatingIps(ctx context.Context) (*FloatingIPListResponseBody, error)
 	// ListImages invokes list-images operation.
 	//
-	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the
-	// options accordingly.
+	// Lists the public images on sale together with the private images of this project. `visibility`
+	// narrows the list to one of the two.
 	//
-	// Only images currently on sale are listed. An image the platform withdraws disappears from here and
-	// can no longer install new instances, while the instances already running it keep running and can
-	// still be rebuilt onto it.
+	// A public image is offered to every project. Only public images currently on sale are listed: one the
+	// platform withdraws disappears from here and can no longer install new instances, while the instances
+	// already running it keep running and can still be rebuilt onto it.
+	//
+	// A private image belongs to this project, which captured it from one of its instances, and is listed
+	// in every status, including while its capture is in progress and after the capture failed.
+	//
+	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+	// memory of the selected instance type cannot boot; filter the options accordingly.
 	//
 	// GET /api/v1/images
 	ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error)
@@ -548,12 +593,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/ports
 	ListPorts(ctx context.Context) (*PortListResponseBody, error)
-	// ListPrivateImages invokes list-private-images operation.
-	//
-	// List private images.
-	//
-	// GET /api/v1/private-images
-	ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (*PrivateImageListResponseBody, error)
 	// ListPrivateNetworks invokes list-private-networks operation.
 	//
 	// List private networks.
@@ -664,6 +703,12 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/disks/{diskId}
 	RenameDisk(ctx context.Context, request *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error)
+	// RenameImage invokes rename-image operation.
+	//
+	// Only a private image of this project can be renamed; any other image is reported as not found.
+	//
+	// PATCH /api/v1/images/{imageId}
+	RenameImage(ctx context.Context, request *RenameImageRequestBody, params RenameImageParams) (*ImageResource, error)
 	// RenameInstance invokes rename-instance operation.
 	//
 	// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
@@ -671,12 +716,6 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/instances/{instanceId}
 	RenameInstance(ctx context.Context, request *RenameInstanceRequestBody, params RenameInstanceParams) (*InstanceResource, error)
-	// RenamePrivateImage invokes rename-private-image operation.
-	//
-	// Rename a private image.
-	//
-	// PATCH /api/v1/private-images/{privateImageId}
-	RenamePrivateImage(ctx context.Context, request *RenamePrivateImageRequestBody, params RenamePrivateImageParams) (*PrivateImageResource, error)
 	// RenamePrivateNetwork invokes rename-private-network operation.
 	//
 	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
@@ -1712,6 +1751,9 @@ func (c *Client) sendBindFloatingIP(ctx context.Context, request *BindFloatingIP
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns;
 // track the returned task.
 //
+// The backup is billed for its size, at the backup price of its region. Obtain a price with
+// `create-backup-quote` first.
+//
 // POST /api/v1/backups
 func (c *Client) CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (*PurchaseResult, error) {
 	res, err := c.sendCreateBackup(ctx, request)
@@ -1817,6 +1859,130 @@ func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequ
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateBackupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateBackupQuote invokes create-backup-quote operation.
+//
+// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing
+// is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's
+// backup offering is selected; the returned line names it, and that `price_id` is the one to order
+// with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+// is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// POST /api/v1/backups/quote
+func (c *Client) CreateBackupQuote(ctx context.Context, request *CreateBackupQuoteRequestBody) (*PurchaseQuote, error) {
+	res, err := c.sendCreateBackupQuote(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateBackupQuote(ctx context.Context, request *CreateBackupQuoteRequestBody) (res *PurchaseQuote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-backup-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/backups/quote"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateBackupQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/backups/quote"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateBackupQuoteRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateBackupQuoteOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateBackupQuoteResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1938,6 +2104,267 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateDiskResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateImage invokes create-image operation.
+//
+// Creates a private image of this project from the system disk of the instance; data disks are not
+// included. The resulting image can create instances and rebuild them, and remains usable after the
+// source instance is released.
+//
+// The image reflects the moment the capture started. Later changes to the instance are not included.
+//
+// The capture has two phases, reported by the status of the image:
+//
+//   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
+//     remains usable during this phase, although stopping it first is recommended for consistency.
+//   - `uploading` — no longer tied to the system disk. The instance may be started at this point;
+//     there is no need to wait for the capture to finish. The duration of this phase is proportional to
+//     the size of the system disk, roughly 3 minutes for 20 GB.
+//
+// The file system of a running instance may be captured mid-write, in which case the image is
+// equivalent to the disk contents after a power loss. Where consistency matters, stop the instance
+// before starting the capture and start it again once the status becomes `uploading`.
+//
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// The image is billed for the storage it occupies, at the private image price of its region. Obtain a
+// price with `create-image-quote` first.
+//
+// POST /api/v1/images
+func (c *Client) CreateImage(ctx context.Context, request *CreateImageRequestBody) (*PurchaseResult, error) {
+	res, err := c.sendCreateImage(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateImage(ctx context.Context, request *CreateImageRequestBody) (res *PurchaseResult, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-image"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/images"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateImageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/images"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateImageRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateImageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateImageResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateImageQuote invokes create-image-quote operation.
+//
+// Prices the capture `create-image` would order for the same instance, without ordering anything.
+// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the system disk, which is the most the image can occupy. When
+// `price_id` is omitted, a price of the region's private image offering is selected; the returned line
+// names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+// is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// POST /api/v1/images/quote
+func (c *Client) CreateImageQuote(ctx context.Context, request *CreateImageQuoteRequestBody) (*PurchaseQuote, error) {
+	res, err := c.sendCreateImageQuote(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateImageQuote(ctx context.Context, request *CreateImageQuoteRequestBody) (res *PurchaseQuote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-image-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/images/quote"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateImageQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/images/quote"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateImageQuoteRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateImageQuoteOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateImageQuoteResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2172,139 +2599,6 @@ func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestB
 
 	stage = "DecodeResponse"
 	result, err := decodeCreatePortResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreatePrivateImage invokes create-private-image operation.
-//
-// Captured from the system disk of the instance; data disks are not included. The resulting image can
-// create instances and rebuild them, and remains usable after the source instance is released.
-//
-// The image reflects the moment the capture started. Later changes to the instance are not included.
-//
-// The capture has two phases, reported by the status of the image:
-//
-//   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
-//     remains usable during this phase, although stopping it first is recommended for consistency.
-//   - `uploading` — no longer tied to the system disk. The instance may be started at this point;
-//     there is no need to wait for the capture to finish. The duration of this phase is proportional to
-//     the size of the system disk, roughly 3 minutes for 20 GB.
-//
-// The file system of a running instance may be captured mid-write, in which case the image is
-// equivalent to the disk contents after a power loss. Where consistency matters, stop the instance
-// before starting the capture and start it again once the status becomes `uploading`.
-//
-// The instance can be started, stopped and used normally during the capture, but cannot be released.
-//
-// POST /api/v1/private-images
-func (c *Client) CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (*PurchaseResult, error) {
-	res, err := c.sendCreatePrivateImage(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (res *PurchaseResult, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-private-image"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/private-images"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreatePrivateImageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/private-images"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreatePrivateImageRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreatePrivateImageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreatePrivateImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3351,6 +3645,147 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 	return result, nil
 }
 
+// DeleteImage invokes delete-image operation.
+//
+// Only a private image of this project can be deleted; any other image is reported as not found.
+//
+// Deletion is rejected while instances created from the image still exist, as they need it in order to
+// be rebuilt.
+//
+// An image whose capture has not finished can be deleted; the capture is aborted.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
+// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
+//
+// DELETE /api/v1/images/{imageId}
+func (c *Client) DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error) {
+	res, err := c.sendDeleteImage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteImage(ctx context.Context, params DeleteImageParams) (res DeleteImageRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-image"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/images/{imageId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteImageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/images/"
+	{
+		// Encode "imageId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "imageId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ImageId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteImageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteImageResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteInstance invokes delete-instance operation.
 //
 // The system disk is deleted with the instance, and snapshots created from the system disk are deleted
@@ -3748,145 +4183,6 @@ func (c *Client) sendDeletePort(ctx context.Context, params DeletePortParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeDeletePortResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// DeletePrivateImage invokes delete-private-image operation.
-//
-// Deletion is rejected while instances created from the image still exist, as they need it in order to
-// be rebuilt.
-//
-// An image whose capture has not finished can be deleted; the capture is aborted.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
-//
-// DELETE /api/v1/private-images/{privateImageId}
-func (c *Client) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error) {
-	res, err := c.sendDeletePrivateImage(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendDeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (res DeletePrivateImageRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-private-image"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/private-images/{privateImageId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeletePrivateImageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/private-images/"
-	{
-		// Encode "privateImageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "privateImageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.PrivateImageId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DeletePrivateImageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDeletePrivateImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5994,6 +6290,139 @@ func (c *Client) sendGetFloatingIP(ctx context.Context, params GetFloatingIPPara
 	return result, nil
 }
 
+// GetImage invokes get-image operation.
+//
+// Returns a public image, or a private image of this project; any other image is reported as not
+// found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the
+// reason.
+//
+// GET /api/v1/images/{imageId}
+func (c *Client) GetImage(ctx context.Context, params GetImageParams) (*ImageResource, error) {
+	res, err := c.sendGetImage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetImage(ctx context.Context, params GetImageParams) (res *ImageResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-image"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/images/{imageId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetImageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/images/"
+	{
+		// Encode "imageId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "imageId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ImageId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetImageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetImageResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetInstance invokes get-instance operation.
 //
 // Queries the current state of the instance, which makes it slower but more accurate than the list
@@ -6407,137 +6836,6 @@ func (c *Client) sendGetPeering(ctx context.Context, params GetPeeringParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeGetPeeringResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetPrivateImage invokes get-private-image operation.
-//
-// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
-//
-// GET /api/v1/private-images/{privateImageId}
-func (c *Client) GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (*PrivateImageResource, error) {
-	res, err := c.sendGetPrivateImage(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetPrivateImage(ctx context.Context, params GetPrivateImageParams) (res *PrivateImageResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-private-image"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/private-images/{privateImageId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetPrivateImageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/private-images/"
-	{
-		// Encode "privateImageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "privateImageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.PrivateImageId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetPrivateImageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetPrivateImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7209,10 +7507,10 @@ func (c *Client) sendGetTask(ctx context.Context, params GetTaskParams) (res *Ta
 // submit a new purchase after paying. After an uncertain response, look the order up before submitting
 // again.
 //
-// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
-// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
-// boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-// own subscription items on the same order.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id.
+// Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing
+// disks retain their own subscription. Instances, disks and public IPs keep their own subscription
+// items on the same order.
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance
 // of that request is released, the order fails, and any payment for it is refunded. Each instance is
@@ -8021,12 +8319,18 @@ func (c *Client) sendListFloatingIps(ctx context.Context) (res *FloatingIPListRe
 
 // ListImages invokes list-images operation.
 //
-// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the
-// options accordingly.
+// Lists the public images on sale together with the private images of this project. `visibility`
+// narrows the list to one of the two.
 //
-// Only images currently on sale are listed. An image the platform withdraws disappears from here and
-// can no longer install new instances, while the instances already running it keep running and can
-// still be rebuilt onto it.
+// A public image is offered to every project. Only public images currently on sale are listed: one the
+// platform withdraws disappears from here and can no longer install new instances, while the instances
+// already running it keep running and can still be rebuilt onto it.
+//
+// A private image belongs to this project, which captured it from one of its instances, and is listed
+// in every status, including while its capture is in progress and after the capture failed.
+//
+// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+// memory of the selected instance type cannot boot; filter the options accordingly.
 //
 // GET /api/v1/images
 func (c *Client) ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error) {
@@ -8086,7 +8390,27 @@ func (c *Client) sendListImages(ctx context.Context, params ListImagesParams) (r
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.UUIDToString(params.RegionID))
+			if val, ok := params.RegionID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "visibility" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "visibility",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Visibility.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
 		}); err != nil {
 			return res, errors.Wrap(err, "encode query")
 		}
@@ -9462,174 +9786,6 @@ func (c *Client) sendListPorts(ctx context.Context) (res *PortListResponseBody, 
 
 	stage = "DecodeResponse"
 	result, err := decodeListPortsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListPrivateImages invokes list-private-images operation.
-//
-// List private images.
-//
-// GET /api/v1/private-images
-func (c *Client) ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (*PrivateImageListResponseBody, error) {
-	res, err := c.sendListPrivateImages(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (res *PrivateImageListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-private-images"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/private-images"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListPrivateImagesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/private-images"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "region_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.RegionID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListPrivateImagesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListPrivateImagesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -11524,6 +11680,140 @@ func (c *Client) sendRenameDisk(ctx context.Context, request *RenameDiskRequestB
 	return result, nil
 }
 
+// RenameImage invokes rename-image operation.
+//
+// Only a private image of this project can be renamed; any other image is reported as not found.
+//
+// PATCH /api/v1/images/{imageId}
+func (c *Client) RenameImage(ctx context.Context, request *RenameImageRequestBody, params RenameImageParams) (*ImageResource, error) {
+	res, err := c.sendRenameImage(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRenameImage(ctx context.Context, request *RenameImageRequestBody, params RenameImageParams) (res *ImageResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("rename-image"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/images/{imageId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RenameImageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/images/"
+	{
+		// Encode "imageId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "imageId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ImageId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRenameImageRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RenameImageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRenameImageResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RenameInstance invokes rename-instance operation.
 //
 // Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
@@ -11652,140 +11942,6 @@ func (c *Client) sendRenameInstance(ctx context.Context, request *RenameInstance
 
 	stage = "DecodeResponse"
 	result, err := decodeRenameInstanceResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenamePrivateImage invokes rename-private-image operation.
-//
-// Rename a private image.
-//
-// PATCH /api/v1/private-images/{privateImageId}
-func (c *Client) RenamePrivateImage(ctx context.Context, request *RenamePrivateImageRequestBody, params RenamePrivateImageParams) (*PrivateImageResource, error) {
-	res, err := c.sendRenamePrivateImage(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenamePrivateImage(ctx context.Context, request *RenamePrivateImageRequestBody, params RenamePrivateImageParams) (res *PrivateImageResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-private-image"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/private-images/{privateImageId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenamePrivateImageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/private-images/"
-	{
-		// Encode "privateImageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "privateImageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.PrivateImageId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenamePrivateImageRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RenamePrivateImageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenamePrivateImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

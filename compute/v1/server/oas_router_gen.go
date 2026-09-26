@@ -15,7 +15,10 @@ var (
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn35AllowedHeaders = map[string]string{
+	rn16AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
+	}
+	rn37AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
@@ -23,17 +26,17 @@ var (
 	rn86AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn67AllowedHeaders = map[string]string{
+	rn69AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn59AllowedHeaders = map[string]string{
+	rn61AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn16AllowedHeaders = map[string]string{
+	rn17AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn37AllowedHeaders = map[string]string{
+	rn39AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
@@ -59,13 +62,22 @@ var (
 		"DELETE": "Authorization",
 		"PUT":    "Authorization,Content-Type",
 	}
-	rn69AllowedHeaders = map[string]string{
-		"GET": "Authorization",
+	rn19AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn20AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
+	}
+	rn41AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PATCH":  "Authorization,Content-Type",
 	}
 	rn71AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn63AllowedHeaders = map[string]string{
+	rn65AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
@@ -80,20 +92,20 @@ var (
 	rn75AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn60AllowedHeaders = map[string]string{
+	rn62AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn8AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn51AllowedHeaders = map[string]string{
+	rn53AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
 	rn10AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn53AllowedHeaders = map[string]string{
+	rn55AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
 	rn93AllowedHeaders = map[string]string{
@@ -109,7 +121,7 @@ var (
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn55AllowedHeaders = map[string]string{
+	rn57AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
 	rn76AllowedHeaders = map[string]string{
@@ -133,7 +145,7 @@ var (
 	rn73AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn17AllowedHeaders = map[string]string{
+	rn21AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
@@ -147,74 +159,58 @@ var (
 	rn80AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn19AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
-	}
-	rn39AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-	}
-	rn20AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
-	}
-	rn41AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"GET":    "Authorization",
-		"PATCH":  "Authorization,Content-Type",
-	}
-	rn22AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
-	}
-	rn24AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"GET":    "Authorization",
-		"PATCH":  "Authorization,Content-Type",
-	}
-	rn56AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"GET":    "Authorization",
-		"POST":   "Authorization",
-	}
-	rn25AllowedHeaders = map[string]string{
+	rn23AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
 	rn43AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn33AllowedHeaders = map[string]string{
+	rn24AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn26AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PATCH":  "Authorization,Content-Type",
+	}
+	rn58AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"POST":   "Authorization",
+	}
+	rn27AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn45AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+	}
+	rn35AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
 	rn98AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn49AllowedHeaders = map[string]string{
+	rn51AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
 	rn74AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn66AllowedHeaders = map[string]string{
+	rn68AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn26AllowedHeaders = map[string]string{
+	rn28AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn28AllowedHeaders = map[string]string{
+	rn30AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
-	}
-	rn29AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
-	}
-	rn45AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
 	}
 	rn31AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
@@ -222,10 +218,17 @@ var (
 	}
 	rn47AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
+	}
+	rn33AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn49AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn62AllowedHeaders = map[string]string{
+	rn64AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 )
@@ -315,6 +318,37 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 
+					if len(elem) == 0 {
+						break
+					}
+					switch elem[0] {
+					case 'q': // Prefix: "quote"
+						origElem := elem
+						if l := len("quote"); len(elem) >= l && elem[0:l] == "quote" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "POST":
+								s.handleCreateBackupQuoteRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "POST",
+									allowedHeaders: rn16AllowedHeaders,
+									acceptPost:     "application/json",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+
+						elem = origElem
+					}
 					// Param: "backupId"
 					// Match until "/"
 					idx := strings.IndexByte(elem, '/')
@@ -341,7 +375,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "DELETE,GET,PATCH",
-								allowedHeaders: rn35AllowedHeaders,
+								allowedHeaders: rn37AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "application/json",
 							})
@@ -408,7 +442,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn67AllowedHeaders,
+								allowedHeaders: rn69AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -444,7 +478,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn59AllowedHeaders,
+									allowedHeaders: rn61AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -472,7 +506,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn16AllowedHeaders,
+								allowedHeaders: rn17AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -515,7 +549,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE,GET,PATCH",
-									allowedHeaders: rn37AllowedHeaders,
+									allowedHeaders: rn39AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "application/json",
 								})
@@ -760,20 +794,98 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if len(elem) == 0 {
-						// Leaf node.
 						switch r.Method {
 						case "GET":
 							s.handleListImagesRequest([0]string{}, elemIsEscaped, w, r)
+						case "POST":
+							s.handleCreateImageRequest([0]string{}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: rn69AllowedHeaders,
-								acceptPost:     "",
+								allowedMethods: "GET,POST",
+								allowedHeaders: rn19AllowedHeaders,
+								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
 						}
 
 						return
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'q': // Prefix: "quote"
+							origElem := elem
+							if l := len("quote"); len(elem) >= l && elem[0:l] == "quote" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleCreateImageQuoteRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn20AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+							elem = origElem
+						}
+						// Param: "imageId"
+						// Leaf parameter, slashes are prohibited
+						idx := strings.IndexByte(elem, '/')
+						if idx >= 0 {
+							break
+						}
+						args[0] = elem
+						elem = ""
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "DELETE":
+								s.handleDeleteImageRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							case "GET":
+								s.handleGetImageRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							case "PATCH":
+								s.handleRenameImageRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "DELETE,GET,PATCH",
+									allowedHeaders: rn41AllowedHeaders,
+									acceptPost:     "",
+									acceptPatch:    "application/json",
+								})
+							}
+
+							return
+						}
+
 					}
 
 				case 'n': // Prefix: "nstance"
@@ -830,7 +942,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET,POST",
-									allowedHeaders: rn63AllowedHeaders,
+									allowedHeaders: rn65AllowedHeaders,
 									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
@@ -977,7 +1089,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												default:
 													s.notAllowed(w, r, notAllowedParams{
 														allowedMethods: "GET",
-														allowedHeaders: rn60AllowedHeaders,
+														allowedHeaders: rn62AllowedHeaders,
 														acceptPost:     "",
 														acceptPatch:    "",
 													})
@@ -1048,7 +1160,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "DELETE",
-													allowedHeaders: rn51AllowedHeaders,
+													allowedHeaders: rn53AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -1113,7 +1225,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "DELETE",
-													allowedHeaders: rn53AllowedHeaders,
+													allowedHeaders: rn55AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -1275,7 +1387,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												default:
 													s.notAllowed(w, r, notAllowedParams{
 														allowedMethods: "DELETE",
-														allowedHeaders: rn55AllowedHeaders,
+														allowedHeaders: rn57AllowedHeaders,
 														acceptPost:     "",
 														acceptPatch:    "",
 													})
@@ -1554,7 +1666,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn17AllowedHeaders,
+								allowedHeaders: rn21AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -1691,7 +1803,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn19AllowedHeaders,
+								allowedHeaders: rn23AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -1727,7 +1839,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE",
-									allowedHeaders: rn39AllowedHeaders,
+									allowedHeaders: rn43AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -1738,38 +1850,69 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 					}
 
-				case 'r': // Prefix: "rivate-"
+				case 'r': // Prefix: "rivate-networks"
 
-					if l := len("rivate-"); len(elem) >= l && elem[0:l] == "rivate-" {
+					if l := len("rivate-networks"); len(elem) >= l && elem[0:l] == "rivate-networks" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
 					if len(elem) == 0 {
-						break
+						switch r.Method {
+						case "GET":
+							s.handleListPrivateNetworksRequest([0]string{}, elemIsEscaped, w, r)
+						case "POST":
+							s.handleCreatePrivateNetworkRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET,POST",
+								allowedHeaders: rn24AllowedHeaders,
+								acceptPost:     "application/json",
+								acceptPatch:    "",
+							})
+						}
+
+						return
 					}
 					switch elem[0] {
-					case 'i': // Prefix: "images"
+					case '/': // Prefix: "/"
 
-						if l := len("images"); len(elem) >= l && elem[0:l] == "images" {
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
+						// Param: "privateNetworkId"
+						// Match until "/"
+						idx := strings.IndexByte(elem, '/')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
 						if len(elem) == 0 {
 							switch r.Method {
+							case "DELETE":
+								s.handleDeletePrivateNetworkRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
 							case "GET":
-								s.handleListPrivateImagesRequest([0]string{}, elemIsEscaped, w, r)
-							case "POST":
-								s.handleCreatePrivateImageRequest([0]string{}, elemIsEscaped, w, r)
+								s.handleGetPrivateNetworkRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							case "PATCH":
+								s.handleRenamePrivateNetworkRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET,POST",
-									allowedHeaders: rn20AllowedHeaders,
-									acceptPost:     "application/json",
-									acceptPatch:    "",
+									allowedMethods: "DELETE,GET,PATCH",
+									allowedHeaders: rn26AllowedHeaders,
+									acceptPost:     "",
+									acceptPatch:    "application/json",
 								})
 							}
 
@@ -1784,152 +1927,104 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								break
 							}
 
-							// Param: "privateImageId"
-							// Leaf parameter, slashes are prohibited
-							idx := strings.IndexByte(elem, '/')
-							if idx >= 0 {
-								break
-							}
-							args[0] = elem
-							elem = ""
-
 							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "DELETE":
-									s.handleDeletePrivateImageRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								case "GET":
-									s.handleGetPrivateImageRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								case "PATCH":
-									s.handleRenamePrivateImageRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "DELETE,GET,PATCH",
-										allowedHeaders: rn41AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "application/json",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					case 'n': // Prefix: "networks"
-
-						if l := len("networks"); len(elem) >= l && elem[0:l] == "networks" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "GET":
-								s.handleListPrivateNetworksRequest([0]string{}, elemIsEscaped, w, r)
-							case "POST":
-								s.handleCreatePrivateNetworkRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET,POST",
-									allowedHeaders: rn22AllowedHeaders,
-									acceptPost:     "application/json",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
 								break
-							}
-
-							// Param: "privateNetworkId"
-							// Match until "/"
-							idx := strings.IndexByte(elem, '/')
-							if idx < 0 {
-								idx = len(elem)
-							}
-							args[0] = elem[:idx]
-							elem = elem[idx:]
-
-							if len(elem) == 0 {
-								switch r.Method {
-								case "DELETE":
-									s.handleDeletePrivateNetworkRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								case "GET":
-									s.handleGetPrivateNetworkRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								case "PATCH":
-									s.handleRenamePrivateNetworkRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "DELETE,GET,PATCH",
-										allowedHeaders: rn24AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "application/json",
-									})
-								}
-
-								return
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case 'i': // Prefix: "ipv6"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("ipv6"); len(elem) >= l && elem[0:l] == "ipv6" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "DELETE":
+										s.handleDisablePrivateNetworkIpv6Request([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "GET":
+										s.handleGetPrivateNetworkIpv6Request([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "POST":
+										s.handleEnablePrivateNetworkIpv6Request([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "DELETE,GET,POST",
+											allowedHeaders: rn58AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 'r': // Prefix: "routes"
+
+								if l := len("routes"); len(elem) >= l && elem[0:l] == "routes" {
+									elem = elem[l:]
+								} else {
 									break
 								}
-								switch elem[0] {
-								case 'i': // Prefix: "ipv6"
 
-									if l := len("ipv6"); len(elem) >= l && elem[0:l] == "ipv6" {
+								if len(elem) == 0 {
+									switch r.Method {
+									case "GET":
+										s.handleListRoutesRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "POST":
+										s.handleCreateRouteRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET,POST",
+											allowedHeaders: rn27AllowedHeaders,
+											acceptPost:     "application/json",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
+
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
+									// Param: "routeId"
+									// Leaf parameter, slashes are prohibited
+									idx := strings.IndexByte(elem, '/')
+									if idx >= 0 {
+										break
+									}
+									args[1] = elem
+									elem = ""
+
 									if len(elem) == 0 {
 										// Leaf node.
 										switch r.Method {
 										case "DELETE":
-											s.handleDisablePrivateNetworkIpv6Request([1]string{
+											s.handleDeleteRouteRequest([2]string{
 												args[0],
-											}, elemIsEscaped, w, r)
-										case "GET":
-											s.handleGetPrivateNetworkIpv6Request([1]string{
-												args[0],
-											}, elemIsEscaped, w, r)
-										case "POST":
-											s.handleEnablePrivateNetworkIpv6Request([1]string{
-												args[0],
+												args[1],
 											}, elemIsEscaped, w, r)
 										default:
 											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "DELETE,GET,POST",
-												allowedHeaders: rn56AllowedHeaders,
+												allowedMethods: "DELETE",
+												allowedHeaders: rn45AllowedHeaders,
 												acceptPost:     "",
 												acceptPatch:    "",
 											})
@@ -1938,65 +2033,69 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										return
 									}
 
-								case 'r': // Prefix: "routes"
+								}
 
-									if l := len("routes"); len(elem) >= l && elem[0:l] == "routes" {
+							case 's': // Prefix: "subnets"
+
+								if l := len("subnets"); len(elem) >= l && elem[0:l] == "subnets" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "GET":
+										s.handleListSubnetsRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "POST":
+										s.handleCreateSubnetRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET,POST",
+											allowedHeaders: rn35AllowedHeaders,
+											acceptPost:     "application/json",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
+
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
-										switch r.Method {
-										case "GET":
-											s.handleListRoutesRequest([1]string{
-												args[0],
-											}, elemIsEscaped, w, r)
-										case "POST":
-											s.handleCreateRouteRequest([1]string{
-												args[0],
-											}, elemIsEscaped, w, r)
-										default:
-											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "GET,POST",
-												allowedHeaders: rn25AllowedHeaders,
-												acceptPost:     "application/json",
-												acceptPatch:    "",
-											})
-										}
-
-										return
+										break
 									}
 									switch elem[0] {
-									case '/': // Prefix: "/"
-
-										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									case 'n': // Prefix: "next-free-cidr"
+										origElem := elem
+										if l := len("next-free-cidr"); len(elem) >= l && elem[0:l] == "next-free-cidr" {
 											elem = elem[l:]
 										} else {
 											break
 										}
 
-										// Param: "routeId"
-										// Leaf parameter, slashes are prohibited
-										idx := strings.IndexByte(elem, '/')
-										if idx >= 0 {
-											break
-										}
-										args[1] = elem
-										elem = ""
-
 										if len(elem) == 0 {
 											// Leaf node.
 											switch r.Method {
-											case "DELETE":
-												s.handleDeleteRouteRequest([2]string{
+											case "GET":
+												s.handleSuggestSubnetCidrRequest([1]string{
 													args[0],
-													args[1],
 												}, elemIsEscaped, w, r)
 											default:
 												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "DELETE",
-													allowedHeaders: rn43AllowedHeaders,
+													allowedMethods: "GET",
+													allowedHeaders: rn98AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -2005,108 +2104,35 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											return
 										}
 
+										elem = origElem
 									}
-
-								case 's': // Prefix: "subnets"
-
-									if l := len("subnets"); len(elem) >= l && elem[0:l] == "subnets" {
-										elem = elem[l:]
-									} else {
+									// Param: "subnetId"
+									// Leaf parameter, slashes are prohibited
+									idx := strings.IndexByte(elem, '/')
+									if idx >= 0 {
 										break
 									}
+									args[1] = elem
+									elem = ""
 
 									if len(elem) == 0 {
+										// Leaf node.
 										switch r.Method {
-										case "GET":
-											s.handleListSubnetsRequest([1]string{
+										case "DELETE":
+											s.handleDeleteSubnetRequest([2]string{
 												args[0],
-											}, elemIsEscaped, w, r)
-										case "POST":
-											s.handleCreateSubnetRequest([1]string{
-												args[0],
+												args[1],
 											}, elemIsEscaped, w, r)
 										default:
 											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "GET,POST",
-												allowedHeaders: rn33AllowedHeaders,
-												acceptPost:     "application/json",
+												allowedMethods: "DELETE",
+												allowedHeaders: rn51AllowedHeaders,
+												acceptPost:     "",
 												acceptPatch:    "",
 											})
 										}
 
 										return
-									}
-									switch elem[0] {
-									case '/': // Prefix: "/"
-
-										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											break
-										}
-										switch elem[0] {
-										case 'n': // Prefix: "next-free-cidr"
-											origElem := elem
-											if l := len("next-free-cidr"); len(elem) >= l && elem[0:l] == "next-free-cidr" {
-												elem = elem[l:]
-											} else {
-												break
-											}
-
-											if len(elem) == 0 {
-												// Leaf node.
-												switch r.Method {
-												case "GET":
-													s.handleSuggestSubnetCidrRequest([1]string{
-														args[0],
-													}, elemIsEscaped, w, r)
-												default:
-													s.notAllowed(w, r, notAllowedParams{
-														allowedMethods: "GET",
-														allowedHeaders: rn98AllowedHeaders,
-														acceptPost:     "",
-														acceptPatch:    "",
-													})
-												}
-
-												return
-											}
-
-											elem = origElem
-										}
-										// Param: "subnetId"
-										// Leaf parameter, slashes are prohibited
-										idx := strings.IndexByte(elem, '/')
-										if idx >= 0 {
-											break
-										}
-										args[1] = elem
-										elem = ""
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch r.Method {
-											case "DELETE":
-												s.handleDeleteSubnetRequest([2]string{
-													args[0],
-													args[1],
-												}, elemIsEscaped, w, r)
-											default:
-												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "DELETE",
-													allowedHeaders: rn49AllowedHeaders,
-													acceptPost:     "",
-													acceptPatch:    "",
-												})
-											}
-
-											return
-										}
-
 									}
 
 								}
@@ -2182,7 +2208,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn66AllowedHeaders,
+									allowedHeaders: rn68AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -2224,7 +2250,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn26AllowedHeaders,
+								allowedHeaders: rn28AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -2267,7 +2293,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE,GET,PATCH",
-									allowedHeaders: rn28AllowedHeaders,
+									allowedHeaders: rn30AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "application/json",
 								})
@@ -2297,7 +2323,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET,POST",
-										allowedHeaders: rn29AllowedHeaders,
+										allowedHeaders: rn31AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -2334,7 +2360,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "DELETE",
-											allowedHeaders: rn45AllowedHeaders,
+											allowedHeaders: rn47AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -2366,7 +2392,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn31AllowedHeaders,
+								allowedHeaders: rn33AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -2410,7 +2436,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE,GET,PATCH",
-									allowedHeaders: rn47AllowedHeaders,
+									allowedHeaders: rn49AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "application/json",
 								})
@@ -2450,7 +2476,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn62AllowedHeaders,
+							allowedHeaders: rn64AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -2600,6 +2626,37 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 
+					if len(elem) == 0 {
+						break
+					}
+					switch elem[0] {
+					case 'q': // Prefix: "quote"
+						origElem := elem
+						if l := len("quote"); len(elem) >= l && elem[0:l] == "quote" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "POST":
+								r.name = CreateBackupQuoteOperation
+								r.summary = "Quote a backup"
+								r.operationID = "create-backup-quote"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/backups/quote"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
+						}
+
+						elem = origElem
+					}
 					// Param: "backupId"
 					// Match until "/"
 					idx := strings.IndexByte(elem, '/')
@@ -3071,12 +3128,20 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 
 					if len(elem) == 0 {
-						// Leaf node.
 						switch method {
 						case "GET":
 							r.name = ListImagesOperation
-							r.summary = "List images on sale"
+							r.summary = "List images"
 							r.operationID = "list-images"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/images"
+							r.args = args
+							r.count = 0
+							return r, true
+						case "POST":
+							r.name = CreateImageOperation
+							r.summary = "Capture an instance as a private image"
+							r.operationID = "create-image"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/images"
 							r.args = args
@@ -3085,6 +3150,91 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						default:
 							return
 						}
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'q': // Prefix: "quote"
+							origElem := elem
+							if l := len("quote"); len(elem) >= l && elem[0:l] == "quote" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = CreateImageQuoteOperation
+									r.summary = "Quote capturing an instance as a private image"
+									r.operationID = "create-image-quote"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/images/quote"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
+							elem = origElem
+						}
+						// Param: "imageId"
+						// Leaf parameter, slashes are prohibited
+						idx := strings.IndexByte(elem, '/')
+						if idx >= 0 {
+							break
+						}
+						args[0] = elem
+						elem = ""
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "DELETE":
+								r.name = DeleteImageOperation
+								r.summary = "Delete a private image"
+								r.operationID = "delete-image"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/images/{imageId}"
+								r.args = args
+								r.count = 1
+								return r, true
+							case "GET":
+								r.name = GetImageOperation
+								r.summary = "Retrieve an image"
+								r.operationID = "get-image"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/images/{imageId}"
+								r.args = args
+								r.count = 1
+								return r, true
+							case "PATCH":
+								r.name = RenameImageOperation
+								r.summary = "Rename a private image"
+								r.operationID = "rename-image"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/images/{imageId}"
+								r.args = args
+								r.count = 1
+								return r, true
+							default:
+								return
+							}
+						}
+
 					}
 
 				case 'n': // Prefix: "nstance"
@@ -4048,45 +4198,84 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 					}
 
-				case 'r': // Prefix: "rivate-"
+				case 'r': // Prefix: "rivate-networks"
 
-					if l := len("rivate-"); len(elem) >= l && elem[0:l] == "rivate-" {
+					if l := len("rivate-networks"); len(elem) >= l && elem[0:l] == "rivate-networks" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
 					if len(elem) == 0 {
-						break
+						switch method {
+						case "GET":
+							r.name = ListPrivateNetworksOperation
+							r.summary = "List private networks"
+							r.operationID = "list-private-networks"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/private-networks"
+							r.args = args
+							r.count = 0
+							return r, true
+						case "POST":
+							r.name = CreatePrivateNetworkOperation
+							r.summary = "Create a private network"
+							r.operationID = "create-private-network"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/private-networks"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
 					}
 					switch elem[0] {
-					case 'i': // Prefix: "images"
+					case '/': // Prefix: "/"
 
-						if l := len("images"); len(elem) >= l && elem[0:l] == "images" {
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
+						// Param: "privateNetworkId"
+						// Match until "/"
+						idx := strings.IndexByte(elem, '/')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
 						if len(elem) == 0 {
 							switch method {
-							case "GET":
-								r.name = ListPrivateImagesOperation
-								r.summary = "List private images"
-								r.operationID = "list-private-images"
+							case "DELETE":
+								r.name = DeletePrivateNetworkOperation
+								r.summary = "Release a private network"
+								r.operationID = "delete-private-network"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/private-images"
+								r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
 								r.args = args
-								r.count = 0
+								r.count = 1
 								return r, true
-							case "POST":
-								r.name = CreatePrivateImageOperation
-								r.summary = "Capture an instance as a private image"
-								r.operationID = "create-private-image"
+							case "GET":
+								r.name = GetPrivateNetworkOperation
+								r.summary = "Retrieve a private network"
+								r.operationID = "get-private-network"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/private-images"
+								r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
 								r.args = args
-								r.count = 0
+								r.count = 1
+								return r, true
+							case "PATCH":
+								r.name = RenamePrivateNetworkOperation
+								r.summary = "Rename a private network"
+								r.operationID = "rename-private-network"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
+								r.args = args
+								r.count = 1
 								return r, true
 							default:
 								return
@@ -4101,358 +4290,218 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								break
 							}
 
-							// Param: "privateImageId"
-							// Leaf parameter, slashes are prohibited
-							idx := strings.IndexByte(elem, '/')
-							if idx >= 0 {
-								break
-							}
-							args[0] = elem
-							elem = ""
-
 							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "DELETE":
-									r.name = DeletePrivateImageOperation
-									r.summary = "Delete a private image"
-									r.operationID = "delete-private-image"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/private-images/{privateImageId}"
-									r.args = args
-									r.count = 1
-									return r, true
-								case "GET":
-									r.name = GetPrivateImageOperation
-									r.summary = "Retrieve a private image"
-									r.operationID = "get-private-image"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/private-images/{privateImageId}"
-									r.args = args
-									r.count = 1
-									return r, true
-								case "PATCH":
-									r.name = RenamePrivateImageOperation
-									r.summary = "Rename a private image"
-									r.operationID = "rename-private-image"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/private-images/{privateImageId}"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					case 'n': // Prefix: "networks"
-
-						if l := len("networks"); len(elem) >= l && elem[0:l] == "networks" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch method {
-							case "GET":
-								r.name = ListPrivateNetworksOperation
-								r.summary = "List private networks"
-								r.operationID = "list-private-networks"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/private-networks"
-								r.args = args
-								r.count = 0
-								return r, true
-							case "POST":
-								r.name = CreatePrivateNetworkOperation
-								r.summary = "Create a private network"
-								r.operationID = "create-private-network"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/private-networks"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
-							}
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
 								break
-							}
-
-							// Param: "privateNetworkId"
-							// Match until "/"
-							idx := strings.IndexByte(elem, '/')
-							if idx < 0 {
-								idx = len(elem)
-							}
-							args[0] = elem[:idx]
-							elem = elem[idx:]
-
-							if len(elem) == 0 {
-								switch method {
-								case "DELETE":
-									r.name = DeletePrivateNetworkOperation
-									r.summary = "Release a private network"
-									r.operationID = "delete-private-network"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
-									r.args = args
-									r.count = 1
-									return r, true
-								case "GET":
-									r.name = GetPrivateNetworkOperation
-									r.summary = "Retrieve a private network"
-									r.operationID = "get-private-network"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
-									r.args = args
-									r.count = 1
-									return r, true
-								case "PATCH":
-									r.name = RenamePrivateNetworkOperation
-									r.summary = "Rename a private network"
-									r.operationID = "rename-private-network"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case 'i': // Prefix: "ipv6"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("ipv6"); len(elem) >= l && elem[0:l] == "ipv6" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "DELETE":
+										r.name = DisablePrivateNetworkIpv6Operation
+										r.summary = "Disable IPv6 on a private network"
+										r.operationID = "disable-private-network-ipv6"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "GET":
+										r.name = GetPrivateNetworkIpv6Operation
+										r.summary = "Retrieve the IPv6 configuration of a private network"
+										r.operationID = "get-private-network-ipv6"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "POST":
+										r.name = EnablePrivateNetworkIpv6Operation
+										r.summary = "Enable IPv6 on a private network"
+										r.operationID = "enable-private-network-ipv6"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 'r': // Prefix: "routes"
+
+								if l := len("routes"); len(elem) >= l && elem[0:l] == "routes" {
+									elem = elem[l:]
+								} else {
 									break
 								}
-								switch elem[0] {
-								case 'i': // Prefix: "ipv6"
 
-									if l := len("ipv6"); len(elem) >= l && elem[0:l] == "ipv6" {
+								if len(elem) == 0 {
+									switch method {
+									case "GET":
+										r.name = ListRoutesOperation
+										r.summary = "List static routes"
+										r.operationID = "list-routes"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "POST":
+										r.name = CreateRouteOperation
+										r.summary = "Create a static route"
+										r.operationID = "create-route"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
+
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 										elem = elem[l:]
 									} else {
 										break
 									}
+
+									// Param: "routeId"
+									// Leaf parameter, slashes are prohibited
+									idx := strings.IndexByte(elem, '/')
+									if idx >= 0 {
+										break
+									}
+									args[1] = elem
+									elem = ""
 
 									if len(elem) == 0 {
 										// Leaf node.
 										switch method {
 										case "DELETE":
-											r.name = DisablePrivateNetworkIpv6Operation
-											r.summary = "Disable IPv6 on a private network"
-											r.operationID = "disable-private-network-ipv6"
+											r.name = DeleteRouteOperation
+											r.summary = "Delete a static route"
+											r.operationID = "delete-route"
 											r.operationGroup = ""
-											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
+											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes/{routeId}"
 											r.args = args
-											r.count = 1
-											return r, true
-										case "GET":
-											r.name = GetPrivateNetworkIpv6Operation
-											r.summary = "Retrieve the IPv6 configuration of a private network"
-											r.operationID = "get-private-network-ipv6"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
-											r.args = args
-											r.count = 1
-											return r, true
-										case "POST":
-											r.name = EnablePrivateNetworkIpv6Operation
-											r.summary = "Enable IPv6 on a private network"
-											r.operationID = "enable-private-network-ipv6"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
-											r.args = args
-											r.count = 1
+											r.count = 2
 											return r, true
 										default:
 											return
 										}
 									}
 
-								case 'r': // Prefix: "routes"
+								}
 
-									if l := len("routes"); len(elem) >= l && elem[0:l] == "routes" {
+							case 's': // Prefix: "subnets"
+
+								if l := len("subnets"); len(elem) >= l && elem[0:l] == "subnets" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									switch method {
+									case "GET":
+										r.name = ListSubnetsOperation
+										r.summary = "List subnets"
+										r.operationID = "list-subnets"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "POST":
+										r.name = CreateSubnetOperation
+										r.summary = "Create a subnet"
+										r.operationID = "create-subnet"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
+
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
-										switch method {
-										case "GET":
-											r.name = ListRoutesOperation
-											r.summary = "List static routes"
-											r.operationID = "list-routes"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes"
-											r.args = args
-											r.count = 1
-											return r, true
-										case "POST":
-											r.name = CreateRouteOperation
-											r.summary = "Create a static route"
-											r.operationID = "create-route"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes"
-											r.args = args
-											r.count = 1
-											return r, true
-										default:
-											return
-										}
-									}
-									switch elem[0] {
-									case '/': // Prefix: "/"
-
-										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										// Param: "routeId"
-										// Leaf parameter, slashes are prohibited
-										idx := strings.IndexByte(elem, '/')
-										if idx >= 0 {
-											break
-										}
-										args[1] = elem
-										elem = ""
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "DELETE":
-												r.name = DeleteRouteOperation
-												r.summary = "Delete a static route"
-												r.operationID = "delete-route"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes/{routeId}"
-												r.args = args
-												r.count = 2
-												return r, true
-											default:
-												return
-											}
-										}
-
-									}
-
-								case 's': // Prefix: "subnets"
-
-									if l := len("subnets"); len(elem) >= l && elem[0:l] == "subnets" {
-										elem = elem[l:]
-									} else {
 										break
 									}
-
-									if len(elem) == 0 {
-										switch method {
-										case "GET":
-											r.name = ListSubnetsOperation
-											r.summary = "List subnets"
-											r.operationID = "list-subnets"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets"
-											r.args = args
-											r.count = 1
-											return r, true
-										case "POST":
-											r.name = CreateSubnetOperation
-											r.summary = "Create a subnet"
-											r.operationID = "create-subnet"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets"
-											r.args = args
-											r.count = 1
-											return r, true
-										default:
-											return
-										}
-									}
 									switch elem[0] {
-									case '/': // Prefix: "/"
-
-										if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									case 'n': // Prefix: "next-free-cidr"
+										origElem := elem
+										if l := len("next-free-cidr"); len(elem) >= l && elem[0:l] == "next-free-cidr" {
 											elem = elem[l:]
 										} else {
 											break
 										}
 
 										if len(elem) == 0 {
-											break
-										}
-										switch elem[0] {
-										case 'n': // Prefix: "next-free-cidr"
-											origElem := elem
-											if l := len("next-free-cidr"); len(elem) >= l && elem[0:l] == "next-free-cidr" {
-												elem = elem[l:]
-											} else {
-												break
-											}
-
-											if len(elem) == 0 {
-												// Leaf node.
-												switch method {
-												case "GET":
-													r.name = SuggestSubnetCidrOperation
-													r.summary = "Suggest the next free CIDR"
-													r.operationID = "suggest-subnet-cidr"
-													r.operationGroup = ""
-													r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr"
-													r.args = args
-													r.count = 1
-													return r, true
-												default:
-													return
-												}
-											}
-
-											elem = origElem
-										}
-										// Param: "subnetId"
-										// Leaf parameter, slashes are prohibited
-										idx := strings.IndexByte(elem, '/')
-										if idx >= 0 {
-											break
-										}
-										args[1] = elem
-										elem = ""
-
-										if len(elem) == 0 {
 											// Leaf node.
 											switch method {
-											case "DELETE":
-												r.name = DeleteSubnetOperation
-												r.summary = "Delete a subnet"
-												r.operationID = "delete-subnet"
+											case "GET":
+												r.name = SuggestSubnetCidrOperation
+												r.summary = "Suggest the next free CIDR"
+												r.operationID = "suggest-subnet-cidr"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}"
+												r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr"
 												r.args = args
-												r.count = 2
+												r.count = 1
 												return r, true
 											default:
 												return
 											}
 										}
 
+										elem = origElem
+									}
+									// Param: "subnetId"
+									// Leaf parameter, slashes are prohibited
+									idx := strings.IndexByte(elem, '/')
+									if idx >= 0 {
+										break
+									}
+									args[1] = elem
+									elem = ""
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "DELETE":
+											r.name = DeleteSubnetOperation
+											r.summary = "Delete a subnet"
+											r.operationID = "delete-subnet"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}"
+											r.args = args
+											r.count = 2
+											return r, true
+										default:
+											return
+										}
 									}
 
 								}

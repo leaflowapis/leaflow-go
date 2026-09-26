@@ -88,8 +88,28 @@ func (UnimplementedHandler) BindFloatingIP(ctx context.Context, req *BindFloatin
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns;
 // track the returned task.
 //
+// The backup is billed for its size, at the backup price of its region. Obtain a price with
+// `create-backup-quote` first.
+//
 // POST /api/v1/backups
 func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (r *PurchaseResult, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateBackupQuote implements create-backup-quote operation.
+//
+// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing
+// is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's
+// backup offering is selected; the returned line names it, and that `price_id` is the one to order
+// with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+// is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// POST /api/v1/backups/quote
+func (UnimplementedHandler) CreateBackupQuote(ctx context.Context, req *CreateBackupQuoteRequestBody) (r *PurchaseQuote, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -104,6 +124,53 @@ func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupR
 //
 // POST /api/v1/disks
 func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (r *PurchaseResult, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateImage implements create-image operation.
+//
+// Creates a private image of this project from the system disk of the instance; data disks are not
+// included. The resulting image can create instances and rebuild them, and remains usable after the
+// source instance is released.
+//
+// The image reflects the moment the capture started. Later changes to the instance are not included.
+//
+// The capture has two phases, reported by the status of the image:
+//
+//   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
+//     remains usable during this phase, although stopping it first is recommended for consistency.
+//   - `uploading` — no longer tied to the system disk. The instance may be started at this point;
+//     there is no need to wait for the capture to finish. The duration of this phase is proportional to
+//     the size of the system disk, roughly 3 minutes for 20 GB.
+//
+// The file system of a running instance may be captured mid-write, in which case the image is
+// equivalent to the disk contents after a power loss. Where consistency matters, stop the instance
+// before starting the capture and start it again once the status becomes `uploading`.
+//
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// The image is billed for the storage it occupies, at the private image price of its region. Obtain a
+// price with `create-image-quote` first.
+//
+// POST /api/v1/images
+func (UnimplementedHandler) CreateImage(ctx context.Context, req *CreateImageRequestBody) (r *PurchaseResult, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateImageQuote implements create-image-quote operation.
+//
+// Prices the capture `create-image` would order for the same instance, without ordering anything.
+// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the system disk, which is the most the image can occupy. When
+// `price_id` is omitted, a price of the region's private image offering is selected; the returned line
+// names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+// is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// POST /api/v1/images/quote
+func (UnimplementedHandler) CreateImageQuote(ctx context.Context, req *CreateImageQuoteRequestBody) (r *PurchaseQuote, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -124,32 +191,6 @@ func (UnimplementedHandler) CreatePeering(ctx context.Context, req *CreatePeerin
 //
 // POST /api/v1/ports
 func (UnimplementedHandler) CreatePort(ctx context.Context, req *CreatePortRequestBody) (r *PortResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreatePrivateImage implements create-private-image operation.
-//
-// Captured from the system disk of the instance; data disks are not included. The resulting image can
-// create instances and rebuild them, and remains usable after the source instance is released.
-//
-// The image reflects the moment the capture started. Later changes to the instance are not included.
-//
-// The capture has two phases, reported by the status of the image:
-//
-//   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
-//     remains usable during this phase, although stopping it first is recommended for consistency.
-//   - `uploading` — no longer tied to the system disk. The instance may be started at this point;
-//     there is no need to wait for the capture to finish. The duration of this phase is proportional to
-//     the size of the system disk, roughly 3 minutes for 20 GB.
-//
-// The file system of a running instance may be captured mid-write, in which case the image is
-// equivalent to the disk contents after a power loss. Where consistency matters, stop the instance
-// before starting the capture and start it again once the status becomes `uploading`.
-//
-// The instance can be started, stopped and used normally during the capture, but cannot be released.
-//
-// POST /api/v1/private-images
-func (UnimplementedHandler) CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (r *PurchaseResult, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -249,6 +290,25 @@ func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskPar
 	return r, ht.ErrNotImplemented
 }
 
+// DeleteImage implements delete-image operation.
+//
+// Only a private image of this project can be deleted; any other image is reported as not found.
+//
+// Deletion is rejected while instances created from the image still exist, as they need it in order to
+// be rebuilt.
+//
+// An image whose capture has not finished can be deleted; the capture is aborted.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
+// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
+//
+// DELETE /api/v1/images/{imageId}
+func (UnimplementedHandler) DeleteImage(ctx context.Context, params DeleteImageParams) (r DeleteImageRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteInstance implements delete-instance operation.
 //
 // The system disk is deleted with the instance, and snapshots created from the system disk are deleted
@@ -285,23 +345,6 @@ func (UnimplementedHandler) DeletePeering(ctx context.Context, params DeletePeer
 // DELETE /api/v1/ports/{portId}
 func (UnimplementedHandler) DeletePort(ctx context.Context, params DeletePortParams) error {
 	return ht.ErrNotImplemented
-}
-
-// DeletePrivateImage implements delete-private-image operation.
-//
-// Deletion is rejected while instances created from the image still exist, as they need it in order to
-// be rebuilt.
-//
-// An image whose capture has not finished can be deleted; the capture is aborted.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
-//
-// DELETE /api/v1/private-images/{privateImageId}
-func (UnimplementedHandler) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (r DeletePrivateImageRes, _ error) {
-	return r, ht.ErrNotImplemented
 }
 
 // DeletePrivateNetwork implements delete-private-network operation.
@@ -458,6 +501,17 @@ func (UnimplementedHandler) GetFloatingIP(ctx context.Context, params GetFloatin
 	return r, ht.ErrNotImplemented
 }
 
+// GetImage implements get-image operation.
+//
+// Returns a public image, or a private image of this project; any other image is reported as not
+// found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the
+// reason.
+//
+// GET /api/v1/images/{imageId}
+func (UnimplementedHandler) GetImage(ctx context.Context, params GetImageParams) (r *ImageResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetInstance implements get-instance operation.
 //
 // Queries the current state of the instance, which makes it slower but more accurate than the list
@@ -487,15 +541,6 @@ func (UnimplementedHandler) GetInstanceConsoleOutput(ctx context.Context, params
 //
 // GET /api/v1/peerings/{peeringId}
 func (UnimplementedHandler) GetPeering(ctx context.Context, params GetPeeringParams) (r *PeeringResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetPrivateImage implements get-private-image operation.
-//
-// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
-//
-// GET /api/v1/private-images/{privateImageId}
-func (UnimplementedHandler) GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (r *PrivateImageResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -552,10 +597,10 @@ func (UnimplementedHandler) GetTask(ctx context.Context, params GetTaskParams) (
 // submit a new purchase after paying. After an uncertain response, look the order up before submitting
 // again.
 //
-// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
-// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
-// boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-// own subscription items on the same order.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id.
+// Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing
+// disks retain their own subscription. Instances, disks and public IPs keep their own subscription
+// items on the same order.
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance
 // of that request is released, the order fails, and any payment for it is refunded. Each instance is
@@ -624,12 +669,18 @@ func (UnimplementedHandler) ListFloatingIps(ctx context.Context) (r *FloatingIPL
 
 // ListImages implements list-images operation.
 //
-// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the
-// options accordingly.
+// Lists the public images on sale together with the private images of this project. `visibility`
+// narrows the list to one of the two.
 //
-// Only images currently on sale are listed. An image the platform withdraws disappears from here and
-// can no longer install new instances, while the instances already running it keep running and can
-// still be rebuilt onto it.
+// A public image is offered to every project. Only public images currently on sale are listed: one the
+// platform withdraws disappears from here and can no longer install new instances, while the instances
+// already running it keep running and can still be rebuilt onto it.
+//
+// A private image belongs to this project, which captured it from one of its instances, and is listed
+// in every status, including while its capture is in progress and after the capture failed.
+//
+// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+// memory of the selected instance type cannot boot; filter the options accordingly.
 //
 // GET /api/v1/images
 func (UnimplementedHandler) ListImages(ctx context.Context, params ListImagesParams) (r *ImageListResponseBody, _ error) {
@@ -715,15 +766,6 @@ func (UnimplementedHandler) ListPeerings(ctx context.Context, params ListPeering
 //
 // GET /api/v1/ports
 func (UnimplementedHandler) ListPorts(ctx context.Context) (r *PortListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListPrivateImages implements list-private-images operation.
-//
-// List private images.
-//
-// GET /api/v1/private-images
-func (UnimplementedHandler) ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (r *PrivateImageListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -879,6 +921,15 @@ func (UnimplementedHandler) RenameDisk(ctx context.Context, req *RenameDiskReque
 	return r, ht.ErrNotImplemented
 }
 
+// RenameImage implements rename-image operation.
+//
+// Only a private image of this project can be renamed; any other image is reported as not found.
+//
+// PATCH /api/v1/images/{imageId}
+func (UnimplementedHandler) RenameImage(ctx context.Context, req *RenameImageRequestBody, params RenameImageParams) (r *ImageResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RenameInstance implements rename-instance operation.
 //
 // Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
@@ -886,15 +937,6 @@ func (UnimplementedHandler) RenameDisk(ctx context.Context, req *RenameDiskReque
 //
 // PATCH /api/v1/instances/{instanceId}
 func (UnimplementedHandler) RenameInstance(ctx context.Context, req *RenameInstanceRequestBody, params RenameInstanceParams) (r *InstanceResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenamePrivateImage implements rename-private-image operation.
-//
-// Rename a private image.
-//
-// PATCH /api/v1/private-images/{privateImageId}
-func (UnimplementedHandler) RenamePrivateImage(ctx context.Context, req *RenamePrivateImageRequestBody, params RenamePrivateImageParams) (r *PrivateImageResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

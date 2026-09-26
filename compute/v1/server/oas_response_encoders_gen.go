@@ -103,9 +103,48 @@ func encodeCreateBackupResponse(response *PurchaseResult, w http.ResponseWriter,
 	return nil
 }
 
+func encodeCreateBackupQuoteResponse(response *PurchaseQuote, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCreateDiskResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateImageResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateImageQuoteResponse(response *PurchaseQuote, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -130,19 +169,6 @@ func encodeCreatePeeringResponse(response *PeeringResource, w http.ResponseWrite
 }
 
 func encodeCreatePortResponse(response *PortResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeCreatePrivateImageResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
 
@@ -295,6 +321,37 @@ func encodeDeleteDiskResponse(response DeleteDiskRes, w http.ResponseWriter, spa
 	}
 }
 
+func encodeDeleteImageResponse(response DeleteImageRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *Task:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(202)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *Error:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(409)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeDeleteInstanceResponse(response DeleteInstanceRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *Task:
@@ -343,37 +400,6 @@ func encodeDeletePortResponse(response *DeletePortNoContent, w http.ResponseWrit
 	w.WriteHeader(204)
 
 	return nil
-}
-
-func encodeDeletePrivateImageResponse(response DeletePrivateImageRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
-	}
 }
 
 func encodeDeletePrivateNetworkResponse(response *DeletePrivateNetworkNoContent, w http.ResponseWriter, span trace.Span) error {
@@ -547,6 +573,19 @@ func encodeGetFloatingIPResponse(response *FloatingIPResource, w http.ResponseWr
 	return nil
 }
 
+func encodeGetImageResponse(response *ImageResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeGetInstanceResponse(response *InstanceResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -574,19 +613,6 @@ func encodeGetInstanceConsoleOutputResponse(response *ConsoleOutputResponseBody,
 }
 
 func encodeGetPeeringResponse(response *PeeringResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetPrivateImageResponse(response *PrivateImageResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -859,19 +885,6 @@ func encodeListPortsResponse(response *PortListResponseBody, w http.ResponseWrit
 	return nil
 }
 
-func encodeListPrivateImagesResponse(response *PrivateImageListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeListPrivateNetworksResponse(response *PrivateNetworkListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -1072,7 +1085,7 @@ func encodeRenameDiskResponse(response *DiskResource, w http.ResponseWriter, spa
 	return nil
 }
 
-func encodeRenameInstanceResponse(response *InstanceResource, w http.ResponseWriter, span trace.Span) error {
+func encodeRenameImageResponse(response *ImageResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1085,7 +1098,7 @@ func encodeRenameInstanceResponse(response *InstanceResource, w http.ResponseWri
 	return nil
 }
 
-func encodeRenamePrivateImageResponse(response *PrivateImageResource, w http.ResponseWriter, span trace.Span) error {
+func encodeRenameInstanceResponse(response *InstanceResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

@@ -379,6 +379,78 @@ func (e IPv6ResponseBodyStatus) Valid() bool {
 	}
 }
 
+// Defines values for ImageResourceAccessState.
+const (
+	ImageResourceAccessStateEnabled     ImageResourceAccessState = "enabled"
+	ImageResourceAccessStateLessThannil ImageResourceAccessState = "<nil>"
+	ImageResourceAccessStatePending     ImageResourceAccessState = "pending"
+	ImageResourceAccessStateReclaimed   ImageResourceAccessState = "reclaimed"
+	ImageResourceAccessStateSuspended   ImageResourceAccessState = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the ImageResourceAccessState enum.
+func (e ImageResourceAccessState) Valid() bool {
+	switch e {
+	case ImageResourceAccessStateEnabled:
+		return true
+	case ImageResourceAccessStateLessThannil:
+		return true
+	case ImageResourceAccessStatePending:
+		return true
+	case ImageResourceAccessStateReclaimed:
+		return true
+	case ImageResourceAccessStateSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImageResourceStatus.
+const (
+	ImageResourceStatusAvailable    ImageResourceStatus = "available"
+	ImageResourceStatusDeleting     ImageResourceStatus = "deleting"
+	ImageResourceStatusError        ImageResourceStatus = "error"
+	ImageResourceStatusProvisioning ImageResourceStatus = "provisioning"
+	ImageResourceStatusUploading    ImageResourceStatus = "uploading"
+)
+
+// Valid indicates whether the value is a known member of the ImageResourceStatus enum.
+func (e ImageResourceStatus) Valid() bool {
+	switch e {
+	case ImageResourceStatusAvailable:
+		return true
+	case ImageResourceStatusDeleting:
+		return true
+	case ImageResourceStatusError:
+		return true
+	case ImageResourceStatusProvisioning:
+		return true
+	case ImageResourceStatusUploading:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImageVisibility.
+const (
+	Private ImageVisibility = "private"
+	Public  ImageVisibility = "public"
+)
+
+// Valid indicates whether the value is a known member of the ImageVisibility enum.
+func (e ImageVisibility) Valid() bool {
+	switch e {
+	case Private:
+		return true
+	case Public:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceResourceAccessState.
 const (
 	InstanceResourceAccessStateEnabled     InstanceResourceAccessState = "enabled"
@@ -667,60 +739,6 @@ func (e PortResourceStatus) Valid() bool {
 	}
 }
 
-// Defines values for PrivateImageResourceAccessState.
-const (
-	PrivateImageResourceAccessStateEnabled     PrivateImageResourceAccessState = "enabled"
-	PrivateImageResourceAccessStateLessThannil PrivateImageResourceAccessState = "<nil>"
-	PrivateImageResourceAccessStatePending     PrivateImageResourceAccessState = "pending"
-	PrivateImageResourceAccessStateReclaimed   PrivateImageResourceAccessState = "reclaimed"
-	PrivateImageResourceAccessStateSuspended   PrivateImageResourceAccessState = "suspended"
-)
-
-// Valid indicates whether the value is a known member of the PrivateImageResourceAccessState enum.
-func (e PrivateImageResourceAccessState) Valid() bool {
-	switch e {
-	case PrivateImageResourceAccessStateEnabled:
-		return true
-	case PrivateImageResourceAccessStateLessThannil:
-		return true
-	case PrivateImageResourceAccessStatePending:
-		return true
-	case PrivateImageResourceAccessStateReclaimed:
-		return true
-	case PrivateImageResourceAccessStateSuspended:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for PrivateImageResourceStatus.
-const (
-	PrivateImageResourceStatusAvailable    PrivateImageResourceStatus = "available"
-	PrivateImageResourceStatusDeleting     PrivateImageResourceStatus = "deleting"
-	PrivateImageResourceStatusError        PrivateImageResourceStatus = "error"
-	PrivateImageResourceStatusProvisioning PrivateImageResourceStatus = "provisioning"
-	PrivateImageResourceStatusUploading    PrivateImageResourceStatus = "uploading"
-)
-
-// Valid indicates whether the value is a known member of the PrivateImageResourceStatus enum.
-func (e PrivateImageResourceStatus) Valid() bool {
-	switch e {
-	case PrivateImageResourceStatusAvailable:
-		return true
-	case PrivateImageResourceStatusDeleting:
-		return true
-	case PrivateImageResourceStatusError:
-		return true
-	case PrivateImageResourceStatusProvisioning:
-		return true
-	case PrivateImageResourceStatusUploading:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for PrivateNetworkResourceStatus.
 const (
 	PrivateNetworkResourceStatusAvailable PrivateNetworkResourceStatus = "available"
@@ -750,12 +768,12 @@ func (e PrivateNetworkResourceStatus) Valid() bool {
 
 // Defines values for ReleaseResourceType.
 const (
-	Backup       ReleaseResourceType = "backup"
-	Disk         ReleaseResourceType = "disk"
-	FloatingIp   ReleaseResourceType = "floating_ip"
-	Instance     ReleaseResourceType = "instance"
-	PrivateImage ReleaseResourceType = "private_image"
-	Snapshot     ReleaseResourceType = "snapshot"
+	Backup     ReleaseResourceType = "backup"
+	Disk       ReleaseResourceType = "disk"
+	FloatingIp ReleaseResourceType = "floating_ip"
+	Image      ReleaseResourceType = "image"
+	Instance   ReleaseResourceType = "instance"
+	Snapshot   ReleaseResourceType = "snapshot"
 )
 
 // Valid indicates whether the value is a known member of the ReleaseResourceType enum.
@@ -767,9 +785,9 @@ func (e ReleaseResourceType) Valid() bool {
 		return true
 	case FloatingIp:
 		return true
-	case Instance:
+	case Image:
 		return true
-	case PrivateImage:
+	case Instance:
 		return true
 	case Snapshot:
 		return true
@@ -997,6 +1015,15 @@ type ConsoleResponseBody struct {
 	ConsoleUrl string `json:"console_url"`
 }
 
+// CreateBackupQuoteRequestBody The fields of `CreateBackupRequestBody` that decide the price
+type CreateBackupQuoteRequestBody struct {
+	// DiskId The disk that would be backed up
+	DiskId openapi_types.UUID `json:"disk_id"`
+
+	// PriceId A price of the region's backup offering. One is selected when omitted
+	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
+}
+
 // CreateBackupRequestBody defines model for CreateBackupRequestBody.
 type CreateBackupRequestBody struct {
 	DiskId openapi_types.UUID `json:"disk_id"`
@@ -1022,6 +1049,26 @@ type CreateDiskRequestBody struct {
 	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
 }
 
+// CreateImageQuoteRequestBody The fields of `CreateImageRequestBody` that decide the price
+type CreateImageQuoteRequestBody struct {
+	// InstanceId The instance whose system disk would be captured
+	InstanceId openapi_types.UUID `json:"instance_id"`
+
+	// PriceId A price of the region's private image offering. One is selected when omitted
+	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
+}
+
+// CreateImageRequestBody defines model for CreateImageRequestBody.
+type CreateImageRequestBody struct {
+	// InstanceId Captured from the system disk of this instance; data disks are not included
+	InstanceId openapi_types.UUID `json:"instance_id"`
+	Name       string             `json:"name"`
+
+	// Order Purchase options. Every request places an order of its own.
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
+}
+
 // CreatePeeringRequestBody defines model for CreatePeeringRequestBody.
 type CreatePeeringRequestBody struct {
 	AccepterNetworkId  openapi_types.UUID `json:"accepter_network_id"`
@@ -1039,17 +1086,6 @@ type CreatePortRequestBody struct {
 	// SecurityGroupIds At least one, and all must belong to the same private network
 	SecurityGroupIds []openapi_types.UUID `json:"security_group_ids"`
 	SubnetId         openapi_types.UUID   `json:"subnet_id"`
-}
-
-// CreatePrivateImageRequestBody defines model for CreatePrivateImageRequestBody.
-type CreatePrivateImageRequestBody struct {
-	// InstanceId Captured from the system disk of this instance; data disks are not included
-	InstanceId openapi_types.UUID `json:"instance_id"`
-	Name       string             `json:"name"`
-
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
 }
 
 // CreatePrivateNetworkRequestBody defines model for CreatePrivateNetworkRequestBody.
@@ -1204,8 +1240,7 @@ type DiskTypeListResponseBody struct {
 
 // DiskTypeResource defines model for DiskTypeResource.
 type DiskTypeResource struct {
-	AvailabilityZoneId openapi_types.UUID  `json:"availability_zone_id"`
-	BackupPlanId       *openapi_types.UUID `json:"backup_plan_id"`
+	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
 
 	// ForSystem True for a system disk type, the one chosen as `boot_disk.disk_type_id` when creating an instance from an image. A system disk type cannot be used to create a data disk, and a data disk type cannot be used for a system disk.
 	ForSystem bool               `json:"for_system"`
@@ -1219,13 +1254,12 @@ type DiskTypeResource struct {
 	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the
 	// range. The exact figure for the size actually bought appears on the disk itself once it
 	// exists.
-	IopsAtMinSize      *int64                `json:"iops_at_min_size"`
-	MaxSizeGb          int64                 `json:"max_size_gb"`
-	Media              DiskTypeResourceMedia `json:"media"`
-	MinSizeGb          int64                 `json:"min_size_gb"`
-	Name               string                `json:"name"`
-	PlanId             *openapi_types.UUID   `json:"plan_id"`
-	PrivateImagePlanId *openapi_types.UUID   `json:"private_image_plan_id"`
+	IopsAtMinSize *int64                `json:"iops_at_min_size"`
+	MaxSizeGb     int64                 `json:"max_size_gb"`
+	Media         DiskTypeResourceMedia `json:"media"`
+	MinSizeGb     int64                 `json:"min_size_gb"`
+	Name          string                `json:"name"`
+	PlanId        *openapi_types.UUID   `json:"plan_id"`
 
 	// ProductId Billing Product ID. Null when no Product is assigned; otherwise `compute`.
 	ProductId      *string             `json:"product_id"`
@@ -1346,23 +1380,65 @@ type ImageListResponseBody struct {
 	TotalCount *int64          `json:"total_count,omitempty"`
 }
 
-// ImageResource defines model for ImageResource.
+// ImageResource An image that installs the system of an instance. Fields that describe a capture or its billing apply only to private images and are null, zero or empty for public ones.
 type ImageResource struct {
-	Architecture string             `json:"architecture"`
-	Id           openapi_types.UUID `json:"id"`
+	AccessState  *ImageResourceAccessState `json:"access_state"`
+	Architecture string                    `json:"architecture"`
+	CreatedAt    time.Time                 `json:"created_at"`
+
+	// Failure Reason the capture failed; non-empty only when `status` is `error`
+	Failure    *string            `json:"failure"`
+	Generation int64              `json:"generation"`
+	Id         openapi_types.UUID `json:"id"`
 
 	// LoginUsername The account this image lets you log in as. The password set at creation belongs to this account
-	LoginUsername string             `json:"login_username"`
-	MinDiskGb     int64              `json:"min_disk_gb"`
-	MinRamMb      int64              `json:"min_ram_mb"`
-	Name          string             `json:"name"`
-	OsFamily      string             `json:"os_family"`
-	OsVersion     string             `json:"os_version"`
-	RegionId      openapi_types.UUID `json:"region_id"`
+	LoginUsername string `json:"login_username"`
+
+	// MinDiskGb The system disk of an instance created from this image cannot be smaller than this
+	MinDiskGb int64 `json:"min_disk_gb"`
+
+	// MinRamMb The instance type of an instance created from this image must have at least this much memory
+	MinRamMb   int64               `json:"min_ram_mb"`
+	Name       string              `json:"name"`
+	ObservedAt *time.Time          `json:"observed_at"`
+	OrderId    *openapi_types.UUID `json:"order_id"`
+	OsFamily   string              `json:"os_family"`
+	OsVersion  string              `json:"os_version"`
+	PriceId    *openapi_types.UUID `json:"price_id"`
+	RegionId   openapi_types.UUID  `json:"region_id"`
+
+	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
+
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this private image: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for it, and for public images.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
+
+	// SizeBytes Storage occupied by a private image, which is what it is billed for; 0 until its capture completes, and 0 for public images
+	SizeBytes int64 `json:"size_bytes"`
+
+	// SourceInstanceId The instance a private image was captured from. The image remains usable after that instance is released. Null for public images
+	SourceInstanceId *openapi_types.UUID `json:"source_instance_id"`
+
+	// Status Only `available` images can install instances. A public image is always `available`; a private image goes through `provisioning` and `uploading` while it is captured.
+	Status             ImageResourceStatus `json:"status"`
+	SubscriptionItemId *openapi_types.UUID `json:"subscription_item_id"`
 
 	// SupportsPasswordReset False means a new password can only be set by rebuilding an instance created from this image
-	SupportsPasswordReset bool `json:"supports_password_reset"`
+	SupportsPasswordReset bool  `json:"supports_password_reset"`
+	Task                  *Task `json:"task"`
+
+	// Visibility Who can see and use an image. `public` — offered to every project by the platform. `private` — usable only by the project that owns it.
+	Visibility ImageVisibility `json:"visibility"`
 }
+
+// ImageResourceAccessState defines model for ImageResource.AccessState.
+type ImageResourceAccessState string
+
+// ImageResourceStatus Only `available` images can install instances. A public image is always `available`; a private image goes through `provisioning` and `uploading` while it is captured.
+type ImageResourceStatus string
+
+// ImageVisibility Who can see and use an image. `public` — offered to every project by the platform. `private` — usable only by the project that owns it.
+type ImageVisibility string
 
 // InstanceListResponseBody defines model for InstanceListResponseBody.
 type InstanceListResponseBody struct {
@@ -1384,7 +1460,7 @@ type InstanceResource struct {
 	Hostname string             `json:"hostname"`
 	Id       openapi_types.UUID `json:"id"`
 
-	// ImageId Non-empty when the instance was created from a platform image
+	// ImageId Non-empty when the instance was created from an image, public or private
 	ImageId *openapi_types.UUID `json:"image_id"`
 
 	// InstanceTypeId The instance type in effect, and the basis for billing
@@ -1406,9 +1482,6 @@ type InstanceResource struct {
 	OrderId    *openapi_types.UUID        `json:"order_id"`
 	PowerState InstanceResourcePowerState `json:"power_state"`
 	PriceId    *openapi_types.UUID        `json:"price_id"`
-
-	// PrivateImageId Non-empty when the instance was created from a private image
-	PrivateImageId *openapi_types.UUID `json:"private_image_id"`
 
 	// PrivateIp Private address of the instance
 	PrivateIp        *string             `json:"private_ip"`
@@ -1507,7 +1580,7 @@ type LaunchInstanceRequestBody struct {
 	// BootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
 	BootDisk *NewBootDisk `json:"boot_disk,omitempty"`
 
-	// BootDiskId Boot a disk you already have instead of installing an image. The disk must be available, unattached, and in the same availability zone as the instance type. Exactly one of this, `image_id` and `private_image_id`
+	// BootDiskId Boot a disk you already have instead of installing an image. The disk must be available, unattached, and in the same availability zone as the instance type. Exactly one of this and `image_id`
 	BootDiskId *openapi_types.UUID `json:"boot_disk_id,omitempty"`
 
 	// Count Number of instances to create; 1 when omitted. Names are numbered automatically for several
@@ -1532,7 +1605,7 @@ type LaunchInstanceRequestBody struct {
 	// GeneratePassword Have the platform generate a random password, returned only in this response
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
-	// ImageId A platform image, and it must be one currently on sale. Exactly one of this, `private_image_id` and `boot_disk_id`
+	// ImageId A public image currently on sale, or an available private image of this project. Exactly one of this and `boot_disk_id`
 	ImageId *openapi_types.UUID `json:"image_id,omitempty"`
 
 	// InstanceTypeId An instance type currently on sale. A withdrawn one is rejected even though its identifier still resolves
@@ -1551,9 +1624,6 @@ type LaunchInstanceRequestBody struct {
 	// PortId Use an existing network interface, which may already have a floating IP bound. Exactly one of this and `subnet_id`; only one instance can be created when it is used
 	PortId  *openapi_types.UUID `json:"port_id,omitempty"`
 	PriceId openapi_types.UUID  `json:"price_id"`
-
-	// PrivateImageId A private image. Exactly one of this, `image_id` and `boot_disk_id`
-	PrivateImageId *openapi_types.UUID `json:"private_image_id,omitempty"`
 
 	// SecurityGroupIds Required when a primary network interface is created, at least one; the default security group is not applied automatically. Ignored together with `port_id`, as the security groups of that interface were fixed when it was created
 	SecurityGroupIds []openapi_types.UUID `json:"security_group_ids,omitempty"`
@@ -1739,66 +1809,6 @@ type PowerRequest struct {
 	ExpectedGeneration *int64 `json:"expected_generation,omitempty"`
 }
 
-// PrivateImageListResponseBody defines model for PrivateImageListResponseBody.
-type PrivateImageListResponseBody struct {
-	Items      []PrivateImageResource `json:"items"`
-	Page       int64                  `json:"page"`
-	PageSize   int64                  `json:"page_size"`
-	TotalCount *int64                 `json:"total_count,omitempty"`
-}
-
-// PrivateImageResource defines model for PrivateImageResource.
-type PrivateImageResource struct {
-	AccessState  *PrivateImageResourceAccessState `json:"access_state"`
-	Architecture string                           `json:"architecture"`
-	CreatedAt    time.Time                        `json:"created_at"`
-
-	// Failure Reason the capture failed; non-empty only when `status` is `error`
-	Failure    *string            `json:"failure"`
-	Generation int64              `json:"generation"`
-	Id         openapi_types.UUID `json:"id"`
-
-	// LoginUsername The account this image lets you log in as. The password set at creation belongs to this account
-	LoginUsername string `json:"login_username"`
-
-	// MinDiskGb The system disk of an instance created from this image cannot be smaller than this
-	MinDiskGb int64 `json:"min_disk_gb"`
-
-	// MinRamMb The instance type of an instance created from this image must have at least this much memory
-	MinRamMb   int64               `json:"min_ram_mb"`
-	Name       string              `json:"name"`
-	ObservedAt *time.Time          `json:"observed_at"`
-	OrderId    *openapi_types.UUID `json:"order_id"`
-	OsFamily   string              `json:"os_family"`
-	OsVersion  string              `json:"os_version"`
-	PriceId    *openapi_types.UUID `json:"price_id"`
-	RegionId   openapi_types.UUID  `json:"region_id"`
-
-	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
-	ReleaseSet []ReleaseSetItem `json:"release_set"`
-
-	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this private image: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
-	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
-
-	// SizeBytes Storage occupied by the image; 0 until the capture completes
-	SizeBytes int64 `json:"size_bytes"`
-
-	// SourceInstanceId The instance this image was captured from. The image remains usable after that instance is released
-	SourceInstanceId   *openapi_types.UUID        `json:"source_instance_id"`
-	Status             PrivateImageResourceStatus `json:"status"`
-	SubscriptionItemId *openapi_types.UUID        `json:"subscription_item_id"`
-
-	// SupportsPasswordReset False means a new password can only be set by rebuilding an instance created from this image
-	SupportsPasswordReset bool  `json:"supports_password_reset"`
-	Task                  *Task `json:"task"`
-}
-
-// PrivateImageResourceAccessState defines model for PrivateImageResource.AccessState.
-type PrivateImageResourceAccessState string
-
-// PrivateImageResourceStatus defines model for PrivateImageResource.Status.
-type PrivateImageResourceStatus string
-
 // PrivateNetworkListResponseBody defines model for PrivateNetworkListResponseBody.
 type PrivateNetworkListResponseBody struct {
 	Items []PrivateNetworkResource `json:"items"`
@@ -1821,6 +1831,9 @@ type PrivateNetworkResource struct {
 // PrivateNetworkResourceStatus Only `available` accepts new instances, interfaces and floating IPs
 type PrivateNetworkResourceStatus string
 
+// PurchaseQuote What a purchase would be charged, priced as a service would order it, without ordering anything. Nothing is reserved and nothing is recorded.
+type PurchaseQuote = externalRef0.PurchaseQuote
+
 // PurchaseResult Identifies the Compute task and the Billing order of a purchase. Work on the purchase starts after the order's invoice is paid, or without waiting when the order has no immediate invoice. Track the task for completion.
 type PurchaseResult struct {
 	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
@@ -1840,12 +1853,9 @@ type RebootInstanceRequestBody struct {
 type RebuildInstanceRequestBody struct {
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
-	// ImageId A platform image, which must be on sale unless it is the one this instance already runs. Exactly one of this and `private_image_id`
-	ImageId  *openapi_types.UUID `json:"image_id,omitempty"`
-	Password *string             `json:"password,omitempty"`
-
-	// PrivateImageId A private image. Exactly one of this and `image_id`
-	PrivateImageId *openapi_types.UUID `json:"private_image_id,omitempty"`
+	// ImageId A public image, which must be on sale unless it is the one this instance already runs, or an available private image of this project
+	ImageId  openapi_types.UUID `json:"image_id"`
+	Password *string            `json:"password,omitempty"`
 }
 
 // RebuildInstanceResponseBody defines model for RebuildInstanceResponseBody.
@@ -1903,13 +1913,13 @@ type RenameDiskRequestBody struct {
 	Name string `json:"name"`
 }
 
-// RenameInstanceRequestBody defines model for RenameInstanceRequestBody.
-type RenameInstanceRequestBody struct {
+// RenameImageRequestBody defines model for RenameImageRequestBody.
+type RenameImageRequestBody struct {
 	Name string `json:"name"`
 }
 
-// RenamePrivateImageRequestBody defines model for RenamePrivateImageRequestBody.
-type RenamePrivateImageRequestBody struct {
+// RenameInstanceRequestBody defines model for RenameInstanceRequestBody.
+type RenameInstanceRequestBody struct {
 	Name string `json:"name"`
 }
 
@@ -2178,9 +2188,13 @@ type ListDisksParams struct {
 
 // ListImagesParams defines parameters for ListImages.
 type ListImagesParams struct {
-	RegionId openapi_types.UUID `form:"region_id" json:"region_id"`
-	Page     *int64             `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64             `form:"page_size,omitempty" json:"page_size,omitempty"`
+	// RegionId Return only the images of this region
+	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
+
+	// Visibility Return only public or only private images. Both are returned when omitted
+	Visibility *ImageVisibility `form:"visibility,omitempty" json:"visibility,omitempty"`
+	Page       *int64           `form:"page,omitempty" json:"page,omitempty"`
+	PageSize   *int64           `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListInstanceTypesParams defines parameters for ListInstanceTypes.
@@ -2237,14 +2251,6 @@ type ListPeeringsParams struct {
 	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
-// ListPrivateImagesParams defines parameters for ListPrivateImages.
-type ListPrivateImagesParams struct {
-	// RegionId Return only the images of this region. An image can only be used in the region that holds it
-	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
-	Page     *int64              `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64              `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
 // ListPrivateNetworksParams defines parameters for ListPrivateNetworks.
 type ListPrivateNetworksParams struct {
 	// RegionId Returns every region when omitted
@@ -2273,6 +2279,9 @@ type ListSnapshotsParams struct {
 // CreateBackupJSONRequestBody defines body for CreateBackup for application/json ContentType.
 type CreateBackupJSONRequestBody = CreateBackupRequestBody
 
+// CreateBackupQuoteJSONRequestBody defines body for CreateBackupQuote for application/json ContentType.
+type CreateBackupQuoteJSONRequestBody = CreateBackupQuoteRequestBody
+
 // RenameBackupJSONRequestBody defines body for RenameBackup for application/json ContentType.
 type RenameBackupJSONRequestBody = RenameBackupRequestBody
 
@@ -2299,6 +2308,15 @@ type SetFloatingIpBandwidthJSONRequestBody = SetBandwidthRequestBody
 
 // BindFloatingIpJSONRequestBody defines body for BindFloatingIp for application/json ContentType.
 type BindFloatingIpJSONRequestBody = BindFloatingIPRequestBody
+
+// CreateImageJSONRequestBody defines body for CreateImage for application/json ContentType.
+type CreateImageJSONRequestBody = CreateImageRequestBody
+
+// CreateImageQuoteJSONRequestBody defines body for CreateImageQuote for application/json ContentType.
+type CreateImageQuoteJSONRequestBody = CreateImageQuoteRequestBody
+
+// RenameImageJSONRequestBody defines body for RenameImage for application/json ContentType.
+type RenameImageJSONRequestBody = RenameImageRequestBody
 
 // LaunchInstanceJSONRequestBody defines body for LaunchInstance for application/json ContentType.
 type LaunchInstanceJSONRequestBody = LaunchInstanceRequestBody
@@ -2347,12 +2365,6 @@ type CreatePeeringJSONRequestBody = CreatePeeringRequestBody
 
 // CreatePortJSONRequestBody defines body for CreatePort for application/json ContentType.
 type CreatePortJSONRequestBody = CreatePortRequestBody
-
-// CreatePrivateImageJSONRequestBody defines body for CreatePrivateImage for application/json ContentType.
-type CreatePrivateImageJSONRequestBody = CreatePrivateImageRequestBody
-
-// RenamePrivateImageJSONRequestBody defines body for RenamePrivateImage for application/json ContentType.
-type RenamePrivateImageJSONRequestBody = RenamePrivateImageRequestBody
 
 // CreatePrivateNetworkJSONRequestBody defines body for CreatePrivateNetwork for application/json ContentType.
 type CreatePrivateNetworkJSONRequestBody = CreatePrivateNetworkRequestBody
@@ -2468,6 +2480,8 @@ type ClientInterface interface {
 	//
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
 	//
+	// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
@@ -2481,10 +2495,38 @@ type ClientInterface interface {
 	//
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
 	//
+	// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 	CreateBackup(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupQuoteWithBody Quote a backup
+	//
+	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
+	CreateBackupQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupQuote Quote a backup
+	//
+	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
+	CreateBackupQuote(ctx context.Context, body CreateBackupQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteBackup Delete a backup
 	//
@@ -2759,14 +2801,126 @@ type ClientInterface interface {
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
 	BindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListImages List images on sale
+	// ListImages List images
 	//
-	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
+	// Lists the public images on sale together with the private images of this project. `visibility` narrows the list to one of the two.
 	//
-	// Only images currently on sale are listed. An image the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+	// A public image is offered to every project. Only public images currently on sale are listed: one the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+	//
+	// A private image belongs to this project, which captured it from one of its instances, and is listed in every status, including while its capture is in progress and after the capture failed.
+	//
+	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot; filter the options accordingly.
 	//
 	// Corresponds with GET /api/v1/images (the `ListImages` operationId).
 	ListImages(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateImageWithBody Capture an instance as a private image
+	//
+	// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
+	//
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+	//
+	// The capture has two phases, reported by the status of the image:
+	//
+	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
+	//
+	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
+	//
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
+	//
+	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/images (the `CreateImage` operationId).
+	CreateImageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateImage Capture an instance as a private image
+	//
+	// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
+	//
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+	//
+	// The capture has two phases, reported by the status of the image:
+	//
+	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
+	//
+	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
+	//
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
+	//
+	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/images (the `CreateImage` operationId).
+	CreateImage(ctx context.Context, body CreateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateImageQuoteWithBody Quote capturing an instance as a private image
+	//
+	// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/images/quote (the `CreateImageQuote` operationId).
+	CreateImageQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateImageQuote Quote capturing an instance as a private image
+	//
+	// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/images/quote (the `CreateImageQuote` operationId).
+	CreateImageQuote(ctx context.Context, body CreateImageQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteImage Delete a private image
+	//
+	// Only a private image of this project can be deleted; any other image is reported as not found.
+	//
+	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
+	//
+	// An image whose capture has not finished can be deleted; the capture is aborted.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	//
+	// Corresponds with DELETE /api/v1/images/{imageId} (the `DeleteImage` operationId).
+	DeleteImage(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetImage Retrieve an image
+	//
+	// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
+	//
+	// Corresponds with GET /api/v1/images/{imageId} (the `GetImage` operationId).
+	GetImage(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenameImageWithBody Rename a private image
+	//
+	// Only a private image of this project can be renamed; any other image is reported as not found.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /api/v1/images/{imageId} (the `RenameImage` operationId).
+	RenameImageWithBody(ctx context.Context, imageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenameImage Rename a private image
+	//
+	// Only a private image of this project can be renamed; any other image is reported as not found.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /api/v1/images/{imageId} (the `RenameImage` operationId).
+	RenameImage(ctx context.Context, imageId openapi_types.UUID, body RenameImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInstanceTypes List instance types on sale
 	//
@@ -2786,7 +2940,7 @@ type ClientInterface interface {
 	//
 	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 	//
@@ -2801,7 +2955,7 @@ type ClientInterface interface {
 	//
 	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 	//
@@ -3282,83 +3436,6 @@ type ClientInterface interface {
 	// Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
 	DeletePort(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPrivateImages List private images
-	//
-	// Corresponds with GET /api/v1/private-images (the `ListPrivateImages` operationId).
-	ListPrivateImages(ctx context.Context, params *ListPrivateImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreatePrivateImageWithBody Capture an instance as a private image
-	//
-	// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
-	//
-	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
-	//
-	// The capture has two phases, reported by the status of the image:
-	//
-	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
-	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
-	//
-	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
-	//
-	// The instance can be started, stopped and used normally during the capture, but cannot be released.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
-	CreatePrivateImageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreatePrivateImage Capture an instance as a private image
-	//
-	// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
-	//
-	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
-	//
-	// The capture has two phases, reported by the status of the image:
-	//
-	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
-	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
-	//
-	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
-	//
-	// The instance can be started, stopped and used normally during the capture, but cannot be released.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
-	CreatePrivateImage(ctx context.Context, body CreatePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeletePrivateImage Delete a private image
-	//
-	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
-	//
-	// An image whose capture has not finished can be deleted; the capture is aborted.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
-	//
-	// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
-	DeletePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetPrivateImage Retrieve a private image
-	//
-	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
-	//
-	// Corresponds with GET /api/v1/private-images/{privateImageId} (the `GetPrivateImage` operationId).
-	GetPrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RenamePrivateImageWithBody Rename a private image
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-	RenamePrivateImageWithBody(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RenamePrivateImage Rename a private image
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-	RenamePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListPrivateNetworks List private networks
 	//
 	// Corresponds with GET /api/v1/private-networks (the `ListPrivateNetworks` operationId).
@@ -3671,6 +3748,8 @@ func (c *Client) ListBackups(ctx context.Context, params *ListBackupsParams, req
 //
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
 //
+// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
@@ -3694,11 +3773,59 @@ func (c *Client) CreateBackupWithBody(ctx context.Context, contentType string, b
 //
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
 //
+// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 func (c *Client) CreateBackup(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateBackupRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupQuoteWithBody Quote a backup
+//
+// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
+func (c *Client) CreateBackupQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupQuoteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupQuote Quote a backup
+//
+// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
+func (c *Client) CreateBackupQuote(ctx context.Context, body CreateBackupQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupQuoteRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4272,15 +4399,207 @@ func (c *Client) BindFloatingIp(ctx context.Context, floatingIpId openapi_types.
 	return c.Client.Do(req)
 }
 
-// ListImages List images on sale
+// ListImages List images
 //
-// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
+// Lists the public images on sale together with the private images of this project. `visibility` narrows the list to one of the two.
 //
-// Only images currently on sale are listed. An image the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+// A public image is offered to every project. Only public images currently on sale are listed: one the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+//
+// A private image belongs to this project, which captured it from one of its instances, and is listed in every status, including while its capture is in progress and after the capture failed.
+//
+// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot; filter the options accordingly.
 //
 // Corresponds with GET /api/v1/images (the `ListImages` operationId).
 func (c *Client) ListImages(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListImagesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateImageWithBody Capture an instance as a private image
+//
+// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
+//
+// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+//
+// The capture has two phases, reported by the status of the image:
+//
+// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
+//
+// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
+//
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/images (the `CreateImage` operationId).
+func (c *Client) CreateImageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateImageRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateImage Capture an instance as a private image
+//
+// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
+//
+// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+//
+// The capture has two phases, reported by the status of the image:
+//
+// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
+//
+// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
+//
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/images (the `CreateImage` operationId).
+func (c *Client) CreateImage(ctx context.Context, body CreateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateImageRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateImageQuoteWithBody Quote capturing an instance as a private image
+//
+// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/images/quote (the `CreateImageQuote` operationId).
+func (c *Client) CreateImageQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateImageQuoteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateImageQuote Quote capturing an instance as a private image
+//
+// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/images/quote (the `CreateImageQuote` operationId).
+func (c *Client) CreateImageQuote(ctx context.Context, body CreateImageQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateImageQuoteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteImage Delete a private image
+//
+// Only a private image of this project can be deleted; any other image is reported as not found.
+//
+// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
+//
+// An image whose capture has not finished can be deleted; the capture is aborted.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+//
+// Corresponds with DELETE /api/v1/images/{imageId} (the `DeleteImage` operationId).
+func (c *Client) DeleteImage(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteImageRequest(c.Server, imageId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetImage Retrieve an image
+//
+// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
+//
+// Corresponds with GET /api/v1/images/{imageId} (the `GetImage` operationId).
+func (c *Client) GetImage(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetImageRequest(c.Server, imageId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenameImageWithBody Rename a private image
+//
+// Only a private image of this project can be renamed; any other image is reported as not found.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /api/v1/images/{imageId} (the `RenameImage` operationId).
+func (c *Client) RenameImageWithBody(ctx context.Context, imageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameImageRequestWithBody(c.Server, imageId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenameImage Rename a private image
+//
+// Only a private image of this project can be renamed; any other image is reported as not found.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /api/v1/images/{imageId} (the `RenameImage` operationId).
+func (c *Client) RenameImage(ctx context.Context, imageId openapi_types.UUID, body RenameImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameImageRequest(c.Server, imageId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4329,7 +4648,7 @@ func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams,
 //
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
-// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 //
@@ -4354,7 +4673,7 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 //
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
-// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 //
@@ -5325,153 +5644,6 @@ func (c *Client) DeletePort(ctx context.Context, portId openapi_types.UUID, reqE
 	return c.Client.Do(req)
 }
 
-// ListPrivateImages List private images
-//
-// Corresponds with GET /api/v1/private-images (the `ListPrivateImages` operationId).
-func (c *Client) ListPrivateImages(ctx context.Context, params *ListPrivateImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPrivateImagesRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreatePrivateImageWithBody Capture an instance as a private image
-//
-// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
-//
-// **The image reflects the moment the capture started. Later changes to the instance are not included.**
-//
-// The capture has two phases, reported by the status of the image:
-//
-// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
-// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
-//
-// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
-//
-// The instance can be started, stopped and used normally during the capture, but cannot be released.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
-func (c *Client) CreatePrivateImageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePrivateImageRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreatePrivateImage Capture an instance as a private image
-//
-// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
-//
-// **The image reflects the moment the capture started. Later changes to the instance are not included.**
-//
-// The capture has two phases, reported by the status of the image:
-//
-// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
-// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
-//
-// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
-//
-// The instance can be started, stopped and used normally during the capture, but cannot be released.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
-func (c *Client) CreatePrivateImage(ctx context.Context, body CreatePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePrivateImageRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DeletePrivateImage Delete a private image
-//
-// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
-//
-// An image whose capture has not finished can be deleted; the capture is aborted.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
-//
-// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
-func (c *Client) DeletePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePrivateImageRequest(c.Server, privateImageId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetPrivateImage Retrieve a private image
-//
-// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
-//
-// Corresponds with GET /api/v1/private-images/{privateImageId} (the `GetPrivateImage` operationId).
-func (c *Client) GetPrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetPrivateImageRequest(c.Server, privateImageId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RenamePrivateImageWithBody Rename a private image
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-func (c *Client) RenamePrivateImageWithBody(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenamePrivateImageRequestWithBody(c.Server, privateImageId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RenamePrivateImage Rename a private image
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-func (c *Client) RenamePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenamePrivateImageRequest(c.Server, privateImageId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // ListPrivateNetworks List private networks
 //
 // Corresponds with GET /api/v1/private-networks (the `ListPrivateNetworks` operationId).
@@ -6235,6 +6407,46 @@ func NewCreateBackupRequestWithBody(server string, contentType string, body io.R
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/backups")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateBackupQuoteRequest calls the generic CreateBackupQuote builder with application/json body
+func NewCreateBackupQuoteRequest(server string, body CreateBackupQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateBackupQuoteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateBackupQuoteRequestWithBody constructs an http.Request for the CreateBackupQuote method, with any body, and a specified content type
+func NewCreateBackupQuoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/backups/quote")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7118,12 +7330,28 @@ func NewListImagesRequest(server string, params *ListImagesParams) (*http.Reques
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-			return nil, err
-		} else {
-			for _, qp := range strings.Split(queryFrag, "&") {
-				rawQueryFragments = append(rawQueryFragments, qp)
+		if params.RegionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", *params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
 			}
+
+		}
+
+		if params.Visibility != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "visibility", *params.Visibility, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
 		}
 
 		if params.Page != nil {
@@ -7160,6 +7388,201 @@ func NewListImagesRequest(server string, params *ListImagesParams) (*http.Reques
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewCreateImageRequest calls the generic CreateImage builder with application/json body
+func NewCreateImageRequest(server string, body CreateImageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateImageRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateImageRequestWithBody constructs an http.Request for the CreateImage method, with any body, and a specified content type
+func NewCreateImageRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/images")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateImageQuoteRequest calls the generic CreateImageQuote builder with application/json body
+func NewCreateImageQuoteRequest(server string, body CreateImageQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateImageQuoteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateImageQuoteRequestWithBody constructs an http.Request for the CreateImageQuote method, with any body, and a specified content type
+func NewCreateImageQuoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/images/quote")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteImageRequest constructs an http.Request for the DeleteImage method
+func NewDeleteImageRequest(server string, imageId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "imageId", imageId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/images/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetImageRequest constructs an http.Request for the GetImage method
+func NewGetImageRequest(server string, imageId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "imageId", imageId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/images/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRenameImageRequest calls the generic RenameImage builder with application/json body
+func NewRenameImageRequest(server string, imageId openapi_types.UUID, body RenameImageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRenameImageRequestWithBody(server, imageId, "application/json", bodyReader)
+}
+
+// NewRenameImageRequestWithBody constructs an http.Request for the RenameImage method, with any body, and a specified content type
+func NewRenameImageRequestWithBody(server string, imageId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "imageId", imageId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/images/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -8894,239 +9317,6 @@ func NewDeletePortRequest(server string, portId openapi_types.UUID) (*http.Reque
 	return req, nil
 }
 
-// NewListPrivateImagesRequest constructs an http.Request for the ListPrivateImages method
-func NewListPrivateImagesRequest(server string, params *ListPrivateImagesParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/private-images")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.RegionId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", *params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreatePrivateImageRequest calls the generic CreatePrivateImage builder with application/json body
-func NewCreatePrivateImageRequest(server string, body CreatePrivateImageJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreatePrivateImageRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreatePrivateImageRequestWithBody constructs an http.Request for the CreatePrivateImage method, with any body, and a specified content type
-func NewCreatePrivateImageRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/private-images")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeletePrivateImageRequest constructs an http.Request for the DeletePrivateImage method
-func NewDeletePrivateImageRequest(server string, privateImageId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "privateImageId", privateImageId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/private-images/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetPrivateImageRequest constructs an http.Request for the GetPrivateImage method
-func NewGetPrivateImageRequest(server string, privateImageId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "privateImageId", privateImageId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/private-images/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewRenamePrivateImageRequest calls the generic RenamePrivateImage builder with application/json body
-func NewRenamePrivateImageRequest(server string, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRenamePrivateImageRequestWithBody(server, privateImageId, "application/json", bodyReader)
-}
-
-// NewRenamePrivateImageRequestWithBody constructs an http.Request for the RenamePrivateImage method, with any body, and a specified content type
-func NewRenamePrivateImageRequestWithBody(server string, privateImageId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "privateImageId", privateImageId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/private-images/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListPrivateNetworksRequest constructs an http.Request for the ListPrivateNetworks method
 func NewListPrivateNetworksRequest(server string, params *ListPrivateNetworksParams) (*http.Request, error) {
 	var err error
@@ -10449,6 +10639,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
 	//
+	// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
@@ -10462,10 +10654,38 @@ type ClientWithResponsesInterface interface {
 	//
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
 	//
+	// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 	CreateBackupWithResponse(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupResponse, error)
+
+	// CreateBackupQuoteWithBodyWithResponse Quote a backup
+	//
+	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
+	CreateBackupQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupQuoteResponse, error)
+
+	// CreateBackupQuoteWithResponse Quote a backup
+	//
+	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
+	CreateBackupQuoteWithResponse(ctx context.Context, body CreateBackupQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupQuoteResponse, error)
 
 	// DeleteBackupWithResponse Delete a backup
 	//
@@ -10762,16 +10982,132 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
 	BindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error)
 
-	// ListImagesWithResponse List images on sale
+	// ListImagesWithResponse List images
 	//
-	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
+	// Lists the public images on sale together with the private images of this project. `visibility` narrows the list to one of the two.
 	//
-	// Only images currently on sale are listed. An image the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+	// A public image is offered to every project. Only public images currently on sale are listed: one the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+	//
+	// A private image belongs to this project, which captured it from one of its instances, and is listed in every status, including while its capture is in progress and after the capture failed.
+	//
+	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot; filter the options accordingly.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/images (the `ListImages` operationId).
 	ListImagesWithResponse(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*ListImagesResponse, error)
+
+	// CreateImageWithBodyWithResponse Capture an instance as a private image
+	//
+	// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
+	//
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+	//
+	// The capture has two phases, reported by the status of the image:
+	//
+	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
+	//
+	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
+	//
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
+	//
+	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/images (the `CreateImage` operationId).
+	CreateImageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateImageResponse, error)
+
+	// CreateImageWithResponse Capture an instance as a private image
+	//
+	// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
+	//
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+	//
+	// The capture has two phases, reported by the status of the image:
+	//
+	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
+	//
+	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
+	//
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
+	//
+	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/images (the `CreateImage` operationId).
+	CreateImageWithResponse(ctx context.Context, body CreateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateImageResponse, error)
+
+	// CreateImageQuoteWithBodyWithResponse Quote capturing an instance as a private image
+	//
+	// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/images/quote (the `CreateImageQuote` operationId).
+	CreateImageQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateImageQuoteResponse, error)
+
+	// CreateImageQuoteWithResponse Quote capturing an instance as a private image
+	//
+	// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/images/quote (the `CreateImageQuote` operationId).
+	CreateImageQuoteWithResponse(ctx context.Context, body CreateImageQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateImageQuoteResponse, error)
+
+	// DeleteImageWithResponse Delete a private image
+	//
+	// Only a private image of this project can be deleted; any other image is reported as not found.
+	//
+	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
+	//
+	// An image whose capture has not finished can be deleted; the capture is aborted.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/images/{imageId} (the `DeleteImage` operationId).
+	DeleteImageWithResponse(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteImageResponse, error)
+
+	// GetImageWithResponse Retrieve an image
+	//
+	// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/images/{imageId} (the `GetImage` operationId).
+	GetImageWithResponse(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetImageResponse, error)
+
+	// RenameImageWithBodyWithResponse Rename a private image
+	//
+	// Only a private image of this project can be renamed; any other image is reported as not found.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/images/{imageId} (the `RenameImage` operationId).
+	RenameImageWithBodyWithResponse(ctx context.Context, imageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameImageResponse, error)
+
+	// RenameImageWithResponse Rename a private image
+	//
+	// Only a private image of this project can be renamed; any other image is reported as not found.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/images/{imageId} (the `RenameImage` operationId).
+	RenameImageWithResponse(ctx context.Context, imageId openapi_types.UUID, body RenameImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameImageResponse, error)
 
 	// ListInstanceTypesWithResponse List instance types on sale
 	//
@@ -10795,7 +11131,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 	//
@@ -10810,7 +11146,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 	//
@@ -11327,89 +11663,6 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
 	DeletePortWithResponse(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePortResponse, error)
 
-	// ListPrivateImagesWithResponse List private images
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/private-images (the `ListPrivateImages` operationId).
-	ListPrivateImagesWithResponse(ctx context.Context, params *ListPrivateImagesParams, reqEditors ...RequestEditorFn) (*ListPrivateImagesResponse, error)
-
-	// CreatePrivateImageWithBodyWithResponse Capture an instance as a private image
-	//
-	// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
-	//
-	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
-	//
-	// The capture has two phases, reported by the status of the image:
-	//
-	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
-	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
-	//
-	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
-	//
-	// The instance can be started, stopped and used normally during the capture, but cannot be released.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
-	CreatePrivateImageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePrivateImageResponse, error)
-
-	// CreatePrivateImageWithResponse Capture an instance as a private image
-	//
-	// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
-	//
-	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
-	//
-	// The capture has two phases, reported by the status of the image:
-	//
-	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
-	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
-	//
-	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
-	//
-	// The instance can be started, stopped and used normally during the capture, but cannot be released.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
-	CreatePrivateImageWithResponse(ctx context.Context, body CreatePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePrivateImageResponse, error)
-
-	// DeletePrivateImageWithResponse Delete a private image
-	//
-	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
-	//
-	// An image whose capture has not finished can be deleted; the capture is aborted.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
-	DeletePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePrivateImageResponse, error)
-
-	// GetPrivateImageWithResponse Retrieve a private image
-	//
-	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/private-images/{privateImageId} (the `GetPrivateImage` operationId).
-	GetPrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPrivateImageResponse, error)
-
-	// RenamePrivateImageWithBodyWithResponse Rename a private image
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-	RenamePrivateImageWithBodyWithResponse(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error)
-
-	// RenamePrivateImageWithResponse Rename a private image
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-	RenamePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error)
-
 	// ListPrivateNetworksWithResponse List private networks
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -11833,6 +12086,54 @@ func (r CreateBackupResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateBackupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateBackupQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PurchaseQuote
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateBackupQuoteResponse) GetJSON200() *PurchaseQuote {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateBackupQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateBackupQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateBackupQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateBackupQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateBackupQuoteResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12862,6 +13163,253 @@ func (r ListImagesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListImagesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateImageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *PurchaseResult
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateImageResponse) GetJSON201() *PurchaseResult {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateImageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateImageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateImageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateImageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateImageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateImageQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PurchaseQuote
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateImageQuoteResponse) GetJSON200() *PurchaseQuote {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateImageQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateImageQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateImageQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateImageQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateImageQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteImageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *Task
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r DeleteImageResponse) GetJSON202() *Task {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteImageResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteImageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteImageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteImageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteImageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteImageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetImageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ImageResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetImageResponse) GetJSON200() *ImageResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetImageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetImageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetImageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetImageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetImageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RenameImageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ImageResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RenameImageResponse) GetJSON200() *ImageResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r RenameImageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RenameImageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RenameImageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RenameImageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RenameImageResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -14596,253 +15144,6 @@ func (r DeletePortResponse) ContentType() string {
 	return ""
 }
 
-type ListPrivateImagesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PrivateImageListResponseBody
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListPrivateImagesResponse) GetJSON200() *PrivateImageListResponseBody {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListPrivateImagesResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListPrivateImagesResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListPrivateImagesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListPrivateImagesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListPrivateImagesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreatePrivateImageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PurchaseResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreatePrivateImageResponse) GetJSON201() *PurchaseResult {
-	return r.JSON201
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreatePrivateImageResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreatePrivateImageResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreatePrivateImageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreatePrivateImageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreatePrivateImageResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeletePrivateImageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
-	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DeletePrivateImageResponse) GetJSON202() *Task {
-	return r.JSON202
-}
-
-// GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeletePrivateImageResponse) GetJSON409() *Error {
-	return r.JSON409
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DeletePrivateImageResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DeletePrivateImageResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DeletePrivateImageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeletePrivateImageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeletePrivateImageResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetPrivateImageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PrivateImageResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetPrivateImageResponse) GetJSON200() *PrivateImageResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetPrivateImageResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetPrivateImageResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetPrivateImageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetPrivateImageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetPrivateImageResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RenamePrivateImageResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PrivateImageResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RenamePrivateImageResponse) GetJSON200() *PrivateImageResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RenamePrivateImageResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RenamePrivateImageResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RenamePrivateImageResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RenamePrivateImageResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RenamePrivateImageResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListPrivateNetworksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -16317,6 +16618,8 @@ func (c *ClientWithResponses) ListBackupsWithResponse(ctx context.Context, param
 //
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
 //
+// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
@@ -16336,6 +16639,8 @@ func (c *ClientWithResponses) CreateBackupWithBodyWithResponse(ctx context.Conte
 //
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
 //
+// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
@@ -16345,6 +16650,44 @@ func (c *ClientWithResponses) CreateBackupWithResponse(ctx context.Context, body
 		return nil, err
 	}
 	return ParseCreateBackupResponse(rsp)
+}
+
+// CreateBackupQuoteWithBodyWithResponse Quote a backup
+//
+// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
+func (c *ClientWithResponses) CreateBackupQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupQuoteResponse, error) {
+	rsp, err := c.CreateBackupQuoteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupQuoteResponse(rsp)
+}
+
+// CreateBackupQuoteWithResponse Quote a backup
+//
+// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
+func (c *ClientWithResponses) CreateBackupQuoteWithResponse(ctx context.Context, body CreateBackupQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupQuoteResponse, error) {
+	rsp, err := c.CreateBackupQuote(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupQuoteResponse(rsp)
 }
 
 // DeleteBackupWithResponse Delete a backup
@@ -16816,11 +17159,15 @@ func (c *ClientWithResponses) BindFloatingIpWithResponse(ctx context.Context, fl
 	return ParseBindFloatingIpResponse(rsp)
 }
 
-// ListImagesWithResponse List images on sale
+// ListImagesWithResponse List images
 //
-// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
+// Lists the public images on sale together with the private images of this project. `visibility` narrows the list to one of the two.
 //
-// Only images currently on sale are listed. An image the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+// A public image is offered to every project. Only public images currently on sale are listed: one the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+//
+// A private image belongs to this project, which captured it from one of its instances, and is listed in every status, including while its capture is in progress and after the capture failed.
+//
+// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot; filter the options accordingly.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16831,6 +17178,166 @@ func (c *ClientWithResponses) ListImagesWithResponse(ctx context.Context, params
 		return nil, err
 	}
 	return ParseListImagesResponse(rsp)
+}
+
+// CreateImageWithBodyWithResponse Capture an instance as a private image
+//
+// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
+//
+// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+//
+// The capture has two phases, reported by the status of the image:
+//
+// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
+//
+// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
+//
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/images (the `CreateImage` operationId).
+func (c *ClientWithResponses) CreateImageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateImageResponse, error) {
+	rsp, err := c.CreateImageWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateImageResponse(rsp)
+}
+
+// CreateImageWithResponse Capture an instance as a private image
+//
+// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
+//
+// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+//
+// The capture has two phases, reported by the status of the image:
+//
+// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
+//
+// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
+//
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
+//
+// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/images (the `CreateImage` operationId).
+func (c *ClientWithResponses) CreateImageWithResponse(ctx context.Context, body CreateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateImageResponse, error) {
+	rsp, err := c.CreateImage(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateImageResponse(rsp)
+}
+
+// CreateImageQuoteWithBodyWithResponse Quote capturing an instance as a private image
+//
+// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/images/quote (the `CreateImageQuote` operationId).
+func (c *ClientWithResponses) CreateImageQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateImageQuoteResponse, error) {
+	rsp, err := c.CreateImageQuoteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateImageQuoteResponse(rsp)
+}
+
+// CreateImageQuoteWithResponse Quote capturing an instance as a private image
+//
+// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
+//
+// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/images/quote (the `CreateImageQuote` operationId).
+func (c *ClientWithResponses) CreateImageQuoteWithResponse(ctx context.Context, body CreateImageQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateImageQuoteResponse, error) {
+	rsp, err := c.CreateImageQuote(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateImageQuoteResponse(rsp)
+}
+
+// DeleteImageWithResponse Delete a private image
+//
+// Only a private image of this project can be deleted; any other image is reported as not found.
+//
+// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
+//
+// An image whose capture has not finished can be deleted; the capture is aborted.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/images/{imageId} (the `DeleteImage` operationId).
+func (c *ClientWithResponses) DeleteImageWithResponse(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteImageResponse, error) {
+	rsp, err := c.DeleteImage(ctx, imageId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteImageResponse(rsp)
+}
+
+// GetImageWithResponse Retrieve an image
+//
+// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/images/{imageId} (the `GetImage` operationId).
+func (c *ClientWithResponses) GetImageWithResponse(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetImageResponse, error) {
+	rsp, err := c.GetImage(ctx, imageId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetImageResponse(rsp)
+}
+
+// RenameImageWithBodyWithResponse Rename a private image
+//
+// Only a private image of this project can be renamed; any other image is reported as not found.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/images/{imageId} (the `RenameImage` operationId).
+func (c *ClientWithResponses) RenameImageWithBodyWithResponse(ctx context.Context, imageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameImageResponse, error) {
+	rsp, err := c.RenameImageWithBody(ctx, imageId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenameImageResponse(rsp)
+}
+
+// RenameImageWithResponse Rename a private image
+//
+// Only a private image of this project can be renamed; any other image is reported as not found.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/images/{imageId} (the `RenameImage` operationId).
+func (c *ClientWithResponses) RenameImageWithResponse(ctx context.Context, imageId openapi_types.UUID, body RenameImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameImageResponse, error) {
+	rsp, err := c.RenameImage(ctx, imageId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenameImageResponse(rsp)
 }
 
 // ListInstanceTypesWithResponse List instance types on sale
@@ -16867,7 +17374,7 @@ func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, par
 //
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
-// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 //
@@ -16888,7 +17395,7 @@ func (c *ClientWithResponses) LaunchInstanceWithBodyWithResponse(ctx context.Con
 //
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
-// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 //
@@ -17699,131 +18206,6 @@ func (c *ClientWithResponses) DeletePortWithResponse(ctx context.Context, portId
 	return ParseDeletePortResponse(rsp)
 }
 
-// ListPrivateImagesWithResponse List private images
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/private-images (the `ListPrivateImages` operationId).
-func (c *ClientWithResponses) ListPrivateImagesWithResponse(ctx context.Context, params *ListPrivateImagesParams, reqEditors ...RequestEditorFn) (*ListPrivateImagesResponse, error) {
-	rsp, err := c.ListPrivateImages(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListPrivateImagesResponse(rsp)
-}
-
-// CreatePrivateImageWithBodyWithResponse Capture an instance as a private image
-//
-// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
-//
-// **The image reflects the moment the capture started. Later changes to the instance are not included.**
-//
-// The capture has two phases, reported by the status of the image:
-//
-// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
-// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
-//
-// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
-//
-// The instance can be started, stopped and used normally during the capture, but cannot be released.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
-func (c *ClientWithResponses) CreatePrivateImageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePrivateImageResponse, error) {
-	rsp, err := c.CreatePrivateImageWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreatePrivateImageResponse(rsp)
-}
-
-// CreatePrivateImageWithResponse Capture an instance as a private image
-//
-// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
-//
-// **The image reflects the moment the capture started. Later changes to the instance are not included.**
-//
-// The capture has two phases, reported by the status of the image:
-//
-// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
-// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
-//
-// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
-//
-// The instance can be started, stopped and used normally during the capture, but cannot be released.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
-func (c *ClientWithResponses) CreatePrivateImageWithResponse(ctx context.Context, body CreatePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePrivateImageResponse, error) {
-	rsp, err := c.CreatePrivateImage(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreatePrivateImageResponse(rsp)
-}
-
-// DeletePrivateImageWithResponse Delete a private image
-//
-// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
-//
-// An image whose capture has not finished can be deleted; the capture is aborted.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
-func (c *ClientWithResponses) DeletePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePrivateImageResponse, error) {
-	rsp, err := c.DeletePrivateImage(ctx, privateImageId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeletePrivateImageResponse(rsp)
-}
-
-// GetPrivateImageWithResponse Retrieve a private image
-//
-// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/private-images/{privateImageId} (the `GetPrivateImage` operationId).
-func (c *ClientWithResponses) GetPrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPrivateImageResponse, error) {
-	rsp, err := c.GetPrivateImage(ctx, privateImageId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetPrivateImageResponse(rsp)
-}
-
-// RenamePrivateImageWithBodyWithResponse Rename a private image
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-func (c *ClientWithResponses) RenamePrivateImageWithBodyWithResponse(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error) {
-	rsp, err := c.RenamePrivateImageWithBody(ctx, privateImageId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRenamePrivateImageResponse(rsp)
-}
-
-// RenamePrivateImageWithResponse Rename a private image
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-func (c *ClientWithResponses) RenamePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error) {
-	rsp, err := c.RenamePrivateImage(ctx, privateImageId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRenamePrivateImageResponse(rsp)
-}
-
 // ListPrivateNetworksWithResponse List private networks
 //
 // Returns a wrapper object for the known response body format(s).
@@ -18449,6 +18831,39 @@ func ParseCreateBackupResponse(rsp *http.Response) (*CreateBackupResponse, error
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateBackupQuoteResponse parses an HTTP response from a CreateBackupQuoteWithResponse call
+func ParseCreateBackupQuoteResponse(rsp *http.Response) (*CreateBackupQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateBackupQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PurchaseQuote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19159,6 +19574,178 @@ func ParseListImagesResponse(rsp *http.Response) (*ListImagesResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ImageListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateImageResponse parses an HTTP response from a CreateImageWithResponse call
+func ParseCreateImageResponse(rsp *http.Response) (*CreateImageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateImageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest PurchaseResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateImageQuoteResponse parses an HTTP response from a CreateImageQuoteWithResponse call
+func ParseCreateImageQuoteResponse(rsp *http.Response) (*CreateImageQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateImageQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PurchaseQuote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteImageResponse parses an HTTP response from a DeleteImageWithResponse call
+func ParseDeleteImageResponse(rsp *http.Response) (*DeleteImageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteImageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Task
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetImageResponse parses an HTTP response from a GetImageWithResponse call
+func ParseGetImageResponse(rsp *http.Response) (*GetImageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetImageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ImageResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRenameImageResponse parses an HTTP response from a RenameImageWithResponse call
+func ParseRenameImageResponse(rsp *http.Response) (*RenameImageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RenameImageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ImageResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20354,178 +20941,6 @@ func ParseDeletePortResponse(rsp *http.Response) (*DeletePortResponse, error) {
 	switch {
 	case rsp.StatusCode == 204:
 		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListPrivateImagesResponse parses an HTTP response from a ListPrivateImagesWithResponse call
-func ParseListPrivateImagesResponse(rsp *http.Response) (*ListPrivateImagesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListPrivateImagesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PrivateImageListResponseBody
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreatePrivateImageResponse parses an HTTP response from a CreatePrivateImageWithResponse call
-func ParseCreatePrivateImageResponse(rsp *http.Response) (*CreatePrivateImageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreatePrivateImageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PurchaseResult
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeletePrivateImageResponse parses an HTTP response from a DeletePrivateImageWithResponse call
-func ParseDeletePrivateImageResponse(rsp *http.Response) (*DeletePrivateImageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeletePrivateImageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetPrivateImageResponse parses an HTTP response from a GetPrivateImageWithResponse call
-func ParseGetPrivateImageResponse(rsp *http.Response) (*GetPrivateImageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetPrivateImageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PrivateImageResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRenamePrivateImageResponse parses an HTTP response from a RenamePrivateImageWithResponse call
-func ParseRenamePrivateImageResponse(rsp *http.Response) (*RenamePrivateImageResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RenamePrivateImageResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PrivateImageResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

@@ -9,12 +9,12 @@ type DeleteDiskRes interface {
 	deleteDiskRes()
 }
 
-type DeleteInstanceRes interface {
-	deleteInstanceRes()
+type DeleteImageRes interface {
+	deleteImageRes()
 }
 
-type DeletePrivateImageRes interface {
-	deletePrivateImageRes()
+type DeleteInstanceRes interface {
+	deleteInstanceRes()
 }
 
 type DeleteSnapshotRes interface {

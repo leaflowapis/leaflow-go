@@ -65,8 +65,25 @@ type Handler interface {
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
 	// track the returned task.
 	//
+	// The backup is billed for its size, at the backup price of its region. Obtain a price with
+	// `create-backup-quote` first.
+	//
 	// POST /api/v1/backups
 	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (*PurchaseResult, error)
+	// CreateBackupQuote implements create-backup-quote operation.
+	//
+	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing
+	// is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's
+	// backup offering is selected; the returned line names it, and that `price_id` is the one to order
+	// with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+	// is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// POST /api/v1/backups/quote
+	CreateBackupQuote(ctx context.Context, req *CreateBackupQuoteRequestBody) (*PurchaseQuote, error)
 	// CreateDisk implements create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -78,24 +95,11 @@ type Handler interface {
 	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (*PurchaseResult, error)
-	// CreatePeering implements create-peering operation.
+	// CreateImage implements create-image operation.
 	//
-	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
-	// before any connectivity is created. Does not change security groups or provide transitive routing.
-	//
-	// POST /api/v1/peerings
-	CreatePeering(ctx context.Context, req *CreatePeeringRequestBody) (*PeeringResource, error)
-	// CreatePort implements create-port operation.
-	//
-	// The new network interface is not attached to any instance. Primary network interfaces are not
-	// created here; they are created with the instance.
-	//
-	// POST /api/v1/ports
-	CreatePort(ctx context.Context, req *CreatePortRequestBody) (*PortResource, error)
-	// CreatePrivateImage implements create-private-image operation.
-	//
-	// Captured from the system disk of the instance; data disks are not included. The resulting image can
-	// create instances and rebuild them, and remains usable after the source instance is released.
+	// Creates a private image of this project from the system disk of the instance; data disks are not
+	// included. The resulting image can create instances and rebuild them, and remains usable after the
+	// source instance is released.
 	//
 	// The image reflects the moment the capture started. Later changes to the instance are not included.
 	//
@@ -113,8 +117,39 @@ type Handler interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// POST /api/v1/private-images
-	CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (*PurchaseResult, error)
+	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a
+	// price with `create-image-quote` first.
+	//
+	// POST /api/v1/images
+	CreateImage(ctx context.Context, req *CreateImageRequestBody) (*PurchaseResult, error)
+	// CreateImageQuote implements create-image-quote operation.
+	//
+	// Prices the capture `create-image` would order for the same instance, without ordering anything.
+	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// The quantity priced is the size of the system disk, which is the most the image can occupy. When
+	// `price_id` is omitted, a price of the region's private image offering is selected; the returned line
+	// names it, and that `price_id` is the one to order with.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+	// is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// POST /api/v1/images/quote
+	CreateImageQuote(ctx context.Context, req *CreateImageQuoteRequestBody) (*PurchaseQuote, error)
+	// CreatePeering implements create-peering operation.
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+	// before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// POST /api/v1/peerings
+	CreatePeering(ctx context.Context, req *CreatePeeringRequestBody) (*PeeringResource, error)
+	// CreatePort implements create-port operation.
+	//
+	// The new network interface is not attached to any instance. Primary network interfaces are not
+	// created here; they are created with the instance.
+	//
+	// POST /api/v1/ports
+	CreatePort(ctx context.Context, req *CreatePortRequestBody) (*PortResource, error)
 	// CreatePrivateNetwork implements create-private-network operation.
 	//
 	// Creates a network, a router and a default security group in one call. The default security group
@@ -187,6 +222,22 @@ type Handler interface {
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
+	// DeleteImage implements delete-image operation.
+	//
+	// Only a private image of this project can be deleted; any other image is reported as not found.
+	//
+	// Deletion is rejected while instances created from the image still exist, as they need it in order to
+	// be rebuilt.
+	//
+	// An image whose capture has not finished can be deleted; the capture is aborted.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
+	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+	// `release_subscription_ids`.
+	//
+	// DELETE /api/v1/images/{imageId}
+	DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error)
 	// DeleteInstance implements delete-instance operation.
 	//
 	// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
@@ -216,20 +267,6 @@ type Handler interface {
 	//
 	// DELETE /api/v1/ports/{portId}
 	DeletePort(ctx context.Context, params DeletePortParams) error
-	// DeletePrivateImage implements delete-private-image operation.
-	//
-	// Deletion is rejected while instances created from the image still exist, as they need it in order to
-	// be rebuilt.
-	//
-	// An image whose capture has not finished can be deleted; the capture is aborted.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
-	//
-	// DELETE /api/v1/private-images/{privateImageId}
-	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
 	// DeletePrivateNetwork implements delete-private-network operation.
 	//
 	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
@@ -339,6 +376,14 @@ type Handler interface {
 	//
 	// GET /api/v1/floating-ips/{floatingIpId}
 	GetFloatingIP(ctx context.Context, params GetFloatingIPParams) (*FloatingIPResource, error)
+	// GetImage implements get-image operation.
+	//
+	// Returns a public image, or a private image of this project; any other image is reported as not
+	// found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the
+	// reason.
+	//
+	// GET /api/v1/images/{imageId}
+	GetImage(ctx context.Context, params GetImageParams) (*ImageResource, error)
 	// GetInstance implements get-instance operation.
 	//
 	// Queries the current state of the instance, which makes it slower but more accurate than the list
@@ -362,12 +407,6 @@ type Handler interface {
 	//
 	// GET /api/v1/peerings/{peeringId}
 	GetPeering(ctx context.Context, params GetPeeringParams) (*PeeringResource, error)
-	// GetPrivateImage implements get-private-image operation.
-	//
-	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
-	//
-	// GET /api/v1/private-images/{privateImageId}
-	GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (*PrivateImageResource, error)
 	// GetPrivateNetwork implements get-private-network operation.
 	//
 	// Retrieve a private network.
@@ -406,10 +445,10 @@ type Handler interface {
 	// submit a new purchase after paying. After an uncertain response, look the order up before submitting
 	// again.
 	//
-	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
-	// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
-	// boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-	// own subscription items on the same order.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id.
+	// Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing
+	// disks retain their own subscription. Instances, disks and public IPs keep their own subscription
+	// items on the same order.
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance
 	// of that request is released, the order fails, and any payment for it is refunded. Each instance is
@@ -460,12 +499,18 @@ type Handler interface {
 	ListFloatingIps(ctx context.Context) (*FloatingIPListResponseBody, error)
 	// ListImages implements list-images operation.
 	//
-	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the
-	// options accordingly.
+	// Lists the public images on sale together with the private images of this project. `visibility`
+	// narrows the list to one of the two.
 	//
-	// Only images currently on sale are listed. An image the platform withdraws disappears from here and
-	// can no longer install new instances, while the instances already running it keep running and can
-	// still be rebuilt onto it.
+	// A public image is offered to every project. Only public images currently on sale are listed: one the
+	// platform withdraws disappears from here and can no longer install new instances, while the instances
+	// already running it keep running and can still be rebuilt onto it.
+	//
+	// A private image belongs to this project, which captured it from one of its instances, and is listed
+	// in every status, including while its capture is in progress and after the capture failed.
+	//
+	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+	// memory of the selected instance type cannot boot; filter the options accordingly.
 	//
 	// GET /api/v1/images
 	ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error)
@@ -527,12 +572,6 @@ type Handler interface {
 	//
 	// GET /api/v1/ports
 	ListPorts(ctx context.Context) (*PortListResponseBody, error)
-	// ListPrivateImages implements list-private-images operation.
-	//
-	// List private images.
-	//
-	// GET /api/v1/private-images
-	ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (*PrivateImageListResponseBody, error)
 	// ListPrivateNetworks implements list-private-networks operation.
 	//
 	// List private networks.
@@ -643,6 +682,12 @@ type Handler interface {
 	//
 	// PATCH /api/v1/disks/{diskId}
 	RenameDisk(ctx context.Context, req *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error)
+	// RenameImage implements rename-image operation.
+	//
+	// Only a private image of this project can be renamed; any other image is reported as not found.
+	//
+	// PATCH /api/v1/images/{imageId}
+	RenameImage(ctx context.Context, req *RenameImageRequestBody, params RenameImageParams) (*ImageResource, error)
 	// RenameInstance implements rename-instance operation.
 	//
 	// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
@@ -650,12 +695,6 @@ type Handler interface {
 	//
 	// PATCH /api/v1/instances/{instanceId}
 	RenameInstance(ctx context.Context, req *RenameInstanceRequestBody, params RenameInstanceParams) (*InstanceResource, error)
-	// RenamePrivateImage implements rename-private-image operation.
-	//
-	// Rename a private image.
-	//
-	// PATCH /api/v1/private-images/{privateImageId}
-	RenamePrivateImage(ctx context.Context, req *RenamePrivateImageRequestBody, params RenamePrivateImageParams) (*PrivateImageResource, error)
 	// RenamePrivateNetwork implements rename-private-network operation.
 	//
 	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.

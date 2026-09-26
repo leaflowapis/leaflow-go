@@ -592,6 +592,35 @@ func (s *ConsoleResponseBody) SetConsoleURL(val string) {
 	s.ConsoleURL = val
 }
 
+// The fields of `CreateBackupRequestBody` that decide the price.
+// Ref: #/components/schemas/CreateBackupQuoteRequestBody
+type CreateBackupQuoteRequestBody struct {
+	// The disk that would be backed up.
+	DiskID uuid.UUID `json:"disk_id"`
+	// A price of the region's backup offering. One is selected when omitted.
+	PriceID OptUUID `json:"price_id"`
+}
+
+// GetDiskID returns the value of DiskID.
+func (s *CreateBackupQuoteRequestBody) GetDiskID() uuid.UUID {
+	return s.DiskID
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *CreateBackupQuoteRequestBody) GetPriceID() OptUUID {
+	return s.PriceID
+}
+
+// SetDiskID sets the value of DiskID.
+func (s *CreateBackupQuoteRequestBody) SetDiskID(val uuid.UUID) {
+	s.DiskID = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *CreateBackupQuoteRequestBody) SetPriceID(val OptUUID) {
+	s.PriceID = val
+}
+
 // Ref: #/components/schemas/CreateBackupRequestBody
 type CreateBackupRequestBody struct {
 	DiskID  uuid.UUID    `json:"disk_id"`
@@ -713,6 +742,84 @@ func (s *CreateDiskRequestBody) SetOrder(val OrderOptions) {
 	s.Order = val
 }
 
+// The fields of `CreateImageRequestBody` that decide the price.
+// Ref: #/components/schemas/CreateImageQuoteRequestBody
+type CreateImageQuoteRequestBody struct {
+	// The instance whose system disk would be captured.
+	InstanceID uuid.UUID `json:"instance_id"`
+	// A price of the region's private image offering. One is selected when omitted.
+	PriceID OptUUID `json:"price_id"`
+}
+
+// GetInstanceID returns the value of InstanceID.
+func (s *CreateImageQuoteRequestBody) GetInstanceID() uuid.UUID {
+	return s.InstanceID
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *CreateImageQuoteRequestBody) GetPriceID() OptUUID {
+	return s.PriceID
+}
+
+// SetInstanceID sets the value of InstanceID.
+func (s *CreateImageQuoteRequestBody) SetInstanceID(val uuid.UUID) {
+	s.InstanceID = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *CreateImageQuoteRequestBody) SetPriceID(val OptUUID) {
+	s.PriceID = val
+}
+
+// Ref: #/components/schemas/CreateImageRequestBody
+type CreateImageRequestBody struct {
+	// Captured from the system disk of this instance; data disks are not included.
+	InstanceID uuid.UUID    `json:"instance_id"`
+	Name       string       `json:"name"`
+	PriceID    uuid.UUID    `json:"price_id"`
+	Order      OrderOptions `json:"order"`
+}
+
+// GetInstanceID returns the value of InstanceID.
+func (s *CreateImageRequestBody) GetInstanceID() uuid.UUID {
+	return s.InstanceID
+}
+
+// GetName returns the value of Name.
+func (s *CreateImageRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *CreateImageRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetOrder returns the value of Order.
+func (s *CreateImageRequestBody) GetOrder() OrderOptions {
+	return s.Order
+}
+
+// SetInstanceID sets the value of InstanceID.
+func (s *CreateImageRequestBody) SetInstanceID(val uuid.UUID) {
+	s.InstanceID = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateImageRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *CreateImageRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetOrder sets the value of Order.
+func (s *CreateImageRequestBody) SetOrder(val OrderOptions) {
+	s.Order = val
+}
+
 // Ref: #/components/schemas/CreatePeeringRequestBody
 type CreatePeeringRequestBody struct {
 	Name               string    `json:"name"`
@@ -809,55 +916,6 @@ func (s *CreatePortRequestBody) SetSubnetID(val uuid.UUID) {
 // SetAddress sets the value of Address.
 func (s *CreatePortRequestBody) SetAddress(val OptString) {
 	s.Address = val
-}
-
-// Ref: #/components/schemas/CreatePrivateImageRequestBody
-type CreatePrivateImageRequestBody struct {
-	// Captured from the system disk of this instance; data disks are not included.
-	InstanceID uuid.UUID    `json:"instance_id"`
-	Name       string       `json:"name"`
-	PriceID    uuid.UUID    `json:"price_id"`
-	Order      OrderOptions `json:"order"`
-}
-
-// GetInstanceID returns the value of InstanceID.
-func (s *CreatePrivateImageRequestBody) GetInstanceID() uuid.UUID {
-	return s.InstanceID
-}
-
-// GetName returns the value of Name.
-func (s *CreatePrivateImageRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetPriceID returns the value of PriceID.
-func (s *CreatePrivateImageRequestBody) GetPriceID() uuid.UUID {
-	return s.PriceID
-}
-
-// GetOrder returns the value of Order.
-func (s *CreatePrivateImageRequestBody) GetOrder() OrderOptions {
-	return s.Order
-}
-
-// SetInstanceID sets the value of InstanceID.
-func (s *CreatePrivateImageRequestBody) SetInstanceID(val uuid.UUID) {
-	s.InstanceID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreatePrivateImageRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetPriceID sets the value of PriceID.
-func (s *CreatePrivateImageRequestBody) SetPriceID(val uuid.UUID) {
-	s.PriceID = val
-}
-
-// SetOrder sets the value of Order.
-func (s *CreatePrivateImageRequestBody) SetOrder(val OrderOptions) {
-	s.Order = val
 }
 
 // Ref: #/components/schemas/CreatePrivateNetworkRequestBody
@@ -1966,11 +2024,9 @@ type DiskTypeResource struct {
 	// rate-limited.
 	ThroughputAtMaxSize NilInt64 `json:"throughput_at_max_size"`
 	// Billing Product ID. Null when no Product is assigned; otherwise `compute`.
-	ProductID          NilString `json:"product_id"`
-	PlanID             NilUUID   `json:"plan_id"`
-	SnapshotPlanID     NilUUID   `json:"snapshot_plan_id"`
-	BackupPlanID       NilUUID   `json:"backup_plan_id"`
-	PrivateImagePlanID NilUUID   `json:"private_image_plan_id"`
+	ProductID      NilString `json:"product_id"`
+	PlanID         NilUUID   `json:"plan_id"`
+	SnapshotPlanID NilUUID   `json:"snapshot_plan_id"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -2053,16 +2109,6 @@ func (s *DiskTypeResource) GetSnapshotPlanID() NilUUID {
 	return s.SnapshotPlanID
 }
 
-// GetBackupPlanID returns the value of BackupPlanID.
-func (s *DiskTypeResource) GetBackupPlanID() NilUUID {
-	return s.BackupPlanID
-}
-
-// GetPrivateImagePlanID returns the value of PrivateImagePlanID.
-func (s *DiskTypeResource) GetPrivateImagePlanID() NilUUID {
-	return s.PrivateImagePlanID
-}
-
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
 func (s *DiskTypeResource) SetAvailabilityZoneID(val uuid.UUID) {
 	s.AvailabilityZoneID = val
@@ -2141,16 +2187,6 @@ func (s *DiskTypeResource) SetPlanID(val NilUUID) {
 // SetSnapshotPlanID sets the value of SnapshotPlanID.
 func (s *DiskTypeResource) SetSnapshotPlanID(val NilUUID) {
 	s.SnapshotPlanID = val
-}
-
-// SetBackupPlanID sets the value of BackupPlanID.
-func (s *DiskTypeResource) SetBackupPlanID(val NilUUID) {
-	s.BackupPlanID = val
-}
-
-// SetPrivateImagePlanID sets the value of PrivateImagePlanID.
-func (s *DiskTypeResource) SetPrivateImagePlanID(val NilUUID) {
-	s.PrivateImagePlanID = val
 }
 
 type DiskTypeResourceMedia string
@@ -2251,12 +2287,12 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-func (*Error) deleteBackupRes()       {}
-func (*Error) deleteDiskRes()         {}
-func (*Error) deleteInstanceRes()     {}
-func (*Error) deletePrivateImageRes() {}
-func (*Error) deleteSnapshotRes()     {}
-func (*Error) releaseFloatingIPRes()  {}
+func (*Error) deleteBackupRes()      {}
+func (*Error) deleteDiskRes()        {}
+func (*Error) deleteImageRes()       {}
+func (*Error) deleteInstanceRes()    {}
+func (*Error) deleteSnapshotRes()    {}
+func (*Error) releaseFloatingIPRes() {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
@@ -3121,25 +3157,51 @@ func (s *ImageListResponseBody) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
+// An image that installs the system of an instance. Fields that describe a capture or its billing
+// apply only to private images and are null, zero or empty for public ones.
 // Ref: #/components/schemas/ImageResource
 type ImageResource struct {
-	Architecture string    `json:"architecture"`
-	ID           uuid.UUID `json:"id"`
+	ID           uuid.UUID       `json:"id"`
+	RegionID     uuid.UUID       `json:"region_id"`
+	Visibility   ImageVisibility `json:"visibility"`
+	Name         string          `json:"name"`
+	OsFamily     string          `json:"os_family"`
+	OsVersion    string          `json:"os_version"`
+	Architecture string          `json:"architecture"`
 	// The account this image lets you log in as. The password set at creation belongs to this account.
-	LoginUsername string    `json:"login_username"`
-	MinDiskGB     int64     `json:"min_disk_gb"`
-	MinRAMMB      int64     `json:"min_ram_mb"`
-	Name          string    `json:"name"`
-	OsFamily      string    `json:"os_family"`
-	OsVersion     string    `json:"os_version"`
-	RegionID      uuid.UUID `json:"region_id"`
+	LoginUsername string `json:"login_username"`
+	// The system disk of an instance created from this image cannot be smaller than this.
+	MinDiskGB int64 `json:"min_disk_gb"`
+	// The instance type of an instance created from this image must have at least this much memory.
+	MinRAMMB int64 `json:"min_ram_mb"`
 	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
-}
-
-// GetArchitecture returns the value of Architecture.
-func (s *ImageResource) GetArchitecture() string {
-	return s.Architecture
+	// Only `available` images can install instances. A public image is always `available`; a private image
+	// goes through `provisioning` and `uploading` while it is captured.
+	Status ImageResourceStatus `json:"status"`
+	// Reason the capture failed; non-empty only when `status` is `error`.
+	Failure NilString `json:"failure"`
+	// Storage occupied by a private image, which is what it is billed for; 0 until its capture completes,
+	// and 0 for public images.
+	SizeBytes int64 `json:"size_bytes"`
+	// The instance a private image was captured from. The image remains usable after that instance is
+	// released. Null for public images.
+	SourceInstanceID   NilUUID   `json:"source_instance_id"`
+	CreatedAt          time.Time `json:"created_at"`
+	OrderID            NilUUID   `json:"order_id"`
+	PriceID            NilUUID   `json:"price_id"`
+	SubscriptionItemID NilUUID   `json:"subscription_item_id"`
+	// The subscriptions a cancellation through Billing has to cover to release this private image: its
+	// own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays
+	// for it, and for public images.
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet  []ReleaseSetItem            `json:"release_set"`
+	AccessState NilImageResourceAccessState `json:"access_state"`
+	Task        NilTask                     `json:"task"`
+	Generation  int64                       `json:"generation"`
+	ObservedAt  NilDateTime                 `json:"observed_at"`
 }
 
 // GetID returns the value of ID.
@@ -3147,19 +3209,14 @@ func (s *ImageResource) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetLoginUsername returns the value of LoginUsername.
-func (s *ImageResource) GetLoginUsername() string {
-	return s.LoginUsername
+// GetRegionID returns the value of RegionID.
+func (s *ImageResource) GetRegionID() uuid.UUID {
+	return s.RegionID
 }
 
-// GetMinDiskGB returns the value of MinDiskGB.
-func (s *ImageResource) GetMinDiskGB() int64 {
-	return s.MinDiskGB
-}
-
-// GetMinRAMMB returns the value of MinRAMMB.
-func (s *ImageResource) GetMinRAMMB() int64 {
-	return s.MinRAMMB
+// GetVisibility returns the value of Visibility.
+func (s *ImageResource) GetVisibility() ImageVisibility {
+	return s.Visibility
 }
 
 // GetName returns the value of Name.
@@ -3177,9 +3234,24 @@ func (s *ImageResource) GetOsVersion() string {
 	return s.OsVersion
 }
 
-// GetRegionID returns the value of RegionID.
-func (s *ImageResource) GetRegionID() uuid.UUID {
-	return s.RegionID
+// GetArchitecture returns the value of Architecture.
+func (s *ImageResource) GetArchitecture() string {
+	return s.Architecture
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *ImageResource) GetLoginUsername() string {
+	return s.LoginUsername
+}
+
+// GetMinDiskGB returns the value of MinDiskGB.
+func (s *ImageResource) GetMinDiskGB() int64 {
+	return s.MinDiskGB
+}
+
+// GetMinRAMMB returns the value of MinRAMMB.
+func (s *ImageResource) GetMinRAMMB() int64 {
+	return s.MinRAMMB
 }
 
 // GetSupportsPasswordReset returns the value of SupportsPasswordReset.
@@ -3187,9 +3259,74 @@ func (s *ImageResource) GetSupportsPasswordReset() bool {
 	return s.SupportsPasswordReset
 }
 
-// SetArchitecture sets the value of Architecture.
-func (s *ImageResource) SetArchitecture(val string) {
-	s.Architecture = val
+// GetStatus returns the value of Status.
+func (s *ImageResource) GetStatus() ImageResourceStatus {
+	return s.Status
+}
+
+// GetFailure returns the value of Failure.
+func (s *ImageResource) GetFailure() NilString {
+	return s.Failure
+}
+
+// GetSizeBytes returns the value of SizeBytes.
+func (s *ImageResource) GetSizeBytes() int64 {
+	return s.SizeBytes
+}
+
+// GetSourceInstanceID returns the value of SourceInstanceID.
+func (s *ImageResource) GetSourceInstanceID() NilUUID {
+	return s.SourceInstanceID
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ImageResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *ImageResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *ImageResource) GetPriceID() NilUUID {
+	return s.PriceID
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *ImageResource) GetSubscriptionItemID() NilUUID {
+	return s.SubscriptionItemID
+}
+
+// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
+func (s *ImageResource) GetReleaseSubscriptionIds() []uuid.UUID {
+	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *ImageResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
+// GetAccessState returns the value of AccessState.
+func (s *ImageResource) GetAccessState() NilImageResourceAccessState {
+	return s.AccessState
+}
+
+// GetTask returns the value of Task.
+func (s *ImageResource) GetTask() NilTask {
+	return s.Task
+}
+
+// GetGeneration returns the value of Generation.
+func (s *ImageResource) GetGeneration() int64 {
+	return s.Generation
+}
+
+// GetObservedAt returns the value of ObservedAt.
+func (s *ImageResource) GetObservedAt() NilDateTime {
+	return s.ObservedAt
 }
 
 // SetID sets the value of ID.
@@ -3197,19 +3334,14 @@ func (s *ImageResource) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetLoginUsername sets the value of LoginUsername.
-func (s *ImageResource) SetLoginUsername(val string) {
-	s.LoginUsername = val
+// SetRegionID sets the value of RegionID.
+func (s *ImageResource) SetRegionID(val uuid.UUID) {
+	s.RegionID = val
 }
 
-// SetMinDiskGB sets the value of MinDiskGB.
-func (s *ImageResource) SetMinDiskGB(val int64) {
-	s.MinDiskGB = val
-}
-
-// SetMinRAMMB sets the value of MinRAMMB.
-func (s *ImageResource) SetMinRAMMB(val int64) {
-	s.MinRAMMB = val
+// SetVisibility sets the value of Visibility.
+func (s *ImageResource) SetVisibility(val ImageVisibility) {
+	s.Visibility = val
 }
 
 // SetName sets the value of Name.
@@ -3227,14 +3359,262 @@ func (s *ImageResource) SetOsVersion(val string) {
 	s.OsVersion = val
 }
 
-// SetRegionID sets the value of RegionID.
-func (s *ImageResource) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
+// SetArchitecture sets the value of Architecture.
+func (s *ImageResource) SetArchitecture(val string) {
+	s.Architecture = val
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *ImageResource) SetLoginUsername(val string) {
+	s.LoginUsername = val
+}
+
+// SetMinDiskGB sets the value of MinDiskGB.
+func (s *ImageResource) SetMinDiskGB(val int64) {
+	s.MinDiskGB = val
+}
+
+// SetMinRAMMB sets the value of MinRAMMB.
+func (s *ImageResource) SetMinRAMMB(val int64) {
+	s.MinRAMMB = val
 }
 
 // SetSupportsPasswordReset sets the value of SupportsPasswordReset.
 func (s *ImageResource) SetSupportsPasswordReset(val bool) {
 	s.SupportsPasswordReset = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ImageResource) SetStatus(val ImageResourceStatus) {
+	s.Status = val
+}
+
+// SetFailure sets the value of Failure.
+func (s *ImageResource) SetFailure(val NilString) {
+	s.Failure = val
+}
+
+// SetSizeBytes sets the value of SizeBytes.
+func (s *ImageResource) SetSizeBytes(val int64) {
+	s.SizeBytes = val
+}
+
+// SetSourceInstanceID sets the value of SourceInstanceID.
+func (s *ImageResource) SetSourceInstanceID(val NilUUID) {
+	s.SourceInstanceID = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ImageResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *ImageResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *ImageResource) SetPriceID(val NilUUID) {
+	s.PriceID = val
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *ImageResource) SetSubscriptionItemID(val NilUUID) {
+	s.SubscriptionItemID = val
+}
+
+// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
+func (s *ImageResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
+	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *ImageResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
+}
+
+// SetAccessState sets the value of AccessState.
+func (s *ImageResource) SetAccessState(val NilImageResourceAccessState) {
+	s.AccessState = val
+}
+
+// SetTask sets the value of Task.
+func (s *ImageResource) SetTask(val NilTask) {
+	s.Task = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *ImageResource) SetGeneration(val int64) {
+	s.Generation = val
+}
+
+// SetObservedAt sets the value of ObservedAt.
+func (s *ImageResource) SetObservedAt(val NilDateTime) {
+	s.ObservedAt = val
+}
+
+type ImageResourceAccessState string
+
+const (
+	ImageResourceAccessStatePending   ImageResourceAccessState = "pending"
+	ImageResourceAccessStateEnabled   ImageResourceAccessState = "enabled"
+	ImageResourceAccessStateSuspended ImageResourceAccessState = "suspended"
+	ImageResourceAccessStateReclaimed ImageResourceAccessState = "reclaimed"
+)
+
+// AllValues returns all ImageResourceAccessState values.
+func (ImageResourceAccessState) AllValues() []ImageResourceAccessState {
+	return []ImageResourceAccessState{
+		ImageResourceAccessStatePending,
+		ImageResourceAccessStateEnabled,
+		ImageResourceAccessStateSuspended,
+		ImageResourceAccessStateReclaimed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ImageResourceAccessState) MarshalText() ([]byte, error) {
+	switch s {
+	case ImageResourceAccessStatePending:
+		return []byte(s), nil
+	case ImageResourceAccessStateEnabled:
+		return []byte(s), nil
+	case ImageResourceAccessStateSuspended:
+		return []byte(s), nil
+	case ImageResourceAccessStateReclaimed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ImageResourceAccessState) UnmarshalText(data []byte) error {
+	switch ImageResourceAccessState(data) {
+	case ImageResourceAccessStatePending:
+		*s = ImageResourceAccessStatePending
+		return nil
+	case ImageResourceAccessStateEnabled:
+		*s = ImageResourceAccessStateEnabled
+		return nil
+	case ImageResourceAccessStateSuspended:
+		*s = ImageResourceAccessStateSuspended
+		return nil
+	case ImageResourceAccessStateReclaimed:
+		*s = ImageResourceAccessStateReclaimed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Only `available` images can install instances. A public image is always `available`; a private image
+// goes through `provisioning` and `uploading` while it is captured.
+type ImageResourceStatus string
+
+const (
+	ImageResourceStatusProvisioning ImageResourceStatus = "provisioning"
+	ImageResourceStatusUploading    ImageResourceStatus = "uploading"
+	ImageResourceStatusAvailable    ImageResourceStatus = "available"
+	ImageResourceStatusDeleting     ImageResourceStatus = "deleting"
+	ImageResourceStatusError        ImageResourceStatus = "error"
+)
+
+// AllValues returns all ImageResourceStatus values.
+func (ImageResourceStatus) AllValues() []ImageResourceStatus {
+	return []ImageResourceStatus{
+		ImageResourceStatusProvisioning,
+		ImageResourceStatusUploading,
+		ImageResourceStatusAvailable,
+		ImageResourceStatusDeleting,
+		ImageResourceStatusError,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ImageResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ImageResourceStatusProvisioning:
+		return []byte(s), nil
+	case ImageResourceStatusUploading:
+		return []byte(s), nil
+	case ImageResourceStatusAvailable:
+		return []byte(s), nil
+	case ImageResourceStatusDeleting:
+		return []byte(s), nil
+	case ImageResourceStatusError:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ImageResourceStatus) UnmarshalText(data []byte) error {
+	switch ImageResourceStatus(data) {
+	case ImageResourceStatusProvisioning:
+		*s = ImageResourceStatusProvisioning
+		return nil
+	case ImageResourceStatusUploading:
+		*s = ImageResourceStatusUploading
+		return nil
+	case ImageResourceStatusAvailable:
+		*s = ImageResourceStatusAvailable
+		return nil
+	case ImageResourceStatusDeleting:
+		*s = ImageResourceStatusDeleting
+		return nil
+	case ImageResourceStatusError:
+		*s = ImageResourceStatusError
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Who can see and use an image. `public` — offered to every project by the platform. `private` —
+// usable only by the project that owns it.
+// Ref: #/components/schemas/ImageVisibility
+type ImageVisibility string
+
+const (
+	ImageVisibilityPublic  ImageVisibility = "public"
+	ImageVisibilityPrivate ImageVisibility = "private"
+)
+
+// AllValues returns all ImageVisibility values.
+func (ImageVisibility) AllValues() []ImageVisibility {
+	return []ImageVisibility{
+		ImageVisibilityPublic,
+		ImageVisibilityPrivate,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ImageVisibility) MarshalText() ([]byte, error) {
+	switch s {
+	case ImageVisibilityPublic:
+		return []byte(s), nil
+	case ImageVisibilityPrivate:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ImageVisibility) UnmarshalText(data []byte) error {
+	switch ImageVisibility(data) {
+	case ImageVisibilityPublic:
+		*s = ImageVisibilityPublic
+		return nil
+	case ImageVisibilityPrivate:
+		*s = ImageVisibilityPrivate
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/InstanceListResponseBody
@@ -3292,7 +3672,7 @@ type InstanceResource struct {
 	// Hostname inside the instance; equals the instance id.
 	Hostname string    `json:"hostname"`
 	ID       uuid.UUID `json:"id"`
-	// Non-empty when the instance was created from a platform image.
+	// Non-empty when the instance was created from an image, public or private.
 	ImageID NilUUID `json:"image_id"`
 	// The instance type in effect, and the basis for billing.
 	InstanceTypeID uuid.UUID `json:"instance_type_id"`
@@ -3306,8 +3686,6 @@ type InstanceResource struct {
 	Name          string `json:"name"`
 	// A free-text note about this instance. Empty when never set.
 	Notes string `json:"notes"`
-	// Non-empty when the instance was created from a private image.
-	PrivateImageID NilUUID `json:"private_image_id"`
 	// Private address of the instance.
 	PrivateIP        NilString `json:"private_ip"`
 	PrivateNetworkID NilUUID   `json:"private_network_id"`
@@ -3394,11 +3772,6 @@ func (s *InstanceResource) GetName() string {
 // GetNotes returns the value of Notes.
 func (s *InstanceResource) GetNotes() string {
 	return s.Notes
-}
-
-// GetPrivateImageID returns the value of PrivateImageID.
-func (s *InstanceResource) GetPrivateImageID() NilUUID {
-	return s.PrivateImageID
 }
 
 // GetPrivateIP returns the value of PrivateIP.
@@ -3559,11 +3932,6 @@ func (s *InstanceResource) SetName(val string) {
 // SetNotes sets the value of Notes.
 func (s *InstanceResource) SetNotes(val string) {
 	s.Notes = val
-}
-
-// SetPrivateImageID sets the value of PrivateImageID.
-func (s *InstanceResource) SetPrivateImageID(val NilUUID) {
-	s.PrivateImageID = val
 }
 
 // SetPrivateIP sets the value of PrivateIP.
@@ -4314,11 +4682,10 @@ type LaunchInstanceRequestBody struct {
 	// Have the platform generate a random password, returned only in this response.
 	GeneratePassword OptBool `json:"generate_password"`
 	// Boot a disk you already have instead of installing an image. The disk must be available, unattached,
-	// and in the same availability zone as the instance type. Exactly one of this, `image_id` and
-	// `private_image_id`.
+	// and in the same availability zone as the instance type. Exactly one of this and `image_id`.
 	BootDiskID OptUUID `json:"boot_disk_id"`
-	// A platform image, and it must be one currently on sale. Exactly one of this, `private_image_id` and
-	// `boot_disk_id`.
+	// A public image currently on sale, or an available private image of this project. Exactly one of this
+	// and `boot_disk_id`.
 	ImageID OptUUID `json:"image_id"`
 	// An instance type currently on sale. A withdrawn one is rejected even though its identifier still
 	// resolves.
@@ -4333,8 +4700,6 @@ type LaunchInstanceRequestBody struct {
 	// Use an existing network interface, which may already have a floating IP bound. Exactly one of this
 	// and `subnet_id`; only one instance can be created when it is used.
 	PortID OptUUID `json:"port_id"`
-	// A private image. Exactly one of this, `image_id` and `boot_disk_id`.
-	PrivateImageID OptUUID `json:"private_image_id"`
 	// Required when a primary network interface is created, at least one; the default security group is
 	// not applied automatically. Ignored together with `port_id`, as the security groups of that interface
 	// were fixed when it was created.
@@ -4395,11 +4760,6 @@ func (s *LaunchInstanceRequestBody) GetPassword() OptString {
 // GetPortID returns the value of PortID.
 func (s *LaunchInstanceRequestBody) GetPortID() OptUUID {
 	return s.PortID
-}
-
-// GetPrivateImageID returns the value of PrivateImageID.
-func (s *LaunchInstanceRequestBody) GetPrivateImageID() OptUUID {
-	return s.PrivateImageID
 }
 
 // GetSecurityGroupIds returns the value of SecurityGroupIds.
@@ -4482,11 +4842,6 @@ func (s *LaunchInstanceRequestBody) SetPortID(val OptUUID) {
 	s.PortID = val
 }
 
-// SetPrivateImageID sets the value of PrivateImageID.
-func (s *LaunchInstanceRequestBody) SetPrivateImageID(val OptUUID) {
-	s.PrivateImageID = val
-}
-
 // SetSecurityGroupIds sets the value of SecurityGroupIds.
 func (s *LaunchInstanceRequestBody) SetSecurityGroupIds(val OptNilUUIDArray) {
 	s.SecurityGroupIds = val
@@ -4567,6 +4922,8 @@ func (s *LaunchInstanceResponseBody) SetOrder(val PlacedOrder) {
 func (s *LaunchInstanceResponseBody) SetPassword(val NilString) {
 	s.Password = val
 }
+
+type Money string
 
 // A system disk purchased in the same order. Required when booting from an image; mutually exclusive
 // with boot_disk_id.
@@ -4954,6 +5311,51 @@ func (o NilIPv4Binding) Or(d IPv4Binding) IPv4Binding {
 	return d
 }
 
+// NewNilImageResourceAccessState returns new NilImageResourceAccessState with value set to v.
+func NewNilImageResourceAccessState(v ImageResourceAccessState) NilImageResourceAccessState {
+	return NilImageResourceAccessState{
+		Value: v,
+	}
+}
+
+// NilImageResourceAccessState is nullable ImageResourceAccessState.
+type NilImageResourceAccessState struct {
+	Value ImageResourceAccessState
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilImageResourceAccessState) SetTo(v ImageResourceAccessState) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilImageResourceAccessState) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilImageResourceAccessState) SetToNull() {
+	o.Null = true
+	var v ImageResourceAccessState
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilImageResourceAccessState) Get() (v ImageResourceAccessState, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilImageResourceAccessState) Or(d ImageResourceAccessState) ImageResourceAccessState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilInstanceResourceAccessState returns new NilInstanceResourceAccessState with value set to v.
 func NewNilInstanceResourceAccessState(v InstanceResourceAccessState) NilInstanceResourceAccessState {
 	return NilInstanceResourceAccessState{
@@ -5044,37 +5446,37 @@ func (o NilInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewNilPrivateImageResourceAccessState returns new NilPrivateImageResourceAccessState with value set to v.
-func NewNilPrivateImageResourceAccessState(v PrivateImageResourceAccessState) NilPrivateImageResourceAccessState {
-	return NilPrivateImageResourceAccessState{
+// NewNilMoney returns new NilMoney with value set to v.
+func NewNilMoney(v Money) NilMoney {
+	return NilMoney{
 		Value: v,
 	}
 }
 
-// NilPrivateImageResourceAccessState is nullable PrivateImageResourceAccessState.
-type NilPrivateImageResourceAccessState struct {
-	Value PrivateImageResourceAccessState
+// NilMoney is nullable Money.
+type NilMoney struct {
+	Value Money
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilPrivateImageResourceAccessState) SetTo(v PrivateImageResourceAccessState) {
+func (o *NilMoney) SetTo(v Money) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilPrivateImageResourceAccessState) IsNull() bool { return o.Null }
+func (o NilMoney) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilPrivateImageResourceAccessState) SetToNull() {
+func (o *NilMoney) SetToNull() {
 	o.Null = true
-	var v PrivateImageResourceAccessState
+	var v Money
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilPrivateImageResourceAccessState) Get() (v PrivateImageResourceAccessState, ok bool) {
+func (o NilMoney) Get() (v Money, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -5082,7 +5484,7 @@ func (o NilPrivateImageResourceAccessState) Get() (v PrivateImageResourceAccessS
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilPrivateImageResourceAccessState) Or(d PrivateImageResourceAccessState) PrivateImageResourceAccessState {
+func (o NilMoney) Or(d Money) Money {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5609,6 +6011,52 @@ func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptImageVisibility returns new OptImageVisibility with value set to v.
+func NewOptImageVisibility(v ImageVisibility) OptImageVisibility {
+	return OptImageVisibility{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptImageVisibility is optional ImageVisibility.
+type OptImageVisibility struct {
+	Value ImageVisibility
+	Set   bool
+}
+
+// IsSet returns true if OptImageVisibility was set.
+func (o OptImageVisibility) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptImageVisibility) Reset() {
+	var v ImageVisibility
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptImageVisibility) SetTo(v ImageVisibility) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptImageVisibility) Get() (v ImageVisibility, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptImageVisibility) Or(d ImageVisibility) ImageVisibility {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7064,451 +7512,6 @@ func (s *PowerRequest) SetExpectedGeneration(val OptInt64) {
 	s.ExpectedGeneration = val
 }
 
-// Ref: #/components/schemas/PrivateImageListResponseBody
-type PrivateImageListResponseBody struct {
-	Items      []PrivateImageResource `json:"items"`
-	Page       int64                  `json:"page"`
-	PageSize   int64                  `json:"page_size"`
-	TotalCount OptInt64               `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *PrivateImageListResponseBody) GetItems() []PrivateImageResource {
-	return s.Items
-}
-
-// GetPage returns the value of Page.
-func (s *PrivateImageListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *PrivateImageListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *PrivateImageListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *PrivateImageListResponseBody) SetItems(val []PrivateImageResource) {
-	s.Items = val
-}
-
-// SetPage sets the value of Page.
-func (s *PrivateImageListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *PrivateImageListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *PrivateImageListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// Ref: #/components/schemas/PrivateImageResource
-type PrivateImageResource struct {
-	Architecture string    `json:"architecture"`
-	CreatedAt    time.Time `json:"created_at"`
-	// Reason the capture failed; non-empty only when `status` is `error`.
-	Failure NilString `json:"failure"`
-	ID      uuid.UUID `json:"id"`
-	// The account this image lets you log in as. The password set at creation belongs to this account.
-	LoginUsername string `json:"login_username"`
-	// The system disk of an instance created from this image cannot be smaller than this.
-	MinDiskGB int64 `json:"min_disk_gb"`
-	// The instance type of an instance created from this image must have at least this much memory.
-	MinRAMMB  int64     `json:"min_ram_mb"`
-	Name      string    `json:"name"`
-	OsFamily  string    `json:"os_family"`
-	OsVersion string    `json:"os_version"`
-	RegionID  uuid.UUID `json:"region_id"`
-	// Storage occupied by the image; 0 until the capture completes.
-	SizeBytes int64 `json:"size_bytes"`
-	// The instance this image was captured from. The image remains usable after that instance is released.
-	SourceInstanceID NilUUID                    `json:"source_instance_id"`
-	Status           PrivateImageResourceStatus `json:"status"`
-	// False means a new password can only be set by rebuilding an instance created from this image.
-	SupportsPasswordReset bool    `json:"supports_password_reset"`
-	OrderID               NilUUID `json:"order_id"`
-	PriceID               NilUUID `json:"price_id"`
-	SubscriptionItemID    NilUUID `json:"subscription_item_id"`
-	// The subscriptions a cancellation through Billing has to cover to release this private image: its
-	// own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays
-	// for any of them.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
-	// for, so that each line of a cancellation can name what it releases.
-	ReleaseSet  []ReleaseSetItem                   `json:"release_set"`
-	AccessState NilPrivateImageResourceAccessState `json:"access_state"`
-	Task        NilTask                            `json:"task"`
-	Generation  int64                              `json:"generation"`
-	ObservedAt  NilDateTime                        `json:"observed_at"`
-}
-
-// GetArchitecture returns the value of Architecture.
-func (s *PrivateImageResource) GetArchitecture() string {
-	return s.Architecture
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *PrivateImageResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetFailure returns the value of Failure.
-func (s *PrivateImageResource) GetFailure() NilString {
-	return s.Failure
-}
-
-// GetID returns the value of ID.
-func (s *PrivateImageResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetLoginUsername returns the value of LoginUsername.
-func (s *PrivateImageResource) GetLoginUsername() string {
-	return s.LoginUsername
-}
-
-// GetMinDiskGB returns the value of MinDiskGB.
-func (s *PrivateImageResource) GetMinDiskGB() int64 {
-	return s.MinDiskGB
-}
-
-// GetMinRAMMB returns the value of MinRAMMB.
-func (s *PrivateImageResource) GetMinRAMMB() int64 {
-	return s.MinRAMMB
-}
-
-// GetName returns the value of Name.
-func (s *PrivateImageResource) GetName() string {
-	return s.Name
-}
-
-// GetOsFamily returns the value of OsFamily.
-func (s *PrivateImageResource) GetOsFamily() string {
-	return s.OsFamily
-}
-
-// GetOsVersion returns the value of OsVersion.
-func (s *PrivateImageResource) GetOsVersion() string {
-	return s.OsVersion
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *PrivateImageResource) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetSizeBytes returns the value of SizeBytes.
-func (s *PrivateImageResource) GetSizeBytes() int64 {
-	return s.SizeBytes
-}
-
-// GetSourceInstanceID returns the value of SourceInstanceID.
-func (s *PrivateImageResource) GetSourceInstanceID() NilUUID {
-	return s.SourceInstanceID
-}
-
-// GetStatus returns the value of Status.
-func (s *PrivateImageResource) GetStatus() PrivateImageResourceStatus {
-	return s.Status
-}
-
-// GetSupportsPasswordReset returns the value of SupportsPasswordReset.
-func (s *PrivateImageResource) GetSupportsPasswordReset() bool {
-	return s.SupportsPasswordReset
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *PrivateImageResource) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetPriceID returns the value of PriceID.
-func (s *PrivateImageResource) GetPriceID() NilUUID {
-	return s.PriceID
-}
-
-// GetSubscriptionItemID returns the value of SubscriptionItemID.
-func (s *PrivateImageResource) GetSubscriptionItemID() NilUUID {
-	return s.SubscriptionItemID
-}
-
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *PrivateImageResource) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
-// GetReleaseSet returns the value of ReleaseSet.
-func (s *PrivateImageResource) GetReleaseSet() []ReleaseSetItem {
-	return s.ReleaseSet
-}
-
-// GetAccessState returns the value of AccessState.
-func (s *PrivateImageResource) GetAccessState() NilPrivateImageResourceAccessState {
-	return s.AccessState
-}
-
-// GetTask returns the value of Task.
-func (s *PrivateImageResource) GetTask() NilTask {
-	return s.Task
-}
-
-// GetGeneration returns the value of Generation.
-func (s *PrivateImageResource) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *PrivateImageResource) GetObservedAt() NilDateTime {
-	return s.ObservedAt
-}
-
-// SetArchitecture sets the value of Architecture.
-func (s *PrivateImageResource) SetArchitecture(val string) {
-	s.Architecture = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *PrivateImageResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetFailure sets the value of Failure.
-func (s *PrivateImageResource) SetFailure(val NilString) {
-	s.Failure = val
-}
-
-// SetID sets the value of ID.
-func (s *PrivateImageResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetLoginUsername sets the value of LoginUsername.
-func (s *PrivateImageResource) SetLoginUsername(val string) {
-	s.LoginUsername = val
-}
-
-// SetMinDiskGB sets the value of MinDiskGB.
-func (s *PrivateImageResource) SetMinDiskGB(val int64) {
-	s.MinDiskGB = val
-}
-
-// SetMinRAMMB sets the value of MinRAMMB.
-func (s *PrivateImageResource) SetMinRAMMB(val int64) {
-	s.MinRAMMB = val
-}
-
-// SetName sets the value of Name.
-func (s *PrivateImageResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetOsFamily sets the value of OsFamily.
-func (s *PrivateImageResource) SetOsFamily(val string) {
-	s.OsFamily = val
-}
-
-// SetOsVersion sets the value of OsVersion.
-func (s *PrivateImageResource) SetOsVersion(val string) {
-	s.OsVersion = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *PrivateImageResource) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetSizeBytes sets the value of SizeBytes.
-func (s *PrivateImageResource) SetSizeBytes(val int64) {
-	s.SizeBytes = val
-}
-
-// SetSourceInstanceID sets the value of SourceInstanceID.
-func (s *PrivateImageResource) SetSourceInstanceID(val NilUUID) {
-	s.SourceInstanceID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *PrivateImageResource) SetStatus(val PrivateImageResourceStatus) {
-	s.Status = val
-}
-
-// SetSupportsPasswordReset sets the value of SupportsPasswordReset.
-func (s *PrivateImageResource) SetSupportsPasswordReset(val bool) {
-	s.SupportsPasswordReset = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *PrivateImageResource) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetPriceID sets the value of PriceID.
-func (s *PrivateImageResource) SetPriceID(val NilUUID) {
-	s.PriceID = val
-}
-
-// SetSubscriptionItemID sets the value of SubscriptionItemID.
-func (s *PrivateImageResource) SetSubscriptionItemID(val NilUUID) {
-	s.SubscriptionItemID = val
-}
-
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *PrivateImageResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
-// SetReleaseSet sets the value of ReleaseSet.
-func (s *PrivateImageResource) SetReleaseSet(val []ReleaseSetItem) {
-	s.ReleaseSet = val
-}
-
-// SetAccessState sets the value of AccessState.
-func (s *PrivateImageResource) SetAccessState(val NilPrivateImageResourceAccessState) {
-	s.AccessState = val
-}
-
-// SetTask sets the value of Task.
-func (s *PrivateImageResource) SetTask(val NilTask) {
-	s.Task = val
-}
-
-// SetGeneration sets the value of Generation.
-func (s *PrivateImageResource) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *PrivateImageResource) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
-}
-
-type PrivateImageResourceAccessState string
-
-const (
-	PrivateImageResourceAccessStatePending   PrivateImageResourceAccessState = "pending"
-	PrivateImageResourceAccessStateEnabled   PrivateImageResourceAccessState = "enabled"
-	PrivateImageResourceAccessStateSuspended PrivateImageResourceAccessState = "suspended"
-	PrivateImageResourceAccessStateReclaimed PrivateImageResourceAccessState = "reclaimed"
-)
-
-// AllValues returns all PrivateImageResourceAccessState values.
-func (PrivateImageResourceAccessState) AllValues() []PrivateImageResourceAccessState {
-	return []PrivateImageResourceAccessState{
-		PrivateImageResourceAccessStatePending,
-		PrivateImageResourceAccessStateEnabled,
-		PrivateImageResourceAccessStateSuspended,
-		PrivateImageResourceAccessStateReclaimed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrivateImageResourceAccessState) MarshalText() ([]byte, error) {
-	switch s {
-	case PrivateImageResourceAccessStatePending:
-		return []byte(s), nil
-	case PrivateImageResourceAccessStateEnabled:
-		return []byte(s), nil
-	case PrivateImageResourceAccessStateSuspended:
-		return []byte(s), nil
-	case PrivateImageResourceAccessStateReclaimed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrivateImageResourceAccessState) UnmarshalText(data []byte) error {
-	switch PrivateImageResourceAccessState(data) {
-	case PrivateImageResourceAccessStatePending:
-		*s = PrivateImageResourceAccessStatePending
-		return nil
-	case PrivateImageResourceAccessStateEnabled:
-		*s = PrivateImageResourceAccessStateEnabled
-		return nil
-	case PrivateImageResourceAccessStateSuspended:
-		*s = PrivateImageResourceAccessStateSuspended
-		return nil
-	case PrivateImageResourceAccessStateReclaimed:
-		*s = PrivateImageResourceAccessStateReclaimed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type PrivateImageResourceStatus string
-
-const (
-	PrivateImageResourceStatusProvisioning PrivateImageResourceStatus = "provisioning"
-	PrivateImageResourceStatusUploading    PrivateImageResourceStatus = "uploading"
-	PrivateImageResourceStatusAvailable    PrivateImageResourceStatus = "available"
-	PrivateImageResourceStatusDeleting     PrivateImageResourceStatus = "deleting"
-	PrivateImageResourceStatusError        PrivateImageResourceStatus = "error"
-)
-
-// AllValues returns all PrivateImageResourceStatus values.
-func (PrivateImageResourceStatus) AllValues() []PrivateImageResourceStatus {
-	return []PrivateImageResourceStatus{
-		PrivateImageResourceStatusProvisioning,
-		PrivateImageResourceStatusUploading,
-		PrivateImageResourceStatusAvailable,
-		PrivateImageResourceStatusDeleting,
-		PrivateImageResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrivateImageResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case PrivateImageResourceStatusProvisioning:
-		return []byte(s), nil
-	case PrivateImageResourceStatusUploading:
-		return []byte(s), nil
-	case PrivateImageResourceStatusAvailable:
-		return []byte(s), nil
-	case PrivateImageResourceStatusDeleting:
-		return []byte(s), nil
-	case PrivateImageResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrivateImageResourceStatus) UnmarshalText(data []byte) error {
-	switch PrivateImageResourceStatus(data) {
-	case PrivateImageResourceStatusProvisioning:
-		*s = PrivateImageResourceStatusProvisioning
-		return nil
-	case PrivateImageResourceStatusUploading:
-		*s = PrivateImageResourceStatusUploading
-		return nil
-	case PrivateImageResourceStatusAvailable:
-		*s = PrivateImageResourceStatusAvailable
-		return nil
-	case PrivateImageResourceStatusDeleting:
-		*s = PrivateImageResourceStatusDeleting
-		return nil
-	case PrivateImageResourceStatusError:
-		*s = PrivateImageResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/PrivateNetworkListResponseBody
 type PrivateNetworkListResponseBody struct {
 	Items []PrivateNetworkResource `json:"items"`
@@ -7680,6 +7683,228 @@ func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// What a purchase would be charged, priced as a service would order it, without ordering anything.
+// Nothing is reserved and nothing is recorded.
+// Ref: #/components/schemas/PurchaseQuote
+type PurchaseQuote struct {
+	// One line for each item the purchase would order, in the order it would order them.
+	Lines []PurchaseQuoteLine `json:"lines"`
+	// What would be owed for the whole purchase. Null when any line could not be priced: what would be
+	// owed is not knowable then.
+	Total    NilMoney `json:"total"`
+	Currency string   `json:"currency"`
+}
+
+// GetLines returns the value of Lines.
+func (s *PurchaseQuote) GetLines() []PurchaseQuoteLine {
+	return s.Lines
+}
+
+// GetTotal returns the value of Total.
+func (s *PurchaseQuote) GetTotal() NilMoney {
+	return s.Total
+}
+
+// GetCurrency returns the value of Currency.
+func (s *PurchaseQuote) GetCurrency() string {
+	return s.Currency
+}
+
+// SetLines sets the value of Lines.
+func (s *PurchaseQuote) SetLines(val []PurchaseQuoteLine) {
+	s.Lines = val
+}
+
+// SetTotal sets the value of Total.
+func (s *PurchaseQuote) SetTotal(val NilMoney) {
+	s.Total = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *PurchaseQuote) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// Ref: #/components/schemas/PurchaseQuoteLine
+type PurchaseQuoteLine struct {
+	// Whether a price was found for this line. When false, `price_id`, `unit_amount` and `amount` are null
+	// and `unpriced_reason` states what is missing.
+	Priced bool `json:"priced"`
+	// Why no price was found; `none` while `priced` is true.
+	UnpricedReason PurchaseQuoteLineUnpricedReason `json:"unpriced_reason"`
+	// The price selected, including when the request left the choice to the service. Order with this
+	// price.
+	PriceID    NilUUID  `json:"price_id"`
+	PlanName   string   `json:"plan_name"`
+	UnitAmount NilMoney `json:"unit_amount"`
+	// The quantity priced.
+	Quantity string `json:"quantity"`
+	// Not rounded. Round only for display.
+	Amount    NilMoney `json:"amount"`
+	TaxAmount NilMoney `json:"tax_amount"`
+	Currency  string   `json:"currency"`
+}
+
+// GetPriced returns the value of Priced.
+func (s *PurchaseQuoteLine) GetPriced() bool {
+	return s.Priced
+}
+
+// GetUnpricedReason returns the value of UnpricedReason.
+func (s *PurchaseQuoteLine) GetUnpricedReason() PurchaseQuoteLineUnpricedReason {
+	return s.UnpricedReason
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *PurchaseQuoteLine) GetPriceID() NilUUID {
+	return s.PriceID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *PurchaseQuoteLine) GetPlanName() string {
+	return s.PlanName
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *PurchaseQuoteLine) GetUnitAmount() NilMoney {
+	return s.UnitAmount
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *PurchaseQuoteLine) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetAmount returns the value of Amount.
+func (s *PurchaseQuoteLine) GetAmount() NilMoney {
+	return s.Amount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *PurchaseQuoteLine) GetTaxAmount() NilMoney {
+	return s.TaxAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *PurchaseQuoteLine) GetCurrency() string {
+	return s.Currency
+}
+
+// SetPriced sets the value of Priced.
+func (s *PurchaseQuoteLine) SetPriced(val bool) {
+	s.Priced = val
+}
+
+// SetUnpricedReason sets the value of UnpricedReason.
+func (s *PurchaseQuoteLine) SetUnpricedReason(val PurchaseQuoteLineUnpricedReason) {
+	s.UnpricedReason = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *PurchaseQuoteLine) SetPriceID(val NilUUID) {
+	s.PriceID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *PurchaseQuoteLine) SetPlanName(val string) {
+	s.PlanName = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *PurchaseQuoteLine) SetUnitAmount(val NilMoney) {
+	s.UnitAmount = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *PurchaseQuoteLine) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *PurchaseQuoteLine) SetAmount(val NilMoney) {
+	s.Amount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *PurchaseQuoteLine) SetTaxAmount(val NilMoney) {
+	s.TaxAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *PurchaseQuoteLine) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// Why no price was found; `none` while `priced` is true.
+type PurchaseQuoteLineUnpricedReason string
+
+const (
+	PurchaseQuoteLineUnpricedReasonNone            PurchaseQuoteLineUnpricedReason = "none"
+	PurchaseQuoteLineUnpricedReasonNoPrice         PurchaseQuoteLineUnpricedReason = "no_price"
+	PurchaseQuoteLineUnpricedReasonNoRateCard      PurchaseQuoteLineUnpricedReason = "no_rate_card"
+	PurchaseQuoteLineUnpricedReasonNoMeter         PurchaseQuoteLineUnpricedReason = "no_meter"
+	PurchaseQuoteLineUnpricedReasonNoDimensions    PurchaseQuoteLineUnpricedReason = "no_dimensions"
+	PurchaseQuoteLineUnpricedReasonNoEffectiveRule PurchaseQuoteLineUnpricedReason = "no_effective_rule"
+)
+
+// AllValues returns all PurchaseQuoteLineUnpricedReason values.
+func (PurchaseQuoteLineUnpricedReason) AllValues() []PurchaseQuoteLineUnpricedReason {
+	return []PurchaseQuoteLineUnpricedReason{
+		PurchaseQuoteLineUnpricedReasonNone,
+		PurchaseQuoteLineUnpricedReasonNoPrice,
+		PurchaseQuoteLineUnpricedReasonNoRateCard,
+		PurchaseQuoteLineUnpricedReasonNoMeter,
+		PurchaseQuoteLineUnpricedReasonNoDimensions,
+		PurchaseQuoteLineUnpricedReasonNoEffectiveRule,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PurchaseQuoteLineUnpricedReason) MarshalText() ([]byte, error) {
+	switch s {
+	case PurchaseQuoteLineUnpricedReasonNone:
+		return []byte(s), nil
+	case PurchaseQuoteLineUnpricedReasonNoPrice:
+		return []byte(s), nil
+	case PurchaseQuoteLineUnpricedReasonNoRateCard:
+		return []byte(s), nil
+	case PurchaseQuoteLineUnpricedReasonNoMeter:
+		return []byte(s), nil
+	case PurchaseQuoteLineUnpricedReasonNoDimensions:
+		return []byte(s), nil
+	case PurchaseQuoteLineUnpricedReasonNoEffectiveRule:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PurchaseQuoteLineUnpricedReason) UnmarshalText(data []byte) error {
+	switch PurchaseQuoteLineUnpricedReason(data) {
+	case PurchaseQuoteLineUnpricedReasonNone:
+		*s = PurchaseQuoteLineUnpricedReasonNone
+		return nil
+	case PurchaseQuoteLineUnpricedReasonNoPrice:
+		*s = PurchaseQuoteLineUnpricedReasonNoPrice
+		return nil
+	case PurchaseQuoteLineUnpricedReasonNoRateCard:
+		*s = PurchaseQuoteLineUnpricedReasonNoRateCard
+		return nil
+	case PurchaseQuoteLineUnpricedReasonNoMeter:
+		*s = PurchaseQuoteLineUnpricedReasonNoMeter
+		return nil
+	case PurchaseQuoteLineUnpricedReasonNoDimensions:
+		*s = PurchaseQuoteLineUnpricedReasonNoDimensions
+		return nil
+	case PurchaseQuoteLineUnpricedReasonNoEffectiveRule:
+		*s = PurchaseQuoteLineUnpricedReasonNoEffectiveRule
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Identifies the Compute task and the Billing order of a purchase. Work on the purchase starts after
 // the order's invoice is paid, or without waiting when the order has no immediate invoice. Track the
 // task for completion.
@@ -7730,12 +7955,10 @@ func (s *RebootInstanceRequestBody) SetForce(val OptBool) {
 // Ref: #/components/schemas/RebuildInstanceRequestBody
 type RebuildInstanceRequestBody struct {
 	GeneratePassword OptBool `json:"generate_password"`
-	// A platform image, which must be on sale unless it is the one this instance already runs. Exactly one
-	// of this and `private_image_id`.
-	ImageID  OptUUID   `json:"image_id"`
+	// A public image, which must be on sale unless it is the one this instance already runs, or an
+	// available private image of this project.
+	ImageID  uuid.UUID `json:"image_id"`
 	Password OptString `json:"password"`
-	// A private image. Exactly one of this and `image_id`.
-	PrivateImageID OptUUID `json:"private_image_id"`
 }
 
 // GetGeneratePassword returns the value of GeneratePassword.
@@ -7744,7 +7967,7 @@ func (s *RebuildInstanceRequestBody) GetGeneratePassword() OptBool {
 }
 
 // GetImageID returns the value of ImageID.
-func (s *RebuildInstanceRequestBody) GetImageID() OptUUID {
+func (s *RebuildInstanceRequestBody) GetImageID() uuid.UUID {
 	return s.ImageID
 }
 
@@ -7753,29 +7976,19 @@ func (s *RebuildInstanceRequestBody) GetPassword() OptString {
 	return s.Password
 }
 
-// GetPrivateImageID returns the value of PrivateImageID.
-func (s *RebuildInstanceRequestBody) GetPrivateImageID() OptUUID {
-	return s.PrivateImageID
-}
-
 // SetGeneratePassword sets the value of GeneratePassword.
 func (s *RebuildInstanceRequestBody) SetGeneratePassword(val OptBool) {
 	s.GeneratePassword = val
 }
 
 // SetImageID sets the value of ImageID.
-func (s *RebuildInstanceRequestBody) SetImageID(val OptUUID) {
+func (s *RebuildInstanceRequestBody) SetImageID(val uuid.UUID) {
 	s.ImageID = val
 }
 
 // SetPassword sets the value of Password.
 func (s *RebuildInstanceRequestBody) SetPassword(val OptString) {
 	s.Password = val
-}
-
-// SetPrivateImageID sets the value of PrivateImageID.
-func (s *RebuildInstanceRequestBody) SetPrivateImageID(val OptUUID) {
-	s.PrivateImageID = val
 }
 
 // Ref: #/components/schemas/RebuildInstanceResponseBody
@@ -7914,12 +8127,12 @@ func (s *ReleaseResource) SetName(val string) {
 type ReleaseResourceType string
 
 const (
-	ReleaseResourceTypeInstance     ReleaseResourceType = "instance"
-	ReleaseResourceTypeDisk         ReleaseResourceType = "disk"
-	ReleaseResourceTypeSnapshot     ReleaseResourceType = "snapshot"
-	ReleaseResourceTypeBackup       ReleaseResourceType = "backup"
-	ReleaseResourceTypePrivateImage ReleaseResourceType = "private_image"
-	ReleaseResourceTypeFloatingIP   ReleaseResourceType = "floating_ip"
+	ReleaseResourceTypeInstance   ReleaseResourceType = "instance"
+	ReleaseResourceTypeDisk       ReleaseResourceType = "disk"
+	ReleaseResourceTypeSnapshot   ReleaseResourceType = "snapshot"
+	ReleaseResourceTypeBackup     ReleaseResourceType = "backup"
+	ReleaseResourceTypeImage      ReleaseResourceType = "image"
+	ReleaseResourceTypeFloatingIP ReleaseResourceType = "floating_ip"
 )
 
 // AllValues returns all ReleaseResourceType values.
@@ -7929,7 +8142,7 @@ func (ReleaseResourceType) AllValues() []ReleaseResourceType {
 		ReleaseResourceTypeDisk,
 		ReleaseResourceTypeSnapshot,
 		ReleaseResourceTypeBackup,
-		ReleaseResourceTypePrivateImage,
+		ReleaseResourceTypeImage,
 		ReleaseResourceTypeFloatingIP,
 	}
 }
@@ -7945,7 +8158,7 @@ func (s ReleaseResourceType) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case ReleaseResourceTypeBackup:
 		return []byte(s), nil
-	case ReleaseResourceTypePrivateImage:
+	case ReleaseResourceTypeImage:
 		return []byte(s), nil
 	case ReleaseResourceTypeFloatingIP:
 		return []byte(s), nil
@@ -7969,8 +8182,8 @@ func (s *ReleaseResourceType) UnmarshalText(data []byte) error {
 	case ReleaseResourceTypeBackup:
 		*s = ReleaseResourceTypeBackup
 		return nil
-	case ReleaseResourceTypePrivateImage:
-		*s = ReleaseResourceTypePrivateImage
+	case ReleaseResourceTypeImage:
+		*s = ReleaseResourceTypeImage
 		return nil
 	case ReleaseResourceTypeFloatingIP:
 		*s = ReleaseResourceTypeFloatingIP
@@ -8038,6 +8251,21 @@ func (s *RenameDiskRequestBody) SetName(val string) {
 	s.Name = val
 }
 
+// Ref: #/components/schemas/RenameImageRequestBody
+type RenameImageRequestBody struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *RenameImageRequestBody) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *RenameImageRequestBody) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/RenameInstanceRequestBody
 type RenameInstanceRequestBody struct {
 	Name string `json:"name"`
@@ -8050,21 +8278,6 @@ func (s *RenameInstanceRequestBody) GetName() string {
 
 // SetName sets the value of Name.
 func (s *RenameInstanceRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/RenamePrivateImageRequestBody
-type RenamePrivateImageRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenamePrivateImageRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenamePrivateImageRequestBody) SetName(val string) {
 	s.Name = val
 }
 
@@ -9341,12 +9554,12 @@ func (s *Task) SetCompletedAt(val NilDateTime) {
 	s.CompletedAt = val
 }
 
-func (*Task) deleteBackupRes()       {}
-func (*Task) deleteDiskRes()         {}
-func (*Task) deleteInstanceRes()     {}
-func (*Task) deletePrivateImageRes() {}
-func (*Task) deleteSnapshotRes()     {}
-func (*Task) releaseFloatingIPRes()  {}
+func (*Task) deleteBackupRes()      {}
+func (*Task) deleteDiskRes()        {}
+func (*Task) deleteImageRes()       {}
+func (*Task) deleteInstanceRes()    {}
+func (*Task) deleteSnapshotRes()    {}
+func (*Task) releaseFloatingIPRes() {}
 
 type TaskState string
 

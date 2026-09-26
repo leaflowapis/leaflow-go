@@ -94,8 +94,50 @@ func encodeCreateBackupRequest(
 	return nil
 }
 
+func encodeCreateBackupQuoteRequest(
+	req *CreateBackupQuoteRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateDiskRequest(
 	req *CreateDiskRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateImageRequest(
+	req *CreateImageRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateImageQuoteRequest(
+	req *CreateImageQuoteRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -124,20 +166,6 @@ func encodeCreatePeeringRequest(
 
 func encodeCreatePortRequest(
 	req *CreatePortRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeCreatePrivateImageRequest(
-	req *CreatePrivateImageRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -304,8 +332,8 @@ func encodeRenameDiskRequest(
 	return nil
 }
 
-func encodeRenameInstanceRequest(
-	req *RenameInstanceRequestBody,
+func encodeRenameImageRequest(
+	req *RenameImageRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -318,8 +346,8 @@ func encodeRenameInstanceRequest(
 	return nil
 }
 
-func encodeRenamePrivateImageRequest(
-	req *RenamePrivateImageRequestBody,
+func encodeRenameInstanceRequest(
+	req *RenameInstanceRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
