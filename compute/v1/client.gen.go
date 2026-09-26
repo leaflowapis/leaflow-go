@@ -1749,17 +1749,19 @@ type PrivateNetworkListResponseBody struct {
 
 // PrivateNetworkResource defines model for PrivateNetworkResource.
 type PrivateNetworkResource struct {
-	Cidr               string                       `json:"cidr"`
-	CreatedAt          time.Time                    `json:"created_at"`
-	HasInternetGateway bool                         `json:"has_internet_gateway"`
-	Id                 openapi_types.UUID           `json:"id"`
-	Name               string                       `json:"name"`
-	RegionId           openapi_types.UUID           `json:"region_id"`
-	Status             PrivateNetworkResourceStatus `json:"status"`
-	UpdatedAt          time.Time                    `json:"updated_at"`
+	Cidr               string             `json:"cidr"`
+	CreatedAt          time.Time          `json:"created_at"`
+	HasInternetGateway bool               `json:"has_internet_gateway"`
+	Id                 openapi_types.UUID `json:"id"`
+	Name               string             `json:"name"`
+	RegionId           openapi_types.UUID `json:"region_id"`
+
+	// Status Only `available` accepts new instances, interfaces and floating IPs
+	Status    PrivateNetworkResourceStatus `json:"status"`
+	UpdatedAt time.Time                    `json:"updated_at"`
 }
 
-// PrivateNetworkResourceStatus defines model for PrivateNetworkResource.Status.
+// PrivateNetworkResourceStatus Only `available` accepts new instances, interfaces and floating IPs
 type PrivateNetworkResourceStatus string
 
 // PurchaseResult Identifies the Compute task and the Billing order of a purchase. Work on the purchase starts after the order's invoice is paid, or without waiting when the order has no immediate invoice. Track the task for completion.
@@ -2718,6 +2720,8 @@ type ClientInterface interface {
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
+	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
+	//
 	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
@@ -2730,6 +2734,8 @@ type ClientInterface interface {
 	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
+	//
+	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
 	//
 	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -2832,6 +2838,8 @@ type ClientInterface interface {
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 	//
+	// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type.
@@ -2846,6 +2854,8 @@ type ClientInterface interface {
 	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	//
+	// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -4225,6 +4235,8 @@ func (c *Client) ListFloatingIps(ctx context.Context, reqEditors ...RequestEdito
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
+// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
+//
 // Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
@@ -4247,6 +4259,8 @@ func (c *Client) AllocateFloatingIpWithBody(ctx context.Context, contentType str
 // If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
+//
+// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
 //
 // Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -4459,6 +4473,8 @@ func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams,
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 //
+// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type.
@@ -4483,6 +4499,8 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 // Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+//
+// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -11179,6 +11197,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
+	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
+	//
 	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -11191,6 +11211,8 @@ type ClientWithResponsesInterface interface {
 	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
+	//
+	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
 	//
 	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -11305,6 +11327,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 	//
+	// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -11319,6 +11343,8 @@ type ClientWithResponsesInterface interface {
 	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	//
+	// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -17503,6 +17529,8 @@ func (c *ClientWithResponses) ListFloatingIpsWithResponse(ctx context.Context, r
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
+// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
+//
 // Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -17521,6 +17549,8 @@ func (c *ClientWithResponses) AllocateFloatingIpWithBodyWithResponse(ctx context
 // If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
+//
+// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
 //
 // Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -17701,6 +17731,8 @@ func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, par
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
 //
+// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -17721,6 +17753,8 @@ func (c *ClientWithResponses) LaunchInstanceWithBodyWithResponse(ctx context.Con
 // Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+//
+// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //

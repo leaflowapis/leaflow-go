@@ -7437,14 +7437,15 @@ func (s *PrivateNetworkListResponseBody) SetItems(val []PrivateNetworkResource) 
 
 // Ref: #/components/schemas/PrivateNetworkResource
 type PrivateNetworkResource struct {
-	Cidr               string                       `json:"cidr"`
-	CreatedAt          time.Time                    `json:"created_at"`
-	HasInternetGateway bool                         `json:"has_internet_gateway"`
-	ID                 uuid.UUID                    `json:"id"`
-	Name               string                       `json:"name"`
-	RegionID           uuid.UUID                    `json:"region_id"`
-	Status             PrivateNetworkResourceStatus `json:"status"`
-	UpdatedAt          time.Time                    `json:"updated_at"`
+	Cidr               string    `json:"cidr"`
+	CreatedAt          time.Time `json:"created_at"`
+	HasInternetGateway bool      `json:"has_internet_gateway"`
+	ID                 uuid.UUID `json:"id"`
+	Name               string    `json:"name"`
+	RegionID           uuid.UUID `json:"region_id"`
+	// Only `available` accepts new instances, interfaces and floating IPs.
+	Status    PrivateNetworkResourceStatus `json:"status"`
+	UpdatedAt time.Time                    `json:"updated_at"`
 }
 
 // GetCidr returns the value of Cidr.
@@ -7527,6 +7528,7 @@ func (s *PrivateNetworkResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
+// Only `available` accepts new instances, interfaces and floating IPs.
 type PrivateNetworkResourceStatus string
 
 const (
