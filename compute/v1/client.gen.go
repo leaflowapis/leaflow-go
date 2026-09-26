@@ -2506,6 +2506,8 @@ type ClientInterface interface {
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its subscription ends.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
@@ -2608,6 +2610,8 @@ type ClientInterface interface {
 	// DeleteDisk Delete a disk
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -2738,6 +2742,8 @@ type ClientInterface interface {
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released when its subscriptions end.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
@@ -2853,6 +2859,8 @@ type ClientInterface interface {
 	// The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 	//
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. It is released when its subscription ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -3413,6 +3421,8 @@ type ClientInterface interface {
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription ends.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
@@ -3702,6 +3712,8 @@ type ClientInterface interface {
 
 	// DeleteSnapshot Delete a snapshot
 	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its subscription ends.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
@@ -3800,6 +3812,8 @@ func (c *Client) CreateBackup(ctx context.Context, body CreateBackupJSONRequestB
 // DeleteBackup Delete a backup
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -4013,6 +4027,8 @@ func (c *Client) CreateDisk(ctx context.Context, body CreateDiskJSONRequestBody,
 // DeleteDisk Delete a disk
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -4253,6 +4269,8 @@ func (c *Client) AllocateFloatingIp(ctx context.Context, body AllocateFloatingIp
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released when its subscriptions end.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
@@ -4488,6 +4506,8 @@ func (c *Client) LaunchInstance(ctx context.Context, body LaunchInstanceJSONRequ
 // The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -5578,6 +5598,8 @@ func (c *Client) CreatePrivateImage(ctx context.Context, body CreatePrivateImage
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription ends.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
@@ -6256,6 +6278,8 @@ func (c *Client) CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequ
 }
 
 // DeleteSnapshot Delete a snapshot
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -10927,6 +10951,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its subscription ends.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -11039,6 +11065,8 @@ type ClientWithResponsesInterface interface {
 	// DeleteDiskWithResponse Delete a disk
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -11175,6 +11203,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released when its subscriptions end.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -11302,6 +11332,8 @@ type ClientWithResponsesInterface interface {
 	// The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 	//
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. It is released when its subscription ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -11904,6 +11936,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription ends.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -12234,6 +12268,8 @@ type ClientWithResponsesInterface interface {
 	CreateSnapshotWithResponse(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotResponse, error)
 
 	// DeleteSnapshotWithResponse Delete a snapshot
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its subscription ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -17119,6 +17155,8 @@ func (c *ClientWithResponses) CreateBackupWithResponse(ctx context.Context, body
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its subscription ends.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -17297,6 +17335,8 @@ func (c *ClientWithResponses) CreateDiskWithResponse(ctx context.Context, body C
 // DeleteDiskWithResponse Delete a disk
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -17499,6 +17539,8 @@ func (c *ClientWithResponses) AllocateFloatingIpWithResponse(ctx context.Context
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released when its subscriptions end.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -17698,6 +17740,8 @@ func (c *ClientWithResponses) LaunchInstanceWithResponse(ctx context.Context, bo
 // The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that resource. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -18618,6 +18662,8 @@ func (c *ClientWithResponses) CreatePrivateImageWithResponse(ctx context.Context
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
 //
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription ends.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -19182,6 +19228,8 @@ func (c *ClientWithResponses) CreateSnapshotWithResponse(ctx context.Context, bo
 }
 
 // DeleteSnapshotWithResponse Delete a snapshot
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //

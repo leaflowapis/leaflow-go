@@ -216,6 +216,10 @@ type Invoker interface {
 	//
 	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a
+	// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
+	// subscription ends.
+	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 	// and terminal outcomes.
 	//
@@ -224,6 +228,10 @@ type Invoker interface {
 	// DeleteDisk invokes delete-disk operation.
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
+	// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
+	// ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 	// and terminal outcomes.
@@ -238,6 +246,10 @@ type Invoker interface {
 	//
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 	// delete that image first.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
+	// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
+	// resource. It is released when its subscription ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 	// and terminal outcomes.
@@ -263,6 +275,10 @@ type Invoker interface {
 	// be rebuilt.
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
+	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
+	// ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 	// and terminal outcomes.
@@ -296,6 +312,10 @@ type Invoker interface {
 	// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot invokes delete-snapshot operation.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a
+	// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
+	// subscription ends.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 	// and terminal outcomes.
@@ -660,6 +680,10 @@ type Invoker interface {
 	// ReleaseFloatingIP invokes release-floating-ip operation.
 	//
 	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
+	// bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
+	// released when its subscriptions end.
 	//
 	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 	// and terminal outcomes.
@@ -3319,6 +3343,10 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a
+// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
+// subscription ends.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
 //
@@ -3466,6 +3494,10 @@ func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams
 // DeleteDisk invokes delete-disk operation.
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
+// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
+// ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
@@ -3619,6 +3651,10 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 // delete that image first.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
+// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
+// resource. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
@@ -4033,6 +4069,10 @@ func (c *Client) sendDeletePort(ctx context.Context, params DeletePortParams) (r
 // be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
+// pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
+// ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
@@ -4743,6 +4783,10 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 }
 
 // DeleteSnapshot invokes delete-snapshot operation.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a
+// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
+// subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
@@ -11461,6 +11505,10 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 // ReleaseFloatingIP invokes release-floating-ip operation.
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
+// bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
+// released when its subscriptions end.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.

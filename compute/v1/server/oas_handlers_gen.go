@@ -3829,6 +3829,10 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a
+// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
+// subscription ends.
+//
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
 //
@@ -4035,6 +4039,10 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 // handleDeleteDiskRequest handles delete-disk operation.
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
+// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
+// ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
@@ -4247,6 +4255,10 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 //
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 // delete that image first.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
+// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
+// resource. It is released when its subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
@@ -4858,6 +4870,10 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 // be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
+// pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
+// ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
@@ -5873,6 +5889,10 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 }
 
 // handleDeleteSnapshotRequest handles delete-snapshot operation.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a
+// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
+// subscription ends.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
@@ -15456,6 +15476,10 @@ func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w 
 // handleReleaseFloatingIPRequest handles release-floating-ip operation.
 //
 // Releases the floating IP after unbinding it. Completion is reported by the returned task.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
+// bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
+// released when its subscriptions end.
 //
 // Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
 // and terminal outcomes.
