@@ -653,8 +653,11 @@ type Cancellation struct {
 	// For `immediate`, the second the refund is computed as of.
 	ProrationDate OptDateTime `json:"proration_date"`
 	// Who asked for it. `project_deletion` means the project was deleted.
-	Origin   CancellationOrigin `json:"origin"`
-	Currency string             `json:"currency"`
+	Origin CancellationOrigin `json:"origin"`
+	// The billing account that paid for these subscriptions when the cancellation was created: the account
+	// of an account-level purchase, or the account the project was linked to.
+	BillingAccountID int64  `json:"billing_account_id"`
+	Currency         string `json:"currency"`
 	// The refund confirmed when it was created. Absent when the platform created it.
 	ExpectedRefundableAmount OptMoney `json:"expected_refundable_amount"`
 	// Present with `failed`. A code of the service that provides the resources, such as a disk that can
@@ -694,6 +697,11 @@ func (s *Cancellation) GetProrationDate() OptDateTime {
 // GetOrigin returns the value of Origin.
 func (s *Cancellation) GetOrigin() CancellationOrigin {
 	return s.Origin
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Cancellation) GetBillingAccountID() int64 {
+	return s.BillingAccountID
 }
 
 // GetCurrency returns the value of Currency.
@@ -759,6 +767,11 @@ func (s *Cancellation) SetProrationDate(val OptDateTime) {
 // SetOrigin sets the value of Origin.
 func (s *Cancellation) SetOrigin(val CancellationOrigin) {
 	s.Origin = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Cancellation) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
 }
 
 // SetCurrency sets the value of Currency.
@@ -864,12 +877,15 @@ func (s *CancellationCreate) SetReason(val OptString) {
 // Ref: #/components/schemas/CancellationItem
 type CancellationItem struct {
 	// The cancellation request of this subscription, the same as `Subscription.cancellation_request.id`.
-	ID               uuid.UUID              `json:"id"`
-	SubscriptionID   uuid.UUID              `json:"subscription_id"`
-	PlanID           uuid.UUID              `json:"plan_id"`
-	PlanName         string                 `json:"plan_name"`
-	Status           CancellationItemStatus `json:"status"`
-	ReleaseStartedAt OptDateTime            `json:"release_started_at"`
+	ID             uuid.UUID `json:"id"`
+	SubscriptionID uuid.UUID `json:"subscription_id"`
+	PlanID         uuid.UUID `json:"plan_id"`
+	PlanName       string    `json:"plan_name"`
+	// How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating the
+	// cancellation turned that off, and withdrawing the cancellation leaves it off.
+	BillingType      CancellationItemBillingType `json:"billing_type"`
+	Status           CancellationItemStatus      `json:"status"`
+	ReleaseStartedAt OptDateTime                 `json:"release_started_at"`
 	// When the service ended, as confirmed by the service that provides it.
 	EffectiveAt OptDateTime `json:"effective_at"`
 	// Present with `completed`. The part of the refund returned to the account balance.
@@ -898,6 +914,11 @@ func (s *CancellationItem) GetPlanID() uuid.UUID {
 // GetPlanName returns the value of PlanName.
 func (s *CancellationItem) GetPlanName() string {
 	return s.PlanName
+}
+
+// GetBillingType returns the value of BillingType.
+func (s *CancellationItem) GetBillingType() CancellationItemBillingType {
+	return s.BillingType
 }
 
 // GetStatus returns the value of Status.
@@ -950,6 +971,11 @@ func (s *CancellationItem) SetPlanName(val string) {
 	s.PlanName = val
 }
 
+// SetBillingType sets the value of BillingType.
+func (s *CancellationItem) SetBillingType(val CancellationItemBillingType) {
+	s.BillingType = val
+}
+
 // SetStatus sets the value of Status.
 func (s *CancellationItem) SetStatus(val CancellationItemStatus) {
 	s.Status = val
@@ -978,6 +1004,56 @@ func (s *CancellationItem) SetCreditAmount(val OptMoney) {
 // SetGatewayAmount sets the value of GatewayAmount.
 func (s *CancellationItem) SetGatewayAmount(val OptMoney) {
 	s.GatewayAmount = val
+}
+
+// How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating the
+// cancellation turned that off, and withdrawing the cancellation leaves it off.
+type CancellationItemBillingType string
+
+const (
+	CancellationItemBillingTypePostpaid CancellationItemBillingType = "postpaid"
+	CancellationItemBillingTypePrepaid  CancellationItemBillingType = "prepaid"
+	CancellationItemBillingTypeOneTime  CancellationItemBillingType = "one_time"
+)
+
+// AllValues returns all CancellationItemBillingType values.
+func (CancellationItemBillingType) AllValues() []CancellationItemBillingType {
+	return []CancellationItemBillingType{
+		CancellationItemBillingTypePostpaid,
+		CancellationItemBillingTypePrepaid,
+		CancellationItemBillingTypeOneTime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationItemBillingType) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationItemBillingTypePostpaid:
+		return []byte(s), nil
+	case CancellationItemBillingTypePrepaid:
+		return []byte(s), nil
+	case CancellationItemBillingTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationItemBillingType) UnmarshalText(data []byte) error {
+	switch CancellationItemBillingType(data) {
+	case CancellationItemBillingTypePostpaid:
+		*s = CancellationItemBillingTypePostpaid
+		return nil
+	case CancellationItemBillingTypePrepaid:
+		*s = CancellationItemBillingTypePrepaid
+		return nil
+	case CancellationItemBillingTypeOneTime:
+		*s = CancellationItemBillingTypeOneTime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type CancellationItemStatus string
@@ -1272,14 +1348,17 @@ type CancellationRefundPreviewItem struct {
 	PlanName       string    `json:"plan_name"`
 	// The project and its current name, for display. Absent for a purchase at account level, and when the
 	// project details cannot be read at the moment.
-	Project          OptNilNamedIdentity                      `json:"project"`
-	BillingType      CancellationRefundPreviewItemBillingType `json:"billing_type"`
-	UnusedAmount     Money                                    `json:"unused_amount"`
-	RefundableAmount Money                                    `json:"refundable_amount"`
-	RefundAmount     Money                                    `json:"refund_amount"`
-	CreditAmount     Money                                    `json:"credit_amount"`
-	TaxAmount        Money                                    `json:"tax_amount"`
-	ForfeitedAmount  Money                                    `json:"forfeited_amount"`
+	Project     OptNilNamedIdentity                      `json:"project"`
+	BillingType CancellationRefundPreviewItemBillingType `json:"billing_type"`
+	// Whether automatic renewal is on now. Creating the cancellation turns it off, and withdrawing the
+	// cancellation does not turn it back on. Always false for a subscription that is not `prepaid`.
+	AutoRenew        bool  `json:"auto_renew"`
+	UnusedAmount     Money `json:"unused_amount"`
+	RefundableAmount Money `json:"refundable_amount"`
+	RefundAmount     Money `json:"refund_amount"`
+	CreditAmount     Money `json:"credit_amount"`
+	TaxAmount        Money `json:"tax_amount"`
+	ForfeitedAmount  Money `json:"forfeited_amount"`
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -1305,6 +1384,11 @@ func (s *CancellationRefundPreviewItem) GetProject() OptNilNamedIdentity {
 // GetBillingType returns the value of BillingType.
 func (s *CancellationRefundPreviewItem) GetBillingType() CancellationRefundPreviewItemBillingType {
 	return s.BillingType
+}
+
+// GetAutoRenew returns the value of AutoRenew.
+func (s *CancellationRefundPreviewItem) GetAutoRenew() bool {
+	return s.AutoRenew
 }
 
 // GetUnusedAmount returns the value of UnusedAmount.
@@ -1360,6 +1444,11 @@ func (s *CancellationRefundPreviewItem) SetProject(val OptNilNamedIdentity) {
 // SetBillingType sets the value of BillingType.
 func (s *CancellationRefundPreviewItem) SetBillingType(val CancellationRefundPreviewItemBillingType) {
 	s.BillingType = val
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *CancellationRefundPreviewItem) SetAutoRenew(val bool) {
+	s.AutoRenew = val
 }
 
 // SetUnusedAmount sets the value of UnusedAmount.

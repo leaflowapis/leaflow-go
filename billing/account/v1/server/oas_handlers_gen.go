@@ -695,7 +695,8 @@ func (s *Server) handleCreateBillingAccountRequest(args [0]string, argsEscaped b
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that cancellation
 // is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
-// payment are canceled along with it.
+// payment are canceled along with it, and automatic renewal is turned off for every subscription in
+// the set, for `period_end` as well as `immediate`.
 //
 // POST /account/v1/cancellations
 func (s *Server) handleCreateCancellationRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9275,6 +9276,10 @@ func (s *Server) handleRenewSubscriptionRequest(args [1]string, argsEscaped bool
 // Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
 // manual renewal. Postpaid subscriptions do not renew and keep this false.
 //
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
+//
 // PUT /account/v1/subscriptions/{subscriptionId}/auto-renew
 func (s *Server) handleSetAutoRenewRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -10339,8 +10344,9 @@ func (s *Server) handleUpdateBillingAccountRequest(args [1]string, argsEscaped b
 // handleWithdrawCancellationRequest handles withdraw-cancellation operation.
 //
 // Withdraws the whole cancellation while none of its resources has begun to be released; the
-// subscriptions continue as before. After that it is refused with 409 `BILLING_CANCELLATION_CONFLICT`.
-// Withdrawing one that is already withdrawn returns it unchanged.
+// subscriptions continue as before, except that automatic renewal, turned off when the cancellation
+// was created, stays off until it is turned on again. After that it is refused with 409
+// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
 //
 // POST /account/v1/cancellations/{cancellationId}/withdraw
 func (s *Server) handleWithdrawCancellationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

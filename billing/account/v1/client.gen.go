@@ -133,6 +133,27 @@ func (e CancellationStatus) Valid() bool {
 	}
 }
 
+// Defines values for CancellationItemBillingType.
+const (
+	CancellationItemBillingTypeOneTime  CancellationItemBillingType = "one_time"
+	CancellationItemBillingTypePostpaid CancellationItemBillingType = "postpaid"
+	CancellationItemBillingTypePrepaid  CancellationItemBillingType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the CancellationItemBillingType enum.
+func (e CancellationItemBillingType) Valid() bool {
+	switch e {
+	case CancellationItemBillingTypeOneTime:
+		return true
+	case CancellationItemBillingTypePostpaid:
+		return true
+	case CancellationItemBillingTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CancellationItemStatus.
 const (
 	CancellationItemStatusCanceled  CancellationItemStatus = "canceled"
@@ -1506,9 +1527,12 @@ type BillingAccountUpdate struct {
 //   - `failed`: the service could not carry it out, for the reason in `failure_code`; the
 //     subscriptions continue and can be canceled again.
 type Cancellation struct {
-	CanceledAt  *time.Time `json:"canceled_at,omitempty"`
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	Currency    string     `json:"currency"`
+	// BillingAccountId The billing account that paid for these subscriptions when the cancellation was created: the
+	// account of an account-level purchase, or the account the project was linked to.
+	BillingAccountId int64      `json:"billing_account_id"`
+	CanceledAt       *time.Time `json:"canceled_at,omitempty"`
+	CompletedAt      *time.Time `json:"completed_at,omitempty"`
+	Currency         string     `json:"currency"`
 
 	// ExpectedRefundableAmount The refund confirmed when it was created. Absent when the platform created it.
 	ExpectedRefundableAmount *externalRef0.Money `json:"expected_refundable_amount,omitempty"`
@@ -1562,6 +1586,10 @@ type CancellationItem struct {
 	// BalanceAmount Present with `completed`. The part of the refund returned to the account balance.
 	BalanceAmount *externalRef0.Money `json:"balance_amount,omitempty"`
 
+	// BillingType How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating
+	// the cancellation turned that off, and withdrawing the cancellation leaves it off.
+	BillingType CancellationItemBillingType `json:"billing_type"`
+
 	// CreditAmount Present with `completed`. The part restored to the credit grants that paid.
 	CreditAmount *externalRef0.Money `json:"credit_amount,omitempty"`
 
@@ -1579,6 +1607,10 @@ type CancellationItem struct {
 	Status           CancellationItemStatus `json:"status"`
 	SubscriptionId   openapi_types.UUID     `json:"subscription_id"`
 }
+
+// CancellationItemBillingType How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating
+// the cancellation turned that off, and withdrawing the cancellation leaves it off.
+type CancellationItemBillingType string
 
 // CancellationItemStatus defines model for CancellationItem.Status.
 type CancellationItemStatus string
@@ -1683,6 +1715,10 @@ type CancellationRefundPreview struct {
 
 // CancellationRefundPreviewItem One subscription of the quoted cancellation. The amounts mean what they mean in the total.
 type CancellationRefundPreviewItem struct {
+	// AutoRenew Whether automatic renewal is on now. Creating the cancellation turns it off, and withdrawing
+	// the cancellation does not turn it back on. Always false for a subscription that is not
+	// `prepaid`.
+	AutoRenew   bool                                     `json:"auto_renew"`
 	BillingType CancellationRefundPreviewItemBillingType `json:"billing_type"`
 
 	// CreditAmount A decimal string, in the currency stated alongside it.
@@ -4021,7 +4057,8 @@ type ClientInterface interface {
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-	// still waiting for payment are canceled along with it.
+	// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+	// every subscription in the set, for `period_end` as well as `immediate`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -4067,7 +4104,8 @@ type ClientInterface interface {
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-	// still waiting for payment are canceled along with it.
+	// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+	// every subscription in the set, for `period_end` as well as `immediate`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -4082,8 +4120,10 @@ type ClientInterface interface {
 	// WithdrawCancellation Withdraw a cancellation
 	//
 	// Withdraws the whole cancellation while none of its resources has begun to be released; the
-	// subscriptions continue as before. After that it is refused with 409
-	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	// subscriptions continue as before, except that automatic renewal, turned off when the
+	// cancellation was created, stays off until it is turned on again. After that it is refused with
+	// 409 `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it
+	// unchanged.
 	//
 	// Corresponds with POST /account/v1/cancellations/{cancellationId}/withdraw (the `WithdrawCancellation` operationId).
 	WithdrawCancellation(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4493,7 +4533,12 @@ type ClientInterface interface {
 
 	// SetAutoRenewWithBody Set auto renew
 	//
-	// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits manual renewal. Postpaid subscriptions do not renew and keep this false.
+	// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
+	// manual renewal. Postpaid subscriptions do not renew and keep this false.
+	//
+	// While the subscription has an open cancellation, turning it on or off is refused with 409
+	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+	// turned it off, and withdrawing the cancellation does not turn it back on.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -4502,7 +4547,12 @@ type ClientInterface interface {
 
 	// SetAutoRenew Set auto renew
 	//
-	// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits manual renewal. Postpaid subscriptions do not renew and keep this false.
+	// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
+	// manual renewal. Postpaid subscriptions do not renew and keep this false.
+	//
+	// While the subscription has an open cancellation, turning it on or off is refused with 409
+	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+	// turned it off, and withdrawing the cancellation does not turn it back on.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -4911,7 +4961,8 @@ func (c *Client) ListCancellations(ctx context.Context, params *ListCancellation
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-// still waiting for payment are canceled along with it.
+// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+// every subscription in the set, for `period_end` as well as `immediate`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4967,7 +5018,8 @@ func (c *Client) CreateCancellationWithBody(ctx context.Context, contentType str
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-// still waiting for payment are canceled along with it.
+// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+// every subscription in the set, for `period_end` as well as `immediate`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -5002,8 +5054,10 @@ func (c *Client) GetCancellation(ctx context.Context, cancellationId Cancellatio
 // WithdrawCancellation Withdraw a cancellation
 //
 // Withdraws the whole cancellation while none of its resources has begun to be released; the
-// subscriptions continue as before. After that it is refused with 409
-// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+// subscriptions continue as before, except that automatic renewal, turned off when the
+// cancellation was created, stays off until it is turned on again. After that it is refused with
+// 409 `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it
+// unchanged.
 //
 // Corresponds with POST /account/v1/cancellations/{cancellationId}/withdraw (the `WithdrawCancellation` operationId).
 func (c *Client) WithdrawCancellation(ctx context.Context, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5773,7 +5827,12 @@ func (c *Client) GetSubscription(ctx context.Context, subscriptionId Subscriptio
 
 // SetAutoRenewWithBody Set auto renew
 //
-// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits manual renewal. Postpaid subscriptions do not renew and keep this false.
+// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
+// manual renewal. Postpaid subscriptions do not renew and keep this false.
+//
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
 //
 // Takes any type of body and a specified content type.
 //
@@ -5792,7 +5851,12 @@ func (c *Client) SetAutoRenewWithBody(ctx context.Context, subscriptionId Subscr
 
 // SetAutoRenew Set auto renew
 //
-// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits manual renewal. Postpaid subscriptions do not renew and keep this false.
+// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
+// manual renewal. Postpaid subscriptions do not renew and keep this false.
+//
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9174,7 +9238,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-	// still waiting for payment are canceled along with it.
+	// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+	// every subscription in the set, for `period_end` as well as `immediate`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -9220,7 +9285,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-	// still waiting for payment are canceled along with it.
+	// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+	// every subscription in the set, for `period_end` as well as `immediate`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -9237,8 +9303,10 @@ type ClientWithResponsesInterface interface {
 	// WithdrawCancellationWithResponse Withdraw a cancellation
 	//
 	// Withdraws the whole cancellation while none of its resources has begun to be released; the
-	// subscriptions continue as before. After that it is refused with 409
-	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	// subscriptions continue as before, except that automatic renewal, turned off when the
+	// cancellation was created, stays off until it is turned on again. After that it is refused with
+	// 409 `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it
+	// unchanged.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -9692,7 +9760,12 @@ type ClientWithResponsesInterface interface {
 
 	// SetAutoRenewWithBodyWithResponse Set auto renew
 	//
-	// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits manual renewal. Postpaid subscriptions do not renew and keep this false.
+	// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
+	// manual renewal. Postpaid subscriptions do not renew and keep this false.
+	//
+	// While the subscription has an open cancellation, turning it on or off is refused with 409
+	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+	// turned it off, and withdrawing the cancellation does not turn it back on.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -9701,7 +9774,12 @@ type ClientWithResponsesInterface interface {
 
 	// SetAutoRenewWithResponse Set auto renew
 	//
-	// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits manual renewal. Postpaid subscriptions do not renew and keep this false.
+	// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
+	// manual renewal. Postpaid subscriptions do not renew and keep this false.
+	//
+	// While the subscription has an open cancellation, turning it on or off is refused with 409
+	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+	// turned it off, and withdrawing the cancellation does not turn it back on.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12513,7 +12591,8 @@ func (c *ClientWithResponses) ListCancellationsWithResponse(ctx context.Context,
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-// still waiting for payment are canceled along with it.
+// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+// every subscription in the set, for `period_end` as well as `immediate`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -12565,7 +12644,8 @@ func (c *ClientWithResponses) CreateCancellationWithBodyWithResponse(ctx context
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-// still waiting for payment are canceled along with it.
+// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+// every subscription in the set, for `period_end` as well as `immediate`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -12594,8 +12674,10 @@ func (c *ClientWithResponses) GetCancellationWithResponse(ctx context.Context, c
 // WithdrawCancellationWithResponse Withdraw a cancellation
 //
 // Withdraws the whole cancellation while none of its resources has begun to be released; the
-// subscriptions continue as before. After that it is refused with 409
-// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+// subscriptions continue as before, except that automatic renewal, turned off when the
+// cancellation was created, stays off until it is turned on again. After that it is refused with
+// 409 `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it
+// unchanged.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13265,7 +13347,12 @@ func (c *ClientWithResponses) GetSubscriptionWithResponse(ctx context.Context, s
 
 // SetAutoRenewWithBodyWithResponse Set auto renew
 //
-// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits manual renewal. Postpaid subscriptions do not renew and keep this false.
+// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
+// manual renewal. Postpaid subscriptions do not renew and keep this false.
+//
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13280,7 +13367,12 @@ func (c *ClientWithResponses) SetAutoRenewWithBodyWithResponse(ctx context.Conte
 
 // SetAutoRenewWithResponse Set auto renew
 //
-// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits manual renewal. Postpaid subscriptions do not renew and keep this false.
+// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
+// manual renewal. Postpaid subscriptions do not renew and keep this false.
+//
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

@@ -1364,6 +1364,10 @@ func (s *Cancellation) encodeFields(e *jx.Encoder) {
 		s.Origin.Encode(e)
 	}
 	{
+		e.FieldStart("billing_account_id")
+		e.Int64(s.BillingAccountID)
+	}
+	{
 		e.FieldStart("currency")
 		e.Str(s.Currency)
 	}
@@ -1405,20 +1409,21 @@ func (s *Cancellation) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCancellation = [13]string{
+var jsonFieldsNameOfCancellation = [14]string{
 	0:  "id",
 	1:  "status",
 	2:  "mode",
 	3:  "scheduled_at",
 	4:  "proration_date",
 	5:  "origin",
-	6:  "currency",
-	7:  "expected_refundable_amount",
-	8:  "failure_code",
-	9:  "requested_at",
-	10: "completed_at",
-	11: "canceled_at",
-	12: "items",
+	6:  "billing_account_id",
+	7:  "currency",
+	8:  "expected_refundable_amount",
+	9:  "failure_code",
+	10: "requested_at",
+	11: "completed_at",
+	12: "canceled_at",
+	13: "items",
 }
 
 // Decode decodes Cancellation from json.
@@ -1492,8 +1497,20 @@ func (s *Cancellation) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"origin\"")
 			}
-		case "currency":
+		case "billing_account_id":
 			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Int64()
+				s.BillingAccountID = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billing_account_id\"")
+			}
+		case "currency":
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -1525,7 +1542,7 @@ func (s *Cancellation) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failure_code\"")
 			}
 		case "requested_at":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.RequestedAt = v
@@ -1557,7 +1574,7 @@ func (s *Cancellation) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"canceled_at\"")
 			}
 		case "items":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				s.Items = make([]CancellationItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -1584,8 +1601,8 @@ func (s *Cancellation) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b01100111,
-		0b00010010,
+		0b11100111,
+		0b00100100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1831,6 +1848,10 @@ func (s *CancellationItem) encodeFields(e *jx.Encoder) {
 		e.Str(s.PlanName)
 	}
 	{
+		e.FieldStart("billing_type")
+		s.BillingType.Encode(e)
+	}
+	{
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
@@ -1866,17 +1887,18 @@ func (s *CancellationItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCancellationItem = [10]string{
-	0: "id",
-	1: "subscription_id",
-	2: "plan_id",
-	3: "plan_name",
-	4: "status",
-	5: "release_started_at",
-	6: "effective_at",
-	7: "balance_amount",
-	8: "credit_amount",
-	9: "gateway_amount",
+var jsonFieldsNameOfCancellationItem = [11]string{
+	0:  "id",
+	1:  "subscription_id",
+	2:  "plan_id",
+	3:  "plan_name",
+	4:  "billing_type",
+	5:  "status",
+	6:  "release_started_at",
+	7:  "effective_at",
+	8:  "balance_amount",
+	9:  "credit_amount",
+	10: "gateway_amount",
 }
 
 // Decode decodes CancellationItem from json.
@@ -1936,8 +1958,18 @@ func (s *CancellationItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"plan_name\"")
 			}
-		case "status":
+		case "billing_type":
 			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.BillingType.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billing_type\"")
+			}
+		case "status":
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -2006,7 +2038,7 @@ func (s *CancellationItem) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b00011111,
+		0b00111111,
 		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
@@ -2049,6 +2081,48 @@ func (s *CancellationItem) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *CancellationItem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes CancellationItemBillingType as json.
+func (s CancellationItemBillingType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes CancellationItemBillingType from json.
+func (s *CancellationItemBillingType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CancellationItemBillingType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch CancellationItemBillingType(v) {
+	case CancellationItemBillingTypePostpaid:
+		*s = CancellationItemBillingTypePostpaid
+	case CancellationItemBillingTypePrepaid:
+		*s = CancellationItemBillingTypePrepaid
+	case CancellationItemBillingTypeOneTime:
+		*s = CancellationItemBillingTypeOneTime
+	default:
+		*s = CancellationItemBillingType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s CancellationItemBillingType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CancellationItemBillingType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -2561,6 +2635,10 @@ func (s *CancellationRefundPreviewItem) encodeFields(e *jx.Encoder) {
 		s.BillingType.Encode(e)
 	}
 	{
+		e.FieldStart("auto_renew")
+		e.Bool(s.AutoRenew)
+	}
+	{
 		e.FieldStart("unused_amount")
 		s.UnusedAmount.Encode(e)
 	}
@@ -2586,18 +2664,19 @@ func (s *CancellationRefundPreviewItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCancellationRefundPreviewItem = [11]string{
+var jsonFieldsNameOfCancellationRefundPreviewItem = [12]string{
 	0:  "subscription_id",
 	1:  "plan_id",
 	2:  "plan_name",
 	3:  "project",
 	4:  "billing_type",
-	5:  "unused_amount",
-	6:  "refundable_amount",
-	7:  "refund_amount",
-	8:  "credit_amount",
-	9:  "tax_amount",
-	10: "forfeited_amount",
+	5:  "auto_renew",
+	6:  "unused_amount",
+	7:  "refundable_amount",
+	8:  "refund_amount",
+	9:  "credit_amount",
+	10: "tax_amount",
+	11: "forfeited_amount",
 }
 
 // Decode decodes CancellationRefundPreviewItem from json.
@@ -2665,8 +2744,20 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"billing_type\"")
 			}
-		case "unused_amount":
+		case "auto_renew":
 			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Bool()
+				s.AutoRenew = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"auto_renew\"")
+			}
+		case "unused_amount":
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.UnusedAmount.Decode(d); err != nil {
 					return err
@@ -2676,7 +2767,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"unused_amount\"")
 			}
 		case "refundable_amount":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.RefundableAmount.Decode(d); err != nil {
 					return err
@@ -2686,7 +2777,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"refundable_amount\"")
 			}
 		case "refund_amount":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.RefundAmount.Decode(d); err != nil {
 					return err
@@ -2696,7 +2787,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"refund_amount\"")
 			}
 		case "credit_amount":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.CreditAmount.Decode(d); err != nil {
 					return err
@@ -2706,7 +2797,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"credit_amount\"")
 			}
 		case "tax_amount":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.TaxAmount.Decode(d); err != nil {
 					return err
@@ -2716,7 +2807,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_amount\"")
 			}
 		case "forfeited_amount":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.ForfeitedAmount.Decode(d); err != nil {
 					return err
@@ -2736,7 +2827,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11110111,
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

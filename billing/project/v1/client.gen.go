@@ -136,6 +136,27 @@ func (e CancellationStatus) Valid() bool {
 	}
 }
 
+// Defines values for CancellationItemBillingType.
+const (
+	CancellationItemBillingTypeOneTime  CancellationItemBillingType = "one_time"
+	CancellationItemBillingTypePostpaid CancellationItemBillingType = "postpaid"
+	CancellationItemBillingTypePrepaid  CancellationItemBillingType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the CancellationItemBillingType enum.
+func (e CancellationItemBillingType) Valid() bool {
+	switch e {
+	case CancellationItemBillingTypeOneTime:
+		return true
+	case CancellationItemBillingTypePostpaid:
+		return true
+	case CancellationItemBillingTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CancellationItemStatus.
 const (
 	CancellationItemStatusCanceled  CancellationItemStatus = "canceled"
@@ -820,9 +841,12 @@ type AutoRenewSet struct {
 //   - `failed`: the service could not carry it out, for the reason in `failure_code`; the
 //     subscriptions continue and can be canceled again.
 type Cancellation struct {
-	CanceledAt  *time.Time `json:"canceled_at,omitempty"`
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	Currency    string     `json:"currency"`
+	// BillingAccountId The billing account that paid for these subscriptions when the cancellation was created: the
+	// account of an account-level purchase, or the account the project was linked to.
+	BillingAccountId int64      `json:"billing_account_id"`
+	CanceledAt       *time.Time `json:"canceled_at,omitempty"`
+	CompletedAt      *time.Time `json:"completed_at,omitempty"`
+	Currency         string     `json:"currency"`
 
 	// ExpectedRefundableAmount The refund confirmed when it was created. Absent when the platform created it.
 	ExpectedRefundableAmount *externalRef0.Money `json:"expected_refundable_amount,omitempty"`
@@ -876,6 +900,10 @@ type CancellationItem struct {
 	// BalanceAmount Present with `completed`. The part of the refund returned to the account balance.
 	BalanceAmount *externalRef0.Money `json:"balance_amount,omitempty"`
 
+	// BillingType How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating
+	// the cancellation turned that off, and withdrawing the cancellation leaves it off.
+	BillingType CancellationItemBillingType `json:"billing_type"`
+
 	// CreditAmount Present with `completed`. The part restored to the credit grants that paid.
 	CreditAmount *externalRef0.Money `json:"credit_amount,omitempty"`
 
@@ -893,6 +921,10 @@ type CancellationItem struct {
 	Status           CancellationItemStatus `json:"status"`
 	SubscriptionId   openapi_types.UUID     `json:"subscription_id"`
 }
+
+// CancellationItemBillingType How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating
+// the cancellation turned that off, and withdrawing the cancellation leaves it off.
+type CancellationItemBillingType string
 
 // CancellationItemStatus defines model for CancellationItem.Status.
 type CancellationItemStatus string
@@ -997,6 +1029,10 @@ type CancellationRefundPreview struct {
 
 // CancellationRefundPreviewItem One subscription of the quoted cancellation. The amounts mean what they mean in the total.
 type CancellationRefundPreviewItem struct {
+	// AutoRenew Whether automatic renewal is on now. Creating the cancellation turns it off, and withdrawing
+	// the cancellation does not turn it back on. Always false for a subscription that is not
+	// `prepaid`.
+	AutoRenew   bool                                     `json:"auto_renew"`
 	BillingType CancellationRefundPreviewItemBillingType `json:"billing_type"`
 
 	// CreditAmount A decimal string, in the currency stated alongside it.
@@ -2107,7 +2143,8 @@ type ClientInterface interface {
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-	// still waiting for payment are canceled along with it.
+	// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+	// every subscription in the set, for `period_end` as well as `immediate`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2153,7 +2190,8 @@ type ClientInterface interface {
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-	// still waiting for payment are canceled along with it.
+	// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+	// every subscription in the set, for `period_end` as well as `immediate`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2168,8 +2206,10 @@ type ClientInterface interface {
 	// WithdrawProjectCancellation Withdraw a cancellation
 	//
 	// Withdraws the whole cancellation while none of its resources has begun to be released; the
-	// subscriptions continue as before. After that it is refused with 409
-	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	// subscriptions continue as before, except that automatic renewal, turned off when the
+	// cancellation was created, stays off until it is turned on again. After that it is refused with
+	// 409 `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it
+	// unchanged.
 	//
 	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw (the `WithdrawProjectCancellation` operationId).
 	WithdrawProjectCancellation(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2278,6 +2318,10 @@ type ClientInterface interface {
 	// Automatic renewal draws on the project billing account's balance, which a project member may
 	// commit. Paying by card requires the account owner and is done from the billing centre.
 	//
+	// While the subscription has an open cancellation, turning it on or off is refused with 409
+	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+	// turned it off, and withdrawing the cancellation does not turn it back on.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
@@ -2287,6 +2331,10 @@ type ClientInterface interface {
 	//
 	// Automatic renewal draws on the project billing account's balance, which a project member may
 	// commit. Paying by card requires the account owner and is done from the billing centre.
+	//
+	// While the subscription has an open cancellation, turning it on or off is refused with 409
+	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+	// turned it off, and withdrawing the cancellation does not turn it back on.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2415,7 +2463,8 @@ func (c *Client) ListProjectCancellations(ctx context.Context, projectId Project
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-// still waiting for payment are canceled along with it.
+// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+// every subscription in the set, for `period_end` as well as `immediate`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2471,7 +2520,8 @@ func (c *Client) CreateProjectCancellationWithBody(ctx context.Context, projectI
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-// still waiting for payment are canceled along with it.
+// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+// every subscription in the set, for `period_end` as well as `immediate`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2506,8 +2556,10 @@ func (c *Client) GetProjectCancellation(ctx context.Context, projectId ProjectId
 // WithdrawProjectCancellation Withdraw a cancellation
 //
 // Withdraws the whole cancellation while none of its resources has begun to be released; the
-// subscriptions continue as before. After that it is refused with 409
-// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+// subscriptions continue as before, except that automatic renewal, turned off when the
+// cancellation was created, stays off until it is turned on again. After that it is refused with
+// 409 `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it
+// unchanged.
 //
 // Corresponds with POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw (the `WithdrawProjectCancellation` operationId).
 func (c *Client) WithdrawProjectCancellation(ctx context.Context, projectId ProjectId, cancellationId CancellationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2706,6 +2758,10 @@ func (c *Client) ListProjectSubscriptions(ctx context.Context, projectId Project
 // Automatic renewal draws on the project billing account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
 //
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
@@ -2725,6 +2781,10 @@ func (c *Client) SetProjectAutoRenewWithBody(ctx context.Context, projectId Proj
 //
 // Automatic renewal draws on the project billing account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
+//
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4073,7 +4133,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-	// still waiting for payment are canceled along with it.
+	// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+	// every subscription in the set, for `period_end` as well as `immediate`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4119,7 +4180,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-	// still waiting for payment are canceled along with it.
+	// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+	// every subscription in the set, for `period_end` as well as `immediate`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4136,8 +4198,10 @@ type ClientWithResponsesInterface interface {
 	// WithdrawProjectCancellationWithResponse Withdraw a cancellation
 	//
 	// Withdraws the whole cancellation while none of its resources has begun to be released; the
-	// subscriptions continue as before. After that it is refused with 409
-	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	// subscriptions continue as before, except that automatic renewal, turned off when the
+	// cancellation was created, stays off until it is turned on again. After that it is refused with
+	// 409 `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it
+	// unchanged.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -4260,6 +4324,10 @@ type ClientWithResponsesInterface interface {
 	// Automatic renewal draws on the project billing account's balance, which a project member may
 	// commit. Paying by card requires the account owner and is done from the billing centre.
 	//
+	// While the subscription has an open cancellation, turning it on or off is refused with 409
+	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+	// turned it off, and withdrawing the cancellation does not turn it back on.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
@@ -4269,6 +4337,10 @@ type ClientWithResponsesInterface interface {
 	//
 	// Automatic renewal draws on the project billing account's balance, which a project member may
 	// commit. Paying by card requires the account owner and is done from the billing centre.
+	//
+	// While the subscription has an open cancellation, turning it on or off is refused with 409
+	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+	// turned it off, and withdrawing the cancellation does not turn it back on.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -5166,7 +5238,8 @@ func (c *ClientWithResponses) ListProjectCancellationsWithResponse(ctx context.C
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-// still waiting for payment are canceled along with it.
+// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+// every subscription in the set, for `period_end` as well as `immediate`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5218,7 +5291,8 @@ func (c *ClientWithResponses) CreateProjectCancellationWithBodyWithResponse(ctx 
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
-// still waiting for payment are canceled along with it.
+// still waiting for payment are canceled along with it, and automatic renewal is turned off for
+// every subscription in the set, for `period_end` as well as `immediate`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5247,8 +5321,10 @@ func (c *ClientWithResponses) GetProjectCancellationWithResponse(ctx context.Con
 // WithdrawProjectCancellationWithResponse Withdraw a cancellation
 //
 // Withdraws the whole cancellation while none of its resources has begun to be released; the
-// subscriptions continue as before. After that it is refused with 409
-// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+// subscriptions continue as before, except that automatic renewal, turned off when the
+// cancellation was created, stays off until it is turned on again. After that it is refused with
+// 409 `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it
+// unchanged.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5425,6 +5501,10 @@ func (c *ClientWithResponses) ListProjectSubscriptionsWithResponse(ctx context.C
 // Automatic renewal draws on the project billing account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
 //
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew (the `SetProjectAutoRenew` operationId).
@@ -5440,6 +5520,10 @@ func (c *ClientWithResponses) SetProjectAutoRenewWithBodyWithResponse(ctx contex
 //
 // Automatic renewal draws on the project billing account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
+//
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

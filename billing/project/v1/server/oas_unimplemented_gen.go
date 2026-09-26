@@ -51,7 +51,8 @@ var _ Handler = UnimplementedHandler{}
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that cancellation
 // is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
-// payment are canceled along with it.
+// payment are canceled along with it, and automatic renewal is turned off for every subscription in
+// the set, for `period_end` as well as `immediate`.
 //
 // POST /api/v1/projects/{projectId}/cancellations
 func (UnimplementedHandler) CreateProjectCancellation(ctx context.Context, req *CancellationCreate, params CreateProjectCancellationParams) (r CreateProjectCancellationRes, _ error) {
@@ -213,6 +214,10 @@ func (UnimplementedHandler) ListProjectUsageCharges(ctx context.Context, params 
 // Automatic renewal draws on the project billing account's balance, which a project member may commit.
 // Paying by card requires the account owner and is done from the billing centre.
 //
+// While the subscription has an open cancellation, turning it on or off is refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
+// turned it off, and withdrawing the cancellation does not turn it back on.
+//
 // PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew
 func (UnimplementedHandler) SetProjectAutoRenew(ctx context.Context, req *AutoRenewSet, params SetProjectAutoRenewParams) (r *Subscription, _ error) {
 	return r, ht.ErrNotImplemented
@@ -221,8 +226,9 @@ func (UnimplementedHandler) SetProjectAutoRenew(ctx context.Context, req *AutoRe
 // WithdrawProjectCancellation implements withdraw-project-cancellation operation.
 //
 // Withdraws the whole cancellation while none of its resources has begun to be released; the
-// subscriptions continue as before. After that it is refused with 409 `BILLING_CANCELLATION_CONFLICT`.
-// Withdrawing one that is already withdrawn returns it unchanged.
+// subscriptions continue as before, except that automatic renewal, turned off when the cancellation
+// was created, stays off until it is turned on again. After that it is refused with 409
+// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
 //
 // POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw
 func (UnimplementedHandler) WithdrawProjectCancellation(ctx context.Context, params WithdrawProjectCancellationParams) (r *Cancellation, _ error) {
