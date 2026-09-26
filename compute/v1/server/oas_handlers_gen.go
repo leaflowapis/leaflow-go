@@ -244,9 +244,6 @@ func (s *Server) handleAcceptPeeringRequest(args [1]string, argsEscaped bool, w 
 // Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's
 // `status` is not `available`. `meta.private_network_id` names it.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/floating-ips
 func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -383,7 +380,7 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 		}
 	}()
 
-	var response AllocateFloatingIPRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -399,7 +396,7 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 		type (
 			Request  = *AllocateFloatingIPRequestBody
 			Params   = struct{}
-			Response = AllocateFloatingIPRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -447,9 +444,6 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 //
 // The disk must be in the same region and availability zone as the instance. Partition it and mount
 // the file system inside the instance once it is attached.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/disks
 func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -597,7 +591,7 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response AttachDiskRes
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -611,10 +605,6 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -622,7 +612,7 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *AttachDiskRequestBody
 			Params   = AttachDiskParams
-			Response = AttachDiskRes
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -884,8 +874,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 
 // handleAttachPortRequest handles attach-port operation.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
+// Attach a network interface.
 //
 // POST /api/v1/instances/{instanceId}/ports
 func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1033,7 +1022,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response AttachPortRes
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1047,10 +1036,6 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -1058,7 +1043,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *AttachPortRequestBody
 			Params   = AttachPortParams
-			Response = AttachPortRes
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1329,9 +1314,6 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns;
 // track the returned task.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/backups
 func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -1468,7 +1450,7 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response CreateBackupRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1484,7 +1466,7 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 		type (
 			Request  = *CreateBackupRequestBody
 			Params   = struct{}
-			Response = CreateBackupRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1536,9 +1518,6 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 // A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
 // resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
 // one keep working and can still be resized.
-//
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // POST /api/v1/disks
 func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1676,7 +1655,7 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response CreateDiskRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1692,7 +1671,7 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		type (
 			Request  = *CreateDiskRequestBody
 			Params   = struct{}
-			Response = CreateDiskRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2159,9 +2138,6 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/private-images
 func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -2298,7 +2274,7 @@ func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped boo
 		}
 	}()
 
-	var response CreatePrivateImageRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -2314,7 +2290,7 @@ func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped boo
 		type (
 			Request  = *CreatePrivateImageRequestBody
 			Params   = struct{}
-			Response = CreatePrivateImageRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3206,9 +3182,6 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 // preserve and restore an entire system, use a private image; for a copy that crosses availability
 // zones and survives deletion of the disk, use a backup.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/snapshots
 func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -3345,7 +3318,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		}
 	}()
 
-	var response CreateSnapshotRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -3361,7 +3334,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = *CreateSnapshotRequestBody
 			Params   = struct{}
-			Response = CreateSnapshotRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3628,9 +3601,6 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 // pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
 // subscription ends.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/backups/{backupId}
 func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -3776,10 +3746,6 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 					Name: "backupId",
 					In:   "path",
 				}: params.BackupId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -3838,9 +3804,6 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
 // pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
 // ends.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // DELETE /api/v1/disks/{diskId}
 func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3987,10 +3950,6 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 					Name: "diskId",
 					In:   "path",
 				}: params.DiskId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -4054,9 +4013,6 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
 // that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
 // resource. It is released when its subscription ends.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // DELETE /api/v1/instances/{instanceId}
 func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4203,10 +4159,6 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -4670,9 +4622,6 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 // pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
 // ends.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/private-images/{privateImageId}
 func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -4818,10 +4767,6 @@ func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped boo
 					Name: "privateImageId",
 					In:   "path",
 				}: params.PrivateImageId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -5689,9 +5634,6 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 // pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
 // subscription ends.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -5837,10 +5779,6 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 					Name: "snapshotId",
 					In:   "path",
 				}: params.SnapshotId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -6102,9 +6040,6 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 // system that is being written to corrupts data.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/instances/{instanceId}/disks/{diskId}
 func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -6236,7 +6171,7 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response DetachDiskRes
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -6254,10 +6189,6 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 					Name: "diskId",
 					In:   "path",
 				}: params.DiskId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -6265,7 +6196,7 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DetachDiskParams
-			Response = DetachDiskRes
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6518,9 +6449,6 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/instances/{instanceId}/ports/{portId}
 func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -6652,7 +6580,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response DetachPortRes
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -6670,10 +6598,6 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 					Name: "portId",
 					In:   "path",
 				}: params.PortId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -6681,7 +6605,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DetachPortParams
-			Response = DetachPortRes
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9746,8 +9670,8 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s
 // Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
 // the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
-// submit a new purchase after paying, and reuse the original idempotency key after an uncertain
-// response.
+// submit a new purchase after paying. After an uncertain response, look the order up before submitting
+// again.
 //
 // Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 // subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
@@ -9764,9 +9688,6 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 // group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another
 // private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names
 // the resource.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // POST /api/v1/instances
 func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9904,7 +9825,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		}
 	}()
 
-	var response LaunchInstanceRes
+	var response *LaunchInstanceResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -9920,7 +9841,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = *LaunchInstanceRequestBody
 			Params   = struct{}
-			Response = LaunchInstanceRes
+			Response = *LaunchInstanceResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14638,9 +14559,6 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
 // instance until it settles at `running`.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/instances/{instanceId}/reboot
 func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -14787,7 +14705,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response RebootInstanceRes
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -14801,10 +14719,6 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -14812,7 +14726,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *RebootInstanceRequestBody
 			Params   = RebootInstanceParams
-			Response = RebootInstanceRes
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -15283,9 +15197,6 @@ func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w 
 // bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
 // released when its subscriptions end.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -15431,10 +15342,6 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 					Name: "floatingIpId",
 					In:   "path",
 				}: params.FloatingIpId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -17232,9 +17139,6 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 // types use a performance level that does not scale with size, so resizing a system disk does not
 // change its performance.
 //
-// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/disks/{diskId}/resize
 func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -17381,7 +17285,7 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response ResizeDiskRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -17402,7 +17306,7 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *ResizeDiskRequestBody
 			Params   = ResizeDiskParams
-			Response = ResizeDiskRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17451,15 +17355,12 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 // Creates a Billing change order, including for metered pricing. The price must belong to the Billing
 // Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
 // applied after the order's invoice is paid, or without waiting when the order has no immediate
-// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
-// uncertain response.
+// invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up
+// before submitting again.
 //
 // The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
 // completed resize is final and cannot be reverted; to return to the previous type, submit another
 // resize.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/resize
 func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -17607,7 +17508,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response ResizeInstanceRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -17628,7 +17529,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *ResizeInstanceRequestBody
 			Params   = ResizeInstanceParams
-			Response = ResizeInstanceRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17679,9 +17580,6 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 // The target disk type may belong to another availability zone of the same region, and its capacity
 // must not be smaller than the backup. The disk cannot be attached until the restore completes; track
 // the returned task.
-//
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // POST /api/v1/backups/{backupId}/restore
 func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -17829,7 +17727,7 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 		}
 	}()
 
-	var response RestoreBackupRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -17850,7 +17748,7 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = *RestoreBackupRequestBody
 			Params   = RestoreBackupParams
-			Response = RestoreBackupRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17905,9 +17803,6 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 // from the snapshot instead.
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // POST /api/v1/disks/{diskId}/revert
 func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -18055,7 +17950,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response RevertDiskRes
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -18069,10 +17964,6 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 					Name: "diskId",
 					In:   "path",
 				}: params.DiskId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -18080,7 +17971,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *RevertDiskRequestBody
 			Params   = RevertDiskParams
-			Response = RevertDiskRes
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -18374,9 +18265,6 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 // that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
 // address that is not bound is checked when the address is bound to an instance.
 //
-// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -18523,7 +18411,7 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		}
 	}()
 
-	var response SetFloatingIPBandwidthRes
+	var response *PurchaseResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -18544,7 +18432,7 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		type (
 			Request  = *SetBandwidthRequestBody
 			Params   = SetFloatingIPBandwidthParams
-			Response = SetFloatingIPBandwidthRes
+			Response = *PurchaseResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -19034,9 +18922,6 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/instances/{instanceId}/start
 func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -19183,7 +19068,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		}
 	}()
 
-	var response StartInstanceRes
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -19197,10 +19082,6 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -19208,7 +19089,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = *PowerRequest
 			Params   = StartInstanceParams
-			Response = StartInstanceRes
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -19258,9 +19139,6 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 // start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // POST /api/v1/instances/{instanceId}/stop
 func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -19408,7 +19286,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response StopInstanceRes
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -19422,10 +19300,6 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -19433,7 +19307,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		type (
 			Request  = *PowerRequest
 			Params   = StopInstanceParams
-			Response = StopInstanceRes
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,

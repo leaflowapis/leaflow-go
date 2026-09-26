@@ -217,21 +217,20 @@ type OffsetPagination struct {
 	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
-// OrderOptions Purchase options. Reuse idempotency_key for retries of the same purchase, including resource creation. Different parameters with the same key return HTTP 409. Replays identify the original purchase and do not create another order.
+// OrderOptions Purchase options. Every request places an order of its own.
 type OrderOptions struct {
-	// AutoPay Defaults to true. When true, the purchase is paid from available account funds and applicable grants when it is placed. If they do not cover the amount due, the request fails with HTTP 422 and code BILLING_INSUFFICIENT_FUNDS; no order is created and nothing is charged. The idempotency key remains bound to the refused request. Retrying with the same key returns HTTP 409 with code ORDER_CLOSED, and purchasing again requires a new idempotency key. When false, the order is created without payment, and its invoice, if any, is paid through Billing.
+	// AutoPay Defaults to true. When true, the purchase is paid from available account funds and applicable grants when it is placed. If they do not cover the amount due, the request fails with HTTP 422 and code BILLING_INSUFFICIENT_FUNDS; no order is created and nothing is charged. When false, the order is created without payment, and its invoice, if any, is paid through Billing.
 	AutoPay        *bool   `json:"auto_pay,omitempty"`
 	ExpectedAmount *string `json:"expected_amount,omitempty"`
-	IdempotencyKey string  `json:"idempotency_key"`
 	RedemptionCode *string `json:"redemption_code,omitempty"`
 }
 
-// PlacedOrder Identifies the original purchase. Replays retain these identifiers. Read the order for purchase progress and its invoice for amounts and payment status.
+// PlacedOrder Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
 type PlacedOrder struct {
-	// InvoiceId The invoice for this purchase. Null when there is no immediate invoice. Replays retain this identifier; read the invoice for its current payment state.
+	// InvoiceId The invoice for this purchase. Null when there is no immediate invoice. Read the invoice for its current payment state.
 	InvoiceId *openapi_types.UUID `json:"invoice_id"`
 
-	// OrderId The original order, including for purchases without an immediate charge. Payment alone does not imply that the service has completed delivery.
+	// OrderId The order, including for purchases without an immediate charge. Payment alone does not imply that the service has completed delivery.
 	OrderId openapi_types.UUID `json:"order_id"`
 }
 

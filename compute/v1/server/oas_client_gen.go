@@ -46,21 +46,15 @@ type Invoker interface {
 	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's
 	// `status` is not `available`. `meta.private_network_id` names it.
 	//
-	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/floating-ips
-	AllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (AllocateFloatingIPRes, error)
+	AllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (*PurchaseResult, error)
 	// AttachDisk invokes attach-disk operation.
 	//
 	// The disk must be in the same region and availability zone as the instance. Partition it and mount
 	// the file system inside the instance once it is attached.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/instances/{instanceId}/disks
-	AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error)
+	AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (*Task, error)
 	// AttachInstanceFloatingIP invokes attach-instance-floating-ip operation.
 	//
 	// Changes the public IP binding on the instance's primary network interface. The returned task tracks
@@ -70,11 +64,10 @@ type Invoker interface {
 	AttachInstanceFloatingIP(ctx context.Context, request *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// AttachPort invokes attach-port operation.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
+	// Attach a network interface.
 	//
 	// POST /api/v1/instances/{instanceId}/ports
-	AttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (AttachPortRes, error)
+	AttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (*Task, error)
 	// BindFloatingIP invokes bind-floating-ip operation.
 	//
 	// Bind a floating IP to a network interface.
@@ -93,11 +86,8 @@ type Invoker interface {
 	// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
 	// track the returned task.
 	//
-	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (CreateBackupRes, error)
+	CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (*PurchaseResult, error)
 	// CreateDisk invokes create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -107,11 +97,8 @@ type Invoker interface {
 	// resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
 	// one keep working and can still be resized.
 	//
-	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/disks
-	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error)
+	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (*PurchaseResult, error)
 	// CreatePeering invokes create-peering operation.
 	//
 	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
@@ -147,11 +134,8 @@ type Invoker interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/private-images
-	CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (CreatePrivateImageRes, error)
+	CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (*PurchaseResult, error)
 	// CreatePrivateNetwork invokes create-private-network operation.
 	//
 	// Creates a network, a router and a default security group in one call. The default security group
@@ -194,11 +178,8 @@ type Invoker interface {
 	// preserve and restore an entire system, use a private image; for a copy that crosses availability
 	// zones and survives deletion of the disk, use a backup.
 	//
-	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/snapshots
-	CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (CreateSnapshotRes, error)
+	CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (*PurchaseResult, error)
 	// CreateSubnet invokes create-subnet operation.
 	//
 	// Create a subnet.
@@ -213,9 +194,6 @@ type Invoker interface {
 	// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
 	// subscription ends.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// DELETE /api/v1/backups/{backupId}
 	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
 	// DeleteDisk invokes delete-disk operation.
@@ -225,9 +203,6 @@ type Invoker interface {
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
 	// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
 	// ends.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
@@ -243,9 +218,6 @@ type Invoker interface {
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
 	// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
 	// resource. It is released when its subscription ends.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
 	//
 	// DELETE /api/v1/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
@@ -272,9 +244,6 @@ type Invoker interface {
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
 	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
 	// ends.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
 	//
 	// DELETE /api/v1/private-images/{privateImageId}
 	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
@@ -310,9 +279,6 @@ type Invoker interface {
 	// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
 	// subscription ends.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// DELETE /api/v1/snapshots/{snapshotId}
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
 	// DeleteSubnet invokes delete-subnet operation.
@@ -327,11 +293,8 @@ type Invoker interface {
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 	// system that is being written to corrupts data.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-	DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error)
+	DetachDisk(ctx context.Context, params DetachDiskParams) (*Task, error)
 	// DetachInstanceFloatingIP invokes detach-instance-floating-ip operation.
 	//
 	// Changes the public IP binding on the instance's primary network interface. The returned task tracks
@@ -343,11 +306,8 @@ type Invoker interface {
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// DELETE /api/v1/instances/{instanceId}/ports/{portId}
-	DetachPort(ctx context.Context, params DetachPortParams) (DetachPortRes, error)
+	DetachPort(ctx context.Context, params DetachPortParams) (*Task, error)
 	// DisablePrivateNetworkIpv6 invokes disable-private-network-ipv6 operation.
 	//
 	// A released prefix is not re-allocated immediately.
@@ -455,8 +415,8 @@ type Invoker interface {
 	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
 	// Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
 	// the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
-	// submit a new purchase after paying, and reuse the original idempotency key after an uncertain
-	// response.
+	// submit a new purchase after paying. After an uncertain response, look the order up before submitting
+	// again.
 	//
 	// Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 	// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
@@ -474,11 +434,8 @@ type Invoker interface {
 	// private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names
 	// the resource.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/instances
-	LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (LaunchInstanceRes, error)
+	LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
 	// ListAvailabilityZones invokes list-availability-zones operation.
 	//
 	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
@@ -656,11 +613,8 @@ type Invoker interface {
 	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
 	// instance until it settles at `running`.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/instances/{instanceId}/reboot
-	RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error)
+	RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (*Task, error)
 	// RebuildInstance invokes rebuild-instance operation.
 	//
 	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
@@ -684,9 +638,6 @@ type Invoker interface {
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
 	// bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
 	// released when its subscriptions end.
-	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
 	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error)
@@ -764,28 +715,22 @@ type Invoker interface {
 	// types use a performance level that does not scale with size, so resizing a system disk does not
 	// change its performance.
 	//
-	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
+	ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (*PurchaseResult, error)
 	// ResizeInstance invokes resize-instance operation.
 	//
 	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing
 	// Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
 	// applied after the order's invoice is paid, or without waiting when the order has no immediate
-	// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
-	// uncertain response.
+	// invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up
+	// before submitting again.
 	//
 	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
 	// completed resize is final and cannot be reverted; to return to the previous type, submit another
 	// resize.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/instances/{instanceId}/resize
-	ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error)
+	ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (*PurchaseResult, error)
 	// RestoreBackup invokes restore-backup operation.
 	//
 	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
@@ -794,11 +739,8 @@ type Invoker interface {
 	// must not be smaller than the backup. The disk cannot be attached until the restore completes; track
 	// the returned task.
 	//
-	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
+	RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (*PurchaseResult, error)
 	// RevertDisk invokes revert-disk operation.
 	//
 	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
@@ -811,11 +753,8 @@ type Invoker interface {
 	//
 	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
+	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (*Task, error)
 	// RunInstanceCommand invokes run-instance-command operation.
 	//
 	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
@@ -857,11 +796,8 @@ type Invoker interface {
 	// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
 	// address that is not bound is checked when the address is bound to an instance.
 	//
-	// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-	SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (SetFloatingIPBandwidthRes, error)
+	SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*PurchaseResult, error)
 	// SetInstanceLabels invokes set-instance-labels operation.
 	//
 	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
@@ -890,11 +826,8 @@ type Invoker interface {
 	// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 	// determine completion.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/instances/{instanceId}/start
-	StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (StartInstanceRes, error)
+	StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (*Task, error)
 	// StopInstance invokes stop-instance operation.
 	//
 	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
@@ -902,11 +835,8 @@ type Invoker interface {
 	// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 	// determine completion.
 	//
-	// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-	// and terminal outcomes.
-	//
 	// POST /api/v1/instances/{instanceId}/stop
-	StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (StopInstanceRes, error)
+	StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (*Task, error)
 	// SuggestSubnetCidr invokes suggest-subnet-cidr operation.
 	//
 	// The returned value is a suggestion and is validated again when the subnet is created. It exists to
@@ -1106,16 +1036,13 @@ func (c *Client) sendAcceptPeering(ctx context.Context, params AcceptPeeringPara
 // Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's
 // `status` is not `available`. `meta.private_network_id` names it.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/floating-ips
-func (c *Client) AllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (AllocateFloatingIPRes, error) {
+func (c *Client) AllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (*PurchaseResult, error) {
 	res, err := c.sendAllocateFloatingIP(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendAllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (res AllocateFloatingIPRes, err error) {
+func (c *Client) sendAllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("allocate-floating-ip"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1226,16 +1153,13 @@ func (c *Client) sendAllocateFloatingIP(ctx context.Context, request *AllocateFl
 // The disk must be in the same region and availability zone as the instance. Partition it and mount
 // the file system inside the instance once it is attached.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/instances/{instanceId}/disks
-func (c *Client) AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error) {
+func (c *Client) AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (*Task, error) {
 	res, err := c.sendAttachDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (res AttachDiskRes, err error) {
+func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("attach-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1302,20 +1226,6 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 	}
 	if err := encodeAttachDiskRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -1512,16 +1422,15 @@ func (c *Client) sendAttachInstanceFloatingIP(ctx context.Context, request *Atta
 
 // AttachPort invokes attach-port operation.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
+// Attach a network interface.
 //
 // POST /api/v1/instances/{instanceId}/ports
-func (c *Client) AttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (AttachPortRes, error) {
+func (c *Client) AttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (*Task, error) {
 	res, err := c.sendAttachPort(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (res AttachPortRes, err error) {
+func (c *Client) sendAttachPort(ctx context.Context, request *AttachPortRequestBody, params AttachPortParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("attach-port"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1588,20 +1497,6 @@ func (c *Client) sendAttachPort(ctx context.Context, request *AttachPortRequestB
 	}
 	if err := encodeAttachPortRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -1807,16 +1702,13 @@ func (c *Client) sendBindFloatingIP(ctx context.Context, request *BindFloatingIP
 // The duration depends on the amount of data. The backup is not complete when this endpoint returns;
 // track the returned task.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/backups
-func (c *Client) CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (CreateBackupRes, error) {
+func (c *Client) CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (*PurchaseResult, error) {
 	res, err := c.sendCreateBackup(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequestBody) (res CreateBackupRes, err error) {
+func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequestBody) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-backup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1931,16 +1823,13 @@ func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequ
 // resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
 // one keep working and can still be resized.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/disks
-func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error) {
+func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (*PurchaseResult, error) {
 	res, err := c.sendCreateDisk(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestBody) (res CreateDiskRes, err error) {
+func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestBody) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2301,16 +2190,13 @@ func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestB
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/private-images
-func (c *Client) CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (CreatePrivateImageRes, error) {
+func (c *Client) CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (*PurchaseResult, error) {
 	res, err := c.sendCreatePrivateImage(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (res CreatePrivateImageRes, err error) {
+func (c *Client) sendCreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-private-image"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2936,16 +2822,13 @@ func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *Creat
 // preserve and restore an entire system, use a private image; for a copy that crosses availability
 // zones and survives deletion of the disk, use a backup.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/snapshots
-func (c *Client) CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (CreateSnapshotRes, error) {
+func (c *Client) CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (*PurchaseResult, error) {
 	res, err := c.sendCreateSnapshot(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (res CreateSnapshotRes, err error) {
+func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-snapshot"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3194,9 +3077,6 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 // pay-as-you-go subscription. `meta.resource_id` names the backup. It is released when its
 // subscription ends.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/backups/{backupId}
 func (c *Client) DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error) {
 	res, err := c.sendDeleteBackup(ctx, params)
@@ -3268,20 +3148,6 @@ func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams
 		return res, errors.Wrap(err, "create request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -3345,9 +3211,6 @@ func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
 // pay-as-you-go subscription. `meta.resource_id` names the disk. It is released when its subscription
 // ends.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // DELETE /api/v1/disks/{diskId}
 func (c *Client) DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error) {
@@ -3420,20 +3283,6 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 		return res, errors.Wrap(err, "create request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -3502,9 +3351,6 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
 // that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
 // resource. It is released when its subscription ends.
-//
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
 //
 // DELETE /api/v1/instances/{instanceId}
 func (c *Client) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error) {
@@ -3575,20 +3421,6 @@ func (c *Client) sendDeleteInstance(ctx context.Context, params DeleteInstancePa
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -3921,9 +3753,6 @@ func (c *Client) sendDeletePort(ctx context.Context, params DeletePortParams) (r
 // pay-as-you-go subscription. `meta.resource_id` names the image. It is released when its subscription
 // ends.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/private-images/{privateImageId}
 func (c *Client) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error) {
 	res, err := c.sendDeletePrivateImage(ctx, params)
@@ -3993,20 +3822,6 @@ func (c *Client) sendDeletePrivateImage(ctx context.Context, params DeletePrivat
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -4635,9 +4450,6 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 // pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released when its
 // subscription ends.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/snapshots/{snapshotId}
 func (c *Client) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error) {
 	res, err := c.sendDeleteSnapshot(ctx, params)
@@ -4707,20 +4519,6 @@ func (c *Client) sendDeleteSnapshot(ctx context.Context, params DeleteSnapshotPa
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -4935,16 +4733,13 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 // system that is being written to corrupts data.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-func (c *Client) DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error) {
+func (c *Client) DetachDisk(ctx context.Context, params DetachDiskParams) (*Task, error) {
 	res, err := c.sendDetachDisk(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (res DetachDiskRes, err error) {
+func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("detach-disk"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -5026,20 +4821,6 @@ func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (r
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -5253,16 +5034,13 @@ func (c *Client) sendDetachInstanceFloatingIP(ctx context.Context, params Detach
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/instances/{instanceId}/ports/{portId}
-func (c *Client) DetachPort(ctx context.Context, params DetachPortParams) (DetachPortRes, error) {
+func (c *Client) DetachPort(ctx context.Context, params DetachPortParams) (*Task, error) {
 	res, err := c.sendDetachPort(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachPort(ctx context.Context, params DetachPortParams) (res DetachPortRes, err error) {
+func (c *Client) sendDetachPort(ctx context.Context, params DetachPortParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("detach-port"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -5344,20 +5122,6 @@ func (c *Client) sendDetachPort(ctx context.Context, params DetachPortParams) (r
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -7423,8 +7187,8 @@ func (c *Client) sendGetTask(ctx context.Context, params GetTaskParams) (res *Ta
 // Creates a Billing order, including for metered pricing. The price must belong to the resource’s
 // Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
 // the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
-// submit a new purchase after paying, and reuse the original idempotency key after an uncertain
-// response.
+// submit a new purchase after paying. After an uncertain response, look the order up before submitting
+// again.
 //
 // Exactly one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 // subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
@@ -7442,16 +7206,13 @@ func (c *Client) sendGetTask(ctx context.Context, params GetTaskParams) (res *Ta
 // private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names
 // the resource.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/instances
-func (c *Client) LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (LaunchInstanceRes, error) {
+func (c *Client) LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error) {
 	res, err := c.sendLaunchInstance(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendLaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (res LaunchInstanceRes, err error) {
+func (c *Client) sendLaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (res *LaunchInstanceResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("launch-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -10937,16 +10698,13 @@ func (c *Client) sendOpenInstanceConsole(ctx context.Context, params OpenInstanc
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
 // instance until it settles at `running`.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/instances/{instanceId}/reboot
-func (c *Client) RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error) {
+func (c *Client) RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (*Task, error) {
 	res, err := c.sendRebootInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (res RebootInstanceRes, err error) {
+func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reboot-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -11013,20 +10771,6 @@ func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstance
 	}
 	if err := encodeRebootInstanceRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -11364,9 +11108,6 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 // bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
 // released when its subscriptions end.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (c *Client) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error) {
 	res, err := c.sendReleaseFloatingIP(ctx, params)
@@ -11436,20 +11177,6 @@ func (c *Client) sendReleaseFloatingIP(ctx context.Context, params ReleaseFloati
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -12607,16 +12334,13 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 // types use a performance level that does not scale with size, so resizing a system disk does not
 // change its performance.
 //
-// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/disks/{diskId}/resize
-func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error) {
+func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (*PurchaseResult, error) {
 	res, err := c.sendResizeDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (res ResizeDiskRes, err error) {
+func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -12746,23 +12470,20 @@ func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestB
 // Creates a Billing change order, including for metered pricing. The price must belong to the Billing
 // Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
 // applied after the order's invoice is paid, or without waiting when the order has no immediate
-// invoice. Do not submit a new purchase after paying, and reuse the original idempotency key after an
-// uncertain response.
+// invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up
+// before submitting again.
 //
 // The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
 // completed resize is final and cannot be reverted; to return to the previous type, submit another
 // resize.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/instances/{instanceId}/resize
-func (c *Client) ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error) {
+func (c *Client) ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (*PurchaseResult, error) {
 	res, err := c.sendResizeInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (res ResizeInstanceRes, err error) {
+func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -12895,16 +12616,13 @@ func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstance
 // must not be smaller than the backup. The disk cannot be attached until the restore completes; track
 // the returned task.
 //
-// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/backups/{backupId}/restore
-func (c *Client) RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error) {
+func (c *Client) RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (*PurchaseResult, error) {
 	res, err := c.sendRestoreBackup(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (res RestoreBackupRes, err error) {
+func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("restore-backup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -13041,16 +12759,13 @@ func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRe
 //
 // The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/disks/{diskId}/revert
-func (c *Client) RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error) {
+func (c *Client) RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (*Task, error) {
 	res, err := c.sendRevertDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (res RevertDiskRes, err error) {
+func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revert-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -13117,20 +12832,6 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 	}
 	if err := encodeRevertDiskRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -13359,16 +13060,13 @@ func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunCommand
 // that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
 // address that is not bound is checked when the address is bound to an instance.
 //
-// Replays return HTTP 200 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-func (c *Client) SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (SetFloatingIPBandwidthRes, error) {
+func (c *Client) SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*PurchaseResult, error) {
 	res, err := c.sendSetFloatingIPBandwidth(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (res SetFloatingIPBandwidthRes, err error) {
+func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (res *PurchaseResult, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-floating-ip-bandwidth"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -13779,16 +13477,13 @@ func (c *Client) sendSetInstanceNotes(ctx context.Context, request *SetInstanceN
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/instances/{instanceId}/start
-func (c *Client) StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (StartInstanceRes, error) {
+func (c *Client) StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (*Task, error) {
 	res, err := c.sendStartInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (res StartInstanceRes, err error) {
+func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("start-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -13857,20 +13552,6 @@ func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, p
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -13934,16 +13615,13 @@ func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, p
 // attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
 // determine completion.
 //
-// Replays return HTTP 202 for the original operation. See the idempotency conventions for conflicts
-// and terminal outcomes.
-//
 // POST /api/v1/instances/{instanceId}/stop
-func (c *Client) StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (StopInstanceRes, error) {
+func (c *Client) StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (*Task, error) {
 	res, err := c.sendStopInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (res StopInstanceRes, err error) {
+func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("stop-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -14010,20 +13688,6 @@ func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, pa
 	}
 	if err := encodeStopInstanceRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{

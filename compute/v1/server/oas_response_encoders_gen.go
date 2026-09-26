@@ -25,66 +25,30 @@ func encodeAcceptPeeringResponse(response *PeeringResource, w http.ResponseWrite
 	return nil
 }
 
-func encodeAllocateFloatingIPResponse(response AllocateFloatingIPRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
+func encodeAllocateFloatingIPResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
-func encodeAttachDiskResponse(response AttachDiskRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeAttachDiskResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeAttachInstanceFloatingIPResponse(response *FloatingIPResource, w http.ResponseWriter, span trace.Span) error {
@@ -100,35 +64,17 @@ func encodeAttachInstanceFloatingIPResponse(response *FloatingIPResource, w http
 	return nil
 }
 
-func encodeAttachPortResponse(response AttachPortRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeAttachPortResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeBindFloatingIPResponse(response *FloatingIPResource, w http.ResponseWriter, span trace.Span) error {
@@ -144,66 +90,30 @@ func encodeBindFloatingIPResponse(response *FloatingIPResource, w http.ResponseW
 	return nil
 }
 
-func encodeCreateBackupResponse(response CreateBackupRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
+func encodeCreateBackupResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
-func encodeCreateDiskResponse(response CreateDiskRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
+func encodeCreateDiskResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeCreatePeeringResponse(response *PeeringResource, w http.ResponseWriter, span trace.Span) error {
@@ -232,35 +142,17 @@ func encodeCreatePortResponse(response *PortResource, w http.ResponseWriter, spa
 	return nil
 }
 
-func encodeCreatePrivateImageResponse(response CreatePrivateImageRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
+func encodeCreatePrivateImageResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeCreatePrivateNetworkResponse(response *PrivateNetworkResource, w http.ResponseWriter, span trace.Span) error {
@@ -315,35 +207,17 @@ func encodeCreateSecurityGroupRuleResponse(response *SecurityRuleResource, w htt
 	return nil
 }
 
-func encodeCreateSnapshotResponse(response CreateSnapshotRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
+func encodeCreateSnapshotResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeCreateSubnetResponse(response *SubnetResource, w http.ResponseWriter, span trace.Span) error {
@@ -563,35 +437,17 @@ func encodeDeleteSubnetResponse(response *DeleteSubnetNoContent, w http.Response
 	return nil
 }
 
-func encodeDetachDiskResponse(response DetachDiskRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeDetachDiskResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeDetachInstanceFloatingIPResponse(response *FloatingIPResource, w http.ResponseWriter, span trace.Span) error {
@@ -607,35 +463,17 @@ func encodeDetachInstanceFloatingIPResponse(response *FloatingIPResource, w http
 	return nil
 }
 
-func encodeDetachPortResponse(response DetachPortRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeDetachPortResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeDisablePrivateNetworkIpv6Response(response *DisablePrivateNetworkIpv6NoContent, w http.ResponseWriter, span trace.Span) error {
@@ -826,35 +664,17 @@ func encodeGetTaskResponse(response *Task, w http.ResponseWriter, span trace.Spa
 	return nil
 }
 
-func encodeLaunchInstanceResponse(response LaunchInstanceRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *LaunchInstanceResponseBody:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeLaunchInstanceResponse(response *LaunchInstanceResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeListAvailabilityZonesResponse(response *ZoneListResponseBody, w http.ResponseWriter, span trace.Span) error {
@@ -1156,35 +976,17 @@ func encodeOpenInstanceConsoleResponse(response *ConsoleResponseBody, w http.Res
 	return nil
 }
 
-func encodeRebootInstanceResponse(response RebootInstanceRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeRebootInstanceResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeRebuildInstanceResponse(response *RebuildInstanceResponseBody, w http.ResponseWriter, span trace.Span) error {
@@ -1348,128 +1150,56 @@ func encodeResetInstancePasswordResponse(response *ResetPasswordResponseBody, w 
 	return nil
 }
 
-func encodeResizeDiskResponse(response ResizeDiskRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(200)
+func encodeResizeDiskResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
-func encodeResizeInstanceResponse(response ResizeInstanceRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeResizeInstanceResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
-func encodeRestoreBackupResponse(response RestoreBackupRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(201)
+func encodeRestoreBackupResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
-func encodeRevertDiskResponse(response RevertDiskRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeRevertDiskResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeRunInstanceCommandResponse(response *CommandResultResponseBody, w http.ResponseWriter, span trace.Span) error {
@@ -1485,35 +1215,17 @@ func encodeRunInstanceCommandResponse(response *CommandResultResponseBody, w htt
 	return nil
 }
 
-func encodeSetFloatingIPBandwidthResponse(response SetFloatingIPBandwidthRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *PurchaseResult:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(200)
+func encodeSetFloatingIPBandwidthResponse(response *PurchaseResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeSetInstanceLabelsResponse(response *InstanceResource, w http.ResponseWriter, span trace.Span) error {
@@ -1542,66 +1254,30 @@ func encodeSetInstanceNotesResponse(response *InstanceResource, w http.ResponseW
 	return nil
 }
 
-func encodeStartInstanceResponse(response StartInstanceRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeStartInstanceResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
-func encodeStopInstanceResponse(response StopInstanceRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *Task:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
+func encodeStopInstanceResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
 	}
+
+	return nil
 }
 
 func encodeSuggestSubnetCidrResponse(response *NextFreeCidrResponseBody, w http.ResponseWriter, span trace.Span) error {

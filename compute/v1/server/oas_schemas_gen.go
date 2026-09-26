@@ -2196,30 +2196,12 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-func (*Error) allocateFloatingIPRes()     {}
-func (*Error) attachDiskRes()             {}
-func (*Error) attachPortRes()             {}
-func (*Error) createBackupRes()           {}
-func (*Error) createDiskRes()             {}
-func (*Error) createPrivateImageRes()     {}
-func (*Error) createSnapshotRes()         {}
-func (*Error) deleteBackupRes()           {}
-func (*Error) deleteDiskRes()             {}
-func (*Error) deleteInstanceRes()         {}
-func (*Error) deletePrivateImageRes()     {}
-func (*Error) deleteSnapshotRes()         {}
-func (*Error) detachDiskRes()             {}
-func (*Error) detachPortRes()             {}
-func (*Error) launchInstanceRes()         {}
-func (*Error) rebootInstanceRes()         {}
-func (*Error) releaseFloatingIPRes()      {}
-func (*Error) resizeDiskRes()             {}
-func (*Error) resizeInstanceRes()         {}
-func (*Error) restoreBackupRes()          {}
-func (*Error) revertDiskRes()             {}
-func (*Error) setFloatingIPBandwidthRes() {}
-func (*Error) startInstanceRes()          {}
-func (*Error) stopInstanceRes()           {}
+func (*Error) deleteBackupRes()       {}
+func (*Error) deleteDiskRes()         {}
+func (*Error) deleteInstanceRes()     {}
+func (*Error) deletePrivateImageRes() {}
+func (*Error) deleteSnapshotRes()     {}
+func (*Error) releaseFloatingIPRes()  {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
@@ -4428,15 +4410,12 @@ func (s *LaunchInstanceRequestBody) SetFloatingIP(val OptNewFloatingIP) {
 
 // Ref: #/components/schemas/LaunchInstanceResponseBody
 type LaunchInstanceResponseBody struct {
-	// Instances created by this operation. Empty before resource creation starts; a replay may include
-	// identifiers produced since the first response. Historical identifiers do not imply that the
-	// instances still exist.
+	// Instances created by this operation. Empty before resource creation starts.
 	InstanceIds []uuid.UUID `json:"instance_ids"`
-	// The original Compute task. Replays retain this identifier, including after failure or cancellation.
+	// The Compute task that carries out the purchase.
 	TaskID uuid.UUID   `json:"task_id"`
 	Order  PlacedOrder `json:"order"`
-	// Generated login password, returned only by the initial response. Null on replay or when no password
-	// was generated. A retry never generates or resets a password.
+	// Generated login password, returned only by this response. Null when no password was generated.
 	Password NilString `json:"password"`
 }
 
@@ -4479,8 +4458,6 @@ func (s *LaunchInstanceResponseBody) SetOrder(val PlacedOrder) {
 func (s *LaunchInstanceResponseBody) SetPassword(val NilString) {
 	s.Password = val
 }
-
-func (*LaunchInstanceResponseBody) launchInstanceRes() {}
 
 // A system disk purchased in the same order. Required when booting from an image; mutually exclusive
 // with boot_disk_id.
@@ -6077,26 +6054,16 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// Purchase options. Reuse idempotency_key for retries of the same purchase, including resource
-// creation. Different parameters with the same key return HTTP 409. Replays identify the original
-// purchase and do not create another order.
+// Purchase options. Every request places an order of its own.
 // Ref: #/components/schemas/OrderOptions
 type OrderOptions struct {
-	IdempotencyKey string `json:"idempotency_key"`
 	// Defaults to true. When true, the purchase is paid from available account funds and applicable grants
 	// when it is placed. If they do not cover the amount due, the request fails with HTTP 422 and code
-	// BILLING_INSUFFICIENT_FUNDS; no order is created and nothing is charged. The idempotency key remains
-	// bound to the refused request. Retrying with the same key returns HTTP 409 with code ORDER_CLOSED,
-	// and purchasing again requires a new idempotency key. When false, the order is created without
-	// payment, and its invoice, if any, is paid through Billing.
+	// BILLING_INSUFFICIENT_FUNDS; no order is created and nothing is charged. When false, the order is
+	// created without payment, and its invoice, if any, is paid through Billing.
 	AutoPay        OptBool   `json:"auto_pay"`
 	ExpectedAmount OptString `json:"expected_amount"`
 	RedemptionCode OptString `json:"redemption_code"`
-}
-
-// GetIdempotencyKey returns the value of IdempotencyKey.
-func (s *OrderOptions) GetIdempotencyKey() string {
-	return s.IdempotencyKey
 }
 
 // GetAutoPay returns the value of AutoPay.
@@ -6112,11 +6079,6 @@ func (s *OrderOptions) GetExpectedAmount() OptString {
 // GetRedemptionCode returns the value of RedemptionCode.
 func (s *OrderOptions) GetRedemptionCode() OptString {
 	return s.RedemptionCode
-}
-
-// SetIdempotencyKey sets the value of IdempotencyKey.
-func (s *OrderOptions) SetIdempotencyKey(val string) {
-	s.IdempotencyKey = val
 }
 
 // SetAutoPay sets the value of AutoPay.
@@ -6350,15 +6312,15 @@ func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Identifies the original purchase. Replays retain these identifiers. Read the order for purchase
-// progress and its invoice for amounts and payment status.
+// Identifies the purchase. Read the order for purchase progress and its invoice for amounts and
+// payment status.
 // Ref: #/components/schemas/PlacedOrder
 type PlacedOrder struct {
-	// The invoice for this purchase. Null when there is no immediate invoice. Replays retain this
-	// identifier; read the invoice for its current payment state.
+	// The invoice for this purchase. Null when there is no immediate invoice. Read the invoice for its
+	// current payment state.
 	InvoiceID NilUUID `json:"invoice_id"`
-	// The original order, including for purchases without an immediate charge. Payment alone does not
-	// imply that the service has completed delivery.
+	// The order, including for purchases without an immediate charge. Payment alone does not imply that
+	// the service has completed delivery.
 	OrderID uuid.UUID `json:"order_id"`
 }
 
@@ -7587,7 +7549,7 @@ func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
 // task for completion.
 // Ref: #/components/schemas/PurchaseResult
 type PurchaseResult struct {
-	// The original Compute task. Replays retain this identifier, including after failure or cancellation.
+	// The Compute task that carries out the purchase.
 	TaskID uuid.UUID   `json:"task_id"`
 	Order  PlacedOrder `json:"order"`
 }
@@ -7611,16 +7573,6 @@ func (s *PurchaseResult) SetTaskID(val uuid.UUID) {
 func (s *PurchaseResult) SetOrder(val PlacedOrder) {
 	s.Order = val
 }
-
-func (*PurchaseResult) allocateFloatingIPRes()     {}
-func (*PurchaseResult) createBackupRes()           {}
-func (*PurchaseResult) createDiskRes()             {}
-func (*PurchaseResult) createPrivateImageRes()     {}
-func (*PurchaseResult) createSnapshotRes()         {}
-func (*PurchaseResult) resizeDiskRes()             {}
-func (*PurchaseResult) resizeInstanceRes()         {}
-func (*PurchaseResult) restoreBackupRes()          {}
-func (*PurchaseResult) setFloatingIPBandwidthRes() {}
 
 // Ref: #/components/schemas/RebootInstanceRequestBody
 type RebootInstanceRequestBody struct {
@@ -9090,20 +9042,12 @@ func (s *Task) SetCompletedAt(val NilDateTime) {
 	s.CompletedAt = val
 }
 
-func (*Task) attachDiskRes()         {}
-func (*Task) attachPortRes()         {}
 func (*Task) deleteBackupRes()       {}
 func (*Task) deleteDiskRes()         {}
 func (*Task) deleteInstanceRes()     {}
 func (*Task) deletePrivateImageRes() {}
 func (*Task) deleteSnapshotRes()     {}
-func (*Task) detachDiskRes()         {}
-func (*Task) detachPortRes()         {}
-func (*Task) rebootInstanceRes()     {}
 func (*Task) releaseFloatingIPRes()  {}
-func (*Task) revertDiskRes()         {}
-func (*Task) startInstanceRes()      {}
-func (*Task) stopInstanceRes()       {}
 
 type TaskState string
 

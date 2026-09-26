@@ -16,7 +16,7 @@ var (
 		"POST": "Authorization,Content-Type",
 	}
 	rn35AllowedHeaders = map[string]string{
-		"DELETE": "Authorization,Idempotency-Key",
+		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
@@ -34,7 +34,7 @@ var (
 		"POST": "Authorization,Content-Type",
 	}
 	rn37AllowedHeaders = map[string]string{
-		"DELETE": "Authorization,Idempotency-Key",
+		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
@@ -42,14 +42,14 @@ var (
 		"POST": "Authorization,Content-Type",
 	}
 	rn88AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type,Idempotency-Key",
+		"POST": "Authorization,Content-Type",
 	}
 	rn5AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
 	rn13AllowedHeaders = map[string]string{
-		"DELETE": "Authorization,Idempotency-Key",
+		"DELETE": "Authorization",
 		"GET":    "Authorization",
 	}
 	rn92AllowedHeaders = map[string]string{
@@ -70,7 +70,7 @@ var (
 		"POST": "Authorization,Content-Type",
 	}
 	rn7AllowedHeaders = map[string]string{
-		"DELETE": "Authorization,Idempotency-Key",
+		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
@@ -85,10 +85,10 @@ var (
 	}
 	rn8AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type,Idempotency-Key",
+		"POST": "Authorization,Content-Type",
 	}
 	rn51AllowedHeaders = map[string]string{
-		"DELETE": "Authorization,Idempotency-Key",
+		"DELETE": "Authorization",
 	}
 	rn10AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
@@ -107,13 +107,13 @@ var (
 	}
 	rn11AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type,Idempotency-Key",
+		"POST": "Authorization,Content-Type",
 	}
 	rn55AllowedHeaders = map[string]string{
-		"DELETE": "Authorization,Idempotency-Key",
+		"DELETE": "Authorization",
 	}
 	rn76AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type,Idempotency-Key",
+		"POST": "Authorization,Content-Type",
 	}
 	rn78AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
@@ -122,10 +122,10 @@ var (
 		"POST": "Authorization,Content-Type",
 	}
 	rn95AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type,Idempotency-Key",
+		"POST": "Authorization,Content-Type",
 	}
 	rn97AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type,Idempotency-Key",
+		"POST": "Authorization,Content-Type",
 	}
 	rn72AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -159,7 +159,7 @@ var (
 		"POST": "Authorization,Content-Type",
 	}
 	rn41AllowedHeaders = map[string]string{
-		"DELETE": "Authorization,Idempotency-Key",
+		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
@@ -221,7 +221,7 @@ var (
 		"POST": "Authorization,Content-Type",
 	}
 	rn47AllowedHeaders = map[string]string{
-		"DELETE": "Authorization,Idempotency-Key",
+		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
