@@ -23,6 +23,14 @@ func (s *PayRequest) setDefaults() {
 }
 
 // setDefaults set default value of fields.
+func (s *QuoteRenewal) setDefaults() {
+	{
+		val := int(1)
+		s.Periods.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *RenewRequest) setDefaults() {
 	{
 		val := int(1)

@@ -41,9 +41,8 @@ type Handler interface {
 	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 	//    progress;
-	//  - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//    `expected_refundable_amount`; preview again.
+	//    `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
 	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
@@ -51,16 +50,6 @@ type Handler interface {
 	//
 	// POST /api/v1/projects/{projectId}/cancellations
 	CreateProjectCancellation(ctx context.Context, req *CancellationCreate, params CreateProjectCancellationParams) (CreateProjectCancellationRes, error)
-	// CreateProjectCancellationPreview implements create-project-cancellation-preview operation.
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms agreed
-	// when each was bought. This request does not create a resource: nothing is recorded or reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// POST /api/v1/projects/{projectId}/cancellations/preview
-	CreateProjectCancellationPreview(ctx context.Context, req *CancellationPreviewRequest, params CreateProjectCancellationPreviewParams) (*CancellationRefundPreview, error)
 	// CreateProjectQuote implements create-project-quote operation.
 	//
 	// Priced in the project billing account's currency, and at any rate negotiated for that account.
@@ -72,8 +61,15 @@ type Handler interface {
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
 	// with the discounts the account holds, and with tax.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed does not
-	// belong to this project.
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+	// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+	// canceled does not belong to this project.
 	//
 	// POST /api/v1/projects/{projectId}/quotes
 	CreateProjectQuote(ctx context.Context, req *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)

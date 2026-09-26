@@ -62,9 +62,8 @@ type Invoker interface {
 	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 	//    progress;
-	//  - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//    `expected_refundable_amount`; preview again.
+	//    `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
 	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
@@ -72,16 +71,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/projects/{projectId}/cancellations
 	CreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (CreateProjectCancellationRes, error)
-	// CreateProjectCancellationPreview invokes create-project-cancellation-preview operation.
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms agreed
-	// when each was bought. This request does not create a resource: nothing is recorded or reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// POST /api/v1/projects/{projectId}/cancellations/preview
-	CreateProjectCancellationPreview(ctx context.Context, request *CancellationPreviewRequest, params CreateProjectCancellationPreviewParams) (*CancellationRefundPreview, error)
 	// CreateProjectQuote invokes create-project-quote operation.
 	//
 	// Priced in the project billing account's currency, and at any rate negotiated for that account.
@@ -93,8 +82,15 @@ type Invoker interface {
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
 	// with the discounts the account holds, and with tax.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed does not
-	// belong to this project.
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+	// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+	// canceled does not belong to this project.
 	//
 	// POST /api/v1/projects/{projectId}/quotes
 	CreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
@@ -277,9 +273,8 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that cancellation
 // is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
@@ -416,145 +411,6 @@ func (c *Client) sendCreateProjectCancellation(ctx context.Context, request *Can
 	return result, nil
 }
 
-// CreateProjectCancellationPreview invokes create-project-cancellation-preview operation.
-//
-// What canceling these subscriptions together would return, computed now under the refund terms agreed
-// when each was bought. This request does not create a resource: nothing is recorded or reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// POST /api/v1/projects/{projectId}/cancellations/preview
-func (c *Client) CreateProjectCancellationPreview(ctx context.Context, request *CancellationPreviewRequest, params CreateProjectCancellationPreviewParams) (*CancellationRefundPreview, error) {
-	res, err := c.sendCreateProjectCancellationPreview(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateProjectCancellationPreview(ctx context.Context, request *CancellationPreviewRequest, params CreateProjectCancellationPreviewParams) (res *CancellationRefundPreview, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-project-cancellation-preview"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations/preview"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateProjectCancellationPreviewOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/cancellations/preview"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateProjectCancellationPreviewRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateProjectCancellationPreviewOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateProjectCancellationPreviewResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreateProjectQuote invokes create-project-quote operation.
 //
 // Priced in the project billing account's currency, and at any rate negotiated for that account.
@@ -566,8 +422,15 @@ func (c *Client) sendCreateProjectCancellationPreview(ctx context.Context, reque
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
 // with the discounts the account holds, and with tax.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed does not
-// belong to this project.
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+// canceled does not belong to this project.
 //
 // POST /api/v1/projects/{projectId}/quotes
 func (c *Client) CreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error) {

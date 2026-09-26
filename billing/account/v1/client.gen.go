@@ -820,6 +820,48 @@ func (e QuoteLinePriceType) Valid() bool {
 	}
 }
 
+// Defines values for QuoteRenewalInterval.
+const (
+	QuoteRenewalIntervalDay   QuoteRenewalInterval = "day"
+	QuoteRenewalIntervalMonth QuoteRenewalInterval = "month"
+	QuoteRenewalIntervalYear  QuoteRenewalInterval = "year"
+)
+
+// Valid indicates whether the value is a known member of the QuoteRenewalInterval enum.
+func (e QuoteRenewalInterval) Valid() bool {
+	switch e {
+	case QuoteRenewalIntervalDay:
+		return true
+	case QuoteRenewalIntervalMonth:
+		return true
+	case QuoteRenewalIntervalYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QuoteRenewalResultInterval.
+const (
+	QuoteRenewalResultIntervalDay   QuoteRenewalResultInterval = "day"
+	QuoteRenewalResultIntervalMonth QuoteRenewalResultInterval = "month"
+	QuoteRenewalResultIntervalYear  QuoteRenewalResultInterval = "year"
+)
+
+// Valid indicates whether the value is a known member of the QuoteRenewalResultInterval enum.
+func (e QuoteRenewalResultInterval) Valid() bool {
+	switch e {
+	case QuoteRenewalResultIntervalDay:
+		return true
+	case QuoteRenewalResultIntervalMonth:
+		return true
+	case QuoteRenewalResultIntervalYear:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RefundDestination.
 const (
 	RefundDestinationBalance RefundDestination = "balance"
@@ -1498,20 +1540,20 @@ type CancellationStatus string
 
 // CancellationCreate defines model for CancellationCreate.
 type CancellationCreate struct {
-	// ExpectedRefundableAmount The `refundable_amount` of the preview. The cancellation is refused when the refund differs.
+	// ExpectedRefundableAmount The `refundable_amount` of the quote. The cancellation is refused when the refund differs.
 	ExpectedRefundableAmount string `json:"expected_refundable_amount"`
 
 	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
 	Mode TerminationPolicy `json:"mode"`
 
-	// ProrationDate For `immediate`, the `proration_date` of the preview: a whole second, not in the future and
+	// ProrationDate For `immediate`, the `proration_date` of the quote: a whole second, not in the future and
 	// at most ten minutes old. The refund is computed as of it. Now when omitted.
 	ProrationDate *time.Time `json:"proration_date,omitempty"`
 
 	// Reason A note from the account holder. It is kept with the cancellation and not shown elsewhere.
 	Reason *string `json:"reason,omitempty"`
 
-	// SubscriptionIds As in the preview.
+	// SubscriptionIds As in the quote.
 	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
 }
 
@@ -1558,16 +1600,8 @@ type CancellationPreview struct {
 	SubscriptionId   openapi_types.UUID `json:"subscription_id"`
 }
 
-// CancellationPreviewRequest defines model for CancellationPreviewRequest.
-type CancellationPreviewRequest struct {
-	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
-	Mode TerminationPolicy `json:"mode"`
-
-	// SubscriptionIds The subscriptions to end together, all of one service. Every subscription released with a resource must be included.
-	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
-}
-
-// CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now.
+// CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now. Give
+// `proration_date` and `refundable_amount` when creating the cancellation.
 //
 //   - `unused_amount`: before tax, the value of the paid service still unused, whatever the refund
 //     terms say.
@@ -1658,7 +1692,7 @@ type CancellationRefundPreview struct {
 	UnusedAmount externalRef0.Money `json:"unused_amount"`
 }
 
-// CancellationRefundPreviewItem One subscription of the preview. The amounts mean what they mean in the preview.
+// CancellationRefundPreviewItem One subscription of the quoted cancellation. The amounts mean what they mean in the total.
 type CancellationRefundPreviewItem struct {
 	BillingType CancellationRefundPreviewItemBillingType `json:"billing_type"`
 
@@ -2794,6 +2828,29 @@ type PromotionCodeRejection string
 // account's first purchase.
 type PurchaseOperation string
 
+// Quote defines model for Quote.
+type Quote struct {
+	// Cancellation What the cancellation requested would return. Present only when one was requested.
+	Cancellation *CancellationRefundPreview `json:"cancellation,omitempty"`
+	Currency     string                     `json:"currency"`
+	Renewals     []QuoteRenewalResult       `json:"renewals,omitempty"`
+
+	// Total What the renewals would charge in total. Amounts to be returned are not netted off it: a
+	// quote of a cancellation alone has a total of zero, and what it would return is in
+	// `cancellation`.
+	Total externalRef0.Money `json:"total"`
+}
+
+// QuoteCancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
+// request; to compare, quote `immediate` and `period_end` separately.
+type QuoteCancellation struct {
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// SubscriptionIds The subscriptions to end together, all of one service. Every subscription released with a resource must be included.
+	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
+}
+
 // QuoteLine Identify a price directly, or select a price for a plan. For each resource give its ID or lookup key, never both. Lookup keys require product_id.
 //
 // A line that gives a meter, `dimensions` or `duration_seconds` estimates usage and is
@@ -2839,6 +2896,66 @@ type QuoteLineInterval string
 
 // QuoteLinePriceType Narrows the selection when a plan offers more than one billing type.
 type QuoteLinePriceType string
+
+// QuoteRenewal Price renewing a prepaid subscription. Give `price_id`, or `interval` with
+// `interval_count`, to renew for another term at the price currently sold for it. Naming
+// the current term, or giving neither, renews at the agreed amount.
+type QuoteRenewal struct {
+	Interval      *QuoteRenewalInterval `json:"interval,omitempty"`
+	IntervalCount *int                  `json:"interval_count,omitempty"`
+
+	// Periods How many consecutive periods to renew for.
+	Periods        *int                `json:"periods,omitempty"`
+	PriceId        *openapi_types.UUID `json:"price_id,omitempty"`
+	SubscriptionId openapi_types.UUID  `json:"subscription_id"`
+}
+
+// QuoteRenewalInterval defines model for QuoteRenewal.Interval.
+type QuoteRenewalInterval string
+
+// QuoteRenewalResult What renewing would charge. Renewing the same subscription for the same term and number
+// of periods charges exactly `total`, unless prices or the discounts the account holds
+// change in between.
+type QuoteRenewalResult struct {
+	// Amount The price of the periods before the discounts the account holds. A discount the
+	// subscription already carries is reflected here. Contains tax only where the price
+	// itself includes it.
+	Amount externalRef0.Money `json:"amount"`
+
+	// DiscountAmount The reduction from a discount the account holds.
+	DiscountAmount externalRef0.Money `json:"discount_amount"`
+
+	// Index Which renewal of the request this answers.
+	Index         int                        `json:"index"`
+	Interval      QuoteRenewalResultInterval `json:"interval"`
+	IntervalCount int                        `json:"interval_count"`
+	Periods       int                        `json:"periods"`
+
+	// PriceId The price the renewal is charged under.
+	PriceId        openapi_types.UUID `json:"price_id"`
+	SubscriptionId openapi_types.UUID `json:"subscription_id"`
+
+	// TaxAmount Tax on the discounted amount.
+	TaxAmount externalRef0.Money `json:"tax_amount"`
+
+	// TaxIncludedAmount The part of `tax_amount` already contained in `amount`.
+	TaxIncludedAmount externalRef0.Money `json:"tax_included_amount"`
+
+	// Total What renewing would charge: `amount` less `discount_amount`, plus `tax_amount`, less
+	// `tax_included_amount`.
+	Total externalRef0.Money `json:"total"`
+}
+
+// QuoteRenewalResultInterval defines model for QuoteRenewalResult.Interval.
+type QuoteRenewalResultInterval string
+
+// QuoteRequest Specify renewals for existing subscriptions, or one cancellation on its own.
+type QuoteRequest struct {
+	// Cancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
+	// request; to compare, quote `immediate` and `period_end` separately.
+	Cancellation *QuoteCancellation `json:"cancellation,omitempty"`
+	Renewals     []QuoteRenewal     `json:"renewals,omitempty"`
+}
 
 // Refund defines model for Refund.
 type Refund struct {
@@ -3697,9 +3814,6 @@ type UpdateBillingAccountJSONRequestBody = BillingAccountUpdate
 // CreateCancellationJSONRequestBody defines body for CreateCancellation for application/json ContentType.
 type CreateCancellationJSONRequestBody = CancellationCreate
 
-// CreateCancellationPreviewJSONRequestBody defines body for CreateCancellationPreview for application/json ContentType.
-type CreateCancellationPreviewJSONRequestBody = CancellationPreviewRequest
-
 // PayInvoiceJSONRequestBody defines body for PayInvoice for application/json ContentType.
 type PayInvoiceJSONRequestBody = PayRequest
 
@@ -3717,6 +3831,9 @@ type SetProjectBillingAccountJSONRequestBody = ProjectBillingInfoSet
 
 // PreviewPromotionCodeJSONRequestBody defines body for PreviewPromotionCode for application/json ContentType.
 type PreviewPromotionCodeJSONRequestBody = PromotionCodePreviewRequest
+
+// CreateQuoteJSONRequestBody defines body for CreateQuote for application/json ContentType.
+type CreateQuoteJSONRequestBody = QuoteRequest
 
 // SetAutoRenewJSONRequestBody defines body for SetAutoRenew for application/json ContentType.
 type SetAutoRenewJSONRequestBody = AutoRenewSet
@@ -3965,9 +4082,8 @@ type ClientInterface interface {
 	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
-	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//   `expected_refundable_amount`; preview again.
+	//   `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -4012,9 +4128,8 @@ type ClientInterface interface {
 	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
-	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//   `expected_refundable_amount`; preview again.
+	//   `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -4024,34 +4139,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
 	CreateCancellation(ctx context.Context, body CreateCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateCancellationPreviewWithBody Preview a cancellation
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms
-	// agreed when each was bought. This request does not create a resource: nothing is recorded or
-	// reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
-	CreateCancellationPreviewWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateCancellationPreview Preview a cancellation
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms
-	// agreed when each was bought. This request does not create a resource: nothing is recorded or
-	// reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
-	CreateCancellationPreview(ctx context.Context, body CreateCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetCancellation Get a cancellation
 	//
@@ -4401,6 +4488,58 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/promotion-codes/preview (the `PreviewPromotionCode` operationId).
 	PreviewPromotionCode(ctx context.Context, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateQuoteWithBody Quote renewals or a cancellation
+	//
+	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
+	// as often as required. Prices may change between quoting and renewing, so a quote should be
+	// refreshed before a final confirmation is shown.
+	//
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+	// named, with the discounts the account holds, and with tax.
+	//
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+	// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
+	// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
+	CreateQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateQuote Quote renewals or a cancellation
+	//
+	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
+	// as often as required. Prices may change between quoting and renewing, so a quote should be
+	// refreshed before a final confirmation is shown.
+	//
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+	// named, with the discounts the account holds, and with tax.
+	//
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+	// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
+	// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
+	CreateQuote(ctx context.Context, body CreateQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRefunds List refunds
 	//
 	// Newest first.
@@ -4440,7 +4579,7 @@ type ClientInterface interface {
 	//
 	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 	//
-	// Use create-cancellation-preview, which previews the subscriptions released together.
+	// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
 	//
 	// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
 	//
@@ -4908,9 +5047,8 @@ func (c *Client) ListCancellations(ctx context.Context, params *ListCancellation
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -4965,9 +5103,8 @@ func (c *Client) CreateCancellationWithBody(ctx context.Context, contentType str
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -4978,54 +5115,6 @@ func (c *Client) CreateCancellationWithBody(ctx context.Context, contentType str
 // Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
 func (c *Client) CreateCancellation(ctx context.Context, body CreateCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateCancellationRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateCancellationPreviewWithBody Preview a cancellation
-//
-// What canceling these subscriptions together would return, computed now under the refund terms
-// agreed when each was bought. This request does not create a resource: nothing is recorded or
-// reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
-func (c *Client) CreateCancellationPreviewWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateCancellationPreviewRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateCancellationPreview Preview a cancellation
-//
-// What canceling these subscriptions together would return, computed now under the refund terms
-// agreed when each was bought. This request does not create a resource: nothing is recorded or
-// reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
-func (c *Client) CreateCancellationPreview(ctx context.Context, body CreateCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateCancellationPreviewRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5704,6 +5793,78 @@ func (c *Client) PreviewPromotionCode(ctx context.Context, body PreviewPromotion
 	return c.Client.Do(req)
 }
 
+// CreateQuoteWithBody Quote renewals or a cancellation
+//
+// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
+// as often as required. Prices may change between quoting and renewing, so a quote should be
+// refreshed before a final confirmation is shown.
+//
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+// named, with the discounts the account holds, and with tax.
+//
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
+// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
+func (c *Client) CreateQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateQuoteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateQuote Quote renewals or a cancellation
+//
+// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
+// as often as required. Prices may change between quoting and renewing, so a quote should be
+// refreshed before a final confirmation is shown.
+//
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+// named, with the discounts the account holds, and with tax.
+//
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
+// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
+func (c *Client) CreateQuote(ctx context.Context, body CreateQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateQuoteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListRefunds List refunds
 //
 // Newest first.
@@ -5793,7 +5954,7 @@ func (c *Client) SetAutoRenew(ctx context.Context, subscriptionId SubscriptionId
 //
 // Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 //
-// Use create-cancellation-preview, which previews the subscriptions released together.
+// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
 //
 // Corresponds with GET /account/v1/subscriptions/{subscriptionId}/cancellation-preview (the `PreviewCancellation` operationId).
 // Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
@@ -6717,46 +6878,6 @@ func NewCreateCancellationRequestWithBody(server string, contentType string, bod
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/cancellations")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateCancellationPreviewRequest calls the generic CreateCancellationPreview builder with application/json body
-func NewCreateCancellationPreviewRequest(server string, body CreateCancellationPreviewJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateCancellationPreviewRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateCancellationPreviewRequestWithBody constructs an http.Request for the CreateCancellationPreview method, with any body, and a specified content type
-func NewCreateCancellationPreviewRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/cancellations/preview")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8236,6 +8357,46 @@ func NewPreviewPromotionCodeRequestWithBody(server string, contentType string, b
 	return req, nil
 }
 
+// NewCreateQuoteRequest calls the generic CreateQuote builder with application/json body
+func NewCreateQuoteRequest(server string, body CreateQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateQuoteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateQuoteRequestWithBody constructs an http.Request for the CreateQuote method, with any body, and a specified content type
+func NewCreateQuoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/quotes")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListRefundsRequest constructs an http.Request for the ListRefunds method
 func NewListRefundsRequest(server string, params *ListRefundsParams) (*http.Request, error) {
 	var err error
@@ -9386,9 +9547,8 @@ type ClientWithResponsesInterface interface {
 	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
-	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//   `expected_refundable_amount`; preview again.
+	//   `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -9433,9 +9593,8 @@ type ClientWithResponsesInterface interface {
 	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
-	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//   `expected_refundable_amount`; preview again.
+	//   `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -9445,34 +9604,6 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/cancellations (the `CreateCancellation` operationId).
 	CreateCancellationWithResponse(ctx context.Context, body CreateCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationResponse, error)
-
-	// CreateCancellationPreviewWithBodyWithResponse Preview a cancellation
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms
-	// agreed when each was bought. This request does not create a resource: nothing is recorded or
-	// reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
-	CreateCancellationPreviewWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationPreviewResponse, error)
-
-	// CreateCancellationPreviewWithResponse Preview a cancellation
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms
-	// agreed when each was bought. This request does not create a resource: nothing is recorded or
-	// reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
-	CreateCancellationPreviewWithResponse(ctx context.Context, body CreateCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationPreviewResponse, error)
 
 	// GetCancellationWithResponse Get a cancellation
 	//
@@ -9862,6 +9993,58 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/promotion-codes/preview (the `PreviewPromotionCode` operationId).
 	PreviewPromotionCodeWithResponse(ctx context.Context, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewPromotionCodeResponse, error)
 
+	// CreateQuoteWithBodyWithResponse Quote renewals or a cancellation
+	//
+	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
+	// as often as required. Prices may change between quoting and renewing, so a quote should be
+	// refreshed before a final confirmation is shown.
+	//
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+	// named, with the discounts the account holds, and with tax.
+	//
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+	// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
+	// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
+	CreateQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateQuoteResponse, error)
+
+	// CreateQuoteWithResponse Quote renewals or a cancellation
+	//
+	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
+	// as often as required. Prices may change between quoting and renewing, so a quote should be
+	// refreshed before a final confirmation is shown.
+	//
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+	// named, with the discounts the account holds, and with tax.
+	//
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+	// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
+	// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
+	CreateQuoteWithResponse(ctx context.Context, body CreateQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateQuoteResponse, error)
+
 	// ListRefundsWithResponse List refunds
 	//
 	// Newest first.
@@ -9907,7 +10090,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 	//
-	// Use create-cancellation-preview, which previews the subscriptions released together.
+	// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -10682,54 +10865,6 @@ func (r CreateCancellationResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateCancellationResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateCancellationPreviewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CancellationRefundPreview
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CreateCancellationPreviewResponse) GetJSON200() *CancellationRefundPreview {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateCancellationPreviewResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateCancellationPreviewResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateCancellationPreviewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateCancellationPreviewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateCancellationPreviewResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11977,6 +12112,54 @@ func (r PreviewPromotionCodeResponse) ContentType() string {
 	return ""
 }
 
+type CreateQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRefundsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -12970,9 +13153,8 @@ func (c *ClientWithResponses) ListCancellationsWithResponse(ctx context.Context,
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -13023,9 +13205,8 @@ func (c *ClientWithResponses) CreateCancellationWithBodyWithResponse(ctx context
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -13040,46 +13221,6 @@ func (c *ClientWithResponses) CreateCancellationWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseCreateCancellationResponse(rsp)
-}
-
-// CreateCancellationPreviewWithBodyWithResponse Preview a cancellation
-//
-// What canceling these subscriptions together would return, computed now under the refund terms
-// agreed when each was bought. This request does not create a resource: nothing is recorded or
-// reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
-func (c *ClientWithResponses) CreateCancellationPreviewWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCancellationPreviewResponse, error) {
-	rsp, err := c.CreateCancellationPreviewWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateCancellationPreviewResponse(rsp)
-}
-
-// CreateCancellationPreviewWithResponse Preview a cancellation
-//
-// What canceling these subscriptions together would return, computed now under the refund terms
-// agreed when each was bought. This request does not create a resource: nothing is recorded or
-// reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/cancellations/preview (the `CreateCancellationPreview` operationId).
-func (c *ClientWithResponses) CreateCancellationPreviewWithResponse(ctx context.Context, body CreateCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCancellationPreviewResponse, error) {
-	rsp, err := c.CreateCancellationPreview(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateCancellationPreviewResponse(rsp)
 }
 
 // GetCancellationWithResponse Get a cancellation
@@ -13662,6 +13803,70 @@ func (c *ClientWithResponses) PreviewPromotionCodeWithResponse(ctx context.Conte
 	return ParsePreviewPromotionCodeResponse(rsp)
 }
 
+// CreateQuoteWithBodyWithResponse Quote renewals or a cancellation
+//
+// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
+// as often as required. Prices may change between quoting and renewing, so a quote should be
+// refreshed before a final confirmation is shown.
+//
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+// named, with the discounts the account holds, and with tax.
+//
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
+// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
+func (c *ClientWithResponses) CreateQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateQuoteResponse, error) {
+	rsp, err := c.CreateQuoteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateQuoteResponse(rsp)
+}
+
+// CreateQuoteWithResponse Quote renewals or a cancellation
+//
+// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
+// as often as required. Prices may change between quoting and renewing, so a quote should be
+// refreshed before a final confirmation is shown.
+//
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
+// named, with the discounts the account holds, and with tax.
+//
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
+// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
+func (c *ClientWithResponses) CreateQuoteWithResponse(ctx context.Context, body CreateQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateQuoteResponse, error) {
+	rsp, err := c.CreateQuote(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateQuoteResponse(rsp)
+}
+
 // ListRefundsWithResponse List refunds
 //
 // Newest first.
@@ -13737,7 +13942,7 @@ func (c *ClientWithResponses) SetAutoRenewWithResponse(ctx context.Context, subs
 //
 // Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 //
-// Use create-cancellation-preview, which previews the subscriptions released together.
+// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14413,39 +14618,6 @@ func ParseCreateCancellationResponse(rsp *http.Response) (*CreateCancellationRes
 			return nil, err
 		}
 		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateCancellationPreviewResponse parses an HTTP response from a CreateCancellationPreviewWithResponse call
-func ParseCreateCancellationPreviewResponse(rsp *http.Response) (*CreateCancellationPreviewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateCancellationPreviewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CancellationRefundPreview
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -15299,6 +15471,39 @@ func ParsePreviewPromotionCodeResponse(rsp *http.Response) (*PreviewPromotionCod
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PromotionCodePreview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateQuoteResponse parses an HTTP response from a CreateQuoteWithResponse call
+func ParseCreateQuoteResponse(rsp *http.Response) (*CreateQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -114,9 +114,8 @@ type Invoker interface {
 	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 	//    progress;
-	//  - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//    `expected_refundable_amount`; preview again.
+	//    `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
 	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
@@ -124,16 +123,6 @@ type Invoker interface {
 	//
 	// POST /account/v1/cancellations
 	CreateCancellation(ctx context.Context, request *CancellationCreate) (CreateCancellationRes, error)
-	// CreateCancellationPreview invokes create-cancellation-preview operation.
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms agreed
-	// when each was bought. This request does not create a resource: nothing is recorded or reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// POST /account/v1/cancellations/preview
-	CreateCancellationPreview(ctx context.Context, request *CancellationPreviewRequest) (*CancellationRefundPreview, error)
 	// CreateCancellationRequest invokes create-cancellation-request operation.
 	//
 	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual
@@ -154,6 +143,29 @@ type Invoker interface {
 	//
 	// POST /account/v1/payment-methods/setup
 	CreatePaymentMethodSetup(ctx context.Context, request *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
+	// CreateQuote invokes create-quote operation.
+	//
+	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called as
+	// often as required. Prices may change between quoting and renewing, so a quote should be refreshed
+	// before a final confirmation is shown.
+	//
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
+	// with the discounts the account holds, and with tax.
+	//
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals the
+	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field` `cancellation`. It is
+	// refused with the same errors as creating the cancellation, except that the amount is not checked.
+	// Give the returned `cancellation.proration_date` and `cancellation.refundable_amount` when creating
+	// it.
+	//
+	// Every subscription must be paid for by the same one of your billing accounts; otherwise the request
+	// is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does not exist,
+	// and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+	//
+	// POST /account/v1/quotes
+	CreateQuote(ctx context.Context, request *QuoteRequest) (*Quote, error)
 	// CreateRenewalOrder invokes create-renewal-order operation.
 	//
 	// Places a renewal order and issues its invoice without charging anything; pay the invoice to renew.
@@ -430,7 +442,7 @@ type Invoker interface {
 	//
 	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 	//
-	// Use create-cancellation-preview, which previews the subscriptions released together.
+	// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
 	//
 	// Deprecated: schema marks this operation as deprecated.
 	//
@@ -1158,9 +1170,8 @@ func (c *Client) sendCreateBillingAccount(ctx context.Context, request *BillingA
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that cancellation
 // is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
@@ -1271,126 +1282,6 @@ func (c *Client) sendCreateCancellation(ctx context.Context, request *Cancellati
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateCancellationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateCancellationPreview invokes create-cancellation-preview operation.
-//
-// What canceling these subscriptions together would return, computed now under the refund terms agreed
-// when each was bought. This request does not create a resource: nothing is recorded or reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// POST /account/v1/cancellations/preview
-func (c *Client) CreateCancellationPreview(ctx context.Context, request *CancellationPreviewRequest) (*CancellationRefundPreview, error) {
-	res, err := c.sendCreateCancellationPreview(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateCancellationPreview(ctx context.Context, request *CancellationPreviewRequest) (res *CancellationRefundPreview, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-cancellation-preview"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/cancellations/preview"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateCancellationPreviewOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/account/v1/cancellations/preview"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateCancellationPreviewRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, CreateCancellationPreviewOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateCancellationPreviewResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1650,6 +1541,139 @@ func (c *Client) sendCreatePaymentMethodSetup(ctx context.Context, request *Paym
 
 	stage = "DecodeResponse"
 	result, err := decodeCreatePaymentMethodSetupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateQuote invokes create-quote operation.
+//
+// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called as
+// often as required. Prices may change between quoting and renewing, so a quote should be refreshed
+// before a final confirmation is shown.
+//
+// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
+// with the discounts the account holds, and with tax.
+//
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals the
+// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field` `cancellation`. It is
+// refused with the same errors as creating the cancellation, except that the amount is not checked.
+// Give the returned `cancellation.proration_date` and `cancellation.refundable_amount` when creating
+// it.
+//
+// Every subscription must be paid for by the same one of your billing accounts; otherwise the request
+// is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does not exist,
+// and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+//
+// POST /account/v1/quotes
+func (c *Client) CreateQuote(ctx context.Context, request *QuoteRequest) (*Quote, error) {
+	res, err := c.sendCreateQuote(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateQuote(ctx context.Context, request *QuoteRequest) (res *Quote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/quotes"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/quotes"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateQuoteRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, CreateQuoteOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateQuoteResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7337,7 +7361,7 @@ func (c *Client) sendPayTogether(ctx context.Context, request *PayTogetherReques
 //
 // Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 //
-// Use create-cancellation-preview, which previews the subscriptions released together.
+// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
 //
 // Deprecated: schema marks this operation as deprecated.
 //

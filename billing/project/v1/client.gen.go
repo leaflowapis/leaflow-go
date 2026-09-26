@@ -854,20 +854,20 @@ type CancellationStatus string
 
 // CancellationCreate defines model for CancellationCreate.
 type CancellationCreate struct {
-	// ExpectedRefundableAmount The `refundable_amount` of the preview. The cancellation is refused when the refund differs.
+	// ExpectedRefundableAmount The `refundable_amount` of the quote. The cancellation is refused when the refund differs.
 	ExpectedRefundableAmount string `json:"expected_refundable_amount"`
 
 	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
 	Mode TerminationPolicy `json:"mode"`
 
-	// ProrationDate For `immediate`, the `proration_date` of the preview: a whole second, not in the future and
+	// ProrationDate For `immediate`, the `proration_date` of the quote: a whole second, not in the future and
 	// at most ten minutes old. The refund is computed as of it. Now when omitted.
 	ProrationDate *time.Time `json:"proration_date,omitempty"`
 
 	// Reason A note from the account holder. It is kept with the cancellation and not shown elsewhere.
 	Reason *string `json:"reason,omitempty"`
 
-	// SubscriptionIds As in the preview.
+	// SubscriptionIds As in the quote.
 	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
 }
 
@@ -903,16 +903,8 @@ type CancellationList struct {
 	TotalCount *int64         `json:"total_count,omitempty"`
 }
 
-// CancellationPreviewRequest defines model for CancellationPreviewRequest.
-type CancellationPreviewRequest struct {
-	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
-	Mode TerminationPolicy `json:"mode"`
-
-	// SubscriptionIds The subscriptions to end together, all of one service. Every subscription released with a resource must be included.
-	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
-}
-
-// CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now.
+// CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now. Give
+// `proration_date` and `refundable_amount` when creating the cancellation.
 //
 //   - `unused_amount`: before tax, the value of the paid service still unused, whatever the refund
 //     terms say.
@@ -1003,7 +995,7 @@ type CancellationRefundPreview struct {
 	UnusedAmount externalRef0.Money `json:"unused_amount"`
 }
 
-// CancellationRefundPreviewItem One subscription of the preview. The amounts mean what they mean in the preview.
+// CancellationRefundPreviewItem One subscription of the quoted cancellation. The amounts mean what they mean in the total.
 type CancellationRefundPreviewItem struct {
 	BillingType CancellationRefundPreviewItemBillingType `json:"billing_type"`
 
@@ -1438,17 +1430,30 @@ type ProjectBillingAccountStatus string
 
 // Quote defines model for Quote.
 type Quote struct {
-	Currency string               `json:"currency"`
-	Lines    []QuoteLineResult    `json:"lines,omitempty"`
-	Renewals []QuoteRenewalResult `json:"renewals,omitempty"`
+	// Cancellation What the cancellation requested would return. Present only when one was requested.
+	Cancellation *CancellationRefundPreview `json:"cancellation,omitempty"`
+	Currency     string                     `json:"currency"`
+	Lines        []QuoteLineResult          `json:"lines,omitempty"`
+	Renewals     []QuoteRenewalResult       `json:"renewals,omitempty"`
 
 	// Total What would be owed in total, renewals included. Amounts to be returned are not netted
-	// off it.
+	// off it: a quote of a cancellation alone has a total of zero, and what it would return is
+	// in `cancellation`.
 	//
 	// Null when any line could not be priced. What would be owed is not knowable then, and a
 	// total that silently left the unpriced lines out would read as a smaller bill rather than
 	// an incomplete one — the per-line `priced` flag is easy to skip, a missing total is not.
 	Total *externalRef0.Money `json:"total,omitempty"`
+}
+
+// QuoteCancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
+// request; to compare, quote `immediate` and `period_end` separately.
+type QuoteCancellation struct {
+	// Mode Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	Mode TerminationPolicy `json:"mode"`
+
+	// SubscriptionIds The subscriptions to end together, all of one service. Every subscription released with a resource must be included.
+	SubscriptionIds []openapi_types.UUID `json:"subscription_ids"`
 }
 
 // QuoteLine Identify a price directly, or select a price for a plan. For each resource give its ID or lookup key, never both. Lookup keys require product_id.
@@ -1611,10 +1616,14 @@ type QuoteRenewalResult struct {
 // QuoteRenewalResultInterval defines model for QuoteRenewalResult.Interval.
 type QuoteRenewalResultInterval string
 
-// QuoteRequest Specify lines for new purchases and renewals for existing subscriptions. The total includes all requested items.
+// QuoteRequest Specify lines for new purchases and renewals for existing subscriptions, or one cancellation on
+// its own. The total includes all requested lines and renewals.
 type QuoteRequest struct {
-	Lines    []QuoteLine    `json:"lines,omitempty"`
-	Renewals []QuoteRenewal `json:"renewals,omitempty"`
+	// Cancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
+	// request; to compare, quote `immediate` and `period_end` separately.
+	Cancellation *QuoteCancellation `json:"cancellation,omitempty"`
+	Lines        []QuoteLine        `json:"lines,omitempty"`
+	Renewals     []QuoteRenewal     `json:"renewals,omitempty"`
 }
 
 // RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
@@ -1963,9 +1972,6 @@ type ListProjectUsageChargesParams struct {
 // CreateProjectCancellationJSONRequestBody defines body for CreateProjectCancellation for application/json ContentType.
 type CreateProjectCancellationJSONRequestBody = CancellationCreate
 
-// CreateProjectCancellationPreviewJSONRequestBody defines body for CreateProjectCancellationPreview for application/json ContentType.
-type CreateProjectCancellationPreviewJSONRequestBody = CancellationPreviewRequest
-
 // CreateProjectQuoteJSONRequestBody defines body for CreateProjectQuote for application/json ContentType.
 type CreateProjectQuoteJSONRequestBody = QuoteRequest
 
@@ -2114,9 +2120,8 @@ type ClientInterface interface {
 	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
-	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//   `expected_refundable_amount`; preview again.
+	//   `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -2161,9 +2166,8 @@ type ClientInterface interface {
 	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
-	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//   `expected_refundable_amount`; preview again.
+	//   `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -2173,34 +2177,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
 	CreateProjectCancellation(ctx context.Context, projectId ProjectId, body CreateProjectCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateProjectCancellationPreviewWithBody Preview a cancellation
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms
-	// agreed when each was bought. This request does not create a resource: nothing is recorded or
-	// reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
-	CreateProjectCancellationPreviewWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateProjectCancellationPreview Preview a cancellation
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms
-	// agreed when each was bought. This request does not create a resource: nothing is recorded or
-	// reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
-	CreateProjectCancellationPreview(ctx context.Context, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetProjectCancellation Get a cancellation
 	//
@@ -2258,8 +2234,15 @@ type ClientInterface interface {
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
 	// named, with the discounts the account holds, and with tax.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed
-	// does not belong to this project.
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+	// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+	// canceled does not belong to this project.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2278,8 +2261,15 @@ type ClientInterface interface {
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
 	// named, with the discounts the account holds, and with tax.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed
-	// does not belong to this project.
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+	// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+	// canceled does not belong to this project.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2438,9 +2428,8 @@ func (c *Client) ListProjectCancellations(ctx context.Context, projectId Project
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -2495,9 +2484,8 @@ func (c *Client) CreateProjectCancellationWithBody(ctx context.Context, projectI
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -2508,54 +2496,6 @@ func (c *Client) CreateProjectCancellationWithBody(ctx context.Context, projectI
 // Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
 func (c *Client) CreateProjectCancellation(ctx context.Context, projectId ProjectId, body CreateProjectCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateProjectCancellationRequest(c.Server, projectId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateProjectCancellationPreviewWithBody Preview a cancellation
-//
-// What canceling these subscriptions together would return, computed now under the refund terms
-// agreed when each was bought. This request does not create a resource: nothing is recorded or
-// reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
-func (c *Client) CreateProjectCancellationPreviewWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateProjectCancellationPreviewRequestWithBody(c.Server, projectId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateProjectCancellationPreview Preview a cancellation
-//
-// What canceling these subscriptions together would return, computed now under the refund terms
-// agreed when each was bought. This request does not create a resource: nothing is recorded or
-// reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
-func (c *Client) CreateProjectCancellationPreview(ctx context.Context, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateProjectCancellationPreviewRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2682,8 +2622,15 @@ func (c *Client) ListProjectOrderItems(ctx context.Context, projectId ProjectId,
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
 // named, with the discounts the account holds, and with tax.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed
-// does not belong to this project.
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+// canceled does not belong to this project.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2712,8 +2659,15 @@ func (c *Client) CreateProjectQuoteWithBody(ctx context.Context, projectId Proje
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
 // named, with the discounts the account holds, and with tax.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed
-// does not belong to this project.
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+// canceled does not belong to this project.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3164,53 +3118,6 @@ func NewCreateProjectCancellationRequestWithBody(server string, projectId Projec
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/projects/%s/cancellations", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateProjectCancellationPreviewRequest calls the generic CreateProjectCancellationPreview builder with application/json body
-func NewCreateProjectCancellationPreviewRequest(server string, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateProjectCancellationPreviewRequestWithBody(server, projectId, "application/json", bodyReader)
-}
-
-// NewCreateProjectCancellationPreviewRequestWithBody constructs an http.Request for the CreateProjectCancellationPreview method, with any body, and a specified content type
-func NewCreateProjectCancellationPreviewRequestWithBody(server string, projectId ProjectId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/projects/%s/cancellations/preview", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -4179,9 +4086,8 @@ type ClientWithResponsesInterface interface {
 	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
-	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//   `expected_refundable_amount`; preview again.
+	//   `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -4226,9 +4132,8 @@ type ClientWithResponsesInterface interface {
 	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
-	// - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//   `expected_refundable_amount`; preview again.
+	//   `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that
 	// cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -4238,34 +4143,6 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /api/v1/projects/{projectId}/cancellations (the `CreateProjectCancellation` operationId).
 	CreateProjectCancellationWithResponse(ctx context.Context, projectId ProjectId, body CreateProjectCancellationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectCancellationResponse, error)
-
-	// CreateProjectCancellationPreviewWithBodyWithResponse Preview a cancellation
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms
-	// agreed when each was bought. This request does not create a resource: nothing is recorded or
-	// reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
-	CreateProjectCancellationPreviewWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectCancellationPreviewResponse, error)
-
-	// CreateProjectCancellationPreviewWithResponse Preview a cancellation
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms
-	// agreed when each was bought. This request does not create a resource: nothing is recorded or
-	// reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
-	CreateProjectCancellationPreviewWithResponse(ctx context.Context, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectCancellationPreviewResponse, error)
 
 	// GetProjectCancellationWithResponse Get a cancellation
 	//
@@ -4335,8 +4212,15 @@ type ClientWithResponsesInterface interface {
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
 	// named, with the discounts the account holds, and with tax.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed
-	// does not belong to this project.
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+	// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+	// canceled does not belong to this project.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4355,8 +4239,15 @@ type ClientWithResponsesInterface interface {
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
 	// named, with the discounts the account holds, and with tax.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed
-	// does not belong to this project.
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+	// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+	// amount is not checked. Give the returned `cancellation.proration_date` and
+	// `cancellation.refundable_amount` when creating it.
+	//
+	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+	// canceled does not belong to this project.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4654,54 +4545,6 @@ func (r CreateProjectCancellationResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateProjectCancellationResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateProjectCancellationPreviewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CancellationRefundPreview
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CreateProjectCancellationPreviewResponse) GetJSON200() *CancellationRefundPreview {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateProjectCancellationPreviewResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateProjectCancellationPreviewResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateProjectCancellationPreviewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateProjectCancellationPreviewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateProjectCancellationPreviewResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -5336,9 +5179,8 @@ func (c *ClientWithResponses) ListProjectCancellationsWithResponse(ctx context.C
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -5389,9 +5231,8 @@ func (c *ClientWithResponses) CreateProjectCancellationWithBodyWithResponse(ctx 
 //     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
-//   - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; preview again.
+//     `expected_refundable_amount`; quote again.
 //
 // Sending the same request again, for the same subscriptions, mode and amount while that
 // cancellation is still open, returns it with 200 rather than creating another. Renewal orders
@@ -5406,46 +5247,6 @@ func (c *ClientWithResponses) CreateProjectCancellationWithResponse(ctx context.
 		return nil, err
 	}
 	return ParseCreateProjectCancellationResponse(rsp)
-}
-
-// CreateProjectCancellationPreviewWithBodyWithResponse Preview a cancellation
-//
-// What canceling these subscriptions together would return, computed now under the refund terms
-// agreed when each was bought. This request does not create a resource: nothing is recorded or
-// reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
-func (c *ClientWithResponses) CreateProjectCancellationPreviewWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectCancellationPreviewResponse, error) {
-	rsp, err := c.CreateProjectCancellationPreviewWithBody(ctx, projectId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateProjectCancellationPreviewResponse(rsp)
-}
-
-// CreateProjectCancellationPreviewWithResponse Preview a cancellation
-//
-// What canceling these subscriptions together would return, computed now under the refund terms
-// agreed when each was bought. This request does not create a resource: nothing is recorded or
-// reserved.
-//
-// It is refused with the same errors as creating the cancellation, except that the amount is not
-// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/projects/{projectId}/cancellations/preview (the `CreateProjectCancellationPreview` operationId).
-func (c *ClientWithResponses) CreateProjectCancellationPreviewWithResponse(ctx context.Context, projectId ProjectId, body CreateProjectCancellationPreviewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectCancellationPreviewResponse, error) {
-	rsp, err := c.CreateProjectCancellationPreview(ctx, projectId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateProjectCancellationPreviewResponse(rsp)
 }
 
 // GetProjectCancellationWithResponse Get a cancellation
@@ -5552,8 +5353,15 @@ func (c *ClientWithResponses) ListProjectOrderItemsWithResponse(ctx context.Cont
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
 // named, with the discounts the account holds, and with tax.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed
-// does not belong to this project.
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+// canceled does not belong to this project.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5578,8 +5386,15 @@ func (c *ClientWithResponses) CreateProjectQuoteWithBodyWithResponse(ctx context
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
 // named, with the discounts the account holds, and with tax.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed
-// does not belong to this project.
+// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
+// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
+//
+// Returns 404 when the project has no billing account, or when a subscription to be renewed or
+// canceled does not belong to this project.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5830,39 +5645,6 @@ func ParseCreateProjectCancellationResponse(rsp *http.Response) (*CreateProjectC
 			return nil, err
 		}
 		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateProjectCancellationPreviewResponse parses an HTTP response from a CreateProjectCancellationPreviewWithResponse call
-func ParseCreateProjectCancellationPreviewResponse(rsp *http.Response) (*CreateProjectCancellationPreviewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateProjectCancellationPreviewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CancellationRefundPreview
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

@@ -1230,13 +1230,13 @@ func (s *Cancellation) SetItems(val []CancellationItem) {
 
 // Ref: #/components/schemas/CancellationCreate
 type CancellationCreate struct {
-	// As in the preview.
+	// As in the quote.
 	SubscriptionIds []uuid.UUID       `json:"subscription_ids"`
 	Mode            TerminationPolicy `json:"mode"`
-	// For `immediate`, the `proration_date` of the preview: a whole second, not in the future and at most
+	// For `immediate`, the `proration_date` of the quote: a whole second, not in the future and at most
 	// ten minutes old. The refund is computed as of it. Now when omitted.
 	ProrationDate OptDateTime `json:"proration_date"`
-	// The `refundable_amount` of the preview. The cancellation is refused when the refund differs.
+	// The `refundable_amount` of the quote. The cancellation is refused when the refund differs.
 	ExpectedRefundableAmount string `json:"expected_refundable_amount"`
 	// A note from the account holder. It is kept with the cancellation and not shown elsewhere.
 	Reason OptString `json:"reason"`
@@ -1615,35 +1615,8 @@ func (s *CancellationPreview) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// Ref: #/components/schemas/CancellationPreviewRequest
-type CancellationPreviewRequest struct {
-	// The subscriptions to end together, all of one service. Every subscription released with a resource
-	// must be included.
-	SubscriptionIds []uuid.UUID       `json:"subscription_ids"`
-	Mode            TerminationPolicy `json:"mode"`
-}
-
-// GetSubscriptionIds returns the value of SubscriptionIds.
-func (s *CancellationPreviewRequest) GetSubscriptionIds() []uuid.UUID {
-	return s.SubscriptionIds
-}
-
-// GetMode returns the value of Mode.
-func (s *CancellationPreviewRequest) GetMode() TerminationPolicy {
-	return s.Mode
-}
-
-// SetSubscriptionIds sets the value of SubscriptionIds.
-func (s *CancellationPreviewRequest) SetSubscriptionIds(val []uuid.UUID) {
-	s.SubscriptionIds = val
-}
-
-// SetMode sets the value of Mode.
-func (s *CancellationPreviewRequest) SetMode(val TerminationPolicy) {
-	s.Mode = val
-}
-
-// What the cancellation would return, subscription by subscription and in total, as of now.
+// What the cancellation would return, subscription by subscription and in total, as of now. Give
+// `proration_date` and `refundable_amount` when creating the cancellation.
 //
 //   - `unused_amount`: before tax, the value of the paid service still unused, whatever the refund
 //     terms say.
@@ -1782,7 +1755,7 @@ func (s *CancellationRefundPreview) SetItems(val []CancellationRefundPreviewItem
 	s.Items = val
 }
 
-// One subscription of the preview. The amounts mean what they mean in the preview.
+// One subscription of the quoted cancellation. The amounts mean what they mean in the total.
 // Ref: #/components/schemas/CancellationRefundPreviewItem
 type CancellationRefundPreviewItem struct {
 	SubscriptionID uuid.UUID `json:"subscription_id"`
@@ -4600,6 +4573,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptCancellationRefundPreview returns new OptCancellationRefundPreview with value set to v.
+func NewOptCancellationRefundPreview(v CancellationRefundPreview) OptCancellationRefundPreview {
+	return OptCancellationRefundPreview{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCancellationRefundPreview is optional CancellationRefundPreview.
+type OptCancellationRefundPreview struct {
+	Value CancellationRefundPreview
+	Set   bool
+}
+
+// IsSet returns true if OptCancellationRefundPreview was set.
+func (o OptCancellationRefundPreview) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCancellationRefundPreview) Reset() {
+	var v CancellationRefundPreview
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCancellationRefundPreview) SetTo(v CancellationRefundPreview) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCancellationRefundPreview) Get() (v CancellationRefundPreview, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCancellationRefundPreview) Or(d CancellationRefundPreview) CancellationRefundPreview {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptCancellationRequest returns new OptCancellationRequest with value set to v.
 func NewOptCancellationRequest(v CancellationRequest) OptCancellationRequest {
 	return OptCancellationRequest{
@@ -6068,6 +6087,52 @@ func (o OptPromotionCodeRejection) Or(d PromotionCodeRejection) PromotionCodeRej
 	return d
 }
 
+// NewOptQuoteCancellation returns new OptQuoteCancellation with value set to v.
+func NewOptQuoteCancellation(v QuoteCancellation) OptQuoteCancellation {
+	return OptQuoteCancellation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteCancellation is optional QuoteCancellation.
+type OptQuoteCancellation struct {
+	Value QuoteCancellation
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteCancellation was set.
+func (o OptQuoteCancellation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteCancellation) Reset() {
+	var v QuoteCancellation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteCancellation) SetTo(v QuoteCancellation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteCancellation) Get() (v QuoteCancellation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteCancellation) Or(d QuoteCancellation) QuoteCancellation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptQuoteLineDimensions returns new OptQuoteLineDimensions with value set to v.
 func NewOptQuoteLineDimensions(v QuoteLineDimensions) OptQuoteLineDimensions {
 	return OptQuoteLineDimensions{
@@ -6200,6 +6265,52 @@ func (o OptQuoteLinePriceType) Get() (v QuoteLinePriceType, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptQuoteLinePriceType) Or(d QuoteLinePriceType) QuoteLinePriceType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptQuoteRenewalInterval returns new OptQuoteRenewalInterval with value set to v.
+func NewOptQuoteRenewalInterval(v QuoteRenewalInterval) OptQuoteRenewalInterval {
+	return OptQuoteRenewalInterval{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteRenewalInterval is optional QuoteRenewalInterval.
+type OptQuoteRenewalInterval struct {
+	Value QuoteRenewalInterval
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteRenewalInterval was set.
+func (o OptQuoteRenewalInterval) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteRenewalInterval) Reset() {
+	var v QuoteRenewalInterval
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteRenewalInterval) SetTo(v QuoteRenewalInterval) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteRenewalInterval) Get() (v QuoteRenewalInterval, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteRenewalInterval) Or(d QuoteRenewalInterval) QuoteRenewalInterval {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9719,6 +9830,87 @@ func (s *PurchaseOperation) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/Quote
+type Quote struct {
+	Renewals []QuoteRenewalResult `json:"renewals"`
+	// What the cancellation requested would return. Present only when one was requested.
+	Cancellation OptCancellationRefundPreview `json:"cancellation"`
+	// What the renewals would charge in total. Amounts to be returned are not netted off it: a quote of a
+	// cancellation alone has a total of zero, and what it would return is in `cancellation`.
+	Total    Money  `json:"total"`
+	Currency string `json:"currency"`
+}
+
+// GetRenewals returns the value of Renewals.
+func (s *Quote) GetRenewals() []QuoteRenewalResult {
+	return s.Renewals
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *Quote) GetCancellation() OptCancellationRefundPreview {
+	return s.Cancellation
+}
+
+// GetTotal returns the value of Total.
+func (s *Quote) GetTotal() Money {
+	return s.Total
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Quote) GetCurrency() string {
+	return s.Currency
+}
+
+// SetRenewals sets the value of Renewals.
+func (s *Quote) SetRenewals(val []QuoteRenewalResult) {
+	s.Renewals = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *Quote) SetCancellation(val OptCancellationRefundPreview) {
+	s.Cancellation = val
+}
+
+// SetTotal sets the value of Total.
+func (s *Quote) SetTotal(val Money) {
+	s.Total = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Quote) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// A cancellation to quote: what ending these subscriptions together would return. One mode per
+// request; to compare, quote `immediate` and `period_end` separately.
+// Ref: #/components/schemas/QuoteCancellation
+type QuoteCancellation struct {
+	// The subscriptions to end together, all of one service. Every subscription released with a resource
+	// must be included.
+	SubscriptionIds []uuid.UUID       `json:"subscription_ids"`
+	Mode            TerminationPolicy `json:"mode"`
+}
+
+// GetSubscriptionIds returns the value of SubscriptionIds.
+func (s *QuoteCancellation) GetSubscriptionIds() []uuid.UUID {
+	return s.SubscriptionIds
+}
+
+// GetMode returns the value of Mode.
+func (s *QuoteCancellation) GetMode() TerminationPolicy {
+	return s.Mode
+}
+
+// SetSubscriptionIds sets the value of SubscriptionIds.
+func (s *QuoteCancellation) SetSubscriptionIds(val []uuid.UUID) {
+	s.SubscriptionIds = val
+}
+
+// SetMode sets the value of Mode.
+func (s *QuoteCancellation) SetMode(val TerminationPolicy) {
+	s.Mode = val
+}
+
 // Identify a price directly, or select a price for a plan. For each resource give its ID or lookup
 // key, never both. Lookup keys require product_id.
 //
@@ -10007,6 +10199,328 @@ func (s *QuoteLinePriceType) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Price renewing a prepaid subscription. Give `price_id`, or `interval` with `interval_count`, to
+// renew for another term at the price currently sold for it. Naming the current term, or giving
+// neither, renews at the agreed amount.
+// Ref: #/components/schemas/QuoteRenewal
+type QuoteRenewal struct {
+	SubscriptionID uuid.UUID               `json:"subscription_id"`
+	PriceID        OptUUID                 `json:"price_id"`
+	Interval       OptQuoteRenewalInterval `json:"interval"`
+	IntervalCount  OptInt                  `json:"interval_count"`
+	// How many consecutive periods to renew for.
+	Periods OptInt `json:"periods"`
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *QuoteRenewal) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *QuoteRenewal) GetPriceID() OptUUID {
+	return s.PriceID
+}
+
+// GetInterval returns the value of Interval.
+func (s *QuoteRenewal) GetInterval() OptQuoteRenewalInterval {
+	return s.Interval
+}
+
+// GetIntervalCount returns the value of IntervalCount.
+func (s *QuoteRenewal) GetIntervalCount() OptInt {
+	return s.IntervalCount
+}
+
+// GetPeriods returns the value of Periods.
+func (s *QuoteRenewal) GetPeriods() OptInt {
+	return s.Periods
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *QuoteRenewal) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteRenewal) SetPriceID(val OptUUID) {
+	s.PriceID = val
+}
+
+// SetInterval sets the value of Interval.
+func (s *QuoteRenewal) SetInterval(val OptQuoteRenewalInterval) {
+	s.Interval = val
+}
+
+// SetIntervalCount sets the value of IntervalCount.
+func (s *QuoteRenewal) SetIntervalCount(val OptInt) {
+	s.IntervalCount = val
+}
+
+// SetPeriods sets the value of Periods.
+func (s *QuoteRenewal) SetPeriods(val OptInt) {
+	s.Periods = val
+}
+
+type QuoteRenewalInterval string
+
+const (
+	QuoteRenewalIntervalDay   QuoteRenewalInterval = "day"
+	QuoteRenewalIntervalMonth QuoteRenewalInterval = "month"
+	QuoteRenewalIntervalYear  QuoteRenewalInterval = "year"
+)
+
+// AllValues returns all QuoteRenewalInterval values.
+func (QuoteRenewalInterval) AllValues() []QuoteRenewalInterval {
+	return []QuoteRenewalInterval{
+		QuoteRenewalIntervalDay,
+		QuoteRenewalIntervalMonth,
+		QuoteRenewalIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteRenewalInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteRenewalIntervalDay:
+		return []byte(s), nil
+	case QuoteRenewalIntervalMonth:
+		return []byte(s), nil
+	case QuoteRenewalIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteRenewalInterval) UnmarshalText(data []byte) error {
+	switch QuoteRenewalInterval(data) {
+	case QuoteRenewalIntervalDay:
+		*s = QuoteRenewalIntervalDay
+		return nil
+	case QuoteRenewalIntervalMonth:
+		*s = QuoteRenewalIntervalMonth
+		return nil
+	case QuoteRenewalIntervalYear:
+		*s = QuoteRenewalIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What renewing would charge. Renewing the same subscription for the same term and number of periods
+// charges exactly `total`, unless prices or the discounts the account holds change in between.
+// Ref: #/components/schemas/QuoteRenewalResult
+type QuoteRenewalResult struct {
+	// Which renewal of the request this answers.
+	Index          int       `json:"index"`
+	SubscriptionID uuid.UUID `json:"subscription_id"`
+	// The price the renewal is charged under.
+	PriceID       uuid.UUID                  `json:"price_id"`
+	Interval      QuoteRenewalResultInterval `json:"interval"`
+	IntervalCount int                        `json:"interval_count"`
+	Periods       int                        `json:"periods"`
+	// The price of the periods before the discounts the account holds. A discount the subscription already
+	// carries is reflected here. Contains tax only where the price itself includes it.
+	Amount Money `json:"amount"`
+	// The reduction from a discount the account holds.
+	DiscountAmount Money `json:"discount_amount"`
+	// Tax on the discounted amount.
+	TaxAmount Money `json:"tax_amount"`
+	// The part of `tax_amount` already contained in `amount`.
+	TaxIncludedAmount Money `json:"tax_included_amount"`
+	// What renewing would charge: `amount` less `discount_amount`, plus `tax_amount`, less
+	// `tax_included_amount`.
+	Total Money `json:"total"`
+}
+
+// GetIndex returns the value of Index.
+func (s *QuoteRenewalResult) GetIndex() int {
+	return s.Index
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *QuoteRenewalResult) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *QuoteRenewalResult) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetInterval returns the value of Interval.
+func (s *QuoteRenewalResult) GetInterval() QuoteRenewalResultInterval {
+	return s.Interval
+}
+
+// GetIntervalCount returns the value of IntervalCount.
+func (s *QuoteRenewalResult) GetIntervalCount() int {
+	return s.IntervalCount
+}
+
+// GetPeriods returns the value of Periods.
+func (s *QuoteRenewalResult) GetPeriods() int {
+	return s.Periods
+}
+
+// GetAmount returns the value of Amount.
+func (s *QuoteRenewalResult) GetAmount() Money {
+	return s.Amount
+}
+
+// GetDiscountAmount returns the value of DiscountAmount.
+func (s *QuoteRenewalResult) GetDiscountAmount() Money {
+	return s.DiscountAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *QuoteRenewalResult) GetTaxAmount() Money {
+	return s.TaxAmount
+}
+
+// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
+func (s *QuoteRenewalResult) GetTaxIncludedAmount() Money {
+	return s.TaxIncludedAmount
+}
+
+// GetTotal returns the value of Total.
+func (s *QuoteRenewalResult) GetTotal() Money {
+	return s.Total
+}
+
+// SetIndex sets the value of Index.
+func (s *QuoteRenewalResult) SetIndex(val int) {
+	s.Index = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *QuoteRenewalResult) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteRenewalResult) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetInterval sets the value of Interval.
+func (s *QuoteRenewalResult) SetInterval(val QuoteRenewalResultInterval) {
+	s.Interval = val
+}
+
+// SetIntervalCount sets the value of IntervalCount.
+func (s *QuoteRenewalResult) SetIntervalCount(val int) {
+	s.IntervalCount = val
+}
+
+// SetPeriods sets the value of Periods.
+func (s *QuoteRenewalResult) SetPeriods(val int) {
+	s.Periods = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *QuoteRenewalResult) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetDiscountAmount sets the value of DiscountAmount.
+func (s *QuoteRenewalResult) SetDiscountAmount(val Money) {
+	s.DiscountAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *QuoteRenewalResult) SetTaxAmount(val Money) {
+	s.TaxAmount = val
+}
+
+// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
+func (s *QuoteRenewalResult) SetTaxIncludedAmount(val Money) {
+	s.TaxIncludedAmount = val
+}
+
+// SetTotal sets the value of Total.
+func (s *QuoteRenewalResult) SetTotal(val Money) {
+	s.Total = val
+}
+
+type QuoteRenewalResultInterval string
+
+const (
+	QuoteRenewalResultIntervalDay   QuoteRenewalResultInterval = "day"
+	QuoteRenewalResultIntervalMonth QuoteRenewalResultInterval = "month"
+	QuoteRenewalResultIntervalYear  QuoteRenewalResultInterval = "year"
+)
+
+// AllValues returns all QuoteRenewalResultInterval values.
+func (QuoteRenewalResultInterval) AllValues() []QuoteRenewalResultInterval {
+	return []QuoteRenewalResultInterval{
+		QuoteRenewalResultIntervalDay,
+		QuoteRenewalResultIntervalMonth,
+		QuoteRenewalResultIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteRenewalResultInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteRenewalResultIntervalDay:
+		return []byte(s), nil
+	case QuoteRenewalResultIntervalMonth:
+		return []byte(s), nil
+	case QuoteRenewalResultIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteRenewalResultInterval) UnmarshalText(data []byte) error {
+	switch QuoteRenewalResultInterval(data) {
+	case QuoteRenewalResultIntervalDay:
+		*s = QuoteRenewalResultIntervalDay
+		return nil
+	case QuoteRenewalResultIntervalMonth:
+		*s = QuoteRenewalResultIntervalMonth
+		return nil
+	case QuoteRenewalResultIntervalYear:
+		*s = QuoteRenewalResultIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Specify renewals for existing subscriptions, or one cancellation on its own.
+// Ref: #/components/schemas/QuoteRequest
+type QuoteRequest struct {
+	Renewals     []QuoteRenewal       `json:"renewals"`
+	Cancellation OptQuoteCancellation `json:"cancellation"`
+}
+
+// GetRenewals returns the value of Renewals.
+func (s *QuoteRequest) GetRenewals() []QuoteRenewal {
+	return s.Renewals
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *QuoteRequest) GetCancellation() OptQuoteCancellation {
+	return s.Cancellation
+}
+
+// SetRenewals sets the value of Renewals.
+func (s *QuoteRequest) SetRenewals(val []QuoteRenewal) {
+	s.Renewals = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *QuoteRequest) SetCancellation(val OptQuoteCancellation) {
+	s.Cancellation = val
 }
 
 // Ref: #/components/schemas/Refund

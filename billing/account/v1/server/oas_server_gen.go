@@ -93,9 +93,8 @@ type Handler interface {
 	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
 	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 	//    progress;
-	//  - 422 `BILLING_CANCELLATION_UNSUPPORTED` when the service cannot yet be canceled here;
 	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//    `expected_refundable_amount`; preview again.
+	//    `expected_refundable_amount`; quote again.
 	//
 	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
 	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
@@ -103,16 +102,6 @@ type Handler interface {
 	//
 	// POST /account/v1/cancellations
 	CreateCancellation(ctx context.Context, req *CancellationCreate) (CreateCancellationRes, error)
-	// CreateCancellationPreview implements create-cancellation-preview operation.
-	//
-	// What canceling these subscriptions together would return, computed now under the refund terms agreed
-	// when each was bought. This request does not create a resource: nothing is recorded or reserved.
-	//
-	// It is refused with the same errors as creating the cancellation, except that the amount is not
-	// checked. Give the returned `proration_date` and `refundable_amount` when creating it.
-	//
-	// POST /account/v1/cancellations/preview
-	CreateCancellationPreview(ctx context.Context, req *CancellationPreviewRequest) (*CancellationRefundPreview, error)
 	// CreateCancellationRequest implements create-cancellation-request operation.
 	//
 	// Ends the whole subscription under confirmed terms. The request does not itself stop service; actual
@@ -133,6 +122,29 @@ type Handler interface {
 	//
 	// POST /account/v1/payment-methods/setup
 	CreatePaymentMethodSetup(ctx context.Context, req *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
+	// CreateQuote implements create-quote operation.
+	//
+	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
+	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called as
+	// often as required. Prices may change between quoting and renewing, so a quote should be refreshed
+	// before a final confirmation is shown.
+	//
+	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
+	// with the discounts the account holds, and with tax.
+	//
+	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals the
+	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field` `cancellation`. It is
+	// refused with the same errors as creating the cancellation, except that the amount is not checked.
+	// Give the returned `cancellation.proration_date` and `cancellation.refundable_amount` when creating
+	// it.
+	//
+	// Every subscription must be paid for by the same one of your billing accounts; otherwise the request
+	// is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does not exist,
+	// and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+	//
+	// POST /account/v1/quotes
+	CreateQuote(ctx context.Context, req *QuoteRequest) (*Quote, error)
 	// CreateRenewalOrder implements create-renewal-order operation.
 	//
 	// Places a renewal order and issues its invoice without charging anything; pay the invoice to renew.
@@ -409,7 +421,7 @@ type Handler interface {
 	//
 	// Reads confirmed terms and paid-period value without recording a request or locking a refund amount.
 	//
-	// Use create-cancellation-preview, which previews the subscriptions released together.
+	// Use create-quote with a `cancellation`, which quotes the subscriptions released together.
 	//
 	// Deprecated: schema marks this operation as deprecated.
 	//
