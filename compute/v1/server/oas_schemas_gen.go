@@ -6561,18 +6561,12 @@ func (s *OrderOptions) SetRedemptionCode(val OptString) {
 // Ref: #/components/schemas/PeeringListResponseBody
 type PeeringListResponseBody struct {
 	Items      []PeeringResource `json:"items"`
-	Total      int               `json:"total"`
 	Pagination OffsetPagination  `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
 func (s *PeeringListResponseBody) GetItems() []PeeringResource {
 	return s.Items
-}
-
-// GetTotal returns the value of Total.
-func (s *PeeringListResponseBody) GetTotal() int {
-	return s.Total
 }
 
 // GetPagination returns the value of Pagination.
@@ -6583,11 +6577,6 @@ func (s *PeeringListResponseBody) GetPagination() OffsetPagination {
 // SetItems sets the value of Items.
 func (s *PeeringListResponseBody) SetItems(val []PeeringResource) {
 	s.Items = val
-}
-
-// SetTotal sets the value of Total.
-func (s *PeeringListResponseBody) SetTotal(val int) {
-	s.Total = val
 }
 
 // SetPagination sets the value of Pagination.

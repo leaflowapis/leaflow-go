@@ -1731,7 +1731,6 @@ type PeeringListResponseBody struct {
 
 	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
-	Total      int                           `json:"total"`
 }
 
 // PeeringResource defines model for PeeringResource.
