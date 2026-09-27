@@ -284,10 +284,10 @@ type Invoker interface {
 	// ListCurrencies invokes list-currencies operation.
 	//
 	// The currencies a new billing account can be opened in. A retired currency is not listed, although
-	// accounts already opened in it keep working. Not paged: the set is a few rows.
+	// accounts already opened in it keep working. Results are paginated.
 	//
 	// GET /account/v1/currencies
-	ListCurrencies(ctx context.Context) (*CurrencyList, error)
+	ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error)
 	// ListEntitlements invokes list-entitlements operation.
 	//
 	// Capabilities that come with what has been bought. A capability that is not held simply does not
@@ -333,8 +333,8 @@ type Invoker interface {
 	//
 	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
 	// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-	// others are refused. An empty list means no online payment is available for this account. Not paged:
-	// the set is a few rows.
+	// others are refused. An empty result means no online payment is available for this account. Results
+	// are paginated.
 	//
 	// GET /account/v1/billing-accounts/{accountId}/payment-options
 	ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error)
@@ -4063,15 +4063,15 @@ func (c *Client) sendListCreditGrants(ctx context.Context, params ListCreditGran
 // ListCurrencies invokes list-currencies operation.
 //
 // The currencies a new billing account can be opened in. A retired currency is not listed, although
-// accounts already opened in it keep working. Not paged: the set is a few rows.
+// accounts already opened in it keep working. Results are paginated.
 //
 // GET /account/v1/currencies
-func (c *Client) ListCurrencies(ctx context.Context) (*CurrencyList, error) {
-	res, err := c.sendListCurrencies(ctx)
+func (c *Client) ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error) {
+	res, err := c.sendListCurrencies(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListCurrencies(ctx context.Context) (res *CurrencyList, err error) {
+func (c *Client) sendListCurrencies(ctx context.Context, params ListCurrenciesParams) (res *CurrencyList, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-currencies"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -4111,6 +4111,44 @@ func (c *Client) sendListCurrencies(ctx context.Context) (res *CurrencyList, err
 	var pathParts [1]string
 	pathParts[0] = "/account/v1/currencies"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
@@ -5331,8 +5369,8 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 //
 // Lists the payment gateways and methods that currently accept payment in this account's currency, the
 // preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-// others are refused. An empty list means no online payment is available for this account. Not paged:
-// the set is a few rows.
+// others are refused. An empty result means no online payment is available for this account. Results
+// are paginated.
 //
 // GET /account/v1/billing-accounts/{accountId}/payment-options
 func (c *Client) ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error) {
@@ -5399,6 +5437,44 @@ func (c *Client) sendListPaymentOptions(ctx context.Context, params ListPaymentO
 	}
 	pathParts[2] = "/payment-options"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
@@ -5735,6 +5811,44 @@ func (c *Client) sendListRenewalPrices(ctx context.Context, params ListRenewalPr
 	}
 	pathParts[2] = "/renewal-prices"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)

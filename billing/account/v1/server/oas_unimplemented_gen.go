@@ -340,10 +340,10 @@ func (UnimplementedHandler) ListCreditGrants(ctx context.Context, params ListCre
 // ListCurrencies implements list-currencies operation.
 //
 // The currencies a new billing account can be opened in. A retired currency is not listed, although
-// accounts already opened in it keep working. Not paged: the set is a few rows.
+// accounts already opened in it keep working. Results are paginated.
 //
 // GET /account/v1/currencies
-func (UnimplementedHandler) ListCurrencies(ctx context.Context) (r *CurrencyList, _ error) {
+func (UnimplementedHandler) ListCurrencies(ctx context.Context, params ListCurrenciesParams) (r *CurrencyList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -410,8 +410,8 @@ func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListP
 //
 // Lists the payment gateways and methods that currently accept payment in this account's currency, the
 // preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-// others are refused. An empty list means no online payment is available for this account. Not paged:
-// the set is a few rows.
+// others are refused. An empty result means no online payment is available for this account. Results
+// are paginated.
 //
 // GET /account/v1/billing-accounts/{accountId}/payment-options
 func (UnimplementedHandler) ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (r *PaymentOptionList, _ error) {

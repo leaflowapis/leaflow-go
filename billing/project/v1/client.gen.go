@@ -771,8 +771,10 @@ type ActiveResourceStatus string
 
 // ActiveResourceList defines model for ActiveResourceList.
 type ActiveResourceList struct {
-	Items      []ActiveResource `json:"items"`
-	TotalCount *int64           `json:"total_count,omitempty"`
+	Items []ActiveResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Allowance defines model for Allowance.
@@ -822,8 +824,10 @@ type AllowanceStatus string
 
 // AllowanceList defines model for AllowanceList.
 type AllowanceList struct {
-	Items      []Allowance `json:"items"`
-	TotalCount *int64      `json:"total_count,omitempty"`
+	Items []Allowance `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // AutoRenewSet defines model for AutoRenewSet.
@@ -931,8 +935,10 @@ type CancellationItemStatus string
 
 // CancellationList defines model for CancellationList.
 type CancellationList struct {
-	Items      []Cancellation `json:"items"`
-	TotalCount *int64         `json:"total_count,omitempty"`
+	Items []Cancellation `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now. Give
@@ -1154,8 +1160,10 @@ type Entitlement struct {
 
 // EntitlementList defines model for EntitlementList.
 type EntitlementList struct {
-	Items      []Entitlement `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
+	Items []Entitlement `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Error defines model for Error.
@@ -1364,8 +1372,10 @@ type OrderItemInterval string
 
 // OrderItemList defines model for OrderItemList.
 type OrderItemList struct {
-	Items      []OrderItem `json:"items"`
-	TotalCount *int64      `json:"total_count,omitempty"`
+	Items []OrderItem `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // OrderItemStatus `pending` is waiting to be set up. `completed` was confirmed by the service.
@@ -1376,8 +1386,10 @@ type OrderItemStatus string
 
 // OrderList defines model for OrderList.
 type OrderList struct {
-	Items      []Order `json:"items"`
-	TotalCount *int64  `json:"total_count,omitempty"`
+	Items []Order `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // OrderStatus Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is
@@ -1673,9 +1685,11 @@ type SpendRowList struct {
 	Currency string     `json:"currency"`
 	Items    []SpendRow `json:"items"`
 
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
+
 	// Total The sum over the whole period, not only the page returned.
-	Total      externalRef0.Money `json:"total"`
-	TotalCount *int64             `json:"total_count,omitempty"`
+	Total externalRef0.Money `json:"total"`
 }
 
 // Subscription An independently billed purchase. Fixed renewals use the agreed recurring_amount and interval; already paid periods retain their original value. Technical state belongs to the owning service.
@@ -1753,8 +1767,10 @@ type SubscriptionStatus string
 
 // SubscriptionList defines model for SubscriptionList.
 type SubscriptionList struct {
-	Items      []Subscription `json:"items"`
-	TotalCount *int64         `json:"total_count,omitempty"`
+	Items []Subscription `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
@@ -1822,8 +1838,10 @@ type UsageCharge struct {
 
 // UsageChargeList defines model for UsageChargeList.
 type UsageChargeList struct {
-	Items      []UsageCharge `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
+	Items []UsageCharge `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // CancellationId defines model for CancellationId.

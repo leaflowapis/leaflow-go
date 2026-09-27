@@ -5027,7 +5027,7 @@ func (s *Server) handleListCreditGrantsRequest(args [0]string, argsEscaped bool,
 // handleListCurrenciesRequest handles list-currencies operation.
 //
 // The currencies a new billing account can be opened in. A retired currency is not listed, although
-// accounts already opened in it keep working. Not paged: the set is a few rows.
+// accounts already opened in it keep working. Results are paginated.
 //
 // GET /account/v1/currencies
 func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5147,6 +5147,16 @@ func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w
 			return
 		}
 	}
+	params, err := decodeListCurrenciesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 
@@ -5159,13 +5169,22 @@ func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w
 			OperationID:      "list-currencies",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = struct{}
+			Params   = ListCurrenciesParams
 			Response = *CurrencyList
 		)
 		response, err = middleware.HookMiddleware[
@@ -5175,14 +5194,14 @@ func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			nil,
+			unpackListCurrenciesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListCurrencies(ctx)
+				response, err = s.h.ListCurrencies(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListCurrencies(ctx)
+		response, err = s.h.ListCurrencies(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -6499,8 +6518,8 @@ func (s *Server) handleListPaymentMethodsRequest(args [0]string, argsEscaped boo
 //
 // Lists the payment gateways and methods that currently accept payment in this account's currency, the
 // preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-// others are refused. An empty list means no online payment is available for this account. Not paged:
-// the set is a few rows.
+// others are refused. An empty result means no online payment is available for this account. Results
+// are paginated.
 //
 // GET /account/v1/billing-accounts/{accountId}/payment-options
 func (s *Server) handleListPaymentOptionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6643,6 +6662,14 @@ func (s *Server) handleListPaymentOptionsRequest(args [1]string, argsEscaped boo
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 				{
 					Name: "accountId",
 					In:   "path",
@@ -7061,6 +7088,14 @@ func (s *Server) handleListRenewalPricesRequest(args [1]string, argsEscaped bool
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 				{
 					Name: "subscriptionId",
 					In:   "path",

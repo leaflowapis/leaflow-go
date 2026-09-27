@@ -299,8 +299,10 @@ type PlanFeature struct {
 
 // PlanList defines model for PlanList.
 type PlanList struct {
-	Items      []Plan `json:"items"`
-	TotalCount *int64 `json:"total_count,omitempty"`
+	Items []Plan `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Price defines model for Price.
@@ -399,8 +401,10 @@ type PriceType string
 
 // PriceList defines model for PriceList.
 type PriceList struct {
-	Items      []Price `json:"items"`
-	TotalCount *int64  `json:"total_count,omitempty"`
+	Items []Price `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Product defines model for Product.
@@ -417,8 +421,10 @@ type ProductID = string
 
 // ProductList defines model for ProductList.
 type ProductList struct {
-	Items      []Product `json:"items"`
-	TotalCount *int64    `json:"total_count,omitempty"`
+	Items []Product `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Quote defines model for Quote.
@@ -574,8 +580,10 @@ type RatePricingModel string
 
 // RateList defines model for RateList.
 type RateList struct {
-	Items      []Rate `json:"items"`
-	TotalCount *int64 `json:"total_count,omitempty"`
+	Items []Rate `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.

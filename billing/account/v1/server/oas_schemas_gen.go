@@ -369,8 +369,8 @@ func (s *Allowance) SetValidUntil(val OptNilDateTime) {
 
 // Ref: #/components/schemas/AllowanceList
 type AllowanceList struct {
-	Items      []Allowance `json:"items"`
-	TotalCount OptInt64    `json:"total_count"`
+	Items      []Allowance      `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -378,9 +378,9 @@ func (s *AllowanceList) GetItems() []Allowance {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *AllowanceList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *AllowanceList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -388,9 +388,9 @@ func (s *AllowanceList) SetItems(val []Allowance) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *AllowanceList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *AllowanceList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // `included` came with a recurring purchase and ends with its subscription, `promotional` was granted.
@@ -881,7 +881,7 @@ func (s *BillingAccountCreate) SetEmail(val OptString) {
 // Ref: #/components/schemas/BillingAccountList
 type BillingAccountList struct {
 	Items      []BillingAccount `json:"items"`
-	TotalCount OptInt64         `json:"total_count"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -889,9 +889,9 @@ func (s *BillingAccountList) GetItems() []BillingAccount {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *BillingAccountList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *BillingAccountList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -899,9 +899,9 @@ func (s *BillingAccountList) SetItems(val []BillingAccount) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *BillingAccountList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *BillingAccountList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type BillingAccountStatus string
@@ -1559,8 +1559,8 @@ func (s *CancellationItemStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/CancellationList
 type CancellationList struct {
-	Items      []Cancellation `json:"items"`
-	TotalCount OptInt64       `json:"total_count"`
+	Items      []Cancellation   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -1568,9 +1568,9 @@ func (s *CancellationList) GetItems() []Cancellation {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *CancellationList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *CancellationList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -1578,9 +1578,9 @@ func (s *CancellationList) SetItems(val []Cancellation) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *CancellationList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *CancellationList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Who asked for it. `project_deletion` means the project was deleted.
@@ -2448,8 +2448,8 @@ func (s *CreditGrant) SetValidUntil(val OptNilDateTime) {
 
 // Ref: #/components/schemas/CreditGrantList
 type CreditGrantList struct {
-	Items      []CreditGrant `json:"items"`
-	TotalCount OptInt64      `json:"total_count"`
+	Items      []CreditGrant    `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -2457,9 +2457,9 @@ func (s *CreditGrantList) GetItems() []CreditGrant {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *CreditGrantList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *CreditGrantList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -2467,9 +2467,9 @@ func (s *CreditGrantList) SetItems(val []CreditGrant) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *CreditGrantList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *CreditGrantList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type CreditGrantStatus string
@@ -2608,7 +2608,8 @@ func (s *Currency) SetMinimumTopUp(val Money) {
 
 // Ref: #/components/schemas/CurrencyList
 type CurrencyList struct {
-	Items []Currency `json:"items"`
+	Items      []Currency       `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -2616,9 +2617,19 @@ func (s *CurrencyList) GetItems() []Currency {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *CurrencyList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *CurrencyList) SetItems(val []Currency) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *CurrencyList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // DeletePaymentMethodNoContent is response for DeletePaymentMethod operation.
@@ -2834,8 +2845,8 @@ func (s *Discount) SetEndedAt(val OptNilDateTime) {
 
 // Ref: #/components/schemas/DiscountList
 type DiscountList struct {
-	Items      []Discount `json:"items"`
-	TotalCount OptInt64   `json:"total_count"`
+	Items      []Discount       `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -2843,9 +2854,9 @@ func (s *DiscountList) GetItems() []Discount {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *DiscountList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *DiscountList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -2853,9 +2864,9 @@ func (s *DiscountList) SetItems(val []Discount) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *DiscountList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *DiscountList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type DiscountStatus string
@@ -3016,8 +3027,8 @@ func (s *Entitlement) SetExpiresAt(val OptNilDateTime) {
 
 // Ref: #/components/schemas/EntitlementList
 type EntitlementList struct {
-	Items      []Entitlement `json:"items"`
-	TotalCount OptInt64      `json:"total_count"`
+	Items      []Entitlement    `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -3025,9 +3036,9 @@ func (s *EntitlementList) GetItems() []Entitlement {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *EntitlementList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *EntitlementList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -3035,9 +3046,9 @@ func (s *EntitlementList) SetItems(val []Entitlement) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *EntitlementList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *EntitlementList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/Error
@@ -3696,8 +3707,8 @@ func (s *InvoiceItem) SetPeriodEnd(val OptNilDateTime) {
 
 // Ref: #/components/schemas/InvoiceItemList
 type InvoiceItemList struct {
-	Items      []InvoiceItem `json:"items"`
-	TotalCount OptInt64      `json:"total_count"`
+	Items      []InvoiceItem    `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -3705,9 +3716,9 @@ func (s *InvoiceItemList) GetItems() []InvoiceItem {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *InvoiceItemList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *InvoiceItemList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -3715,9 +3726,9 @@ func (s *InvoiceItemList) SetItems(val []InvoiceItem) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *InvoiceItemList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *InvoiceItemList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type InvoiceItemType string
@@ -3784,8 +3795,8 @@ func (s *InvoiceItemType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/InvoiceList
 type InvoiceList struct {
-	Items      []Invoice `json:"items"`
-	TotalCount OptInt64  `json:"total_count"`
+	Items      []Invoice        `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -3793,9 +3804,9 @@ func (s *InvoiceList) GetItems() []Invoice {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *InvoiceList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *InvoiceList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -3803,9 +3814,9 @@ func (s *InvoiceList) SetItems(val []Invoice) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *InvoiceList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *InvoiceList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // A usage invoice stays `draft` through its month: each charge is added to it as it is priced and paid
@@ -4426,6 +4437,45 @@ func (s *ObjectIdentity) SetID(val uuid.UUID) {
 // SetName sets the value of Name.
 func (s *ObjectIdentity) SetName(val string) {
 	s.Name = val
+}
+
+// Pagination metadata for stable numbered pages. total_count is returned only when the operation can
+// determine it without an unbounded scan.
+// Ref: #/components/schemas/OffsetPagination
+type OffsetPagination struct {
+	Page       int64    `json:"page"`
+	PageSize   int64    `json:"page_size"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetPage returns the value of Page.
+func (s *OffsetPagination) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *OffsetPagination) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OffsetPagination) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetPage sets the value of Page.
+func (s *OffsetPagination) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *OffsetPagination) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OffsetPagination) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // NewOptAccountIdentity returns new OptAccountIdentity with value set to v.
@@ -7584,8 +7634,8 @@ func (s *OrderItemInterval) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/OrderItemList
 type OrderItemList struct {
-	Items      []OrderItem `json:"items"`
-	TotalCount OptInt64    `json:"total_count"`
+	Items      []OrderItem      `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -7593,9 +7643,9 @@ func (s *OrderItemList) GetItems() []OrderItem {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *OrderItemList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *OrderItemList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -7603,9 +7653,9 @@ func (s *OrderItemList) SetItems(val []OrderItem) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *OrderItemList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *OrderItemList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // `pending` is waiting to be set up. `completed` was confirmed by the service. `failed` was not set up
@@ -7669,8 +7719,8 @@ func (s *OrderItemStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/OrderList
 type OrderList struct {
-	Items      []Order  `json:"items"`
-	TotalCount OptInt64 `json:"total_count"`
+	Items      []Order          `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -7678,9 +7728,9 @@ func (s *OrderList) GetItems() []Order {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *OrderList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *OrderList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -7688,9 +7738,9 @@ func (s *OrderList) SetItems(val []Order) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *OrderList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *OrderList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is accepted
@@ -8271,8 +8321,8 @@ func (s *PaymentMethod) SetStatus(val PaymentMethodStatus) {
 
 // Ref: #/components/schemas/PaymentMethodList
 type PaymentMethodList struct {
-	Items      []PaymentMethod `json:"items"`
-	TotalCount OptInt64        `json:"total_count"`
+	Items      []PaymentMethod  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -8280,9 +8330,9 @@ func (s *PaymentMethodList) GetItems() []PaymentMethod {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *PaymentMethodList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *PaymentMethodList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -8290,9 +8340,9 @@ func (s *PaymentMethodList) SetItems(val []PaymentMethod) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *PaymentMethodList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *PaymentMethodList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/PaymentMethodSetup
@@ -8444,7 +8494,8 @@ func (s *PaymentOption) SetMethods(val []PaymentOptionMethod) {
 
 // Ref: #/components/schemas/PaymentOptionList
 type PaymentOptionList struct {
-	Items []PaymentOption `json:"items"`
+	Items      []PaymentOption  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -8452,9 +8503,19 @@ func (s *PaymentOptionList) GetItems() []PaymentOption {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *PaymentOptionList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *PaymentOptionList) SetItems(val []PaymentOption) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *PaymentOptionList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/PaymentOptionMethod
@@ -9298,7 +9359,7 @@ func (s *ProjectBillingInfo) SetEffectiveTo(val OptNilDateTime) {
 // Ref: #/components/schemas/ProjectBillingInfoList
 type ProjectBillingInfoList struct {
 	Items      []ProjectBillingInfo `json:"items"`
-	TotalCount OptInt64             `json:"total_count"`
+	Pagination OffsetPagination     `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -9306,9 +9367,9 @@ func (s *ProjectBillingInfoList) GetItems() []ProjectBillingInfo {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *ProjectBillingInfoList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *ProjectBillingInfoList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -9316,9 +9377,9 @@ func (s *ProjectBillingInfoList) SetItems(val []ProjectBillingInfo) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *ProjectBillingInfoList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *ProjectBillingInfoList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/ProjectBillingInfoSet
@@ -10806,8 +10867,8 @@ func (s *RefundDestination) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/RefundList
 type RefundList struct {
-	Items      []Refund `json:"items"`
-	TotalCount OptInt64 `json:"total_count"`
+	Items      []Refund         `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -10815,9 +10876,9 @@ func (s *RefundList) GetItems() []Refund {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *RefundList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *RefundList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -10825,9 +10886,9 @@ func (s *RefundList) SetItems(val []Refund) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *RefundList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *RefundList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Prorated returns the unused value of paid service periods using integer-second duration ratios.
@@ -11468,7 +11529,8 @@ func (s *RenewalPriceInterval) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/RenewalPriceList
 type RenewalPriceList struct {
-	Items []RenewalPrice `json:"items"`
+	Items      []RenewalPrice   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -11476,9 +11538,19 @@ func (s *RenewalPriceList) GetItems() []RenewalPrice {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *RenewalPriceList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *RenewalPriceList) SetItems(val []RenewalPrice) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *RenewalPriceList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // An independently billed purchase. Fixed renewals use the agreed recurring_amount and interval;
@@ -11967,8 +12039,8 @@ func (s *SubscriptionInterval) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/SubscriptionList
 type SubscriptionList struct {
-	Items      []Subscription `json:"items"`
-	TotalCount OptInt64       `json:"total_count"`
+	Items      []Subscription   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -11976,9 +12048,9 @@ func (s *SubscriptionList) GetItems() []Subscription {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *SubscriptionList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *SubscriptionList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -11986,9 +12058,9 @@ func (s *SubscriptionList) SetItems(val []Subscription) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *SubscriptionList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *SubscriptionList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type SubscriptionStatus string
@@ -12510,8 +12582,8 @@ func (s *TopUpCreate) SetReturnURL(val OptString) {
 
 // Ref: #/components/schemas/TopUpList
 type TopUpList struct {
-	Items      []TopUp  `json:"items"`
-	TotalCount OptInt64 `json:"total_count"`
+	Items      []TopUp          `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -12519,9 +12591,9 @@ func (s *TopUpList) GetItems() []TopUp {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *TopUpList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *TopUpList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -12529,9 +12601,9 @@ func (s *TopUpList) SetItems(val []TopUp) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *TopUpList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *TopUpList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
@@ -12848,8 +12920,8 @@ func (s *Transaction) SetCreatedAt(val time.Time) {
 
 // Ref: #/components/schemas/TransactionList
 type TransactionList struct {
-	Items      []Transaction `json:"items"`
-	TotalCount OptInt64      `json:"total_count"`
+	Items      []Transaction    `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -12857,9 +12929,9 @@ func (s *TransactionList) GetItems() []Transaction {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *TransactionList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *TransactionList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -12867,9 +12939,9 @@ func (s *TransactionList) SetItems(val []Transaction) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *TransactionList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *TransactionList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Present on refunds. Where this part of the refund goes.
@@ -13288,8 +13360,8 @@ func (s *UsageChargeDimensions) init() UsageChargeDimensions {
 
 // Ref: #/components/schemas/UsageChargeList
 type UsageChargeList struct {
-	Items      []UsageCharge `json:"items"`
-	TotalCount OptInt64      `json:"total_count"`
+	Items      []UsageCharge    `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -13297,9 +13369,9 @@ func (s *UsageChargeList) GetItems() []UsageCharge {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *UsageChargeList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *UsageChargeList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -13307,7 +13379,7 @@ func (s *UsageChargeList) SetItems(val []UsageCharge) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *UsageChargeList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *UsageChargeList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }

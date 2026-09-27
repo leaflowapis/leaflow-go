@@ -945,6 +945,9 @@ type AttachPortRequestBody struct {
 // BackupListResponseBody defines model for BackupListResponseBody.
 type BackupListResponseBody struct {
 	Items []BackupResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // BackupResource defines model for BackupResource.
@@ -1178,15 +1181,18 @@ type DiskAttachmentState string
 
 // DiskAttachmentList defines model for DiskAttachmentList.
 type DiskAttachmentList struct {
-	Items      []DiskAttachment `json:"items"`
-	Page       int64            `json:"page"`
-	PageSize   int64            `json:"page_size"`
-	TotalCount int64            `json:"total_count"`
+	Items []DiskAttachment `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // DiskListResponseBody defines model for DiskListResponseBody.
 type DiskListResponseBody struct {
 	Items []DiskResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // DiskResource defines model for DiskResource.
@@ -1236,6 +1242,9 @@ type DiskResourceStatus string
 // DiskTypeListResponseBody defines model for DiskTypeListResponseBody.
 type DiskTypeListResponseBody struct {
 	Items []DiskTypeResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // DiskTypeResource defines model for DiskTypeResource.
@@ -1287,6 +1296,9 @@ type Error = externalRef0.Error
 // FloatingIPListResponseBody defines model for FloatingIPListResponseBody.
 type FloatingIPListResponseBody struct {
 	Items []FloatingIPResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // FloatingIPResource defines model for FloatingIPResource.
@@ -1344,10 +1356,10 @@ type IPv4BindingState string
 
 // IPv4PoolListResponseBody defines model for IPv4PoolListResponseBody.
 type IPv4PoolListResponseBody struct {
-	Items      []IPv4PoolResource `json:"items"`
-	Page       int64              `json:"page"`
-	PageSize   int64              `json:"page_size"`
-	TotalCount *int64             `json:"total_count,omitempty"`
+	Items []IPv4PoolResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // IPv4PoolResource defines model for IPv4PoolResource.
@@ -1374,10 +1386,10 @@ type IPv6ResponseBodyStatus string
 
 // ImageListResponseBody defines model for ImageListResponseBody.
 type ImageListResponseBody struct {
-	Items      []ImageResource `json:"items"`
-	Page       int64           `json:"page"`
-	PageSize   int64           `json:"page_size"`
-	TotalCount *int64          `json:"total_count,omitempty"`
+	Items []ImageResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // ImageResource An image that installs the system of an instance. Fields that describe a capture or its billing apply only to private images and are null, zero or empty for public ones.
@@ -1442,10 +1454,10 @@ type ImageVisibility string
 
 // InstanceListResponseBody defines model for InstanceListResponseBody.
 type InstanceListResponseBody struct {
-	Items      []InstanceResource `json:"items"`
-	Page       int64              `json:"page"`
-	PageSize   int64              `json:"page_size"`
-	TotalCount *int64             `json:"total_count,omitempty"`
+	Items []InstanceResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // InstanceResource defines model for InstanceResource.
@@ -1536,10 +1548,10 @@ type InstanceRestrictionSource string
 
 // InstanceTypeListResponseBody defines model for InstanceTypeListResponseBody.
 type InstanceTypeListResponseBody struct {
-	Items      []InstanceTypeResource `json:"items"`
-	Page       int64                  `json:"page"`
-	PageSize   int64                  `json:"page_size"`
-	TotalCount *int64                 `json:"total_count,omitempty"`
+	Items []InstanceTypeResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // InstanceTypeResource defines model for InstanceTypeResource.
@@ -1673,10 +1685,10 @@ type NextFreeCidrResponseBody struct {
 
 // OperationLogListResponseBody defines model for OperationLogListResponseBody.
 type OperationLogListResponseBody struct {
-	Items      []OperationLogResource `json:"items"`
-	Page       int64                  `json:"page"`
-	PageSize   int64                  `json:"page_size"`
-	TotalCount *int64                 `json:"total_count,omitempty"`
+	Items []OperationLogResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // OperationLogResource defines model for OperationLogResource.
@@ -1716,7 +1728,10 @@ type OrderOptions = externalRef0.OrderOptions
 // PeeringListResponseBody defines model for PeeringListResponseBody.
 type PeeringListResponseBody struct {
 	Items []PeeringResource `json:"items"`
-	Total int               `json:"total"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
+	Total      int                           `json:"total"`
 }
 
 // PeeringResource defines model for PeeringResource.
@@ -1774,15 +1789,18 @@ type PortAttachmentState string
 
 // PortAttachmentList defines model for PortAttachmentList.
 type PortAttachmentList struct {
-	Items      []PortAttachment `json:"items"`
-	Page       int64            `json:"page"`
-	PageSize   int64            `json:"page_size"`
-	TotalCount int64            `json:"total_count"`
+	Items []PortAttachment `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // PortListResponseBody defines model for PortListResponseBody.
 type PortListResponseBody struct {
 	Items []PortResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // PortResource defines model for PortResource.
@@ -1812,6 +1830,9 @@ type PowerRequest struct {
 // PrivateNetworkListResponseBody defines model for PrivateNetworkListResponseBody.
 type PrivateNetworkListResponseBody struct {
 	Items []PrivateNetworkResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // PrivateNetworkResource defines model for PrivateNetworkResource.
@@ -1869,6 +1890,9 @@ type RebuildInstanceResponseBody struct {
 // RegionListResponseBody defines model for RegionListResponseBody.
 type RegionListResponseBody struct {
 	Items []RegionResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // RegionResource defines model for RegionResource.
@@ -1996,6 +2020,9 @@ type RevertDiskRequestBody struct {
 // RouteListResponseBody defines model for RouteListResponseBody.
 type RouteListResponseBody struct {
 	Items []RouteResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // RouteResource defines model for RouteResource.
@@ -2024,6 +2051,9 @@ type RunCommandRequestBody struct {
 // SecurityGroupListResponseBody defines model for SecurityGroupListResponseBody.
 type SecurityGroupListResponseBody struct {
 	Items []SecurityGroupResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // SecurityGroupResource defines model for SecurityGroupResource.
@@ -2041,6 +2071,9 @@ type SecurityGroupResource struct {
 // SecurityRuleListResponseBody defines model for SecurityRuleListResponseBody.
 type SecurityRuleListResponseBody struct {
 	Items []SecurityRuleResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // SecurityRuleResource defines model for SecurityRuleResource.
@@ -2091,6 +2124,9 @@ type SetInstanceNotesRequestBody struct {
 // SnapshotListResponseBody defines model for SnapshotListResponseBody.
 type SnapshotListResponseBody struct {
 	Items []SnapshotResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // SnapshotResource defines model for SnapshotResource.
@@ -2131,6 +2167,9 @@ type SnapshotResourceStatus string
 // SubnetListResponseBody defines model for SubnetListResponseBody.
 type SubnetListResponseBody struct {
 	Items []SubnetResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // SubnetResource defines model for SubnetResource.
@@ -2152,6 +2191,9 @@ type Task = externalRef0.Task
 // ZoneListResponseBody defines model for ZoneListResponseBody.
 type ZoneListResponseBody struct {
 	Items []ZoneResource `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // ZoneResource defines model for ZoneResource.
@@ -2164,18 +2206,28 @@ type ZoneResource struct {
 	Name string `json:"name"`
 }
 
+// Page defines model for Page.
+type Page = int64
+
+// PageSize defines model for PageSize.
+type PageSize = int64
+
 // ListBackupsParams defines parameters for ListBackups.
 type ListBackupsParams struct {
 	// DiskId Return only the backups of this disk
-	DiskId *openapi_types.UUID `form:"disk_id,omitempty" json:"disk_id,omitempty"`
+	DiskId   *openapi_types.UUID `form:"disk_id,omitempty" json:"disk_id,omitempty"`
+	Page     *Page               `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize           `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListDiskTypesParams defines parameters for ListDiskTypes.
 type ListDiskTypesParams struct {
-	RegionId openapi_types.UUID `form:"region_id" json:"region_id"`
+	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
 
 	// ForSystem `true` lists only system disk types and `false` only data disk types. Both are listed when omitted.
-	ForSystem *bool `form:"for_system,omitempty" json:"for_system,omitempty"`
+	ForSystem *bool     `form:"for_system,omitempty" json:"for_system,omitempty"`
+	Page      *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize  *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListDisksParams defines parameters for ListDisks.
@@ -2184,6 +2236,14 @@ type ListDisksParams struct {
 
 	// AvailabilityZoneId Supplied together with `region_code` to filter attachable disks
 	AvailabilityZoneId *openapi_types.UUID `form:"availability_zone_id,omitempty" json:"availability_zone_id,omitempty"`
+	Page               *Page               `form:"page,omitempty" json:"page,omitempty"`
+	PageSize           *PageSize           `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListFloatingIpsParams defines parameters for ListFloatingIps.
+type ListFloatingIpsParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListImagesParams defines parameters for ListImages.
@@ -2193,23 +2253,23 @@ type ListImagesParams struct {
 
 	// Visibility Return only public or only private images. Both are returned when omitted
 	Visibility *ImageVisibility `form:"visibility,omitempty" json:"visibility,omitempty"`
-	Page       *int64           `form:"page,omitempty" json:"page,omitempty"`
-	PageSize   *int64           `form:"page_size,omitempty" json:"page_size,omitempty"`
+	Page       *Page            `form:"page,omitempty" json:"page,omitempty"`
+	PageSize   *PageSize        `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListInstanceTypesParams defines parameters for ListInstanceTypes.
 type ListInstanceTypesParams struct {
-	RegionId openapi_types.UUID `form:"region_id" json:"region_id"`
-	Page     *int64             `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64             `form:"page_size,omitempty" json:"page_size,omitempty"`
+	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
+	Page     *Page               `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize           `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListInstancesParams defines parameters for ListInstances.
 type ListInstancesParams struct {
 	// Label Only instances carrying this label, written as `key:value` — for example `env:prod`. Both halves are matched exactly
-	Label    *string `form:"label,omitempty" json:"label,omitempty"`
-	Page     *int64  `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64  `form:"page_size,omitempty" json:"page_size,omitempty"`
+	Label    *string   `form:"label,omitempty" json:"label,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // GetInstanceConsoleOutputParams defines parameters for GetInstanceConsoleOutput.
@@ -2220,41 +2280,61 @@ type GetInstanceConsoleOutputParams struct {
 
 // ListInstanceDisksParams defines parameters for ListInstanceDisks.
 type ListInstanceDisksParams struct {
-	Page     *int64 `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64 `form:"page_size,omitempty" json:"page_size,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListInstancePortsParams defines parameters for ListInstancePorts.
 type ListInstancePortsParams struct {
-	Page     *int64 `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64 `form:"page_size,omitempty" json:"page_size,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListIpv4PoolsParams defines parameters for ListIpv4Pools.
 type ListIpv4PoolsParams struct {
-	RegionId openapi_types.UUID `form:"region_id" json:"region_id"`
-	Page     *int64             `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64             `form:"page_size,omitempty" json:"page_size,omitempty"`
+	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
+	Page     *Page               `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize           `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListOperationLogsParams defines parameters for ListOperationLogs.
 type ListOperationLogsParams struct {
 	// Action Return a single kind of operation; the value matches the operation id of the endpoint
-	Action   *string `form:"action,omitempty" json:"action,omitempty"`
-	Page     *int64  `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64  `form:"page_size,omitempty" json:"page_size,omitempty"`
+	Action   *string   `form:"action,omitempty" json:"action,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListPeeringsParams defines parameters for ListPeerings.
 type ListPeeringsParams struct {
-	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
-	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListPortsParams defines parameters for ListPorts.
+type ListPortsParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListPrivateNetworksParams defines parameters for ListPrivateNetworks.
 type ListPrivateNetworksParams struct {
 	// RegionId Returns every region when omitted
 	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
+	Page     *Page               `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize           `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListRoutesParams defines parameters for ListRoutes.
+type ListRoutesParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListSubnetsParams defines parameters for ListSubnets.
+type ListSubnetsParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // SuggestSubnetCidrParams defines parameters for SuggestSubnetCidr.
@@ -2262,18 +2342,40 @@ type SuggestSubnetCidrParams struct {
 	PrefixLength *int64 `form:"prefix_length,omitempty" json:"prefix_length,omitempty"`
 }
 
+// ListRegionsParams defines parameters for ListRegions.
+type ListRegionsParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListAvailabilityZonesParams defines parameters for ListAvailabilityZones.
+type ListAvailabilityZonesParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
 // ListSecurityGroupsParams defines parameters for ListSecurityGroups.
 type ListSecurityGroupsParams struct {
 	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
 
 	// PrivateNetworkId Return only the security groups of this private network
-	PrivateNetworkId *string `form:"private_network_id,omitempty" json:"private_network_id,omitempty"`
+	PrivateNetworkId *string   `form:"private_network_id,omitempty" json:"private_network_id,omitempty"`
+	Page             *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize         *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListSecurityGroupRulesParams defines parameters for ListSecurityGroupRules.
+type ListSecurityGroupRulesParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListSnapshotsParams defines parameters for ListSnapshots.
 type ListSnapshotsParams struct {
 	// DiskId Return only the snapshots of this disk
-	DiskId *openapi_types.UUID `form:"disk_id,omitempty" json:"disk_id,omitempty"`
+	DiskId   *openapi_types.UUID `form:"disk_id,omitempty" json:"disk_id,omitempty"`
+	Page     *Page               `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize           `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // CreateBackupJSONRequestBody defines body for CreateBackup for application/json ContentType.
@@ -2716,7 +2818,7 @@ type ClientInterface interface {
 	// ListFloatingIps List floating IPs
 	//
 	// Corresponds with GET /api/v1/floating-ips (the `ListFloatingIps` operationId).
-	ListFloatingIps(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListFloatingIps(ctx context.Context, params *ListFloatingIpsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AllocateFloatingIpWithBody Allocate a floating IP
 	//
@@ -3409,7 +3511,7 @@ type ClientInterface interface {
 	// ListPorts List network interfaces
 	//
 	// Corresponds with GET /api/v1/ports (the `ListPorts` operationId).
-	ListPorts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPorts(ctx context.Context, params *ListPortsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreatePortWithBody Create a network interface
 	//
@@ -3513,7 +3615,7 @@ type ClientInterface interface {
 	// ListRoutes List static routes
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/routes (the `ListRoutes` operationId).
-	ListRoutes(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListRoutes(ctx context.Context, privateNetworkId openapi_types.UUID, params *ListRoutesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateRouteWithBody Create a static route
 	//
@@ -3543,7 +3645,7 @@ type ClientInterface interface {
 	// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be deleted individually.
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets (the `ListSubnets` operationId).
-	ListSubnets(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSubnets(ctx context.Context, privateNetworkId openapi_types.UUID, params *ListSubnetsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateSubnetWithBody Create a subnet
 	//
@@ -3576,14 +3678,14 @@ type ClientInterface interface {
 	// ListRegions List available regions
 	//
 	// Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
-	ListRegions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListRegions(ctx context.Context, params *ListRegionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAvailabilityZones List the availability zones of a region
 	//
 	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone before creating either.
 	//
 	// Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
-	ListAvailabilityZones(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAvailabilityZones(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSecurityGroups List security groups
 	//
@@ -3641,7 +3743,7 @@ type ClientInterface interface {
 	// ListSecurityGroupRules List security group rules
 	//
 	// Corresponds with GET /api/v1/security-groups/{securityGroupId}/rules (the `ListSecurityGroupRules` operationId).
-	ListSecurityGroupRules(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSecurityGroupRules(ctx context.Context, securityGroupId openapi_types.UUID, params *ListSecurityGroupRulesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateSecurityGroupRuleWithBody Create a security group rule
 	//
@@ -4214,8 +4316,8 @@ func (c *Client) RevertDisk(ctx context.Context, diskId openapi_types.UUID, body
 // ListFloatingIps List floating IPs
 //
 // Corresponds with GET /api/v1/floating-ips (the `ListFloatingIps` operationId).
-func (c *Client) ListFloatingIps(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListFloatingIpsRequest(c.Server)
+func (c *Client) ListFloatingIps(ctx context.Context, params *ListFloatingIpsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListFloatingIpsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5577,8 +5679,8 @@ func (c *Client) RejectPeering(ctx context.Context, peeringId openapi_types.UUID
 // ListPorts List network interfaces
 //
 // Corresponds with GET /api/v1/ports (the `ListPorts` operationId).
-func (c *Client) ListPorts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPortsRequest(c.Server)
+func (c *Client) ListPorts(ctx context.Context, params *ListPortsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPortsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5821,8 +5923,8 @@ func (c *Client) EnablePrivateNetworkIpv6(ctx context.Context, privateNetworkId 
 // ListRoutes List static routes
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId}/routes (the `ListRoutes` operationId).
-func (c *Client) ListRoutes(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRoutesRequest(c.Server, privateNetworkId)
+func (c *Client) ListRoutes(ctx context.Context, privateNetworkId openapi_types.UUID, params *ListRoutesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoutesRequest(c.Server, privateNetworkId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5891,8 +5993,8 @@ func (c *Client) DeleteRoute(ctx context.Context, privateNetworkId openapi_types
 // IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be deleted individually.
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets (the `ListSubnets` operationId).
-func (c *Client) ListSubnets(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSubnetsRequest(c.Server, privateNetworkId)
+func (c *Client) ListSubnets(ctx context.Context, privateNetworkId openapi_types.UUID, params *ListSubnetsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSubnetsRequest(c.Server, privateNetworkId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5974,8 +6076,8 @@ func (c *Client) DeleteSubnet(ctx context.Context, privateNetworkId openapi_type
 // ListRegions List available regions
 //
 // Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
-func (c *Client) ListRegions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRegionsRequest(c.Server)
+func (c *Client) ListRegions(ctx context.Context, params *ListRegionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRegionsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5991,8 +6093,8 @@ func (c *Client) ListRegions(ctx context.Context, reqEditors ...RequestEditorFn)
 // A disk and an instance must reside in the same availability zone to be attached. Confirm the zone before creating either.
 //
 // Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
-func (c *Client) ListAvailabilityZones(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAvailabilityZonesRequest(c.Server, regionId)
+func (c *Client) ListAvailabilityZones(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAvailabilityZonesRequest(c.Server, regionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6129,8 +6231,8 @@ func (c *Client) RenameSecurityGroup(ctx context.Context, securityGroupId openap
 // ListSecurityGroupRules List security group rules
 //
 // Corresponds with GET /api/v1/security-groups/{securityGroupId}/rules (the `ListSecurityGroupRules` operationId).
-func (c *Client) ListSecurityGroupRules(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSecurityGroupRulesRequest(c.Server, securityGroupId)
+func (c *Client) ListSecurityGroupRules(ctx context.Context, securityGroupId openapi_types.UUID, params *ListSecurityGroupRulesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSecurityGroupRulesRequest(c.Server, securityGroupId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6363,6 +6465,30 @@ func NewListBackupsRequest(server string, params *ListBackupsParams) (*http.Requ
 		if params.DiskId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "disk_id", *params.DiskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -6656,17 +6782,45 @@ func NewListDiskTypesRequest(server string, params *ListDiskTypesParams) (*http.
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-			return nil, err
-		} else {
-			for _, qp := range strings.Split(queryFrag, "&") {
-				rawQueryFragments = append(rawQueryFragments, qp)
+		if params.RegionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", *params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
 			}
+
 		}
 
 		if params.ForSystem != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "for_system", *params.ForSystem, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -6767,6 +6921,30 @@ func NewListDisksRequest(server string, params *ListDisksParams) (*http.Request,
 		if params.AvailabilityZoneId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "availability_zone_id", *params.AvailabilityZoneId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -7040,7 +7218,7 @@ func NewRevertDiskRequestWithBody(server string, diskId openapi_types.UUID, cont
 }
 
 // NewListFloatingIpsRequest constructs an http.Request for the ListFloatingIps method
-func NewListFloatingIpsRequest(server string) (*http.Request, error) {
+func NewListFloatingIpsRequest(server string, params *ListFloatingIpsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -7056,6 +7234,45 @@ func NewListFloatingIpsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -7615,12 +7832,16 @@ func NewListInstanceTypesRequest(server string, params *ListInstanceTypesParams)
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-			return nil, err
-		} else {
-			for _, qp := range strings.Split(queryFrag, "&") {
-				rawQueryFragments = append(rawQueryFragments, qp)
+		if params.RegionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", *params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
 			}
+
 		}
 
 		if params.Page != nil {
@@ -8850,12 +9071,16 @@ func NewListIpv4PoolsRequest(server string, params *ListIpv4PoolsParams) (*http.
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-			return nil, err
-		} else {
-			for _, qp := range strings.Split(queryFrag, "&") {
-				rawQueryFragments = append(rawQueryFragments, qp)
+		if params.RegionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", *params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
 			}
+
 		}
 
 		if params.Page != nil {
@@ -9002,9 +9227,9 @@ func NewListPeeringsRequest(server string, params *ListPeeringsParams) (*http.Re
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if params.Limit != nil {
+		if params.Page != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9014,9 +9239,9 @@ func NewListPeeringsRequest(server string, params *ListPeeringsParams) (*http.Re
 
 		}
 
-		if params.Offset != nil {
+		if params.PageSize != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "offset", *params.Offset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9217,7 +9442,7 @@ func NewRejectPeeringRequest(server string, peeringId openapi_types.UUID) (*http
 }
 
 // NewListPortsRequest constructs an http.Request for the ListPorts method
-func NewListPortsRequest(server string) (*http.Request, error) {
+func NewListPortsRequest(server string, params *ListPortsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -9233,6 +9458,45 @@ func NewListPortsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -9348,6 +9612,30 @@ func NewListPrivateNetworksRequest(server string, params *ListPrivateNetworksPar
 		if params.RegionId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", *params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9629,7 +9917,7 @@ func NewEnablePrivateNetworkIpv6Request(server string, privateNetworkId openapi_
 }
 
 // NewListRoutesRequest constructs an http.Request for the ListRoutes method
-func NewListRoutesRequest(server string, privateNetworkId openapi_types.UUID) (*http.Request, error) {
+func NewListRoutesRequest(server string, privateNetworkId openapi_types.UUID, params *ListRoutesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9652,6 +9940,45 @@ func NewListRoutesRequest(server string, privateNetworkId openapi_types.UUID) (*
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -9751,7 +10078,7 @@ func NewDeleteRouteRequest(server string, privateNetworkId openapi_types.UUID, r
 }
 
 // NewListSubnetsRequest constructs an http.Request for the ListSubnets method
-func NewListSubnetsRequest(server string, privateNetworkId openapi_types.UUID) (*http.Request, error) {
+func NewListSubnetsRequest(server string, privateNetworkId openapi_types.UUID, params *ListSubnetsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9774,6 +10101,45 @@ func NewListSubnetsRequest(server string, privateNetworkId openapi_types.UUID) (
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -9934,7 +10300,7 @@ func NewDeleteSubnetRequest(server string, privateNetworkId openapi_types.UUID, 
 }
 
 // NewListRegionsRequest constructs an http.Request for the ListRegions method
-func NewListRegionsRequest(server string) (*http.Request, error) {
+func NewListRegionsRequest(server string, params *ListRegionsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -9952,6 +10318,45 @@ func NewListRegionsRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -9961,7 +10366,7 @@ func NewListRegionsRequest(server string) (*http.Request, error) {
 }
 
 // NewListAvailabilityZonesRequest constructs an http.Request for the ListAvailabilityZones method
-func NewListAvailabilityZonesRequest(server string, regionId openapi_types.UUID) (*http.Request, error) {
+func NewListAvailabilityZonesRequest(server string, regionId openapi_types.UUID, params *ListAvailabilityZonesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9984,6 +10389,45 @@ func NewListAvailabilityZonesRequest(server string, regionId openapi_types.UUID)
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -10037,6 +10481,30 @@ func NewListSecurityGroupsRequest(server string, params *ListSecurityGroupsParam
 		if params.PrivateNetworkId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "private_network_id", *params.PrivateNetworkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -10216,7 +10684,7 @@ func NewRenameSecurityGroupRequestWithBody(server string, securityGroupId openap
 }
 
 // NewListSecurityGroupRulesRequest constructs an http.Request for the ListSecurityGroupRules method
-func NewListSecurityGroupRulesRequest(server string, securityGroupId openapi_types.UUID) (*http.Request, error) {
+func NewListSecurityGroupRulesRequest(server string, securityGroupId openapi_types.UUID, params *ListSecurityGroupRulesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10239,6 +10707,45 @@ func NewListSecurityGroupRulesRequest(server string, securityGroupId openapi_typ
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -10368,6 +10875,30 @@ func NewListSnapshotsRequest(server string, params *ListSnapshotsParams) (*http.
 		if params.DiskId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "disk_id", *params.DiskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -10891,7 +11422,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/floating-ips (the `ListFloatingIps` operationId).
-	ListFloatingIpsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFloatingIpsResponse, error)
+	ListFloatingIpsWithResponse(ctx context.Context, params *ListFloatingIpsParams, reqEditors ...RequestEditorFn) (*ListFloatingIpsResponse, error)
 
 	// AllocateFloatingIpWithBodyWithResponse Allocate a floating IP
 	//
@@ -11634,7 +12165,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/ports (the `ListPorts` operationId).
-	ListPortsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPortsResponse, error)
+	ListPortsWithResponse(ctx context.Context, params *ListPortsParams, reqEditors ...RequestEditorFn) (*ListPortsResponse, error)
 
 	// CreatePortWithBodyWithResponse Create a network interface
 	//
@@ -11754,7 +12285,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/routes (the `ListRoutes` operationId).
-	ListRoutesWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRoutesResponse, error)
+	ListRoutesWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *ListRoutesParams, reqEditors ...RequestEditorFn) (*ListRoutesResponse, error)
 
 	// CreateRouteWithBodyWithResponse Create a static route
 	//
@@ -11788,7 +12319,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets (the `ListSubnets` operationId).
-	ListSubnetsWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListSubnetsResponse, error)
+	ListSubnetsWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *ListSubnetsParams, reqEditors ...RequestEditorFn) (*ListSubnetsResponse, error)
 
 	// CreateSubnetWithBodyWithResponse Create a subnet
 	//
@@ -11827,7 +12358,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
-	ListRegionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error)
+	ListRegionsWithResponse(ctx context.Context, params *ListRegionsParams, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error)
 
 	// ListAvailabilityZonesWithResponse List the availability zones of a region
 	//
@@ -11836,7 +12367,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
-	ListAvailabilityZonesWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error)
+	ListAvailabilityZonesWithResponse(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error)
 
 	// ListSecurityGroupsWithResponse List security groups
 	//
@@ -11902,7 +12433,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/security-groups/{securityGroupId}/rules (the `ListSecurityGroupRules` operationId).
-	ListSecurityGroupRulesWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListSecurityGroupRulesResponse, error)
+	ListSecurityGroupRulesWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *ListSecurityGroupRulesParams, reqEditors ...RequestEditorFn) (*ListSecurityGroupRulesResponse, error)
 
 	// CreateSecurityGroupRuleWithBodyWithResponse Create a security group rule
 	//
@@ -17008,8 +17539,8 @@ func (c *ClientWithResponses) RevertDiskWithResponse(ctx context.Context, diskId
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/floating-ips (the `ListFloatingIps` operationId).
-func (c *ClientWithResponses) ListFloatingIpsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFloatingIpsResponse, error) {
-	rsp, err := c.ListFloatingIps(ctx, reqEditors...)
+func (c *ClientWithResponses) ListFloatingIpsWithResponse(ctx context.Context, params *ListFloatingIpsParams, reqEditors ...RequestEditorFn) (*ListFloatingIpsResponse, error) {
+	rsp, err := c.ListFloatingIps(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18153,8 +18684,8 @@ func (c *ClientWithResponses) RejectPeeringWithResponse(ctx context.Context, pee
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/ports (the `ListPorts` operationId).
-func (c *ClientWithResponses) ListPortsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPortsResponse, error) {
-	rsp, err := c.ListPorts(ctx, reqEditors...)
+func (c *ClientWithResponses) ListPortsWithResponse(ctx context.Context, params *ListPortsParams, reqEditors ...RequestEditorFn) (*ListPortsResponse, error) {
+	rsp, err := c.ListPorts(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18357,8 +18888,8 @@ func (c *ClientWithResponses) EnablePrivateNetworkIpv6WithResponse(ctx context.C
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId}/routes (the `ListRoutes` operationId).
-func (c *ClientWithResponses) ListRoutesWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRoutesResponse, error) {
-	rsp, err := c.ListRoutes(ctx, privateNetworkId, reqEditors...)
+func (c *ClientWithResponses) ListRoutesWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *ListRoutesParams, reqEditors ...RequestEditorFn) (*ListRoutesResponse, error) {
+	rsp, err := c.ListRoutes(ctx, privateNetworkId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18415,8 +18946,8 @@ func (c *ClientWithResponses) DeleteRouteWithResponse(ctx context.Context, priva
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets (the `ListSubnets` operationId).
-func (c *ClientWithResponses) ListSubnetsWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListSubnetsResponse, error) {
-	rsp, err := c.ListSubnets(ctx, privateNetworkId, reqEditors...)
+func (c *ClientWithResponses) ListSubnetsWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *ListSubnetsParams, reqEditors ...RequestEditorFn) (*ListSubnetsResponse, error) {
+	rsp, err := c.ListSubnets(ctx, privateNetworkId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18484,8 +19015,8 @@ func (c *ClientWithResponses) DeleteSubnetWithResponse(ctx context.Context, priv
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
-func (c *ClientWithResponses) ListRegionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error) {
-	rsp, err := c.ListRegions(ctx, reqEditors...)
+func (c *ClientWithResponses) ListRegionsWithResponse(ctx context.Context, params *ListRegionsParams, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error) {
+	rsp, err := c.ListRegions(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18499,8 +19030,8 @@ func (c *ClientWithResponses) ListRegionsWithResponse(ctx context.Context, reqEd
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
-func (c *ClientWithResponses) ListAvailabilityZonesWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error) {
-	rsp, err := c.ListAvailabilityZones(ctx, regionId, reqEditors...)
+func (c *ClientWithResponses) ListAvailabilityZonesWithResponse(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error) {
+	rsp, err := c.ListAvailabilityZones(ctx, regionId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18613,8 +19144,8 @@ func (c *ClientWithResponses) RenameSecurityGroupWithResponse(ctx context.Contex
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/security-groups/{securityGroupId}/rules (the `ListSecurityGroupRules` operationId).
-func (c *ClientWithResponses) ListSecurityGroupRulesWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListSecurityGroupRulesResponse, error) {
-	rsp, err := c.ListSecurityGroupRules(ctx, securityGroupId, reqEditors...)
+func (c *ClientWithResponses) ListSecurityGroupRulesWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *ListSecurityGroupRulesParams, reqEditors ...RequestEditorFn) (*ListSecurityGroupRulesResponse, error) {
+	rsp, err := c.ListSecurityGroupRules(ctx, securityGroupId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

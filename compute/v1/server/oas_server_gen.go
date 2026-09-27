@@ -496,7 +496,7 @@ type Handler interface {
 	// List floating IPs.
 	//
 	// GET /api/v1/floating-ips
-	ListFloatingIps(ctx context.Context) (*FloatingIPListResponseBody, error)
+	ListFloatingIps(ctx context.Context, params ListFloatingIpsParams) (*FloatingIPListResponseBody, error)
 	// ListImages implements list-images operation.
 	//
 	// Lists the public images on sale together with the private images of this project. `visibility`
@@ -571,7 +571,7 @@ type Handler interface {
 	// List network interfaces.
 	//
 	// GET /api/v1/ports
-	ListPorts(ctx context.Context) (*PortListResponseBody, error)
+	ListPorts(ctx context.Context, params ListPortsParams) (*PortListResponseBody, error)
 	// ListPrivateNetworks implements list-private-networks operation.
 	//
 	// List private networks.
@@ -583,7 +583,7 @@ type Handler interface {
 	// List available regions.
 	//
 	// GET /api/v1/regions
-	ListRegions(ctx context.Context) (*RegionListResponseBody, error)
+	ListRegions(ctx context.Context, params ListRegionsParams) (*RegionListResponseBody, error)
 	// ListRoutes implements list-routes operation.
 	//
 	// List static routes.

@@ -259,6 +259,45 @@ func (s *ObjectIdentity) SetName(val string) {
 	s.Name = val
 }
 
+// Pagination metadata for stable numbered pages. total_count is returned only when the operation can
+// determine it without an unbounded scan.
+// Ref: #/components/schemas/OffsetPagination
+type OffsetPagination struct {
+	Page       int64    `json:"page"`
+	PageSize   int64    `json:"page_size"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetPage returns the value of Page.
+func (s *OffsetPagination) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *OffsetPagination) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OffsetPagination) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetPage sets the value of Page.
+func (s *OffsetPagination) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *OffsetPagination) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OffsetPagination) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
 // NewOptBool returns new OptBool with value set to v.
 func NewOptBool(v bool) OptBool {
 	return OptBool{
@@ -1485,8 +1524,8 @@ func (*PlanHeaders) getPlanRes() {}
 
 // Ref: #/components/schemas/PlanList
 type PlanList struct {
-	Items      []Plan   `json:"items"`
-	TotalCount OptInt64 `json:"total_count"`
+	Items      []Plan           `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -1494,9 +1533,9 @@ func (s *PlanList) GetItems() []Plan {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *PlanList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *PlanList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -1504,9 +1543,9 @@ func (s *PlanList) SetItems(val []Plan) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *PlanList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *PlanList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // PlanListHeaders wraps PlanList with response headers.
@@ -1977,8 +2016,8 @@ func (s *PriceInterval) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/PriceList
 type PriceList struct {
-	Items      []Price  `json:"items"`
-	TotalCount OptInt64 `json:"total_count"`
+	Items      []Price          `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -1986,9 +2025,9 @@ func (s *PriceList) GetItems() []Price {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *PriceList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *PriceList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -1996,9 +2035,9 @@ func (s *PriceList) SetItems(val []Price) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *PriceList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *PriceList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // PriceListHeaders wraps PriceList with response headers.
@@ -2200,8 +2239,8 @@ type ProductID string
 
 // Ref: #/components/schemas/ProductList
 type ProductList struct {
-	Items      []Product `json:"items"`
-	TotalCount OptInt64  `json:"total_count"`
+	Items      []Product        `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -2209,9 +2248,9 @@ func (s *ProductList) GetItems() []Product {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *ProductList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *ProductList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -2219,9 +2258,9 @@ func (s *ProductList) SetItems(val []Product) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *ProductList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *ProductList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // ProductListHeaders wraps ProductList with response headers.
@@ -2937,8 +2976,8 @@ func (s *RateDimensions) init() RateDimensions {
 
 // Ref: #/components/schemas/RateList
 type RateList struct {
-	Items      []Rate   `json:"items"`
-	TotalCount OptInt64 `json:"total_count"`
+	Items      []Rate           `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -2946,9 +2985,9 @@ func (s *RateList) GetItems() []Rate {
 	return s.Items
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *RateList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *RateList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -2956,9 +2995,9 @@ func (s *RateList) SetItems(val []Rate) {
 	s.Items = val
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *RateList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *RateList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // RateListHeaders wraps RateList with response headers.

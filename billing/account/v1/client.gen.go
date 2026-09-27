@@ -1406,8 +1406,10 @@ type AllowanceStatus string
 
 // AllowanceList defines model for AllowanceList.
 type AllowanceList struct {
-	Items      []Allowance `json:"items"`
-	TotalCount *int64      `json:"total_count,omitempty"`
+	Items []Allowance `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Applicability Product, plan and price lists form a union; three empty lists permit every item.
@@ -1499,8 +1501,10 @@ type BillingAccountCreate struct {
 
 // BillingAccountList defines model for BillingAccountList.
 type BillingAccountList struct {
-	Items      []BillingAccount `json:"items"`
-	TotalCount *int64           `json:"total_count,omitempty"`
+	Items []BillingAccount `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // BillingAccountUpdate defines model for BillingAccountUpdate.
@@ -1617,8 +1621,10 @@ type CancellationItemStatus string
 
 // CancellationList defines model for CancellationList.
 type CancellationList struct {
-	Items      []Cancellation `json:"items"`
-	TotalCount *int64         `json:"total_count,omitempty"`
+	Items []Cancellation `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now. Give
@@ -1865,8 +1871,10 @@ type CreditGrantStatus string
 
 // CreditGrantList defines model for CreditGrantList.
 type CreditGrantList struct {
-	Items      []CreditGrant `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
+	Items []CreditGrant `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // CreditGroup defines model for CreditGroup.
@@ -1902,6 +1910,9 @@ type Currency struct {
 // CurrencyList defines model for CurrencyList.
 type CurrencyList struct {
 	Items []Currency `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Discount A coupon held on this account. It applies at checkout without a code.
@@ -1942,8 +1953,10 @@ type DiscountType string
 
 // DiscountList defines model for DiscountList.
 type DiscountList struct {
-	Items      []Discount `json:"items"`
-	TotalCount *int64     `json:"total_count,omitempty"`
+	Items []Discount `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Entitlement defines model for Entitlement.
@@ -1962,8 +1975,10 @@ type Entitlement struct {
 
 // EntitlementList defines model for EntitlementList.
 type EntitlementList struct {
-	Items      []Entitlement `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
+	Items []Entitlement `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Error defines model for Error.
@@ -2120,14 +2135,18 @@ type InvoiceItemType string
 
 // InvoiceItemList defines model for InvoiceItemList.
 type InvoiceItemList struct {
-	Items      []InvoiceItem `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
+	Items []InvoiceItem `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // InvoiceList defines model for InvoiceList.
 type InvoiceList struct {
-	Items      []Invoice `json:"items"`
-	TotalCount *int64    `json:"total_count,omitempty"`
+	Items []Invoice `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // InvoiceStatus A usage invoice stays `draft` through its month: each charge is added to it as it is priced
@@ -2367,8 +2386,10 @@ type OrderItemInterval string
 
 // OrderItemList defines model for OrderItemList.
 type OrderItemList struct {
-	Items      []OrderItem `json:"items"`
-	TotalCount *int64      `json:"total_count,omitempty"`
+	Items []OrderItem `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // OrderItemStatus `pending` is waiting to be set up. `completed` was confirmed by the service.
@@ -2379,8 +2400,10 @@ type OrderItemStatus string
 
 // OrderList defines model for OrderList.
 type OrderList struct {
-	Items      []Order `json:"items"`
-	TotalCount *int64  `json:"total_count,omitempty"`
+	Items []Order `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // OrderStatus Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is
@@ -2477,8 +2500,10 @@ type PaymentMethodStatus string
 
 // PaymentMethodList defines model for PaymentMethodList.
 type PaymentMethodList struct {
-	Items      []PaymentMethod `json:"items"`
-	TotalCount *int64          `json:"total_count,omitempty"`
+	Items []PaymentMethod `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // PaymentMethodSetup defines model for PaymentMethodSetup.
@@ -2513,6 +2538,9 @@ type PaymentOption struct {
 // PaymentOptionList defines model for PaymentOptionList.
 type PaymentOptionList struct {
 	Items []PaymentOption `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // PaymentOptionMethod defines model for PaymentOptionMethod.
@@ -2724,8 +2752,10 @@ type ProjectBillingInfo struct {
 
 // ProjectBillingInfoList defines model for ProjectBillingInfoList.
 type ProjectBillingInfoList struct {
-	Items      []ProjectBillingInfo `json:"items"`
-	TotalCount *int64               `json:"total_count,omitempty"`
+	Items []ProjectBillingInfo `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // ProjectBillingInfoSet defines model for ProjectBillingInfoSet.
@@ -3042,8 +3072,10 @@ type RefundStatus string
 
 // RefundList defines model for RefundList.
 type RefundList struct {
-	Items      []Refund `json:"items"`
-	TotalCount *int64   `json:"total_count,omitempty"`
+	Items []Refund `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
@@ -3149,6 +3181,9 @@ type RenewalPriceInterval string
 // RenewalPriceList defines model for RenewalPriceList.
 type RenewalPriceList struct {
 	Items []RenewalPrice `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Subscription An independently billed purchase. Fixed renewals use the agreed recurring_amount and interval; already paid periods retain their original value. Technical state belongs to the owning service.
@@ -3226,8 +3261,10 @@ type SubscriptionStatus string
 
 // SubscriptionList defines model for SubscriptionList.
 type SubscriptionList struct {
-	Items      []Subscription `json:"items"`
-	TotalCount *int64         `json:"total_count,omitempty"`
+	Items []Subscription `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // TaxItem Tax name, rate and amounts frozen on the invoice.
@@ -3351,8 +3388,10 @@ type TopUpCreate struct {
 
 // TopUpList defines model for TopUpList.
 type TopUpList struct {
-	Items      []TopUp `json:"items"`
-	TotalCount *int64  `json:"total_count,omitempty"`
+	Items []TopUp `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // Transaction A funds operation. Each payment has one source; refunds identify the original successful transaction. Unknown gateway results remain pending. Payments from the balance or a gateway are distinct from credit-grant payments.
@@ -3425,8 +3464,10 @@ type TransactionStatus string
 
 // TransactionList defines model for TransactionList.
 type TransactionList struct {
-	Items      []Transaction `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
+	Items []Transaction `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // TransactionType topup adds to the balance; payment settles an invoice; refund returns original funds; payout withdraws from the balance; adjustment changes the balance with an audit reason.
@@ -3497,8 +3538,10 @@ type UsageCharge struct {
 
 // UsageChargeList defines model for UsageChargeList.
 type UsageChargeList struct {
-	Items      []UsageCharge `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
+	Items []UsageCharge `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
 // AccountId defines model for AccountId.
@@ -3566,6 +3609,15 @@ type ListBillingAccountsParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
+// ListPaymentOptionsParams defines parameters for ListPaymentOptions.
+type ListPaymentOptionsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many per page, 100 at most.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
 // ListCancellationsParams defines parameters for ListCancellations.
 type ListCancellationsParams struct {
 	// Page 1-based page number; the first page when omitted.
@@ -3602,6 +3654,15 @@ type ListCreditGrantsParams struct {
 
 // ListCreditGrantsParamsStatus defines parameters for ListCreditGrants.
 type ListCreditGrantsParamsStatus string
+
+// ListCurrenciesParams defines parameters for ListCurrencies.
+type ListCurrenciesParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many per page, 100 at most.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
 
 // ListAccountDiscountsParams defines parameters for ListAccountDiscounts.
 type ListAccountDiscountsParams struct {
@@ -3748,6 +3809,15 @@ type ListSubscriptionsParams struct {
 	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
 	BillingAccountId *AccountIdQuery     `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
 	ProjectId        *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
+}
+
+// ListRenewalPricesParams defines parameters for ListRenewalPrices.
+type ListRenewalPricesParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many per page, 100 at most.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListTopUpsParams defines parameters for ListTopUps.
@@ -4005,11 +4075,11 @@ type ClientInterface interface {
 	//
 	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
 	// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-	// others are refused. An empty list means no online payment is available for this account. Not paged: the
-	// set is a few rows.
+	// others are refused. An empty result means no online payment is available for this account.
+	// Results are paginated.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
-	ListPaymentOptions(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPaymentOptions(ctx context.Context, accountId AccountId, params *ListPaymentOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCancellations List cancellations
 	//
@@ -4139,10 +4209,10 @@ type ClientInterface interface {
 	// ListCurrencies List currencies accounts can be opened in
 	//
 	// The currencies a new billing account can be opened in. A retired currency is not listed,
-	// although accounts already opened in it keep working. Not paged: the set is a few rows.
+	// although accounts already opened in it keep working. Results are paginated.
 	//
 	// Corresponds with GET /account/v1/currencies (the `ListCurrencies` operationId).
-	ListCurrencies(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListCurrencies(ctx context.Context, params *ListCurrenciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAccountDiscounts List the coupons held on this account
 	//
@@ -4634,7 +4704,7 @@ type ClientInterface interface {
 	// Lists the current renewal agreement and available intervals. The current option preserves recurring_amount; other options use current prices. Amounts cover the whole subscription quantity and exclude tax.
 	//
 	// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/renewal-prices (the `ListRenewalPrices` operationId).
-	ListRenewalPrices(ctx context.Context, subscriptionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListRenewalPrices(ctx context.Context, subscriptionId openapi_types.UUID, params *ListRenewalPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTopUps List top ups
 	//
@@ -4889,12 +4959,12 @@ func (c *Client) GetAccountMeteredUsage(ctx context.Context, accountId AccountId
 //
 // Lists the payment gateways and methods that currently accept payment in this account's currency, the
 // preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-// others are refused. An empty list means no online payment is available for this account. Not paged: the
-// set is a few rows.
+// others are refused. An empty result means no online payment is available for this account.
+// Results are paginated.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
-func (c *Client) ListPaymentOptions(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPaymentOptionsRequest(c.Server, accountId)
+func (c *Client) ListPaymentOptions(ctx context.Context, accountId AccountId, params *ListPaymentOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPaymentOptionsRequest(c.Server, accountId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5093,11 +5163,11 @@ func (c *Client) ListCreditGrants(ctx context.Context, params *ListCreditGrantsP
 // ListCurrencies List currencies accounts can be opened in
 //
 // The currencies a new billing account can be opened in. A retired currency is not listed,
-// although accounts already opened in it keep working. Not paged: the set is a few rows.
+// although accounts already opened in it keep working. Results are paginated.
 //
 // Corresponds with GET /account/v1/currencies (the `ListCurrencies` operationId).
-func (c *Client) ListCurrencies(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCurrenciesRequest(c.Server)
+func (c *Client) ListCurrencies(ctx context.Context, params *ListCurrenciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCurrenciesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5988,8 +6058,8 @@ func (c *Client) CreateRenewalOrder(ctx context.Context, subscriptionId Subscrip
 // Lists the current renewal agreement and available intervals. The current option preserves recurring_amount; other options use current prices. Amounts cover the whole subscription quantity and exclude tax.
 //
 // Corresponds with GET /account/v1/subscriptions/{subscriptionId}/renewal-prices (the `ListRenewalPrices` operationId).
-func (c *Client) ListRenewalPrices(ctx context.Context, subscriptionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRenewalPricesRequest(c.Server, subscriptionId)
+func (c *Client) ListRenewalPrices(ctx context.Context, subscriptionId openapi_types.UUID, params *ListRenewalPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRenewalPricesRequest(c.Server, subscriptionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6513,7 +6583,7 @@ func NewGetAccountMeteredUsageRequest(server string, accountId AccountId) (*http
 }
 
 // NewListPaymentOptionsRequest constructs an http.Request for the ListPaymentOptions method
-func NewListPaymentOptionsRequest(server string, accountId AccountId) (*http.Request, error) {
+func NewListPaymentOptionsRequest(server string, accountId AccountId, params *ListPaymentOptionsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6536,6 +6606,45 @@ func NewListPaymentOptionsRequest(server string, accountId AccountId) (*http.Req
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -6847,7 +6956,7 @@ func NewListCreditGrantsRequest(server string, params *ListCreditGrantsParams) (
 }
 
 // NewListCurrenciesRequest constructs an http.Request for the ListCurrencies method
-func NewListCurrenciesRequest(server string) (*http.Request, error) {
+func NewListCurrenciesRequest(server string, params *ListCurrenciesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -6863,6 +6972,45 @@ func NewListCurrenciesRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -8568,7 +8716,7 @@ func NewCreateRenewalOrderRequestWithBody(server string, subscriptionId Subscrip
 }
 
 // NewListRenewalPricesRequest constructs an http.Request for the ListRenewalPrices method
-func NewListRenewalPricesRequest(server string, subscriptionId openapi_types.UUID) (*http.Request, error) {
+func NewListRenewalPricesRequest(server string, subscriptionId openapi_types.UUID, params *ListRenewalPricesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -8591,6 +8739,45 @@ func NewListRenewalPricesRequest(server string, subscriptionId openapi_types.UUI
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -9182,13 +9369,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
 	// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-	// others are refused. An empty list means no online payment is available for this account. Not paged: the
-	// set is a few rows.
+	// others are refused. An empty result means no online payment is available for this account.
+	// Results are paginated.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
-	ListPaymentOptionsWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*ListPaymentOptionsResponse, error)
+	ListPaymentOptionsWithResponse(ctx context.Context, accountId AccountId, params *ListPaymentOptionsParams, reqEditors ...RequestEditorFn) (*ListPaymentOptionsResponse, error)
 
 	// ListCancellationsWithResponse List cancellations
 	//
@@ -9326,12 +9513,12 @@ type ClientWithResponsesInterface interface {
 	// ListCurrenciesWithResponse List currencies accounts can be opened in
 	//
 	// The currencies a new billing account can be opened in. A retired currency is not listed,
-	// although accounts already opened in it keep working. Not paged: the set is a few rows.
+	// although accounts already opened in it keep working. Results are paginated.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/currencies (the `ListCurrencies` operationId).
-	ListCurrenciesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCurrenciesResponse, error)
+	ListCurrenciesWithResponse(ctx context.Context, params *ListCurrenciesParams, reqEditors ...RequestEditorFn) (*ListCurrenciesResponse, error)
 
 	// ListAccountDiscountsWithResponse List the coupons held on this account
 	//
@@ -9863,7 +10050,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/subscriptions/{subscriptionId}/renewal-prices (the `ListRenewalPrices` operationId).
-	ListRenewalPricesWithResponse(ctx context.Context, subscriptionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRenewalPricesResponse, error)
+	ListRenewalPricesWithResponse(ctx context.Context, subscriptionId openapi_types.UUID, params *ListRenewalPricesParams, reqEditors ...RequestEditorFn) (*ListRenewalPricesResponse, error)
 
 	// ListTopUpsWithResponse List top ups
 	//
@@ -12523,14 +12710,14 @@ func (c *ClientWithResponses) GetAccountMeteredUsageWithResponse(ctx context.Con
 //
 // Lists the payment gateways and methods that currently accept payment in this account's currency, the
 // preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-// others are refused. An empty list means no online payment is available for this account. Not paged: the
-// set is a few rows.
+// others are refused. An empty result means no online payment is available for this account.
+// Results are paginated.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
-func (c *ClientWithResponses) ListPaymentOptionsWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*ListPaymentOptionsResponse, error) {
-	rsp, err := c.ListPaymentOptions(ctx, accountId, reqEditors...)
+func (c *ClientWithResponses) ListPaymentOptionsWithResponse(ctx context.Context, accountId AccountId, params *ListPaymentOptionsParams, reqEditors ...RequestEditorFn) (*ListPaymentOptionsResponse, error) {
+	rsp, err := c.ListPaymentOptions(ctx, accountId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -12709,13 +12896,13 @@ func (c *ClientWithResponses) ListCreditGrantsWithResponse(ctx context.Context, 
 // ListCurrenciesWithResponse List currencies accounts can be opened in
 //
 // The currencies a new billing account can be opened in. A retired currency is not listed,
-// although accounts already opened in it keep working. Not paged: the set is a few rows.
+// although accounts already opened in it keep working. Results are paginated.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/currencies (the `ListCurrencies` operationId).
-func (c *ClientWithResponses) ListCurrenciesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCurrenciesResponse, error) {
-	rsp, err := c.ListCurrencies(ctx, reqEditors...)
+func (c *ClientWithResponses) ListCurrenciesWithResponse(ctx context.Context, params *ListCurrenciesParams, reqEditors ...RequestEditorFn) (*ListCurrenciesResponse, error) {
+	rsp, err := c.ListCurrencies(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -13486,8 +13673,8 @@ func (c *ClientWithResponses) CreateRenewalOrderWithResponse(ctx context.Context
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/subscriptions/{subscriptionId}/renewal-prices (the `ListRenewalPrices` operationId).
-func (c *ClientWithResponses) ListRenewalPricesWithResponse(ctx context.Context, subscriptionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRenewalPricesResponse, error) {
-	rsp, err := c.ListRenewalPrices(ctx, subscriptionId, reqEditors...)
+func (c *ClientWithResponses) ListRenewalPricesWithResponse(ctx context.Context, subscriptionId openapi_types.UUID, params *ListRenewalPricesParams, reqEditors ...RequestEditorFn) (*ListRenewalPricesResponse, error) {
+	rsp, err := c.ListRenewalPrices(ctx, subscriptionId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

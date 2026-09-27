@@ -152,7 +152,8 @@ func (s *AttachPortRequestBody) SetPortID(val uuid.UUID) {
 
 // Ref: #/components/schemas/BackupListResponseBody
 type BackupListResponseBody struct {
-	Items []BackupResource `json:"items"`
+	Items      []BackupResource `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -160,9 +161,19 @@ func (s *BackupListResponseBody) GetItems() []BackupResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *BackupListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *BackupListResponseBody) SetItems(val []BackupResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *BackupListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/BackupResource
@@ -1412,9 +1423,7 @@ func (s *DiskAttachment) SetDevice(val NilString) {
 // Ref: #/components/schemas/DiskAttachmentList
 type DiskAttachmentList struct {
 	Items      []DiskAttachment `json:"items"`
-	Page       int64            `json:"page"`
-	PageSize   int64            `json:"page_size"`
-	TotalCount int64            `json:"total_count"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -1422,19 +1431,9 @@ func (s *DiskAttachmentList) GetItems() []DiskAttachment {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *DiskAttachmentList) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *DiskAttachmentList) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *DiskAttachmentList) GetTotalCount() int64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *DiskAttachmentList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -1442,19 +1441,9 @@ func (s *DiskAttachmentList) SetItems(val []DiskAttachment) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *DiskAttachmentList) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *DiskAttachmentList) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *DiskAttachmentList) SetTotalCount(val int64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *DiskAttachmentList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type DiskAttachmentRole string
@@ -1569,7 +1558,8 @@ func (s *DiskAttachmentState) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/DiskListResponseBody
 type DiskListResponseBody struct {
-	Items []DiskResource `json:"items"`
+	Items      []DiskResource   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -1577,9 +1567,19 @@ func (s *DiskListResponseBody) GetItems() []DiskResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *DiskListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *DiskListResponseBody) SetItems(val []DiskResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *DiskListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/DiskResource
@@ -1980,7 +1980,8 @@ func (s *DiskResourceStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/DiskTypeListResponseBody
 type DiskTypeListResponseBody struct {
-	Items []DiskTypeResource `json:"items"`
+	Items      []DiskTypeResource `json:"items"`
+	Pagination OffsetPagination   `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -1988,9 +1989,19 @@ func (s *DiskTypeListResponseBody) GetItems() []DiskTypeResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *DiskTypeListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *DiskTypeListResponseBody) SetItems(val []DiskTypeResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *DiskTypeListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/DiskTypeResource
@@ -2335,7 +2346,8 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 
 // Ref: #/components/schemas/FloatingIPListResponseBody
 type FloatingIPListResponseBody struct {
-	Items []FloatingIPResource `json:"items"`
+	Items      []FloatingIPResource `json:"items"`
+	Pagination OffsetPagination     `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -2343,9 +2355,19 @@ func (s *FloatingIPListResponseBody) GetItems() []FloatingIPResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *FloatingIPListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *FloatingIPListResponseBody) SetItems(val []FloatingIPResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *FloatingIPListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/FloatingIPResource
@@ -2917,9 +2939,7 @@ func (s *IPv4BindingState) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/IPv4PoolListResponseBody
 type IPv4PoolListResponseBody struct {
 	Items      []IPv4PoolResource `json:"items"`
-	Page       int64              `json:"page"`
-	PageSize   int64              `json:"page_size"`
-	TotalCount OptInt64           `json:"total_count"`
+	Pagination OffsetPagination   `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -2927,19 +2947,9 @@ func (s *IPv4PoolListResponseBody) GetItems() []IPv4PoolResource {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *IPv4PoolListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *IPv4PoolListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *IPv4PoolListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *IPv4PoolListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -2947,19 +2957,9 @@ func (s *IPv4PoolListResponseBody) SetItems(val []IPv4PoolResource) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *IPv4PoolListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *IPv4PoolListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *IPv4PoolListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *IPv4PoolListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/IPv4PoolResource
@@ -3111,10 +3111,8 @@ func (s *IPv6ResponseBodyStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/ImageListResponseBody
 type ImageListResponseBody struct {
-	Items      []ImageResource `json:"items"`
-	Page       int64           `json:"page"`
-	PageSize   int64           `json:"page_size"`
-	TotalCount OptInt64        `json:"total_count"`
+	Items      []ImageResource  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -3122,19 +3120,9 @@ func (s *ImageListResponseBody) GetItems() []ImageResource {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *ImageListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *ImageListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *ImageListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *ImageListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -3142,19 +3130,9 @@ func (s *ImageListResponseBody) SetItems(val []ImageResource) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *ImageListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *ImageListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *ImageListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *ImageListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // An image that installs the system of an instance. Fields that describe a capture or its billing
@@ -3620,9 +3598,7 @@ func (s *ImageVisibility) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/InstanceListResponseBody
 type InstanceListResponseBody struct {
 	Items      []InstanceResource `json:"items"`
-	Page       int64              `json:"page"`
-	PageSize   int64              `json:"page_size"`
-	TotalCount OptInt64           `json:"total_count"`
+	Pagination OffsetPagination   `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -3630,19 +3606,9 @@ func (s *InstanceListResponseBody) GetItems() []InstanceResource {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *InstanceListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *InstanceListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *InstanceListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *InstanceListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -3650,19 +3616,9 @@ func (s *InstanceListResponseBody) SetItems(val []InstanceResource) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *InstanceListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *InstanceListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *InstanceListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *InstanceListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/InstanceResource
@@ -4460,9 +4416,7 @@ func (s *InstanceRestrictionSource) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/InstanceTypeListResponseBody
 type InstanceTypeListResponseBody struct {
 	Items      []InstanceTypeResource `json:"items"`
-	Page       int64                  `json:"page"`
-	PageSize   int64                  `json:"page_size"`
-	TotalCount OptInt64               `json:"total_count"`
+	Pagination OffsetPagination       `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -4470,19 +4424,9 @@ func (s *InstanceTypeListResponseBody) GetItems() []InstanceTypeResource {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *InstanceTypeListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *InstanceTypeListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *InstanceTypeListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *InstanceTypeListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -4490,19 +4434,9 @@ func (s *InstanceTypeListResponseBody) SetItems(val []InstanceTypeResource) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *InstanceTypeListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *InstanceTypeListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *InstanceTypeListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *InstanceTypeListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/InstanceTypeResource
@@ -5671,12 +5605,49 @@ func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// Pagination metadata for stable numbered pages. total_count is returned only when the operation can
+// determine it without an unbounded scan.
+// Ref: #/components/schemas/OffsetPagination
+type OffsetPagination struct {
+	Page       int64    `json:"page"`
+	PageSize   int64    `json:"page_size"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetPage returns the value of Page.
+func (s *OffsetPagination) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *OffsetPagination) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OffsetPagination) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetPage sets the value of Page.
+func (s *OffsetPagination) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *OffsetPagination) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OffsetPagination) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
 // Ref: #/components/schemas/OperationLogListResponseBody
 type OperationLogListResponseBody struct {
 	Items      []OperationLogResource `json:"items"`
-	Page       int64                  `json:"page"`
-	PageSize   int64                  `json:"page_size"`
-	TotalCount OptInt64               `json:"total_count"`
+	Pagination OffsetPagination       `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -5684,19 +5655,9 @@ func (s *OperationLogListResponseBody) GetItems() []OperationLogResource {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *OperationLogListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *OperationLogListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *OperationLogListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *OperationLogListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -5704,19 +5665,9 @@ func (s *OperationLogListResponseBody) SetItems(val []OperationLogResource) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *OperationLogListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *OperationLogListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *OperationLogListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *OperationLogListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/OperationLogResource
@@ -6057,52 +6008,6 @@ func (o OptImageVisibility) Get() (v ImageVisibility, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptImageVisibility) Or(d ImageVisibility) ImageVisibility {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptInt returns new OptInt with value set to v.
-func NewOptInt(v int) OptInt {
-	return OptInt{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptInt is optional int.
-type OptInt struct {
-	Value int
-	Set   bool
-}
-
-// IsSet returns true if OptInt was set.
-func (o OptInt) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptInt) Reset() {
-	var v int
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptInt) SetTo(v int) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptInt) Get() (v int, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptInt) Or(d int) int {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6655,8 +6560,9 @@ func (s *OrderOptions) SetRedemptionCode(val OptString) {
 
 // Ref: #/components/schemas/PeeringListResponseBody
 type PeeringListResponseBody struct {
-	Items []PeeringResource `json:"items"`
-	Total int               `json:"total"`
+	Items      []PeeringResource `json:"items"`
+	Total      int               `json:"total"`
+	Pagination OffsetPagination  `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -6669,6 +6575,11 @@ func (s *PeeringListResponseBody) GetTotal() int {
 	return s.Total
 }
 
+// GetPagination returns the value of Pagination.
+func (s *PeeringListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *PeeringListResponseBody) SetItems(val []PeeringResource) {
 	s.Items = val
@@ -6677,6 +6588,11 @@ func (s *PeeringListResponseBody) SetItems(val []PeeringResource) {
 // SetTotal sets the value of Total.
 func (s *PeeringListResponseBody) SetTotal(val int) {
 	s.Total = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *PeeringListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/PeeringResource
@@ -7150,9 +7066,7 @@ func (s *PortAttachment) SetReleasedAt(val NilDateTime) {
 // Ref: #/components/schemas/PortAttachmentList
 type PortAttachmentList struct {
 	Items      []PortAttachment `json:"items"`
-	Page       int64            `json:"page"`
-	PageSize   int64            `json:"page_size"`
-	TotalCount int64            `json:"total_count"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -7160,19 +7074,9 @@ func (s *PortAttachmentList) GetItems() []PortAttachment {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *PortAttachmentList) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *PortAttachmentList) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *PortAttachmentList) GetTotalCount() int64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *PortAttachmentList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -7180,19 +7084,9 @@ func (s *PortAttachmentList) SetItems(val []PortAttachment) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *PortAttachmentList) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *PortAttachmentList) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *PortAttachmentList) SetTotalCount(val int64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *PortAttachmentList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type PortAttachmentRole string
@@ -7307,7 +7201,8 @@ func (s *PortAttachmentState) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/PortListResponseBody
 type PortListResponseBody struct {
-	Items []PortResource `json:"items"`
+	Items      []PortResource   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -7315,9 +7210,19 @@ func (s *PortListResponseBody) GetItems() []PortResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *PortListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *PortListResponseBody) SetItems(val []PortResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *PortListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/PortResource
@@ -7514,7 +7419,8 @@ func (s *PowerRequest) SetExpectedGeneration(val OptInt64) {
 
 // Ref: #/components/schemas/PrivateNetworkListResponseBody
 type PrivateNetworkListResponseBody struct {
-	Items []PrivateNetworkResource `json:"items"`
+	Items      []PrivateNetworkResource `json:"items"`
+	Pagination OffsetPagination         `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -7522,9 +7428,19 @@ func (s *PrivateNetworkListResponseBody) GetItems() []PrivateNetworkResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *PrivateNetworkListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *PrivateNetworkListResponseBody) SetItems(val []PrivateNetworkResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *PrivateNetworkListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/PrivateNetworkResource
@@ -8020,7 +7936,8 @@ func (s *RebuildInstanceResponseBody) SetPassword(val string) {
 
 // Ref: #/components/schemas/RegionListResponseBody
 type RegionListResponseBody struct {
-	Items []RegionResource `json:"items"`
+	Items      []RegionResource `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -8028,9 +7945,19 @@ func (s *RegionListResponseBody) GetItems() []RegionResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *RegionListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *RegionListResponseBody) SetItems(val []RegionResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *RegionListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/RegionResource
@@ -8528,7 +8455,8 @@ func (s *RevertDiskRequestBody) SetSnapshotID(val uuid.UUID) {
 
 // Ref: #/components/schemas/RouteListResponseBody
 type RouteListResponseBody struct {
-	Items []RouteResource `json:"items"`
+	Items      []RouteResource  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -8536,9 +8464,19 @@ func (s *RouteListResponseBody) GetItems() []RouteResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *RouteListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *RouteListResponseBody) SetItems(val []RouteResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *RouteListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/RouteResource
@@ -8668,7 +8606,8 @@ func (s *ScopedTokenAuth) SetRoles(val []string) {
 
 // Ref: #/components/schemas/SecurityGroupListResponseBody
 type SecurityGroupListResponseBody struct {
-	Items []SecurityGroupResource `json:"items"`
+	Items      []SecurityGroupResource `json:"items"`
+	Pagination OffsetPagination        `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -8676,9 +8615,19 @@ func (s *SecurityGroupListResponseBody) GetItems() []SecurityGroupResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *SecurityGroupListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *SecurityGroupListResponseBody) SetItems(val []SecurityGroupResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *SecurityGroupListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/SecurityGroupResource
@@ -8754,7 +8703,8 @@ func (s *SecurityGroupResource) SetPrivateNetworkID(val uuid.UUID) {
 
 // Ref: #/components/schemas/SecurityRuleListResponseBody
 type SecurityRuleListResponseBody struct {
-	Items []SecurityRuleResource `json:"items"`
+	Items      []SecurityRuleResource `json:"items"`
+	Pagination OffsetPagination       `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -8762,9 +8712,19 @@ func (s *SecurityRuleListResponseBody) GetItems() []SecurityRuleResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *SecurityRuleListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *SecurityRuleListResponseBody) SetItems(val []SecurityRuleResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *SecurityRuleListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/SecurityRuleResource
@@ -9040,7 +9000,8 @@ func (s *SetInstanceNotesRequestBody) SetNotes(val string) {
 
 // Ref: #/components/schemas/SnapshotListResponseBody
 type SnapshotListResponseBody struct {
-	Items []SnapshotResource `json:"items"`
+	Items      []SnapshotResource `json:"items"`
+	Pagination OffsetPagination   `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -9048,9 +9009,19 @@ func (s *SnapshotListResponseBody) GetItems() []SnapshotResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *SnapshotListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *SnapshotListResponseBody) SetItems(val []SnapshotResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *SnapshotListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/SnapshotResource
@@ -9370,7 +9341,8 @@ func (s *SnapshotResourceStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/SubnetListResponseBody
 type SubnetListResponseBody struct {
-	Items []SubnetResource `json:"items"`
+	Items      []SubnetResource `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -9378,9 +9350,19 @@ func (s *SubnetListResponseBody) GetItems() []SubnetResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *SubnetListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *SubnetListResponseBody) SetItems(val []SubnetResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *SubnetListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/SubnetResource
@@ -9625,7 +9607,8 @@ func (s *TaskState) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/ZoneListResponseBody
 type ZoneListResponseBody struct {
-	Items []ZoneResource `json:"items"`
+	Items      []ZoneResource   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -9633,9 +9616,19 @@ func (s *ZoneListResponseBody) GetItems() []ZoneResource {
 	return s.Items
 }
 
+// GetPagination returns the value of Pagination.
+func (s *ZoneListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
 // SetItems sets the value of Items.
 func (s *ZoneListResponseBody) SetItems(val []ZoneResource) {
 	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *ZoneListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // Ref: #/components/schemas/ZoneResource

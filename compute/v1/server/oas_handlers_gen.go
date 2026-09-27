@@ -10471,6 +10471,14 @@ func (s *Server) handleListAvailabilityZonesRequest(args [1]string, argsEscaped 
 					Name: "regionId",
 					In:   "path",
 				}: params.RegionId,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -10671,6 +10679,14 @@ func (s *Server) handleListBackupsRequest(args [0]string, argsEscaped bool, w ht
 					Name: "disk_id",
 					In:   "query",
 				}: params.DiskID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -10877,6 +10893,14 @@ func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w 
 					Name: "for_system",
 					In:   "query",
 				}: params.ForSystem,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -11082,6 +11106,14 @@ func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http
 					Name: "availability_zone_id",
 					In:   "query",
 				}: params.AvailabilityZoneID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -11255,6 +11287,16 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 			return
 		}
 	}
+	params, err := decodeListFloatingIpsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 
@@ -11267,13 +11309,22 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 			OperationID:      "list-floating-ips",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = struct{}
+			Params   = ListFloatingIpsParams
 			Response = *FloatingIPListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
@@ -11283,14 +11334,14 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 		](
 			m,
 			mreq,
-			nil,
+			unpackListFloatingIpsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListFloatingIps(ctx)
+				response, err = s.h.ListFloatingIps(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListFloatingIps(ctx)
+		response, err = s.h.ListFloatingIps(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -12945,13 +12996,13 @@ func (s *Server) handleListPeeringsRequest(args [0]string, argsEscaped bool, w h
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "limit",
+					Name: "page",
 					In:   "query",
-				}: params.Limit,
+				}: params.Page,
 				{
-					Name: "offset",
+					Name: "page_size",
 					In:   "query",
-				}: params.Offset,
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -13125,6 +13176,16 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 			return
 		}
 	}
+	params, err := decodeListPortsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 
@@ -13137,13 +13198,22 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 			OperationID:      "list-ports",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = struct{}
+			Params   = ListPortsParams
 			Response = *PortListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
@@ -13153,14 +13223,14 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 		](
 			m,
 			mreq,
-			nil,
+			unpackListPortsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListPorts(ctx)
+				response, err = s.h.ListPorts(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListPorts(ctx)
+		response, err = s.h.ListPorts(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -13337,6 +13407,14 @@ func (s *Server) handleListPrivateNetworksRequest(args [0]string, argsEscaped bo
 					Name: "region_id",
 					In:   "query",
 				}: params.RegionID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -13510,6 +13588,16 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 			return
 		}
 	}
+	params, err := decodeListRegionsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 
@@ -13522,13 +13610,22 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 			OperationID:      "list-regions",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = struct{}
+			Params   = ListRegionsParams
 			Response = *RegionListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
@@ -13538,14 +13635,14 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 		](
 			m,
 			mreq,
-			nil,
+			unpackListRegionsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListRegions(ctx)
+				response, err = s.h.ListRegions(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListRegions(ctx)
+		response, err = s.h.ListRegions(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -13722,6 +13819,14 @@ func (s *Server) handleListRoutesRequest(args [1]string, argsEscaped bool, w htt
 					Name: "privateNetworkId",
 					In:   "path",
 				}: params.PrivateNetworkId,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -13922,6 +14027,14 @@ func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped
 					Name: "securityGroupId",
 					In:   "path",
 				}: params.SecurityGroupId,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -14126,6 +14239,14 @@ func (s *Server) handleListSecurityGroupsRequest(args [0]string, argsEscaped boo
 					Name: "private_network_id",
 					In:   "query",
 				}: params.PrivateNetworkID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -14326,6 +14447,14 @@ func (s *Server) handleListSnapshotsRequest(args [0]string, argsEscaped bool, w 
 					Name: "disk_id",
 					In:   "query",
 				}: params.DiskID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -14527,6 +14656,14 @@ func (s *Server) handleListSubnetsRequest(args [1]string, argsEscaped bool, w ht
 					Name: "privateNetworkId",
 					In:   "path",
 				}: params.PrivateNetworkId,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}

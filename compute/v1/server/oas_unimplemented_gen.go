@@ -663,7 +663,7 @@ func (UnimplementedHandler) ListDisks(ctx context.Context, params ListDisksParam
 // List floating IPs.
 //
 // GET /api/v1/floating-ips
-func (UnimplementedHandler) ListFloatingIps(ctx context.Context) (r *FloatingIPListResponseBody, _ error) {
+func (UnimplementedHandler) ListFloatingIps(ctx context.Context, params ListFloatingIpsParams) (r *FloatingIPListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -765,7 +765,7 @@ func (UnimplementedHandler) ListPeerings(ctx context.Context, params ListPeering
 // List network interfaces.
 //
 // GET /api/v1/ports
-func (UnimplementedHandler) ListPorts(ctx context.Context) (r *PortListResponseBody, _ error) {
+func (UnimplementedHandler) ListPorts(ctx context.Context, params ListPortsParams) (r *PortListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -783,7 +783,7 @@ func (UnimplementedHandler) ListPrivateNetworks(ctx context.Context, params List
 // List available regions.
 //
 // GET /api/v1/regions
-func (UnimplementedHandler) ListRegions(ctx context.Context) (r *RegionListResponseBody, _ error) {
+func (UnimplementedHandler) ListRegions(ctx context.Context, params ListRegionsParams) (r *RegionListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
