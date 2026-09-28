@@ -21,22 +21,22 @@ import (
 
 // Defines values for AccountResourceStatus.
 const (
-	AccountResourceStatusACTIVE    AccountResourceStatus = "ACTIVE"
-	AccountResourceStatusBANNED    AccountResourceStatus = "BANNED"
-	AccountResourceStatusDELETING  AccountResourceStatus = "DELETING"
-	AccountResourceStatusSUSPENDED AccountResourceStatus = "SUSPENDED"
+	ACTIVE    AccountResourceStatus = "ACTIVE"
+	BANNED    AccountResourceStatus = "BANNED"
+	DELETING  AccountResourceStatus = "DELETING"
+	SUSPENDED AccountResourceStatus = "SUSPENDED"
 )
 
 // Valid indicates whether the value is a known member of the AccountResourceStatus enum.
 func (e AccountResourceStatus) Valid() bool {
 	switch e {
-	case AccountResourceStatusACTIVE:
+	case ACTIVE:
 		return true
-	case AccountResourceStatusBANNED:
+	case BANNED:
 		return true
-	case AccountResourceStatusDELETING:
+	case DELETING:
 		return true
-	case AccountResourceStatusSUSPENDED:
+	case SUSPENDED:
 		return true
 	default:
 		return false
@@ -172,27 +172,18 @@ func (e Locale) Valid() bool {
 	}
 }
 
-// Defines values for ProjectResourceStatus.
+// Defines values for ProjectTraitResourceEffect.
 const (
-	ProjectResourceStatusACTIVE    ProjectResourceStatus = "ACTIVE"
-	ProjectResourceStatusBANNED    ProjectResourceStatus = "BANNED"
-	ProjectResourceStatusDELETED   ProjectResourceStatus = "DELETED"
-	ProjectResourceStatusDELETING  ProjectResourceStatus = "DELETING"
-	ProjectResourceStatusSUSPENDED ProjectResourceStatus = "SUSPENDED"
+	NoAccess ProjectTraitResourceEffect = "NoAccess"
+	NoWrite  ProjectTraitResourceEffect = "NoWrite"
 )
 
-// Valid indicates whether the value is a known member of the ProjectResourceStatus enum.
-func (e ProjectResourceStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the ProjectTraitResourceEffect enum.
+func (e ProjectTraitResourceEffect) Valid() bool {
 	switch e {
-	case ProjectResourceStatusACTIVE:
+	case NoAccess:
 		return true
-	case ProjectResourceStatusBANNED:
-		return true
-	case ProjectResourceStatusDELETED:
-		return true
-	case ProjectResourceStatusDELETING:
-		return true
-	case ProjectResourceStatusSUSPENDED:
+	case NoWrite:
 		return true
 	default:
 		return false
@@ -253,33 +244,6 @@ func (e SettingsResourceRegistrationMode) Valid() bool {
 	case SettingsResourceRegistrationModeINVITEONLY:
 		return true
 	case SettingsResourceRegistrationModeOPEN:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ListProjectsParamsStatus.
-const (
-	ListProjectsParamsStatusACTIVE    ListProjectsParamsStatus = "ACTIVE"
-	ListProjectsParamsStatusBANNED    ListProjectsParamsStatus = "BANNED"
-	ListProjectsParamsStatusDELETED   ListProjectsParamsStatus = "DELETED"
-	ListProjectsParamsStatusDELETING  ListProjectsParamsStatus = "DELETING"
-	ListProjectsParamsStatusSUSPENDED ListProjectsParamsStatus = "SUSPENDED"
-)
-
-// Valid indicates whether the value is a known member of the ListProjectsParamsStatus enum.
-func (e ListProjectsParamsStatus) Valid() bool {
-	switch e {
-	case ListProjectsParamsStatusACTIVE:
-		return true
-	case ListProjectsParamsStatusBANNED:
-		return true
-	case ListProjectsParamsStatusDELETED:
-		return true
-	case ListProjectsParamsStatusDELETING:
-		return true
-	case ListProjectsParamsStatusSUSPENDED:
 		return true
 	default:
 		return false
@@ -516,28 +480,29 @@ type ProjectAccessResource struct {
 
 // ProjectResource defines model for ProjectResource.
 type ProjectResource struct {
-	BanReason string    `json:"ban_reason"`
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
 
 	// DeletedAt When the project was deleted
-	DeletedAt   *time.Time         `json:"deleted_at"`
-	Description string             `json:"description"`
-	Id          openapi_types.UUID `json:"id"`
-	LockReason  string             `json:"lock_reason"`
-
-	// LockedAt A read-only management lock. Running resources and billing remain unchanged. Only an operator can release it.
-	LockedAt *time.Time            `json:"locked_at"`
-	Name     string                `json:"name"`
-	Status   ProjectResourceStatus `json:"status"`
-
-	// StatusReason Written for a reader; it takes part in no query
-	StatusReason string    `json:"status_reason"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	DeletedAt           *time.Time             `json:"deleted_at"`
+	DeletionRequestedAt *time.Time             `json:"deletion_requested_at"`
+	Description         string                 `json:"description"`
+	Id                  openapi_types.UUID     `json:"id"`
+	Name                string                 `json:"name"`
+	Traits              []ProjectTraitResource `json:"traits"`
+	UpdatedAt           time.Time              `json:"updated_at"`
 }
 
-// ProjectResourceStatus defines model for ProjectResource.Status.
-type ProjectResourceStatus string
+// ProjectTraitResource defines model for ProjectTraitResource.
+type ProjectTraitResource struct {
+	Effect ProjectTraitResourceEffect `json:"effect"`
+	Key    string                     `json:"key"`
+	Reason string                     `json:"reason"`
+	Value  string                     `json:"value"`
+}
+
+// ProjectTraitResourceEffect defines model for ProjectTraitResource.Effect.
+type ProjectTraitResourceEffect string
 
 // RegisterRequestBody defines model for RegisterRequestBody.
 type RegisterRequestBody struct {
@@ -658,14 +623,9 @@ type ListProjectsParams struct {
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 
 	// Keyword Matches against name or description
-	Keyword *string `form:"keyword,omitempty" json:"keyword,omitempty"`
-
-	// Status Filters by external status. Deleted projects are excluded while this is absent
-	Status *ListProjectsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	Keyword        *string `form:"keyword,omitempty" json:"keyword,omitempty"`
+	IncludeDeleted *bool   `form:"include_deleted,omitempty" json:"include_deleted,omitempty"`
 }
-
-// ListProjectsParamsStatus defines parameters for ListProjects.
-type ListProjectsParamsStatus string
 
 // UpdateAccountJSONRequestBody defines body for UpdateAccount for application/json ContentType.
 type UpdateAccountJSONRequestBody = UpdateAccountRequestBody
@@ -1929,9 +1889,9 @@ func NewListProjectsRequest(server string, params *ListProjectsParams) (*http.Re
 
 		}
 
-		if params.Status != nil {
+		if params.IncludeDeleted != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_deleted", *params.IncludeDeleted, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

@@ -324,9 +324,8 @@ type ListProjectsParams struct {
 	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Matches against name or description.
-	Keyword OptString `json:",omitempty,omitzero"`
-	// Filters by external status. Deleted projects are excluded while this is absent.
-	Status OptListProjectsStatus `json:",omitempty,omitzero"`
+	Keyword        OptString `json:",omitempty,omitzero"`
+	IncludeDeleted OptBool   `json:",omitempty,omitzero"`
 }
 
 func unpackListProjectsParams(packed middleware.Parameters) (params ListProjectsParams) {
@@ -359,11 +358,11 @@ func unpackListProjectsParams(packed middleware.Parameters) (params ListProjects
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "status",
+			Name: "include_deleted",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptListProjectsStatus)
+			params.IncludeDeleted = v.(OptBool)
 		}
 	}
 	return params
@@ -576,58 +575,48 @@ func decodeListProjectsParams(args [0]string, argsEscaped bool, r *http.Request)
 			Err:  err,
 		}
 	}
-	// Decode query: status.
+	// Set default value for query: include_deleted.
+	{
+		val := bool(false)
+		params.IncludeDeleted.SetTo(val)
+	}
+	// Decode query: include_deleted.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "status",
+			Name:    "include_deleted",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal ListProjectsStatus
+				var paramsDotIncludeDeletedVal bool
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
 						return err
 					}
 
-					c, err := conv.ToString(val)
+					c, err := conv.ToBool(val)
 					if err != nil {
 						return err
 					}
 
-					paramsDotStatusVal = ListProjectsStatus(c)
+					paramsDotIncludeDeletedVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.Status.SetTo(paramsDotStatusVal)
+				params.IncludeDeleted.SetTo(paramsDotIncludeDeletedVal)
 				return nil
 			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
-					if err := func() error {
-						if err := value.Validate(); err != nil {
-							return err
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "status",
+			Name: "include_deleted",
 			In:   "query",
 			Err:  err,
 		}

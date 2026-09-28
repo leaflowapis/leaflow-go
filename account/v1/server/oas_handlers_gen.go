@@ -2392,9 +2392,9 @@ func (s *Server) handleListProjectsRequest(args [0]string, argsEscaped bool, w h
 					In:   "query",
 				}: params.Keyword,
 				{
-					Name: "status",
+					Name: "include_deleted",
 					In:   "query",
-				}: params.Status,
+				}: params.IncludeDeleted,
 			},
 			Raw: r,
 		}
