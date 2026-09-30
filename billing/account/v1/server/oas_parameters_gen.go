@@ -146,6 +146,136 @@ func decodeCancelTopUpParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// CheckoutOrderParams is parameters of checkout-order operation.
+type CheckoutOrderParams struct {
+	OrderId uuid.UUID
+}
+
+func unpackCheckoutOrderParams(packed middleware.Parameters) (params CheckoutOrderParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "orderId",
+			In:   "path",
+		}
+		params.OrderId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCheckoutOrderParams(args [1]string, argsEscaped bool, r *http.Request) (params CheckoutOrderParams, _ error) {
+	// Decode path: orderId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "orderId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrderId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "orderId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CollectInvoicePaymentParams is parameters of collect-invoice-payment operation.
+type CollectInvoicePaymentParams struct {
+	InvoiceId uuid.UUID
+}
+
+func unpackCollectInvoicePaymentParams(packed middleware.Parameters) (params CollectInvoicePaymentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "invoiceId",
+			In:   "path",
+		}
+		params.InvoiceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCollectInvoicePaymentParams(args [1]string, argsEscaped bool, r *http.Request) (params CollectInvoicePaymentParams, _ error) {
+	// Decode path: invoiceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "invoiceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.InvoiceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "invoiceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CreateRenewalOrderParams is parameters of create-renewal-order operation.
 type CreateRenewalOrderParams struct {
 	SubscriptionId uuid.UUID
@@ -6592,71 +6722,6 @@ func decodeListUsageChargesParams(args [0]string, argsEscaped bool, r *http.Requ
 		return params, &ogenerrors.DecodeParamError{
 			Name: "to",
 			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// PayInvoiceParams is parameters of pay-invoice operation.
-type PayInvoiceParams struct {
-	InvoiceId uuid.UUID
-}
-
-func unpackPayInvoiceParams(packed middleware.Parameters) (params PayInvoiceParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "invoiceId",
-			In:   "path",
-		}
-		params.InvoiceId = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodePayInvoiceParams(args [1]string, argsEscaped bool, r *http.Request) (params PayInvoiceParams, _ error) {
-	// Decode path: invoiceId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "invoiceId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.InvoiceId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "invoiceId",
-			In:   "path",
 			Err:  err,
 		}
 	}

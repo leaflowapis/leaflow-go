@@ -8,6 +8,8 @@ type OperationName = string
 const (
 	CancelOrderOperation                 OperationName = "CancelOrder"
 	CancelTopUpOperation                 OperationName = "CancelTopUp"
+	CheckoutOrderOperation               OperationName = "CheckoutOrder"
+	CollectInvoicePaymentOperation       OperationName = "CollectInvoicePayment"
 	CreateBillingAccountOperation        OperationName = "CreateBillingAccount"
 	CreateCancellationOperation          OperationName = "CreateCancellation"
 	CreatePaymentMethodSetupOperation    OperationName = "CreatePaymentMethodSetup"
@@ -44,7 +46,6 @@ const (
 	ListTopUpsOperation                  OperationName = "ListTopUps"
 	ListTransactionsOperation            OperationName = "ListTransactions"
 	ListUsageChargesOperation            OperationName = "ListUsageCharges"
-	PayInvoiceOperation                  OperationName = "PayInvoice"
 	PayTogetherOperation                 OperationName = "PayTogether"
 	PreviewInvoicePaymentOperation       OperationName = "PreviewInvoicePayment"
 	PreviewPayTogetherOperation          OperationName = "PreviewPayTogether"

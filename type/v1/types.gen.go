@@ -39,30 +39,66 @@ func (e AttachmentState) Valid() bool {
 	}
 }
 
+// Defines values for CheckoutMode.
+const (
+	Automatic CheckoutMode = "automatic"
+	Deferred  CheckoutMode = "deferred"
+)
+
+// Valid indicates whether the value is a known member of the CheckoutMode enum.
+func (e CheckoutMode) Valid() bool {
+	switch e {
+	case Automatic:
+		return true
+	case Deferred:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PurchaseQuoteLineUnpricedReason.
 const (
-	NoDimensions    PurchaseQuoteLineUnpricedReason = "no_dimensions"
-	NoEffectiveRule PurchaseQuoteLineUnpricedReason = "no_effective_rule"
-	NoMeter         PurchaseQuoteLineUnpricedReason = "no_meter"
-	NoPrice         PurchaseQuoteLineUnpricedReason = "no_price"
-	NoRateCard      PurchaseQuoteLineUnpricedReason = "no_rate_card"
-	None            PurchaseQuoteLineUnpricedReason = "none"
+	PurchaseQuoteLineUnpricedReasonNoDimensions    PurchaseQuoteLineUnpricedReason = "no_dimensions"
+	PurchaseQuoteLineUnpricedReasonNoEffectiveRule PurchaseQuoteLineUnpricedReason = "no_effective_rule"
+	PurchaseQuoteLineUnpricedReasonNoMeter         PurchaseQuoteLineUnpricedReason = "no_meter"
+	PurchaseQuoteLineUnpricedReasonNoPrice         PurchaseQuoteLineUnpricedReason = "no_price"
+	PurchaseQuoteLineUnpricedReasonNoRateCard      PurchaseQuoteLineUnpricedReason = "no_rate_card"
+	PurchaseQuoteLineUnpricedReasonNone            PurchaseQuoteLineUnpricedReason = "none"
 )
 
 // Valid indicates whether the value is a known member of the PurchaseQuoteLineUnpricedReason enum.
 func (e PurchaseQuoteLineUnpricedReason) Valid() bool {
 	switch e {
-	case NoDimensions:
+	case PurchaseQuoteLineUnpricedReasonNoDimensions:
 		return true
-	case NoEffectiveRule:
+	case PurchaseQuoteLineUnpricedReasonNoEffectiveRule:
 		return true
-	case NoMeter:
+	case PurchaseQuoteLineUnpricedReasonNoMeter:
 		return true
-	case NoPrice:
+	case PurchaseQuoteLineUnpricedReasonNoPrice:
 		return true
-	case NoRateCard:
+	case PurchaseQuoteLineUnpricedReasonNoRateCard:
 		return true
-	case None:
+	case PurchaseQuoteLineUnpricedReasonNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QuotedLineUnpricedReason.
+const (
+	QuotedLineUnpricedReasonNoPrice QuotedLineUnpricedReason = "no_price"
+	QuotedLineUnpricedReasonNone    QuotedLineUnpricedReason = "none"
+)
+
+// Valid indicates whether the value is a known member of the QuotedLineUnpricedReason enum.
+func (e QuotedLineUnpricedReason) Valid() bool {
+	switch e {
+	case QuotedLineUnpricedReasonNoPrice:
+		return true
+	case QuotedLineUnpricedReasonNone:
 		return true
 	default:
 		return false
@@ -193,6 +229,27 @@ type AttachmentList struct {
 	Pagination OffsetPagination `json:"pagination"`
 }
 
+// CheckoutMode automatic confirms checkout with applicable account discounts and collects payment from eligible
+// credit grants and available balance. Insufficient funds fail the purchase with HTTP 422
+// BILLING_INSUFFICIENT_FUNDS; no Billing order, charge or discount redemption is committed.
+// deferred creates a pending_checkout order for subsequent confirmation and payment through Billing.
+// An absent invoice or zero immediate amount does not bypass confirmation. No new discount
+// redemption or payment is made when the order is created.
+type CheckoutMode string
+
+// CheckoutOptions Shared checkout choices for a product purchase. Omitting this object or mode selects
+// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+// refuses a purchase; no infrastructure is created for that refusal.
+type CheckoutOptions struct {
+	// ExpectedAmount Expected invoice total after discounts and tax, before applying credit grants or balance.
+	// A different total fails with BILLING_AMOUNT_CHANGED without charging or reserving a discount.
+	// Accepted only in automatic mode; with deferred it is refused with HTTP 400. For deferred
+	// checkout, confirm the amount through Billing.
+	ExpectedAmount *Money        `json:"expected_amount,omitempty"`
+	Mode           *CheckoutMode `json:"mode,omitempty"`
+}
+
 // CursorPagination Pagination metadata for keyset traversal. Pass next_cursor as cursor to read the following page; null means there is no following page.
 type CursorPagination struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
@@ -257,7 +314,7 @@ type OrderOptions struct {
 
 // PlacedOrder Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
 type PlacedOrder struct {
-	// InvoiceId The invoice for this purchase. Null when there is no immediate invoice. Read the invoice for its current payment state.
+	// InvoiceId The invoice for this purchase, which may still be a draft awaiting checkout. Null when no invoice has been created. Its presence or absence does not establish whether delivery may begin.
 	InvoiceId *openapi_types.UUID `json:"invoice_id"`
 
 	// OrderId The order, including for purchases without an immediate charge. Payment alone does not imply that the service has completed delivery.
@@ -299,6 +356,83 @@ type PurchaseQuoteLine struct {
 
 // PurchaseQuoteLineUnpricedReason Why no price was found; `none` while `priced` is true.
 type PurchaseQuoteLineUnpricedReason string
+
+// Quote A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
+// charged or reserved, and no discount redemption is consumed. Account discounts and tax are
+// evaluated as for automatic checkout. Promotion codes are evaluated through Billing quote operations.
+// All amounts use currency. This preview does not lock prices or guarantee discount availability.
+type Quote struct {
+	Currency string `json:"currency"`
+
+	// DiscountAmount Sum of line discounts. Null when any line cannot be priced.
+	DiscountAmount *Money `json:"discount_amount"`
+
+	// EstimatedUsageAmount Sum of the lines' estimated_usage_amount. A projection, not part of total and not collected at
+	// checkout. Null when no line is billed for usage or when any usage cannot be priced.
+	EstimatedUsageAmount *Money `json:"estimated_usage_amount"`
+
+	// Lines One line for each item the purchase would order, in the order it would order them.
+	Lines []QuotedLine `json:"lines"`
+
+	// Subtotal Sum of line amounts before discounts, less tax already included in the discounted line
+	// amounts, as on an invoice. Null when any line cannot be priced.
+	Subtotal *Money `json:"subtotal"`
+
+	// TaxAmount Sum of tax on the discounted line amounts. Null when any line cannot be priced.
+	TaxAmount *Money `json:"tax_amount"`
+
+	// Total subtotal minus discount_amount plus tax_amount: what checkout collects, before applying
+	// credit grants or balance. Equals the sum of line totals and excludes estimated_usage_amount.
+	// Null when any line cannot be priced.
+	Total *Money `json:"total"`
+}
+
+// QuotedLine One calculated purchase line. Fixed purchase amounts are rounded as checkout rounds them.
+// When priced is false, price_id and every monetary field are null. A priced line without an
+// immediate charge has zero amounts; an unavailable unit price remains null.
+type QuotedLine struct {
+	// Amount Before discounts, including any setup charges. Contains tax only where the price includes it.
+	// Zero for a priced order item with no immediate charge.
+	Amount   *Money `json:"amount"`
+	Currency string `json:"currency"`
+
+	// DiscountAmount Total reduction on this line, including any committed recurring discount.
+	DiscountAmount *Money `json:"discount_amount"`
+
+	// EstimatedUsageAmount Projected charge for this line's future usage over the period stated by the quoting operation,
+	// at current rates, before discounts and tax and not rounded. Not part of amount or total and
+	// not collected at checkout. Null when the line is not billed for usage or its usage cannot be
+	// priced.
+	EstimatedUsageAmount *Money `json:"estimated_usage_amount"`
+	PlanName             string `json:"plan_name"`
+
+	// PriceId The price selected, including when the request left the choice to the service. Order with this price.
+	PriceId *openapi_types.UUID `json:"price_id"`
+
+	// Priced Whether the line can be priced. When false, unpriced_reason states what is missing.
+	Priced bool `json:"priced"`
+
+	// Quantity The quantity priced.
+	Quantity string `json:"quantity"`
+
+	// TaxAmount Tax on the discounted amount, including any tax already contained in that amount.
+	TaxAmount *Money `json:"tax_amount"`
+
+	// TaxIncludedAmount The part of tax_amount already contained in amount minus discount_amount.
+	TaxIncludedAmount *Money `json:"tax_included_amount"`
+
+	// Total amount minus discount_amount plus tax_amount minus tax_included_amount.
+	Total *Money `json:"total"`
+
+	// UnitAmount Unit price before discounts, with tax included only where the price includes it.
+	UnitAmount *Money `json:"unit_amount"`
+
+	// UnpricedReason Why no price was found; `none` while `priced` is true.
+	UnpricedReason QuotedLineUnpricedReason `json:"unpriced_reason"`
+}
+
+// QuotedLineUnpricedReason Why no price was found; `none` while `priced` is true.
+type QuotedLineUnpricedReason string
 
 // ReclamationState defines model for ReclamationState.
 type ReclamationState struct {

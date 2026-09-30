@@ -25,7 +25,7 @@ func encodeCreateProjectCancellationRequest(
 }
 
 func encodeCreateProjectQuoteRequest(
-	req *QuoteRequest,
+	req QuoteRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

@@ -6778,8 +6778,8 @@ func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 // payment status.
 // Ref: #/components/schemas/PlacedOrder
 type PlacedOrder struct {
-	// The invoice for this purchase. Null when there is no immediate invoice. Read the invoice for its
-	// current payment state.
+	// The invoice for this purchase, which may still be a draft awaiting checkout. Null when no invoice
+	// has been created. Its presence or absence does not establish whether delivery may begin.
 	InvoiceID NilUUID `json:"invoice_id"`
 	// The order, including for purchases without an immediate charge. Payment alone does not imply that
 	// the service has completed delivery.

@@ -39,6 +39,8 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 var operationRolesAccessTokenAuth = map[string][]string{
 	CancelOrderOperation:                 []string{},
 	CancelTopUpOperation:                 []string{},
+	CheckoutOrderOperation:               []string{},
+	CollectInvoicePaymentOperation:       []string{},
 	CreateBillingAccountOperation:        []string{},
 	CreateCancellationOperation:          []string{},
 	CreatePaymentMethodSetupOperation:    []string{},
@@ -75,7 +77,6 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	ListTopUpsOperation:                  []string{},
 	ListTransactionsOperation:            []string{},
 	ListUsageChargesOperation:            []string{},
-	PayInvoiceOperation:                  []string{},
 	PayTogetherOperation:                 []string{},
 	PreviewInvoicePaymentOperation:       []string{},
 	PreviewPayTogetherOperation:          []string{},

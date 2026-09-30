@@ -408,6 +408,7 @@ const (
 	OrderStatusFailed             OrderStatus = "failed"
 	OrderStatusPartiallyCompleted OrderStatus = "partially_completed"
 	OrderStatusPending            OrderStatus = "pending"
+	OrderStatusPendingCheckout    OrderStatus = "pending_checkout"
 )
 
 // Valid indicates whether the value is a known member of the OrderStatus enum.
@@ -424,6 +425,8 @@ func (e OrderStatus) Valid() bool {
 	case OrderStatusPartiallyCompleted:
 		return true
 	case OrderStatusPending:
+		return true
+	case OrderStatusPendingCheckout:
 		return true
 	default:
 		return false
@@ -496,36 +499,6 @@ func (e QuoteLinePriceType) Valid() bool {
 	}
 }
 
-// Defines values for QuoteLineResultUnpricedReason.
-const (
-	QuoteLineResultUnpricedReasonNoDimensions    QuoteLineResultUnpricedReason = "no_dimensions"
-	QuoteLineResultUnpricedReasonNoEffectiveRule QuoteLineResultUnpricedReason = "no_effective_rule"
-	QuoteLineResultUnpricedReasonNoMeter         QuoteLineResultUnpricedReason = "no_meter"
-	QuoteLineResultUnpricedReasonNoPrice         QuoteLineResultUnpricedReason = "no_price"
-	QuoteLineResultUnpricedReasonNoRateCard      QuoteLineResultUnpricedReason = "no_rate_card"
-	QuoteLineResultUnpricedReasonNone            QuoteLineResultUnpricedReason = "none"
-)
-
-// Valid indicates whether the value is a known member of the QuoteLineResultUnpricedReason enum.
-func (e QuoteLineResultUnpricedReason) Valid() bool {
-	switch e {
-	case QuoteLineResultUnpricedReasonNoDimensions:
-		return true
-	case QuoteLineResultUnpricedReasonNoEffectiveRule:
-		return true
-	case QuoteLineResultUnpricedReasonNoMeter:
-		return true
-	case QuoteLineResultUnpricedReasonNoPrice:
-		return true
-	case QuoteLineResultUnpricedReasonNoRateCard:
-		return true
-	case QuoteLineResultUnpricedReasonNone:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for QuoteRenewalInterval.
 const (
 	QuoteRenewalIntervalDay   QuoteRenewalInterval = "day"
@@ -562,6 +535,42 @@ func (e QuoteRenewalResultInterval) Valid() bool {
 	case QuoteRenewalResultIntervalMonth:
 		return true
 	case QuoteRenewalResultIntervalYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QuotedDiscountType.
+const (
+	AccountDiscount QuotedDiscountType = "account_discount"
+	PromotionCode   QuotedDiscountType = "promotion_code"
+)
+
+// Valid indicates whether the value is a known member of the QuotedDiscountType enum.
+func (e QuotedDiscountType) Valid() bool {
+	switch e {
+	case AccountDiscount:
+		return true
+	case PromotionCode:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QuotedLineUnpricedReason.
+const (
+	QuotedLineUnpricedReasonNoPrice QuotedLineUnpricedReason = "no_price"
+	QuotedLineUnpricedReasonNone    QuotedLineUnpricedReason = "none"
+)
+
+// Valid indicates whether the value is a known member of the QuotedLineUnpricedReason enum.
+func (e QuotedLineUnpricedReason) Valid() bool {
+	switch e {
+	case QuotedLineUnpricedReasonNoPrice:
+		return true
+	case QuotedLineUnpricedReasonNone:
 		return true
 	default:
 		return false
@@ -941,6 +950,13 @@ type CancellationList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
+// CancellationQuoteRequest Preview one cancellation without combining it with a purchase, renewal or promotion code.
+type CancellationQuoteRequest struct {
+	// Cancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
+	// request; to compare, quote `immediate` and `period_end` separately.
+	Cancellation QuoteCancellation `json:"cancellation"`
+}
+
 // CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now. Give
 // `proration_date` and `refundable_amount` when creating the cancellation.
 //
@@ -1169,14 +1185,20 @@ type EntitlementList struct {
 // Error defines model for Error.
 type Error = externalRef0.Error
 
-// InvoiceStatus `refunded` means the invoice was paid and has since been refunded in full; a partial refund
+// InvoiceStatus An order invoice stays `draft` until checkout confirms its discount and final amounts. It
+// cannot be collected while draft. Confirmation makes it `open`, or `paid` when its total is zero
+// without creating a payment transaction. A quote never changes this status.
+//
+// `refunded` means the invoice was paid and has since been refunded in full; a partial refund
 // leaves it `paid`, with the refunded part in `amount_refunded`.
 //
 // `void` means the invoice will not be paid and holds no money: nothing was paid, or its order
 // failed or was canceled and everything paid toward it has been returned.
 type InvoiceStatus string
 
-// InvoiceSummary Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
+// InvoiceSummary Purchase-related invoice amounts, without account contact details or payment methods. A draft
+// order invoice shows base amounts awaiting checkout, not a confirmed discount or collectible total.
+// Absent when no invoice has been created; absence does not establish acceptance or delivery.
 type InvoiceSummary struct {
 	AmountPaid     string `json:"amount_paid"`
 	AmountRefunded string `json:"amount_refunded"`
@@ -1188,7 +1210,11 @@ type InvoiceSummary struct {
 	Id             openapi_types.UUID `json:"id"`
 	Number         *string            `json:"number,omitempty"`
 
-	// Status `refunded` means the invoice was paid and has since been refunded in full; a partial refund
+	// Status An order invoice stays `draft` until checkout confirms its discount and final amounts. It
+	// cannot be collected while draft. Confirmation makes it `open`, or `paid` when its total is zero
+	// without creating a payment transaction. A quote never changes this status.
+	//
+	// `refunded` means the invoice was paid and has since been refunded in full; a partial refund
 	// leaves it `paid`, with the refunded part in `amount_refunded`.
 	//
 	// `void` means the invoice will not be paid and holds no money: nothing was paid, or its order
@@ -1210,7 +1236,10 @@ type ObjectIdentity struct {
 	Name      string             `json:"name"`
 }
 
-// Order defines model for Order.
+// Order A recorded purchase. pending_checkout requires explicit Billing confirmation before collection
+// or acceptance, even without an invoice. Coupon fields describe a discount confirmed at checkout and are absent
+// before confirmation; a quote never populates them. A draft invoice contains base purchase
+// amounts awaiting checkout. Payment and acceptance remain separate from resource delivery.
 type Order struct {
 	Account *AccountIdentity `json:"account,omitempty"`
 
@@ -1236,11 +1265,13 @@ type Order struct {
 	CreatedAt time.Time           `json:"created_at"`
 	Currency  string              `json:"currency"`
 
-	// ExpiresAt Acceptance deadline. Only pending orders expire automatically.
+	// ExpiresAt Acceptance deadline. pending_checkout and pending orders can expire automatically.
 	ExpiresAt *time.Time         `json:"expires_at,omitempty"`
 	Id        openapi_types.UUID `json:"id"`
 
-	// Invoice Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
+	// Invoice Purchase-related invoice amounts, without account contact details or payment methods. A draft
+	// order invoice shows base amounts awaiting checkout, not a confirmed discount or collectible total.
+	// Absent when no invoice has been created; absence does not establish acceptance or delivery.
 	Invoice *InvoiceSummary `json:"invoice,omitempty"`
 
 	// Items What was bought. Present on a single order and on every order in a list, so a list
@@ -1259,11 +1290,15 @@ type Order struct {
 	// as a membership.
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
 
-	// PromotionCode Code text frozen when this order applied the coupon.
+	// PromotionCode Code text frozen when checkout applied the coupon. Absent for an account discount.
 	PromotionCode   *string             `json:"promotion_code,omitempty"`
 	PromotionCodeId *openapi_types.UUID `json:"promotion_code_id,omitempty"`
 
-	// Status Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is
+	// Status pending_checkout has recorded purchase terms but no confirmed checkout. An absent invoice
+	// or zero total does not permit acceptance. Confirmation moves it to pending. Both pending_checkout
+	// and pending can expire or be canceled; neither establishes service delivery.
+	//
+	// Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid. `active` is
 	// accepted with items still being set up. `completed` means every item was set up.
 	// `partially_completed` means some items were set up and the others failed and were
 	// refunded to their original payment sources. `failed` means every item failed and the
@@ -1288,7 +1323,9 @@ type OrderChangeEffective string
 // the time and starts billing from the moment agreed.
 type OrderType string
 
-// OrderItem Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are absent when there is no immediate invoice. Later catalog changes do not reprice this line.
+// OrderItem Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are absent
+// when there is no immediate invoice. Later catalog changes do not reprice this line. A new service
+// purchase creates its pending subscription when this item is recorded, not when payment succeeds.
 type OrderItem struct {
 	// Amount `gross_amount` less `discount_amount`.
 	Amount *externalRef0.Money `json:"amount,omitempty"`
@@ -1346,7 +1383,11 @@ type OrderItem struct {
 	// `failed` was not set up and its amount was refunded to the original payment sources.
 	// `canceled` was withdrawn with its unpaid order. A completed item is ended by canceling
 	// its subscription.
-	Status         OrderItemStatus     `json:"status"`
+	Status OrderItemStatus `json:"status"`
+
+	// SubscriptionId Stable Billing subscription ID. A new prepaid or postpaid service purchase returns the
+	// pending subscription here; renewals reference the existing subscription and changes the
+	// replacement. Absent for delivery without a subscription. This is not a business resource ID.
 	SubscriptionId *openapi_types.UUID `json:"subscription_id,omitempty"`
 
 	// TaxAmount Total tax after discounts, including any tax already included in the price.
@@ -1392,7 +1433,21 @@ type OrderList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// OrderStatus Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is
+// OrderQuoteRequest Preview checkout of one existing order. Its recorded purchase terms supply every line.
+// Without a code, an applicable account discount is selected. A preview neither changes the
+// order nor reserves or consumes a redemption. A confirmed order returns its recorded amounts.
+type OrderQuoteRequest struct {
+	OrderId openapi_types.UUID `json:"order_id"`
+
+	// PromotionCode Code to evaluate for this order. Must be supplied again when confirming checkout.
+	PromotionCode *string `json:"promotion_code,omitempty"`
+}
+
+// OrderStatus pending_checkout has recorded purchase terms but no confirmed checkout. An absent invoice
+// or zero total does not permit acceptance. Confirmation moves it to pending. Both pending_checkout
+// and pending can expire or be canceled; neither establishes service delivery.
+//
+// Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid. `active` is
 // accepted with items still being set up. `completed` means every item was set up.
 // `partially_completed` means some items were set up and the others failed and were
 // refunded to their original payment sources. `failed` means every item failed and the
@@ -1458,22 +1513,49 @@ type ProjectBillingAccount struct {
 // still running. `suspended` — resources have been stopped for non-payment.
 type ProjectBillingAccountStatus string
 
-// Quote defines model for Quote.
+// PurchaseQuoteRequest Preview one proposed purchase using the project's current billing account. Without a code,
+// an applicable account discount is selected. An explicit code is evaluated without reserving or
+// consuming a redemption and must be supplied again when confirming checkout through Billing.
+// Future usage estimates cannot be combined with a promotion code or used as a checkout amount.
+type PurchaseQuoteRequest struct {
+	Lines         []QuoteLine `json:"lines"`
+	PromotionCode *string     `json:"promotion_code,omitempty"`
+}
+
+// Quote A computed price preview, without a saved quote or a price guarantee. No funds or discount
+// redemptions are reserved. Amounts use currency and exclude payment from credit grants or balance.
 type Quote struct {
 	// Cancellation What the cancellation requested would return. Present only when one was requested.
 	Cancellation *CancellationRefundPreview `json:"cancellation,omitempty"`
 	Currency     string                     `json:"currency"`
-	Lines        []QuoteLineResult          `json:"lines,omitempty"`
-	Renewals     []QuoteRenewalResult       `json:"renewals,omitempty"`
 
-	// Total What would be owed in total, renewals included. Amounts to be returned are not netted
-	// off it: a quote of a cancellation alone has a total of zero, and what it would return is
-	// in `cancellation`.
+	// Discount The one new discount evaluated for a purchase or order, without applying it. Null when
+	// none is selected, pricing is incomplete, or the quote targets a renewal list or cancellation.
+	// A confirmed order instead reports its recorded discount.
+	Discount *QuotedDiscount `json:"discount"`
+
+	// DiscountAmount Total line discounts. Null when any line cannot be priced; zero for a cancellation-only quote.
+	DiscountAmount *externalRef0.Money  `json:"discount_amount"`
+	Lines          []QuotedLine         `json:"lines,omitempty"`
+	Renewals       []QuoteRenewalResult `json:"renewals,omitempty"`
+
+	// Subtotal Sum before discounts, less tax already included in the discounted line amounts, as on an
+	// invoice. Null when any line cannot be priced. Zero for a cancellation-only quote.
+	Subtotal *externalRef0.Money `json:"subtotal"`
+
+	// TaxAmount Total tax on the discounted amounts. Null when any line cannot be priced; zero for a cancellation-only quote.
+	TaxAmount *externalRef0.Money `json:"tax_amount"`
+
+	// Total subtotal minus discount_amount plus tax_amount, before applying credit grants or balance.
+	// For a purchase or order with no usage estimates, pass this as expected_amount at checkout.
+	// A renewal list sums separate orders; use each renewal's total when confirming that order.
+	// Refunds are not netted off: a cancellation-only quote has zero totals and its refund is in
+	// cancellation. Usage estimates are projections, not checkout amounts.
 	//
 	// Null when any line could not be priced. What would be owed is not knowable then, and a
 	// total that silently left the unpriced lines out would read as a smaller bill rather than
 	// an incomplete one — the per-line `priced` flag is easy to skip, a missing total is not.
-	Total *externalRef0.Money `json:"total,omitempty"`
+	Total *externalRef0.Money `json:"total"`
 }
 
 // QuoteCancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
@@ -1488,35 +1570,15 @@ type QuoteCancellation struct {
 
 // QuoteLine Identify a price directly, or select a price for a plan. For each resource give its ID or lookup key, never both. Lookup keys require product_id.
 //
-// A line that gives a meter, `dimensions` or `duration_seconds` estimates usage and is
-// priced only at a postpaid price. Such a line is refused with HTTP 400
-// `BILLING_PURCHASE_INVALID` when `price_type` is `prepaid` or `one_time`, or when the price
-// it names is not postpaid; `meta.field` is `price_type`, `price_id` or `price_lookup_key`
-// accordingly. When the plan has no postpaid price, the line is returned unpriced with
-// `no_price`.
+// Charges for future usage are not estimated here; the service that sells the product quotes
+// them with its purchase.
 type QuoteLine struct {
-	// Dimensions The attributes the price depends on — region, instance type, token class.
-	//
-	// Required when the price draws its rates from a price list, which is how anything
-	// sold by region or by machine type is priced. A price that carries a single unit
-	// amount, or a ladder, has no attributes to give and takes none.
-	//
-	// Every attribute the meter declares must be present. A combination with no rate
-	// covering it is refused rather than priced at zero.
-	Dimensions map[string]string `json:"dimensions,omitempty"`
-
-	// DurationSeconds For metered items, how long to price for. This allows an estimate such as "about
-	// this much per month" to be shown before anything exists. The priced quantity is
-	// `quantity` multiplied by this duration.
-	DurationSeconds *int64              `json:"duration_seconds,omitempty"`
-	Interval        *QuoteLineInterval  `json:"interval,omitempty"`
-	IntervalCount   *int                `json:"interval_count,omitempty"`
-	MeterId         *openapi_types.UUID `json:"meter_id,omitempty"`
-	MeterLookupKey  *string             `json:"meter_lookup_key,omitempty"`
-	PlanId          *openapi_types.UUID `json:"plan_id,omitempty"`
-	PlanLookupKey   *string             `json:"plan_lookup_key,omitempty"`
-	PriceId         *openapi_types.UUID `json:"price_id,omitempty"`
-	PriceLookupKey  *string             `json:"price_lookup_key,omitempty"`
+	Interval       *QuoteLineInterval  `json:"interval,omitempty"`
+	IntervalCount  *int                `json:"interval_count,omitempty"`
+	PlanId         *openapi_types.UUID `json:"plan_id,omitempty"`
+	PlanLookupKey  *string             `json:"plan_lookup_key,omitempty"`
+	PriceId        *openapi_types.UUID `json:"price_id,omitempty"`
+	PriceLookupKey *string             `json:"price_lookup_key,omitempty"`
 
 	// PriceType Narrows the selection when a plan offers more than one billing type.
 	PriceType *QuoteLinePriceType `json:"price_type,omitempty"`
@@ -1531,68 +1593,6 @@ type QuoteLineInterval string
 
 // QuoteLinePriceType Narrows the selection when a plan offers more than one billing type.
 type QuoteLinePriceType string
-
-// QuoteLineResult defines model for QuoteLineResult.
-type QuoteLineResult struct {
-	// Amount Not rounded. Round only for display.
-	Amount   *externalRef0.Money `json:"amount,omitempty"`
-	Currency string              `json:"currency"`
-
-	// Index Which line of the request this answers.
-	Index    int     `json:"index"`
-	PlanName *string `json:"plan_name,omitempty"`
-
-	// PriceId The price selected. Returned whenever `priced` is true, including when the
-	// request identified the item indirectly, so that the choice can be confirmed.
-	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
-
-	// Priced Whether a price was found for this line. Read this before anything else.
-	//
-	// A single item with no price no longer fails the whole request. A catalogue
-	// almost always has something not yet priced, and refusing the request would
-	// leave no way to render a list in which a few entries are simply not on sale.
-	//
-	// When false, `price_id`, `unit_amount` and `amount` are absent and
-	// `unpriced_reason` states what is missing.
-	Priced bool `json:"priced"`
-
-	// Quantity The quantity actually priced. When `duration_seconds` is given, it is the requested
-	// `quantity` multiplied by that duration.
-	Quantity *string `json:"quantity,omitempty"`
-
-	// TaxAmount Tax included in the account quote. Absent in public catalogue estimates.
-	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
-
-	// TaxIncludedAmount Tax already included in the displayed price.
-	TaxIncludedAmount *externalRef0.Money `json:"tax_included_amount,omitempty"`
-
-	// UnitAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
-
-	// UnpricedReason Why no price was found; `none` while `priced` is true.
-	//
-	// The last four are told apart because their remedies differ: the price points
-	// at no price list, the list holds no rate for that meter, that exact combination
-	// of attributes is not configured, or it is configured but nothing is in effect
-	// at the moment asked about.
-	UnpricedReason *QuoteLineResultUnpricedReason `json:"unpriced_reason,omitempty"`
-}
-
-// QuoteLineResultUnpricedReason Why no price was found; `none` while `priced` is true.
-//
-// The last four are told apart because their remedies differ: the price points
-// at no price list, the list holds no rate for that meter, that exact combination
-// of attributes is not configured, or it is configured but nothing is in effect
-// at the moment asked about.
-type QuoteLineResultUnpricedReason string
 
 // QuoteRenewal Price renewing a prepaid subscription. Give `price_id`, or `interval` with
 // `interval_count`, to renew for another term at the price currently sold for it. Naming
@@ -1646,18 +1646,87 @@ type QuoteRenewalResult struct {
 // QuoteRenewalResultInterval defines model for QuoteRenewalResult.Interval.
 type QuoteRenewalResultInterval string
 
-// QuoteRequest Specify lines for new purchases and renewals for existing subscriptions, or one cancellation on
-// its own. The total includes all requested lines and renewals.
+// QuoteRequest Quote exactly one target. Purchase lines, an existing order, a renewal list and a cancellation are mutually exclusive.
 type QuoteRequest struct {
-	// Cancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
-	// request; to compare, quote `immediate` and `period_end` separately.
-	Cancellation *QuoteCancellation `json:"cancellation,omitempty"`
-	Lines        []QuoteLine        `json:"lines,omitempty"`
-	Renewals     []QuoteRenewal     `json:"renewals,omitempty"`
+	union json.RawMessage
 }
+
+// QuotedDiscount The discount selected for this calculation. Its presence in a quote does not apply it or
+// reserve a redemption. Discount amounts are reported on the quote and its lines.
+type QuotedDiscount struct {
+	Name string `json:"name"`
+
+	// PromotionCode Code text for a promotion_code discount; null for an account_discount.
+	PromotionCode *string            `json:"promotion_code"`
+	Type          QuotedDiscountType `json:"type"`
+}
+
+// QuotedDiscountType defines model for QuotedDiscount.Type.
+type QuotedDiscountType string
+
+// QuotedLine A purchase quote line or one recorded order item. Monetary fields use the account currency.
+// Fixed purchase amounts are rounded as checkout rounds them. Usage estimates are not amounts
+// collectible at checkout. When priced is false, monetary fields and price_id are absent.
+type QuotedLine struct {
+	// Amount Before discounts, including any setup charges. Contains tax only where the price includes it.
+	// Zero for a priced order item with no immediate charge.
+	Amount   *externalRef0.Money `json:"amount,omitempty"`
+	Currency string              `json:"currency"`
+
+	// DiscountAmount Total reduction on this line, including any committed recurring discount.
+	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
+
+	// Index Zero-based request line index, or the recorded order item's position for an order quote.
+	Index int `json:"index"`
+
+	// OrderItemId Present for an existing order quote; identifies the recorded item being priced.
+	OrderItemId *openapi_types.UUID `json:"order_item_id,omitempty"`
+	PlanName    *string             `json:"plan_name,omitempty"`
+
+	// PriceId The price selected. Returned whenever `priced` is true, including when the
+	// request identified the item indirectly, so that the choice can be confirmed.
+	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
+
+	// Priced Whether a price was found for this line. Read this before anything else.
+	//
+	// A single item with no price no longer fails the whole request. A catalogue
+	// almost always has something not yet priced, and refusing the request would
+	// leave no way to render a list in which a few entries are simply not on sale.
+	//
+	// When false, `price_id`, `unit_amount` and `amount` are absent and
+	// `unpriced_reason` states what is missing.
+	Priced bool `json:"priced"`
+
+	// Quantity The quantity priced.
+	Quantity *string `json:"quantity,omitempty"`
+
+	// TaxAmount Tax on the discounted amount, including any tax already contained in that amount.
+	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
+
+	// TaxIncludedAmount The part of tax_amount already contained in amount minus discount_amount.
+	TaxIncludedAmount *externalRef0.Money `json:"tax_included_amount,omitempty"`
+
+	// Total amount minus discount_amount plus tax_amount minus tax_included_amount.
+	Total *externalRef0.Money `json:"total,omitempty"`
+
+	// UnitAmount Unit price before discounts, with tax included only where the price includes it.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
+
+	// UnpricedReason Why no price was found; `none` while `priced` is true.
+	UnpricedReason *QuotedLineUnpricedReason `json:"unpriced_reason,omitempty"`
+}
+
+// QuotedLineUnpricedReason Why no price was found; `none` while `priced` is true.
+type QuotedLineUnpricedReason string
 
 // RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
 type RefundPolicy string
+
+// RenewalQuoteRequest Preview renewing subscriptions, each at most once. Each entry represents a separate renewal
+// order. To preview a new promotion code, create a renewal order and quote it by order_id.
+type RenewalQuoteRequest struct {
+	Renewals []QuoteRenewal `json:"renewals"`
+}
 
 // SpendRow defines model for SpendRow.
 type SpendRow struct {
@@ -1692,7 +1761,27 @@ type SpendRowList struct {
 	Total externalRef0.Money `json:"total"`
 }
 
-// Subscription An independently billed purchase. Fixed renewals use the agreed recurring_amount and interval; already paid periods retain their original value. Technical state belongs to the owning service.
+// Subscription An independently billed purchase relationship, separate from the owning service's resource.
+// Placing a new prepaid or postpaid service order creates a pending subscription for each line
+// in the same purchase transaction. Its ID is returned on the order item and remains stable
+// through checkout and delivery. One order may create several subscriptions, such as an instance,
+// its system disk and its address; it has no single subscription ID.
+//
+// Pending does not grant service or accrue usage. Payment confirmation and order acceptance do
+// not activate a service-owned subscription. It becomes active when the owning service confirms
+// delivery, with started_at set to the confirmed effective time. Prepaid service periods start
+// then; postpaid usage starts only when the service reports actual delivery and metering.
+//
+// One-time delivery may omit a subscription. Renewals reference and extend existing subscriptions
+// rather than creating another; changes may create pending replacements. Canceling or failing an
+// unfulfilled purchase closes its pending subscriptions without starting a service period.
+// Fixed renewals use the agreed recurring_amount and interval; already paid periods retain their
+// original value. Technical state belongs to the owning service.
+//
+// A purchased shared capacity limit, such as a regional snapshot count quota, can have its own
+// subscription. Activating that capacity confirms delivery of the quota, not individual snapshots.
+// Creating or deleting snapshots within it does not create, activate or terminate more subscriptions;
+// the owning service enforces current holdings against the purchased count.
 type Subscription struct {
 	Account   AccountIdentity `json:"account"`
 	AutoRenew bool            `json:"auto_renew"`
@@ -1717,7 +1806,8 @@ type Subscription struct {
 	IntervalCount               *int                 `json:"interval_count,omitempty"`
 	OrderItemId                 *openapi_types.UUID  `json:"order_item_id,omitempty"`
 
-	// PaidUntil Present for prepaid items. Absent for metered ones, which have no end date.
+	// PaidUntil End of the prepaid service already activated. Null for a new pending subscription, even
+	// when its purchase has been paid, and for postpaid subscriptions with no prepaid end date.
 	PaidUntil *time.Time `json:"paid_until,omitempty"`
 
 	// PaidWith How the purchase, or the latest renewal paid with a saved card, was paid. Automatic renewal
@@ -1742,15 +1832,22 @@ type Subscription struct {
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
 	Quantity  string              `json:"quantity"`
 
-	// RecurringAmount Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Absent for other billing types.
+	// RecurringAmount Whole-subscription prepaid renewal amount, after continuing discounts and before tax.
+	// Pending subscriptions show base terms until checkout confirms any new continuing discount.
+	// Absent for other billing types.
 	RecurringAmount *string `json:"recurring_amount,omitempty"`
 
 	// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
 	RefundPolicy           *RefundPolicy       `json:"refund_policy,omitempty"`
 	ReplacesSubscriptionId *openapi_types.UUID `json:"replaces_subscription_id,omitempty"`
-	StartedAt              *time.Time          `json:"started_at,omitempty"`
-	Status                 SubscriptionStatus  `json:"status"`
-	SuspendReason          *string             `json:"suspend_reason,omitempty"`
+
+	// StartedAt Confirmed start of service. Null for a new pending subscription, including after payment.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// Status pending means the purchase relationship exists but service has not started. For a
+	// service-owned purchase, only confirmed delivery moves it to active; paying alone does not.
+	Status        SubscriptionStatus `json:"status"`
+	SuspendReason *string            `json:"suspend_reason,omitempty"`
 
 	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
 	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
@@ -1762,7 +1859,8 @@ type SubscriptionBillingType string
 // SubscriptionInterval defines model for Subscription.Interval.
 type SubscriptionInterval string
 
-// SubscriptionStatus defines model for Subscription.Status.
+// SubscriptionStatus pending means the purchase relationship exists but service has not started. For a
+// service-owned purchase, only confirmed delivery moves it to active; paying alone does not.
 type SubscriptionStatus string
 
 // SubscriptionList defines model for SubscriptionList.
@@ -2014,6 +2112,120 @@ type CreateProjectQuoteJSONRequestBody = QuoteRequest
 // SetProjectAutoRenewJSONRequestBody defines body for SetProjectAutoRenew for application/json ContentType.
 type SetProjectAutoRenewJSONRequestBody = AutoRenewSet
 
+// AsPurchaseQuoteRequest returns the union data inside the QuoteRequest as a PurchaseQuoteRequest
+func (t QuoteRequest) AsPurchaseQuoteRequest() (PurchaseQuoteRequest, error) {
+	var body PurchaseQuoteRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromPurchaseQuoteRequest overwrites any union data inside the QuoteRequest as the provided PurchaseQuoteRequest
+func (t *QuoteRequest) FromPurchaseQuoteRequest(v PurchaseQuoteRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergePurchaseQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided PurchaseQuoteRequest
+func (t *QuoteRequest) MergePurchaseQuoteRequest(v PurchaseQuoteRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsOrderQuoteRequest returns the union data inside the QuoteRequest as a OrderQuoteRequest
+func (t QuoteRequest) AsOrderQuoteRequest() (OrderQuoteRequest, error) {
+	var body OrderQuoteRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOrderQuoteRequest overwrites any union data inside the QuoteRequest as the provided OrderQuoteRequest
+func (t *QuoteRequest) FromOrderQuoteRequest(v OrderQuoteRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOrderQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided OrderQuoteRequest
+func (t *QuoteRequest) MergeOrderQuoteRequest(v OrderQuoteRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsRenewalQuoteRequest returns the union data inside the QuoteRequest as a RenewalQuoteRequest
+func (t QuoteRequest) AsRenewalQuoteRequest() (RenewalQuoteRequest, error) {
+	var body RenewalQuoteRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromRenewalQuoteRequest overwrites any union data inside the QuoteRequest as the provided RenewalQuoteRequest
+func (t *QuoteRequest) FromRenewalQuoteRequest(v RenewalQuoteRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeRenewalQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided RenewalQuoteRequest
+func (t *QuoteRequest) MergeRenewalQuoteRequest(v RenewalQuoteRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCancellationQuoteRequest returns the union data inside the QuoteRequest as a CancellationQuoteRequest
+func (t QuoteRequest) AsCancellationQuoteRequest() (CancellationQuoteRequest, error) {
+	var body CancellationQuoteRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCancellationQuoteRequest overwrites any union data inside the QuoteRequest as the provided CancellationQuoteRequest
+func (t *QuoteRequest) FromCancellationQuoteRequest(v CancellationQuoteRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCancellationQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided CancellationQuoteRequest
+func (t *QuoteRequest) MergeCancellationQuoteRequest(v CancellationQuoteRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t QuoteRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *QuoteRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -2246,8 +2458,8 @@ type ClientInterface interface {
 
 	// ListProjectOrders List project orders
 	//
-	// An order awaiting payment shows what is outstanding. Paying it is done from the billing
-	// centre by the account owner.
+	// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what
+	// is outstanding. Checkout and payment are performed in the billing centre by the account owner.
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/orders (the `ListProjectOrders` operationId).
 	ListProjectOrders(ctx context.Context, projectId ProjectId, params *ListProjectOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2264,15 +2476,27 @@ type ClientInterface interface {
 
 	// CreateProjectQuoteWithBody Quote for a project
 	//
-	// Priced in the project billing account's currency, and at any rate negotiated for that account.
-	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+	// reserved or applied to an order, and no discount redemption is consumed. The response has no
+	// quote ID and does not guarantee a price or reserve a promotion code.
 	//
-	// Prices may change between quoting and ordering. An order is charged at the price in
-	// effect when it is placed, so a quote should be refreshed before a final confirmation is
-	// shown.
+	// New purchases use the project's current billing account and currency. With order_id, the order
+	// must belong to this project; its recorded purchase terms, billing account and currency are used.
+	// An optional promotion_code previews one code for the purchase or order. Without it, Billing
+	// selects an applicable account discount. An invalid or inapplicable explicit code is refused
+	// rather than silently replaced. Give total as expected_amount when confirming checkout through
+	// Billing; eligibility and availability are checked again. An order already checked out returns
+	// its confirmed amounts without reapplying its discount; a different code is refused with
+	// BILLING_ORDER_CHECKOUT_CONFLICT.
+	//
+	// Prices may change before an order is created; confirmed purchase terms are not repriced from
+	// today's catalog. Usage estimates describe future usage and are not checkout amounts. They do
+	// not accept a promotion code, including when mixed with fixed purchase lines.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-	// named, with the discounts the account holds, and with tax.
+	// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+	// promotion code because its entries create separate orders. To use a new code on a renewal,
+	// first create a renewal order and quote its checkout by order_id.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -2281,8 +2505,8 @@ type ClientInterface interface {
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-	// canceled does not belong to this project.
+	// Returns 404 when the project has no billing account for a new purchase quote, or when the order
+	// or a subscription to be renewed or canceled does not belong to this project.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2291,15 +2515,27 @@ type ClientInterface interface {
 
 	// CreateProjectQuote Quote for a project
 	//
-	// Priced in the project billing account's currency, and at any rate negotiated for that account.
-	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+	// reserved or applied to an order, and no discount redemption is consumed. The response has no
+	// quote ID and does not guarantee a price or reserve a promotion code.
 	//
-	// Prices may change between quoting and ordering. An order is charged at the price in
-	// effect when it is placed, so a quote should be refreshed before a final confirmation is
-	// shown.
+	// New purchases use the project's current billing account and currency. With order_id, the order
+	// must belong to this project; its recorded purchase terms, billing account and currency are used.
+	// An optional promotion_code previews one code for the purchase or order. Without it, Billing
+	// selects an applicable account discount. An invalid or inapplicable explicit code is refused
+	// rather than silently replaced. Give total as expected_amount when confirming checkout through
+	// Billing; eligibility and availability are checked again. An order already checked out returns
+	// its confirmed amounts without reapplying its discount; a different code is refused with
+	// BILLING_ORDER_CHECKOUT_CONFLICT.
+	//
+	// Prices may change before an order is created; confirmed purchase terms are not repriced from
+	// today's catalog. Usage estimates describe future usage and are not checkout amounts. They do
+	// not accept a promotion code, including when mixed with fixed purchase lines.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-	// named, with the discounts the account holds, and with tax.
+	// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+	// promotion code because its entries create separate orders. To use a new code on a renewal,
+	// first create a renewal order and quote its checkout by order_id.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -2308,8 +2544,8 @@ type ClientInterface interface {
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-	// canceled does not belong to this project.
+	// Returns 404 when the project has no billing account for a new purchase quote, or when the order
+	// or a subscription to be renewed or canceled does not belong to this project.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2616,8 +2852,8 @@ func (c *Client) ListProjectEntitlements(ctx context.Context, projectId ProjectI
 
 // ListProjectOrders List project orders
 //
-// An order awaiting payment shows what is outstanding. Paying it is done from the billing
-// centre by the account owner.
+// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what
+// is outstanding. Checkout and payment are performed in the billing centre by the account owner.
 //
 // Corresponds with GET /api/v1/projects/{projectId}/orders (the `ListProjectOrders` operationId).
 func (c *Client) ListProjectOrders(ctx context.Context, projectId ProjectId, params *ListProjectOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2664,15 +2900,27 @@ func (c *Client) ListProjectOrderItems(ctx context.Context, projectId ProjectId,
 
 // CreateProjectQuoteWithBody Quote for a project
 //
-// Priced in the project billing account's currency, and at any rate negotiated for that account.
-// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+// reserved or applied to an order, and no discount redemption is consumed. The response has no
+// quote ID and does not guarantee a price or reserve a promotion code.
 //
-// Prices may change between quoting and ordering. An order is charged at the price in
-// effect when it is placed, so a quote should be refreshed before a final confirmation is
-// shown.
+// New purchases use the project's current billing account and currency. With order_id, the order
+// must belong to this project; its recorded purchase terms, billing account and currency are used.
+// An optional promotion_code previews one code for the purchase or order. Without it, Billing
+// selects an applicable account discount. An invalid or inapplicable explicit code is refused
+// rather than silently replaced. Give total as expected_amount when confirming checkout through
+// Billing; eligibility and availability are checked again. An order already checked out returns
+// its confirmed amounts without reapplying its discount; a different code is refused with
+// BILLING_ORDER_CHECKOUT_CONFLICT.
+//
+// Prices may change before an order is created; confirmed purchase terms are not repriced from
+// today's catalog. Usage estimates describe future usage and are not checkout amounts. They do
+// not accept a promotion code, including when mixed with fixed purchase lines.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-// named, with the discounts the account holds, and with tax.
+// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+// promotion code because its entries create separate orders. To use a new code on a renewal,
+// first create a renewal order and quote its checkout by order_id.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 // terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -2681,8 +2929,8 @@ func (c *Client) ListProjectOrderItems(ctx context.Context, projectId ProjectId,
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-// canceled does not belong to this project.
+// Returns 404 when the project has no billing account for a new purchase quote, or when the order
+// or a subscription to be renewed or canceled does not belong to this project.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2701,15 +2949,27 @@ func (c *Client) CreateProjectQuoteWithBody(ctx context.Context, projectId Proje
 
 // CreateProjectQuote Quote for a project
 //
-// Priced in the project billing account's currency, and at any rate negotiated for that account.
-// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+// reserved or applied to an order, and no discount redemption is consumed. The response has no
+// quote ID and does not guarantee a price or reserve a promotion code.
 //
-// Prices may change between quoting and ordering. An order is charged at the price in
-// effect when it is placed, so a quote should be refreshed before a final confirmation is
-// shown.
+// New purchases use the project's current billing account and currency. With order_id, the order
+// must belong to this project; its recorded purchase terms, billing account and currency are used.
+// An optional promotion_code previews one code for the purchase or order. Without it, Billing
+// selects an applicable account discount. An invalid or inapplicable explicit code is refused
+// rather than silently replaced. Give total as expected_amount when confirming checkout through
+// Billing; eligibility and availability are checked again. An order already checked out returns
+// its confirmed amounts without reapplying its discount; a different code is refused with
+// BILLING_ORDER_CHECKOUT_CONFLICT.
+//
+// Prices may change before an order is created; confirmed purchase terms are not repriced from
+// today's catalog. Usage estimates describe future usage and are not checkout amounts. They do
+// not accept a promotion code, including when mixed with fixed purchase lines.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-// named, with the discounts the account holds, and with tax.
+// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+// promotion code because its entries create separate orders. To use a new code on a renewal,
+// first create a renewal order and quote its checkout by order_id.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 // terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -2718,8 +2978,8 @@ func (c *Client) CreateProjectQuoteWithBody(ctx context.Context, projectId Proje
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-// canceled does not belong to this project.
+// Returns 404 when the project has no billing account for a new purchase quote, or when the order
+// or a subscription to be renewed or canceled does not belong to this project.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4242,8 +4502,8 @@ type ClientWithResponsesInterface interface {
 
 	// ListProjectOrdersWithResponse List project orders
 	//
-	// An order awaiting payment shows what is outstanding. Paying it is done from the billing
-	// centre by the account owner.
+	// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what
+	// is outstanding. Checkout and payment are performed in the billing centre by the account owner.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -4266,15 +4526,27 @@ type ClientWithResponsesInterface interface {
 
 	// CreateProjectQuoteWithBodyWithResponse Quote for a project
 	//
-	// Priced in the project billing account's currency, and at any rate negotiated for that account.
-	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+	// reserved or applied to an order, and no discount redemption is consumed. The response has no
+	// quote ID and does not guarantee a price or reserve a promotion code.
 	//
-	// Prices may change between quoting and ordering. An order is charged at the price in
-	// effect when it is placed, so a quote should be refreshed before a final confirmation is
-	// shown.
+	// New purchases use the project's current billing account and currency. With order_id, the order
+	// must belong to this project; its recorded purchase terms, billing account and currency are used.
+	// An optional promotion_code previews one code for the purchase or order. Without it, Billing
+	// selects an applicable account discount. An invalid or inapplicable explicit code is refused
+	// rather than silently replaced. Give total as expected_amount when confirming checkout through
+	// Billing; eligibility and availability are checked again. An order already checked out returns
+	// its confirmed amounts without reapplying its discount; a different code is refused with
+	// BILLING_ORDER_CHECKOUT_CONFLICT.
+	//
+	// Prices may change before an order is created; confirmed purchase terms are not repriced from
+	// today's catalog. Usage estimates describe future usage and are not checkout amounts. They do
+	// not accept a promotion code, including when mixed with fixed purchase lines.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-	// named, with the discounts the account holds, and with tax.
+	// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+	// promotion code because its entries create separate orders. To use a new code on a renewal,
+	// first create a renewal order and quote its checkout by order_id.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -4283,8 +4555,8 @@ type ClientWithResponsesInterface interface {
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-	// canceled does not belong to this project.
+	// Returns 404 when the project has no billing account for a new purchase quote, or when the order
+	// or a subscription to be renewed or canceled does not belong to this project.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4293,15 +4565,27 @@ type ClientWithResponsesInterface interface {
 
 	// CreateProjectQuoteWithResponse Quote for a project
 	//
-	// Priced in the project billing account's currency, and at any rate negotiated for that account.
-	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+	// reserved or applied to an order, and no discount redemption is consumed. The response has no
+	// quote ID and does not guarantee a price or reserve a promotion code.
 	//
-	// Prices may change between quoting and ordering. An order is charged at the price in
-	// effect when it is placed, so a quote should be refreshed before a final confirmation is
-	// shown.
+	// New purchases use the project's current billing account and currency. With order_id, the order
+	// must belong to this project; its recorded purchase terms, billing account and currency are used.
+	// An optional promotion_code previews one code for the purchase or order. Without it, Billing
+	// selects an applicable account discount. An invalid or inapplicable explicit code is refused
+	// rather than silently replaced. Give total as expected_amount when confirming checkout through
+	// Billing; eligibility and availability are checked again. An order already checked out returns
+	// its confirmed amounts without reapplying its discount; a different code is refused with
+	// BILLING_ORDER_CHECKOUT_CONFLICT.
+	//
+	// Prices may change before an order is created; confirmed purchase terms are not repriced from
+	// today's catalog. Usage estimates describe future usage and are not checkout amounts. They do
+	// not accept a promotion code, including when mixed with fixed purchase lines.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-	// named, with the discounts the account holds, and with tax.
+	// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+	// promotion code because its entries create separate orders. To use a new code on a renewal,
+	// first create a renewal order and quote its checkout by order_id.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -4310,8 +4594,8 @@ type ClientWithResponsesInterface interface {
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-	// canceled does not belong to this project.
+	// Returns 404 when the project has no billing account for a new purchase quote, or when the order
+	// or a subscription to be renewed or canceled does not belong to this project.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -5377,8 +5661,8 @@ func (c *ClientWithResponses) ListProjectEntitlementsWithResponse(ctx context.Co
 
 // ListProjectOrdersWithResponse List project orders
 //
-// An order awaiting payment shows what is outstanding. Paying it is done from the billing
-// centre by the account owner.
+// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what
+// is outstanding. Checkout and payment are performed in the billing centre by the account owner.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5419,15 +5703,27 @@ func (c *ClientWithResponses) ListProjectOrderItemsWithResponse(ctx context.Cont
 
 // CreateProjectQuoteWithBodyWithResponse Quote for a project
 //
-// Priced in the project billing account's currency, and at any rate negotiated for that account.
-// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+// reserved or applied to an order, and no discount redemption is consumed. The response has no
+// quote ID and does not guarantee a price or reserve a promotion code.
 //
-// Prices may change between quoting and ordering. An order is charged at the price in
-// effect when it is placed, so a quote should be refreshed before a final confirmation is
-// shown.
+// New purchases use the project's current billing account and currency. With order_id, the order
+// must belong to this project; its recorded purchase terms, billing account and currency are used.
+// An optional promotion_code previews one code for the purchase or order. Without it, Billing
+// selects an applicable account discount. An invalid or inapplicable explicit code is refused
+// rather than silently replaced. Give total as expected_amount when confirming checkout through
+// Billing; eligibility and availability are checked again. An order already checked out returns
+// its confirmed amounts without reapplying its discount; a different code is refused with
+// BILLING_ORDER_CHECKOUT_CONFLICT.
+//
+// Prices may change before an order is created; confirmed purchase terms are not repriced from
+// today's catalog. Usage estimates describe future usage and are not checkout amounts. They do
+// not accept a promotion code, including when mixed with fixed purchase lines.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-// named, with the discounts the account holds, and with tax.
+// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+// promotion code because its entries create separate orders. To use a new code on a renewal,
+// first create a renewal order and quote its checkout by order_id.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 // terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -5436,8 +5732,8 @@ func (c *ClientWithResponses) ListProjectOrderItemsWithResponse(ctx context.Cont
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-// canceled does not belong to this project.
+// Returns 404 when the project has no billing account for a new purchase quote, or when the order
+// or a subscription to be renewed or canceled does not belong to this project.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5452,15 +5748,27 @@ func (c *ClientWithResponses) CreateProjectQuoteWithBodyWithResponse(ctx context
 
 // CreateProjectQuoteWithResponse Quote for a project
 //
-// Priced in the project billing account's currency, and at any rate negotiated for that account.
-// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+// reserved or applied to an order, and no discount redemption is consumed. The response has no
+// quote ID and does not guarantee a price or reserve a promotion code.
 //
-// Prices may change between quoting and ordering. An order is charged at the price in
-// effect when it is placed, so a quote should be refreshed before a final confirmation is
-// shown.
+// New purchases use the project's current billing account and currency. With order_id, the order
+// must belong to this project; its recorded purchase terms, billing account and currency are used.
+// An optional promotion_code previews one code for the purchase or order. Without it, Billing
+// selects an applicable account discount. An invalid or inapplicable explicit code is refused
+// rather than silently replaced. Give total as expected_amount when confirming checkout through
+// Billing; eligibility and availability are checked again. An order already checked out returns
+// its confirmed amounts without reapplying its discount; a different code is refused with
+// BILLING_ORDER_CHECKOUT_CONFLICT.
+//
+// Prices may change before an order is created; confirmed purchase terms are not repriced from
+// today's catalog. Usage estimates describe future usage and are not checkout amounts. They do
+// not accept a promotion code, including when mixed with fixed purchase lines.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-// named, with the discounts the account holds, and with tax.
+// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+// promotion code because its entries create separate orders. To use a new code on a renewal,
+// first create a renewal order and quote its checkout by order_id.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 // terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -5469,8 +5777,8 @@ func (c *ClientWithResponses) CreateProjectQuoteWithBodyWithResponse(ctx context
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-// canceled does not belong to this project.
+// Returns 404 when the project has no billing account for a new purchase quote, or when the order
+// or a subscription to be renewed or canceled does not belong to this project.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

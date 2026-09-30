@@ -985,7 +985,7 @@ func (s QuoteLinePriceType) Validate() error {
 	}
 }
 
-func (s *QuoteLineResult) Validate() error {
+func (s *QuotedLine) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -1015,7 +1015,7 @@ func (s *QuoteLineResult) Validate() error {
 	return nil
 }
 
-func (s QuoteLineResultUnpricedReason) Validate() error {
+func (s QuotedLineUnpricedReason) Validate() error {
 	switch s {
 	case "none":
 		return nil

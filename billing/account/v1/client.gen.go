@@ -519,6 +519,7 @@ const (
 	OrderStatusFailed             OrderStatus = "failed"
 	OrderStatusPartiallyCompleted OrderStatus = "partially_completed"
 	OrderStatusPending            OrderStatus = "pending"
+	OrderStatusPendingCheckout    OrderStatus = "pending_checkout"
 )
 
 // Valid indicates whether the value is a known member of the OrderStatus enum.
@@ -535,6 +536,8 @@ func (e OrderStatus) Valid() bool {
 	case OrderStatusPartiallyCompleted:
 		return true
 	case OrderStatusPending:
+		return true
+	case OrderStatusPendingCheckout:
 		return true
 	default:
 		return false
@@ -877,6 +880,42 @@ func (e QuoteRenewalResultInterval) Valid() bool {
 	case QuoteRenewalResultIntervalMonth:
 		return true
 	case QuoteRenewalResultIntervalYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QuotedDiscountType.
+const (
+	AccountDiscount QuotedDiscountType = "account_discount"
+	PromotionCode   QuotedDiscountType = "promotion_code"
+)
+
+// Valid indicates whether the value is a known member of the QuotedDiscountType enum.
+func (e QuotedDiscountType) Valid() bool {
+	switch e {
+	case AccountDiscount:
+		return true
+	case PromotionCode:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QuotedLineUnpricedReason.
+const (
+	QuotedLineUnpricedReasonNoPrice QuotedLineUnpricedReason = "no_price"
+	QuotedLineUnpricedReasonNone    QuotedLineUnpricedReason = "none"
+)
+
+// Valid indicates whether the value is a known member of the QuotedLineUnpricedReason enum.
+func (e QuotedLineUnpricedReason) Valid() bool {
+	switch e {
+	case QuotedLineUnpricedReasonNoPrice:
+		return true
+	case QuotedLineUnpricedReasonNone:
 		return true
 	default:
 		return false
@@ -1627,6 +1666,13 @@ type CancellationList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
+// CancellationQuoteRequest Preview one cancellation without combining it with a purchase, renewal or promotion code.
+type CancellationQuoteRequest struct {
+	// Cancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
+	// request; to compare, quote `immediate` and `period_end` separately.
+	Cancellation QuoteCancellation `json:"cancellation"`
+}
+
 // CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now. Give
 // `proration_date` and `refundable_amount` when creating the cancellation.
 //
@@ -1830,6 +1876,39 @@ type CancellationRequestMode string
 // CancellationRequestStatus defines model for CancellationRequest.Status.
 type CancellationRequestStatus string
 
+// CheckoutOrderRequest defines model for CheckoutOrderRequest.
+type CheckoutOrderRequest struct {
+	// ExpectedAmount Quote.total in the order's currency, after discounts and tax but before applying credit
+	// grants or balance. A different total fails with BILLING_AMOUNT_CHANGED.
+	ExpectedAmount externalRef0.Money `json:"expected_amount"`
+
+	// PromotionCode The code to apply, evaluated again at confirmation. Omit to select an applicable account
+	// discount. On an already confirmed checkout, omission retains the recorded discount.
+	PromotionCode *string `json:"promotion_code,omitempty"`
+}
+
+// CollectInvoicePaymentRequest Applies eligible credit grants and the available balance as requested, then collects only the remainder
+// through the selected gateway. Grants restricted to other purchases are not counted as available funds.
+// An unresolved channel payment is reused; retries do not apply the grant or balance portions twice.
+// Without a gateway selection, insufficient account funds fail without starting an online payment.
+type CollectInvoicePaymentRequest struct {
+	// MethodType Required with payment_gateway; for example card, wechat_pay or alipay.
+	MethodType *string `json:"method_type,omitempty"`
+
+	// PaymentGateway Required to collect an online remainder. An existing attempt keeps its original gateway.
+	PaymentGateway *string `json:"payment_gateway,omitempty"`
+
+	// PaymentMethodId Optional saved card owned by this billing account and belonging to the selected gateway. Omit to complete payment interactively.
+	PaymentMethodId *openapi_types.UUID `json:"payment_method_id,omitempty"`
+	ReturnUrl       *string             `json:"return_url,omitempty"`
+
+	// UseBalance Whether to apply the available balance. Credit grants are controlled separately by use_credits.
+	UseBalance *bool `json:"use_balance,omitempty"`
+
+	// UseCredits Apply eligible, unexpired credit grants before using the balance. This never withdraws grants or converts them into balance.
+	UseCredits *bool `json:"use_credits,omitempty"`
+}
+
 // CreditGrant defines model for CreditGrant.
 type CreditGrant struct {
 	// Amount A decimal string, in the currency stated alongside it.
@@ -2031,7 +2110,11 @@ type Invoice struct {
 	PeriodEnd   *time.Time `json:"period_end,omitempty"`
 	PeriodStart *time.Time `json:"period_start,omitempty"`
 
-	// Status A usage invoice stays `draft` through its month: each charge is added to it as it is priced
+	// Status An order invoice stays `draft` until checkout confirms its discount and final amounts. It
+	// cannot be collected while draft. Confirmation makes it `open`, or `paid` when its total is zero
+	// without creating a payment transaction. A quote never changes this status.
+	//
+	// A usage invoice stays `draft` through its month: each charge is added to it as it is priced
 	// and paid from credits and balance as it goes. It is issued at the end of the month, becoming
 	// `paid` when everything was covered and `open` when something is still owed.
 	//
@@ -2149,7 +2232,11 @@ type InvoiceList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// InvoiceStatus A usage invoice stays `draft` through its month: each charge is added to it as it is priced
+// InvoiceStatus An order invoice stays `draft` until checkout confirms its discount and final amounts. It
+// cannot be collected while draft. Confirmation makes it `open`, or `paid` when its total is zero
+// without creating a payment transaction. A quote never changes this status.
+//
+// A usage invoice stays `draft` through its month: each charge is added to it as it is priced
 // and paid from credits and balance as it goes. It is issued at the end of the month, becoming
 // `paid` when everything was covered and `open` when something is still owed.
 //
@@ -2161,7 +2248,9 @@ type InvoiceList struct {
 // `amount_refunded` show.
 type InvoiceStatus string
 
-// InvoiceSummary Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
+// InvoiceSummary Purchase-related invoice amounts, without account contact details or payment methods. A draft
+// order invoice shows base amounts awaiting checkout, not a confirmed discount or collectible total.
+// Absent when no invoice has been created; absence does not establish acceptance or delivery.
 type InvoiceSummary struct {
 	AmountPaid     string `json:"amount_paid"`
 	AmountRefunded string `json:"amount_refunded"`
@@ -2173,7 +2262,11 @@ type InvoiceSummary struct {
 	Id             openapi_types.UUID `json:"id"`
 	Number         *string            `json:"number,omitempty"`
 
-	// Status A usage invoice stays `draft` through its month: each charge is added to it as it is priced
+	// Status An order invoice stays `draft` until checkout confirms its discount and final amounts. It
+	// cannot be collected while draft. Confirmation makes it `open`, or `paid` when its total is zero
+	// without creating a payment transaction. A quote never changes this status.
+	//
+	// A usage invoice stays `draft` through its month: each charge is added to it as it is priced
 	// and paid from credits and balance as it goes. It is issued at the end of the month, becoming
 	// `paid` when everything was covered and `open` when something is still owed.
 	//
@@ -2224,7 +2317,10 @@ type ObjectIdentity struct {
 	Name      string             `json:"name"`
 }
 
-// Order defines model for Order.
+// Order A recorded purchase. pending_checkout requires explicit Billing confirmation before collection
+// or acceptance, even without an invoice. Coupon fields describe a discount confirmed at checkout and are absent
+// before confirmation; a quote never populates them. A draft invoice contains base purchase
+// amounts awaiting checkout. Payment and acceptance remain separate from resource delivery.
 type Order struct {
 	Account *AccountIdentity `json:"account,omitempty"`
 
@@ -2250,11 +2346,13 @@ type Order struct {
 	CreatedAt time.Time           `json:"created_at"`
 	Currency  string              `json:"currency"`
 
-	// ExpiresAt Acceptance deadline. Only pending orders expire automatically.
+	// ExpiresAt Acceptance deadline. pending_checkout and pending orders can expire automatically.
 	ExpiresAt *time.Time         `json:"expires_at,omitempty"`
 	Id        openapi_types.UUID `json:"id"`
 
-	// Invoice Purchase-related invoice amounts, without account contact details or payment methods. Absent on an order with no immediate invoice.
+	// Invoice Purchase-related invoice amounts, without account contact details or payment methods. A draft
+	// order invoice shows base amounts awaiting checkout, not a confirmed discount or collectible total.
+	// Absent when no invoice has been created; absence does not establish acceptance or delivery.
 	Invoice *InvoiceSummary `json:"invoice,omitempty"`
 
 	// Items What was bought. Present on a single order and on every order in a list, so a list
@@ -2273,11 +2371,15 @@ type Order struct {
 	// as a membership.
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
 
-	// PromotionCode Code text frozen when this order applied the coupon.
+	// PromotionCode Code text frozen when checkout applied the coupon. Absent for an account discount.
 	PromotionCode   *string             `json:"promotion_code,omitempty"`
 	PromotionCodeId *openapi_types.UUID `json:"promotion_code_id,omitempty"`
 
-	// Status Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is
+	// Status pending_checkout has recorded purchase terms but no confirmed checkout. An absent invoice
+	// or zero total does not permit acceptance. Confirmation moves it to pending. Both pending_checkout
+	// and pending can expire or be canceled; neither establishes service delivery.
+	//
+	// Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid. `active` is
 	// accepted with items still being set up. `completed` means every item was set up.
 	// `partially_completed` means some items were set up and the others failed and were
 	// refunded to their original payment sources. `failed` means every item failed and the
@@ -2302,7 +2404,9 @@ type OrderChangeEffective string
 // the time and starts billing from the moment agreed.
 type OrderType string
 
-// OrderItem Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are absent when there is no immediate invoice. Later catalog changes do not reprice this line.
+// OrderItem Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are absent
+// when there is no immediate invoice. Later catalog changes do not reprice this line. A new service
+// purchase creates its pending subscription when this item is recorded, not when payment succeeds.
 type OrderItem struct {
 	// Amount `gross_amount` less `discount_amount`.
 	Amount *externalRef0.Money `json:"amount,omitempty"`
@@ -2360,7 +2464,11 @@ type OrderItem struct {
 	// `failed` was not set up and its amount was refunded to the original payment sources.
 	// `canceled` was withdrawn with its unpaid order. A completed item is ended by canceling
 	// its subscription.
-	Status         OrderItemStatus     `json:"status"`
+	Status OrderItemStatus `json:"status"`
+
+	// SubscriptionId Stable Billing subscription ID. A new prepaid or postpaid service purchase returns the
+	// pending subscription here; renewals reference the existing subscription and changes the
+	// replacement. Absent for delivery without a subscription. This is not a business resource ID.
 	SubscriptionId *openapi_types.UUID `json:"subscription_id,omitempty"`
 
 	// TaxAmount Total tax after discounts, including any tax already included in the price.
@@ -2406,7 +2514,21 @@ type OrderList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// OrderStatus Follows the items. `pending` is not yet accepted and may be paid or unpaid. `active` is
+// OrderQuoteRequest Preview checkout of one existing order. Its recorded purchase terms supply every line.
+// Without a code, an applicable account discount is selected. A preview neither changes the
+// order nor reserves or consumes a redemption. A confirmed order returns its recorded amounts.
+type OrderQuoteRequest struct {
+	OrderId openapi_types.UUID `json:"order_id"`
+
+	// PromotionCode Code to evaluate for this order. Must be supplied again when confirming checkout.
+	PromotionCode *string `json:"promotion_code,omitempty"`
+}
+
+// OrderStatus pending_checkout has recorded purchase terms but no confirmed checkout. An absent invoice
+// or zero total does not permit acceptance. Confirmation moves it to pending. Both pending_checkout
+// and pending can expire or be canceled; neither establishes service delivery.
+//
+// Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid. `active` is
 // accepted with items still being set up. `completed` means every item was set up.
 // `partially_completed` means some items were set up and the others failed and were
 // refunded to their original payment sources. `failed` means every item failed and the
@@ -2429,28 +2551,6 @@ type PaidWith struct {
 
 	// PaymentMethodId The saved payment method that was charged, when one was.
 	PaymentMethodId *openapi_types.UUID `json:"payment_method_id,omitempty"`
-}
-
-// PayRequest Applies eligible credit grants and the available balance as requested, then collects only the remainder
-// through the selected gateway. Grants restricted to other purchases are not counted as available funds.
-// An unresolved channel payment is reused; retries do not apply the grant or balance portions twice.
-// Without a gateway selection, insufficient account funds fail without starting an online payment.
-type PayRequest struct {
-	// MethodType Required with payment_gateway; for example card, wechat_pay or alipay.
-	MethodType *string `json:"method_type,omitempty"`
-
-	// PaymentGateway Required to collect an online remainder. An existing attempt keeps its original gateway.
-	PaymentGateway *string `json:"payment_gateway,omitempty"`
-
-	// PaymentMethodId Optional saved card owned by this billing account and belonging to the selected gateway. Omit to complete payment interactively.
-	PaymentMethodId *openapi_types.UUID `json:"payment_method_id,omitempty"`
-	ReturnUrl       *string             `json:"return_url,omitempty"`
-
-	// UseBalance Whether to apply the available balance. Credit grants are controlled separately by use_credits.
-	UseBalance *bool `json:"use_balance,omitempty"`
-
-	// UseCredits Apply eligible, unexpired credit grants before using the balance. This never withdraws grants or converts them into balance.
-	UseCredits *bool `json:"use_credits,omitempty"`
 }
 
 // PayTogetherRequest Name at least one invoice or order. They must all belong to the same account and share
@@ -2788,8 +2888,8 @@ type PromotionCodePreview struct {
 	AppliesTo *Applicability `json:"applies_to,omitempty"`
 	Currency  *string        `json:"currency,omitempty"`
 
-	// EstimatedDiscount What it would take off this purchase. An estimate: the amount is settled at the
-	// moment the order is placed.
+	// EstimatedDiscount What it would take off this purchase. An estimate: the discount is confirmed during
+	// order checkout. Use CreateQuote for the purchase's complete total, including tax.
 	EstimatedDiscount *externalRef0.Money `json:"estimated_discount,omitempty"`
 
 	// MaxDiscount A decimal string, in the currency stated alongside it.
@@ -2856,17 +2956,40 @@ type PromotionCodeRejection string
 // account's first purchase.
 type PurchaseOperation string
 
-// Quote defines model for Quote.
+// Quote A computed price preview, without a saved quote or a price guarantee. No funds or discount
+// redemptions are reserved. Amounts use currency and exclude payment from credit grants or balance.
 type Quote struct {
 	// Cancellation What the cancellation requested would return. Present only when one was requested.
 	Cancellation *CancellationRefundPreview `json:"cancellation,omitempty"`
 	Currency     string                     `json:"currency"`
-	Renewals     []QuoteRenewalResult       `json:"renewals,omitempty"`
 
-	// Total What the renewals would charge in total. Amounts to be returned are not netted off it: a
-	// quote of a cancellation alone has a total of zero, and what it would return is in
-	// `cancellation`.
-	Total externalRef0.Money `json:"total"`
+	// Discount The one new discount evaluated for a purchase or order, without applying it. Null when
+	// none is selected, pricing is incomplete, or the quote targets a renewal list or cancellation.
+	// A confirmed order instead reports its recorded discount.
+	Discount *QuotedDiscount `json:"discount"`
+
+	// DiscountAmount Total line discounts. Null when any line cannot be priced; zero for a cancellation-only quote.
+	DiscountAmount *externalRef0.Money  `json:"discount_amount"`
+	Lines          []QuotedLine         `json:"lines,omitempty"`
+	Renewals       []QuoteRenewalResult `json:"renewals,omitempty"`
+
+	// Subtotal Sum before discounts, less tax already included in the discounted line amounts, as on an
+	// invoice. Null when any line cannot be priced. Zero for a cancellation-only quote.
+	Subtotal *externalRef0.Money `json:"subtotal"`
+
+	// TaxAmount Total tax on the discounted amounts. Null when any line cannot be priced; zero for a cancellation-only quote.
+	TaxAmount *externalRef0.Money `json:"tax_amount"`
+
+	// Total subtotal minus discount_amount plus tax_amount, before applying credit grants or balance.
+	// For a purchase or order with no usage estimates, pass this as expected_amount at checkout.
+	// A renewal list sums separate orders; use each renewal's total when confirming that order.
+	// Refunds are not netted off: a cancellation-only quote has zero totals and its refund is in
+	// cancellation. Usage estimates are projections, not checkout amounts.
+	//
+	// Null when any line could not be priced. What would be owed is not knowable then, and a
+	// total that silently left the unpriced lines out would read as a smaller bill rather than
+	// an incomplete one — the per-line `priced` flag is easy to skip, a missing total is not.
+	Total *externalRef0.Money `json:"total"`
 }
 
 // QuoteCancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
@@ -2881,35 +3004,15 @@ type QuoteCancellation struct {
 
 // QuoteLine Identify a price directly, or select a price for a plan. For each resource give its ID or lookup key, never both. Lookup keys require product_id.
 //
-// A line that gives a meter, `dimensions` or `duration_seconds` estimates usage and is
-// priced only at a postpaid price. Such a line is refused with HTTP 400
-// `BILLING_PURCHASE_INVALID` when `price_type` is `prepaid` or `one_time`, or when the price
-// it names is not postpaid; `meta.field` is `price_type`, `price_id` or `price_lookup_key`
-// accordingly. When the plan has no postpaid price, the line is returned unpriced with
-// `no_price`.
+// Charges for future usage are not estimated here; the service that sells the product quotes
+// them with its purchase.
 type QuoteLine struct {
-	// Dimensions The attributes the price depends on — region, instance type, token class.
-	//
-	// Required when the price draws its rates from a price list, which is how anything
-	// sold by region or by machine type is priced. A price that carries a single unit
-	// amount, or a ladder, has no attributes to give and takes none.
-	//
-	// Every attribute the meter declares must be present. A combination with no rate
-	// covering it is refused rather than priced at zero.
-	Dimensions map[string]string `json:"dimensions,omitempty"`
-
-	// DurationSeconds For metered items, how long to price for. This allows an estimate such as "about
-	// this much per month" to be shown before anything exists. The priced quantity is
-	// `quantity` multiplied by this duration.
-	DurationSeconds *int64              `json:"duration_seconds,omitempty"`
-	Interval        *QuoteLineInterval  `json:"interval,omitempty"`
-	IntervalCount   *int                `json:"interval_count,omitempty"`
-	MeterId         *openapi_types.UUID `json:"meter_id,omitempty"`
-	MeterLookupKey  *string             `json:"meter_lookup_key,omitempty"`
-	PlanId          *openapi_types.UUID `json:"plan_id,omitempty"`
-	PlanLookupKey   *string             `json:"plan_lookup_key,omitempty"`
-	PriceId         *openapi_types.UUID `json:"price_id,omitempty"`
-	PriceLookupKey  *string             `json:"price_lookup_key,omitempty"`
+	Interval       *QuoteLineInterval  `json:"interval,omitempty"`
+	IntervalCount  *int                `json:"interval_count,omitempty"`
+	PlanId         *openapi_types.UUID `json:"plan_id,omitempty"`
+	PlanLookupKey  *string             `json:"plan_lookup_key,omitempty"`
+	PriceId        *openapi_types.UUID `json:"price_id,omitempty"`
+	PriceLookupKey *string             `json:"price_lookup_key,omitempty"`
 
 	// PriceType Narrows the selection when a plan offers more than one billing type.
 	PriceType *QuoteLinePriceType `json:"price_type,omitempty"`
@@ -2977,13 +3080,78 @@ type QuoteRenewalResult struct {
 // QuoteRenewalResultInterval defines model for QuoteRenewalResult.Interval.
 type QuoteRenewalResultInterval string
 
-// QuoteRequest Specify renewals for existing subscriptions, or one cancellation on its own.
+// QuoteRequest Quote exactly one target. An existing order, a renewal list and a cancellation are mutually exclusive.
 type QuoteRequest struct {
-	// Cancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
-	// request; to compare, quote `immediate` and `period_end` separately.
-	Cancellation *QuoteCancellation `json:"cancellation,omitempty"`
-	Renewals     []QuoteRenewal     `json:"renewals,omitempty"`
+	union json.RawMessage
 }
+
+// QuotedDiscount The discount selected for this calculation. Its presence in a quote does not apply it or
+// reserve a redemption. Discount amounts are reported on the quote and its lines.
+type QuotedDiscount struct {
+	Name string `json:"name"`
+
+	// PromotionCode Code text for a promotion_code discount; null for an account_discount.
+	PromotionCode *string            `json:"promotion_code"`
+	Type          QuotedDiscountType `json:"type"`
+}
+
+// QuotedDiscountType defines model for QuotedDiscount.Type.
+type QuotedDiscountType string
+
+// QuotedLine A purchase quote line or one recorded order item. Monetary fields use the account currency.
+// Fixed purchase amounts are rounded as checkout rounds them. Usage estimates are not amounts
+// collectible at checkout. When priced is false, monetary fields and price_id are absent.
+type QuotedLine struct {
+	// Amount Before discounts, including any setup charges. Contains tax only where the price includes it.
+	// Zero for a priced order item with no immediate charge.
+	Amount   *externalRef0.Money `json:"amount,omitempty"`
+	Currency string              `json:"currency"`
+
+	// DiscountAmount Total reduction on this line, including any committed recurring discount.
+	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
+
+	// Index Zero-based request line index, or the recorded order item's position for an order quote.
+	Index int `json:"index"`
+
+	// OrderItemId Present for an existing order quote; identifies the recorded item being priced.
+	OrderItemId *openapi_types.UUID `json:"order_item_id,omitempty"`
+	PlanName    *string             `json:"plan_name,omitempty"`
+
+	// PriceId The price selected. Returned whenever `priced` is true, including when the
+	// request identified the item indirectly, so that the choice can be confirmed.
+	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
+
+	// Priced Whether a price was found for this line. Read this before anything else.
+	//
+	// A single item with no price no longer fails the whole request. A catalogue
+	// almost always has something not yet priced, and refusing the request would
+	// leave no way to render a list in which a few entries are simply not on sale.
+	//
+	// When false, `price_id`, `unit_amount` and `amount` are absent and
+	// `unpriced_reason` states what is missing.
+	Priced bool `json:"priced"`
+
+	// Quantity The quantity priced.
+	Quantity *string `json:"quantity,omitempty"`
+
+	// TaxAmount Tax on the discounted amount, including any tax already contained in that amount.
+	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
+
+	// TaxIncludedAmount The part of tax_amount already contained in amount minus discount_amount.
+	TaxIncludedAmount *externalRef0.Money `json:"tax_included_amount,omitempty"`
+
+	// Total amount minus discount_amount plus tax_amount minus tax_included_amount.
+	Total *externalRef0.Money `json:"total,omitempty"`
+
+	// UnitAmount Unit price before discounts, with tax included only where the price includes it.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
+
+	// UnpricedReason Why no price was found; `none` while `priced` is true.
+	UnpricedReason *QuotedLineUnpricedReason `json:"unpriced_reason,omitempty"`
+}
+
+// QuotedLineUnpricedReason Why no price was found; `none` while `priced` is true.
+type QuotedLineUnpricedReason string
 
 // Refund defines model for Refund.
 type Refund struct {
@@ -3186,7 +3354,33 @@ type RenewalPriceList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// Subscription An independently billed purchase. Fixed renewals use the agreed recurring_amount and interval; already paid periods retain their original value. Technical state belongs to the owning service.
+// RenewalQuoteRequest Preview renewing subscriptions, each at most once. Each entry represents a separate renewal
+// order. To preview a new promotion code, create a renewal order and quote it by order_id.
+type RenewalQuoteRequest struct {
+	Renewals []QuoteRenewal `json:"renewals"`
+}
+
+// Subscription An independently billed purchase relationship, separate from the owning service's resource.
+// Placing a new prepaid or postpaid service order creates a pending subscription for each line
+// in the same purchase transaction. Its ID is returned on the order item and remains stable
+// through checkout and delivery. One order may create several subscriptions, such as an instance,
+// its system disk and its address; it has no single subscription ID.
+//
+// Pending does not grant service or accrue usage. Payment confirmation and order acceptance do
+// not activate a service-owned subscription. It becomes active when the owning service confirms
+// delivery, with started_at set to the confirmed effective time. Prepaid service periods start
+// then; postpaid usage starts only when the service reports actual delivery and metering.
+//
+// One-time delivery may omit a subscription. Renewals reference and extend existing subscriptions
+// rather than creating another; changes may create pending replacements. Canceling or failing an
+// unfulfilled purchase closes its pending subscriptions without starting a service period.
+// Fixed renewals use the agreed recurring_amount and interval; already paid periods retain their
+// original value. Technical state belongs to the owning service.
+//
+// A purchased shared capacity limit, such as a regional snapshot count quota, can have its own
+// subscription. Activating that capacity confirms delivery of the quota, not individual snapshots.
+// Creating or deleting snapshots within it does not create, activate or terminate more subscriptions;
+// the owning service enforces current holdings against the purchased count.
 type Subscription struct {
 	Account   AccountIdentity `json:"account"`
 	AutoRenew bool            `json:"auto_renew"`
@@ -3211,7 +3405,8 @@ type Subscription struct {
 	IntervalCount               *int                 `json:"interval_count,omitempty"`
 	OrderItemId                 *openapi_types.UUID  `json:"order_item_id,omitempty"`
 
-	// PaidUntil Present for prepaid items. Absent for metered ones, which have no end date.
+	// PaidUntil End of the prepaid service already activated. Null for a new pending subscription, even
+	// when its purchase has been paid, and for postpaid subscriptions with no prepaid end date.
 	PaidUntil *time.Time `json:"paid_until,omitempty"`
 
 	// PaidWith How the purchase, or the latest renewal paid with a saved card, was paid. Automatic renewal
@@ -3236,15 +3431,22 @@ type Subscription struct {
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
 	Quantity  string              `json:"quantity"`
 
-	// RecurringAmount Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Absent for other billing types.
+	// RecurringAmount Whole-subscription prepaid renewal amount, after continuing discounts and before tax.
+	// Pending subscriptions show base terms until checkout confirms any new continuing discount.
+	// Absent for other billing types.
 	RecurringAmount *string `json:"recurring_amount,omitempty"`
 
 	// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
 	RefundPolicy           *RefundPolicy       `json:"refund_policy,omitempty"`
 	ReplacesSubscriptionId *openapi_types.UUID `json:"replaces_subscription_id,omitempty"`
-	StartedAt              *time.Time          `json:"started_at,omitempty"`
-	Status                 SubscriptionStatus  `json:"status"`
-	SuspendReason          *string             `json:"suspend_reason,omitempty"`
+
+	// StartedAt Confirmed start of service. Null for a new pending subscription, including after payment.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// Status pending means the purchase relationship exists but service has not started. For a
+	// service-owned purchase, only confirmed delivery moves it to active; paying alone does not.
+	Status        SubscriptionStatus `json:"status"`
+	SuspendReason *string            `json:"suspend_reason,omitempty"`
 
 	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
 	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
@@ -3256,7 +3458,8 @@ type SubscriptionBillingType string
 // SubscriptionInterval defines model for Subscription.Interval.
 type SubscriptionInterval string
 
-// SubscriptionStatus defines model for Subscription.Status.
+// SubscriptionStatus pending means the purchase relationship exists but service has not started. For a
+// service-owned purchase, only confirmed delivery moves it to active; paying alone does not.
 type SubscriptionStatus string
 
 // SubscriptionList defines model for SubscriptionList.
@@ -3879,8 +4082,11 @@ type UpdateBillingAccountJSONRequestBody = BillingAccountUpdate
 // CreateCancellationJSONRequestBody defines body for CreateCancellation for application/json ContentType.
 type CreateCancellationJSONRequestBody = CancellationCreate
 
-// PayInvoiceJSONRequestBody defines body for PayInvoice for application/json ContentType.
-type PayInvoiceJSONRequestBody = PayRequest
+// CollectInvoicePaymentJSONRequestBody defines body for CollectInvoicePayment for application/json ContentType.
+type CollectInvoicePaymentJSONRequestBody = CollectInvoicePaymentRequest
+
+// CheckoutOrderJSONRequestBody defines body for CheckoutOrder for application/json ContentType.
+type CheckoutOrderJSONRequestBody = CheckoutOrderRequest
 
 // CreatePaymentMethodSetupJSONRequestBody defines body for CreatePaymentMethodSetup for application/json ContentType.
 type CreatePaymentMethodSetupJSONRequestBody = PaymentMethodSetup
@@ -3911,6 +4117,94 @@ type CreateRenewalOrderJSONRequestBody = RenewalOrderRequest
 
 // CreateTopUpJSONRequestBody defines body for CreateTopUp for application/json ContentType.
 type CreateTopUpJSONRequestBody = TopUpCreate
+
+// AsOrderQuoteRequest returns the union data inside the QuoteRequest as a OrderQuoteRequest
+func (t QuoteRequest) AsOrderQuoteRequest() (OrderQuoteRequest, error) {
+	var body OrderQuoteRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromOrderQuoteRequest overwrites any union data inside the QuoteRequest as the provided OrderQuoteRequest
+func (t *QuoteRequest) FromOrderQuoteRequest(v OrderQuoteRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeOrderQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided OrderQuoteRequest
+func (t *QuoteRequest) MergeOrderQuoteRequest(v OrderQuoteRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsRenewalQuoteRequest returns the union data inside the QuoteRequest as a RenewalQuoteRequest
+func (t QuoteRequest) AsRenewalQuoteRequest() (RenewalQuoteRequest, error) {
+	var body RenewalQuoteRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromRenewalQuoteRequest overwrites any union data inside the QuoteRequest as the provided RenewalQuoteRequest
+func (t *QuoteRequest) FromRenewalQuoteRequest(v RenewalQuoteRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeRenewalQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided RenewalQuoteRequest
+func (t *QuoteRequest) MergeRenewalQuoteRequest(v RenewalQuoteRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCancellationQuoteRequest returns the union data inside the QuoteRequest as a CancellationQuoteRequest
+func (t QuoteRequest) AsCancellationQuoteRequest() (CancellationQuoteRequest, error) {
+	var body CancellationQuoteRequest
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCancellationQuoteRequest overwrites any union data inside the QuoteRequest as the provided CancellationQuoteRequest
+func (t *QuoteRequest) FromCancellationQuoteRequest(v CancellationQuoteRequest) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCancellationQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided CancellationQuoteRequest
+func (t *QuoteRequest) MergeCancellationQuoteRequest(v CancellationQuoteRequest) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t QuoteRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *QuoteRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -4244,46 +4538,54 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
 	GetInvoice(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListInvoiceItems List invoice items
+	// CollectInvoicePaymentWithBody Collect payment for an invoice
 	//
-	// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
-	ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PayInvoiceWithBody Pay invoice
+	// Applies eligible credit grants and available balance as requested, then collects the remainder
+	// through the selected payment gateway and method. With no gateway selection, insufficient
+	// account funds fail without starting an online payment. Card and non-card methods use this same
+	// operation. Promotion codes are confirmed by checkout, before collecting payment.
 	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
+	// Returns a payment action when customer interaction is required. requires_action and processing
+	// do not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment
+	// attempt is reused, and retries do not apply credit grants or balance twice.
 	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the gateway confirms it.
-	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
-	// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+	// Calling this on an invoice that is already paid returns the existing payment result without
+	// another charge. A draft order invoice must first be confirmed through checkout. It and a void
+	// invoice are refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
 	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
 	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-	PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /account/v1/invoices/{invoiceId}/collect-payment (the `CollectInvoicePayment` operationId).
+	CollectInvoicePaymentWithBody(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PayInvoice Pay invoice
+	// CollectInvoicePayment Collect payment for an invoice
 	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
+	// Applies eligible credit grants and available balance as requested, then collects the remainder
+	// through the selected payment gateway and method. With no gateway selection, insufficient
+	// account funds fail without starting an online payment. Card and non-card methods use this same
+	// operation. Promotion codes are confirmed by checkout, before collecting payment.
 	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the gateway confirms it.
+	// Returns a payment action when customer interaction is required. requires_action and processing
+	// do not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment
+	// attempt is reused, and retries do not apply credit grants or balance twice.
 	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
-	// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+	// Calling this on an invoice that is already paid returns the existing payment result without
+	// another charge. A draft order invoice must first be confirmed through checkout. It and a void
+	// invoice are refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
 	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
 	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-	PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /account/v1/invoices/{invoiceId}/collect-payment (the `CollectInvoicePayment` operationId).
+	CollectInvoicePayment(ctx context.Context, invoiceId InvoiceId, body CollectInvoicePaymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListInvoiceItems List invoice items
+	//
+	// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
+	ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PreviewInvoicePayment Preview invoice payment
 	//
@@ -4300,7 +4602,7 @@ type ClientInterface interface {
 
 	// ListOrders List orders
 	//
-	// Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means accepted, not delivered. Only pending orders expire at expires_at.
+	// Lists acceptance status and associated invoice amounts. pending_checkout awaits confirmation; pending has confirmed checkout and may be unpaid or paid. active means accepted, not delivered. pending_checkout and pending orders can expire at expires_at.
 	//
 	// Corresponds with GET /account/v1/orders (the `ListOrders` operationId).
 	ListOrders(ctx context.Context, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4327,6 +4629,78 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelOrder` operationId).
 	CancelOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CheckoutOrderWithBody Confirm order checkout
+	//
+	// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+	// preview, or omit it to select an applicable account discount. At most one new coupon is applied
+	// to an order; existing subscription discount commitments are not stacked with a new coupon on
+	// the same line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+	//
+	// Rechecks eligibility and redemption availability. A different total fails with
+	// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price.
+	// A failed confirmation leaves the invoice draft and reserves no discount redemption.
+	//
+	// A successful confirmation records the discount, including any recurring discount terms,
+	// reserves its redemption, moves pending_checkout to pending and finalizes the invoice when one
+	// is required. The reservation counts toward the code's limits and is consumed when the invoice
+	// is paid, or at confirmation when nothing is due. Use collect-invoice-payment to collect
+	// its outstanding amount from account funds or a payment gateway. No payment attempt or checkout
+	// session is created by this operation. A purchase with nothing to collect can proceed to Billing
+	// admission without a payment transaction. An absent invoice or zero immediate amount still
+	// requires checkout confirmation; checkout alone does not confirm resource delivery.
+	//
+	// Retrying with the same code and expected amount returns the existing order without another
+	// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing
+	// that code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed
+	// terms. Cancellation, expiry or complete fulfillment failure releases the reservation or returns
+	// the consumed redemption; a refund alone does not.
+	//
+	// The order must belong to one of your billing accounts. A canceled, failed or expired order
+	// cannot be checked out. A period-end change cannot be checked out before its renewal invoice is
+	// available. Orders retain their billing account and currency after a project is linked elsewhere;
+	// discounts from another account cannot be used for them.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/orders/{orderId}/checkout (the `CheckoutOrder` operationId).
+	CheckoutOrderWithBody(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CheckoutOrder Confirm order checkout
+	//
+	// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+	// preview, or omit it to select an applicable account discount. At most one new coupon is applied
+	// to an order; existing subscription discount commitments are not stacked with a new coupon on
+	// the same line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+	//
+	// Rechecks eligibility and redemption availability. A different total fails with
+	// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price.
+	// A failed confirmation leaves the invoice draft and reserves no discount redemption.
+	//
+	// A successful confirmation records the discount, including any recurring discount terms,
+	// reserves its redemption, moves pending_checkout to pending and finalizes the invoice when one
+	// is required. The reservation counts toward the code's limits and is consumed when the invoice
+	// is paid, or at confirmation when nothing is due. Use collect-invoice-payment to collect
+	// its outstanding amount from account funds or a payment gateway. No payment attempt or checkout
+	// session is created by this operation. A purchase with nothing to collect can proceed to Billing
+	// admission without a payment transaction. An absent invoice or zero immediate amount still
+	// requires checkout confirmation; checkout alone does not confirm resource delivery.
+	//
+	// Retrying with the same code and expected amount returns the existing order without another
+	// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing
+	// that code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed
+	// terms. Cancellation, expiry or complete fulfillment failure releases the reservation or returns
+	// the consumed redemption; a refund alone does not.
+	//
+	// The order must belong to one of your billing accounts. A canceled, failed or expired order
+	// cannot be checked out. A period-end change cannot be checked out before its renewal invoice is
+	// available. Orders retain their billing account and currency after a project is linked elsewhere;
+	// discounts from another account cannot be used for them.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/orders/{orderId}/checkout (the `CheckoutOrder` operationId).
+	CheckoutOrder(ctx context.Context, orderId OrderId, body CheckoutOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOrderItems List order items
 	//
@@ -4388,7 +4762,7 @@ type ClientInterface interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover
 	// them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 	// Invoices that are already paid are not charged again. An invoice with an online payment
-	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
 	// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
 	// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
 	// passed with `BILLING_ORDER_EXPIRED`.
@@ -4407,7 +4781,7 @@ type ClientInterface interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover
 	// them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 	// Invoices that are already paid are not charged again. An invoice with an online payment
-	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
 	// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
 	// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
 	// passed with `BILLING_ORDER_EXPIRED`.
@@ -4532,24 +4906,34 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/promotion-codes/preview (the `PreviewPromotionCode` operationId).
 	PreviewPromotionCode(ctx context.Context, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateQuoteWithBody Quote renewals or a cancellation
+	// CreateQuoteWithBody Quote order checkout, renewals or a cancellation
 	//
-	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
-	// as often as required. Prices may change between quoting and renewing, so a quote should be
-	// refreshed before a final confirmation is shown.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+	// reserved or applied to an order, and no discount redemption is consumed. The response has no
+	// quote ID and does not guarantee a price or reserve a promotion code.
+	//
+	// With order_id, uses that order's recorded purchase terms and billing account. An optional
+	// promotion_code previews one code; without it, Billing selects an applicable account discount.
+	// An invalid or inapplicable explicit code is refused rather than silently replaced. Give total
+	// as expected_amount when confirming checkout; eligibility and availability are checked again.
+	// An order already checked out returns its confirmed amounts, without reapplying its discount;
+	// a different code is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-	// named, with the discounts the account holds, and with tax.
+	// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+	// promotion code because its entries create separate orders. To use a new code on a renewal,
+	// first create a renewal order and quote its checkout by order_id. Prices and discount eligibility
+	// may change between preview and confirmation.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with another target
 	// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
 	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+	// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+	// quote must be paid for by the same one of your billing accounts; otherwise the
 	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
 	// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 	//
@@ -4558,24 +4942,34 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
 	CreateQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateQuote Quote renewals or a cancellation
+	// CreateQuote Quote order checkout, renewals or a cancellation
 	//
-	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
-	// as often as required. Prices may change between quoting and renewing, so a quote should be
-	// refreshed before a final confirmation is shown.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+	// reserved or applied to an order, and no discount redemption is consumed. The response has no
+	// quote ID and does not guarantee a price or reserve a promotion code.
+	//
+	// With order_id, uses that order's recorded purchase terms and billing account. An optional
+	// promotion_code previews one code; without it, Billing selects an applicable account discount.
+	// An invalid or inapplicable explicit code is refused rather than silently replaced. Give total
+	// as expected_amount when confirming checkout; eligibility and availability are checked again.
+	// An order already checked out returns its confirmed amounts, without reapplying its discount;
+	// a different code is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-	// named, with the discounts the account holds, and with tax.
+	// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+	// promotion code because its entries create separate orders. To use a new code on a renewal,
+	// first create a renewal order and quote its checkout by order_id. Prices and discount eligibility
+	// may change between preview and confirmation.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with another target
 	// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
 	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+	// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+	// quote must be paid for by the same one of your billing accounts; otherwise the
 	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
 	// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 	//
@@ -4669,11 +5063,13 @@ type ClientInterface interface {
 
 	// CreateRenewalOrderWithBody Create renewal order
 	//
-	// Places a renewal order and issues its invoice without charging anything; pay the invoice to
-	// renew. The periods and price are chosen as for renewing. The order can be paid until the
-	// current paid period ends, and never after the end of the first period it renews; unpaid by
+	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+	// Quote and confirm its checkout before collecting payment to renew. Existing subscription
+	// discount commitments are retained. The periods and price are chosen as for renewing. The order
+	// can be paid until the current paid period ends, and never after the end of the first period it renews; unpaid by
 	// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
-	// this order instead of placing another.
+	// this order instead of placing another, confirming checkout with an applicable account discount
+	// first if it has not already been confirmed.
 	//
 	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
 	// second time conflicts.
@@ -4685,11 +5081,13 @@ type ClientInterface interface {
 
 	// CreateRenewalOrder Create renewal order
 	//
-	// Places a renewal order and issues its invoice without charging anything; pay the invoice to
-	// renew. The periods and price are chosen as for renewing. The order can be paid until the
-	// current paid period ends, and never after the end of the first period it renews; unpaid by
+	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+	// Quote and confirm its checkout before collecting payment to renew. Existing subscription
+	// discount commitments are retained. The periods and price are chosen as for renewing. The order
+	// can be paid until the current paid period ends, and never after the end of the first period it renews; unpaid by
 	// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
-	// this order instead of placing another.
+	// this order instead of placing another, confirming checkout with an applicable account discount
+	// first if it has not already been confirmed.
 	//
 	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
 	// second time conflicts.
@@ -5248,39 +5646,28 @@ func (c *Client) GetInvoice(ctx context.Context, invoiceId InvoiceId, reqEditors
 	return c.Client.Do(req)
 }
 
-// ListInvoiceItems List invoice items
+// CollectInvoicePaymentWithBody Collect payment for an invoice
 //
-// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
-func (c *Client) ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListInvoiceItemsRequest(c.Server, invoiceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// PayInvoiceWithBody Pay invoice
+// Applies eligible credit grants and available balance as requested, then collects the remainder
+// through the selected payment gateway and method. With no gateway selection, insufficient
+// account funds fail without starting an online payment. Card and non-card methods use this same
+// operation. Promotion codes are confirmed by checkout, before collecting payment.
 //
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
+// Returns a payment action when customer interaction is required. requires_action and processing
+// do not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment
+// attempt is reused, and retries do not apply credit grants or balance twice.
 //
-// Returns a checkout address when the gateway requires the cardholder to confirm the
-// payment; the invoice is marked paid once the gateway confirms it.
-//
-// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
-// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+// Calling this on an invoice that is already paid returns the existing payment result without
+// another charge. A draft order invoice must first be confirmed through checkout. It and a void
+// invoice are refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
 // canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
 // payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-func (c *Client) PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPayInvoiceRequestWithBody(c.Server, invoiceId, contentType, body)
+// Corresponds with POST /account/v1/invoices/{invoiceId}/collect-payment (the `CollectInvoicePayment` operationId).
+func (c *Client) CollectInvoicePaymentWithBody(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCollectInvoicePaymentRequestWithBody(c.Server, invoiceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5291,24 +5678,43 @@ func (c *Client) PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, co
 	return c.Client.Do(req)
 }
 
-// PayInvoice Pay invoice
+// CollectInvoicePayment Collect payment for an invoice
 //
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
+// Applies eligible credit grants and available balance as requested, then collects the remainder
+// through the selected payment gateway and method. With no gateway selection, insufficient
+// account funds fail without starting an online payment. Card and non-card methods use this same
+// operation. Promotion codes are confirmed by checkout, before collecting payment.
 //
-// Returns a checkout address when the gateway requires the cardholder to confirm the
-// payment; the invoice is marked paid once the gateway confirms it.
+// Returns a payment action when customer interaction is required. requires_action and processing
+// do not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment
+// attempt is reused, and retries do not apply credit grants or balance twice.
 //
-// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
-// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+// Calling this on an invoice that is already paid returns the existing payment result without
+// another charge. A draft order invoice must first be confirmed through checkout. It and a void
+// invoice are refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
 // canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
 // payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-func (c *Client) PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPayInvoiceRequest(c.Server, invoiceId, body)
+// Corresponds with POST /account/v1/invoices/{invoiceId}/collect-payment (the `CollectInvoicePayment` operationId).
+func (c *Client) CollectInvoicePayment(ctx context.Context, invoiceId InvoiceId, body CollectInvoicePaymentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCollectInvoicePaymentRequest(c.Server, invoiceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListInvoiceItems List invoice items
+//
+// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
+func (c *Client) ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListInvoiceItemsRequest(c.Server, invoiceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5344,7 +5750,7 @@ func (c *Client) PreviewInvoicePayment(ctx context.Context, invoiceId InvoiceId,
 
 // ListOrders List orders
 //
-// Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means accepted, not delivered. Only pending orders expire at expires_at.
+// Lists acceptance status and associated invoice amounts. pending_checkout awaits confirmation; pending has confirmed checkout and may be unpaid or paid. active means accepted, not delivered. pending_checkout and pending orders can expire at expires_at.
 //
 // Corresponds with GET /account/v1/orders (the `ListOrders` operationId).
 func (c *Client) ListOrders(ctx context.Context, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5392,6 +5798,98 @@ func (c *Client) GetOrder(ctx context.Context, orderId OrderId, reqEditors ...Re
 // Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelOrder` operationId).
 func (c *Client) CancelOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelOrderRequest(c.Server, orderId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CheckoutOrderWithBody Confirm order checkout
+//
+// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+// preview, or omit it to select an applicable account discount. At most one new coupon is applied
+// to an order; existing subscription discount commitments are not stacked with a new coupon on
+// the same line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+//
+// Rechecks eligibility and redemption availability. A different total fails with
+// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price.
+// A failed confirmation leaves the invoice draft and reserves no discount redemption.
+//
+// A successful confirmation records the discount, including any recurring discount terms,
+// reserves its redemption, moves pending_checkout to pending and finalizes the invoice when one
+// is required. The reservation counts toward the code's limits and is consumed when the invoice
+// is paid, or at confirmation when nothing is due. Use collect-invoice-payment to collect
+// its outstanding amount from account funds or a payment gateway. No payment attempt or checkout
+// session is created by this operation. A purchase with nothing to collect can proceed to Billing
+// admission without a payment transaction. An absent invoice or zero immediate amount still
+// requires checkout confirmation; checkout alone does not confirm resource delivery.
+//
+// Retrying with the same code and expected amount returns the existing order without another
+// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing
+// that code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed
+// terms. Cancellation, expiry or complete fulfillment failure releases the reservation or returns
+// the consumed redemption; a refund alone does not.
+//
+// The order must belong to one of your billing accounts. A canceled, failed or expired order
+// cannot be checked out. A period-end change cannot be checked out before its renewal invoice is
+// available. Orders retain their billing account and currency after a project is linked elsewhere;
+// discounts from another account cannot be used for them.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/orders/{orderId}/checkout (the `CheckoutOrder` operationId).
+func (c *Client) CheckoutOrderWithBody(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCheckoutOrderRequestWithBody(c.Server, orderId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CheckoutOrder Confirm order checkout
+//
+// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+// preview, or omit it to select an applicable account discount. At most one new coupon is applied
+// to an order; existing subscription discount commitments are not stacked with a new coupon on
+// the same line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+//
+// Rechecks eligibility and redemption availability. A different total fails with
+// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price.
+// A failed confirmation leaves the invoice draft and reserves no discount redemption.
+//
+// A successful confirmation records the discount, including any recurring discount terms,
+// reserves its redemption, moves pending_checkout to pending and finalizes the invoice when one
+// is required. The reservation counts toward the code's limits and is consumed when the invoice
+// is paid, or at confirmation when nothing is due. Use collect-invoice-payment to collect
+// its outstanding amount from account funds or a payment gateway. No payment attempt or checkout
+// session is created by this operation. A purchase with nothing to collect can proceed to Billing
+// admission without a payment transaction. An absent invoice or zero immediate amount still
+// requires checkout confirmation; checkout alone does not confirm resource delivery.
+//
+// Retrying with the same code and expected amount returns the existing order without another
+// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing
+// that code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed
+// terms. Cancellation, expiry or complete fulfillment failure releases the reservation or returns
+// the consumed redemption; a refund alone does not.
+//
+// The order must belong to one of your billing accounts. A canceled, failed or expired order
+// cannot be checked out. A period-end change cannot be checked out before its renewal invoice is
+// available. Orders retain their billing account and currency after a project is linked elsewhere;
+// discounts from another account cannot be used for them.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/orders/{orderId}/checkout (the `CheckoutOrder` operationId).
+func (c *Client) CheckoutOrder(ctx context.Context, orderId OrderId, body CheckoutOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCheckoutOrderRequest(c.Server, orderId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5522,7 +6020,7 @@ func (c *Client) SetDefaultPaymentMethod(ctx context.Context, paymentMethodId Pa
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover
 // them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 // Invoices that are already paid are not charged again. An invoice with an online payment
-// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+// still in progress is refused with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
 // `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
 // `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
 // passed with `BILLING_ORDER_EXPIRED`.
@@ -5551,7 +6049,7 @@ func (c *Client) PayTogetherWithBody(ctx context.Context, contentType string, bo
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover
 // them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 // Invoices that are already paid are not charged again. An invoice with an online payment
-// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+// still in progress is refused with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
 // `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
 // `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
 // passed with `BILLING_ORDER_EXPIRED`.
@@ -5776,24 +6274,34 @@ func (c *Client) PreviewPromotionCode(ctx context.Context, body PreviewPromotion
 	return c.Client.Do(req)
 }
 
-// CreateQuoteWithBody Quote renewals or a cancellation
+// CreateQuoteWithBody Quote order checkout, renewals or a cancellation
 //
-// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
-// as often as required. Prices may change between quoting and renewing, so a quote should be
-// refreshed before a final confirmation is shown.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+// reserved or applied to an order, and no discount redemption is consumed. The response has no
+// quote ID and does not guarantee a price or reserve a promotion code.
+//
+// With order_id, uses that order's recorded purchase terms and billing account. An optional
+// promotion_code previews one code; without it, Billing selects an applicable account discount.
+// An invalid or inapplicable explicit code is refused rather than silently replaced. Give total
+// as expected_amount when confirming checkout; eligibility and availability are checked again.
+// An order already checked out returns its confirmed amounts, without reapplying its discount;
+// a different code is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-// named, with the discounts the account holds, and with tax.
+// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+// promotion code because its entries create separate orders. To use a new code on a renewal,
+// first create a renewal order and quote its checkout by order_id. Prices and discount eligibility
+// may change between preview and confirmation.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+// terms agreed when each subscription was bought. It is quoted on its own: combined with another target
 // the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
 // `cancellation`. It is refused with the same errors as creating the cancellation, except that the
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+// quote must be paid for by the same one of your billing accounts; otherwise the
 // request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
 // not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 //
@@ -5812,24 +6320,34 @@ func (c *Client) CreateQuoteWithBody(ctx context.Context, contentType string, bo
 	return c.Client.Do(req)
 }
 
-// CreateQuote Quote renewals or a cancellation
+// CreateQuote Quote order checkout, renewals or a cancellation
 //
-// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
-// as often as required. Prices may change between quoting and renewing, so a quote should be
-// refreshed before a final confirmation is shown.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+// reserved or applied to an order, and no discount redemption is consumed. The response has no
+// quote ID and does not guarantee a price or reserve a promotion code.
+//
+// With order_id, uses that order's recorded purchase terms and billing account. An optional
+// promotion_code previews one code; without it, Billing selects an applicable account discount.
+// An invalid or inapplicable explicit code is refused rather than silently replaced. Give total
+// as expected_amount when confirming checkout; eligibility and availability are checked again.
+// An order already checked out returns its confirmed amounts, without reapplying its discount;
+// a different code is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-// named, with the discounts the account holds, and with tax.
+// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+// promotion code because its entries create separate orders. To use a new code on a renewal,
+// first create a renewal order and quote its checkout by order_id. Prices and discount eligibility
+// may change between preview and confirmation.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+// terms agreed when each subscription was bought. It is quoted on its own: combined with another target
 // the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
 // `cancellation`. It is refused with the same errors as creating the cancellation, except that the
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+// quote must be paid for by the same one of your billing accounts; otherwise the
 // request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
 // not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 //
@@ -6003,11 +6521,13 @@ func (c *Client) RenewSubscription(ctx context.Context, subscriptionId Subscript
 
 // CreateRenewalOrderWithBody Create renewal order
 //
-// Places a renewal order and issues its invoice without charging anything; pay the invoice to
-// renew. The periods and price are chosen as for renewing. The order can be paid until the
-// current paid period ends, and never after the end of the first period it renews; unpaid by
+// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+// Quote and confirm its checkout before collecting payment to renew. Existing subscription
+// discount commitments are retained. The periods and price are chosen as for renewing. The order
+// can be paid until the current paid period ends, and never after the end of the first period it renews; unpaid by
 // then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
-// this order instead of placing another.
+// this order instead of placing another, confirming checkout with an applicable account discount
+// first if it has not already been confirmed.
 //
 // Save `order_id` before submitting and read the order after an unknown outcome; creating it a
 // second time conflicts.
@@ -6029,11 +6549,13 @@ func (c *Client) CreateRenewalOrderWithBody(ctx context.Context, subscriptionId 
 
 // CreateRenewalOrder Create renewal order
 //
-// Places a renewal order and issues its invoice without charging anything; pay the invoice to
-// renew. The periods and price are chosen as for renewing. The order can be paid until the
-// current paid period ends, and never after the end of the first period it renews; unpaid by
+// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+// Quote and confirm its checkout before collecting payment to renew. Existing subscription
+// discount commitments are retained. The periods and price are chosen as for renewing. The order
+// can be paid until the current paid period ends, and never after the end of the first period it renews; unpaid by
 // then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
-// this order instead of placing another.
+// this order instead of placing another, confirming checkout with an applicable account discount
+// first if it has not already been confirmed.
 //
 // Save `order_id` before submitting and read the order after an unknown outcome; creating it a
 // second time conflicts.
@@ -7337,6 +7859,53 @@ func NewGetInvoiceRequest(server string, invoiceId InvoiceId) (*http.Request, er
 	return req, nil
 }
 
+// NewCollectInvoicePaymentRequest calls the generic CollectInvoicePayment builder with application/json body
+func NewCollectInvoicePaymentRequest(server string, invoiceId InvoiceId, body CollectInvoicePaymentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCollectInvoicePaymentRequestWithBody(server, invoiceId, "application/json", bodyReader)
+}
+
+// NewCollectInvoicePaymentRequestWithBody constructs an http.Request for the CollectInvoicePayment method, with any body, and a specified content type
+func NewCollectInvoicePaymentRequestWithBody(server string, invoiceId InvoiceId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invoiceId", invoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/invoices/%s/collect-payment", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListInvoiceItemsRequest constructs an http.Request for the ListInvoiceItems method
 func NewListInvoiceItemsRequest(server string, invoiceId InvoiceId, params *ListInvoiceItemsParams) (*http.Request, error) {
 	var err error
@@ -7406,53 +7975,6 @@ func NewListInvoiceItemsRequest(server string, invoiceId InvoiceId, params *List
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewPayInvoiceRequest calls the generic PayInvoice builder with application/json body
-func NewPayInvoiceRequest(server string, invoiceId InvoiceId, body PayInvoiceJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPayInvoiceRequestWithBody(server, invoiceId, "application/json", bodyReader)
-}
-
-// NewPayInvoiceRequestWithBody constructs an http.Request for the PayInvoice method, with any body, and a specified content type
-func NewPayInvoiceRequestWithBody(server string, invoiceId InvoiceId, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invoiceId", invoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/invoices/%s/pay", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -7720,6 +8242,53 @@ func NewCancelOrderRequest(server string, orderId OrderId) (*http.Request, error
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewCheckoutOrderRequest calls the generic CheckoutOrder builder with application/json body
+func NewCheckoutOrderRequest(server string, orderId OrderId, body CheckoutOrderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCheckoutOrderRequestWithBody(server, orderId, "application/json", bodyReader)
+}
+
+// NewCheckoutOrderRequestWithBody constructs an http.Request for the CheckoutOrder method, with any body, and a specified content type
+func NewCheckoutOrderRequestWithBody(server string, orderId OrderId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/orders/%s/checkout", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -9558,48 +10127,56 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
 	GetInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceResponse, error)
 
+	// CollectInvoicePaymentWithBodyWithResponse Collect payment for an invoice
+	//
+	// Applies eligible credit grants and available balance as requested, then collects the remainder
+	// through the selected payment gateway and method. With no gateway selection, insufficient
+	// account funds fail without starting an online payment. Card and non-card methods use this same
+	// operation. Promotion codes are confirmed by checkout, before collecting payment.
+	//
+	// Returns a payment action when customer interaction is required. requires_action and processing
+	// do not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment
+	// attempt is reused, and retries do not apply credit grants or balance twice.
+	//
+	// Calling this on an invoice that is already paid returns the existing payment result without
+	// another charge. A draft order invoice must first be confirmed through checkout. It and a void
+	// invoice are refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/invoices/{invoiceId}/collect-payment (the `CollectInvoicePayment` operationId).
+	CollectInvoicePaymentWithBodyWithResponse(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CollectInvoicePaymentResponse, error)
+
+	// CollectInvoicePaymentWithResponse Collect payment for an invoice
+	//
+	// Applies eligible credit grants and available balance as requested, then collects the remainder
+	// through the selected payment gateway and method. With no gateway selection, insufficient
+	// account funds fail without starting an online payment. Card and non-card methods use this same
+	// operation. Promotion codes are confirmed by checkout, before collecting payment.
+	//
+	// Returns a payment action when customer interaction is required. requires_action and processing
+	// do not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment
+	// attempt is reused, and retries do not apply credit grants or balance twice.
+	//
+	// Calling this on an invoice that is already paid returns the existing payment result without
+	// another charge. A draft order invoice must first be confirmed through checkout. It and a void
+	// invoice are refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/invoices/{invoiceId}/collect-payment (the `CollectInvoicePayment` operationId).
+	CollectInvoicePaymentWithResponse(ctx context.Context, invoiceId InvoiceId, body CollectInvoicePaymentJSONRequestBody, reqEditors ...RequestEditorFn) (*CollectInvoicePaymentResponse, error)
+
 	// ListInvoiceItemsWithResponse List invoice items
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
 	ListInvoiceItemsWithResponse(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*ListInvoiceItemsResponse, error)
-
-	// PayInvoiceWithBodyWithResponse Pay invoice
-	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
-	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the gateway confirms it.
-	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
-	// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
-	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
-	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-	PayInvoiceWithBodyWithResponse(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error)
-
-	// PayInvoiceWithResponse Pay invoice
-	//
-	// Applies the account balance first, then charges the remainder to a payment method. Give
-	// `payment_method_id` to choose one, or omit it to use the default.
-	//
-	// Returns a checkout address when the gateway requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the gateway confirms it.
-	//
-	// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
-	// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
-	// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
-	// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-	PayInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error)
 
 	// PreviewInvoicePaymentWithResponse Preview invoice payment
 	//
@@ -9618,7 +10195,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListOrdersWithResponse List orders
 	//
-	// Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means accepted, not delivered. Only pending orders expire at expires_at.
+	// Lists acceptance status and associated invoice amounts. pending_checkout awaits confirmation; pending has confirmed checkout and may be unpaid or paid. active means accepted, not delivered. pending_checkout and pending orders can expire at expires_at.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -9651,6 +10228,78 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelOrder` operationId).
 	CancelOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*CancelOrderResponse, error)
+
+	// CheckoutOrderWithBodyWithResponse Confirm order checkout
+	//
+	// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+	// preview, or omit it to select an applicable account discount. At most one new coupon is applied
+	// to an order; existing subscription discount commitments are not stacked with a new coupon on
+	// the same line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+	//
+	// Rechecks eligibility and redemption availability. A different total fails with
+	// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price.
+	// A failed confirmation leaves the invoice draft and reserves no discount redemption.
+	//
+	// A successful confirmation records the discount, including any recurring discount terms,
+	// reserves its redemption, moves pending_checkout to pending and finalizes the invoice when one
+	// is required. The reservation counts toward the code's limits and is consumed when the invoice
+	// is paid, or at confirmation when nothing is due. Use collect-invoice-payment to collect
+	// its outstanding amount from account funds or a payment gateway. No payment attempt or checkout
+	// session is created by this operation. A purchase with nothing to collect can proceed to Billing
+	// admission without a payment transaction. An absent invoice or zero immediate amount still
+	// requires checkout confirmation; checkout alone does not confirm resource delivery.
+	//
+	// Retrying with the same code and expected amount returns the existing order without another
+	// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing
+	// that code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed
+	// terms. Cancellation, expiry or complete fulfillment failure releases the reservation or returns
+	// the consumed redemption; a refund alone does not.
+	//
+	// The order must belong to one of your billing accounts. A canceled, failed or expired order
+	// cannot be checked out. A period-end change cannot be checked out before its renewal invoice is
+	// available. Orders retain their billing account and currency after a project is linked elsewhere;
+	// discounts from another account cannot be used for them.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/orders/{orderId}/checkout (the `CheckoutOrder` operationId).
+	CheckoutOrderWithBodyWithResponse(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckoutOrderResponse, error)
+
+	// CheckoutOrderWithResponse Confirm order checkout
+	//
+	// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+	// preview, or omit it to select an applicable account discount. At most one new coupon is applied
+	// to an order; existing subscription discount commitments are not stacked with a new coupon on
+	// the same line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+	//
+	// Rechecks eligibility and redemption availability. A different total fails with
+	// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price.
+	// A failed confirmation leaves the invoice draft and reserves no discount redemption.
+	//
+	// A successful confirmation records the discount, including any recurring discount terms,
+	// reserves its redemption, moves pending_checkout to pending and finalizes the invoice when one
+	// is required. The reservation counts toward the code's limits and is consumed when the invoice
+	// is paid, or at confirmation when nothing is due. Use collect-invoice-payment to collect
+	// its outstanding amount from account funds or a payment gateway. No payment attempt or checkout
+	// session is created by this operation. A purchase with nothing to collect can proceed to Billing
+	// admission without a payment transaction. An absent invoice or zero immediate amount still
+	// requires checkout confirmation; checkout alone does not confirm resource delivery.
+	//
+	// Retrying with the same code and expected amount returns the existing order without another
+	// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing
+	// that code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed
+	// terms. Cancellation, expiry or complete fulfillment failure releases the reservation or returns
+	// the consumed redemption; a refund alone does not.
+	//
+	// The order must belong to one of your billing accounts. A canceled, failed or expired order
+	// cannot be checked out. A period-end change cannot be checked out before its renewal invoice is
+	// available. Orders retain their billing account and currency after a project is linked elsewhere;
+	// discounts from another account cannot be used for them.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/orders/{orderId}/checkout (the `CheckoutOrder` operationId).
+	CheckoutOrderWithResponse(ctx context.Context, orderId OrderId, body CheckoutOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckoutOrderResponse, error)
 
 	// ListOrderItemsWithResponse List order items
 	//
@@ -9720,7 +10369,7 @@ type ClientWithResponsesInterface interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover
 	// them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 	// Invoices that are already paid are not charged again. An invoice with an online payment
-	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
 	// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
 	// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
 	// passed with `BILLING_ORDER_EXPIRED`.
@@ -9739,7 +10388,7 @@ type ClientWithResponsesInterface interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover
 	// them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 	// Invoices that are already paid are not charged again. An invoice with an online payment
-	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+	// still in progress is refused with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
 	// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
 	// `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
 	// passed with `BILLING_ORDER_EXPIRED`.
@@ -9870,24 +10519,34 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/promotion-codes/preview (the `PreviewPromotionCode` operationId).
 	PreviewPromotionCodeWithResponse(ctx context.Context, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewPromotionCodeResponse, error)
 
-	// CreateQuoteWithBodyWithResponse Quote renewals or a cancellation
+	// CreateQuoteWithBodyWithResponse Quote order checkout, renewals or a cancellation
 	//
-	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
-	// as often as required. Prices may change between quoting and renewing, so a quote should be
-	// refreshed before a final confirmation is shown.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+	// reserved or applied to an order, and no discount redemption is consumed. The response has no
+	// quote ID and does not guarantee a price or reserve a promotion code.
+	//
+	// With order_id, uses that order's recorded purchase terms and billing account. An optional
+	// promotion_code previews one code; without it, Billing selects an applicable account discount.
+	// An invalid or inapplicable explicit code is refused rather than silently replaced. Give total
+	// as expected_amount when confirming checkout; eligibility and availability are checked again.
+	// An order already checked out returns its confirmed amounts, without reapplying its discount;
+	// a different code is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-	// named, with the discounts the account holds, and with tax.
+	// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+	// promotion code because its entries create separate orders. To use a new code on a renewal,
+	// first create a renewal order and quote its checkout by order_id. Prices and discount eligibility
+	// may change between preview and confirmation.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with another target
 	// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
 	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+	// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+	// quote must be paid for by the same one of your billing accounts; otherwise the
 	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
 	// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 	//
@@ -9896,24 +10555,34 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/quotes (the `CreateQuote` operationId).
 	CreateQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateQuoteResponse, error)
 
-	// CreateQuoteWithResponse Quote renewals or a cancellation
+	// CreateQuoteWithResponse Quote order checkout, renewals or a cancellation
 	//
-	// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-	// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
-	// as often as required. Prices may change between quoting and renewing, so a quote should be
-	// refreshed before a final confirmation is shown.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+	// reserved or applied to an order, and no discount redemption is consumed. The response has no
+	// quote ID and does not guarantee a price or reserve a promotion code.
+	//
+	// With order_id, uses that order's recorded purchase terms and billing account. An optional
+	// promotion_code previews one code; without it, Billing selects an applicable account discount.
+	// An invalid or inapplicable explicit code is refused rather than silently replaced. Give total
+	// as expected_amount when confirming checkout; eligibility and availability are checked again.
+	// An order already checked out returns its confirmed amounts, without reapplying its discount;
+	// a different code is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-	// named, with the discounts the account holds, and with tax.
+	// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+	// promotion code because its entries create separate orders. To use a new code on a renewal,
+	// first create a renewal order and quote its checkout by order_id. Prices and discount eligibility
+	// may change between preview and confirmation.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-	// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+	// terms agreed when each subscription was bought. It is quoted on its own: combined with another target
 	// the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
 	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+	// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+	// quote must be paid for by the same one of your billing accounts; otherwise the
 	// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
 	// not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 	//
@@ -10013,11 +10682,13 @@ type ClientWithResponsesInterface interface {
 
 	// CreateRenewalOrderWithBodyWithResponse Create renewal order
 	//
-	// Places a renewal order and issues its invoice without charging anything; pay the invoice to
-	// renew. The periods and price are chosen as for renewing. The order can be paid until the
-	// current paid period ends, and never after the end of the first period it renews; unpaid by
+	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+	// Quote and confirm its checkout before collecting payment to renew. Existing subscription
+	// discount commitments are retained. The periods and price are chosen as for renewing. The order
+	// can be paid until the current paid period ends, and never after the end of the first period it renews; unpaid by
 	// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
-	// this order instead of placing another.
+	// this order instead of placing another, confirming checkout with an applicable account discount
+	// first if it has not already been confirmed.
 	//
 	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
 	// second time conflicts.
@@ -10029,11 +10700,13 @@ type ClientWithResponsesInterface interface {
 
 	// CreateRenewalOrderWithResponse Create renewal order
 	//
-	// Places a renewal order and issues its invoice without charging anything; pay the invoice to
-	// renew. The periods and price are chosen as for renewing. The order can be paid until the
-	// current paid period ends, and never after the end of the first period it renews; unpaid by
+	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+	// Quote and confirm its checkout before collecting payment to renew. Existing subscription
+	// discount commitments are retained. The periods and price are chosen as for renewing. The order
+	// can be paid until the current paid period ends, and never after the end of the first period it renews; unpaid by
 	// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
-	// this order instead of placing another.
+	// this order instead of placing another, confirming checkout with an applicable account discount
+	// first if it has not already been confirmed.
 	//
 	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a
 	// second time conflicts.
@@ -11007,6 +11680,54 @@ func (r GetInvoiceResponse) ContentType() string {
 	return ""
 }
 
+type CollectInvoicePaymentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PaymentResult
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CollectInvoicePaymentResponse) GetJSON200() *PaymentResult {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CollectInvoicePaymentResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CollectInvoicePaymentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CollectInvoicePaymentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CollectInvoicePaymentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CollectInvoicePaymentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListInvoiceItemsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11049,54 +11770,6 @@ func (r ListInvoiceItemsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListInvoiceItemsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PayInvoiceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PaymentResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r PayInvoiceResponse) GetJSON200() *PaymentResult {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r PayInvoiceResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r PayInvoiceResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r PayInvoiceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PayInvoiceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PayInvoiceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11296,6 +11969,61 @@ func (r CancelOrderResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CancelOrderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CheckoutOrderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Order
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CheckoutOrderResponse) GetJSON200() *Order {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CheckoutOrderResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CheckoutOrderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CheckoutOrderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CheckoutOrderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CheckoutOrderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CheckoutOrderResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12971,6 +13699,62 @@ func (c *ClientWithResponses) GetInvoiceWithResponse(ctx context.Context, invoic
 	return ParseGetInvoiceResponse(rsp)
 }
 
+// CollectInvoicePaymentWithBodyWithResponse Collect payment for an invoice
+//
+// Applies eligible credit grants and available balance as requested, then collects the remainder
+// through the selected payment gateway and method. With no gateway selection, insufficient
+// account funds fail without starting an online payment. Card and non-card methods use this same
+// operation. Promotion codes are confirmed by checkout, before collecting payment.
+//
+// Returns a payment action when customer interaction is required. requires_action and processing
+// do not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment
+// attempt is reused, and retries do not apply credit grants or balance twice.
+//
+// Calling this on an invoice that is already paid returns the existing payment result without
+// another charge. A draft order invoice must first be confirmed through checkout. It and a void
+// invoice are refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/invoices/{invoiceId}/collect-payment (the `CollectInvoicePayment` operationId).
+func (c *ClientWithResponses) CollectInvoicePaymentWithBodyWithResponse(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CollectInvoicePaymentResponse, error) {
+	rsp, err := c.CollectInvoicePaymentWithBody(ctx, invoiceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCollectInvoicePaymentResponse(rsp)
+}
+
+// CollectInvoicePaymentWithResponse Collect payment for an invoice
+//
+// Applies eligible credit grants and available balance as requested, then collects the remainder
+// through the selected payment gateway and method. With no gateway selection, insufficient
+// account funds fail without starting an online payment. Card and non-card methods use this same
+// operation. Promotion codes are confirmed by checkout, before collecting payment.
+//
+// Returns a payment action when customer interaction is required. requires_action and processing
+// do not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment
+// attempt is reused, and retries do not apply credit grants or balance twice.
+//
+// Calling this on an invoice that is already paid returns the existing payment result without
+// another charge. A draft order invoice must first be confirmed through checkout. It and a void
+// invoice are refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
+// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
+// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/invoices/{invoiceId}/collect-payment (the `CollectInvoicePayment` operationId).
+func (c *ClientWithResponses) CollectInvoicePaymentWithResponse(ctx context.Context, invoiceId InvoiceId, body CollectInvoicePaymentJSONRequestBody, reqEditors ...RequestEditorFn) (*CollectInvoicePaymentResponse, error) {
+	rsp, err := c.CollectInvoicePayment(ctx, invoiceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCollectInvoicePaymentResponse(rsp)
+}
+
 // ListInvoiceItemsWithResponse List invoice items
 //
 // Returns a wrapper object for the known response body format(s).
@@ -12982,54 +13766,6 @@ func (c *ClientWithResponses) ListInvoiceItemsWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseListInvoiceItemsResponse(rsp)
-}
-
-// PayInvoiceWithBodyWithResponse Pay invoice
-//
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
-//
-// Returns a checkout address when the gateway requires the cardholder to confirm the
-// payment; the invoice is marked paid once the gateway confirms it.
-//
-// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
-// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
-// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
-// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-func (c *ClientWithResponses) PayInvoiceWithBodyWithResponse(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error) {
-	rsp, err := c.PayInvoiceWithBody(ctx, invoiceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePayInvoiceResponse(rsp)
-}
-
-// PayInvoiceWithResponse Pay invoice
-//
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
-//
-// Returns a checkout address when the gateway requires the cardholder to confirm the
-// payment; the invoice is marked paid once the gateway confirms it.
-//
-// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice
-// is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was
-// canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose
-// payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
-func (c *ClientWithResponses) PayInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error) {
-	rsp, err := c.PayInvoice(ctx, invoiceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePayInvoiceResponse(rsp)
 }
 
 // PreviewInvoicePaymentWithResponse Preview invoice payment
@@ -13055,7 +13791,7 @@ func (c *ClientWithResponses) PreviewInvoicePaymentWithResponse(ctx context.Cont
 
 // ListOrdersWithResponse List orders
 //
-// Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means accepted, not delivered. Only pending orders expire at expires_at.
+// Lists acceptance status and associated invoice amounts. pending_checkout awaits confirmation; pending has confirmed checkout and may be unpaid or paid. active means accepted, not delivered. pending_checkout and pending orders can expire at expires_at.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13105,6 +13841,90 @@ func (c *ClientWithResponses) CancelOrderWithResponse(ctx context.Context, order
 		return nil, err
 	}
 	return ParseCancelOrderResponse(rsp)
+}
+
+// CheckoutOrderWithBodyWithResponse Confirm order checkout
+//
+// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+// preview, or omit it to select an applicable account discount. At most one new coupon is applied
+// to an order; existing subscription discount commitments are not stacked with a new coupon on
+// the same line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+//
+// Rechecks eligibility and redemption availability. A different total fails with
+// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price.
+// A failed confirmation leaves the invoice draft and reserves no discount redemption.
+//
+// A successful confirmation records the discount, including any recurring discount terms,
+// reserves its redemption, moves pending_checkout to pending and finalizes the invoice when one
+// is required. The reservation counts toward the code's limits and is consumed when the invoice
+// is paid, or at confirmation when nothing is due. Use collect-invoice-payment to collect
+// its outstanding amount from account funds or a payment gateway. No payment attempt or checkout
+// session is created by this operation. A purchase with nothing to collect can proceed to Billing
+// admission without a payment transaction. An absent invoice or zero immediate amount still
+// requires checkout confirmation; checkout alone does not confirm resource delivery.
+//
+// Retrying with the same code and expected amount returns the existing order without another
+// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing
+// that code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed
+// terms. Cancellation, expiry or complete fulfillment failure releases the reservation or returns
+// the consumed redemption; a refund alone does not.
+//
+// The order must belong to one of your billing accounts. A canceled, failed or expired order
+// cannot be checked out. A period-end change cannot be checked out before its renewal invoice is
+// available. Orders retain their billing account and currency after a project is linked elsewhere;
+// discounts from another account cannot be used for them.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/orders/{orderId}/checkout (the `CheckoutOrder` operationId).
+func (c *ClientWithResponses) CheckoutOrderWithBodyWithResponse(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckoutOrderResponse, error) {
+	rsp, err := c.CheckoutOrderWithBody(ctx, orderId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCheckoutOrderResponse(rsp)
+}
+
+// CheckoutOrderWithResponse Confirm order checkout
+//
+// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+// preview, or omit it to select an applicable account discount. At most one new coupon is applied
+// to an order; existing subscription discount commitments are not stacked with a new coupon on
+// the same line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+//
+// Rechecks eligibility and redemption availability. A different total fails with
+// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price.
+// A failed confirmation leaves the invoice draft and reserves no discount redemption.
+//
+// A successful confirmation records the discount, including any recurring discount terms,
+// reserves its redemption, moves pending_checkout to pending and finalizes the invoice when one
+// is required. The reservation counts toward the code's limits and is consumed when the invoice
+// is paid, or at confirmation when nothing is due. Use collect-invoice-payment to collect
+// its outstanding amount from account funds or a payment gateway. No payment attempt or checkout
+// session is created by this operation. A purchase with nothing to collect can proceed to Billing
+// admission without a payment transaction. An absent invoice or zero immediate amount still
+// requires checkout confirmation; checkout alone does not confirm resource delivery.
+//
+// Retrying with the same code and expected amount returns the existing order without another
+// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing
+// that code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed
+// terms. Cancellation, expiry or complete fulfillment failure releases the reservation or returns
+// the consumed redemption; a refund alone does not.
+//
+// The order must belong to one of your billing accounts. A canceled, failed or expired order
+// cannot be checked out. A period-end change cannot be checked out before its renewal invoice is
+// available. Orders retain their billing account and currency after a project is linked elsewhere;
+// discounts from another account cannot be used for them.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/orders/{orderId}/checkout (the `CheckoutOrder` operationId).
+func (c *ClientWithResponses) CheckoutOrderWithResponse(ctx context.Context, orderId OrderId, body CheckoutOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckoutOrderResponse, error) {
+	rsp, err := c.CheckoutOrder(ctx, orderId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCheckoutOrderResponse(rsp)
 }
 
 // ListOrderItemsWithResponse List order items
@@ -13211,7 +14031,7 @@ func (c *ClientWithResponses) SetDefaultPaymentMethodWithResponse(ctx context.Co
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover
 // them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 // Invoices that are already paid are not charged again. An invoice with an online payment
-// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+// still in progress is refused with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
 // `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
 // `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
 // passed with `BILLING_ORDER_EXPIRED`.
@@ -13236,7 +14056,7 @@ func (c *ClientWithResponses) PayTogetherWithBodyWithResponse(ctx context.Contex
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover
 // them all, the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged.
 // Invoices that are already paid are not charged again. An invoice with an online payment
-// still in progress is refused with `BILLING_PAYMENT_PENDING`, a void invoice with
+// still in progress is refused with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
 // `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with
 // `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has
 // passed with `BILLING_ORDER_EXPIRED`.
@@ -13427,24 +14247,34 @@ func (c *ClientWithResponses) PreviewPromotionCodeWithResponse(ctx context.Conte
 	return ParsePreviewPromotionCodeResponse(rsp)
 }
 
-// CreateQuoteWithBodyWithResponse Quote renewals or a cancellation
+// CreateQuoteWithBodyWithResponse Quote order checkout, renewals or a cancellation
 //
-// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
-// as often as required. Prices may change between quoting and renewing, so a quote should be
-// refreshed before a final confirmation is shown.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+// reserved or applied to an order, and no discount redemption is consumed. The response has no
+// quote ID and does not guarantee a price or reserve a promotion code.
+//
+// With order_id, uses that order's recorded purchase terms and billing account. An optional
+// promotion_code previews one code; without it, Billing selects an applicable account discount.
+// An invalid or inapplicable explicit code is refused rather than silently replaced. Give total
+// as expected_amount when confirming checkout; eligibility and availability are checked again.
+// An order already checked out returns its confirmed amounts, without reapplying its discount;
+// a different code is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-// named, with the discounts the account holds, and with tax.
+// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+// promotion code because its entries create separate orders. To use a new code on a renewal,
+// first create a renewal order and quote its checkout by order_id. Prices and discount eligibility
+// may change between preview and confirmation.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+// terms agreed when each subscription was bought. It is quoted on its own: combined with another target
 // the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
 // `cancellation`. It is refused with the same errors as creating the cancellation, except that the
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+// quote must be paid for by the same one of your billing accounts; otherwise the
 // request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
 // not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 //
@@ -13459,24 +14289,34 @@ func (c *ClientWithResponses) CreateQuoteWithBodyWithResponse(ctx context.Contex
 	return ParseCreateQuoteResponse(rsp)
 }
 
-// CreateQuoteWithResponse Quote renewals or a cancellation
+// CreateQuoteWithResponse Quote order checkout, renewals or a cancellation
 //
-// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called
-// as often as required. Prices may change between quoting and renewing, so a quote should be
-// refreshed before a final confirmation is shown.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged,
+// reserved or applied to an order, and no discount redemption is consumed. The response has no
+// quote ID and does not guarantee a price or reserve a promotion code.
+//
+// With order_id, uses that order's recorded purchase terms and billing account. An optional
+// promotion_code previews one code; without it, Billing selects an applicable account discount.
+// An invalid or inapplicable explicit code is refused rather than silently replaced. Give total
+// as expected_amount when confirming checkout; eligibility and availability are checked again.
+// An order already checked out returns its confirmed amounts, without reapplying its discount;
+// a different code is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price
-// named, with the discounts the account holds, and with tax.
+// named, with the discounts the account holds, and with tax. A renewal list does not accept a
+// promotion code because its entries create separate orders. To use a new code on a renewal,
+// first create a renewal order and quote its checkout by order_id. Prices and discount eligibility
+// may change between preview and confirmation.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals
+// terms agreed when each subscription was bought. It is quoted on its own: combined with another target
 // the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
 // `cancellation`. It is refused with the same errors as creating the cancellation, except that the
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Every subscription must be paid for by the same one of your billing accounts; otherwise the
+// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+// quote must be paid for by the same one of your billing accounts; otherwise the
 // request is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does
 // not exist, and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 //
@@ -13624,11 +14464,13 @@ func (c *ClientWithResponses) RenewSubscriptionWithResponse(ctx context.Context,
 
 // CreateRenewalOrderWithBodyWithResponse Create renewal order
 //
-// Places a renewal order and issues its invoice without charging anything; pay the invoice to
-// renew. The periods and price are chosen as for renewing. The order can be paid until the
-// current paid period ends, and never after the end of the first period it renews; unpaid by
+// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+// Quote and confirm its checkout before collecting payment to renew. Existing subscription
+// discount commitments are retained. The periods and price are chosen as for renewing. The order
+// can be paid until the current paid period ends, and never after the end of the first period it renews; unpaid by
 // then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
-// this order instead of placing another.
+// this order instead of placing another, confirming checkout with an applicable account discount
+// first if it has not already been confirmed.
 //
 // Save `order_id` before submitting and read the order after an unknown outcome; creating it a
 // second time conflicts.
@@ -13646,11 +14488,13 @@ func (c *ClientWithResponses) CreateRenewalOrderWithBodyWithResponse(ctx context
 
 // CreateRenewalOrderWithResponse Create renewal order
 //
-// Places a renewal order and issues its invoice without charging anything; pay the invoice to
-// renew. The periods and price are chosen as for renewing. The order can be paid until the
-// current paid period ends, and never after the end of the first period it renews; unpaid by
+// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+// Quote and confirm its checkout before collecting payment to renew. Existing subscription
+// discount commitments are retained. The periods and price are chosen as for renewing. The order
+// can be paid until the current paid period ends, and never after the end of the first period it renews; unpaid by
 // then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays
-// this order instead of placing another.
+// this order instead of placing another, confirming checkout with an applicable account discount
+// first if it has not already been confirmed.
 //
 // Save `order_id` before submitting and read the order after an unknown outcome; creating it a
 // second time conflicts.
@@ -14407,22 +15251,22 @@ func ParseGetInvoiceResponse(rsp *http.Response) (*GetInvoiceResponse, error) {
 	return response, nil
 }
 
-// ParseListInvoiceItemsResponse parses an HTTP response from a ListInvoiceItemsWithResponse call
-func ParseListInvoiceItemsResponse(rsp *http.Response) (*ListInvoiceItemsResponse, error) {
+// ParseCollectInvoicePaymentResponse parses an HTTP response from a CollectInvoicePaymentWithResponse call
+func ParseCollectInvoicePaymentResponse(rsp *http.Response) (*CollectInvoicePaymentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListInvoiceItemsResponse{
+	response := &CollectInvoicePaymentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InvoiceItemList
+		var dest PaymentResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -14440,22 +15284,22 @@ func ParseListInvoiceItemsResponse(rsp *http.Response) (*ListInvoiceItemsRespons
 	return response, nil
 }
 
-// ParsePayInvoiceResponse parses an HTTP response from a PayInvoiceWithResponse call
-func ParsePayInvoiceResponse(rsp *http.Response) (*PayInvoiceResponse, error) {
+// ParseListInvoiceItemsResponse parses an HTTP response from a ListInvoiceItemsWithResponse call
+func ParseListInvoiceItemsResponse(rsp *http.Response) (*ListInvoiceItemsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PayInvoiceResponse{
+	response := &ListInvoiceItemsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PaymentResult
+		var dest InvoiceItemList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -14581,6 +15425,46 @@ func ParseCancelOrderResponse(rsp *http.Response) (*CancelOrderResponse, error) 
 	}
 
 	response := &CancelOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Order
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCheckoutOrderResponse parses an HTTP response from a CheckoutOrderWithResponse call
+func ParseCheckoutOrderResponse(rsp *http.Response) (*CheckoutOrderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CheckoutOrderResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

@@ -151,30 +151,30 @@ func (e QuoteLinePriceType) Valid() bool {
 	}
 }
 
-// Defines values for QuoteLineResultUnpricedReason.
+// Defines values for QuotedLineUnpricedReason.
 const (
-	QuoteLineResultUnpricedReasonNoDimensions    QuoteLineResultUnpricedReason = "no_dimensions"
-	QuoteLineResultUnpricedReasonNoEffectiveRule QuoteLineResultUnpricedReason = "no_effective_rule"
-	QuoteLineResultUnpricedReasonNoMeter         QuoteLineResultUnpricedReason = "no_meter"
-	QuoteLineResultUnpricedReasonNoPrice         QuoteLineResultUnpricedReason = "no_price"
-	QuoteLineResultUnpricedReasonNoRateCard      QuoteLineResultUnpricedReason = "no_rate_card"
-	QuoteLineResultUnpricedReasonNone            QuoteLineResultUnpricedReason = "none"
+	QuotedLineUnpricedReasonNoDimensions    QuotedLineUnpricedReason = "no_dimensions"
+	QuotedLineUnpricedReasonNoEffectiveRule QuotedLineUnpricedReason = "no_effective_rule"
+	QuotedLineUnpricedReasonNoMeter         QuotedLineUnpricedReason = "no_meter"
+	QuotedLineUnpricedReasonNoPrice         QuotedLineUnpricedReason = "no_price"
+	QuotedLineUnpricedReasonNoRateCard      QuotedLineUnpricedReason = "no_rate_card"
+	QuotedLineUnpricedReasonNone            QuotedLineUnpricedReason = "none"
 )
 
-// Valid indicates whether the value is a known member of the QuoteLineResultUnpricedReason enum.
-func (e QuoteLineResultUnpricedReason) Valid() bool {
+// Valid indicates whether the value is a known member of the QuotedLineUnpricedReason enum.
+func (e QuotedLineUnpricedReason) Valid() bool {
 	switch e {
-	case QuoteLineResultUnpricedReasonNoDimensions:
+	case QuotedLineUnpricedReasonNoDimensions:
 		return true
-	case QuoteLineResultUnpricedReasonNoEffectiveRule:
+	case QuotedLineUnpricedReasonNoEffectiveRule:
 		return true
-	case QuoteLineResultUnpricedReasonNoMeter:
+	case QuotedLineUnpricedReasonNoMeter:
 		return true
-	case QuoteLineResultUnpricedReasonNoPrice:
+	case QuotedLineUnpricedReasonNoPrice:
 		return true
-	case QuoteLineResultUnpricedReasonNoRateCard:
+	case QuotedLineUnpricedReasonNoRateCard:
 		return true
-	case QuoteLineResultUnpricedReasonNone:
+	case QuotedLineUnpricedReasonNone:
 		return true
 	default:
 		return false
@@ -427,12 +427,13 @@ type ProductList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// Quote defines model for Quote.
+// Quote A public catalog estimate. No account discounts or tax are evaluated. Its total is a list-price
+// estimate, not an expected checkout amount. Nothing is saved, charged or reserved.
 type Quote struct {
-	Currency string            `json:"currency"`
-	Lines    []QuoteLineResult `json:"lines,omitempty"`
+	Currency string       `json:"currency"`
+	Lines    []QuotedLine `json:"lines,omitempty"`
 
-	// Total What would be owed in total. Amounts to be returned are not netted off it.
+	// Total Sum of the public list-price line amounts, without evaluating account discounts or tax.
 	//
 	// Null when any line could not be priced. What would be owed is not knowable then, and a
 	// total that silently left the unpriced lines out would read as a smaller bill rather than
@@ -486,9 +487,10 @@ type QuoteLineInterval string
 // QuoteLinePriceType Narrows the selection when a plan offers more than one billing type.
 type QuoteLinePriceType string
 
-// QuoteLineResult defines model for QuoteLineResult.
-type QuoteLineResult struct {
-	// Amount Not rounded. Round only for display.
+// QuotedLine One public catalog estimate. Prices are used as listed, before account discounts; tax is not
+// evaluated. Monetary fields are absent when the line cannot be priced.
+type QuotedLine struct {
+	// Amount Public list-price amount including any setup charges, before account discounts. Not rounded; round only for display.
 	Amount   *externalRef0.Money `json:"amount,omitempty"`
 	Currency string              `json:"currency"`
 
@@ -517,7 +519,7 @@ type QuoteLineResult struct {
 	// TaxAmount Tax included in the account quote. Absent in public catalogue estimates.
 	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
 
-	// TaxIncludedAmount Tax already included in the displayed price.
+	// TaxIncludedAmount Tax already included in the displayed price. Absent in public catalogue estimates.
 	TaxIncludedAmount *externalRef0.Money `json:"tax_included_amount,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
@@ -537,16 +539,16 @@ type QuoteLineResult struct {
 	// at no price list, the list holds no rate for that meter, that exact combination
 	// of attributes is not configured, or it is configured but nothing is in effect
 	// at the moment asked about.
-	UnpricedReason *QuoteLineResultUnpricedReason `json:"unpriced_reason,omitempty"`
+	UnpricedReason *QuotedLineUnpricedReason `json:"unpriced_reason,omitempty"`
 }
 
-// QuoteLineResultUnpricedReason Why no price was found; `none` while `priced` is true.
+// QuotedLineUnpricedReason Why no price was found; `none` while `priced` is true.
 //
 // The last four are told apart because their remedies differ: the price points
 // at no price list, the list holds no rate for that meter, that exact combination
 // of attributes is not configured, or it is configured but nothing is in effect
 // at the moment asked about.
-type QuoteLineResultUnpricedReason string
+type QuotedLineUnpricedReason string
 
 // Rate defines model for Rate.
 type Rate struct {

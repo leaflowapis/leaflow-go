@@ -74,14 +74,27 @@ type Invoker interface {
 	CreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (CreateProjectCancellationRes, error)
 	// CreateProjectQuote invokes create-project-quote operation.
 	//
-	// Priced in the project billing account's currency, and at any rate negotiated for that account.
-	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+	// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
+	// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
+	// does not guarantee a price or reserve a promotion code.
 	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
-	// is placed, so a quote should be refreshed before a final confirmation is shown.
+	// New purchases use the project's current billing account and currency. With order_id, the order must
+	// belong to this project; its recorded purchase terms, billing account and currency are used. An
+	// optional promotion_code previews one code for the purchase or order. Without it, Billing selects an
+	// applicable account discount. An invalid or inapplicable explicit code is refused rather than
+	// silently replaced. Give total as expected_amount when confirming checkout through Billing;
+	// eligibility and availability are checked again. An order already checked out returns its confirmed
+	// amounts without reapplying its discount; a different code is refused with
+	// BILLING_ORDER_CHECKOUT_CONFLICT.
+	//
+	// Prices may change before an order is created; confirmed purchase terms are not repriced from today's
+	// catalog. Usage estimates describe future usage and are not checkout amounts. They do not accept a
+	// promotion code, including when mixed with fixed purchase lines.
 	//
 	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-	// with the discounts the account holds, and with tax.
+	// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
+	// because its entries create separate orders. To use a new code on a renewal, first create a renewal
+	// order and quote its checkout by order_id.
 	//
 	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -90,11 +103,11 @@ type Invoker interface {
 	// amount is not checked. Give the returned `cancellation.proration_date` and
 	// `cancellation.refundable_amount` when creating it.
 	//
-	// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-	// canceled does not belong to this project.
+	// Returns 404 when the project has no billing account for a new purchase quote, or when the order or a
+	// subscription to be renewed or canceled does not belong to this project.
 	//
 	// POST /api/v1/projects/{projectId}/quotes
-	CreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
+	CreateProjectQuote(ctx context.Context, request QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
 	// GetProjectBillingAccount invokes get-project-billing-account operation.
 	//
 	// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
@@ -156,8 +169,8 @@ type Invoker interface {
 	ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error)
 	// ListProjectOrders invokes list-project-orders operation.
 	//
-	// An order awaiting payment shows what is outstanding. Paying it is done from the billing centre by
-	// the account owner.
+	// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what is
+	// outstanding. Checkout and payment are performed in the billing centre by the account owner.
 	//
 	// GET /api/v1/projects/{projectId}/orders
 	ListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (*OrderList, error)
@@ -420,14 +433,27 @@ func (c *Client) sendCreateProjectCancellation(ctx context.Context, request *Can
 
 // CreateProjectQuote invokes create-project-quote operation.
 //
-// Priced in the project billing account's currency, and at any rate negotiated for that account.
-// Nothing is reserved and nothing is recorded, so this may be called as often as required.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
+// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
+// does not guarantee a price or reserve a promotion code.
 //
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it
-// is placed, so a quote should be refreshed before a final confirmation is shown.
+// New purchases use the project's current billing account and currency. With order_id, the order must
+// belong to this project; its recorded purchase terms, billing account and currency are used. An
+// optional promotion_code previews one code for the purchase or order. Without it, Billing selects an
+// applicable account discount. An invalid or inapplicable explicit code is refused rather than
+// silently replaced. Give total as expected_amount when confirming checkout through Billing;
+// eligibility and availability are checked again. An order already checked out returns its confirmed
+// amounts without reapplying its discount; a different code is refused with
+// BILLING_ORDER_CHECKOUT_CONFLICT.
+//
+// Prices may change before an order is created; confirmed purchase terms are not repriced from today's
+// catalog. Usage estimates describe future usage and are not checkout amounts. They do not accept a
+// promotion code, including when mixed with fixed purchase lines.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-// with the discounts the account holds, and with tax.
+// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
+// because its entries create separate orders. To use a new code on a renewal, first create a renewal
+// order and quote its checkout by order_id.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
 // terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
@@ -436,16 +462,16 @@ func (c *Client) sendCreateProjectCancellation(ctx context.Context, request *Can
 // amount is not checked. Give the returned `cancellation.proration_date` and
 // `cancellation.refundable_amount` when creating it.
 //
-// Returns 404 when the project has no billing account, or when a subscription to be renewed or
-// canceled does not belong to this project.
+// Returns 404 when the project has no billing account for a new purchase quote, or when the order or a
+// subscription to be renewed or canceled does not belong to this project.
 //
 // POST /api/v1/projects/{projectId}/quotes
-func (c *Client) CreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error) {
+func (c *Client) CreateProjectQuote(ctx context.Context, request QuoteRequest, params CreateProjectQuoteParams) (*Quote, error) {
 	res, err := c.sendCreateProjectQuote(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendCreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (res *Quote, err error) {
+func (c *Client) sendCreateProjectQuote(ctx context.Context, request QuoteRequest, params CreateProjectQuoteParams) (res *Quote, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-project-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1992,8 +2018,8 @@ func (c *Client) sendListProjectOrderItems(ctx context.Context, params ListProje
 
 // ListProjectOrders invokes list-project-orders operation.
 //
-// An order awaiting payment shows what is outstanding. Paying it is done from the billing centre by
-// the account owner.
+// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what is
+// outstanding. Checkout and payment are performed in the billing centre by the account owner.
 //
 // GET /api/v1/projects/{projectId}/orders
 func (c *Client) ListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (*OrderList, error) {
