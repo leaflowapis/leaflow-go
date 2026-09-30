@@ -18405,10 +18405,10 @@ func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w 
 // Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
 // is released.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
-// bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
-// released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same
-// set as its `release_subscription_ids`.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
+// pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling
+// the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

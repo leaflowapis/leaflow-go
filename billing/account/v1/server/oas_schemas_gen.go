@@ -490,22 +490,24 @@ func (s *AllowanceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Product, plan and price lists form a union; three empty lists permit every item. Other conditions
-// apply together. Entries always include their display fields.
+// Anything not excluded that matches an inclusion, or anything not excluded when no inclusion is
+// given, subject to the billing type, operation and term conditions. Entries always include their
+// display fields; archived plans and prices stay listed with active set to false.
 // Ref: #/components/schemas/Applicability
 type Applicability struct {
 	Products   []Product           `json:"products"`
-	Plans      []ObjectIdentity    `json:"plans"`
+	Plans      []ApplicablePlan    `json:"plans"`
 	Prices     []PriceOption       `json:"prices"`
 	PriceTypes []string            `json:"price_types"`
 	Operations []PurchaseOperation `json:"operations"`
-	// Restricted to your first purchase of a covered product.
-	FirstPurchaseOnly OptBool `json:"first_purchase_only"`
 	// The shortest term a purchase may have, in months. A purchase with no term, such as metered usage,
 	// never qualifies while this is set.
 	MinTermMonths OptInt `json:"min_term_months"`
 	// The longest term a purchase may have, in months.
-	MaxTermMonths OptInt `json:"max_term_months"`
+	MaxTermMonths    OptInt           `json:"max_term_months"`
+	ExcludedProducts []Product        `json:"excluded_products"`
+	ExcludedPlans    []ApplicablePlan `json:"excluded_plans"`
+	ExcludedPrices   []PriceOption    `json:"excluded_prices"`
 }
 
 // GetProducts returns the value of Products.
@@ -514,7 +516,7 @@ func (s *Applicability) GetProducts() []Product {
 }
 
 // GetPlans returns the value of Plans.
-func (s *Applicability) GetPlans() []ObjectIdentity {
+func (s *Applicability) GetPlans() []ApplicablePlan {
 	return s.Plans
 }
 
@@ -533,11 +535,6 @@ func (s *Applicability) GetOperations() []PurchaseOperation {
 	return s.Operations
 }
 
-// GetFirstPurchaseOnly returns the value of FirstPurchaseOnly.
-func (s *Applicability) GetFirstPurchaseOnly() OptBool {
-	return s.FirstPurchaseOnly
-}
-
 // GetMinTermMonths returns the value of MinTermMonths.
 func (s *Applicability) GetMinTermMonths() OptInt {
 	return s.MinTermMonths
@@ -548,13 +545,28 @@ func (s *Applicability) GetMaxTermMonths() OptInt {
 	return s.MaxTermMonths
 }
 
+// GetExcludedProducts returns the value of ExcludedProducts.
+func (s *Applicability) GetExcludedProducts() []Product {
+	return s.ExcludedProducts
+}
+
+// GetExcludedPlans returns the value of ExcludedPlans.
+func (s *Applicability) GetExcludedPlans() []ApplicablePlan {
+	return s.ExcludedPlans
+}
+
+// GetExcludedPrices returns the value of ExcludedPrices.
+func (s *Applicability) GetExcludedPrices() []PriceOption {
+	return s.ExcludedPrices
+}
+
 // SetProducts sets the value of Products.
 func (s *Applicability) SetProducts(val []Product) {
 	s.Products = val
 }
 
 // SetPlans sets the value of Plans.
-func (s *Applicability) SetPlans(val []ObjectIdentity) {
+func (s *Applicability) SetPlans(val []ApplicablePlan) {
 	s.Plans = val
 }
 
@@ -573,11 +585,6 @@ func (s *Applicability) SetOperations(val []PurchaseOperation) {
 	s.Operations = val
 }
 
-// SetFirstPurchaseOnly sets the value of FirstPurchaseOnly.
-func (s *Applicability) SetFirstPurchaseOnly(val OptBool) {
-	s.FirstPurchaseOnly = val
-}
-
 // SetMinTermMonths sets the value of MinTermMonths.
 func (s *Applicability) SetMinTermMonths(val OptInt) {
 	s.MinTermMonths = val
@@ -586,6 +593,60 @@ func (s *Applicability) SetMinTermMonths(val OptInt) {
 // SetMaxTermMonths sets the value of MaxTermMonths.
 func (s *Applicability) SetMaxTermMonths(val OptInt) {
 	s.MaxTermMonths = val
+}
+
+// SetExcludedProducts sets the value of ExcludedProducts.
+func (s *Applicability) SetExcludedProducts(val []Product) {
+	s.ExcludedProducts = val
+}
+
+// SetExcludedPlans sets the value of ExcludedPlans.
+func (s *Applicability) SetExcludedPlans(val []ApplicablePlan) {
+	s.ExcludedPlans = val
+}
+
+// SetExcludedPrices sets the value of ExcludedPrices.
+func (s *Applicability) SetExcludedPrices(val []PriceOption) {
+	s.ExcludedPrices = val
+}
+
+// A plan it refers to. active is false once the plan is archived; it still applies to subscriptions
+// already on this plan.
+// Ref: #/components/schemas/ApplicablePlan
+type ApplicablePlan struct {
+	ID     uuid.UUID `json:"id"`
+	Name   string    `json:"name"`
+	Active bool      `json:"active"`
+}
+
+// GetID returns the value of ID.
+func (s *ApplicablePlan) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ApplicablePlan) GetName() string {
+	return s.Name
+}
+
+// GetActive returns the value of Active.
+func (s *ApplicablePlan) GetActive() bool {
+	return s.Active
+}
+
+// SetID sets the value of ID.
+func (s *ApplicablePlan) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ApplicablePlan) SetName(val string) {
+	s.Name = val
+}
+
+// SetActive sets the value of Active.
+func (s *ApplicablePlan) SetActive(val bool) {
+	s.Active = val
 }
 
 // A credit grant and what it would pay.
@@ -2360,10 +2421,12 @@ type CreditGrant struct {
 	RemainingAmount  Money     `json:"remaining_amount"`
 	Currency         string    `json:"currency"`
 	// What this credit may pay for. No restrictions means anything on the account.
-	AppliesTo  Applicability     `json:"applies_to"`
-	Status     CreditGrantStatus `json:"status"`
-	ValidFrom  time.Time         `json:"valid_from"`
-	ValidUntil OptNilDateTime    `json:"valid_until"`
+	AppliesTo Applicability `json:"applies_to"`
+	// Restricted to your first purchase of anything it applies to.
+	FirstPurchaseOnly OptBool           `json:"first_purchase_only"`
+	Status            CreditGrantStatus `json:"status"`
+	ValidFrom         time.Time         `json:"valid_from"`
+	ValidUntil        OptNilDateTime    `json:"valid_until"`
 }
 
 // GetMinAmount returns the value of MinAmount.
@@ -2404,6 +2467,11 @@ func (s *CreditGrant) GetCurrency() string {
 // GetAppliesTo returns the value of AppliesTo.
 func (s *CreditGrant) GetAppliesTo() Applicability {
 	return s.AppliesTo
+}
+
+// GetFirstPurchaseOnly returns the value of FirstPurchaseOnly.
+func (s *CreditGrant) GetFirstPurchaseOnly() OptBool {
+	return s.FirstPurchaseOnly
 }
 
 // GetStatus returns the value of Status.
@@ -2459,6 +2527,11 @@ func (s *CreditGrant) SetCurrency(val string) {
 // SetAppliesTo sets the value of AppliesTo.
 func (s *CreditGrant) SetAppliesTo(val Applicability) {
 	s.AppliesTo = val
+}
+
+// SetFirstPurchaseOnly sets the value of FirstPurchaseOnly.
+func (s *CreditGrant) SetFirstPurchaseOnly(val OptBool) {
+	s.FirstPurchaseOnly = val
 }
 
 // SetStatus sets the value of Status.
@@ -2561,12 +2634,19 @@ func (s *CreditGrantStatus) UnmarshalText(data []byte) error {
 type CreditGroup struct {
 	// What the credit in this group may pay for. No restrictions means anything on the account.
 	AppliesTo Applicability `json:"applies_to"`
-	Amount    Money         `json:"amount"`
+	// Restricted to your first purchase of anything it applies to.
+	FirstPurchaseOnly OptBool `json:"first_purchase_only"`
+	Amount            Money   `json:"amount"`
 }
 
 // GetAppliesTo returns the value of AppliesTo.
 func (s *CreditGroup) GetAppliesTo() Applicability {
 	return s.AppliesTo
+}
+
+// GetFirstPurchaseOnly returns the value of FirstPurchaseOnly.
+func (s *CreditGroup) GetFirstPurchaseOnly() OptBool {
+	return s.FirstPurchaseOnly
 }
 
 // GetAmount returns the value of Amount.
@@ -2577,6 +2657,11 @@ func (s *CreditGroup) GetAmount() Money {
 // SetAppliesTo sets the value of AppliesTo.
 func (s *CreditGroup) SetAppliesTo(val Applicability) {
 	s.AppliesTo = val
+}
+
+// SetFirstPurchaseOnly sets the value of FirstPurchaseOnly.
+func (s *CreditGroup) SetFirstPurchaseOnly(val OptBool) {
+	s.FirstPurchaseOnly = val
 }
 
 // SetAmount sets the value of Amount.
@@ -2688,9 +2773,11 @@ type Discount struct {
 	Currency    OptString `json:"currency"`
 	// What it may be used for. Absent means it applies to anything on the account, including setup fees
 	// and traffic.
-	AppliesTo Applicability  `json:"applies_to"`
-	StartedAt OptDateTime    `json:"started_at"`
-	EndedAt   OptNilDateTime `json:"ended_at"`
+	AppliesTo Applicability `json:"applies_to"`
+	// Restricted to your first purchase of anything it applies to.
+	FirstPurchaseOnly OptBool        `json:"first_purchase_only"`
+	StartedAt         OptDateTime    `json:"started_at"`
+	EndedAt           OptNilDateTime `json:"ended_at"`
 }
 
 // GetMinAmount returns the value of MinAmount.
@@ -2771,6 +2858,11 @@ func (s *Discount) GetCurrency() OptString {
 // GetAppliesTo returns the value of AppliesTo.
 func (s *Discount) GetAppliesTo() Applicability {
 	return s.AppliesTo
+}
+
+// GetFirstPurchaseOnly returns the value of FirstPurchaseOnly.
+func (s *Discount) GetFirstPurchaseOnly() OptBool {
+	return s.FirstPurchaseOnly
 }
 
 // GetStartedAt returns the value of StartedAt.
@@ -2861,6 +2953,11 @@ func (s *Discount) SetCurrency(val OptString) {
 // SetAppliesTo sets the value of AppliesTo.
 func (s *Discount) SetAppliesTo(val Applicability) {
 	s.AppliesTo = val
+}
+
+// SetFirstPurchaseOnly sets the value of FirstPurchaseOnly.
+func (s *Discount) SetFirstPurchaseOnly(val OptBool) {
+	s.FirstPurchaseOnly = val
 }
 
 // SetStartedAt sets the value of StartedAt.
@@ -9066,6 +9163,8 @@ type PriceOption struct {
 	// How many periods one purchase covers.
 	IntervalCount OptInt   `json:"interval_count"`
 	UnitAmount    OptMoney `json:"unit_amount"`
+	// False once the price is archived. It still applies to purchases already made at this price.
+	Active bool `json:"active"`
 }
 
 // GetProduct returns the value of Product.
@@ -9118,6 +9217,11 @@ func (s *PriceOption) GetUnitAmount() OptMoney {
 	return s.UnitAmount
 }
 
+// GetActive returns the value of Active.
+func (s *PriceOption) GetActive() bool {
+	return s.Active
+}
+
 // SetProduct sets the value of Product.
 func (s *PriceOption) SetProduct(val Product) {
 	s.Product = val
@@ -9166,6 +9270,11 @@ func (s *PriceOption) SetIntervalCount(val OptInt) {
 // SetUnitAmount sets the value of UnitAmount.
 func (s *PriceOption) SetUnitAmount(val OptMoney) {
 	s.UnitAmount = val
+}
+
+// SetActive sets the value of Active.
+func (s *PriceOption) SetActive(val bool) {
+	s.Active = val
 }
 
 type PriceOptionBillingScheme string

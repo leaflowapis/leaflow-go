@@ -951,12 +951,6 @@ func (s *Applicability) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.FirstPurchaseOnly.Set {
-			e.FieldStart("first_purchase_only")
-			s.FirstPurchaseOnly.Encode(e)
-		}
-	}
-	{
 		if s.MinTermMonths.Set {
 			e.FieldStart("min_term_months")
 			s.MinTermMonths.Encode(e)
@@ -968,17 +962,49 @@ func (s *Applicability) encodeFields(e *jx.Encoder) {
 			s.MaxTermMonths.Encode(e)
 		}
 	}
+	{
+		if s.ExcludedProducts != nil {
+			e.FieldStart("excluded_products")
+			e.ArrStart()
+			for _, elem := range s.ExcludedProducts {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.ExcludedPlans != nil {
+			e.FieldStart("excluded_plans")
+			e.ArrStart()
+			for _, elem := range s.ExcludedPlans {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.ExcludedPrices != nil {
+			e.FieldStart("excluded_prices")
+			e.ArrStart()
+			for _, elem := range s.ExcludedPrices {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
 }
 
-var jsonFieldsNameOfApplicability = [8]string{
+var jsonFieldsNameOfApplicability = [10]string{
 	0: "products",
 	1: "plans",
 	2: "prices",
 	3: "price_types",
 	4: "operations",
-	5: "first_purchase_only",
-	6: "min_term_months",
-	7: "max_term_months",
+	5: "min_term_months",
+	6: "max_term_months",
+	7: "excluded_products",
+	8: "excluded_plans",
+	9: "excluded_prices",
 }
 
 // Decode decodes Applicability from json.
@@ -1008,9 +1034,9 @@ func (s *Applicability) Decode(d *jx.Decoder) error {
 			}
 		case "plans":
 			if err := func() error {
-				s.Plans = make([]ObjectIdentity, 0)
+				s.Plans = make([]ApplicablePlan, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem ObjectIdentity
+					var elem ApplicablePlan
 					if err := elem.Decode(d); err != nil {
 						return err
 					}
@@ -1076,16 +1102,6 @@ func (s *Applicability) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"operations\"")
 			}
-		case "first_purchase_only":
-			if err := func() error {
-				s.FirstPurchaseOnly.Reset()
-				if err := s.FirstPurchaseOnly.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"first_purchase_only\"")
-			}
 		case "min_term_months":
 			if err := func() error {
 				s.MinTermMonths.Reset()
@@ -1105,6 +1121,57 @@ func (s *Applicability) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"max_term_months\"")
+			}
+		case "excluded_products":
+			if err := func() error {
+				s.ExcludedProducts = make([]Product, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem Product
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.ExcludedProducts = append(s.ExcludedProducts, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"excluded_products\"")
+			}
+		case "excluded_plans":
+			if err := func() error {
+				s.ExcludedPlans = make([]ApplicablePlan, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem ApplicablePlan
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.ExcludedPlans = append(s.ExcludedPlans, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"excluded_plans\"")
+			}
+		case "excluded_prices":
+			if err := func() error {
+				s.ExcludedPrices = make([]PriceOption, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem PriceOption
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.ExcludedPrices = append(s.ExcludedPrices, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"excluded_prices\"")
 			}
 		default:
 			return d.Skip()
@@ -1126,6 +1193,136 @@ func (s *Applicability) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *Applicability) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *ApplicablePlan) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ApplicablePlan) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		json.EncodeUUID(e, s.ID)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("active")
+		e.Bool(s.Active)
+	}
+}
+
+var jsonFieldsNameOfApplicablePlan = [3]string{
+	0: "id",
+	1: "name",
+	2: "active",
+}
+
+// Decode decodes ApplicablePlan from json.
+func (s *ApplicablePlan) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ApplicablePlan to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "active":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.Active = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"active\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ApplicablePlan")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfApplicablePlan) {
+					name = jsonFieldsNameOfApplicablePlan[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ApplicablePlan) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ApplicablePlan) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -4519,6 +4716,12 @@ func (s *CreditGrant) encodeFields(e *jx.Encoder) {
 		s.AppliesTo.Encode(e)
 	}
 	{
+		if s.FirstPurchaseOnly.Set {
+			e.FieldStart("first_purchase_only")
+			s.FirstPurchaseOnly.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
@@ -4534,7 +4737,7 @@ func (s *CreditGrant) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreditGrant = [11]string{
+var jsonFieldsNameOfCreditGrant = [12]string{
 	0:  "min_amount",
 	1:  "id",
 	2:  "billing_account_id",
@@ -4543,9 +4746,10 @@ var jsonFieldsNameOfCreditGrant = [11]string{
 	5:  "remaining_amount",
 	6:  "currency",
 	7:  "applies_to",
-	8:  "status",
-	9:  "valid_from",
-	10: "valid_until",
+	8:  "first_purchase_only",
+	9:  "status",
+	10: "valid_from",
+	11: "valid_until",
 }
 
 // Decode decodes CreditGrant from json.
@@ -4643,8 +4847,18 @@ func (s *CreditGrant) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"applies_to\"")
 			}
+		case "first_purchase_only":
+			if err := func() error {
+				s.FirstPurchaseOnly.Reset()
+				if err := s.FirstPurchaseOnly.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"first_purchase_only\"")
+			}
 		case "status":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -4654,7 +4868,7 @@ func (s *CreditGrant) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "valid_from":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.ValidFrom = v
@@ -4686,7 +4900,7 @@ func (s *CreditGrant) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111010,
-		0b00000011,
+		0b00000110,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4911,14 +5125,21 @@ func (s *CreditGroup) encodeFields(e *jx.Encoder) {
 		s.AppliesTo.Encode(e)
 	}
 	{
+		if s.FirstPurchaseOnly.Set {
+			e.FieldStart("first_purchase_only")
+			s.FirstPurchaseOnly.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("amount")
 		s.Amount.Encode(e)
 	}
 }
 
-var jsonFieldsNameOfCreditGroup = [2]string{
+var jsonFieldsNameOfCreditGroup = [3]string{
 	0: "applies_to",
-	1: "amount",
+	1: "first_purchase_only",
+	2: "amount",
 }
 
 // Decode decodes CreditGroup from json.
@@ -4940,8 +5161,18 @@ func (s *CreditGroup) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"applies_to\"")
 			}
+		case "first_purchase_only":
+			if err := func() error {
+				s.FirstPurchaseOnly.Reset()
+				if err := s.FirstPurchaseOnly.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"first_purchase_only\"")
+			}
 		case "amount":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.Amount.Decode(d); err != nil {
 					return err
@@ -4960,7 +5191,7 @@ func (s *CreditGroup) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000101,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5368,6 +5599,12 @@ func (s *Discount) encodeFields(e *jx.Encoder) {
 		s.AppliesTo.Encode(e)
 	}
 	{
+		if s.FirstPurchaseOnly.Set {
+			e.FieldStart("first_purchase_only")
+			s.FirstPurchaseOnly.Encode(e)
+		}
+	}
+	{
 		if s.StartedAt.Set {
 			e.FieldStart("started_at")
 			s.StartedAt.Encode(e, json.EncodeDateTime)
@@ -5381,7 +5618,7 @@ func (s *Discount) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfDiscount = [18]string{
+var jsonFieldsNameOfDiscount = [19]string{
 	0:  "min_amount",
 	1:  "billing_account_id",
 	2:  "coupon_id",
@@ -5398,8 +5635,9 @@ var jsonFieldsNameOfDiscount = [18]string{
 	13: "max_discount",
 	14: "currency",
 	15: "applies_to",
-	16: "started_at",
-	17: "ended_at",
+	16: "first_purchase_only",
+	17: "started_at",
+	18: "ended_at",
 }
 
 // Decode decodes Discount from json.
@@ -5574,6 +5812,16 @@ func (s *Discount) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"applies_to\"")
+			}
+		case "first_purchase_only":
+			if err := func() error {
+				s.FirstPurchaseOnly.Reset()
+				if err := s.FirstPurchaseOnly.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"first_purchase_only\"")
 			}
 		case "started_at":
 			if err := func() error {
@@ -14290,19 +14538,24 @@ func (s *PriceOption) encodeFields(e *jx.Encoder) {
 			s.UnitAmount.Encode(e)
 		}
 	}
+	{
+		e.FieldStart("active")
+		e.Bool(s.Active)
+	}
 }
 
-var jsonFieldsNameOfPriceOption = [10]string{
-	0: "product",
-	1: "plan",
-	2: "billing_scheme",
-	3: "unit_quantity",
-	4: "id",
-	5: "currency",
-	6: "type",
-	7: "interval",
-	8: "interval_count",
-	9: "unit_amount",
+var jsonFieldsNameOfPriceOption = [11]string{
+	0:  "product",
+	1:  "plan",
+	2:  "billing_scheme",
+	3:  "unit_quantity",
+	4:  "id",
+	5:  "currency",
+	6:  "type",
+	7:  "interval",
+	8:  "interval_count",
+	9:  "unit_amount",
+	10: "active",
 }
 
 // Decode decodes PriceOption from json.
@@ -14420,6 +14673,18 @@ func (s *PriceOption) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"unit_amount\"")
 			}
+		case "active":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.Active = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"active\"")
+			}
 		default:
 			return d.Skip()
 		}
@@ -14431,7 +14696,7 @@ func (s *PriceOption) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000000,
+		0b00000100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

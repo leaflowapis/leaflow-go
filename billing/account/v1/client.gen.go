@@ -1328,11 +1328,13 @@ type AllowanceList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// Applicability Product, plan and price lists form a union; three empty lists permit every item.
-// Other conditions apply together. Entries always include their display fields.
+// Applicability Anything not excluded that matches an inclusion, or anything not excluded when no inclusion is
+// given, subject to the billing type, operation and term conditions. Entries always include their
+// display fields; archived plans and prices stay listed with active set to false.
 type Applicability struct {
-	// FirstPurchaseOnly Restricted to your first purchase of a covered product.
-	FirstPurchaseOnly *bool `json:"first_purchase_only,omitempty"`
+	ExcludedPlans    []ApplicablePlan `json:"excluded_plans,omitempty"`
+	ExcludedPrices   []PriceOption    `json:"excluded_prices,omitempty"`
+	ExcludedProducts []Product        `json:"excluded_products,omitempty"`
 
 	// MaxTermMonths The longest term a purchase may have, in months.
 	MaxTermMonths *int `json:"max_term_months,omitempty"`
@@ -1341,10 +1343,17 @@ type Applicability struct {
 	// metered usage, never qualifies while this is set.
 	MinTermMonths *int                `json:"min_term_months,omitempty"`
 	Operations    []PurchaseOperation `json:"operations,omitempty"`
-	Plans         []ObjectIdentity    `json:"plans,omitempty"`
+	Plans         []ApplicablePlan    `json:"plans,omitempty"`
 	PriceTypes    []string            `json:"price_types,omitempty"`
 	Prices        []PriceOption       `json:"prices,omitempty"`
 	Products      []Product           `json:"products,omitempty"`
+}
+
+// ApplicablePlan A plan it refers to. active is false once the plan is archived; it still applies to subscriptions already on this plan.
+type ApplicablePlan struct {
+	Active bool               `json:"active"`
+	Id     openapi_types.UUID `json:"id"`
+	Name   string             `json:"name"`
 }
 
 // AppliedCredit A credit grant and what it would pay.
@@ -1771,12 +1780,15 @@ type CreditGrant struct {
 	Amount externalRef0.Money `json:"amount"`
 
 	// AppliesTo What this credit may pay for. No restrictions means anything on the account.
-	AppliesTo        Applicability      `json:"applies_to"`
-	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
-	Currency         string             `json:"currency"`
-	Id               openapi_types.UUID `json:"id"`
-	MinAmount        *string            `json:"min_amount,omitempty"`
-	Name             string             `json:"name"`
+	AppliesTo        Applicability `json:"applies_to"`
+	BillingAccountId *int64        `json:"billing_account_id,omitempty"`
+	Currency         string        `json:"currency"`
+
+	// FirstPurchaseOnly Restricted to your first purchase of anything it applies to.
+	FirstPurchaseOnly *bool              `json:"first_purchase_only,omitempty"`
+	Id                openapi_types.UUID `json:"id"`
+	MinAmount         *string            `json:"min_amount,omitempty"`
+	Name              string             `json:"name"`
 
 	// RemainingAmount A decimal string, in the currency stated alongside it.
 	//
@@ -1819,6 +1831,9 @@ type CreditGroup struct {
 
 	// AppliesTo What the credit in this group may pay for. No restrictions means anything on the account.
 	AppliesTo Applicability `json:"applies_to"`
+
+	// FirstPurchaseOnly Restricted to your first purchase of anything it applies to.
+	FirstPurchaseOnly *bool `json:"first_purchase_only,omitempty"`
 }
 
 // Currency A currency a billing account can be opened in.
@@ -1854,7 +1869,10 @@ type Discount struct {
 	CouponId         openapi_types.UUID `json:"coupon_id"`
 	Currency         *string            `json:"currency,omitempty"`
 	EndedAt          *time.Time         `json:"ended_at,omitempty"`
-	Id               openapi_types.UUID `json:"id"`
+
+	// FirstPurchaseOnly Restricted to your first purchase of anything it applies to.
+	FirstPurchaseOnly *bool              `json:"first_purchase_only,omitempty"`
+	Id                openapi_types.UUID `json:"id"`
 
 	// MaxDiscount Caps a percentage discount.
 	MaxDiscount *externalRef0.Money `json:"max_discount,omitempty"`
@@ -2676,6 +2694,8 @@ type PaymentStatus string
 
 // PriceOption A price's display terms, including archived prices referenced by an applicability list.
 type PriceOption struct {
+	// Active False once the price is archived. It still applies to purchases already made at this price.
+	Active        bool                     `json:"active"`
 	BillingScheme PriceOptionBillingScheme `json:"billing_scheme"`
 	Currency      string                   `json:"currency"`
 	Id            openapi_types.UUID       `json:"id"`

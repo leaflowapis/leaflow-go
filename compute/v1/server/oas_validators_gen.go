@@ -254,6 +254,17 @@ func (s *BackupCapacityPack) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -501,6 +512,8 @@ func (s BackupResourceStatus) Validate() error {
 		return nil
 	case "error":
 		return nil
+	case "missing":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -538,6 +551,17 @@ func (s *BackupService) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "failure_reason",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
 			Error: err,
 		})
 	}
@@ -2321,6 +2345,8 @@ func (s DiskResourceStatus) Validate() error {
 		return nil
 	case "error":
 		return nil
+	case "missing":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -2720,6 +2746,8 @@ func (s FloatingIPResourceStatus) Validate() error {
 	case "error":
 		return nil
 	case "unknown":
+		return nil
+	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3203,6 +3231,8 @@ func (s ImageResourceStatus) Validate() error {
 		return nil
 	case "error":
 		return nil
+	case "missing":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -3403,17 +3433,6 @@ func (s *InstanceResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "status",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.PowerState.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "power_state",
 			Error: err,
 		})
 	}
@@ -3629,27 +3648,6 @@ func (s InstanceResourceLabels) Validate() error {
 	return nil
 }
 
-func (s InstanceResourcePowerState) Validate() error {
-	switch s {
-	case "no_state":
-		return nil
-	case "running":
-		return nil
-	case "paused":
-		return nil
-	case "shutdown":
-		return nil
-	case "crashed":
-		return nil
-	case "suspended":
-		return nil
-	case "unknown":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s InstanceResourceStatus) Validate() error {
 	switch s {
 	case "pending":
@@ -3677,6 +3675,8 @@ func (s InstanceResourceStatus) Validate() error {
 	case "error":
 		return nil
 	case "unknown":
+		return nil
+	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -5004,6 +5004,8 @@ func (s PortResourceStatus) Validate() error {
 		return nil
 	case "unknown":
 		return nil
+	case "missing":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -5352,6 +5354,8 @@ func (s PrivateNetworkResourceStatus) Validate() error {
 	case "error":
 		return nil
 	case "unknown":
+		return nil
+	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -6961,6 +6965,35 @@ func (s *SnapshotQuota) Validate() error {
 		})
 	}
 	if err := func() error {
+		if value, ok := s.Billing.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "billing",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ReleaseSubscriptionIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_subscription_ids",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.PendingLimit.Get(); ok {
 			if err := func() error {
 				if err := (validate.Int{
@@ -7139,6 +7172,8 @@ func (s SnapshotResourceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
+		return nil
+	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

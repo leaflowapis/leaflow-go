@@ -100,6 +100,7 @@ const (
 	BackupResourceStatusDeleted      BackupResourceStatus = "deleted"
 	BackupResourceStatusError        BackupResourceStatus = "error"
 	BackupResourceStatusFailed       BackupResourceStatus = "failed"
+	BackupResourceStatusMissing      BackupResourceStatus = "missing"
 	BackupResourceStatusProvisioning BackupResourceStatus = "provisioning"
 )
 
@@ -113,6 +114,8 @@ func (e BackupResourceStatus) Valid() bool {
 	case BackupResourceStatusError:
 		return true
 	case BackupResourceStatusFailed:
+		return true
+	case BackupResourceStatusMissing:
 		return true
 	case BackupResourceStatusProvisioning:
 		return true
@@ -389,6 +392,7 @@ const (
 	DiskResourceStatusError        DiskResourceStatus = "error"
 	DiskResourceStatusFailed       DiskResourceStatus = "failed"
 	DiskResourceStatusInUse        DiskResourceStatus = "in_use"
+	DiskResourceStatusMissing      DiskResourceStatus = "missing"
 	DiskResourceStatusPending      DiskResourceStatus = "pending"
 	DiskResourceStatusProvisioning DiskResourceStatus = "provisioning"
 )
@@ -405,6 +409,8 @@ func (e DiskResourceStatus) Valid() bool {
 	case DiskResourceStatusFailed:
 		return true
 	case DiskResourceStatusInUse:
+		return true
+	case DiskResourceStatusMissing:
 		return true
 	case DiskResourceStatusPending:
 		return true
@@ -529,6 +535,7 @@ const (
 	FloatingIPResourceStatusDeleted      FloatingIPResourceStatus = "deleted"
 	FloatingIPResourceStatusError        FloatingIPResourceStatus = "error"
 	FloatingIPResourceStatusFailed       FloatingIPResourceStatus = "failed"
+	FloatingIPResourceStatusMissing      FloatingIPResourceStatus = "missing"
 	FloatingIPResourceStatusPending      FloatingIPResourceStatus = "pending"
 	FloatingIPResourceStatusProvisioning FloatingIPResourceStatus = "provisioning"
 	FloatingIPResourceStatusUnknown      FloatingIPResourceStatus = "unknown"
@@ -544,6 +551,8 @@ func (e FloatingIPResourceStatus) Valid() bool {
 	case FloatingIPResourceStatusError:
 		return true
 	case FloatingIPResourceStatusFailed:
+		return true
+	case FloatingIPResourceStatusMissing:
 		return true
 	case FloatingIPResourceStatusPending:
 		return true
@@ -682,6 +691,7 @@ const (
 	ImageResourceStatusDeleted      ImageResourceStatus = "deleted"
 	ImageResourceStatusError        ImageResourceStatus = "error"
 	ImageResourceStatusFailed       ImageResourceStatus = "failed"
+	ImageResourceStatusMissing      ImageResourceStatus = "missing"
 	ImageResourceStatusPending      ImageResourceStatus = "pending"
 	ImageResourceStatusProvisioning ImageResourceStatus = "provisioning"
 	ImageResourceStatusUploading    ImageResourceStatus = "uploading"
@@ -697,6 +707,8 @@ func (e ImageResourceStatus) Valid() bool {
 	case ImageResourceStatusError:
 		return true
 	case ImageResourceStatusFailed:
+		return true
+	case ImageResourceStatusMissing:
 		return true
 	case ImageResourceStatusPending:
 		return true
@@ -841,45 +853,13 @@ func (e InstanceResourceFailureReason) Valid() bool {
 	}
 }
 
-// Defines values for InstanceResourcePowerState.
-const (
-	InstanceResourcePowerStateCrashed   InstanceResourcePowerState = "crashed"
-	InstanceResourcePowerStateNoState   InstanceResourcePowerState = "no_state"
-	InstanceResourcePowerStatePaused    InstanceResourcePowerState = "paused"
-	InstanceResourcePowerStateRunning   InstanceResourcePowerState = "running"
-	InstanceResourcePowerStateShutdown  InstanceResourcePowerState = "shutdown"
-	InstanceResourcePowerStateSuspended InstanceResourcePowerState = "suspended"
-	InstanceResourcePowerStateUnknown   InstanceResourcePowerState = "unknown"
-)
-
-// Valid indicates whether the value is a known member of the InstanceResourcePowerState enum.
-func (e InstanceResourcePowerState) Valid() bool {
-	switch e {
-	case InstanceResourcePowerStateCrashed:
-		return true
-	case InstanceResourcePowerStateNoState:
-		return true
-	case InstanceResourcePowerStatePaused:
-		return true
-	case InstanceResourcePowerStateRunning:
-		return true
-	case InstanceResourcePowerStateShutdown:
-		return true
-	case InstanceResourcePowerStateSuspended:
-		return true
-	case InstanceResourcePowerStateUnknown:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for InstanceResourceStatus.
 const (
 	InstanceResourceStatusActive           InstanceResourceStatus = "active"
 	InstanceResourceStatusDeleted          InstanceResourceStatus = "deleted"
 	InstanceResourceStatusError            InstanceResourceStatus = "error"
 	InstanceResourceStatusFailed           InstanceResourceStatus = "failed"
+	InstanceResourceStatusMissing          InstanceResourceStatus = "missing"
 	InstanceResourceStatusPaused           InstanceResourceStatus = "paused"
 	InstanceResourceStatusPending          InstanceResourceStatus = "pending"
 	InstanceResourceStatusProvisioning     InstanceResourceStatus = "provisioning"
@@ -901,6 +881,8 @@ func (e InstanceResourceStatus) Valid() bool {
 	case InstanceResourceStatusError:
 		return true
 	case InstanceResourceStatusFailed:
+		return true
+	case InstanceResourceStatusMissing:
 		return true
 	case InstanceResourceStatusPaused:
 		return true
@@ -1088,6 +1070,7 @@ func (e PortOperationType) Valid() bool {
 const (
 	PortResourceStatusAvailable PortResourceStatus = "available"
 	PortResourceStatusError     PortResourceStatus = "error"
+	PortResourceStatusMissing   PortResourceStatus = "missing"
 	PortResourceStatusPending   PortResourceStatus = "pending"
 	PortResourceStatusUnknown   PortResourceStatus = "unknown"
 )
@@ -1098,6 +1081,8 @@ func (e PortResourceStatus) Valid() bool {
 	case PortResourceStatusAvailable:
 		return true
 	case PortResourceStatusError:
+		return true
+	case PortResourceStatusMissing:
 		return true
 	case PortResourceStatusPending:
 		return true
@@ -1214,6 +1199,7 @@ func (e PrivateNetworkOperationType) Valid() bool {
 const (
 	PrivateNetworkResourceStatusAvailable PrivateNetworkResourceStatus = "available"
 	PrivateNetworkResourceStatusError     PrivateNetworkResourceStatus = "error"
+	PrivateNetworkResourceStatusMissing   PrivateNetworkResourceStatus = "missing"
 	PrivateNetworkResourceStatusPending   PrivateNetworkResourceStatus = "pending"
 	PrivateNetworkResourceStatusUnknown   PrivateNetworkResourceStatus = "unknown"
 )
@@ -1224,6 +1210,8 @@ func (e PrivateNetworkResourceStatus) Valid() bool {
 	case PrivateNetworkResourceStatusAvailable:
 		return true
 	case PrivateNetworkResourceStatusError:
+		return true
+	case PrivateNetworkResourceStatusMissing:
 		return true
 	case PrivateNetworkResourceStatusPending:
 		return true
@@ -1387,6 +1375,7 @@ const (
 	SnapshotResourceStatusDeleted      SnapshotResourceStatus = "deleted"
 	SnapshotResourceStatusError        SnapshotResourceStatus = "error"
 	SnapshotResourceStatusFailed       SnapshotResourceStatus = "failed"
+	SnapshotResourceStatusMissing      SnapshotResourceStatus = "missing"
 	SnapshotResourceStatusPending      SnapshotResourceStatus = "pending"
 	SnapshotResourceStatusProvisioning SnapshotResourceStatus = "provisioning"
 )
@@ -1401,6 +1390,8 @@ func (e SnapshotResourceStatus) Valid() bool {
 	case SnapshotResourceStatusError:
 		return true
 	case SnapshotResourceStatusFailed:
+		return true
+	case SnapshotResourceStatusMissing:
 		return true
 	case SnapshotResourceStatusPending:
 		return true
@@ -1483,8 +1474,8 @@ type AllocateFloatingIPRequestBody struct {
 // the address is allocated.
 type AllocateFloatingIPResponseBody struct {
 	// FloatingIp One purchased public IP resource, including its bandwidth configuration. Bandwidth has no
-	// separate Compute resource ID. Billing may split fees internally; read the order for the
-	// commercial breakdown. Changing bandwidth updates this same resource, not another allocation.
+	// separate Compute resource ID; one subscription pays for the address and its bandwidth.
+	// Changing bandwidth updates this same resource, not another allocation.
 	FloatingIp FloatingIPResource `json:"floating_ip"`
 
 	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
@@ -1515,10 +1506,10 @@ type BackupCapacityPack struct {
 	FailureReason *BackupCapacityPackFailureReason `json:"failure_reason"`
 	Id            openapi_types.UUID               `json:"id"`
 	OrderId       openapi_types.UUID               `json:"order_id"`
+	RegionId      openapi_types.UUID               `json:"region_id"`
 
-	// PaidUntil The end of the current paid term; null until the pack is active.
-	PaidUntil *time.Time         `json:"paid_until"`
-	RegionId  openapi_types.UUID `json:"region_id"`
+	// ReleaseSubscriptionIds The subscription a cancellation through Billing has to cover to release this capacity pack. A subscription that has ended is not listed, and the list is empty when no subscription pays for the pack.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 
 	// Status `pending` awaits acceptance of its order; `provisioning` is being applied; `active` covers backup capacity; `ended` no longer does because its subscription has ended; `failed` means the purchase failed, as `failure_reason` states.
 	Status BackupCapacityPackStatus `json:"status"`
@@ -1583,11 +1574,11 @@ type BackupResource struct {
 	// SourceDiskId The disk this backup was taken from. The backup remains usable after that disk is deleted
 	SourceDiskId openapi_types.UUID `json:"source_disk_id"`
 
-	// Status `provisioning` while the backup is taken, then `available`. `failed` means the backup was not created.
+	// Status `provisioning` while the backup is taken, then `available`. `failed` means the backup was not created. `missing` means the backup no longer exists in the cloud.
 	Status BackupResourceStatus `json:"status"`
 }
 
-// BackupResourceStatus `provisioning` while the backup is taken, then `available`. `failed` means the backup was not created.
+// BackupResourceStatus `provisioning` while the backup is taken, then `available`. `failed` means the backup was not created. `missing` means the backup no longer exists in the cloud.
 type BackupResourceStatus string
 
 // BackupService The backup service of a project in one region. Retained backup capacity beyond what active capacity packs cover is metered on it.
@@ -1607,6 +1598,9 @@ type BackupService struct {
 	// Pricing The postpaid usage price of backups in this region. Null when the project has no billing account.
 	Pricing  *Pricing           `json:"pricing,omitempty"`
 	RegionId openapi_types.UUID `json:"region_id"`
+
+	// ReleaseSubscriptionIds The subscription a cancellation through Billing has to cover to release this backup service. A subscription that has ended is not listed, and the list is empty when no subscription pays for the service.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 
 	// RetainedCapacityGib The total `capacity_gib` of the backups retained in this region.
 	RetainedCapacityGib int64 `json:"retained_capacity_gib"`
@@ -1979,7 +1973,7 @@ type DiskResource struct {
 	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 	SizeGb                 int64                `json:"size_gb"`
 
-	// Status `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is created; then `available`, or `in_use` once attached. `failed` means the disk was not created; `failure_reason` states why.
+	// Status `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is created; then `available`, or `in_use` once attached. `failed` means the disk was not created; `failure_reason` states why. `missing` means the disk no longer exists in the cloud.
 	Status DiskResourceStatus `json:"status"`
 
 	// SubscriptionId The Billing subscription associated with this resource. It may still be pending; its
@@ -1996,7 +1990,7 @@ type DiskResourceAccessState string
 // DiskResourceFailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this disk is refunded.
 type DiskResourceFailureReason string
 
-// DiskResourceStatus `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is created; then `available`, or `in_use` once attached. `failed` means the disk was not created; `failure_reason` states why.
+// DiskResourceStatus `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is created; then `available`, or `in_use` once attached. `failed` means the disk was not created; `failure_reason` states why. `missing` means the disk no longer exists in the cloud.
 type DiskResourceStatus string
 
 // DiskTypeListResponseBody defines model for DiskTypeListResponseBody.
@@ -2069,8 +2063,8 @@ type FloatingIPOperation struct {
 type FloatingIPOperationType string
 
 // FloatingIPResource One purchased public IP resource, including its bandwidth configuration. Bandwidth has no
-// separate Compute resource ID. Billing may split fees internally; read the order for the
-// commercial breakdown. Changing bandwidth updates this same resource, not another allocation.
+// separate Compute resource ID; one subscription pays for the address and its bandwidth.
+// Changing bandwidth updates this same resource, not another allocation.
 type FloatingIPResource struct {
 	AccessState *FloatingIPResourceAccessState `json:"access_state"`
 
@@ -2097,10 +2091,10 @@ type FloatingIPResource struct {
 	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
 	ReleaseSet []ReleaseSetItem `json:"release_set"`
 
-	// ReleaseSubscriptionIds The complete subscription set a cancellation through Billing has to cover to release this floating IP, including any internal fee components. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	// ReleaseSubscriptionIds The subscription a cancellation through Billing has to cover to release this floating IP. A subscription that has ended is not listed, and the list is empty when no subscription pays for the floating IP.
 	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 
-	// Status `pending` until the order is accepted, with no address allocated; `provisioning` while the address is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states why.
+	// Status `pending` until the order is accepted, with no address allocated; `provisioning` while the address is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states why. `missing` means the address no longer exists in the cloud.
 	Status FloatingIPResourceStatus `json:"status"`
 
 	// SubscriptionId The Billing subscription associated with this resource. It may still be pending; its
@@ -2114,7 +2108,7 @@ type FloatingIPResourceAccessState string
 // FloatingIPResourceFailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this floating IP is refunded.
 type FloatingIPResourceFailureReason string
 
-// FloatingIPResourceStatus `pending` until the order is accepted, with no address allocated; `provisioning` while the address is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states why.
+// FloatingIPResourceStatus `pending` until the order is accepted, with no address allocated; `provisioning` while the address is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states why. `missing` means the address no longer exists in the cloud.
 type FloatingIPResourceStatus string
 
 // IPv4Binding defines model for IPv4Binding.
@@ -2143,7 +2137,7 @@ type IPv4PoolListResponseBody struct {
 
 // IPv4PoolResource defines model for IPv4PoolResource.
 type IPv4PoolResource struct {
-	// BandwidthPricing How the bandwidth of an address from this pool is billed, per Mbit/s, with the same billing choice as the address. Null when the project has no billing account.
+	// BandwidthPricing How the bandwidth of an address from this pool is billed, per Mbit/s. It is bought in the same purchase as the address, with the same billing choice. Null when the project has no billing account.
 	BandwidthPricing *Pricing           `json:"bandwidth_pricing,omitempty"`
 	Id               openapi_types.UUID `json:"id"`
 	Name             string             `json:"name"`
@@ -2232,7 +2226,7 @@ type ImageResource struct {
 	// SourceInstanceId The instance a private image was captured from. The image remains usable after that instance is released. Null for public images
 	SourceInstanceId *openapi_types.UUID `json:"source_instance_id"`
 
-	// Status Only `available` images can install instances. A public image is always `available`; a private image is `pending` until its order is accepted, then goes through `provisioning` and `uploading` while it is captured. `failed` means the capture produced no image; `failure_reason` states why.
+	// Status Only `available` images can install instances. A public image is always `available`; a private image is `pending` until its order is accepted, then goes through `provisioning` and `uploading` while it is captured. `failed` means the capture produced no image; `failure_reason` states why. `missing` means a private image no longer exists in the cloud.
 	Status ImageResourceStatus `json:"status"`
 
 	// SubscriptionId The Billing subscription associated with this resource. It may still be pending; its
@@ -2252,7 +2246,7 @@ type ImageResourceAccessState string
 // ImageResourceFailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this image is refunded.
 type ImageResourceFailureReason string
 
-// ImageResourceStatus Only `available` images can install instances. A public image is always `available`; a private image is `pending` until its order is accepted, then goes through `provisioning` and `uploading` while it is captured. `failed` means the capture produced no image; `failure_reason` states why.
+// ImageResourceStatus Only `available` images can install instances. A public image is always `available`; a private image is `pending` until its order is accepted, then goes through `provisioning` and `uploading` while it is captured. `failed` means the capture produced no image; `failure_reason` states why. `missing` means a private image no longer exists in the cloud.
 type ImageResourceStatus string
 
 // ImageVisibility Who can see and use an image. `public` — offered to every project by the platform. `private` — usable only by the project that owns it.
@@ -2316,8 +2310,7 @@ type InstanceResource struct {
 	OrderId   *openapi_types.UUID `json:"order_id"`
 
 	// OrderItemId The Billing order item for this resource.
-	OrderItemId *openapi_types.UUID        `json:"order_item_id"`
-	PowerState  InstanceResourcePowerState `json:"power_state"`
+	OrderItemId *openapi_types.UUID `json:"order_item_id"`
 
 	// PrivateIp Private address of the instance
 	PrivateIp        *string             `json:"private_ip"`
@@ -2337,7 +2330,7 @@ type InstanceResource struct {
 	// SourceDiskId Non-empty when the instance was created from a disk you already had, instead of from an image
 	SourceDiskId *openapi_types.UUID `json:"source_disk_id"`
 
-	// Status `pending` until the order is accepted: no virtual machine exists and addresses are null. `provisioning` while the instance is created, then `active`. `failed` means the instance was not created; `failure_reason` states why. The other values are the state last observed in the cloud; an operation in progress appears in `operation`, not here.
+	// Status `pending` until the order is accepted: no virtual machine exists and addresses are null. `provisioning` while the instance is created, then `active`. `failed` means the instance was not created; `failure_reason` states why. `missing` means the virtual machine no longer exists in the cloud. The other values are the state last observed in the cloud; an operation in progress appears in `operation`, not here.
 	Status   InstanceResourceStatus `json:"status"`
 	SubnetId *openapi_types.UUID    `json:"subnet_id"`
 
@@ -2353,10 +2346,7 @@ type InstanceResourceAccessState string
 // InstanceResourceFailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this instance is refunded.
 type InstanceResourceFailureReason string
 
-// InstanceResourcePowerState defines model for InstanceResource.PowerState.
-type InstanceResourcePowerState string
-
-// InstanceResourceStatus `pending` until the order is accepted: no virtual machine exists and addresses are null. `provisioning` while the instance is created, then `active`. `failed` means the instance was not created; `failure_reason` states why. The other values are the state last observed in the cloud; an operation in progress appears in `operation`, not here.
+// InstanceResourceStatus `pending` until the order is accepted: no virtual machine exists and addresses are null. `provisioning` while the instance is created, then `active`. `failed` means the instance was not created; `failure_reason` states why. `missing` means the virtual machine no longer exists in the cloud. The other values are the state last observed in the cloud; an operation in progress appears in `operation`, not here.
 type InstanceResourceStatus string
 
 // InstanceRestriction An independent restriction on use. Removing one restriction never removes another source’s restriction, and never starts an instance its user stopped.
@@ -2717,11 +2707,13 @@ type PortResource struct {
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
 
 	// PublicIps Floating IPv4 addresses bound to this network interface; an empty array when none are bound
-	PublicIps []string           `json:"public_ips"`
-	Status    PortResourceStatus `json:"status"`
+	PublicIps []string `json:"public_ips"`
+
+	// Status `missing` means the interface no longer exists in the cloud.
+	Status PortResourceStatus `json:"status"`
 }
 
-// PortResourceStatus defines model for PortResource.Status.
+// PortResourceStatus `missing` means the interface no longer exists in the cloud.
 type PortResourceStatus string
 
 // PowerRequest defines model for PowerRequest.
@@ -2806,12 +2798,12 @@ type PrivateNetworkResource struct {
 	Operation *PrivateNetworkOperation `json:"operation,omitempty"`
 	RegionId  openapi_types.UUID       `json:"region_id"`
 
-	// Status Only `available` accepts new instances, interfaces and floating IPs
+	// Status Only `available` accepts new instances, interfaces and floating IPs. `missing` means the network no longer exists in the cloud.
 	Status    PrivateNetworkResourceStatus `json:"status"`
 	UpdatedAt time.Time                    `json:"updated_at"`
 }
 
-// PrivateNetworkResourceStatus Only `available` accepts new instances, interfaces and floating IPs
+// PrivateNetworkResourceStatus Only `available` accepts new instances, interfaces and floating IPs. `missing` means the network no longer exists in the cloud.
 type PrivateNetworkResourceStatus string
 
 // Quote A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
@@ -2880,7 +2872,7 @@ type ReleaseResource struct {
 // ReleaseResourceType defines model for ReleaseResource.Type.
 type ReleaseResourceType string
 
-// ReleaseSetItem One subscription of a release set and the resource it pays for. Multiple internal billing components may refer to the same floating IP; they do not create independent bandwidth resources.
+// ReleaseSetItem One subscription of a release set and the resource it pays for.
 type ReleaseSetItem struct {
 	// Resource A resource a release set releases.
 	Resource       ReleaseResource    `json:"resource"`
@@ -3141,8 +3133,8 @@ type SetFloatingIPBandwidthRequestBody struct {
 // SetFloatingIPBandwidthResponseBody The floating IP, still at its current bandwidth, and the order for the change.
 type SetFloatingIPBandwidthResponseBody struct {
 	// FloatingIp One purchased public IP resource, including its bandwidth configuration. Bandwidth has no
-	// separate Compute resource ID. Billing may split fees internally; read the order for the
-	// commercial breakdown. Changing bandwidth updates this same resource, not another allocation.
+	// separate Compute resource ID; one subscription pays for the address and its bandwidth.
+	// Changing bandwidth updates this same resource, not another allocation.
 	FloatingIp FloatingIPResource `json:"floating_ip"`
 
 	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
@@ -3227,6 +3219,9 @@ type SnapshotQuota struct {
 	// Available max(limit - used, 0), or zero while creation is not permitted.
 	Available int64 `json:"available"`
 
+	// Billing The billing choice of the associated quota purchase, as given when it was bought. A change of an existing purchase has to give the same choice. Null when no purchase has been recorded.
+	Billing *BillingChoice `json:"billing"`
+
 	// FailureReason Why the first purchase failed; null unless status is failed. A failed change leaves the current
 	// limit in force and clears pending_limit; its order shows the outcome.
 	FailureReason *SnapshotQuotaFailureReason `json:"failure_reason"`
@@ -3246,6 +3241,9 @@ type SnapshotQuota struct {
 	// Pricing How snapshot quota in this region can be bought, per snapshot slot. Null when the project has no billing account.
 	Pricing  *Pricing           `json:"pricing,omitempty"`
 	RegionId openapi_types.UUID `json:"region_id"`
+
+	// ReleaseSubscriptionIds The subscription a cancellation through Billing has to cover to release this snapshot quota. A subscription that has ended is not listed, and the list is empty when no subscription pays for the quota.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 
 	// Status inactive has no purchase; pending is a first purchase whose order has not been accepted;
 	// provisioning is a first purchase being activated; active permits creation within available
@@ -3290,11 +3288,11 @@ type SnapshotResource struct {
 	// SizeGb Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller
 	SizeGb int64 `json:"size_gb"`
 
-	// Status `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then `available`. `failed` means the snapshot was not created; its slot is released once no snapshot data remains.
+	// Status `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then `available`. `failed` means the snapshot was not created; its slot is released once no snapshot data remains. `missing` means the snapshot no longer exists in the cloud.
 	Status SnapshotResourceStatus `json:"status"`
 }
 
-// SnapshotResourceStatus `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then `available`. `failed` means the snapshot was not created; its slot is released once no snapshot data remains.
+// SnapshotResourceStatus `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then `available`. `failed` means the snapshot was not created; its slot is released once no snapshot data remains. `missing` means the snapshot no longer exists in the cloud.
 type SnapshotResourceStatus string
 
 // SubnetListResponseBody defines model for SubnetListResponseBody.
@@ -4070,7 +4068,7 @@ type ClientInterface interface {
 	//
 	// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it is released.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 	ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5942,7 +5940,7 @@ func (c *Client) CreateFloatingIpQuote(ctx context.Context, body CreateFloatingI
 //
 // Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it is released.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 func (c *Client) ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -14136,7 +14134,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it is released.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -21591,7 +21589,7 @@ func (c *ClientWithResponses) CreateFloatingIpQuoteWithResponse(ctx context.Cont
 //
 // Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it is released.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
