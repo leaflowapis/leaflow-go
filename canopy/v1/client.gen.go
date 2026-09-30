@@ -130,6 +130,81 @@ func (e RequestResourceUsageSource) Valid() bool {
 	}
 }
 
+// Defines values for ServiceResourceFailureReason.
+const (
+	LessThannil   ServiceResourceFailureReason = "<nil>"
+	OrderCanceled ServiceResourceFailureReason = "order_canceled"
+	OrderDeclined ServiceResourceFailureReason = "order_declined"
+	OrderExpired  ServiceResourceFailureReason = "order_expired"
+)
+
+// Valid indicates whether the value is a known member of the ServiceResourceFailureReason enum.
+func (e ServiceResourceFailureReason) Valid() bool {
+	switch e {
+	case LessThannil:
+		return true
+	case OrderCanceled:
+		return true
+	case OrderDeclined:
+		return true
+	case OrderExpired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServiceResourceStatus.
+const (
+	ServiceResourceStatusActive   ServiceResourceStatus = "active"
+	ServiceResourceStatusFailed   ServiceResourceStatus = "failed"
+	ServiceResourceStatusInactive ServiceResourceStatus = "inactive"
+	ServiceResourceStatusPending  ServiceResourceStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the ServiceResourceStatus enum.
+func (e ServiceResourceStatus) Valid() bool {
+	switch e {
+	case ServiceResourceStatusActive:
+		return true
+	case ServiceResourceStatusFailed:
+		return true
+	case ServiceResourceStatusInactive:
+		return true
+	case ServiceResourceStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TokenPriceTokenKind.
+const (
+	CacheRead  TokenPriceTokenKind = "cache_read"
+	CacheWrite TokenPriceTokenKind = "cache_write"
+	Input      TokenPriceTokenKind = "input"
+	Output     TokenPriceTokenKind = "output"
+	Reasoning  TokenPriceTokenKind = "reasoning"
+)
+
+// Valid indicates whether the value is a known member of the TokenPriceTokenKind enum.
+func (e TokenPriceTokenKind) Valid() bool {
+	switch e {
+	case CacheRead:
+		return true
+	case CacheWrite:
+		return true
+	case Input:
+		return true
+	case Output:
+		return true
+	case Reasoning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListApiKeysParamsStatus.
 const (
 	ListApiKeysParamsStatusActive   ListApiKeysParamsStatus = "active"
@@ -336,6 +411,12 @@ type APIKeyUsageResource struct {
 	Requests         int64              `json:"requests"`
 }
 
+// CheckoutOptions Shared checkout choices for a product purchase. Omitting this object or mode selects
+// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+// refuses a purchase; no infrastructure is created for that refusal.
+type CheckoutOptions = externalRef0.CheckoutOptions
+
 // CreateAPIKeyRequestBody defines model for CreateAPIKeyRequestBody.
 type CreateAPIKeyRequestBody struct {
 	// AllowedModels Ignored while `restrict_models` is false
@@ -349,6 +430,24 @@ type CreateAPIKeyRequestBody struct {
 
 	// RestrictModels While true, only the models listed in `allowed_models` are permitted
 	RestrictModels *bool `json:"restrict_models,omitempty"`
+}
+
+// CreateServiceRequestBody defines model for CreateServiceRequestBody.
+type CreateServiceRequestBody struct {
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+}
+
+// CreateServiceResponseBody The service, `pending` until its order is accepted, and the order.
+type CreateServiceResponseBody struct {
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
+
+	// Service The model platform service of a project.
+	Service ServiceResource `json:"service"`
 }
 
 // CursorPageRequestResource defines model for CursorPageRequestResource.
@@ -420,6 +519,16 @@ type ModelListResponseBody struct {
 	Items []ModelResource `json:"items"`
 }
 
+// ModelPricing What requests to a model cost, as Billing prices them in the currency of the project's current billing account. These are list amounts before promotion codes, not a checkout guarantee; usage is billed afterwards under the service's subscription.
+//
+// Each token kind is priced on its own. `input` excludes cached input, which is `cache_read`, and `output` excludes reasoning the provider reports separately, which is `reasoning`; a request is billed for each kind it used.
+type ModelPricing struct {
+	Currency string `json:"currency"`
+
+	// TokenKinds One entry for each of the five token kinds, in the order input, output, cache_read, cache_write, reasoning.
+	TokenKinds []TokenPrice `json:"token_kinds"`
+}
+
 // ModelResource defines model for ModelResource.
 type ModelResource struct {
 	// ContextLength The context window. Advisory only; the server does not truncate on its basis
@@ -434,6 +543,9 @@ type ModelResource struct {
 
 	// MaxOutputTokens The maximum output length. Advisory only
 	MaxOutputTokens int64 `json:"max_output_tokens"`
+
+	// Pricing What requests to this model cost. Null when the project has no billing account.
+	Pricing *ModelPricing `json:"pricing"`
 
 	// ReasoningTiers The values accepted for `reasoning_effort`. Empty means it is not supported
 	ReasoningTiers    []string            `json:"reasoning_tiers"`
@@ -461,6 +573,26 @@ type ModelUsageResource struct {
 	ReasoningTokens  int64  `json:"reasoning_tokens"`
 	Requests         int64  `json:"requests"`
 }
+
+// Money A decimal string, in the currency stated alongside it.
+//
+// **The currency is not part of this type.** It is carried by a `currency` field next to the
+// amount, or by the account the amount belongs to. Reading an amount without that field is
+// reading a number with no unit.
+//
+// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+// through a float.
+type Money = externalRef0.Money
+
+// PlacedOrder Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+type PlacedOrder = externalRef0.PlacedOrder
+
+// Quote A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
+// charged or reserved, and no discount redemption is consumed. Account discounts and tax are
+// evaluated as for automatic checkout. Promotion codes are evaluated through Billing quote operations.
+// All amounts use currency. This preview does not lock prices or guarantee discount availability.
+type Quote = externalRef0.Quote
 
 // RequestResource defines model for RequestResource.
 type RequestResource struct {
@@ -501,6 +633,47 @@ type RequestResourceStatus string
 
 // RequestResourceUsageSource upstream means the figures were reported by the provider; estimated means they were derived from the character classes of the payload
 type RequestResourceUsageSource string
+
+// ServiceResource The model platform service of a project.
+type ServiceResource struct {
+	// ActivatedAt When the service became active and billing began; null until then.
+	ActivatedAt *time.Time `json:"activated_at"`
+
+	// EndedAt When the subscription ended; null unless it has.
+	EndedAt *time.Time `json:"ended_at"`
+
+	// FailureReason Why the enablement failed; null unless `status` is `failed`. `order_declined` means Billing did not accept the order, for example because the billing account is suspended; `order_canceled` means the order was withdrawn; `order_expired` means its checkout was not confirmed in time.
+	FailureReason *ServiceResourceFailureReason `json:"failure_reason"`
+
+	// OrderId The order that enabled the service, or that the latest enablement placed; null before any enablement.
+	OrderId *openapi_types.UUID `json:"order_id"`
+
+	// Status `inactive` has never been enabled or its subscription has ended; `pending` awaits acceptance of its order; `active` accepts requests on the forwarding endpoints; `failed` means the enablement failed, as `failure_reason` states. An `inactive` or `failed` service can be enabled again.
+	Status ServiceResourceStatus `json:"status"`
+
+	// SubscriptionId The Billing subscription that requests are billed under; null before any enablement.
+	SubscriptionId *openapi_types.UUID `json:"subscription_id"`
+}
+
+// ServiceResourceFailureReason Why the enablement failed; null unless `status` is `failed`. `order_declined` means Billing did not accept the order, for example because the billing account is suspended; `order_canceled` means the order was withdrawn; `order_expired` means its checkout was not confirmed in time.
+type ServiceResourceFailureReason string
+
+// ServiceResourceStatus `inactive` has never been enabled or its subscription has ended; `pending` awaits acceptance of its order; `active` accepts requests on the forwarding endpoints; `failed` means the enablement failed, as `failure_reason` states. An `inactive` or `failed` service can be enabled again.
+type ServiceResourceStatus string
+
+// TokenPrice defines model for TokenPrice.
+type TokenPrice struct {
+	TokenKind TokenPriceTokenKind `json:"token_kind"`
+
+	// UnitAmount The charge for `unit_quantity` tokens of this kind. Null when the kind has no rate in the currency, in which case the model cannot be billed for it.
+	UnitAmount *Money `json:"unit_amount"`
+
+	// UnitQuantity How many tokens `unit_amount` is for, such as `1000000`. Null when `unit_amount` is null.
+	UnitQuantity *string `json:"unit_quantity"`
+}
+
+// TokenPriceTokenKind defines model for TokenPrice.TokenKind.
+type TokenPriceTokenKind string
 
 // TotalsResource defines model for TotalsResource.
 type TotalsResource struct {
@@ -545,6 +718,9 @@ type UsageBucketResource struct {
 type UsageTimelineResponseBody struct {
 	Items []UsageBucketResource `json:"items"`
 }
+
+// Conflict defines model for Conflict.
+type Conflict = Error
 
 // ListApiKeysParams defines parameters for ListApiKeys.
 type ListApiKeysParams struct {
@@ -680,6 +856,9 @@ type CreateApiKeyJSONRequestBody = CreateAPIKeyRequestBody
 
 // UpdateApiKeyJSONRequestBody defines body for UpdateApiKey for application/json ContentType.
 type UpdateApiKeyJSONRequestBody = UpdateAPIKeyRequestBody
+
+// CreateServiceJSONRequestBody defines body for CreateService for application/json ContentType.
+type CreateServiceJSONRequestBody = CreateServiceRequestBody
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -844,6 +1023,8 @@ type ClientInterface interface {
 	//
 	// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis, and the request body is forwarded upstream unchanged.
 	//
+	// `pricing` states what requests to each model cost in the currency of the project's current billing account.
+	//
 	// Corresponds with GET /api/v1/models (the `ListModels` operationId).
 	ListModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -869,6 +1050,46 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /api/v1/requests/{requestId} (the `GetRequest` operationId).
 	GetRequest(ctx context.Context, requestId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetService Get the model platform service
+	//
+	// The model platform service of the authenticated project. The forwarding endpoints accept its requests only while `status` is `active`; each request is then billed under `subscription_id`, per token, at the rates stated in each model's `pricing`.
+	//
+	// When the project is deleted, its API keys are revoked and the subscription is canceled; the service then reads `inactive` with `ended_at` set.
+	//
+	// Corresponds with GET /api/v1/service (the `GetService` operationId).
+	GetService(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateServiceWithBody Enable the model platform service
+	//
+	// Purchases the model platform service for this project. The service itself has no charge; requests are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted, which for an order with nothing to pay happens without further action.
+	//
+	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active. A refusal of the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing account.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/service (the `CreateService` operationId).
+	CreateServiceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateService Enable the model platform service
+	//
+	// Purchases the model platform service for this project. The service itself has no charge; requests are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted, which for an order with nothing to pay happens without further action.
+	//
+	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active. A refusal of the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing account.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/service (the `CreateService` operationId).
+	CreateService(ctx context.Context, body CreateServiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateServiceQuote Quote enabling the model platform service
+	//
+	// Prices what `create-service` would order, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+	//
+	// Token usage is priced per model, as each model's `pricing` states, and is neither part of `total` nor projected: `estimated_usage_amount` is null. A request the purchase would refuse is refused the same way.
+	//
+	// Corresponds with POST /api/v1/service/quote (the `CreateServiceQuote` operationId).
+	CreateServiceQuote(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListUsageByApiKey Get usage by API key
 	//
@@ -1080,6 +1301,8 @@ func (c *Client) RevokeApiKey(ctx context.Context, keyId openapi_types.UUID, req
 //
 // `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis, and the request body is forwarded upstream unchanged.
 //
+// `pricing` states what requests to each model cost in the currency of the project's current billing account.
+//
 // Corresponds with GET /api/v1/models (the `ListModels` operationId).
 func (c *Client) ListModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListModelsRequest(c.Server)
@@ -1136,6 +1359,86 @@ func (c *Client) ListRequests(ctx context.Context, params *ListRequestsParams, r
 // Corresponds with GET /api/v1/requests/{requestId} (the `GetRequest` operationId).
 func (c *Client) GetRequest(ctx context.Context, requestId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRequestRequest(c.Server, requestId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetService Get the model platform service
+//
+// The model platform service of the authenticated project. The forwarding endpoints accept its requests only while `status` is `active`; each request is then billed under `subscription_id`, per token, at the rates stated in each model's `pricing`.
+//
+// When the project is deleted, its API keys are revoked and the subscription is canceled; the service then reads `inactive` with `ended_at` set.
+//
+// Corresponds with GET /api/v1/service (the `GetService` operationId).
+func (c *Client) GetService(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetServiceRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateServiceWithBody Enable the model platform service
+//
+// Purchases the model platform service for this project. The service itself has no charge; requests are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted, which for an order with nothing to pay happens without further action.
+//
+// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active. A refusal of the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing account.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/service (the `CreateService` operationId).
+func (c *Client) CreateServiceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateServiceRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateService Enable the model platform service
+//
+// Purchases the model platform service for this project. The service itself has no charge; requests are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted, which for an order with nothing to pay happens without further action.
+//
+// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active. A refusal of the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing account.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/service (the `CreateService` operationId).
+func (c *Client) CreateService(ctx context.Context, body CreateServiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateServiceRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateServiceQuote Quote enabling the model platform service
+//
+// Prices what `create-service` would order, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+//
+// Token usage is priced per model, as each model's `pricing` states, and is neither part of `total` nor projected: `estimated_usage_amount` is null. A request the purchase would refuse is refused the same way.
+//
+// Corresponds with POST /api/v1/service/quote (the `CreateServiceQuote` operationId).
+func (c *Client) CreateServiceQuote(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateServiceQuoteRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1730,6 +2033,100 @@ func NewGetRequestRequest(server string, requestId openapi_types.UUID) (*http.Re
 	return req, nil
 }
 
+// NewGetServiceRequest constructs an http.Request for the GetService method
+func NewGetServiceRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/service")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateServiceRequest calls the generic CreateService builder with application/json body
+func NewCreateServiceRequest(server string, body CreateServiceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateServiceRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateServiceRequestWithBody constructs an http.Request for the CreateService method, with any body, and a specified content type
+func NewCreateServiceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/service")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateServiceQuoteRequest constructs an http.Request for the CreateServiceQuote method
+func NewCreateServiceQuoteRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/service/quote")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListUsageByApiKeyRequest constructs an http.Request for the ListUsageByApiKey method
 func NewListUsageByApiKeyRequest(server string, params *ListUsageByApiKeyParams) (*http.Request, error) {
 	var err error
@@ -2261,6 +2658,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis, and the request body is forwarded upstream unchanged.
 	//
+	// `pricing` states what requests to each model cost in the currency of the project's current billing account.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/models (the `ListModels` operationId).
@@ -2294,6 +2693,50 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /api/v1/requests/{requestId} (the `GetRequest` operationId).
 	GetRequestWithResponse(ctx context.Context, requestId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRequestResponse, error)
+
+	// GetServiceWithResponse Get the model platform service
+	//
+	// The model platform service of the authenticated project. The forwarding endpoints accept its requests only while `status` is `active`; each request is then billed under `subscription_id`, per token, at the rates stated in each model's `pricing`.
+	//
+	// When the project is deleted, its API keys are revoked and the subscription is canceled; the service then reads `inactive` with `ended_at` set.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/service (the `GetService` operationId).
+	GetServiceWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetServiceResponse, error)
+
+	// CreateServiceWithBodyWithResponse Enable the model platform service
+	//
+	// Purchases the model platform service for this project. The service itself has no charge; requests are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted, which for an order with nothing to pay happens without further action.
+	//
+	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active. A refusal of the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing account.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/service (the `CreateService` operationId).
+	CreateServiceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateServiceResponse, error)
+
+	// CreateServiceWithResponse Enable the model platform service
+	//
+	// Purchases the model platform service for this project. The service itself has no charge; requests are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted, which for an order with nothing to pay happens without further action.
+	//
+	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active. A refusal of the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing account.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/service (the `CreateService` operationId).
+	CreateServiceWithResponse(ctx context.Context, body CreateServiceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateServiceResponse, error)
+
+	// CreateServiceQuoteWithResponse Quote enabling the model platform service
+	//
+	// Prices what `create-service` would order, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+	//
+	// Token usage is priced per model, as each model's `pricing` states, and is neither part of `total` nor projected: `estimated_usage_amount` is null. A request the purchase would refuse is refused the same way.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/service/quote (the `CreateServiceQuote` operationId).
+	CreateServiceQuoteWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateServiceQuoteResponse, error)
 
 	// ListUsageByApiKeyWithResponse Get usage by API key
 	//
@@ -2862,6 +3305,164 @@ func (r GetRequestResponse) ContentType() string {
 	return ""
 }
 
+type GetServiceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ServiceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetServiceResponse) GetJSON200() *ServiceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetServiceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetServiceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetServiceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetServiceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetServiceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateServiceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *CreateServiceResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreateServiceResponse) GetJSON202() *CreateServiceResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateServiceResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateServiceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateServiceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateServiceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateServiceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateServiceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateServiceQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateServiceQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateServiceQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateServiceQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateServiceQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateServiceQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateServiceQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateServiceQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListUsageByApiKeyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3207,6 +3808,8 @@ func (c *ClientWithResponses) RevokeApiKeyWithResponse(ctx context.Context, keyI
 //
 // `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis, and the request body is forwarded upstream unchanged.
 //
+// `pricing` states what requests to each model cost in the currency of the project's current billing account.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/models (the `ListModels` operationId).
@@ -3263,6 +3866,74 @@ func (c *ClientWithResponses) GetRequestWithResponse(ctx context.Context, reques
 		return nil, err
 	}
 	return ParseGetRequestResponse(rsp)
+}
+
+// GetServiceWithResponse Get the model platform service
+//
+// The model platform service of the authenticated project. The forwarding endpoints accept its requests only while `status` is `active`; each request is then billed under `subscription_id`, per token, at the rates stated in each model's `pricing`.
+//
+// When the project is deleted, its API keys are revoked and the subscription is canceled; the service then reads `inactive` with `ended_at` set.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/service (the `GetService` operationId).
+func (c *ClientWithResponses) GetServiceWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetServiceResponse, error) {
+	rsp, err := c.GetService(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetServiceResponse(rsp)
+}
+
+// CreateServiceWithBodyWithResponse Enable the model platform service
+//
+// Purchases the model platform service for this project. The service itself has no charge; requests are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted, which for an order with nothing to pay happens without further action.
+//
+// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active. A refusal of the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing account.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/service (the `CreateService` operationId).
+func (c *ClientWithResponses) CreateServiceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateServiceResponse, error) {
+	rsp, err := c.CreateServiceWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateServiceResponse(rsp)
+}
+
+// CreateServiceWithResponse Enable the model platform service
+//
+// Purchases the model platform service for this project. The service itself has no charge; requests are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted, which for an order with nothing to pay happens without further action.
+//
+// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active. A refusal of the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing account.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/service (the `CreateService` operationId).
+func (c *ClientWithResponses) CreateServiceWithResponse(ctx context.Context, body CreateServiceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateServiceResponse, error) {
+	rsp, err := c.CreateService(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateServiceResponse(rsp)
+}
+
+// CreateServiceQuoteWithResponse Quote enabling the model platform service
+//
+// Prices what `create-service` would order, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+//
+// Token usage is priced per model, as each model's `pricing` states, and is neither part of `total` nor projected: `estimated_usage_amount` is null. A request the purchase would refuse is refused the same way.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/service/quote (the `CreateServiceQuote` operationId).
+func (c *ClientWithResponses) CreateServiceQuoteWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateServiceQuoteResponse, error) {
+	rsp, err := c.CreateServiceQuote(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateServiceQuoteResponse(rsp)
 }
 
 // ListUsageByApiKeyWithResponse Get usage by API key
@@ -3677,6 +4348,119 @@ func ParseGetRequestResponse(rsp *http.Response) (*GetRequestResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetServiceResponse parses an HTTP response from a GetServiceWithResponse call
+func ParseGetServiceResponse(rsp *http.Response) (*GetServiceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetServiceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ServiceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateServiceResponse parses an HTTP response from a CreateServiceWithResponse call
+func ParseCreateServiceResponse(rsp *http.Response) (*CreateServiceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateServiceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest CreateServiceResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateServiceQuoteResponse parses an HTTP response from a CreateServiceQuoteWithResponse call
+func ParseCreateServiceQuoteResponse(rsp *http.Response) (*CreateServiceQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateServiceQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

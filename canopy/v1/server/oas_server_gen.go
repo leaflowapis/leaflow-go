@@ -18,6 +18,33 @@ type Handler interface {
 	//
 	// POST /api/v1/keys
 	CreateAPIKey(ctx context.Context, req *CreateAPIKeyRequestBody) (*IssuedAPIKeyResource, error)
+	// CreateService implements create-service operation.
+	//
+	// Purchases the model platform service for this project. The service itself has no charge; requests
+	// are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the
+	// service as `pending` with its order; it becomes `active` once the order is accepted, which for an
+	// order with nothing to pay happens without further action.
+	//
+	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active.
+	// A refusal of the order by Billing is returned with Billing's code, such as
+	// `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing
+	// account.
+	//
+	// POST /api/v1/service
+	CreateService(ctx context.Context, req *CreateServiceRequestBody) (CreateServiceRes, error)
+	// CreateServiceQuote implements create-service-quote operation.
+	//
+	// Prices what `create-service` would order, without ordering or creating anything; nothing is reserved
+	// or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout.
+	// `total` is what automatic checkout would collect before credit grants and balance; give it as
+	// `checkout.expected_amount` to be refused rather than charged a different amount.
+	//
+	// Token usage is priced per model, as each model's `pricing` states, and is neither part of `total`
+	// nor projected: `estimated_usage_amount` is null. A request the purchase would refuse is refused the
+	// same way.
+	//
+	// POST /api/v1/service/quote
+	CreateServiceQuote(ctx context.Context) (CreateServiceQuoteRes, error)
 	// DisableAPIKey implements disable-api-key operation.
 	//
 	// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
@@ -52,6 +79,17 @@ type Handler interface {
 	//
 	// GET /api/v1/requests/{requestId}
 	GetRequest(ctx context.Context, params GetRequestParams) (*RequestResource, error)
+	// GetService implements get-service operation.
+	//
+	// The model platform service of the authenticated project. The forwarding endpoints accept its
+	// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
+	// token, at the rates stated in each model's `pricing`.
+	//
+	// When the project is deleted, its API keys are revoked and the subscription is canceled; the service
+	// then reads `inactive` with `ended_at` set.
+	//
+	// GET /api/v1/service
+	GetService(ctx context.Context) (*ServiceResource, error)
 	// GetUsageSummary implements get-usage-summary operation.
 	//
 	// `from` and `to` are required and may span no more than 31 days. Both carry a timezone offset, so
@@ -84,6 +122,9 @@ type Handler interface {
 	//
 	// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis,
 	// and the request body is forwarded upstream unchanged.
+	//
+	// `pricing` states what requests to each model cost in the currency of the project's current billing
+	// account.
 	//
 	// GET /api/v1/models
 	ListModels(ctx context.Context) (*ModelListResponseBody, error)
