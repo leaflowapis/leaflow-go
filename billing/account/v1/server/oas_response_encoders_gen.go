@@ -105,19 +105,6 @@ func encodeCheckoutOrderResponse(response CheckoutOrderRes, w http.ResponseWrite
 	}
 }
 
-func encodeCollectInvoicePaymentResponse(response *PaymentResult, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeCreateBillingAccountResponse(response *BillingAccount, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -615,6 +602,19 @@ func encodeListUsageChargesResponse(response *UsageChargeList, w http.ResponseWr
 	return nil
 }
 
+func encodePayInvoiceResponse(response *PaymentResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodePayTogetherResponse(response *PaymentResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -642,19 +642,6 @@ func encodePreviewInvoicePaymentResponse(response *PaymentPreview, w http.Respon
 }
 
 func encodePreviewPayTogetherResponse(response *PaymentPreview, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodePreviewPromotionCodeResponse(response *PromotionCodePreview, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

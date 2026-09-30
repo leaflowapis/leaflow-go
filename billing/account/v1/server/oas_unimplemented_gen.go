@@ -66,11 +66,11 @@ func (UnimplementedHandler) CancelTopUp(ctx context.Context, params CancelTopUpP
 // A successful confirmation records the discount, including any recurring discount terms, reserves its
 // redemption, moves pending_checkout to pending and finalizes the invoice when one is required. The
 // reservation counts toward the code's limits and is consumed when the invoice is paid, or at
-// confirmation when nothing is due. Use collect-invoice-payment to collect its outstanding amount from
-// account funds or a payment gateway. No payment attempt or checkout session is created by this
-// operation. A purchase with nothing to collect can proceed to Billing admission without a payment
-// transaction. An absent invoice or zero immediate amount still requires checkout confirmation;
-// checkout alone does not confirm resource delivery.
+// confirmation when nothing is due. Use pay-invoice to collect its outstanding amount from account
+// funds or a payment gateway. No payment attempt or checkout session is created by this operation. An
+// order whose total is zero completes checkout at placement in either mode and does not need this
+// operation; an order with an amount due, even when credits would cover it, still does. Checkout alone
+// does not confirm resource delivery.
 //
 // Retrying with the same code and expected amount returns the existing order without another
 // redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing that
@@ -85,28 +85,6 @@ func (UnimplementedHandler) CancelTopUp(ctx context.Context, params CancelTopUpP
 //
 // POST /account/v1/orders/{orderId}/checkout
 func (UnimplementedHandler) CheckoutOrder(ctx context.Context, req *CheckoutOrderRequest, params CheckoutOrderParams) (r CheckoutOrderRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CollectInvoicePayment implements collect-invoice-payment operation.
-//
-// Applies eligible credit grants and available balance as requested, then collects the remainder
-// through the selected payment gateway and method. With no gateway selection, insufficient account
-// funds fail without starting an online payment. Card and non-card methods use this same operation.
-// Promotion codes are confirmed by checkout, before collecting payment.
-//
-// Returns a payment action when customer interaction is required. requires_action and processing do
-// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
-// is reused, and retries do not apply credit grants or balance twice.
-//
-// Calling this on an invoice that is already paid returns the existing payment result without another
-// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
-// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
-// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
-// has passed, with `BILLING_ORDER_EXPIRED`.
-//
-// POST /account/v1/invoices/{invoiceId}/collect-payment
-func (UnimplementedHandler) CollectInvoicePayment(ctx context.Context, req OptCollectInvoicePaymentRequest, params CollectInvoicePaymentParams) (r *PaymentResult, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -152,7 +130,7 @@ func (UnimplementedHandler) CreateBillingAccount(ctx context.Context, req *Billi
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -212,7 +190,7 @@ func (UnimplementedHandler) CreatePaymentMethodSetup(ctx context.Context, req *P
 // `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 //
 // POST /account/v1/quotes
-func (UnimplementedHandler) CreateQuote(ctx context.Context, req QuoteRequest) (r *Quote, _ error) {
+func (UnimplementedHandler) CreateQuote(ctx context.Context, req *QuoteRequest) (r *Quote, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -549,6 +527,28 @@ func (UnimplementedHandler) ListUsageCharges(ctx context.Context, params ListUsa
 	return r, ht.ErrNotImplemented
 }
 
+// PayInvoice implements pay-invoice operation.
+//
+// Applies eligible credit grants and available balance as requested, then collects the remainder
+// through the selected payment gateway and method. With no gateway selection, insufficient account
+// funds fail without starting an online payment. Card and non-card methods use this same operation.
+// Promotion codes are confirmed by checkout, before collecting payment.
+//
+// Returns a payment action when customer interaction is required. requires_action and processing do
+// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
+// is reused, and retries do not apply credit grants or balance twice.
+//
+// Calling this on an invoice that is already paid returns the existing payment result without another
+// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
+// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
+// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
+// has passed, with `BILLING_ORDER_EXPIRED`.
+//
+// POST /account/v1/invoices/{invoiceId}/pay
+func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (r *PaymentResult, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // PayTogether implements pay-together operation.
 //
 // Pays outstanding invoices, including the invoices of the listed orders, from the account's eligible
@@ -595,16 +595,6 @@ func (UnimplementedHandler) PreviewInvoicePayment(ctx context.Context, params Pr
 //
 // POST /account/v1/payments/preview
 func (UnimplementedHandler) PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (r *PaymentPreview, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// PreviewPromotionCode implements preview-promotion-code operation.
-//
-// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
-// commit.
-//
-// POST /account/v1/promotion-codes/preview
-func (UnimplementedHandler) PreviewPromotionCode(ctx context.Context, req *PromotionCodePreviewRequest) (r *PromotionCodePreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

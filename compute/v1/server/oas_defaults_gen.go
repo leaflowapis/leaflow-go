@@ -3,6 +3,22 @@
 package computev1server
 
 // setDefaults set default value of fields.
+func (s *CheckoutOptions) setDefaults() {
+	{
+		val := CheckoutOptionsMode("automatic")
+		s.Mode.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *LaunchInstanceQuoteRequestBody) setDefaults() {
+	{
+		val := int64(1)
+		s.Count.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *LaunchInstanceRequestBody) setDefaults() {
 	{
 		val := int64(1)
@@ -15,13 +31,5 @@ func (s *NewBootDisk) setDefaults() {
 	{
 		val := bool(true)
 		s.DeleteWithInstance.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
-func (s *OrderOptions) setDefaults() {
-	{
-		val := bool(true)
-		s.AutoPay.SetTo(val)
 	}
 }

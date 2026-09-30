@@ -19,27 +19,75 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for BackupResourceAccessState.
+// Defines values for BackupCapacityPackFailureReason.
 const (
-	BackupResourceAccessStateEnabled     BackupResourceAccessState = "enabled"
-	BackupResourceAccessStateLessThannil BackupResourceAccessState = "<nil>"
-	BackupResourceAccessStatePending     BackupResourceAccessState = "pending"
-	BackupResourceAccessStateReclaimed   BackupResourceAccessState = "reclaimed"
-	BackupResourceAccessStateSuspended   BackupResourceAccessState = "suspended"
+	BackupCapacityPackFailureReasonLessThannil        BackupCapacityPackFailureReason = "<nil>"
+	BackupCapacityPackFailureReasonOrderCanceled      BackupCapacityPackFailureReason = "order_canceled"
+	BackupCapacityPackFailureReasonOrderDeclined      BackupCapacityPackFailureReason = "order_declined"
+	BackupCapacityPackFailureReasonOrderExpired       BackupCapacityPackFailureReason = "order_expired"
+	BackupCapacityPackFailureReasonProvisioningFailed BackupCapacityPackFailureReason = "provisioning_failed"
 )
 
-// Valid indicates whether the value is a known member of the BackupResourceAccessState enum.
-func (e BackupResourceAccessState) Valid() bool {
+// Valid indicates whether the value is a known member of the BackupCapacityPackFailureReason enum.
+func (e BackupCapacityPackFailureReason) Valid() bool {
 	switch e {
-	case BackupResourceAccessStateEnabled:
+	case BackupCapacityPackFailureReasonLessThannil:
 		return true
-	case BackupResourceAccessStateLessThannil:
+	case BackupCapacityPackFailureReasonOrderCanceled:
 		return true
-	case BackupResourceAccessStatePending:
+	case BackupCapacityPackFailureReasonOrderDeclined:
 		return true
-	case BackupResourceAccessStateReclaimed:
+	case BackupCapacityPackFailureReasonOrderExpired:
 		return true
-	case BackupResourceAccessStateSuspended:
+	case BackupCapacityPackFailureReasonProvisioningFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BackupCapacityPackStatus.
+const (
+	BackupCapacityPackStatusActive       BackupCapacityPackStatus = "active"
+	BackupCapacityPackStatusEnded        BackupCapacityPackStatus = "ended"
+	BackupCapacityPackStatusFailed       BackupCapacityPackStatus = "failed"
+	BackupCapacityPackStatusPending      BackupCapacityPackStatus = "pending"
+	BackupCapacityPackStatusProvisioning BackupCapacityPackStatus = "provisioning"
+)
+
+// Valid indicates whether the value is a known member of the BackupCapacityPackStatus enum.
+func (e BackupCapacityPackStatus) Valid() bool {
+	switch e {
+	case BackupCapacityPackStatusActive:
+		return true
+	case BackupCapacityPackStatusEnded:
+		return true
+	case BackupCapacityPackStatusFailed:
+		return true
+	case BackupCapacityPackStatusPending:
+		return true
+	case BackupCapacityPackStatusProvisioning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BackupOperationType.
+const (
+	BackupOperationTypeCreate  BackupOperationType = "create"
+	BackupOperationTypeDelete  BackupOperationType = "delete"
+	BackupOperationTypeRestore BackupOperationType = "restore"
+)
+
+// Valid indicates whether the value is a known member of the BackupOperationType enum.
+func (e BackupOperationType) Valid() bool {
+	switch e {
+	case BackupOperationTypeCreate:
+		return true
+	case BackupOperationTypeDelete:
+		return true
+	case BackupOperationTypeRestore:
 		return true
 	default:
 		return false
@@ -49,10 +97,10 @@ func (e BackupResourceAccessState) Valid() bool {
 // Defines values for BackupResourceStatus.
 const (
 	BackupResourceStatusAvailable    BackupResourceStatus = "available"
-	BackupResourceStatusDeleting     BackupResourceStatus = "deleting"
+	BackupResourceStatusDeleted      BackupResourceStatus = "deleted"
 	BackupResourceStatusError        BackupResourceStatus = "error"
+	BackupResourceStatusFailed       BackupResourceStatus = "failed"
 	BackupResourceStatusProvisioning BackupResourceStatus = "provisioning"
-	BackupResourceStatusRestoring    BackupResourceStatus = "restoring"
 )
 
 // Valid indicates whether the value is a known member of the BackupResourceStatus enum.
@@ -60,13 +108,106 @@ func (e BackupResourceStatus) Valid() bool {
 	switch e {
 	case BackupResourceStatusAvailable:
 		return true
-	case BackupResourceStatusDeleting:
+	case BackupResourceStatusDeleted:
 		return true
 	case BackupResourceStatusError:
 		return true
+	case BackupResourceStatusFailed:
+		return true
 	case BackupResourceStatusProvisioning:
 		return true
-	case BackupResourceStatusRestoring:
+	default:
+		return false
+	}
+}
+
+// Defines values for BackupServiceFailureReason.
+const (
+	BackupServiceFailureReasonLessThannil        BackupServiceFailureReason = "<nil>"
+	BackupServiceFailureReasonOrderCanceled      BackupServiceFailureReason = "order_canceled"
+	BackupServiceFailureReasonOrderDeclined      BackupServiceFailureReason = "order_declined"
+	BackupServiceFailureReasonOrderExpired       BackupServiceFailureReason = "order_expired"
+	BackupServiceFailureReasonProvisioningFailed BackupServiceFailureReason = "provisioning_failed"
+)
+
+// Valid indicates whether the value is a known member of the BackupServiceFailureReason enum.
+func (e BackupServiceFailureReason) Valid() bool {
+	switch e {
+	case BackupServiceFailureReasonLessThannil:
+		return true
+	case BackupServiceFailureReasonOrderCanceled:
+		return true
+	case BackupServiceFailureReasonOrderDeclined:
+		return true
+	case BackupServiceFailureReasonOrderExpired:
+		return true
+	case BackupServiceFailureReasonProvisioningFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BackupServiceStatus.
+const (
+	BackupServiceStatusActive       BackupServiceStatus = "active"
+	BackupServiceStatusFailed       BackupServiceStatus = "failed"
+	BackupServiceStatusInactive     BackupServiceStatus = "inactive"
+	BackupServiceStatusPending      BackupServiceStatus = "pending"
+	BackupServiceStatusProvisioning BackupServiceStatus = "provisioning"
+	BackupServiceStatusSuspended    BackupServiceStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the BackupServiceStatus enum.
+func (e BackupServiceStatus) Valid() bool {
+	switch e {
+	case BackupServiceStatusActive:
+		return true
+	case BackupServiceStatusFailed:
+		return true
+	case BackupServiceStatusInactive:
+		return true
+	case BackupServiceStatusPending:
+		return true
+	case BackupServiceStatusProvisioning:
+		return true
+	case BackupServiceStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingChoiceMode.
+const (
+	BillingChoiceModePostpaid BillingChoiceMode = "postpaid"
+	BillingChoiceModePrepaid  BillingChoiceMode = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the BillingChoiceMode enum.
+func (e BillingChoiceMode) Valid() bool {
+	switch e {
+	case BillingChoiceModePostpaid:
+		return true
+	case BillingChoiceModePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingPeriodUnit.
+const (
+	Month BillingPeriodUnit = "month"
+	Year  BillingPeriodUnit = "year"
+)
+
+// Valid indicates whether the value is a known member of the BillingPeriodUnit enum.
+func (e BillingPeriodUnit) Valid() bool {
+	switch e {
+	case Month:
+		return true
+	case Year:
 		return true
 	default:
 		return false
@@ -129,12 +270,10 @@ func (e DiskAttachmentRole) Valid() bool {
 
 // Defines values for DiskAttachmentState.
 const (
-	DiskAttachmentStateAttached  DiskAttachmentState = "attached"
-	DiskAttachmentStateAttaching DiskAttachmentState = "attaching"
-	DiskAttachmentStateDetaching DiskAttachmentState = "detaching"
-	DiskAttachmentStateReleased  DiskAttachmentState = "released"
-	DiskAttachmentStateReserved  DiskAttachmentState = "reserved"
-	DiskAttachmentStateUnknown   DiskAttachmentState = "unknown"
+	DiskAttachmentStateAttached DiskAttachmentState = "attached"
+	DiskAttachmentStateReleased DiskAttachmentState = "released"
+	DiskAttachmentStateReserved DiskAttachmentState = "reserved"
+	DiskAttachmentStateUnknown  DiskAttachmentState = "unknown"
 )
 
 // Valid indicates whether the value is a known member of the DiskAttachmentState enum.
@@ -142,15 +281,47 @@ func (e DiskAttachmentState) Valid() bool {
 	switch e {
 	case DiskAttachmentStateAttached:
 		return true
-	case DiskAttachmentStateAttaching:
-		return true
-	case DiskAttachmentStateDetaching:
-		return true
 	case DiskAttachmentStateReleased:
 		return true
 	case DiskAttachmentStateReserved:
 		return true
 	case DiskAttachmentStateUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DiskOperationType.
+const (
+	DiskOperationTypeAttach  DiskOperationType = "attach"
+	DiskOperationTypeCreate  DiskOperationType = "create"
+	DiskOperationTypeDelete  DiskOperationType = "delete"
+	DiskOperationTypeDetach  DiskOperationType = "detach"
+	DiskOperationTypeResize  DiskOperationType = "resize"
+	DiskOperationTypeResume  DiskOperationType = "resume"
+	DiskOperationTypeRevert  DiskOperationType = "revert"
+	DiskOperationTypeSuspend DiskOperationType = "suspend"
+)
+
+// Valid indicates whether the value is a known member of the DiskOperationType enum.
+func (e DiskOperationType) Valid() bool {
+	switch e {
+	case DiskOperationTypeAttach:
+		return true
+	case DiskOperationTypeCreate:
+		return true
+	case DiskOperationTypeDelete:
+		return true
+	case DiskOperationTypeDetach:
+		return true
+	case DiskOperationTypeResize:
+		return true
+	case DiskOperationTypeResume:
+		return true
+	case DiskOperationTypeRevert:
+		return true
+	case DiskOperationTypeSuspend:
 		return true
 	default:
 		return false
@@ -184,45 +355,60 @@ func (e DiskResourceAccessState) Valid() bool {
 	}
 }
 
+// Defines values for DiskResourceFailureReason.
+const (
+	DiskResourceFailureReasonLessThannil        DiskResourceFailureReason = "<nil>"
+	DiskResourceFailureReasonOrderCanceled      DiskResourceFailureReason = "order_canceled"
+	DiskResourceFailureReasonOrderDeclined      DiskResourceFailureReason = "order_declined"
+	DiskResourceFailureReasonOrderExpired       DiskResourceFailureReason = "order_expired"
+	DiskResourceFailureReasonProvisioningFailed DiskResourceFailureReason = "provisioning_failed"
+)
+
+// Valid indicates whether the value is a known member of the DiskResourceFailureReason enum.
+func (e DiskResourceFailureReason) Valid() bool {
+	switch e {
+	case DiskResourceFailureReasonLessThannil:
+		return true
+	case DiskResourceFailureReasonOrderCanceled:
+		return true
+	case DiskResourceFailureReasonOrderDeclined:
+		return true
+	case DiskResourceFailureReasonOrderExpired:
+		return true
+	case DiskResourceFailureReasonProvisioningFailed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DiskResourceStatus.
 const (
-	DiskResourceStatusAttaching    DiskResourceStatus = "attaching"
 	DiskResourceStatusAvailable    DiskResourceStatus = "available"
-	DiskResourceStatusDeleting     DiskResourceStatus = "deleting"
-	DiskResourceStatusDetaching    DiskResourceStatus = "detaching"
+	DiskResourceStatusDeleted      DiskResourceStatus = "deleted"
 	DiskResourceStatusError        DiskResourceStatus = "error"
+	DiskResourceStatusFailed       DiskResourceStatus = "failed"
 	DiskResourceStatusInUse        DiskResourceStatus = "in_use"
+	DiskResourceStatusPending      DiskResourceStatus = "pending"
 	DiskResourceStatusProvisioning DiskResourceStatus = "provisioning"
-	DiskResourceStatusReleasing    DiskResourceStatus = "releasing"
-	DiskResourceStatusResizing     DiskResourceStatus = "resizing"
-	DiskResourceStatusRestoring    DiskResourceStatus = "restoring"
-	DiskResourceStatusReverting    DiskResourceStatus = "reverting"
 )
 
 // Valid indicates whether the value is a known member of the DiskResourceStatus enum.
 func (e DiskResourceStatus) Valid() bool {
 	switch e {
-	case DiskResourceStatusAttaching:
-		return true
 	case DiskResourceStatusAvailable:
 		return true
-	case DiskResourceStatusDeleting:
-		return true
-	case DiskResourceStatusDetaching:
+	case DiskResourceStatusDeleted:
 		return true
 	case DiskResourceStatusError:
 		return true
+	case DiskResourceStatusFailed:
+		return true
 	case DiskResourceStatusInUse:
 		return true
+	case DiskResourceStatusPending:
+		return true
 	case DiskResourceStatusProvisioning:
-		return true
-	case DiskResourceStatusReleasing:
-		return true
-	case DiskResourceStatusResizing:
-		return true
-	case DiskResourceStatusRestoring:
-		return true
-	case DiskResourceStatusReverting:
 		return true
 	default:
 		return false
@@ -244,6 +430,39 @@ func (e DiskTypeResourceMedia) Valid() bool {
 	case Nvme:
 		return true
 	case Ssd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FloatingIPOperationType.
+const (
+	FloatingIPOperationTypeBind         FloatingIPOperationType = "bind"
+	FloatingIPOperationTypeCreate       FloatingIPOperationType = "create"
+	FloatingIPOperationTypeDelete       FloatingIPOperationType = "delete"
+	FloatingIPOperationTypeResume       FloatingIPOperationType = "resume"
+	FloatingIPOperationTypeSetBandwidth FloatingIPOperationType = "set_bandwidth"
+	FloatingIPOperationTypeSuspend      FloatingIPOperationType = "suspend"
+	FloatingIPOperationTypeUnbind       FloatingIPOperationType = "unbind"
+)
+
+// Valid indicates whether the value is a known member of the FloatingIPOperationType enum.
+func (e FloatingIPOperationType) Valid() bool {
+	switch e {
+	case FloatingIPOperationTypeBind:
+		return true
+	case FloatingIPOperationTypeCreate:
+		return true
+	case FloatingIPOperationTypeDelete:
+		return true
+	case FloatingIPOperationTypeResume:
+		return true
+	case FloatingIPOperationTypeSetBandwidth:
+		return true
+	case FloatingIPOperationTypeSuspend:
+		return true
+	case FloatingIPOperationTypeUnbind:
 		return true
 	default:
 		return false
@@ -277,27 +496,27 @@ func (e FloatingIPResourceAccessState) Valid() bool {
 	}
 }
 
-// Defines values for FloatingIPResourceBandwidthAccessState.
+// Defines values for FloatingIPResourceFailureReason.
 const (
-	FloatingIPResourceBandwidthAccessStateEnabled     FloatingIPResourceBandwidthAccessState = "enabled"
-	FloatingIPResourceBandwidthAccessStateLessThannil FloatingIPResourceBandwidthAccessState = "<nil>"
-	FloatingIPResourceBandwidthAccessStatePending     FloatingIPResourceBandwidthAccessState = "pending"
-	FloatingIPResourceBandwidthAccessStateReclaimed   FloatingIPResourceBandwidthAccessState = "reclaimed"
-	FloatingIPResourceBandwidthAccessStateSuspended   FloatingIPResourceBandwidthAccessState = "suspended"
+	FloatingIPResourceFailureReasonLessThannil        FloatingIPResourceFailureReason = "<nil>"
+	FloatingIPResourceFailureReasonOrderCanceled      FloatingIPResourceFailureReason = "order_canceled"
+	FloatingIPResourceFailureReasonOrderDeclined      FloatingIPResourceFailureReason = "order_declined"
+	FloatingIPResourceFailureReasonOrderExpired       FloatingIPResourceFailureReason = "order_expired"
+	FloatingIPResourceFailureReasonProvisioningFailed FloatingIPResourceFailureReason = "provisioning_failed"
 )
 
-// Valid indicates whether the value is a known member of the FloatingIPResourceBandwidthAccessState enum.
-func (e FloatingIPResourceBandwidthAccessState) Valid() bool {
+// Valid indicates whether the value is a known member of the FloatingIPResourceFailureReason enum.
+func (e FloatingIPResourceFailureReason) Valid() bool {
 	switch e {
-	case FloatingIPResourceBandwidthAccessStateEnabled:
+	case FloatingIPResourceFailureReasonLessThannil:
 		return true
-	case FloatingIPResourceBandwidthAccessStateLessThannil:
+	case FloatingIPResourceFailureReasonOrderCanceled:
 		return true
-	case FloatingIPResourceBandwidthAccessStatePending:
+	case FloatingIPResourceFailureReasonOrderDeclined:
 		return true
-	case FloatingIPResourceBandwidthAccessStateReclaimed:
+	case FloatingIPResourceFailureReasonOrderExpired:
 		return true
-	case FloatingIPResourceBandwidthAccessStateSuspended:
+	case FloatingIPResourceFailureReasonProvisioningFailed:
 		return true
 	default:
 		return false
@@ -306,11 +525,13 @@ func (e FloatingIPResourceBandwidthAccessState) Valid() bool {
 
 // Defines values for FloatingIPResourceStatus.
 const (
-	FloatingIPResourceStatusAvailable FloatingIPResourceStatus = "available"
-	FloatingIPResourceStatusDeleting  FloatingIPResourceStatus = "deleting"
-	FloatingIPResourceStatusError     FloatingIPResourceStatus = "error"
-	FloatingIPResourceStatusPending   FloatingIPResourceStatus = "pending"
-	FloatingIPResourceStatusUnknown   FloatingIPResourceStatus = "unknown"
+	FloatingIPResourceStatusAvailable    FloatingIPResourceStatus = "available"
+	FloatingIPResourceStatusDeleted      FloatingIPResourceStatus = "deleted"
+	FloatingIPResourceStatusError        FloatingIPResourceStatus = "error"
+	FloatingIPResourceStatusFailed       FloatingIPResourceStatus = "failed"
+	FloatingIPResourceStatusPending      FloatingIPResourceStatus = "pending"
+	FloatingIPResourceStatusProvisioning FloatingIPResourceStatus = "provisioning"
+	FloatingIPResourceStatusUnknown      FloatingIPResourceStatus = "unknown"
 )
 
 // Valid indicates whether the value is a known member of the FloatingIPResourceStatus enum.
@@ -318,11 +539,15 @@ func (e FloatingIPResourceStatus) Valid() bool {
 	switch e {
 	case FloatingIPResourceStatusAvailable:
 		return true
-	case FloatingIPResourceStatusDeleting:
+	case FloatingIPResourceStatusDeleted:
 		return true
 	case FloatingIPResourceStatusError:
 		return true
+	case FloatingIPResourceStatusFailed:
+		return true
 	case FloatingIPResourceStatusPending:
+		return true
+	case FloatingIPResourceStatusProvisioning:
 		return true
 	case FloatingIPResourceStatusUnknown:
 		return true
@@ -333,23 +558,17 @@ func (e FloatingIPResourceStatus) Valid() bool {
 
 // Defines values for IPv4BindingState.
 const (
-	IPv4BindingStateBinding   IPv4BindingState = "binding"
-	IPv4BindingStateBound     IPv4BindingState = "bound"
-	IPv4BindingStateReleased  IPv4BindingState = "released"
-	IPv4BindingStateUnbinding IPv4BindingState = "unbinding"
-	IPv4BindingStateUnknown   IPv4BindingState = "unknown"
+	IPv4BindingStateBound    IPv4BindingState = "bound"
+	IPv4BindingStateReleased IPv4BindingState = "released"
+	IPv4BindingStateUnknown  IPv4BindingState = "unknown"
 )
 
 // Valid indicates whether the value is a known member of the IPv4BindingState enum.
 func (e IPv4BindingState) Valid() bool {
 	switch e {
-	case IPv4BindingStateBinding:
-		return true
 	case IPv4BindingStateBound:
 		return true
 	case IPv4BindingStateReleased:
-		return true
-	case IPv4BindingStateUnbinding:
 		return true
 	case IPv4BindingStateUnknown:
 		return true
@@ -373,6 +592,30 @@ func (e IPv6ResponseBodyStatus) Valid() bool {
 	case IPv6ResponseBodyStatusDraining:
 		return true
 	case IPv6ResponseBodyStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImageOperationType.
+const (
+	ImageOperationTypeCreate  ImageOperationType = "create"
+	ImageOperationTypeDelete  ImageOperationType = "delete"
+	ImageOperationTypeResume  ImageOperationType = "resume"
+	ImageOperationTypeSuspend ImageOperationType = "suspend"
+)
+
+// Valid indicates whether the value is a known member of the ImageOperationType enum.
+func (e ImageOperationType) Valid() bool {
+	switch e {
+	case ImageOperationTypeCreate:
+		return true
+	case ImageOperationTypeDelete:
+		return true
+	case ImageOperationTypeResume:
+		return true
+	case ImageOperationTypeSuspend:
 		return true
 	default:
 		return false
@@ -406,11 +649,40 @@ func (e ImageResourceAccessState) Valid() bool {
 	}
 }
 
+// Defines values for ImageResourceFailureReason.
+const (
+	ImageResourceFailureReasonLessThannil        ImageResourceFailureReason = "<nil>"
+	ImageResourceFailureReasonOrderCanceled      ImageResourceFailureReason = "order_canceled"
+	ImageResourceFailureReasonOrderDeclined      ImageResourceFailureReason = "order_declined"
+	ImageResourceFailureReasonOrderExpired       ImageResourceFailureReason = "order_expired"
+	ImageResourceFailureReasonProvisioningFailed ImageResourceFailureReason = "provisioning_failed"
+)
+
+// Valid indicates whether the value is a known member of the ImageResourceFailureReason enum.
+func (e ImageResourceFailureReason) Valid() bool {
+	switch e {
+	case ImageResourceFailureReasonLessThannil:
+		return true
+	case ImageResourceFailureReasonOrderCanceled:
+		return true
+	case ImageResourceFailureReasonOrderDeclined:
+		return true
+	case ImageResourceFailureReasonOrderExpired:
+		return true
+	case ImageResourceFailureReasonProvisioningFailed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ImageResourceStatus.
 const (
 	ImageResourceStatusAvailable    ImageResourceStatus = "available"
-	ImageResourceStatusDeleting     ImageResourceStatus = "deleting"
+	ImageResourceStatusDeleted      ImageResourceStatus = "deleted"
 	ImageResourceStatusError        ImageResourceStatus = "error"
+	ImageResourceStatusFailed       ImageResourceStatus = "failed"
+	ImageResourceStatusPending      ImageResourceStatus = "pending"
 	ImageResourceStatusProvisioning ImageResourceStatus = "provisioning"
 	ImageResourceStatusUploading    ImageResourceStatus = "uploading"
 )
@@ -420,9 +692,13 @@ func (e ImageResourceStatus) Valid() bool {
 	switch e {
 	case ImageResourceStatusAvailable:
 		return true
-	case ImageResourceStatusDeleting:
+	case ImageResourceStatusDeleted:
 		return true
 	case ImageResourceStatusError:
+		return true
+	case ImageResourceStatusFailed:
+		return true
+	case ImageResourceStatusPending:
 		return true
 	case ImageResourceStatusProvisioning:
 		return true
@@ -445,6 +721,66 @@ func (e ImageVisibility) Valid() bool {
 	case Private:
 		return true
 	case Public:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InstanceOperationType.
+const (
+	InstanceOperationTypeAttachDisk       InstanceOperationType = "attach_disk"
+	InstanceOperationTypeAttachPort       InstanceOperationType = "attach_port"
+	InstanceOperationTypeBindFloatingIp   InstanceOperationType = "bind_floating_ip"
+	InstanceOperationTypeCreate           InstanceOperationType = "create"
+	InstanceOperationTypeDelete           InstanceOperationType = "delete"
+	InstanceOperationTypeDetachDisk       InstanceOperationType = "detach_disk"
+	InstanceOperationTypeDetachPort       InstanceOperationType = "detach_port"
+	InstanceOperationTypeReboot           InstanceOperationType = "reboot"
+	InstanceOperationTypeRebuild          InstanceOperationType = "rebuild"
+	InstanceOperationTypeResetPassword    InstanceOperationType = "reset_password"
+	InstanceOperationTypeResize           InstanceOperationType = "resize"
+	InstanceOperationTypeResume           InstanceOperationType = "resume"
+	InstanceOperationTypeStart            InstanceOperationType = "start"
+	InstanceOperationTypeStop             InstanceOperationType = "stop"
+	InstanceOperationTypeSuspend          InstanceOperationType = "suspend"
+	InstanceOperationTypeUnbindFloatingIp InstanceOperationType = "unbind_floating_ip"
+)
+
+// Valid indicates whether the value is a known member of the InstanceOperationType enum.
+func (e InstanceOperationType) Valid() bool {
+	switch e {
+	case InstanceOperationTypeAttachDisk:
+		return true
+	case InstanceOperationTypeAttachPort:
+		return true
+	case InstanceOperationTypeBindFloatingIp:
+		return true
+	case InstanceOperationTypeCreate:
+		return true
+	case InstanceOperationTypeDelete:
+		return true
+	case InstanceOperationTypeDetachDisk:
+		return true
+	case InstanceOperationTypeDetachPort:
+		return true
+	case InstanceOperationTypeReboot:
+		return true
+	case InstanceOperationTypeRebuild:
+		return true
+	case InstanceOperationTypeResetPassword:
+		return true
+	case InstanceOperationTypeResize:
+		return true
+	case InstanceOperationTypeResume:
+		return true
+	case InstanceOperationTypeStart:
+		return true
+	case InstanceOperationTypeStop:
+		return true
+	case InstanceOperationTypeSuspend:
+		return true
+	case InstanceOperationTypeUnbindFloatingIp:
 		return true
 	default:
 		return false
@@ -478,21 +814,27 @@ func (e InstanceResourceAccessState) Valid() bool {
 	}
 }
 
-// Defines values for InstanceResourceDesiredState.
+// Defines values for InstanceResourceFailureReason.
 const (
-	InstanceResourceDesiredStateDeleted InstanceResourceDesiredState = "deleted"
-	InstanceResourceDesiredStateRunning InstanceResourceDesiredState = "running"
-	InstanceResourceDesiredStateStopped InstanceResourceDesiredState = "stopped"
+	InstanceResourceFailureReasonLessThannil        InstanceResourceFailureReason = "<nil>"
+	InstanceResourceFailureReasonOrderCanceled      InstanceResourceFailureReason = "order_canceled"
+	InstanceResourceFailureReasonOrderDeclined      InstanceResourceFailureReason = "order_declined"
+	InstanceResourceFailureReasonOrderExpired       InstanceResourceFailureReason = "order_expired"
+	InstanceResourceFailureReasonProvisioningFailed InstanceResourceFailureReason = "provisioning_failed"
 )
 
-// Valid indicates whether the value is a known member of the InstanceResourceDesiredState enum.
-func (e InstanceResourceDesiredState) Valid() bool {
+// Valid indicates whether the value is a known member of the InstanceResourceFailureReason enum.
+func (e InstanceResourceFailureReason) Valid() bool {
 	switch e {
-	case InstanceResourceDesiredStateDeleted:
+	case InstanceResourceFailureReasonLessThannil:
 		return true
-	case InstanceResourceDesiredStateRunning:
+	case InstanceResourceFailureReasonOrderCanceled:
 		return true
-	case InstanceResourceDesiredStateStopped:
+	case InstanceResourceFailureReasonOrderDeclined:
+		return true
+	case InstanceResourceFailureReasonOrderExpired:
+		return true
+	case InstanceResourceFailureReasonProvisioningFailed:
 		return true
 	default:
 		return false
@@ -535,12 +877,12 @@ func (e InstanceResourcePowerState) Valid() bool {
 // Defines values for InstanceResourceStatus.
 const (
 	InstanceResourceStatusActive           InstanceResourceStatus = "active"
-	InstanceResourceStatusBuilding         InstanceResourceStatus = "building"
 	InstanceResourceStatusDeleted          InstanceResourceStatus = "deleted"
-	InstanceResourceStatusDeleting         InstanceResourceStatus = "deleting"
 	InstanceResourceStatusError            InstanceResourceStatus = "error"
+	InstanceResourceStatusFailed           InstanceResourceStatus = "failed"
 	InstanceResourceStatusPaused           InstanceResourceStatus = "paused"
 	InstanceResourceStatusPending          InstanceResourceStatus = "pending"
+	InstanceResourceStatusProvisioning     InstanceResourceStatus = "provisioning"
 	InstanceResourceStatusRescued          InstanceResourceStatus = "rescued"
 	InstanceResourceStatusShelved          InstanceResourceStatus = "shelved"
 	InstanceResourceStatusShelvedOffloaded InstanceResourceStatus = "shelved_offloaded"
@@ -554,17 +896,17 @@ func (e InstanceResourceStatus) Valid() bool {
 	switch e {
 	case InstanceResourceStatusActive:
 		return true
-	case InstanceResourceStatusBuilding:
-		return true
 	case InstanceResourceStatusDeleted:
 		return true
-	case InstanceResourceStatusDeleting:
-		return true
 	case InstanceResourceStatusError:
+		return true
+	case InstanceResourceStatusFailed:
 		return true
 	case InstanceResourceStatusPaused:
 		return true
 	case InstanceResourceStatusPending:
+		return true
+	case InstanceResourceStatusProvisioning:
 		return true
 	case InstanceResourceStatusRescued:
 		return true
@@ -604,11 +946,28 @@ func (e InstanceRestrictionSource) Valid() bool {
 	}
 }
 
+// Defines values for PeeringOperationType.
+const (
+	PeeringOperationTypeDelete    PeeringOperationType = "delete"
+	PeeringOperationTypeProvision PeeringOperationType = "provision"
+)
+
+// Valid indicates whether the value is a known member of the PeeringOperationType enum.
+func (e PeeringOperationType) Valid() bool {
+	switch e {
+	case PeeringOperationTypeDelete:
+		return true
+	case PeeringOperationTypeProvision:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PeeringResourceStatus.
 const (
 	PeeringResourceStatusActive            PeeringResourceStatus = "active"
 	PeeringResourceStatusDeleted           PeeringResourceStatus = "deleted"
-	PeeringResourceStatusDeleting          PeeringResourceStatus = "deleting"
 	PeeringResourceStatusError             PeeringResourceStatus = "error"
 	PeeringResourceStatusPendingAcceptance PeeringResourceStatus = "pending_acceptance"
 	PeeringResourceStatusProvisioning      PeeringResourceStatus = "provisioning"
@@ -621,8 +980,6 @@ func (e PeeringResourceStatus) Valid() bool {
 	case PeeringResourceStatusActive:
 		return true
 	case PeeringResourceStatusDeleted:
-		return true
-	case PeeringResourceStatusDeleting:
 		return true
 	case PeeringResourceStatusError:
 		return true
@@ -639,11 +996,10 @@ func (e PeeringResourceStatus) Valid() bool {
 
 // Defines values for PortAddressState.
 const (
-	PortAddressStateAssigned  PortAddressState = "assigned"
-	PortAddressStateReleased  PortAddressState = "released"
-	PortAddressStateReleasing PortAddressState = "releasing"
-	PortAddressStateReserved  PortAddressState = "reserved"
-	PortAddressStateUnknown   PortAddressState = "unknown"
+	PortAddressStateAssigned PortAddressState = "assigned"
+	PortAddressStateReleased PortAddressState = "released"
+	PortAddressStateReserved PortAddressState = "reserved"
+	PortAddressStateUnknown  PortAddressState = "unknown"
 )
 
 // Valid indicates whether the value is a known member of the PortAddressState enum.
@@ -652,8 +1008,6 @@ func (e PortAddressState) Valid() bool {
 	case PortAddressStateAssigned:
 		return true
 	case PortAddressStateReleased:
-		return true
-	case PortAddressStateReleasing:
 		return true
 	case PortAddressStateReserved:
 		return true
@@ -684,22 +1038,16 @@ func (e PortAttachmentRole) Valid() bool {
 
 // Defines values for PortAttachmentState.
 const (
-	PortAttachmentStateAttached  PortAttachmentState = "attached"
-	PortAttachmentStateAttaching PortAttachmentState = "attaching"
-	PortAttachmentStateDetaching PortAttachmentState = "detaching"
-	PortAttachmentStateReleased  PortAttachmentState = "released"
-	PortAttachmentStateReserved  PortAttachmentState = "reserved"
-	PortAttachmentStateUnknown   PortAttachmentState = "unknown"
+	PortAttachmentStateAttached PortAttachmentState = "attached"
+	PortAttachmentStateReleased PortAttachmentState = "released"
+	PortAttachmentStateReserved PortAttachmentState = "reserved"
+	PortAttachmentStateUnknown  PortAttachmentState = "unknown"
 )
 
 // Valid indicates whether the value is a known member of the PortAttachmentState enum.
 func (e PortAttachmentState) Valid() bool {
 	switch e {
 	case PortAttachmentStateAttached:
-		return true
-	case PortAttachmentStateAttaching:
-		return true
-	case PortAttachmentStateDetaching:
 		return true
 	case PortAttachmentStateReleased:
 		return true
@@ -712,10 +1060,33 @@ func (e PortAttachmentState) Valid() bool {
 	}
 }
 
+// Defines values for PortOperationType.
+const (
+	PortOperationTypeAttach PortOperationType = "attach"
+	PortOperationTypeCreate PortOperationType = "create"
+	PortOperationTypeDelete PortOperationType = "delete"
+	PortOperationTypeDetach PortOperationType = "detach"
+)
+
+// Valid indicates whether the value is a known member of the PortOperationType enum.
+func (e PortOperationType) Valid() bool {
+	switch e {
+	case PortOperationTypeAttach:
+		return true
+	case PortOperationTypeCreate:
+		return true
+	case PortOperationTypeDelete:
+		return true
+	case PortOperationTypeDetach:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PortResourceStatus.
 const (
 	PortResourceStatusAvailable PortResourceStatus = "available"
-	PortResourceStatusDeleting  PortResourceStatus = "deleting"
 	PortResourceStatusError     PortResourceStatus = "error"
 	PortResourceStatusPending   PortResourceStatus = "pending"
 	PortResourceStatusUnknown   PortResourceStatus = "unknown"
@@ -725,8 +1096,6 @@ const (
 func (e PortResourceStatus) Valid() bool {
 	switch e {
 	case PortResourceStatusAvailable:
-		return true
-	case PortResourceStatusDeleting:
 		return true
 	case PortResourceStatusError:
 		return true
@@ -739,10 +1108,111 @@ func (e PortResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for PricingOptionMode.
+const (
+	PricingOptionModePostpaid PricingOptionMode = "postpaid"
+	PricingOptionModePrepaid  PricingOptionMode = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the PricingOptionMode enum.
+func (e PricingOptionMode) Valid() bool {
+	switch e {
+	case PricingOptionModePostpaid:
+		return true
+	case PricingOptionModePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PricingOptionQuantityUnit.
+const (
+	Gib      PricingOptionQuantityUnit = "gib"
+	Item     PricingOptionQuantityUnit = "item"
+	Mbps     PricingOptionQuantityUnit = "mbps"
+	Snapshot PricingOptionQuantityUnit = "snapshot"
+)
+
+// Valid indicates whether the value is a known member of the PricingOptionQuantityUnit enum.
+func (e PricingOptionQuantityUnit) Valid() bool {
+	switch e {
+	case Gib:
+		return true
+	case Item:
+		return true
+	case Mbps:
+		return true
+	case Snapshot:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PricingOptionTermination.
+const (
+	Immediate PricingOptionTermination = "immediate"
+	PeriodEnd PricingOptionTermination = "period_end"
+)
+
+// Valid indicates whether the value is a known member of the PricingOptionTermination enum.
+func (e PricingOptionTermination) Valid() bool {
+	switch e {
+	case Immediate:
+		return true
+	case PeriodEnd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PricingOptionUnit.
+const (
+	PricingOptionUnitHour        PricingOptionUnit = "hour"
+	PricingOptionUnitLessThannil PricingOptionUnit = "<nil>"
+)
+
+// Valid indicates whether the value is a known member of the PricingOptionUnit enum.
+func (e PricingOptionUnit) Valid() bool {
+	switch e {
+	case PricingOptionUnitHour:
+		return true
+	case PricingOptionUnitLessThannil:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PrivateNetworkOperationType.
+const (
+	PrivateNetworkOperationTypeCreate      PrivateNetworkOperationType = "create"
+	PrivateNetworkOperationTypeDelete      PrivateNetworkOperationType = "delete"
+	PrivateNetworkOperationTypeDisableIpv6 PrivateNetworkOperationType = "disable_ipv6"
+	PrivateNetworkOperationTypeEnableIpv6  PrivateNetworkOperationType = "enable_ipv6"
+)
+
+// Valid indicates whether the value is a known member of the PrivateNetworkOperationType enum.
+func (e PrivateNetworkOperationType) Valid() bool {
+	switch e {
+	case PrivateNetworkOperationTypeCreate:
+		return true
+	case PrivateNetworkOperationTypeDelete:
+		return true
+	case PrivateNetworkOperationTypeDisableIpv6:
+		return true
+	case PrivateNetworkOperationTypeEnableIpv6:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PrivateNetworkResourceStatus.
 const (
 	PrivateNetworkResourceStatusAvailable PrivateNetworkResourceStatus = "available"
-	PrivateNetworkResourceStatusDeleting  PrivateNetworkResourceStatus = "deleting"
 	PrivateNetworkResourceStatusError     PrivateNetworkResourceStatus = "error"
 	PrivateNetworkResourceStatusPending   PrivateNetworkResourceStatus = "pending"
 	PrivateNetworkResourceStatusUnknown   PrivateNetworkResourceStatus = "unknown"
@@ -752,8 +1222,6 @@ const (
 func (e PrivateNetworkResourceStatus) Valid() bool {
 	switch e {
 	case PrivateNetworkResourceStatusAvailable:
-		return true
-	case PrivateNetworkResourceStatusDeleting:
 		return true
 	case PrivateNetworkResourceStatusError:
 		return true
@@ -768,28 +1236,31 @@ func (e PrivateNetworkResourceStatus) Valid() bool {
 
 // Defines values for ReleaseResourceType.
 const (
-	Backup     ReleaseResourceType = "backup"
-	Disk       ReleaseResourceType = "disk"
-	FloatingIp ReleaseResourceType = "floating_ip"
-	Image      ReleaseResourceType = "image"
-	Instance   ReleaseResourceType = "instance"
-	Snapshot   ReleaseResourceType = "snapshot"
+	ReleaseResourceTypeBackupCapacityPack ReleaseResourceType = "backup_capacity_pack"
+	ReleaseResourceTypeBackupService      ReleaseResourceType = "backup_service"
+	ReleaseResourceTypeDisk               ReleaseResourceType = "disk"
+	ReleaseResourceTypeFloatingIp         ReleaseResourceType = "floating_ip"
+	ReleaseResourceTypeImage              ReleaseResourceType = "image"
+	ReleaseResourceTypeInstance           ReleaseResourceType = "instance"
+	ReleaseResourceTypeSnapshotQuota      ReleaseResourceType = "snapshot_quota"
 )
 
 // Valid indicates whether the value is a known member of the ReleaseResourceType enum.
 func (e ReleaseResourceType) Valid() bool {
 	switch e {
-	case Backup:
+	case ReleaseResourceTypeBackupCapacityPack:
 		return true
-	case Disk:
+	case ReleaseResourceTypeBackupService:
 		return true
-	case FloatingIp:
+	case ReleaseResourceTypeDisk:
 		return true
-	case Image:
+	case ReleaseResourceTypeFloatingIp:
 		return true
-	case Instance:
+	case ReleaseResourceTypeImage:
 		return true
-	case Snapshot:
+	case ReleaseResourceTypeInstance:
+		return true
+	case ReleaseResourceTypeSnapshotQuota:
 		return true
 	default:
 		return false
@@ -832,27 +1303,78 @@ func (e SecurityRuleResourceEthertype) Valid() bool {
 	}
 }
 
-// Defines values for SnapshotResourceAccessState.
+// Defines values for SnapshotOperationType.
 const (
-	SnapshotResourceAccessStateEnabled     SnapshotResourceAccessState = "enabled"
-	SnapshotResourceAccessStateLessThannil SnapshotResourceAccessState = "<nil>"
-	SnapshotResourceAccessStatePending     SnapshotResourceAccessState = "pending"
-	SnapshotResourceAccessStateReclaimed   SnapshotResourceAccessState = "reclaimed"
-	SnapshotResourceAccessStateSuspended   SnapshotResourceAccessState = "suspended"
+	SnapshotOperationTypeCreate  SnapshotOperationType = "create"
+	SnapshotOperationTypeDelete  SnapshotOperationType = "delete"
+	SnapshotOperationTypeRestore SnapshotOperationType = "restore"
 )
 
-// Valid indicates whether the value is a known member of the SnapshotResourceAccessState enum.
-func (e SnapshotResourceAccessState) Valid() bool {
+// Valid indicates whether the value is a known member of the SnapshotOperationType enum.
+func (e SnapshotOperationType) Valid() bool {
 	switch e {
-	case SnapshotResourceAccessStateEnabled:
+	case SnapshotOperationTypeCreate:
 		return true
-	case SnapshotResourceAccessStateLessThannil:
+	case SnapshotOperationTypeDelete:
 		return true
-	case SnapshotResourceAccessStatePending:
+	case SnapshotOperationTypeRestore:
 		return true
-	case SnapshotResourceAccessStateReclaimed:
+	default:
+		return false
+	}
+}
+
+// Defines values for SnapshotQuotaFailureReason.
+const (
+	SnapshotQuotaFailureReasonLessThannil        SnapshotQuotaFailureReason = "<nil>"
+	SnapshotQuotaFailureReasonOrderCanceled      SnapshotQuotaFailureReason = "order_canceled"
+	SnapshotQuotaFailureReasonOrderDeclined      SnapshotQuotaFailureReason = "order_declined"
+	SnapshotQuotaFailureReasonOrderExpired       SnapshotQuotaFailureReason = "order_expired"
+	SnapshotQuotaFailureReasonProvisioningFailed SnapshotQuotaFailureReason = "provisioning_failed"
+)
+
+// Valid indicates whether the value is a known member of the SnapshotQuotaFailureReason enum.
+func (e SnapshotQuotaFailureReason) Valid() bool {
+	switch e {
+	case SnapshotQuotaFailureReasonLessThannil:
 		return true
-	case SnapshotResourceAccessStateSuspended:
+	case SnapshotQuotaFailureReasonOrderCanceled:
+		return true
+	case SnapshotQuotaFailureReasonOrderDeclined:
+		return true
+	case SnapshotQuotaFailureReasonOrderExpired:
+		return true
+	case SnapshotQuotaFailureReasonProvisioningFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SnapshotQuotaStatus.
+const (
+	SnapshotQuotaStatusActive       SnapshotQuotaStatus = "active"
+	SnapshotQuotaStatusFailed       SnapshotQuotaStatus = "failed"
+	SnapshotQuotaStatusInactive     SnapshotQuotaStatus = "inactive"
+	SnapshotQuotaStatusPending      SnapshotQuotaStatus = "pending"
+	SnapshotQuotaStatusProvisioning SnapshotQuotaStatus = "provisioning"
+	SnapshotQuotaStatusSuspended    SnapshotQuotaStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the SnapshotQuotaStatus enum.
+func (e SnapshotQuotaStatus) Valid() bool {
+	switch e {
+	case SnapshotQuotaStatusActive:
+		return true
+	case SnapshotQuotaStatusFailed:
+		return true
+	case SnapshotQuotaStatusInactive:
+		return true
+	case SnapshotQuotaStatusPending:
+		return true
+	case SnapshotQuotaStatusProvisioning:
+		return true
+	case SnapshotQuotaStatusSuspended:
 		return true
 	default:
 		return false
@@ -862,10 +1384,11 @@ func (e SnapshotResourceAccessState) Valid() bool {
 // Defines values for SnapshotResourceStatus.
 const (
 	SnapshotResourceStatusAvailable    SnapshotResourceStatus = "available"
-	SnapshotResourceStatusDeleting     SnapshotResourceStatus = "deleting"
+	SnapshotResourceStatusDeleted      SnapshotResourceStatus = "deleted"
 	SnapshotResourceStatusError        SnapshotResourceStatus = "error"
+	SnapshotResourceStatusFailed       SnapshotResourceStatus = "failed"
+	SnapshotResourceStatusPending      SnapshotResourceStatus = "pending"
 	SnapshotResourceStatusProvisioning SnapshotResourceStatus = "provisioning"
-	SnapshotResourceStatusRestoring    SnapshotResourceStatus = "restoring"
 )
 
 // Valid indicates whether the value is a known member of the SnapshotResourceStatus enum.
@@ -873,13 +1396,15 @@ func (e SnapshotResourceStatus) Valid() bool {
 	switch e {
 	case SnapshotResourceStatusAvailable:
 		return true
-	case SnapshotResourceStatusDeleting:
+	case SnapshotResourceStatusDeleted:
 		return true
 	case SnapshotResourceStatusError:
 		return true
-	case SnapshotResourceStatusProvisioning:
+	case SnapshotResourceStatusFailed:
 		return true
-	case SnapshotResourceStatusRestoring:
+	case SnapshotResourceStatusPending:
+		return true
+	case SnapshotResourceStatusProvisioning:
 		return true
 	default:
 		return false
@@ -904,6 +1429,28 @@ func (e SubnetResourceIpVersion) Valid() bool {
 	}
 }
 
+// AllocateFloatingIPQuoteRequestBody The request of `allocate-floating-ip`, without `checkout`.
+type AllocateFloatingIPQuoteRequestBody struct {
+	// Address The address to allocate. Allocated by the platform when omitted
+	Address *string `json:"address,omitempty"`
+
+	// BandwidthMbps The bandwidth ceiling of this address, in Mbit/s, applied to both directions.
+	//
+	// Required, and there is no "unlimited": an address with no ceiling runs at line rate and is
+	// charged nothing for the traffic, while the address itself bills normally — so the invoice
+	// looks correct and nothing anywhere reports it.
+	//
+	// It is part of this floating IP purchase and is billed as the pool's `bandwidth_pricing` shows,
+	// with the purchase's billing choice. Changing it later updates the
+	// same floating IP through its bandwidth endpoint, not an independent bandwidth resource.
+	BandwidthMbps int64 `json:"bandwidth_mbps"`
+
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing          BillingChoice      `json:"billing"`
+	Ipv4PoolId       openapi_types.UUID `json:"ipv4_pool_id"`
+	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
+}
+
 // AllocateFloatingIPRequestBody defines model for AllocateFloatingIPRequestBody.
 type AllocateFloatingIPRequestBody struct {
 	// Address The address to allocate. Allocated by the platform when omitted
@@ -915,16 +1462,33 @@ type AllocateFloatingIPRequestBody struct {
 	// charged nothing for the traffic, while the address itself bills normally — so the invoice
 	// looks correct and nothing anywhere reports it.
 	//
-	// It is billed separately from the address, per Mbit/s-hour, and appears as its own line on
-	// the order. Changing it later goes through the bandwidth endpoint.
-	BandwidthMbps    int64              `json:"bandwidth_mbps"`
-	BandwidthPriceId openapi_types.UUID `json:"bandwidth_price_id"`
-	Ipv4PoolId       openapi_types.UUID `json:"ipv4_pool_id"`
+	// It is part of this floating IP purchase and is billed as the pool's `bandwidth_pricing` shows,
+	// with the purchase's billing choice. Changing it later updates the
+	// same floating IP through its bandwidth endpoint, not an independent bandwidth resource.
+	BandwidthMbps int64 `json:"bandwidth_mbps"`
 
-	// Order Purchase options. Every request places an order of its own.
-	Order            OrderOptions       `json:"order"`
-	PriceId          openapi_types.UUID `json:"price_id"`
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout         *CheckoutOptions   `json:"checkout,omitempty"`
+	Ipv4PoolId       openapi_types.UUID `json:"ipv4_pool_id"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
+}
+
+// AllocateFloatingIPResponseBody The new floating IP, `pending` until its order is accepted, and the order. `address` is null until
+// the address is allocated.
+type AllocateFloatingIPResponseBody struct {
+	// FloatingIp One purchased public IP resource, including its bandwidth configuration. Bandwidth has no
+	// separate Compute resource ID. Billing may split fees internally; read the order for the
+	// commercial breakdown. Changing bandwidth updates this same resource, not another allocation.
+	FloatingIp FloatingIPResource `json:"floating_ip"`
+
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
 }
 
 // AttachDiskRequestBody defines model for AttachDiskRequestBody.
@@ -942,6 +1506,41 @@ type AttachPortRequestBody struct {
 	PortId openapi_types.UUID `json:"port_id"`
 }
 
+// BackupCapacityPack Prepaid backup capacity for one region, sold by Compute and bought for a term through its own Billing subscription. Compute applies its coverage to backup usage; it is not a Billing allowance or credit.
+type BackupCapacityPack struct {
+	CapacityGib int64     `json:"capacity_gib"`
+	CreatedAt   time.Time `json:"created_at"`
+
+	// FailureReason Why the purchase failed; null unless `status` is `failed`. `provisioning_failed` means it failed after the order was accepted, and its charge is refunded.
+	FailureReason *BackupCapacityPackFailureReason `json:"failure_reason"`
+	Id            openapi_types.UUID               `json:"id"`
+	OrderId       openapi_types.UUID               `json:"order_id"`
+
+	// PaidUntil The end of the current paid term; null until the pack is active.
+	PaidUntil *time.Time         `json:"paid_until"`
+	RegionId  openapi_types.UUID `json:"region_id"`
+
+	// Status `pending` awaits acceptance of its order; `provisioning` is being applied; `active` covers backup capacity; `ended` no longer does because its subscription has ended; `failed` means the purchase failed, as `failure_reason` states.
+	Status BackupCapacityPackStatus `json:"status"`
+
+	// SubscriptionId The pack's Billing subscription, through which it is renewed or canceled.
+	SubscriptionId *openapi_types.UUID `json:"subscription_id"`
+}
+
+// BackupCapacityPackFailureReason Why the purchase failed; null unless `status` is `failed`. `provisioning_failed` means it failed after the order was accepted, and its charge is refunded.
+type BackupCapacityPackFailureReason string
+
+// BackupCapacityPackStatus `pending` awaits acceptance of its order; `provisioning` is being applied; `active` covers backup capacity; `ended` no longer does because its subscription has ended; `failed` means the purchase failed, as `failure_reason` states.
+type BackupCapacityPackStatus string
+
+// BackupCapacityPackListResponseBody defines model for BackupCapacityPackListResponseBody.
+type BackupCapacityPackListResponseBody struct {
+	Items []BackupCapacityPack `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
+}
+
 // BackupListResponseBody defines model for BackupListResponseBody.
 type BackupListResponseBody struct {
 	Items []BackupResource `json:"items"`
@@ -950,23 +1549,30 @@ type BackupListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// BackupResource defines model for BackupResource.
+// BackupOperation An operation still running on this backup. It is not a separate resource; once it finishes, the backup's `operation` is null again and the backup shows the result.
+type BackupOperation struct {
+	StartedAt time.Time `json:"started_at"`
+
+	// Type `restore`: a disk is being restored from this backup.
+	Type BackupOperationType `json:"type"`
+}
+
+// BackupOperationType `restore`: a disk is being restored from this backup.
+type BackupOperationType string
+
+// BackupResource A copy of a disk, metered on the backup service of its region by `capacity_gib` for as long as it is retained. It has no order or subscription of its own.
 type BackupResource struct {
-	AccessState *BackupResourceAccessState `json:"access_state"`
-	CreatedAt   time.Time                  `json:"created_at"`
-	Generation  int64                      `json:"generation"`
-	Id          openapi_types.UUID         `json:"id"`
-	Name        string                     `json:"name"`
-	ObservedAt  *time.Time                 `json:"observed_at"`
-	OrderId     *openapi_types.UUID        `json:"order_id"`
-	PriceId     *openapi_types.UUID        `json:"price_id"`
-	RegionId    openapi_types.UUID         `json:"region_id"`
+	// CapacityGib The capacity metered for this backup, in GiB: the size of the source disk when the backup was taken. Usage is this capacity multiplied by the time the backup is retained.
+	CapacityGib int64              `json:"capacity_gib"`
+	CreatedAt   time.Time          `json:"created_at"`
+	Generation  int64              `json:"generation"`
+	Id          openapi_types.UUID `json:"id"`
+	Name        string             `json:"name"`
+	ObservedAt  *time.Time         `json:"observed_at"`
 
-	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
-	ReleaseSet []ReleaseSetItem `json:"release_set"`
-
-	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this backup: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
-	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
+	// Operation The operation in progress on this backup, or null when none is.
+	Operation *BackupOperation   `json:"operation,omitempty"`
+	RegionId  openapi_types.UUID `json:"region_id"`
 
 	// SizeGb Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this
 	SizeGb int64 `json:"size_gb"`
@@ -975,22 +1581,77 @@ type BackupResource struct {
 	SourceAvailabilityZoneId openapi_types.UUID `json:"source_availability_zone_id"`
 
 	// SourceDiskId The disk this backup was taken from. The backup remains usable after that disk is deleted
-	SourceDiskId       openapi_types.UUID   `json:"source_disk_id"`
-	Status             BackupResourceStatus `json:"status"`
-	SubscriptionItemId *openapi_types.UUID  `json:"subscription_item_id"`
-	Task               *Task                `json:"task"`
+	SourceDiskId openapi_types.UUID `json:"source_disk_id"`
+
+	// Status `provisioning` while the backup is taken, then `available`. `failed` means the backup was not created.
+	Status BackupResourceStatus `json:"status"`
 }
 
-// BackupResourceAccessState defines model for BackupResource.AccessState.
-type BackupResourceAccessState string
-
-// BackupResourceStatus defines model for BackupResource.Status.
+// BackupResourceStatus `provisioning` while the backup is taken, then `available`. `failed` means the backup was not created.
 type BackupResourceStatus string
+
+// BackupService The backup service of a project in one region. Retained backup capacity beyond what active capacity packs cover is metered on it.
+type BackupService struct {
+	// CapacityPackPricing The prepaid options of capacity packs in this region, per GiB. Null when the project has no billing account.
+	CapacityPackPricing *Pricing `json:"capacity_pack_pricing,omitempty"`
+
+	// FailureReason Why the purchase failed; null unless `status` is `failed`. `provisioning_failed` means it failed after the order was accepted, and its charge is refunded.
+	FailureReason *BackupServiceFailureReason `json:"failure_reason"`
+
+	// OrderId The order that activated the service; null before an activation is requested.
+	OrderId *openapi_types.UUID `json:"order_id"`
+
+	// PrepaidCapacityGib The total `capacity_gib` of the active capacity packs in this region; this much retained capacity is covered each hour.
+	PrepaidCapacityGib int64 `json:"prepaid_capacity_gib"`
+
+	// Pricing The postpaid usage price of backups in this region. Null when the project has no billing account.
+	Pricing  *Pricing           `json:"pricing,omitempty"`
+	RegionId openapi_types.UUID `json:"region_id"`
+
+	// RetainedCapacityGib The total `capacity_gib` of the backups retained in this region.
+	RetainedCapacityGib int64 `json:"retained_capacity_gib"`
+
+	// Status `inactive` has never been activated or its subscription has ended; `pending` awaits acceptance of its order; `provisioning` is being activated; `active` accepts new backups; `suspended` refuses new backups and keeps existing ones; `failed` means the activation failed, as `failure_reason` states.
+	Status BackupServiceStatus `json:"status"`
+
+	// SubscriptionId The Billing subscription that backup usage is billed under; null before an activation is requested.
+	SubscriptionId *openapi_types.UUID `json:"subscription_id"`
+}
+
+// BackupServiceFailureReason Why the purchase failed; null unless `status` is `failed`. `provisioning_failed` means it failed after the order was accepted, and its charge is refunded.
+type BackupServiceFailureReason string
+
+// BackupServiceStatus `inactive` has never been activated or its subscription has ended; `pending` awaits acceptance of its order; `provisioning` is being activated; `active` accepts new backups; `suspended` refuses new backups and keeps existing ones; `failed` means the activation failed, as `failure_reason` states.
+type BackupServiceStatus string
+
+// BillingChoice How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+type BillingChoice struct {
+	Mode   BillingChoiceMode `json:"mode"`
+	Period *BillingPeriod    `json:"period,omitempty"`
+}
+
+// BillingChoiceMode defines model for BillingChoice.Mode.
+type BillingChoiceMode string
+
+// BillingPeriod defines model for BillingPeriod.
+type BillingPeriod struct {
+	Count int64             `json:"count"`
+	Unit  BillingPeriodUnit `json:"unit"`
+}
+
+// BillingPeriodUnit defines model for BillingPeriod.Unit.
+type BillingPeriodUnit string
 
 // BindFloatingIPRequestBody defines model for BindFloatingIPRequestBody.
 type BindFloatingIPRequestBody struct {
 	PortAddressId openapi_types.UUID `json:"port_address_id"`
 }
+
+// CheckoutOptions Shared checkout choices for a product purchase. Omitting this object or mode selects
+// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+// refuses a purchase; no infrastructure is created for that refusal.
+type CheckoutOptions = externalRef0.CheckoutOptions
 
 // CommandResultResponseBody defines model for CommandResultResponseBody.
 type CommandResultResponseBody struct {
@@ -1018,58 +1679,134 @@ type ConsoleResponseBody struct {
 	ConsoleUrl string `json:"console_url"`
 }
 
-// CreateBackupQuoteRequestBody The fields of `CreateBackupRequestBody` that decide the price
-type CreateBackupQuoteRequestBody struct {
-	// DiskId The disk that would be backed up
-	DiskId openapi_types.UUID `json:"disk_id"`
+// CreateBackupCapacityPackQuoteRequestBody The request of `create-backup-capacity-pack`, without `checkout`.
+type CreateBackupCapacityPackQuoteRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing     BillingChoice `json:"billing"`
+	CapacityGib int64         `json:"capacity_gib"`
+}
 
-	// PriceId A price of the region's backup offering. One is selected when omitted
-	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
+// CreateBackupCapacityPackRequestBody defines model for CreateBackupCapacityPackRequestBody.
+type CreateBackupCapacityPackRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing     BillingChoice `json:"billing"`
+	CapacityGib int64         `json:"capacity_gib"`
+
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+}
+
+// CreateBackupCapacityPackResponseBody defines model for CreateBackupCapacityPackResponseBody.
+type CreateBackupCapacityPackResponseBody struct {
+	// BackupCapacityPack Prepaid backup capacity for one region, sold by Compute and bought for a term through its own Billing subscription. Compute applies its coverage to backup usage; it is not a Billing allowance or credit.
+	BackupCapacityPack BackupCapacityPack `json:"backup_capacity_pack"`
+
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
 }
 
 // CreateBackupRequestBody defines model for CreateBackupRequestBody.
 type CreateBackupRequestBody struct {
 	DiskId openapi_types.UUID `json:"disk_id"`
 	Name   string             `json:"name"`
-
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
 }
 
-// CreateDiskRequestBody defines model for CreateDiskRequestBody.
-type CreateDiskRequestBody struct {
+// CreateBackupServiceRequestBody defines model for CreateBackupServiceRequestBody.
+type CreateBackupServiceRequestBody struct {
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+}
+
+// CreateBackupServiceResponseBody defines model for CreateBackupServiceResponseBody.
+type CreateBackupServiceResponseBody struct {
+	// BackupService The backup service of a project in one region. Retained backup capacity beyond what active capacity packs cover is metered on it.
+	BackupService BackupService `json:"backup_service"`
+
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
+}
+
+// CreateDiskQuoteRequestBody The request of `create-disk`, without `checkout`.
+type CreateDiskQuoteRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
 	// DiskTypeId A data disk type currently on sale, one whose `for_system` is false. A withdrawn one is rejected even though its identifier still resolves
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
-
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
-	SizeGb  int64              `json:"size_gb"`
+	SizeGb     int64              `json:"size_gb"`
 
 	// SnapshotId Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot
 	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
 }
 
+// CreateDiskRequestBody defines model for CreateDiskRequestBody.
+type CreateDiskRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
+	// DiskTypeId A data disk type currently on sale, one whose `for_system` is false. A withdrawn one is rejected even though its identifier still resolves
+	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
+	Name       string             `json:"name"`
+	SizeGb     int64              `json:"size_gb"`
+
+	// SnapshotId Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot
+	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
+}
+
+// CreateDiskResponseBody The new disk, `pending` until its order is accepted, and the order. Also returned for a disk restored
+// from a backup.
+type CreateDiskResponseBody struct {
+	Disk DiskResource `json:"disk"`
+
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
+}
+
 // CreateImageQuoteRequestBody The fields of `CreateImageRequestBody` that decide the price
 type CreateImageQuoteRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
 	// InstanceId The instance whose system disk would be captured
 	InstanceId openapi_types.UUID `json:"instance_id"`
-
-	// PriceId A price of the region's private image offering. One is selected when omitted
-	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
 }
 
 // CreateImageRequestBody defines model for CreateImageRequestBody.
 type CreateImageRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
 	// InstanceId Captured from the system disk of this instance; data disks are not included
 	InstanceId openapi_types.UUID `json:"instance_id"`
 	Name       string             `json:"name"`
+}
 
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
+// CreateImageResponseBody The new private image, `pending` until its order is accepted, and the order.
+type CreateImageResponseBody struct {
+	// Image An image that installs the system of an instance. Fields that describe a capture or its billing apply only to private images and are null, zero or empty for public ones.
+	Image ImageResource `json:"image"`
+
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
 }
 
 // CreatePeeringRequestBody defines model for CreatePeeringRequestBody.
@@ -1142,14 +1879,11 @@ type CreateSecurityRuleRequestBodyDirection string
 // CreateSecurityRuleRequestBodyEthertype defines model for CreateSecurityRuleRequestBody.Ethertype.
 type CreateSecurityRuleRequestBodyEthertype string
 
-// CreateSnapshotRequestBody defines model for CreateSnapshotRequestBody.
+// CreateSnapshotRequestBody Create one snapshot using existing project-and-region count quota. The region is taken from
+// disk_id. Purchase or adjust quota separately; this request has no checkout or price selection.
 type CreateSnapshotRequestBody struct {
 	DiskId openapi_types.UUID `json:"disk_id"`
 	Name   string             `json:"name"`
-
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
 }
 
 // CreateSubnetRequestBody defines model for CreateSubnetRequestBody.
@@ -1195,6 +1929,17 @@ type DiskListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
+// DiskOperation An operation still running on this disk. It is not a separate resource; once it finishes, the disk's `operation` is null again and the disk shows the result.
+type DiskOperation struct {
+	StartedAt time.Time `json:"started_at"`
+
+	// Type `attach` and `detach` accompany the instance's `attach_disk` and `detach_disk`. `delete` includes release through a Billing cancellation and deletion with an instance.
+	Type DiskOperationType `json:"type"`
+}
+
+// DiskOperationType `attach` and `detach` accompany the instance's `attach_disk` and `detach_disk`. `delete` includes release through a Billing cancellation and deletion with an instance.
+type DiskOperationType string
+
 // DiskResource defines model for DiskResource.
 type DiskResource struct {
 	AccessState *DiskResourceAccessState `json:"access_state"`
@@ -1204,30 +1949,42 @@ type DiskResource struct {
 	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
 	CreatedAt          time.Time          `json:"created_at"`
 	DiskTypeId         openapi_types.UUID `json:"disk_type_id"`
-	Generation         int64              `json:"generation"`
-	Id                 openapi_types.UUID `json:"id"`
+
+	// FailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this disk is refunded.
+	FailureReason *DiskResourceFailureReason `json:"failure_reason"`
+	Generation    int64                      `json:"generation"`
+	Id            openapi_types.UUID         `json:"id"`
 
 	// Iops IOPS this disk is allowed. Null when its type is not rate-limited.
 	//
 	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the
 	// note on the resize endpoint: growing a disk that is attached is refused, precisely because
 	// the new figure would not take effect until it was attached again.
-	Iops       *int64              `json:"iops"`
-	Name       string              `json:"name"`
-	ObservedAt *time.Time          `json:"observed_at"`
-	OrderId    *openapi_types.UUID `json:"order_id"`
-	PriceId    *openapi_types.UUID `json:"price_id"`
-	RegionId   openapi_types.UUID  `json:"region_id"`
+	Iops       *int64     `json:"iops"`
+	Name       string     `json:"name"`
+	ObservedAt *time.Time `json:"observed_at"`
+
+	// Operation The operation in progress on this disk, or null when none is.
+	Operation *DiskOperation      `json:"operation,omitempty"`
+	OrderId   *openapi_types.UUID `json:"order_id"`
+
+	// OrderItemId The Billing order item for this resource.
+	OrderItemId *openapi_types.UUID `json:"order_item_id"`
+	RegionId    openapi_types.UUID  `json:"region_id"`
 
 	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
 	ReleaseSet []ReleaseSetItem `json:"release_set"`
 
-	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this disk: its own and those of its snapshots. A system disk is released only with its instance, so for a system disk the list is that of the instance. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this disk: its own. Snapshots have no individual subscriptions. A system disk is released only with its instance, so for a system disk the list is that of the instance. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
 	SizeGb                 int64                `json:"size_gb"`
-	Status                 DiskResourceStatus   `json:"status"`
-	SubscriptionItemId     *openapi_types.UUID  `json:"subscription_item_id"`
-	Task                   *Task                `json:"task"`
+
+	// Status `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is created; then `available`, or `in_use` once attached. `failed` means the disk was not created; `failure_reason` states why.
+	Status DiskResourceStatus `json:"status"`
+
+	// SubscriptionId The Billing subscription associated with this resource. It may still be pending; its
+	// presence does not imply delivery or metering. Null when no subscription is associated.
+	SubscriptionId *openapi_types.UUID `json:"subscription_id"`
 
 	// ThroughputBytesPerSec Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited
 	ThroughputBytesPerSec *int64 `json:"throughput_bytes_per_sec"`
@@ -1236,7 +1993,10 @@ type DiskResource struct {
 // DiskResourceAccessState defines model for DiskResource.AccessState.
 type DiskResourceAccessState string
 
-// DiskResourceStatus defines model for DiskResource.Status.
+// DiskResourceFailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this disk is refunded.
+type DiskResourceFailureReason string
+
+// DiskResourceStatus `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is created; then `available`, or `in_use` once attached. `failed` means the disk was not created; `failure_reason` states why.
 type DiskResourceStatus string
 
 // DiskTypeListResponseBody defines model for DiskTypeListResponseBody.
@@ -1268,13 +2028,11 @@ type DiskTypeResource struct {
 	Media         DiskTypeResourceMedia `json:"media"`
 	MinSizeGb     int64                 `json:"min_size_gb"`
 	Name          string                `json:"name"`
-	PlanId        *openapi_types.UUID   `json:"plan_id"`
 
-	// ProductId Billing Product ID. Null when no Product is assigned; otherwise `compute`.
-	ProductId      *string             `json:"product_id"`
-	RegionId       openapi_types.UUID  `json:"region_id"`
-	SnapshotPlanId *openapi_types.UUID `json:"snapshot_plan_id"`
-	StepGb         int64               `json:"step_gb"`
+	// Pricing How a disk of this type can be bought, per GiB. Null when the project has no billing account.
+	Pricing  *Pricing           `json:"pricing,omitempty"`
+	RegionId openapi_types.UUID `json:"region_id"`
+	StepGb   int64              `json:"step_gb"`
 
 	// ThroughputAtMaxSize Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not rate-limited
 	ThroughputAtMaxSize *int64 `json:"throughput_at_max_size"`
@@ -1301,41 +2059,62 @@ type FloatingIPListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// FloatingIPResource defines model for FloatingIPResource.
+// FloatingIPOperation An operation still running on this floating IP. It is not a separate resource; once it finishes, the floating IP's `operation` is null again and the floating IP shows the result.
+type FloatingIPOperation struct {
+	StartedAt time.Time               `json:"started_at"`
+	Type      FloatingIPOperationType `json:"type"`
+}
+
+// FloatingIPOperationType defines model for FloatingIPOperation.Type.
+type FloatingIPOperationType string
+
+// FloatingIPResource One purchased public IP resource, including its bandwidth configuration. Bandwidth has no
+// separate Compute resource ID. Billing may split fees internally; read the order for the
+// commercial breakdown. Changing bandwidth updates this same resource, not another allocation.
 type FloatingIPResource struct {
-	AccessState                 *FloatingIPResourceAccessState          `json:"access_state"`
-	Address                     string                                  `json:"address"`
-	BandwidthAccessState        *FloatingIPResourceBandwidthAccessState `json:"bandwidth_access_state"`
-	BandwidthMbps               *int64                                  `json:"bandwidth_mbps"`
-	BandwidthOrderId            *openapi_types.UUID                     `json:"bandwidth_order_id"`
-	BandwidthPriceId            *openapi_types.UUID                     `json:"bandwidth_price_id"`
-	BandwidthSubscriptionItemId *openapi_types.UUID                     `json:"bandwidth_subscription_item_id"`
-	Binding                     *IPv4Binding                            `json:"binding"`
-	CreatedAt                   time.Time                               `json:"created_at"`
-	Generation                  int64                                   `json:"generation"`
-	Id                          openapi_types.UUID                      `json:"id"`
-	ObservedAt                  *time.Time                              `json:"observed_at"`
-	OrderId                     *openapi_types.UUID                     `json:"order_id"`
-	PriceId                     *openapi_types.UUID                     `json:"price_id"`
-	RegionId                    openapi_types.UUID                      `json:"region_id"`
+	AccessState *FloatingIPResourceAccessState `json:"access_state"`
+
+	// Address The allocated public address. Null until the address is allocated.
+	Address       *string      `json:"address"`
+	BandwidthMbps *int64       `json:"bandwidth_mbps"`
+	Binding       *IPv4Binding `json:"binding"`
+	CreatedAt     time.Time    `json:"created_at"`
+
+	// FailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this floating IP is refunded.
+	FailureReason *FloatingIPResourceFailureReason `json:"failure_reason"`
+	Generation    int64                            `json:"generation"`
+	Id            openapi_types.UUID               `json:"id"`
+	ObservedAt    *time.Time                       `json:"observed_at"`
+
+	// Operation The operation in progress on this floating IP, or null when none is.
+	Operation *FloatingIPOperation `json:"operation,omitempty"`
+	OrderId   *openapi_types.UUID  `json:"order_id"`
+
+	// OrderItemId The Billing order item for this resource.
+	OrderItemId *openapi_types.UUID `json:"order_item_id"`
+	RegionId    openapi_types.UUID  `json:"region_id"`
 
 	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
 	ReleaseSet []ReleaseSetItem `json:"release_set"`
 
-	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this address: the subscriptions of the address and of its bandwidth. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
-	ReleaseSubscriptionIds []openapi_types.UUID     `json:"release_subscription_ids"`
-	Status                 FloatingIPResourceStatus `json:"status"`
-	SubscriptionItemId     *openapi_types.UUID      `json:"subscription_item_id"`
-	Task                   *Task                    `json:"task"`
+	// ReleaseSubscriptionIds The complete subscription set a cancellation through Billing has to cover to release this floating IP, including any internal fee components. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
+
+	// Status `pending` until the order is accepted, with no address allocated; `provisioning` while the address is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states why.
+	Status FloatingIPResourceStatus `json:"status"`
+
+	// SubscriptionId The Billing subscription associated with this resource. It may still be pending; its
+	// presence does not imply delivery or metering. Null when no subscription is associated.
+	SubscriptionId *openapi_types.UUID `json:"subscription_id"`
 }
 
 // FloatingIPResourceAccessState defines model for FloatingIPResource.AccessState.
 type FloatingIPResourceAccessState string
 
-// FloatingIPResourceBandwidthAccessState defines model for FloatingIPResource.BandwidthAccessState.
-type FloatingIPResourceBandwidthAccessState string
+// FloatingIPResourceFailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this floating IP is refunded.
+type FloatingIPResourceFailureReason string
 
-// FloatingIPResourceStatus defines model for FloatingIPResource.Status.
+// FloatingIPResourceStatus `pending` until the order is accepted, with no address allocated; `provisioning` while the address is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states why.
 type FloatingIPResourceStatus string
 
 // IPv4Binding defines model for IPv4Binding.
@@ -1364,11 +2143,14 @@ type IPv4PoolListResponseBody struct {
 
 // IPv4PoolResource defines model for IPv4PoolResource.
 type IPv4PoolResource struct {
-	BandwidthPlanId *openapi_types.UUID `json:"bandwidth_plan_id"`
-	Id              openapi_types.UUID  `json:"id"`
-	Name            string              `json:"name"`
-	PlanId          *openapi_types.UUID `json:"plan_id"`
-	RegionId        openapi_types.UUID  `json:"region_id"`
+	// BandwidthPricing How the bandwidth of an address from this pool is billed, per Mbit/s, with the same billing choice as the address. Null when the project has no billing account.
+	BandwidthPricing *Pricing           `json:"bandwidth_pricing,omitempty"`
+	Id               openapi_types.UUID `json:"id"`
+	Name             string             `json:"name"`
+
+	// Pricing How an address from this pool can be bought, per address. Null when the project has no billing account.
+	Pricing  *Pricing           `json:"pricing,omitempty"`
+	RegionId openapi_types.UUID `json:"region_id"`
 }
 
 // IPv6ResponseBody defines model for IPv6ResponseBody.
@@ -1392,16 +2174,30 @@ type ImageListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
+// ImageOperation An operation still running on this image. It is not a separate resource; once it finishes, the image's `operation` is null again and the image shows the result.
+type ImageOperation struct {
+	StartedAt time.Time `json:"started_at"`
+
+	// Type `create` is the capture of a private image.
+	Type ImageOperationType `json:"type"`
+}
+
+// ImageOperationType `create` is the capture of a private image.
+type ImageOperationType string
+
 // ImageResource An image that installs the system of an instance. Fields that describe a capture or its billing apply only to private images and are null, zero or empty for public ones.
 type ImageResource struct {
 	AccessState  *ImageResourceAccessState `json:"access_state"`
 	Architecture string                    `json:"architecture"`
 	CreatedAt    time.Time                 `json:"created_at"`
 
-	// Failure Reason the capture failed; non-empty only when `status` is `error`
-	Failure    *string            `json:"failure"`
-	Generation int64              `json:"generation"`
-	Id         openapi_types.UUID `json:"id"`
+	// Failure Details of why the capture failed; non-empty only when `status` is `failed`
+	Failure *string `json:"failure"`
+
+	// FailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this image is refunded.
+	FailureReason *ImageResourceFailureReason `json:"failure_reason"`
+	Generation    int64                       `json:"generation"`
+	Id            openapi_types.UUID          `json:"id"`
 
 	// LoginUsername The account this image lets you log in as. The password set at creation belongs to this account
 	LoginUsername string `json:"login_username"`
@@ -1410,14 +2206,19 @@ type ImageResource struct {
 	MinDiskGb int64 `json:"min_disk_gb"`
 
 	// MinRamMb The instance type of an instance created from this image must have at least this much memory
-	MinRamMb   int64               `json:"min_ram_mb"`
-	Name       string              `json:"name"`
-	ObservedAt *time.Time          `json:"observed_at"`
-	OrderId    *openapi_types.UUID `json:"order_id"`
-	OsFamily   string              `json:"os_family"`
-	OsVersion  string              `json:"os_version"`
-	PriceId    *openapi_types.UUID `json:"price_id"`
-	RegionId   openapi_types.UUID  `json:"region_id"`
+	MinRamMb   int64      `json:"min_ram_mb"`
+	Name       string     `json:"name"`
+	ObservedAt *time.Time `json:"observed_at"`
+
+	// Operation The operation in progress on this image, or null when none is.
+	Operation *ImageOperation     `json:"operation,omitempty"`
+	OrderId   *openapi_types.UUID `json:"order_id"`
+
+	// OrderItemId The Billing order item for this resource.
+	OrderItemId *openapi_types.UUID `json:"order_item_id"`
+	OsFamily    string              `json:"os_family"`
+	OsVersion   string              `json:"os_version"`
+	RegionId    openapi_types.UUID  `json:"region_id"`
 
 	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
 	ReleaseSet []ReleaseSetItem `json:"release_set"`
@@ -1431,13 +2232,15 @@ type ImageResource struct {
 	// SourceInstanceId The instance a private image was captured from. The image remains usable after that instance is released. Null for public images
 	SourceInstanceId *openapi_types.UUID `json:"source_instance_id"`
 
-	// Status Only `available` images can install instances. A public image is always `available`; a private image goes through `provisioning` and `uploading` while it is captured.
-	Status             ImageResourceStatus `json:"status"`
-	SubscriptionItemId *openapi_types.UUID `json:"subscription_item_id"`
+	// Status Only `available` images can install instances. A public image is always `available`; a private image is `pending` until its order is accepted, then goes through `provisioning` and `uploading` while it is captured. `failed` means the capture produced no image; `failure_reason` states why.
+	Status ImageResourceStatus `json:"status"`
+
+	// SubscriptionId The Billing subscription associated with this resource. It may still be pending; its
+	// presence does not imply delivery or metering. Null when no subscription is associated.
+	SubscriptionId *openapi_types.UUID `json:"subscription_id"`
 
 	// SupportsPasswordReset False means a new password can only be set by rebuilding an instance created from this image
-	SupportsPasswordReset bool  `json:"supports_password_reset"`
-	Task                  *Task `json:"task"`
+	SupportsPasswordReset bool `json:"supports_password_reset"`
 
 	// Visibility Who can see and use an image. `public` — offered to every project by the platform. `private` — usable only by the project that owns it.
 	Visibility ImageVisibility `json:"visibility"`
@@ -1446,7 +2249,10 @@ type ImageResource struct {
 // ImageResourceAccessState defines model for ImageResource.AccessState.
 type ImageResourceAccessState string
 
-// ImageResourceStatus Only `available` images can install instances. A public image is always `available`; a private image goes through `provisioning` and `uploading` while it is captured.
+// ImageResourceFailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this image is refunded.
+type ImageResourceFailureReason string
+
+// ImageResourceStatus Only `available` images can install instances. A public image is always `available`; a private image is `pending` until its order is accepted, then goes through `provisioning` and `uploading` while it is captured. `failed` means the capture produced no image; `failure_reason` states why.
 type ImageResourceStatus string
 
 // ImageVisibility Who can see and use an image. `public` — offered to every project by the platform. `private` — usable only by the project that owns it.
@@ -1460,13 +2266,26 @@ type InstanceListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
+// InstanceOperation An operation still running on this instance. It is not a separate resource; once it finishes, the instance's `operation` is null again and the instance shows the result.
+type InstanceOperation struct {
+	StartedAt time.Time `json:"started_at"`
+
+	// Type `create` runs from acceptance of the order until the instance is `active` or `failed`. `suspend` and `resume` impose and lift a suspension by the platform or for non-payment. `delete` includes release through a Billing cancellation.
+	Type InstanceOperationType `json:"type"`
+}
+
+// InstanceOperationType `create` runs from acceptance of the order until the instance is `active` or `failed`. `suspend` and `resume` impose and lift a suspension by the platform or for non-payment. `delete` includes release through a Billing cancellation.
+type InstanceOperationType string
+
 // InstanceResource defines model for InstanceResource.
 type InstanceResource struct {
 	AccessState        *InstanceResourceAccessState `json:"access_state"`
 	AvailabilityZoneId openapi_types.UUID           `json:"availability_zone_id"`
 	CreatedAt          time.Time                    `json:"created_at"`
-	DesiredState       InstanceResourceDesiredState `json:"desired_state"`
-	Generation         int64                        `json:"generation"`
+
+	// FailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this instance is refunded.
+	FailureReason *InstanceResourceFailureReason `json:"failure_reason"`
+	Generation    int64                          `json:"generation"`
 
 	// Hostname Hostname inside the instance; equals the instance id
 	Hostname string             `json:"hostname"`
@@ -1489,11 +2308,16 @@ type InstanceResource struct {
 	Name          string `json:"name"`
 
 	// Notes A free-text note about this instance. Empty when never set
-	Notes      string                     `json:"notes"`
-	ObservedAt *time.Time                 `json:"observed_at"`
-	OrderId    *openapi_types.UUID        `json:"order_id"`
-	PowerState InstanceResourcePowerState `json:"power_state"`
-	PriceId    *openapi_types.UUID        `json:"price_id"`
+	Notes      string     `json:"notes"`
+	ObservedAt *time.Time `json:"observed_at"`
+
+	// Operation The operation in progress on this instance, or null when none is.
+	Operation *InstanceOperation  `json:"operation,omitempty"`
+	OrderId   *openapi_types.UUID `json:"order_id"`
+
+	// OrderItemId The Billing order item for this resource.
+	OrderItemId *openapi_types.UUID        `json:"order_item_id"`
+	PowerState  InstanceResourcePowerState `json:"power_state"`
 
 	// PrivateIp Private address of the instance
 	PrivateIp        *string             `json:"private_ip"`
@@ -1506,35 +2330,36 @@ type InstanceResource struct {
 	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
 	ReleaseSet []ReleaseSetItem `json:"release_set"`
 
-	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this instance: its own, those of the disks deleted with it, and those of the snapshots of those disks. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
+	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this instance: its own and those of the disks deleted with it. Snapshots are cleaned up with their source disk without canceling the project's snapshot quota. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []openapi_types.UUID  `json:"release_subscription_ids"`
 	Restrictions           []InstanceRestriction `json:"restrictions"`
 
 	// SourceDiskId Non-empty when the instance was created from a disk you already had, instead of from an image
-	SourceDiskId       *openapi_types.UUID    `json:"source_disk_id"`
-	Status             InstanceResourceStatus `json:"status"`
-	SubnetId           *openapi_types.UUID    `json:"subnet_id"`
-	SubscriptionItemId *openapi_types.UUID    `json:"subscription_item_id"`
-	Task               *Task                  `json:"task"`
+	SourceDiskId *openapi_types.UUID `json:"source_disk_id"`
 
-	// TaskState Current provider task, such as scheduling, networking, block_device_mapping or spawning. none means no task; unknown tasks remain observable and do not imply failure.
-	TaskState string    `json:"task_state"`
-	UpdatedAt time.Time `json:"updated_at"`
+	// Status `pending` until the order is accepted: no virtual machine exists and addresses are null. `provisioning` while the instance is created, then `active`. `failed` means the instance was not created; `failure_reason` states why. The other values are the state last observed in the cloud; an operation in progress appears in `operation`, not here.
+	Status   InstanceResourceStatus `json:"status"`
+	SubnetId *openapi_types.UUID    `json:"subnet_id"`
+
+	// SubscriptionId The Billing subscription associated with this resource. It may still be pending; its
+	// presence does not imply delivery or metering. Null when no subscription is associated.
+	SubscriptionId *openapi_types.UUID `json:"subscription_id"`
+	UpdatedAt      time.Time           `json:"updated_at"`
 }
 
 // InstanceResourceAccessState defines model for InstanceResource.AccessState.
 type InstanceResourceAccessState string
 
-// InstanceResourceDesiredState defines model for InstanceResource.DesiredState.
-type InstanceResourceDesiredState string
+// InstanceResourceFailureReason Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed after the order was accepted, and the charge for this instance is refunded.
+type InstanceResourceFailureReason string
 
 // InstanceResourcePowerState defines model for InstanceResource.PowerState.
 type InstanceResourcePowerState string
 
-// InstanceResourceStatus defines model for InstanceResource.Status.
+// InstanceResourceStatus `pending` until the order is accepted: no virtual machine exists and addresses are null. `provisioning` while the instance is created, then `active`. `failed` means the instance was not created; `failure_reason` states why. The other values are the state last observed in the cloud; an operation in progress appears in `operation`, not here.
 type InstanceResourceStatus string
 
-// InstanceRestriction An independent restriction on use. Removing one restriction never removes another source’s restriction or changes the user’s desired power state.
+// InstanceRestriction An independent restriction on use. Removing one restriction never removes another source’s restriction, and never starts an instance its user stopped.
 type InstanceRestriction struct {
 	CreatedAt  time.Time                 `json:"created_at"`
 	Id         openapi_types.UUID        `json:"id"`
@@ -1577,18 +2402,20 @@ type InstanceTypeResource struct {
 	NetworkEgressKbps *int64 `json:"network_egress_kbps"`
 
 	// NetworkIngressKbps Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited
-	NetworkIngressKbps *int64              `json:"network_ingress_kbps"`
-	PlanId             *openapi_types.UUID `json:"plan_id"`
+	NetworkIngressKbps *int64 `json:"network_ingress_kbps"`
 
-	// ProductId Billing Product ID. Null when no Product is assigned; otherwise `compute`.
-	ProductId *string            `json:"product_id"`
-	RamMb     int64              `json:"ram_mb"`
-	RegionId  openapi_types.UUID `json:"region_id"`
-	Vcpus     int64              `json:"vcpus"`
+	// Pricing How an instance of this type can be bought, per instance. Null when the project has no billing account.
+	Pricing  *Pricing           `json:"pricing,omitempty"`
+	RamMb    int64              `json:"ram_mb"`
+	RegionId openapi_types.UUID `json:"region_id"`
+	Vcpus    int64              `json:"vcpus"`
 }
 
-// LaunchInstanceRequestBody defines model for LaunchInstanceRequestBody.
-type LaunchInstanceRequestBody struct {
+// LaunchInstanceQuoteRequestBody The request of `launch-instance`, without `checkout`.
+type LaunchInstanceQuoteRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
 	// BootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
 	BootDisk *NewBootDisk `json:"boot_disk,omitempty"`
 
@@ -1598,7 +2425,7 @@ type LaunchInstanceRequestBody struct {
 	// Count Number of instances to create; 1 when omitted. Names are numbered automatically for several
 	Count *int64 `json:"count,omitempty"`
 
-	// FloatingIp An address and bandwidth purchased in the same order. Mutually exclusive with floating_ip_id.
+	// FloatingIp One floating IP purchased with this bandwidth configuration in the instance's order. Mutually exclusive with floating_ip_id.
 	FloatingIp *NewFloatingIP `json:"floating_ip,omitempty"`
 
 	// FloatingIpId Bind a floating IP you already hold, instead of allocating a new one. It must be idle and in
@@ -1627,15 +2454,11 @@ type LaunchInstanceRequestBody struct {
 	LoginUsername *string `json:"login_username,omitempty"`
 	Name          string  `json:"name"`
 
-	// Order Purchase options. Every request places an order of its own.
-	Order OrderOptions `json:"order"`
-
 	// Password The password to set, on the login account and on root. Only the SSH public keys of the project are used when omitted
 	Password *string `json:"password,omitempty"`
 
 	// PortId Use an existing network interface, which may already have a floating IP bound. Exactly one of this and `subnet_id`; only one instance can be created when it is used
-	PortId  *openapi_types.UUID `json:"port_id,omitempty"`
-	PriceId openapi_types.UUID  `json:"price_id"`
+	PortId *openapi_types.UUID `json:"port_id,omitempty"`
 
 	// SecurityGroupIds Required when a primary network interface is created, at least one; the default security group is not applied automatically. Ignored together with `port_id`, as the security groups of that interface were fixed when it was created
 	SecurityGroupIds []openapi_types.UUID `json:"security_group_ids,omitempty"`
@@ -1644,19 +2467,79 @@ type LaunchInstanceRequestBody struct {
 	SubnetId *openapi_types.UUID `json:"subnet_id,omitempty"`
 }
 
-// LaunchInstanceResponseBody defines model for LaunchInstanceResponseBody.
+// LaunchInstanceRequestBody defines model for LaunchInstanceRequestBody.
+type LaunchInstanceRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
+	// BootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
+	BootDisk *NewBootDisk `json:"boot_disk,omitempty"`
+
+	// BootDiskId Boot a disk you already have instead of installing an image. The disk must be available, unattached, and in the same availability zone as the instance type. Exactly one of this and `image_id`
+	BootDiskId *openapi_types.UUID `json:"boot_disk_id,omitempty"`
+
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
+	// Count Number of instances to create; 1 when omitted. Names are numbered automatically for several
+	Count *int64 `json:"count,omitempty"`
+
+	// FloatingIp One floating IP purchased with this bandwidth configuration in the instance's order. Mutually exclusive with floating_ip_id.
+	FloatingIp *NewFloatingIP `json:"floating_ip,omitempty"`
+
+	// FloatingIpId Bind a floating IP you already hold, instead of allocating a new one. It must be idle and in
+	// the same region.
+	//
+	// Mutually exclusive with `bandwidth_mbps`: an address you already hold has its own bandwidth
+	// ceiling, set when it was allocated, and changing it is a separate operation.
+	//
+	// Like `bandwidth_mbps`, this happens **inside the creation**: if binding fails, no instance is
+	// created. Binding afterwards is still possible from the instance page, but then it is two
+	// operations and a failure in between leaves an instance you cannot reach.
+	//
+	// Only one instance can be created when it is used — one address binds to one interface.
+	FloatingIpId *openapi_types.UUID `json:"floating_ip_id,omitempty"`
+
+	// GeneratePassword Have the platform generate a random password, returned only in this response
+	GeneratePassword *bool `json:"generate_password,omitempty"`
+
+	// ImageId A public image currently on sale, or an available private image of this project. Exactly one of this and `boot_disk_id`
+	ImageId *openapi_types.UUID `json:"image_id,omitempty"`
+
+	// InstanceTypeId An instance type currently on sale. A withdrawn one is rejected even though its identifier still resolves
+	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
+
+	// LoginUsername The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since an image states its own
+	LoginUsername *string `json:"login_username,omitempty"`
+	Name          string  `json:"name"`
+
+	// Password The password to set, on the login account and on root. Only the SSH public keys of the project are used when omitted
+	Password *string `json:"password,omitempty"`
+
+	// PortId Use an existing network interface, which may already have a floating IP bound. Exactly one of this and `subnet_id`; only one instance can be created when it is used
+	PortId *openapi_types.UUID `json:"port_id,omitempty"`
+
+	// SecurityGroupIds Required when a primary network interface is created, at least one; the default security group is not applied automatically. Ignored together with `port_id`, as the security groups of that interface were fixed when it was created
+	SecurityGroupIds []openapi_types.UUID `json:"security_group_ids,omitempty"`
+
+	// SubnetId Create the primary network interface in this subnet. Exactly one of this and `port_id`
+	SubnetId *openapi_types.UUID `json:"subnet_id,omitempty"`
+}
+
+// LaunchInstanceResponseBody The new instances, `pending` until their order is accepted, and the order they share.
 type LaunchInstanceResponseBody struct {
-	// InstanceIds Instances created by this operation. Empty before resource creation starts.
-	InstanceIds []openapi_types.UUID `json:"instance_ids"`
+	// Instances One instance per requested instance, in request order. Their IDs stay the same through checkout and
+	// creation.
+	Instances []InstanceResource `json:"instances"`
 
 	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
 	Order PlacedOrder `json:"order"`
 
 	// Password Generated login password, returned only by this response. Null when no password was generated.
 	Password *string `json:"password"`
-
-	// TaskId The Compute task that carries out the purchase.
-	TaskId openapi_types.UUID `json:"task_id"`
 }
 
 // NewBootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
@@ -1665,16 +2548,13 @@ type NewBootDisk struct {
 
 	// DiskTypeId A system disk type on sale in the availability zone of the instance, one whose `for_system` is true
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
-	PriceId    openapi_types.UUID `json:"price_id"`
 	SizeGb     int64              `json:"size_gb"`
 }
 
-// NewFloatingIP An address and bandwidth purchased in the same order. Mutually exclusive with floating_ip_id.
+// NewFloatingIP One floating IP purchased with this bandwidth configuration in the instance's order. Mutually exclusive with floating_ip_id.
 type NewFloatingIP struct {
-	BandwidthMbps    int64              `json:"bandwidth_mbps"`
-	BandwidthPriceId openapi_types.UUID `json:"bandwidth_price_id"`
-	Ipv4PoolId       openapi_types.UUID `json:"ipv4_pool_id"`
-	PriceId          openapi_types.UUID `json:"price_id"`
+	BandwidthMbps int64              `json:"bandwidth_mbps"`
+	Ipv4PoolId    openapi_types.UUID `json:"ipv4_pool_id"`
 }
 
 // NextFreeCidrResponseBody defines model for NextFreeCidrResponseBody.
@@ -1722,9 +2602,6 @@ type OperationLogResource struct {
 	Succeeded   bool   `json:"succeeded"`
 }
 
-// OrderOptions Purchase options. Every request places an order of its own.
-type OrderOptions = externalRef0.OrderOptions
-
 // PeeringListResponseBody defines model for PeeringListResponseBody.
 type PeeringListResponseBody struct {
 	Items []PeeringResource `json:"items"`
@@ -1733,14 +2610,28 @@ type PeeringListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
+// PeeringOperation An operation still running on this peering. It is not a separate resource; once it finishes, the peering's `operation` is null again and the peering shows the result.
+type PeeringOperation struct {
+	StartedAt time.Time `json:"started_at"`
+
+	// Type `provision` runs after the peering is accepted, until it is `active`.
+	Type PeeringOperationType `json:"type"`
+}
+
+// PeeringOperationType `provision` runs after the peering is accepted, until it is `active`.
+type PeeringOperationType string
+
 // PeeringResource defines model for PeeringResource.
 type PeeringResource struct {
-	AccepterNetworkId  openapi_types.UUID    `json:"accepter_network_id"`
-	AccepterProjectId  openapi_types.UUID    `json:"accepter_project_id"`
-	CreatedAt          time.Time             `json:"created_at"`
-	FailureCode        *string               `json:"failure_code,omitempty"`
-	Id                 openapi_types.UUID    `json:"id"`
-	Name               string                `json:"name"`
+	AccepterNetworkId openapi_types.UUID `json:"accepter_network_id"`
+	AccepterProjectId openapi_types.UUID `json:"accepter_project_id"`
+	CreatedAt         time.Time          `json:"created_at"`
+	FailureCode       *string            `json:"failure_code,omitempty"`
+	Id                openapi_types.UUID `json:"id"`
+	Name              string             `json:"name"`
+
+	// Operation The operation in progress on this peering, or null when none is.
+	Operation          *PeeringOperation     `json:"operation,omitempty"`
 	RegionId           openapi_types.UUID    `json:"region_id"`
 	RequesterNetworkId openapi_types.UUID    `json:"requester_network_id"`
 	RequesterProjectId openapi_types.UUID    `json:"requester_project_id"`
@@ -1802,15 +2693,27 @@ type PortListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
+// PortOperation An operation still running on this network interface. It is not a separate resource; once it finishes, the network interface's `operation` is null again and the network interface shows the result.
+type PortOperation struct {
+	StartedAt time.Time         `json:"started_at"`
+	Type      PortOperationType `json:"type"`
+}
+
+// PortOperationType defines model for PortOperation.Type.
+type PortOperationType string
+
 // PortResource defines model for PortResource.
 type PortResource struct {
-	Addresses        []PortAddress      `json:"addresses,omitempty"`
-	Attachment       *PortAttachment    `json:"attachment,omitempty"`
-	Generation       int64              `json:"generation"`
-	Id               openapi_types.UUID `json:"id"`
-	Mac              *string            `json:"mac"`
-	Name             string             `json:"name"`
-	ObservedAt       *time.Time         `json:"observed_at"`
+	Addresses  []PortAddress      `json:"addresses,omitempty"`
+	Attachment *PortAttachment    `json:"attachment,omitempty"`
+	Generation int64              `json:"generation"`
+	Id         openapi_types.UUID `json:"id"`
+	Mac        *string            `json:"mac"`
+	Name       string             `json:"name"`
+	ObservedAt *time.Time         `json:"observed_at"`
+
+	// Operation The operation in progress on this network interface, or null when none is.
+	Operation        *PortOperation     `json:"operation,omitempty"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
 
 	// PublicIps Floating IPv4 addresses bound to this network interface; an empty array when none are bound
@@ -1826,6 +2729,54 @@ type PowerRequest struct {
 	ExpectedGeneration *int64 `json:"expected_generation,omitempty"`
 }
 
+// Pricing How a catalog item can be bought, calculated by Billing in the currency of the project's current billing account. These are list amounts before promotion codes, not a checkout guarantee; quote a purchase for its exact total.
+type Pricing struct {
+	Currency string `json:"currency"`
+
+	// Options One entry per way the item can be bought. Empty when it cannot be bought in this currency.
+	Options []PricingOption `json:"options"`
+}
+
+// PricingOption One way to buy an item. Choose it by giving its `mode` and `period` as `billing`.
+type PricingOption struct {
+	// Amount Prepaid only; null for postpaid. The amount for one period, per quantity unit.
+	Amount *string           `json:"amount"`
+	Mode   PricingOptionMode `json:"mode"`
+
+	// MonthlyAmount Prepaid only; null for postpaid. `amount` spread over the months of the period.
+	MonthlyAmount *string `json:"monthly_amount"`
+
+	// Period The term of a prepaid option; null for postpaid.
+	Period *BillingPeriod `json:"period"`
+
+	// QuantityUnit What the amounts are for: one `item`, such as an instance or an address; one `gib` of size or capacity; one `mbps` of bandwidth; or one `snapshot` slot.
+	QuantityUnit PricingOptionQuantityUnit `json:"quantity_unit"`
+
+	// SavingPercent Prepaid only. How much lower `monthly_amount` is than that of the shortest prepaid period of the same item, as a decimal percentage. Null for that shortest period and for postpaid.
+	SavingPercent *string `json:"saving_percent"`
+
+	// Termination What canceling does under this option: `immediate` ends the service at once, with any refund following the option's terms; `period_end` ends it at the end of the paid period.
+	Termination PricingOptionTermination `json:"termination"`
+
+	// Unit Postpaid only; null for prepaid. The time unit of `unit_amount`.
+	Unit *PricingOptionUnit `json:"unit"`
+
+	// UnitAmount Postpaid only; null for prepaid. The amount for one `unit` of time, per quantity unit.
+	UnitAmount *string `json:"unit_amount"`
+}
+
+// PricingOptionMode defines model for PricingOption.Mode.
+type PricingOptionMode string
+
+// PricingOptionQuantityUnit What the amounts are for: one `item`, such as an instance or an address; one `gib` of size or capacity; one `mbps` of bandwidth; or one `snapshot` slot.
+type PricingOptionQuantityUnit string
+
+// PricingOptionTermination What canceling does under this option: `immediate` ends the service at once, with any refund following the option's terms; `period_end` ends it at the end of the paid period.
+type PricingOptionTermination string
+
+// PricingOptionUnit Postpaid only; null for prepaid. The time unit of `unit_amount`.
+type PricingOptionUnit string
+
 // PrivateNetworkListResponseBody defines model for PrivateNetworkListResponseBody.
 type PrivateNetworkListResponseBody struct {
 	Items []PrivateNetworkResource `json:"items"`
@@ -1834,6 +2785,15 @@ type PrivateNetworkListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
+// PrivateNetworkOperation An operation still running on this private network. It is not a separate resource; once it finishes, the private network's `operation` is null again and the private network shows the result.
+type PrivateNetworkOperation struct {
+	StartedAt time.Time                   `json:"started_at"`
+	Type      PrivateNetworkOperationType `json:"type"`
+}
+
+// PrivateNetworkOperationType defines model for PrivateNetworkOperation.Type.
+type PrivateNetworkOperationType string
+
 // PrivateNetworkResource defines model for PrivateNetworkResource.
 type PrivateNetworkResource struct {
 	Cidr               string             `json:"cidr"`
@@ -1841,7 +2801,10 @@ type PrivateNetworkResource struct {
 	HasInternetGateway bool               `json:"has_internet_gateway"`
 	Id                 openapi_types.UUID `json:"id"`
 	Name               string             `json:"name"`
-	RegionId           openapi_types.UUID `json:"region_id"`
+
+	// Operation The operation in progress on this private network, or null when none is.
+	Operation *PrivateNetworkOperation `json:"operation,omitempty"`
+	RegionId  openapi_types.UUID       `json:"region_id"`
 
 	// Status Only `available` accepts new instances, interfaces and floating IPs
 	Status    PrivateNetworkResourceStatus `json:"status"`
@@ -1851,17 +2814,11 @@ type PrivateNetworkResource struct {
 // PrivateNetworkResourceStatus Only `available` accepts new instances, interfaces and floating IPs
 type PrivateNetworkResourceStatus string
 
-// PurchaseQuote What a purchase would be charged, priced as a service would order it, without ordering anything. Nothing is reserved and nothing is recorded.
-type PurchaseQuote = externalRef0.PurchaseQuote
-
-// PurchaseResult Identifies the Compute task and the Billing order of a purchase. Work on the purchase starts after the order's invoice is paid, or without waiting when the order has no immediate invoice. Track the task for completion.
-type PurchaseResult struct {
-	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
-	Order PlacedOrder `json:"order"`
-
-	// TaskId The Compute task that carries out the purchase.
-	TaskId openapi_types.UUID `json:"task_id"`
-}
+// Quote A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
+// charged or reserved, and no discount redemption is consumed. Account discounts and tax are
+// evaluated as for automatic checkout. Promotion codes are evaluated through Billing quote operations.
+// All amounts use currency. This preview does not lock prices or guarantee discount availability.
+type Quote = externalRef0.Quote
 
 // RebootInstanceRequestBody defines model for RebootInstanceRequestBody.
 type RebootInstanceRequestBody struct {
@@ -1905,13 +2862,17 @@ type RegionResource struct {
 
 	// Name Display name for this place, shown to tenants (Hong Kong). The stable handle is code.
 	Name string `json:"name"`
+
+	// PrivateImagePricing How private image storage in this region is billed, per GiB. Null when the project has no billing account.
+	PrivateImagePricing *Pricing `json:"private_image_pricing,omitempty"`
 }
 
 // ReleaseResource A resource a release set releases.
 type ReleaseResource struct {
+	// Id The resource's ID; for `backup_service` and `snapshot_quota`, the ID of their region.
 	Id openapi_types.UUID `json:"id"`
 
-	// Name The resource's name. A floating IP is named by its address.
+	// Name The resource's name. A floating IP is named by its address, a backup service or snapshot quota by its region, and a capacity pack by its capacity, such as 100 GiB.
 	Name string              `json:"name"`
 	Type ReleaseResourceType `json:"type"`
 }
@@ -1919,7 +2880,7 @@ type ReleaseResource struct {
 // ReleaseResourceType defines model for ReleaseResource.Type.
 type ReleaseResourceType string
 
-// ReleaseSetItem One subscription of a release set and the resource it pays for. An address and its bandwidth are two subscriptions of the same floating IP.
+// ReleaseSetItem One subscription of a release set and the resource it pays for. Multiple internal billing components may refer to the same floating IP; they do not create independent bandwidth resources.
 type ReleaseSetItem struct {
 	// Resource A resource a release set releases.
 	Resource       ReleaseResource    `json:"resource"`
@@ -1976,35 +2937,92 @@ type ResetPasswordResponseBody struct {
 	Password string `json:"password"`
 }
 
+// ResizeDiskQuoteRequestBody The request of `resize-disk`, without `checkout` and `proration_date`.
+type ResizeDiskQuoteRequestBody struct {
+	// SizeGb Must be larger than the current capacity
+	SizeGb int64 `json:"size_gb"`
+}
+
 // ResizeDiskRequestBody defines model for ResizeDiskRequestBody.
 type ResizeDiskRequestBody struct {
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
+	// ProrationDate The `proration_date` of this change's quote, so that the order is priced from the same instant. Defaults to the time of the request; it must be a whole second, not in the future and at most 10 minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	ProrationDate *time.Time `json:"proration_date,omitempty"`
 
 	// SizeGb Must be larger than the current capacity
 	SizeGb int64 `json:"size_gb"`
 }
 
+// ResizeDiskResponseBody The disk, still at its current size, and the order for the resize.
+type ResizeDiskResponseBody struct {
+	Disk DiskResource `json:"disk"`
+
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
+}
+
+// ResizeInstanceQuoteRequestBody The request of `resize-instance`, without `checkout` and `proration_date`.
+type ResizeInstanceQuoteRequestBody struct {
+	// InstanceTypeId Must be in the same region and availability zone as the current instance type
+	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
+}
+
 // ResizeInstanceRequestBody defines model for ResizeInstanceRequestBody.
 type ResizeInstanceRequestBody struct {
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
 	// InstanceTypeId Must be in the same region and availability zone as the current instance type
 	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
 
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
+	// ProrationDate The `proration_date` of this change's quote, so that the order is priced from the same instant. Defaults to the time of the request; it must be a whole second, not in the future and at most 10 minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	ProrationDate *time.Time `json:"proration_date,omitempty"`
 }
 
-// RestoreBackupRequestBody defines model for RestoreBackupRequestBody.
-type RestoreBackupRequestBody struct {
+// ResizeInstanceResponseBody The instance, still on its current type, and the order for the resize. The instance keeps its ID, and
+// its current subscription remains in force until the resize is applied.
+type ResizeInstanceResponseBody struct {
+	Instance InstanceResource `json:"instance"`
+
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
+}
+
+// RestoreBackupQuoteRequestBody The request of `restore-backup`, without `checkout`.
+type RestoreBackupQuoteRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
 	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region. It has to be a data disk type on sale — restoring creates a new data disk, so a withdrawn type or a system disk type is rejected here as well
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
+	// SizeGb Matches the size of the backup when omitted. When given, it must not be smaller than the backup
+	SizeGb *int64 `json:"size_gb,omitempty"`
+}
+
+// RestoreBackupRequestBody defines model for RestoreBackupRequestBody.
+type RestoreBackupRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
+	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region. It has to be a data disk type on sale — restoring creates a new data disk, so a withdrawn type or a system disk type is rejected here as well
+	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
+	Name       string             `json:"name"`
 
 	// SizeGb Matches the size of the backup when omitted. When given, it must not be smaller than the backup
 	SizeGb *int64 `json:"size_gb,omitempty"`
@@ -2098,14 +3116,37 @@ type SecurityRuleResourceDirection string
 // SecurityRuleResourceEthertype defines model for SecurityRuleResource.Ethertype.
 type SecurityRuleResourceEthertype string
 
-// SetBandwidthRequestBody defines model for SetBandwidthRequestBody.
-type SetBandwidthRequestBody struct {
-	// Mbps Applied to both directions
-	Mbps int64 `json:"mbps"`
+// SetFloatingIPBandwidthQuoteRequestBody The request of `set-floating-ip-bandwidth`, without `checkout` and `proration_date`.
+type SetFloatingIPBandwidthQuoteRequestBody struct {
+	// BandwidthMbps Applied to both directions
+	BandwidthMbps int64 `json:"bandwidth_mbps"`
+}
 
-	// Order Purchase options. Every request places an order of its own.
-	Order   OrderOptions       `json:"order"`
-	PriceId openapi_types.UUID `json:"price_id"`
+// SetFloatingIPBandwidthRequestBody Change bandwidth on the floating IP identified by the path. This is a configuration change
+// of that purchase, not an independent bandwidth purchase. Checkout is handled by Billing.
+type SetFloatingIPBandwidthRequestBody struct {
+	// BandwidthMbps Applied to both directions
+	BandwidthMbps int64 `json:"bandwidth_mbps"`
+
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
+	// ProrationDate The `proration_date` of this change's quote, so that the order is priced from the same instant. Defaults to the time of the request; it must be a whole second, not in the future and at most 10 minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	ProrationDate *time.Time `json:"proration_date,omitempty"`
+}
+
+// SetFloatingIPBandwidthResponseBody The floating IP, still at its current bandwidth, and the order for the change.
+type SetFloatingIPBandwidthResponseBody struct {
+	// FloatingIp One purchased public IP resource, including its bandwidth configuration. Bandwidth has no
+	// separate Compute resource ID. Billing may split fees internally; read the order for the
+	// commercial breakdown. Changing bandwidth updates this same resource, not another allocation.
+	FloatingIp FloatingIPResource `json:"floating_ip"`
+
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
 }
 
 // SetInstanceLabelsRequestBody defines model for SetInstanceLabelsRequestBody.
@@ -2120,6 +3161,45 @@ type SetInstanceNotesRequestBody struct {
 	Notes string `json:"notes"`
 }
 
+// SetSnapshotQuotaQuoteRequestBody The request of `set-snapshot-quota`, without `checkout` and `proration_date`.
+type SetSnapshotQuotaQuoteRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
+	// Limit Desired total concurrent snapshot count for this project and region, not additional slots.
+	Limit int64 `json:"limit"`
+}
+
+// SetSnapshotQuotaRequestBody defines model for SetSnapshotQuotaRequestBody.
+type SetSnapshotQuotaRequestBody struct {
+	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	Billing BillingChoice `json:"billing"`
+
+	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
+	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
+	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
+	// refuses a purchase; no infrastructure is created for that refusal.
+	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
+	// Limit Desired total concurrent snapshot count for this project and region, not additional slots.
+	Limit int64 `json:"limit"`
+
+	// ProrationDate The `proration_date` of this change's quote, so that the order is priced from the same instant. Defaults to the time of the request; it must be a whole second, not in the future and at most 10 minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	ProrationDate *time.Time `json:"proration_date,omitempty"`
+}
+
+// SetSnapshotQuotaResponseBody defines model for SetSnapshotQuotaResponseBody.
+type SetSnapshotQuotaResponseBody struct {
+	// Order Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
+	Order PlacedOrder `json:"order"`
+
+	// SnapshotQuota Snapshot count capacity for the authenticated project and one region, projected from its
+	// effective quota purchase and Compute's actual holdings. This is not a Billing Allowance:
+	// creation occupies capacity and confirmed deletion releases it rather than consuming a grant.
+	// Pending purchases never increase effective capacity before commercial acceptance and activation.
+	SnapshotQuota SnapshotQuota `json:"snapshot_quota"`
+}
+
 // SnapshotListResponseBody defines model for SnapshotListResponseBody.
 type SnapshotListResponseBody struct {
 	Items []SnapshotResource `json:"items"`
@@ -2128,39 +3208,93 @@ type SnapshotListResponseBody struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// SnapshotResource defines model for SnapshotResource.
-type SnapshotResource struct {
-	AccessState *SnapshotResourceAccessState `json:"access_state"`
+// SnapshotOperation An operation still running on this snapshot. It is not a separate resource; once it finishes, the snapshot's `operation` is null again and the snapshot shows the result.
+type SnapshotOperation struct {
+	StartedAt time.Time `json:"started_at"`
 
-	// AvailabilityZoneId A disk restored from this snapshot must reside in this availability zone
-	AvailabilityZoneId openapi_types.UUID  `json:"availability_zone_id"`
-	CreatedAt          time.Time           `json:"created_at"`
-	DiskId             openapi_types.UUID  `json:"disk_id"`
-	Generation         int64               `json:"generation"`
-	Id                 openapi_types.UUID  `json:"id"`
-	Name               string              `json:"name"`
-	ObservedAt         *time.Time          `json:"observed_at"`
-	OrderId            *openapi_types.UUID `json:"order_id"`
-	PriceId            *openapi_types.UUID `json:"price_id"`
-	RegionId           openapi_types.UUID  `json:"region_id"`
-
-	// ReleaseSet The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays for, so that each line of a cancellation can name what it releases.
-	ReleaseSet []ReleaseSetItem `json:"release_set"`
-
-	// ReleaseSubscriptionIds The subscriptions a cancellation through Billing has to cover to release this snapshot: its own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays for any of them.
-	ReleaseSubscriptionIds []openapi_types.UUID `json:"release_subscription_ids"`
-
-	// SizeGb Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller
-	SizeGb             int64                  `json:"size_gb"`
-	Status             SnapshotResourceStatus `json:"status"`
-	SubscriptionItemId *openapi_types.UUID    `json:"subscription_item_id"`
-	Task               *Task                  `json:"task"`
+	// Type `restore`: a disk is being reverted to this snapshot or created from it.
+	Type SnapshotOperationType `json:"type"`
 }
 
-// SnapshotResourceAccessState defines model for SnapshotResource.AccessState.
-type SnapshotResourceAccessState string
+// SnapshotOperationType `restore`: a disk is being reverted to this snapshot or created from it.
+type SnapshotOperationType string
 
-// SnapshotResourceStatus defines model for SnapshotResource.Status.
+// SnapshotQuota Snapshot count capacity for the authenticated project and one region, projected from its
+// effective quota purchase and Compute's actual holdings. This is not a Billing Allowance:
+// creation occupies capacity and confirmed deletion releases it rather than consuming a grant.
+// Pending purchases never increase effective capacity before commercial acceptance and activation.
+type SnapshotQuota struct {
+	// Available max(limit - used, 0), or zero while creation is not permitted.
+	Available int64 `json:"available"`
+
+	// FailureReason Why the first purchase failed; null unless status is failed. A failed change leaves the current
+	// limit in force and clears pending_limit; its order shows the outcome.
+	FailureReason *SnapshotQuotaFailureReason `json:"failure_reason"`
+
+	// Limit Effective maximum concurrent snapshot count. Zero until the first purchase is activated.
+	Limit int64 `json:"limit"`
+
+	// OrderId The order establishing the currently associated quota purchase, including an initial pending purchase.
+	OrderId *openapi_types.UUID `json:"order_id"`
+
+	// PendingLimit Target count awaiting checkout or activation; null when no purchase is pending.
+	PendingLimit *int64 `json:"pending_limit"`
+
+	// PendingOrderId Order for the pending initial purchase or change; null when none is pending.
+	PendingOrderId *openapi_types.UUID `json:"pending_order_id"`
+
+	// Pricing How snapshot quota in this region can be bought, per snapshot slot. Null when the project has no billing account.
+	Pricing  *Pricing           `json:"pricing,omitempty"`
+	RegionId openapi_types.UUID `json:"region_id"`
+
+	// Status inactive has no purchase; pending is a first purchase whose order has not been accepted;
+	// provisioning is a first purchase being activated; active permits creation within available
+	// capacity; suspended refuses new creation; failed means the first purchase failed, as
+	// failure_reason states. A pending change keeps the current status and limit until it is applied.
+	Status SnapshotQuotaStatus `json:"status"`
+
+	// SubscriptionId The quota purchase's Billing subscription, not an individual snapshot subscription.
+	// May still be pending on an initial purchase; an existing subscription remains associated
+	// until a replacement quota is activated. Null when no purchase has been recorded.
+	SubscriptionId *openapi_types.UUID `json:"subscription_id"`
+
+	// Used Held and reserved snapshot slots, including pending creation and unconfirmed cleanup.
+	Used int64 `json:"used"`
+}
+
+// SnapshotQuotaFailureReason Why the first purchase failed; null unless status is failed. A failed change leaves the current
+// limit in force and clears pending_limit; its order shows the outcome.
+type SnapshotQuotaFailureReason string
+
+// SnapshotQuotaStatus inactive has no purchase; pending is a first purchase whose order has not been accepted;
+// provisioning is a first purchase being activated; active permits creation within available
+// capacity; suspended refuses new creation; failed means the first purchase failed, as
+// failure_reason states. A pending change keeps the current status and limit until it is applied.
+type SnapshotQuotaStatus string
+
+// SnapshotResource A snapshot, created within this project's purchased regional snapshot quota. It has no order, price or Billing subscription of its own.
+type SnapshotResource struct {
+	// AvailabilityZoneId A disk restored from this snapshot must reside in this availability zone
+	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
+	CreatedAt          time.Time          `json:"created_at"`
+	DiskId             openapi_types.UUID `json:"disk_id"`
+	Generation         int64              `json:"generation"`
+	Id                 openapi_types.UUID `json:"id"`
+	Name               string             `json:"name"`
+	ObservedAt         *time.Time         `json:"observed_at"`
+
+	// Operation The operation in progress on this snapshot, or null when none is.
+	Operation *SnapshotOperation `json:"operation,omitempty"`
+	RegionId  openapi_types.UUID `json:"region_id"`
+
+	// SizeGb Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller
+	SizeGb int64 `json:"size_gb"`
+
+	// Status `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then `available`. `failed` means the snapshot was not created; its slot is released once no snapshot data remains.
+	Status SnapshotResourceStatus `json:"status"`
+}
+
+// SnapshotResourceStatus `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then `available`. `failed` means the snapshot was not created; its slot is released once no snapshot data remains.
 type SnapshotResourceStatus string
 
 // SubnetListResponseBody defines model for SubnetListResponseBody.
@@ -2183,9 +3317,6 @@ type SubnetResource struct {
 
 // SubnetResourceIpVersion defines model for SubnetResource.IpVersion.
 type SubnetResourceIpVersion int64
-
-// Task A requested action and its outcome. Query it through the service that accepted the request, using the same project or administrator credentials. Only succeeded confirms completion. Stopping a wait does not cancel the action. Cancellation is available only where the action explicitly supports it.
-type Task = externalRef0.Task
 
 // ZoneListResponseBody defines model for ZoneListResponseBody.
 type ZoneListResponseBody struct {
@@ -2210,6 +3341,9 @@ type Page = int64
 
 // PageSize defines model for PageSize.
 type PageSize = int64
+
+// Conflict defines model for Conflict.
+type Conflict = Error
 
 // ListBackupsParams defines parameters for ListBackups.
 type ListBackupsParams struct {
@@ -2353,6 +3487,12 @@ type ListAvailabilityZonesParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
+// ListBackupCapacityPacksParams defines parameters for ListBackupCapacityPacks.
+type ListBackupCapacityPacksParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
 // ListSecurityGroupsParams defines parameters for ListSecurityGroups.
 type ListSecurityGroupsParams struct {
 	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
@@ -2380,17 +3520,20 @@ type ListSnapshotsParams struct {
 // CreateBackupJSONRequestBody defines body for CreateBackup for application/json ContentType.
 type CreateBackupJSONRequestBody = CreateBackupRequestBody
 
-// CreateBackupQuoteJSONRequestBody defines body for CreateBackupQuote for application/json ContentType.
-type CreateBackupQuoteJSONRequestBody = CreateBackupQuoteRequestBody
-
 // RenameBackupJSONRequestBody defines body for RenameBackup for application/json ContentType.
 type RenameBackupJSONRequestBody = RenameBackupRequestBody
 
 // RestoreBackupJSONRequestBody defines body for RestoreBackup for application/json ContentType.
 type RestoreBackupJSONRequestBody = RestoreBackupRequestBody
 
+// CreateBackupRestoreQuoteJSONRequestBody defines body for CreateBackupRestoreQuote for application/json ContentType.
+type CreateBackupRestoreQuoteJSONRequestBody = RestoreBackupQuoteRequestBody
+
 // CreateDiskJSONRequestBody defines body for CreateDisk for application/json ContentType.
 type CreateDiskJSONRequestBody = CreateDiskRequestBody
+
+// CreateDiskQuoteJSONRequestBody defines body for CreateDiskQuote for application/json ContentType.
+type CreateDiskQuoteJSONRequestBody = CreateDiskQuoteRequestBody
 
 // RenameDiskJSONRequestBody defines body for RenameDisk for application/json ContentType.
 type RenameDiskJSONRequestBody = RenameDiskRequestBody
@@ -2398,14 +3541,23 @@ type RenameDiskJSONRequestBody = RenameDiskRequestBody
 // ResizeDiskJSONRequestBody defines body for ResizeDisk for application/json ContentType.
 type ResizeDiskJSONRequestBody = ResizeDiskRequestBody
 
+// CreateDiskResizeQuoteJSONRequestBody defines body for CreateDiskResizeQuote for application/json ContentType.
+type CreateDiskResizeQuoteJSONRequestBody = ResizeDiskQuoteRequestBody
+
 // RevertDiskJSONRequestBody defines body for RevertDisk for application/json ContentType.
 type RevertDiskJSONRequestBody = RevertDiskRequestBody
 
 // AllocateFloatingIpJSONRequestBody defines body for AllocateFloatingIp for application/json ContentType.
 type AllocateFloatingIpJSONRequestBody = AllocateFloatingIPRequestBody
 
+// CreateFloatingIpQuoteJSONRequestBody defines body for CreateFloatingIpQuote for application/json ContentType.
+type CreateFloatingIpQuoteJSONRequestBody = AllocateFloatingIPQuoteRequestBody
+
 // SetFloatingIpBandwidthJSONRequestBody defines body for SetFloatingIpBandwidth for application/json ContentType.
-type SetFloatingIpBandwidthJSONRequestBody = SetBandwidthRequestBody
+type SetFloatingIpBandwidthJSONRequestBody = SetFloatingIPBandwidthRequestBody
+
+// CreateFloatingIpBandwidthQuoteJSONRequestBody defines body for CreateFloatingIpBandwidthQuote for application/json ContentType.
+type CreateFloatingIpBandwidthQuoteJSONRequestBody = SetFloatingIPBandwidthQuoteRequestBody
 
 // BindFloatingIpJSONRequestBody defines body for BindFloatingIp for application/json ContentType.
 type BindFloatingIpJSONRequestBody = BindFloatingIPRequestBody
@@ -2421,6 +3573,9 @@ type RenameImageJSONRequestBody = RenameImageRequestBody
 
 // LaunchInstanceJSONRequestBody defines body for LaunchInstance for application/json ContentType.
 type LaunchInstanceJSONRequestBody = LaunchInstanceRequestBody
+
+// CreateInstanceQuoteJSONRequestBody defines body for CreateInstanceQuote for application/json ContentType.
+type CreateInstanceQuoteJSONRequestBody = LaunchInstanceQuoteRequestBody
 
 // RenameInstanceJSONRequestBody defines body for RenameInstance for application/json ContentType.
 type RenameInstanceJSONRequestBody = RenameInstanceRequestBody
@@ -2455,6 +3610,9 @@ type RebuildInstanceJSONRequestBody = RebuildInstanceRequestBody
 // ResizeInstanceJSONRequestBody defines body for ResizeInstance for application/json ContentType.
 type ResizeInstanceJSONRequestBody = ResizeInstanceRequestBody
 
+// CreateInstanceResizeQuoteJSONRequestBody defines body for CreateInstanceResizeQuote for application/json ContentType.
+type CreateInstanceResizeQuoteJSONRequestBody = ResizeInstanceQuoteRequestBody
+
 // StartInstanceJSONRequestBody defines body for StartInstance for application/json ContentType.
 type StartInstanceJSONRequestBody = PowerRequest
 
@@ -2478,6 +3636,21 @@ type CreateRouteJSONRequestBody = CreateRouteRequestBody
 
 // CreateSubnetJSONRequestBody defines body for CreateSubnet for application/json ContentType.
 type CreateSubnetJSONRequestBody = CreateSubnetRequestBody
+
+// CreateBackupCapacityPackJSONRequestBody defines body for CreateBackupCapacityPack for application/json ContentType.
+type CreateBackupCapacityPackJSONRequestBody = CreateBackupCapacityPackRequestBody
+
+// CreateBackupCapacityPackQuoteJSONRequestBody defines body for CreateBackupCapacityPackQuote for application/json ContentType.
+type CreateBackupCapacityPackQuoteJSONRequestBody = CreateBackupCapacityPackQuoteRequestBody
+
+// CreateBackupServiceJSONRequestBody defines body for CreateBackupService for application/json ContentType.
+type CreateBackupServiceJSONRequestBody = CreateBackupServiceRequestBody
+
+// SetSnapshotQuotaJSONRequestBody defines body for SetSnapshotQuota for application/json ContentType.
+type SetSnapshotQuotaJSONRequestBody = SetSnapshotQuotaRequestBody
+
+// CreateSnapshotQuotaQuoteJSONRequestBody defines body for CreateSnapshotQuotaQuote for application/json ContentType.
+type CreateSnapshotQuotaQuoteJSONRequestBody = SetSnapshotQuotaQuoteRequestBody
 
 // CreateSecurityGroupJSONRequestBody defines body for CreateSecurityGroup for application/json ContentType.
 type CreateSecurityGroupJSONRequestBody = CreateSecurityGroupRequestBody
@@ -2579,9 +3752,9 @@ type ClientInterface interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+	// No order is placed. The backup is metered on the backup service of the disk's region by its `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 	//
-	// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+	// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup until it is `available` or `failed`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2594,53 +3767,25 @@ type ClientInterface interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+	// No order is placed. The backup is metered on the backup service of the disk's region by its `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 	//
-	// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+	// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup until it is `available` or `failed`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 	CreateBackup(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateBackupQuoteWithBody Quote a backup
-	//
-	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
-	CreateBackupQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateBackupQuote Quote a backup
-	//
-	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
-	CreateBackupQuote(ctx context.Context, body CreateBackupQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// DeleteBackup Delete a backup
 	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of the backup ends once it is deleted.
 	//
 	// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 	DeleteBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBackup Retrieve a backup
 	//
-	// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
+	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation progress.
 	//
 	// Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
 	GetBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2663,7 +3808,7 @@ type ClientInterface interface {
 	//
 	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be attached until it is `available`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2674,12 +3819,30 @@ type ClientInterface interface {
 	//
 	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be attached until it is `available`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
 	RestoreBackup(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupRestoreQuoteWithBody Quote restoring from a backup
+	//
+	// Prices what `restore-backup` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/backups/{backupId}/restore/quote (the `CreateBackupRestoreQuote` operationId).
+	CreateBackupRestoreQuoteWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupRestoreQuote Quote restoring from a backup
+	//
+	// Prices what `restore-backup` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/backups/{backupId}/restore/quote (the `CreateBackupRestoreQuote` operationId).
+	CreateBackupRestoreQuote(ctx context.Context, backupId openapi_types.UUID, body CreateBackupRestoreQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListDiskTypes List disk types on sale
 	//
@@ -2724,6 +3887,24 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
 	CreateDisk(ctx context.Context, body CreateDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateDiskQuoteWithBody Quote creating a disk
+	//
+	// Prices what `create-disk` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/disks/quote (the `CreateDiskQuote` operationId).
+	CreateDiskQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateDiskQuote Quote creating a disk
+	//
+	// Prices what `create-disk` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/disks/quote (the `CreateDiskQuote` operationId).
+	CreateDiskQuote(ctx context.Context, body CreateDiskQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteDisk Delete a disk
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
@@ -2735,7 +3916,7 @@ type ClientInterface interface {
 
 	// GetDisk Retrieve a disk
 	//
-	// Queries the current state of the disk, which makes it slower but more accurate than the list endpoint.
+	// Returns the stored state of the disk; it does not query the cloud.
 	//
 	// Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
 	GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2760,7 +3941,7 @@ type ClientInterface interface {
 
 	// ResizeDiskWithBody Resize a disk
 	//
-	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
+	// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the file system inside the instance. If the order is not accepted or the resize fails, the disk keeps its size and the order shows the outcome.
 	//
 	// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
@@ -2775,7 +3956,7 @@ type ClientInterface interface {
 
 	// ResizeDisk Resize a disk
 	//
-	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
+	// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the file system inside the instance. If the order is not accepted or the resize fails, the disk keeps its size and the order shows the outcome.
 	//
 	// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
@@ -2788,13 +3969,31 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
 	ResizeDisk(ctx context.Context, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateDiskResizeQuoteWithBody Quote resizing a disk
+	//
+	// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/disks/{diskId}/resize/quote (the `CreateDiskResizeQuote` operationId).
+	CreateDiskResizeQuoteWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateDiskResizeQuote Quote resizing a disk
+	//
+	// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/disks/{diskId}/resize/quote (the `CreateDiskResizeQuote` operationId).
+	CreateDiskResizeQuote(ctx context.Context, diskId openapi_types.UUID, body CreateDiskResizeQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RevertDiskWithBody Revert to a snapshot
 	//
 	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 	//
 	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The disk shows the `revert` operation until the revert is complete.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2807,7 +4006,7 @@ type ClientInterface interface {
 	//
 	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The disk shows the `revert` operation until the revert is complete.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2823,6 +4022,8 @@ type ClientInterface interface {
 	//
 	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
+	// Returns the floating IP as `pending` with its order; `address` is null until the address is allocated after the order is accepted. A requested `address` is not held while pending; if it is no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is refunded.
+	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
 	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
@@ -2836,6 +4037,8 @@ type ClientInterface interface {
 	//
 	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
+	// Returns the floating IP as `pending` with its order; `address` is null until the address is allocated after the order is accepted. A requested `address` is not held while pending; if it is no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is refunded.
+	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
 	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
@@ -2845,9 +4048,27 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
 	AllocateFloatingIp(ctx context.Context, body AllocateFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateFloatingIpQuoteWithBody Quote allocating a floating IP
+	//
+	// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/floating-ips/quote (the `CreateFloatingIpQuote` operationId).
+	CreateFloatingIpQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFloatingIpQuote Quote allocating a floating IP
+	//
+	// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/floating-ips/quote (the `CreateFloatingIpQuote` operationId).
+	CreateFloatingIpQuote(ctx context.Context, body CreateFloatingIpQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ReleaseFloatingIp Release a floating IP
 	//
-	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+	// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it is released.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
@@ -2861,7 +4082,7 @@ type ClientInterface interface {
 
 	// SetFloatingIpBandwidthWithBody Set the bandwidth limit
 	//
-	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
+	// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The floating IP shows the `set_bandwidth` operation until the change is applied or its order is canceled, including while the order awaits checkout, so other operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows the outcome.
 	//
 	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
 	//
@@ -2872,7 +4093,7 @@ type ClientInterface interface {
 
 	// SetFloatingIpBandwidth Set the bandwidth limit
 	//
-	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
+	// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The floating IP shows the `set_bandwidth` operation until the change is applied or its order is canceled, including while the order awaits checkout, so other operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows the outcome.
 	//
 	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
 	//
@@ -2881,14 +4102,34 @@ type ClientInterface interface {
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
 	SetFloatingIpBandwidth(ctx context.Context, floatingIpId openapi_types.UUID, body SetFloatingIpBandwidthJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateFloatingIpBandwidthQuoteWithBody Quote changing the bandwidth limit
+	//
+	// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote (the `CreateFloatingIpBandwidthQuote` operationId).
+	CreateFloatingIpBandwidthQuoteWithBody(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFloatingIpBandwidthQuote Quote changing the bandwidth limit
+	//
+	// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote (the `CreateFloatingIpBandwidthQuote` operationId).
+	CreateFloatingIpBandwidthQuote(ctx context.Context, floatingIpId openapi_types.UUID, body CreateFloatingIpBandwidthQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UnbindFloatingIp Unbind a floating IP
 	//
-	// The address remains held by the project and simply no longer points at any network interface.
+	// The address remains held by the project and simply no longer points at any network interface. The floating IP shows the `unbind` operation until the change is confirmed.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
 	UnbindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BindFloatingIpWithBody Bind a floating IP to a network interface
+	//
+	// The floating IP shows the `bind` operation until the binding is confirmed.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2896,6 +4137,8 @@ type ClientInterface interface {
 	BindFloatingIpWithBody(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BindFloatingIp Bind a floating IP to a network interface
+	//
+	// The floating IP shows the `bind` operation until the binding is confirmed.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2919,9 +4162,9 @@ type ClientInterface interface {
 	//
 	// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.** The image is returned as `pending` with its order, and the capture starts only once the order is accepted.
 	//
-	// The capture has two phases, reported by the status of the image:
+	// The capture then has two phases, reported by the status of the image:
 	//
 	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -2930,7 +4173,7 @@ type ClientInterface interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+	// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows. Obtain a quote with `create-image-quote` first.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2941,9 +4184,9 @@ type ClientInterface interface {
 	//
 	// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.** The image is returned as `pending` with its order, and the capture starts only once the order is accepted.
 	//
-	// The capture has two phases, reported by the status of the image:
+	// The capture then has two phases, reported by the status of the image:
 	//
 	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -2952,7 +4195,7 @@ type ClientInterface interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+	// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows. Obtain a quote with `create-image-quote` first.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2961,11 +4204,7 @@ type ClientInterface interface {
 
 	// CreateImageQuoteWithBody Quote capturing an instance as a private image
 	//
-	// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	// Prices the capture `create-image` would order for the same instance, without ordering anything; nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. Prices may change, so quote again before final confirmation.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2974,11 +4213,7 @@ type ClientInterface interface {
 
 	// CreateImageQuote Quote capturing an instance as a private image
 	//
-	// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	// Prices the capture `create-image` would order for the same instance, without ordering anything; nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. Prices may change, so quote again before final confirmation.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2991,7 +4226,7 @@ type ClientInterface interface {
 	//
 	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 	//
-	// An image whose capture has not finished can be deleted; the capture is aborted.
+	// An image whose capture has not finished can be deleted; the capture is aborted. This is the one operation accepted while the `create` operation is in progress.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
@@ -3000,7 +4235,7 @@ type ClientInterface interface {
 
 	// GetImage Retrieve an image
 	//
-	// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
+	// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure_reason` states why.
 	//
 	// Corresponds with GET /api/v1/images/{imageId} (the `GetImage` operationId).
 	GetImage(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3032,18 +4267,20 @@ type ClientInterface interface {
 
 	// ListInstances List instances
 	//
-	// Every instance in the project, newest first. This endpoint does not query backend state; for the accurate state of one instance, use the retrieve endpoint.
+	// Every instance in the project, newest first, in their stored state.
 	//
 	// Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
 	ListInstances(ctx context.Context, params *ListInstancesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// LaunchInstanceWithBody Create instances
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing order, including for metered pricing, and returns one `pending` instance per requested instance with the order. `billing` applies to the instance, its system disk and its floating IP alike. A pending instance has no virtual machine, system disk or address, and is not metered.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	//
+	// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 	//
 	// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 	//
@@ -3054,11 +4291,13 @@ type ClientInterface interface {
 
 	// LaunchInstance Create instances
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing order, including for metered pricing, and returns one `pending` instance per requested instance with the order. `billing` applies to the instance, its system disk and its floating IP alike. A pending instance has no virtual machine, system disk or address, and is not metered.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	//
+	// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 	//
 	// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 	//
@@ -3066,6 +4305,24 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /api/v1/instances (the `LaunchInstance` operationId).
 	LaunchInstance(ctx context.Context, body LaunchInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateInstanceQuoteWithBody Quote creating instances
+	//
+	// Prices what `launch-instance` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/instances/quote (the `CreateInstanceQuote` operationId).
+	CreateInstanceQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateInstanceQuote Quote creating instances
+	//
+	// Prices what `launch-instance` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/instances/quote (the `CreateInstanceQuote` operationId).
+	CreateInstanceQuote(ctx context.Context, body CreateInstanceQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteInstance Release an instance
 	//
@@ -3080,7 +4337,7 @@ type ClientInterface interface {
 
 	// GetInstance Retrieve an instance
 	//
-	// Queries the current state of the instance, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
+	// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation progress.
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId} (the `GetInstance` operationId).
 	GetInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3113,7 +4370,7 @@ type ClientInterface interface {
 	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
-	// - it is `running`
+	// - it is `active`
 	// - a floating IP is bound to it, since this endpoint connects over the public internet
 	// - its security group permits inbound TCP 22
 	//
@@ -3138,7 +4395,7 @@ type ClientInterface interface {
 	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
-	// - it is `running`
+	// - it is `active`
 	// - a floating IP is bound to it, since this endpoint connects over the public internet
 	// - its security group permits inbound TCP 22
 	//
@@ -3178,7 +4435,7 @@ type ClientInterface interface {
 
 	// AttachDiskWithBody Attach a disk
 	//
-	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
+	// The disk must be in the same region and availability zone as the instance. Returns the disk; the instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3187,7 +4444,7 @@ type ClientInterface interface {
 
 	// AttachDisk Attach a disk
 	//
-	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
+	// The disk must be in the same region and availability zone as the instance. Returns the disk; the instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3198,14 +4455,16 @@ type ClientInterface interface {
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 	//
-	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
+	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+	//
+	// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation until the disk is detached.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 	DetachDisk(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AttachInstanceFloatingIpWithBody Bind a floating IP to an instance
 	//
-	// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+	// Changes the public IP binding on the instance's primary network interface. The instance shows the `bind_floating_ip` operation until the binding is confirmed.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3214,7 +4473,7 @@ type ClientInterface interface {
 
 	// AttachInstanceFloatingIp Bind a floating IP to an instance
 	//
-	// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+	// Changes the public IP binding on the instance's primary network interface. The instance shows the `bind_floating_ip` operation until the binding is confirmed.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3223,7 +4482,7 @@ type ClientInterface interface {
 
 	// DetachInstanceFloatingIp Unbind the floating IP of an instance
 	//
-	// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+	// Changes the public IP binding on the instance's primary network interface. The instance shows the `unbind_floating_ip` operation until the change is confirmed.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
 	DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3313,12 +4572,16 @@ type ClientInterface interface {
 
 	// AttachPortWithBody Attach a network interface
 	//
+	// Returns the network interface; the instance shows the `attach_port` operation and the interface the `attach` operation until the attachment is confirmed.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
 	AttachPortWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AttachPort Attach a network interface
+	//
+	// Returns the network interface; the instance shows the `attach_port` operation and the interface the `attach` operation until the attachment is confirmed.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3329,6 +4592,8 @@ type ClientInterface interface {
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
+	// Returns the network interface; the instance shows the `detach_port` operation and the interface the `detach` operation until it is detached.
+	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 	DetachPort(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -3338,11 +4603,11 @@ type ClientInterface interface {
 	//
 	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
 	//
-	// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient state, and a second soft reboot is refused as well.
+	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft reboot the instance never carried out. Any other request for an operation, including a second soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 	//
 	// An instance suspended by the platform must be unsuspended first.
 	//
-	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	// The instance shows the `reboot` operation until the reboot has finished.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3355,11 +4620,11 @@ type ClientInterface interface {
 	//
 	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
 	//
-	// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient state, and a second soft reboot is refused as well.
+	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft reboot the instance never carried out. Any other request for an operation, including a second soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 	//
 	// An instance suspended by the platform must be unsuspended first.
 	//
-	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	// The instance shows the `reboot` operation until the reboot has finished.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3372,6 +4637,8 @@ type ClientInterface interface {
 	//
 	// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
+	// The instance shows the `rebuild` operation until the rebuild has finished.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -3383,6 +4650,8 @@ type ClientInterface interface {
 	//
 	// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
+	// The instance shows the `rebuild` operation until the rebuild has finished.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -3390,9 +4659,9 @@ type ClientInterface interface {
 
 	// ResizeInstanceWithBody Resize an instance
 	//
-	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing change order, including for metered pricing, and returns the instance with the order. The instance keeps its billing mode and period, priced with the target type's matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+	// The instance shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3401,18 +4670,36 @@ type ClientInterface interface {
 
 	// ResizeInstance Resize an instance
 	//
-	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing change order, including for metered pricing, and returns the instance with the order. The instance keeps its billing mode and period, priced with the target type's matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+	// The instance shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 	ResizeInstance(ctx context.Context, instanceId openapi_types.UUID, body ResizeInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateInstanceResizeQuoteWithBody Quote resizing an instance
+	//
+	// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/resize/quote (the `CreateInstanceResizeQuote` operationId).
+	CreateInstanceResizeQuoteWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateInstanceResizeQuote Quote resizing an instance
+	//
+	// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/resize/quote (the `CreateInstanceResizeQuote` operationId).
+	CreateInstanceResizeQuote(ctx context.Context, instanceId openapi_types.UUID, body CreateInstanceResizeQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// StartInstanceWithBody Start an instance
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is running or the start has failed.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3421,7 +4708,7 @@ type ClientInterface interface {
 
 	// StartInstance Start an instance
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is running or the start has failed.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3430,7 +4717,7 @@ type ClientInterface interface {
 
 	// StopInstanceWithBody Stop an instance
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the `stop` operation until it is stopped or the stop has failed.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -3439,7 +4726,7 @@ type ClientInterface interface {
 
 	// StopInstance Stop an instance
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the `stop` operation until it is stopped or the stop has failed.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3686,6 +4973,173 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
 	ListAvailabilityZones(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListBackupCapacityPacks List backup capacity packs
+	//
+	// The capacity packs of the authenticated project in this region, newest first, including ended ones.
+	//
+	// Corresponds with GET /api/v1/regions/{regionId}/backup-capacity-packs (the `ListBackupCapacityPacks` operationId).
+	ListBackupCapacityPacks(ctx context.Context, regionId openapi_types.UUID, params *ListBackupCapacityPacksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupCapacityPackWithBody Buy a backup capacity pack
+	//
+	// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or year: `billing` must be prepaid with a period, as offered in the backup service's `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the total `capacity_gib` of the packs active in the region is covered, and Compute meters only the excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing takes its order and payment and handles its renewal and cancellation through the pack's subscription.
+	//
+	// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs (the `CreateBackupCapacityPack` operationId).
+	CreateBackupCapacityPackWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupCapacityPack Buy a backup capacity pack
+	//
+	// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or year: `billing` must be prepaid with a period, as offered in the backup service's `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the total `capacity_gib` of the packs active in the region is covered, and Compute meters only the excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing takes its order and payment and handles its renewal and cancellation through the pack's subscription.
+	//
+	// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs (the `CreateBackupCapacityPack` operationId).
+	CreateBackupCapacityPack(ctx context.Context, regionId openapi_types.UUID, body CreateBackupCapacityPackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupCapacityPackQuoteWithBody Quote buying a backup capacity pack
+	//
+	// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs/quote (the `CreateBackupCapacityPackQuote` operationId).
+	CreateBackupCapacityPackQuoteWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupCapacityPackQuote Quote buying a backup capacity pack
+	//
+	// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs/quote (the `CreateBackupCapacityPackQuote` operationId).
+	CreateBackupCapacityPackQuote(ctx context.Context, regionId openapi_types.UUID, body CreateBackupCapacityPackQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBackupService Get the backup service of a region
+	//
+	// The backup service of the authenticated project in this region. Backups can be created only while it is `active`. Each hour, Compute covers retained backup capacity up to the total `capacity_gib` of the capacity packs active in the region and meters only the excess on this service's subscription, per GiB-hour.
+	//
+	// Canceling the service's subscription through Billing is refused while any backup is retained in the region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment deletes its backups.
+	//
+	// Corresponds with GET /api/v1/regions/{regionId}/backup-service (the `GetBackupService` operationId).
+	GetBackupService(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupServiceWithBody Activate the backup service in a region
+	//
+	// Purchases the backup service for this project and region. The service itself has no charge; backups are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted.
+	//
+	// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or suspended.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-service (the `CreateBackupService` operationId).
+	CreateBackupServiceWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupService Activate the backup service in a region
+	//
+	// Purchases the backup service for this project and region. The service itself has no charge; backups are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted.
+	//
+	// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or suspended.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-service (the `CreateBackupService` operationId).
+	CreateBackupService(ctx context.Context, regionId openapi_types.UUID, body CreateBackupServiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBackupServiceQuote Quote activating the backup service
+	//
+	// Prices what `create-backup-service` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-service/quote (the `CreateBackupServiceQuote` operationId).
+	CreateBackupServiceQuote(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSnapshotQuota Get regional snapshot quota
+	//
+	// The snapshot count quota for the authenticated project in this region. Counts simultaneous
+	// snapshot holdings, not lifetime create calls or storage bytes. Without an active purchase,
+	// limit and available are zero; existing holdings, if any, still appear in used.
+	//
+	// pending and provisioning creations reserve a slot. Snapshots being deleted or whose cleanup
+	// is uncertain retain their slots until absence or deletion is confirmed. available is
+	// max(limit - used, 0) while active, and zero when creation is not permitted; additional
+	// creation is refused while the quota is inactive, suspended or exhausted.
+	//
+	// Canceling the quota's subscription through Billing is refused while any snapshot exists in
+	// the region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for
+	// non-payment deletes its snapshots, as for other reclaimed resources.
+	//
+	// Corresponds with GET /api/v1/regions/{regionId}/snapshot-quota (the `GetSnapshotQuota` operationId).
+	GetSnapshotQuota(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetSnapshotQuotaWithBody Set regional snapshot quota
+	//
+	// Purchases or changes the maximum number of snapshots this project may hold in this region.
+	// limit is the target total, not an additional number of slots or a consumable create allowance.
+	// billing chooses one of the quota's pricing options; a change of an existing purchase keeps its
+	// billing mode and period, and billing must name that option. The purchased quantity is this count.
+	//
+	// Returns the quota with the order. pending_limit records the target while the current limit stays
+	// in force; the new limit applies once the order is accepted and the quota is activated. Snapshots
+	// create no further orders or subscriptions, and deleting one frees a slot without refunding the
+	// quota purchase.
+	//
+	// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+	// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+	// identical target and billing choice returns its existing purchase without charging again; renewing its
+	// term is a separate Billing renewal operation. A requested limit below used is refused with
+	// 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/regions/{regionId}/snapshot-quota (the `SetSnapshotQuota` operationId).
+	SetSnapshotQuotaWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetSnapshotQuota Set regional snapshot quota
+	//
+	// Purchases or changes the maximum number of snapshots this project may hold in this region.
+	// limit is the target total, not an additional number of slots or a consumable create allowance.
+	// billing chooses one of the quota's pricing options; a change of an existing purchase keeps its
+	// billing mode and period, and billing must name that option. The purchased quantity is this count.
+	//
+	// Returns the quota with the order. pending_limit records the target while the current limit stays
+	// in force; the new limit applies once the order is accepted and the quota is activated. Snapshots
+	// create no further orders or subscriptions, and deleting one frees a slot without refunding the
+	// quota purchase.
+	//
+	// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+	// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+	// identical target and billing choice returns its existing purchase without charging again; renewing its
+	// term is a separate Billing renewal operation. A requested limit below used is refused with
+	// 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/regions/{regionId}/snapshot-quota (the `SetSnapshotQuota` operationId).
+	SetSnapshotQuota(ctx context.Context, regionId openapi_types.UUID, body SetSnapshotQuotaJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSnapshotQuotaQuoteWithBody Quote setting the regional snapshot quota
+	//
+	// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now, for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/snapshot-quota/quote (the `CreateSnapshotQuotaQuote` operationId).
+	CreateSnapshotQuotaQuoteWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSnapshotQuotaQuote Quote setting the regional snapshot quota
+	//
+	// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now, for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/snapshot-quota/quote (the `CreateSnapshotQuotaQuote` operationId).
+	CreateSnapshotQuotaQuote(ctx context.Context, regionId openapi_types.UUID, body CreateSnapshotQuotaQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListSecurityGroups List security groups
 	//
 	// Corresponds with GET /api/v1/security-groups (the `ListSecurityGroups` operationId).
@@ -3778,6 +5232,10 @@ type ClientInterface interface {
 	//
 	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
+	// Snapshot slots are purchased separately for this project and the source disk's region. This operation reserves one available slot and returns the snapshot as `pending`; it places no order and charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+	//
+	// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot data has been confirmed absent or removed.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -3789,6 +5247,10 @@ type ClientInterface interface {
 	//
 	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
+	// Snapshot slots are purchased separately for this project and the source disk's region. This operation reserves one available slot and returns the snapshot as `pending`; it places no order and charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+	//
+	// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot data has been confirmed absent or removed.
+	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -3796,7 +5258,7 @@ type ClientInterface interface {
 
 	// DeleteSnapshot Delete a snapshot
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	// Deletes this snapshot without canceling the project's snapshot quota purchase. A snapshot has no individual Billing subscription. Its slot stays occupied until the deletion is confirmed.
 	//
 	// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 	DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3819,11 +5281,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
 	RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetTask Get a requested action
-	//
-	// Corresponds with GET /api/v1/tasks/{taskId} (the `GetTask` operationId).
-	GetTask(ctx context.Context, taskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListBackups List backups
@@ -3847,9 +5304,9 @@ func (c *Client) ListBackups(ctx context.Context, params *ListBackupsParams, req
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+// No order is placed. The backup is metered on the backup service of the disk's region by its `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 //
-// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup until it is `available` or `failed`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3872,9 +5329,9 @@ func (c *Client) CreateBackupWithBody(ctx context.Context, contentType string, b
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+// No order is placed. The backup is metered on the backup service of the disk's region by its `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 //
-// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup until it is `available` or `failed`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3891,57 +5348,9 @@ func (c *Client) CreateBackup(ctx context.Context, body CreateBackupJSONRequestB
 	return c.Client.Do(req)
 }
 
-// CreateBackupQuoteWithBody Quote a backup
-//
-// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
-func (c *Client) CreateBackupQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBackupQuoteRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateBackupQuote Quote a backup
-//
-// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
-func (c *Client) CreateBackupQuote(ctx context.Context, body CreateBackupQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBackupQuoteRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // DeleteBackup Delete a backup
 //
-// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of the backup ends once it is deleted.
 //
 // Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 func (c *Client) DeleteBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3958,7 +5367,7 @@ func (c *Client) DeleteBackup(ctx context.Context, backupId openapi_types.UUID, 
 
 // GetBackup Retrieve a backup
 //
-// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
+// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation progress.
 //
 // Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
 func (c *Client) GetBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4011,7 +5420,7 @@ func (c *Client) RenameBackup(ctx context.Context, backupId openapi_types.UUID, 
 //
 // Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be attached until it is `available`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4032,13 +5441,51 @@ func (c *Client) RestoreBackupWithBody(ctx context.Context, backupId openapi_typ
 //
 // Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be attached until it is `available`.
 //
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
 func (c *Client) RestoreBackup(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRestoreBackupRequest(c.Server, backupId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupRestoreQuoteWithBody Quote restoring from a backup
+//
+// Prices what `restore-backup` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/backups/{backupId}/restore/quote (the `CreateBackupRestoreQuote` operationId).
+func (c *Client) CreateBackupRestoreQuoteWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupRestoreQuoteRequestWithBody(c.Server, backupId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupRestoreQuote Quote restoring from a backup
+//
+// Prices what `restore-backup` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/backups/{backupId}/restore/quote (the `CreateBackupRestoreQuote` operationId).
+func (c *Client) CreateBackupRestoreQuote(ctx context.Context, backupId openapi_types.UUID, body CreateBackupRestoreQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupRestoreQuoteRequest(c.Server, backupId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4142,6 +5589,44 @@ func (c *Client) CreateDisk(ctx context.Context, body CreateDiskJSONRequestBody,
 	return c.Client.Do(req)
 }
 
+// CreateDiskQuoteWithBody Quote creating a disk
+//
+// Prices what `create-disk` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/disks/quote (the `CreateDiskQuote` operationId).
+func (c *Client) CreateDiskQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDiskQuoteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateDiskQuote Quote creating a disk
+//
+// Prices what `create-disk` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/disks/quote (the `CreateDiskQuote` operationId).
+func (c *Client) CreateDiskQuote(ctx context.Context, body CreateDiskQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDiskQuoteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // DeleteDisk Delete a disk
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
@@ -4163,7 +5648,7 @@ func (c *Client) DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqE
 
 // GetDisk Retrieve a disk
 //
-// Queries the current state of the disk, which makes it slower but more accurate than the list endpoint.
+// Returns the stored state of the disk; it does not query the cloud.
 //
 // Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
 func (c *Client) GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4218,7 +5703,7 @@ func (c *Client) RenameDisk(ctx context.Context, diskId openapi_types.UUID, body
 
 // ResizeDiskWithBody Resize a disk
 //
-// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
+// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the file system inside the instance. If the order is not accepted or the resize fails, the disk keeps its size and the order shows the outcome.
 //
 // **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
@@ -4243,7 +5728,7 @@ func (c *Client) ResizeDiskWithBody(ctx context.Context, diskId openapi_types.UU
 
 // ResizeDisk Resize a disk
 //
-// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
+// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the file system inside the instance. If the order is not accepted or the resize fails, the disk keeps its size and the order shows the outcome.
 //
 // **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
@@ -4266,13 +5751,51 @@ func (c *Client) ResizeDisk(ctx context.Context, diskId openapi_types.UUID, body
 	return c.Client.Do(req)
 }
 
+// CreateDiskResizeQuoteWithBody Quote resizing a disk
+//
+// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/disks/{diskId}/resize/quote (the `CreateDiskResizeQuote` operationId).
+func (c *Client) CreateDiskResizeQuoteWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDiskResizeQuoteRequestWithBody(c.Server, diskId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateDiskResizeQuote Quote resizing a disk
+//
+// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/disks/{diskId}/resize/quote (the `CreateDiskResizeQuote` operationId).
+func (c *Client) CreateDiskResizeQuote(ctx context.Context, diskId openapi_types.UUID, body CreateDiskResizeQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDiskResizeQuoteRequest(c.Server, diskId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // RevertDiskWithBody Revert to a snapshot
 //
 // Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 //
 // Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+// The disk shows the `revert` operation until the revert is complete.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4295,7 +5818,7 @@ func (c *Client) RevertDiskWithBody(ctx context.Context, diskId openapi_types.UU
 //
 // Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+// The disk shows the `revert` operation until the revert is complete.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4331,6 +5854,8 @@ func (c *Client) ListFloatingIps(ctx context.Context, params *ListFloatingIpsPar
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
+// Returns the floating IP as `pending` with its order; `address` is null until the address is allocated after the order is accepted. A requested `address` is not held while pending; if it is no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is refunded.
+//
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
 // Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
@@ -4354,6 +5879,8 @@ func (c *Client) AllocateFloatingIpWithBody(ctx context.Context, contentType str
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
+// Returns the floating IP as `pending` with its order; `address` is null until the address is allocated after the order is accepted. A requested `address` is not held while pending; if it is no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is refunded.
+//
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
 // Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
@@ -4373,9 +5900,47 @@ func (c *Client) AllocateFloatingIp(ctx context.Context, body AllocateFloatingIp
 	return c.Client.Do(req)
 }
 
+// CreateFloatingIpQuoteWithBody Quote allocating a floating IP
+//
+// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/floating-ips/quote (the `CreateFloatingIpQuote` operationId).
+func (c *Client) CreateFloatingIpQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFloatingIpQuoteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFloatingIpQuote Quote allocating a floating IP
+//
+// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/floating-ips/quote (the `CreateFloatingIpQuote` operationId).
+func (c *Client) CreateFloatingIpQuote(ctx context.Context, body CreateFloatingIpQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFloatingIpQuoteRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ReleaseFloatingIp Release a floating IP
 //
-// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it is released.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
@@ -4409,7 +5974,7 @@ func (c *Client) GetFloatingIp(ctx context.Context, floatingIpId openapi_types.U
 
 // SetFloatingIpBandwidthWithBody Set the bandwidth limit
 //
-// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
+// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The floating IP shows the `set_bandwidth` operation until the change is applied or its order is canceled, including while the order awaits checkout, so other operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows the outcome.
 //
 // While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
 //
@@ -4430,7 +5995,7 @@ func (c *Client) SetFloatingIpBandwidthWithBody(ctx context.Context, floatingIpI
 
 // SetFloatingIpBandwidth Set the bandwidth limit
 //
-// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
+// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The floating IP shows the `set_bandwidth` operation until the change is applied or its order is canceled, including while the order awaits checkout, so other operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows the outcome.
 //
 // While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
 //
@@ -4449,9 +6014,47 @@ func (c *Client) SetFloatingIpBandwidth(ctx context.Context, floatingIpId openap
 	return c.Client.Do(req)
 }
 
+// CreateFloatingIpBandwidthQuoteWithBody Quote changing the bandwidth limit
+//
+// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote (the `CreateFloatingIpBandwidthQuote` operationId).
+func (c *Client) CreateFloatingIpBandwidthQuoteWithBody(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFloatingIpBandwidthQuoteRequestWithBody(c.Server, floatingIpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFloatingIpBandwidthQuote Quote changing the bandwidth limit
+//
+// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote (the `CreateFloatingIpBandwidthQuote` operationId).
+func (c *Client) CreateFloatingIpBandwidthQuote(ctx context.Context, floatingIpId openapi_types.UUID, body CreateFloatingIpBandwidthQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFloatingIpBandwidthQuoteRequest(c.Server, floatingIpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // UnbindFloatingIp Unbind a floating IP
 //
-// The address remains held by the project and simply no longer points at any network interface.
+// The address remains held by the project and simply no longer points at any network interface. The floating IP shows the `unbind` operation until the change is confirmed.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
 func (c *Client) UnbindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4467,6 +6070,8 @@ func (c *Client) UnbindFloatingIp(ctx context.Context, floatingIpId openapi_type
 }
 
 // BindFloatingIpWithBody Bind a floating IP to a network interface
+//
+// The floating IP shows the `bind` operation until the binding is confirmed.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4484,6 +6089,8 @@ func (c *Client) BindFloatingIpWithBody(ctx context.Context, floatingIpId openap
 }
 
 // BindFloatingIp Bind a floating IP to a network interface
+//
+// The floating IP shows the `bind` operation until the binding is confirmed.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4527,9 +6134,9 @@ func (c *Client) ListImages(ctx context.Context, params *ListImagesParams, reqEd
 //
 // Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 //
-// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+// **The image reflects the moment the capture started. Later changes to the instance are not included.** The image is returned as `pending` with its order, and the capture starts only once the order is accepted.
 //
-// The capture has two phases, reported by the status of the image:
+// The capture then has two phases, reported by the status of the image:
 //
 // - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 // - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -4538,7 +6145,7 @@ func (c *Client) ListImages(ctx context.Context, params *ListImagesParams, reqEd
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows. Obtain a quote with `create-image-quote` first.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4559,9 +6166,9 @@ func (c *Client) CreateImageWithBody(ctx context.Context, contentType string, bo
 //
 // Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 //
-// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+// **The image reflects the moment the capture started. Later changes to the instance are not included.** The image is returned as `pending` with its order, and the capture starts only once the order is accepted.
 //
-// The capture has two phases, reported by the status of the image:
+// The capture then has two phases, reported by the status of the image:
 //
 // - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 // - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -4570,7 +6177,7 @@ func (c *Client) CreateImageWithBody(ctx context.Context, contentType string, bo
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows. Obtain a quote with `create-image-quote` first.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4589,11 +6196,7 @@ func (c *Client) CreateImage(ctx context.Context, body CreateImageJSONRequestBod
 
 // CreateImageQuoteWithBody Quote capturing an instance as a private image
 //
-// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+// Prices the capture `create-image` would order for the same instance, without ordering anything; nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. Prices may change, so quote again before final confirmation.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4612,11 +6215,7 @@ func (c *Client) CreateImageQuoteWithBody(ctx context.Context, contentType strin
 
 // CreateImageQuote Quote capturing an instance as a private image
 //
-// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+// Prices the capture `create-image` would order for the same instance, without ordering anything; nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. Prices may change, so quote again before final confirmation.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4639,7 +6238,7 @@ func (c *Client) CreateImageQuote(ctx context.Context, body CreateImageQuoteJSON
 //
 // Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 //
-// An image whose capture has not finished can be deleted; the capture is aborted.
+// An image whose capture has not finished can be deleted; the capture is aborted. This is the one operation accepted while the `create` operation is in progress.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
@@ -4658,7 +6257,7 @@ func (c *Client) DeleteImage(ctx context.Context, imageId openapi_types.UUID, re
 
 // GetImage Retrieve an image
 //
-// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
+// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure_reason` states why.
 //
 // Corresponds with GET /api/v1/images/{imageId} (the `GetImage` operationId).
 func (c *Client) GetImage(ctx context.Context, imageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4730,7 +6329,7 @@ func (c *Client) ListInstanceTypes(ctx context.Context, params *ListInstanceType
 
 // ListInstances List instances
 //
-// Every instance in the project, newest first. This endpoint does not query backend state; for the accurate state of one instance, use the retrieve endpoint.
+// Every instance in the project, newest first, in their stored state.
 //
 // Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
 func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4747,11 +6346,13 @@ func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams,
 
 // LaunchInstanceWithBody Create instances
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+// Creates a Billing order, including for metered pricing, and returns one `pending` instance per requested instance with the order. `billing` applies to the instance, its system disk and its floating IP alike. A pending instance has no virtual machine, system disk or address, and is not metered.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 //
-// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 //
 // The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 //
@@ -4772,11 +6373,13 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 
 // LaunchInstance Create instances
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+// Creates a Billing order, including for metered pricing, and returns one `pending` instance per requested instance with the order. `billing` applies to the instance, its system disk and its floating IP alike. A pending instance has no virtual machine, system disk or address, and is not metered.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 //
-// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 //
 // The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 //
@@ -4785,6 +6388,44 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 // Corresponds with POST /api/v1/instances (the `LaunchInstance` operationId).
 func (c *Client) LaunchInstance(ctx context.Context, body LaunchInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewLaunchInstanceRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateInstanceQuoteWithBody Quote creating instances
+//
+// Prices what `launch-instance` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/instances/quote (the `CreateInstanceQuote` operationId).
+func (c *Client) CreateInstanceQuoteWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateInstanceQuoteRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateInstanceQuote Quote creating instances
+//
+// Prices what `launch-instance` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/instances/quote (the `CreateInstanceQuote` operationId).
+func (c *Client) CreateInstanceQuote(ctx context.Context, body CreateInstanceQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateInstanceQuoteRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4818,7 +6459,7 @@ func (c *Client) DeleteInstance(ctx context.Context, instanceId openapi_types.UU
 
 // GetInstance Retrieve an instance
 //
-// Queries the current state of the instance, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
+// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation progress.
 //
 // Corresponds with GET /api/v1/instances/{instanceId} (the `GetInstance` operationId).
 func (c *Client) GetInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4881,7 +6522,7 @@ func (c *Client) RenameInstance(ctx context.Context, instanceId openapi_types.UU
 //
 // Three conditions must hold; the instance is unreachable otherwise:
 //
-// - it is `running`
+// - it is `active`
 // - a floating IP is bound to it, since this endpoint connects over the public internet
 // - its security group permits inbound TCP 22
 //
@@ -4916,7 +6557,7 @@ func (c *Client) RunInstanceCommandWithBody(ctx context.Context, instanceId open
 //
 // Three conditions must hold; the instance is unreachable otherwise:
 //
-// - it is `running`
+// - it is `active`
 // - a floating IP is bound to it, since this endpoint connects over the public internet
 // - its security group permits inbound TCP 22
 //
@@ -4996,7 +6637,7 @@ func (c *Client) ListInstanceDisks(ctx context.Context, instanceId openapi_types
 
 // AttachDiskWithBody Attach a disk
 //
-// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
+// The disk must be in the same region and availability zone as the instance. Returns the disk; the instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 //
 // Takes any type of body and a specified content type.
 //
@@ -5015,7 +6656,7 @@ func (c *Client) AttachDiskWithBody(ctx context.Context, instanceId openapi_type
 
 // AttachDisk Attach a disk
 //
-// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
+// The disk must be in the same region and availability zone as the instance. Returns the disk; the instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -5036,7 +6677,9 @@ func (c *Client) AttachDisk(ctx context.Context, instanceId openapi_types.UUID, 
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 //
-// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
+// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+//
+// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation until the disk is detached.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 func (c *Client) DetachDisk(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5053,7 +6696,7 @@ func (c *Client) DetachDisk(ctx context.Context, instanceId openapi_types.UUID, 
 
 // AttachInstanceFloatingIpWithBody Bind a floating IP to an instance
 //
-// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+// Changes the public IP binding on the instance's primary network interface. The instance shows the `bind_floating_ip` operation until the binding is confirmed.
 //
 // Takes any type of body and a specified content type.
 //
@@ -5072,7 +6715,7 @@ func (c *Client) AttachInstanceFloatingIpWithBody(ctx context.Context, instanceI
 
 // AttachInstanceFloatingIp Bind a floating IP to an instance
 //
-// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+// Changes the public IP binding on the instance's primary network interface. The instance shows the `bind_floating_ip` operation until the binding is confirmed.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -5091,7 +6734,7 @@ func (c *Client) AttachInstanceFloatingIp(ctx context.Context, instanceId openap
 
 // DetachInstanceFloatingIp Unbind the floating IP of an instance
 //
-// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+// Changes the public IP binding on the instance's primary network interface. The instance shows the `unbind_floating_ip` operation until the change is confirmed.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
 func (c *Client) DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5261,6 +6904,8 @@ func (c *Client) ListInstancePorts(ctx context.Context, instanceId openapi_types
 
 // AttachPortWithBody Attach a network interface
 //
+// Returns the network interface; the instance shows the `attach_port` operation and the interface the `attach` operation until the attachment is confirmed.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
@@ -5277,6 +6922,8 @@ func (c *Client) AttachPortWithBody(ctx context.Context, instanceId openapi_type
 }
 
 // AttachPort Attach a network interface
+//
+// Returns the network interface; the instance shows the `attach_port` operation and the interface the `attach` operation until the attachment is confirmed.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -5297,6 +6944,8 @@ func (c *Client) AttachPort(ctx context.Context, instanceId openapi_types.UUID, 
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
 //
+// Returns the network interface; the instance shows the `detach_port` operation and the interface the `detach` operation until it is detached.
+//
 // Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 func (c *Client) DetachPort(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDetachPortRequest(c.Server, instanceId, portId)
@@ -5316,11 +6965,11 @@ func (c *Client) DetachPort(ctx context.Context, instanceId openapi_types.UUID, 
 //
 // A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
 //
-// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient state, and a second soft reboot is refused as well.
+// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft reboot the instance never carried out. Any other request for an operation, including a second soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 //
 // An instance suspended by the platform must be unsuspended first.
 //
-// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+// The instance shows the `reboot` operation until the reboot has finished.
 //
 // Takes any type of body and a specified content type.
 //
@@ -5343,11 +6992,11 @@ func (c *Client) RebootInstanceWithBody(ctx context.Context, instanceId openapi_
 //
 // A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
 //
-// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient state, and a second soft reboot is refused as well.
+// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft reboot the instance never carried out. Any other request for an operation, including a second soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 //
 // An instance suspended by the platform must be unsuspended first.
 //
-// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+// The instance shows the `reboot` operation until the reboot has finished.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -5370,6 +7019,8 @@ func (c *Client) RebootInstance(ctx context.Context, instanceId openapi_types.UU
 //
 // The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
+// The instance shows the `rebuild` operation until the rebuild has finished.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -5391,6 +7042,8 @@ func (c *Client) RebuildInstanceWithBody(ctx context.Context, instanceId openapi
 //
 // The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
+// The instance shows the `rebuild` operation until the rebuild has finished.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -5408,9 +7061,9 @@ func (c *Client) RebuildInstance(ctx context.Context, instanceId openapi_types.U
 
 // ResizeInstanceWithBody Resize an instance
 //
-// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+// Creates a Billing change order, including for metered pricing, and returns the instance with the order. The instance keeps its billing mode and period, priced with the target type's matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
-// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+// The instance shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
 //
 // Takes any type of body and a specified content type.
 //
@@ -5429,9 +7082,9 @@ func (c *Client) ResizeInstanceWithBody(ctx context.Context, instanceId openapi_
 
 // ResizeInstance Resize an instance
 //
-// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+// Creates a Billing change order, including for metered pricing, and returns the instance with the order. The instance keeps its billing mode and period, priced with the target type's matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
-// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+// The instance shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -5448,9 +7101,47 @@ func (c *Client) ResizeInstance(ctx context.Context, instanceId openapi_types.UU
 	return c.Client.Do(req)
 }
 
+// CreateInstanceResizeQuoteWithBody Quote resizing an instance
+//
+// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/resize/quote (the `CreateInstanceResizeQuote` operationId).
+func (c *Client) CreateInstanceResizeQuoteWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateInstanceResizeQuoteRequestWithBody(c.Server, instanceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateInstanceResizeQuote Quote resizing an instance
+//
+// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/resize/quote (the `CreateInstanceResizeQuote` operationId).
+func (c *Client) CreateInstanceResizeQuote(ctx context.Context, instanceId openapi_types.UUID, body CreateInstanceResizeQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateInstanceResizeQuoteRequest(c.Server, instanceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // StartInstanceWithBody Start an instance
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is running or the start has failed.
 //
 // Takes any type of body and a specified content type.
 //
@@ -5469,7 +7160,7 @@ func (c *Client) StartInstanceWithBody(ctx context.Context, instanceId openapi_t
 
 // StartInstance Start an instance
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is running or the start has failed.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -5488,7 +7179,7 @@ func (c *Client) StartInstance(ctx context.Context, instanceId openapi_types.UUI
 
 // StopInstanceWithBody Stop an instance
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the `stop` operation until it is stopped or the stop has failed.
 //
 // Takes any type of body and a specified content type.
 //
@@ -5507,7 +7198,7 @@ func (c *Client) StopInstanceWithBody(ctx context.Context, instanceId openapi_ty
 
 // StopInstance Stop an instance
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the `stop` operation until it is stopped or the stop has failed.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -6104,6 +7795,313 @@ func (c *Client) ListAvailabilityZones(ctx context.Context, regionId openapi_typ
 	return c.Client.Do(req)
 }
 
+// ListBackupCapacityPacks List backup capacity packs
+//
+// The capacity packs of the authenticated project in this region, newest first, including ended ones.
+//
+// Corresponds with GET /api/v1/regions/{regionId}/backup-capacity-packs (the `ListBackupCapacityPacks` operationId).
+func (c *Client) ListBackupCapacityPacks(ctx context.Context, regionId openapi_types.UUID, params *ListBackupCapacityPacksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListBackupCapacityPacksRequest(c.Server, regionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupCapacityPackWithBody Buy a backup capacity pack
+//
+// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or year: `billing` must be prepaid with a period, as offered in the backup service's `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the total `capacity_gib` of the packs active in the region is covered, and Compute meters only the excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing takes its order and payment and handles its renewal and cancellation through the pack's subscription.
+//
+// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs (the `CreateBackupCapacityPack` operationId).
+func (c *Client) CreateBackupCapacityPackWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupCapacityPackRequestWithBody(c.Server, regionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupCapacityPack Buy a backup capacity pack
+//
+// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or year: `billing` must be prepaid with a period, as offered in the backup service's `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the total `capacity_gib` of the packs active in the region is covered, and Compute meters only the excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing takes its order and payment and handles its renewal and cancellation through the pack's subscription.
+//
+// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs (the `CreateBackupCapacityPack` operationId).
+func (c *Client) CreateBackupCapacityPack(ctx context.Context, regionId openapi_types.UUID, body CreateBackupCapacityPackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupCapacityPackRequest(c.Server, regionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupCapacityPackQuoteWithBody Quote buying a backup capacity pack
+//
+// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs/quote (the `CreateBackupCapacityPackQuote` operationId).
+func (c *Client) CreateBackupCapacityPackQuoteWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupCapacityPackQuoteRequestWithBody(c.Server, regionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupCapacityPackQuote Quote buying a backup capacity pack
+//
+// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs/quote (the `CreateBackupCapacityPackQuote` operationId).
+func (c *Client) CreateBackupCapacityPackQuote(ctx context.Context, regionId openapi_types.UUID, body CreateBackupCapacityPackQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupCapacityPackQuoteRequest(c.Server, regionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetBackupService Get the backup service of a region
+//
+// The backup service of the authenticated project in this region. Backups can be created only while it is `active`. Each hour, Compute covers retained backup capacity up to the total `capacity_gib` of the capacity packs active in the region and meters only the excess on this service's subscription, per GiB-hour.
+//
+// Canceling the service's subscription through Billing is refused while any backup is retained in the region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment deletes its backups.
+//
+// Corresponds with GET /api/v1/regions/{regionId}/backup-service (the `GetBackupService` operationId).
+func (c *Client) GetBackupService(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBackupServiceRequest(c.Server, regionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupServiceWithBody Activate the backup service in a region
+//
+// Purchases the backup service for this project and region. The service itself has no charge; backups are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted.
+//
+// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or suspended.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-service (the `CreateBackupService` operationId).
+func (c *Client) CreateBackupServiceWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupServiceRequestWithBody(c.Server, regionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupService Activate the backup service in a region
+//
+// Purchases the backup service for this project and region. The service itself has no charge; backups are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted.
+//
+// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or suspended.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-service (the `CreateBackupService` operationId).
+func (c *Client) CreateBackupService(ctx context.Context, regionId openapi_types.UUID, body CreateBackupServiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupServiceRequest(c.Server, regionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBackupServiceQuote Quote activating the backup service
+//
+// Prices what `create-backup-service` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-service/quote (the `CreateBackupServiceQuote` operationId).
+func (c *Client) CreateBackupServiceQuote(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBackupServiceQuoteRequest(c.Server, regionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetSnapshotQuota Get regional snapshot quota
+//
+// The snapshot count quota for the authenticated project in this region. Counts simultaneous
+// snapshot holdings, not lifetime create calls or storage bytes. Without an active purchase,
+// limit and available are zero; existing holdings, if any, still appear in used.
+//
+// pending and provisioning creations reserve a slot. Snapshots being deleted or whose cleanup
+// is uncertain retain their slots until absence or deletion is confirmed. available is
+// max(limit - used, 0) while active, and zero when creation is not permitted; additional
+// creation is refused while the quota is inactive, suspended or exhausted.
+//
+// Canceling the quota's subscription through Billing is refused while any snapshot exists in
+// the region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for
+// non-payment deletes its snapshots, as for other reclaimed resources.
+//
+// Corresponds with GET /api/v1/regions/{regionId}/snapshot-quota (the `GetSnapshotQuota` operationId).
+func (c *Client) GetSnapshotQuota(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSnapshotQuotaRequest(c.Server, regionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetSnapshotQuotaWithBody Set regional snapshot quota
+//
+// Purchases or changes the maximum number of snapshots this project may hold in this region.
+// limit is the target total, not an additional number of slots or a consumable create allowance.
+// billing chooses one of the quota's pricing options; a change of an existing purchase keeps its
+// billing mode and period, and billing must name that option. The purchased quantity is this count.
+//
+// Returns the quota with the order. pending_limit records the target while the current limit stays
+// in force; the new limit applies once the order is accepted and the quota is activated. Snapshots
+// create no further orders or subscriptions, and deleting one frees a slot without refunding the
+// quota purchase.
+//
+// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+// identical target and billing choice returns its existing purchase without charging again; renewing its
+// term is a separate Billing renewal operation. A requested limit below used is refused with
+// 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/regions/{regionId}/snapshot-quota (the `SetSnapshotQuota` operationId).
+func (c *Client) SetSnapshotQuotaWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetSnapshotQuotaRequestWithBody(c.Server, regionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetSnapshotQuota Set regional snapshot quota
+//
+// Purchases or changes the maximum number of snapshots this project may hold in this region.
+// limit is the target total, not an additional number of slots or a consumable create allowance.
+// billing chooses one of the quota's pricing options; a change of an existing purchase keeps its
+// billing mode and period, and billing must name that option. The purchased quantity is this count.
+//
+// Returns the quota with the order. pending_limit records the target while the current limit stays
+// in force; the new limit applies once the order is accepted and the quota is activated. Snapshots
+// create no further orders or subscriptions, and deleting one frees a slot without refunding the
+// quota purchase.
+//
+// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+// identical target and billing choice returns its existing purchase without charging again; renewing its
+// term is a separate Billing renewal operation. A requested limit below used is refused with
+// 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/regions/{regionId}/snapshot-quota (the `SetSnapshotQuota` operationId).
+func (c *Client) SetSnapshotQuota(ctx context.Context, regionId openapi_types.UUID, body SetSnapshotQuotaJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetSnapshotQuotaRequest(c.Server, regionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateSnapshotQuotaQuoteWithBody Quote setting the regional snapshot quota
+//
+// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now, for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/snapshot-quota/quote (the `CreateSnapshotQuotaQuote` operationId).
+func (c *Client) CreateSnapshotQuotaQuoteWithBody(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSnapshotQuotaQuoteRequestWithBody(c.Server, regionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateSnapshotQuotaQuote Quote setting the regional snapshot quota
+//
+// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now, for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/regions/{regionId}/snapshot-quota/quote (the `CreateSnapshotQuotaQuote` operationId).
+func (c *Client) CreateSnapshotQuotaQuote(ctx context.Context, regionId openapi_types.UUID, body CreateSnapshotQuotaQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSnapshotQuotaQuoteRequest(c.Server, regionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListSecurityGroups List security groups
 //
 // Corresponds with GET /api/v1/security-groups (the `ListSecurityGroups` operationId).
@@ -6316,6 +8314,10 @@ func (c *Client) ListSnapshots(ctx context.Context, params *ListSnapshotsParams,
 //
 // **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
+// Snapshot slots are purchased separately for this project and the source disk's region. This operation reserves one available slot and returns the snapshot as `pending`; it places no order and charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+//
+// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot data has been confirmed absent or removed.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -6337,6 +8339,10 @@ func (c *Client) CreateSnapshotWithBody(ctx context.Context, contentType string,
 //
 // **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
+// Snapshot slots are purchased separately for this project and the source disk's region. This operation reserves one available slot and returns the snapshot as `pending`; it places no order and charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+//
+// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot data has been confirmed absent or removed.
+//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -6354,7 +8360,7 @@ func (c *Client) CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequ
 
 // DeleteSnapshot Delete a snapshot
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+// Deletes this snapshot without canceling the project's snapshot quota purchase. A snapshot has no individual Billing subscription. Its slot stays occupied until the deletion is confirmed.
 //
 // Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 func (c *Client) DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6408,21 +8414,6 @@ func (c *Client) RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_
 // Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
 func (c *Client) RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRenameSnapshotRequest(c.Server, snapshotId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetTask Get a requested action
-//
-// Corresponds with GET /api/v1/tasks/{taskId} (the `GetTask` operationId).
-func (c *Client) GetTask(ctx context.Context, taskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTaskRequest(c.Server, taskId)
 	if err != nil {
 		return nil, err
 	}
@@ -6532,46 +8523,6 @@ func NewCreateBackupRequestWithBody(server string, contentType string, body io.R
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/backups")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewCreateBackupQuoteRequest calls the generic CreateBackupQuote builder with application/json body
-func NewCreateBackupQuoteRequest(server string, body CreateBackupQuoteJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateBackupQuoteRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateBackupQuoteRequestWithBody constructs an http.Request for the CreateBackupQuote method, with any body, and a specified content type
-func NewCreateBackupQuoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/backups/quote")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -6734,6 +8685,53 @@ func NewRestoreBackupRequestWithBody(server string, backupId openapi_types.UUID,
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/backups/%s/restore", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateBackupRestoreQuoteRequest calls the generic CreateBackupRestoreQuote builder with application/json body
+func NewCreateBackupRestoreQuoteRequest(server string, backupId openapi_types.UUID, body CreateBackupRestoreQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateBackupRestoreQuoteRequestWithBody(server, backupId, "application/json", bodyReader)
+}
+
+// NewCreateBackupRestoreQuoteRequestWithBody constructs an http.Request for the CreateBackupRestoreQuote method, with any body, and a specified content type
+func NewCreateBackupRestoreQuoteRequestWithBody(server string, backupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "backupId", backupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/backups/%s/restore/quote", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7007,6 +9005,46 @@ func NewCreateDiskRequestWithBody(server string, contentType string, body io.Rea
 	return req, nil
 }
 
+// NewCreateDiskQuoteRequest calls the generic CreateDiskQuote builder with application/json body
+func NewCreateDiskQuoteRequest(server string, body CreateDiskQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateDiskQuoteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateDiskQuoteRequestWithBody constructs an http.Request for the CreateDiskQuote method, with any body, and a specified content type
+func NewCreateDiskQuoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/disks/quote")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewDeleteDiskRequest constructs an http.Request for the DeleteDisk method
 func NewDeleteDiskRequest(server string, diskId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -7150,6 +9188,53 @@ func NewResizeDiskRequestWithBody(server string, diskId openapi_types.UUID, cont
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/disks/%s/resize", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateDiskResizeQuoteRequest calls the generic CreateDiskResizeQuote builder with application/json body
+func NewCreateDiskResizeQuoteRequest(server string, diskId openapi_types.UUID, body CreateDiskResizeQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateDiskResizeQuoteRequestWithBody(server, diskId, "application/json", bodyReader)
+}
+
+// NewCreateDiskResizeQuoteRequestWithBody constructs an http.Request for the CreateDiskResizeQuote method, with any body, and a specified content type
+func NewCreateDiskResizeQuoteRequestWithBody(server string, diskId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "diskId", diskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/disks/%s/resize/quote", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7322,6 +9407,46 @@ func NewAllocateFloatingIpRequestWithBody(server string, contentType string, bod
 	return req, nil
 }
 
+// NewCreateFloatingIpQuoteRequest calls the generic CreateFloatingIpQuote builder with application/json body
+func NewCreateFloatingIpQuoteRequest(server string, body CreateFloatingIpQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateFloatingIpQuoteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateFloatingIpQuoteRequestWithBody constructs an http.Request for the CreateFloatingIpQuote method, with any body, and a specified content type
+func NewCreateFloatingIpQuoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/floating-ips/quote")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewReleaseFloatingIpRequest constructs an http.Request for the ReleaseFloatingIp method
 func NewReleaseFloatingIpRequest(server string, floatingIpId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -7428,6 +9553,53 @@ func NewSetFloatingIpBandwidthRequestWithBody(server string, floatingIpId openap
 	}
 
 	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateFloatingIpBandwidthQuoteRequest calls the generic CreateFloatingIpBandwidthQuote builder with application/json body
+func NewCreateFloatingIpBandwidthQuoteRequest(server string, floatingIpId openapi_types.UUID, body CreateFloatingIpBandwidthQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateFloatingIpBandwidthQuoteRequestWithBody(server, floatingIpId, "application/json", bodyReader)
+}
+
+// NewCreateFloatingIpBandwidthQuoteRequestWithBody constructs an http.Request for the CreateFloatingIpBandwidthQuote method, with any body, and a specified content type
+func NewCreateFloatingIpBandwidthQuoteRequestWithBody(server string, floatingIpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "floatingIpId", floatingIpId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/floating-ips/%s/bandwidth/quote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -7980,6 +10152,46 @@ func NewLaunchInstanceRequestWithBody(server string, contentType string, body io
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/instances")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateInstanceQuoteRequest calls the generic CreateInstanceQuote builder with application/json body
+func NewCreateInstanceQuoteRequest(server string, body CreateInstanceQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateInstanceQuoteRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateInstanceQuoteRequestWithBody constructs an http.Request for the CreateInstanceQuote method, with any body, and a specified content type
+func NewCreateInstanceQuoteRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/instances/quote")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8929,6 +11141,53 @@ func NewResizeInstanceRequestWithBody(server string, instanceId openapi_types.UU
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/instances/%s/resize", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateInstanceResizeQuoteRequest calls the generic CreateInstanceResizeQuote builder with application/json body
+func NewCreateInstanceResizeQuoteRequest(server string, instanceId openapi_types.UUID, body CreateInstanceResizeQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateInstanceResizeQuoteRequestWithBody(server, instanceId, "application/json", bodyReader)
+}
+
+// NewCreateInstanceResizeQuoteRequestWithBody constructs an http.Request for the CreateInstanceResizeQuote method, with any body, and a specified content type
+func NewCreateInstanceResizeQuoteRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/instances/%s/resize/quote", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10437,6 +12696,416 @@ func NewListAvailabilityZonesRequest(server string, regionId openapi_types.UUID,
 	return req, nil
 }
 
+// NewListBackupCapacityPacksRequest constructs an http.Request for the ListBackupCapacityPacks method
+func NewListBackupCapacityPacksRequest(server string, regionId openapi_types.UUID, params *ListBackupCapacityPacksParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/backup-capacity-packs", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateBackupCapacityPackRequest calls the generic CreateBackupCapacityPack builder with application/json body
+func NewCreateBackupCapacityPackRequest(server string, regionId openapi_types.UUID, body CreateBackupCapacityPackJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateBackupCapacityPackRequestWithBody(server, regionId, "application/json", bodyReader)
+}
+
+// NewCreateBackupCapacityPackRequestWithBody constructs an http.Request for the CreateBackupCapacityPack method, with any body, and a specified content type
+func NewCreateBackupCapacityPackRequestWithBody(server string, regionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/backup-capacity-packs", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateBackupCapacityPackQuoteRequest calls the generic CreateBackupCapacityPackQuote builder with application/json body
+func NewCreateBackupCapacityPackQuoteRequest(server string, regionId openapi_types.UUID, body CreateBackupCapacityPackQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateBackupCapacityPackQuoteRequestWithBody(server, regionId, "application/json", bodyReader)
+}
+
+// NewCreateBackupCapacityPackQuoteRequestWithBody constructs an http.Request for the CreateBackupCapacityPackQuote method, with any body, and a specified content type
+func NewCreateBackupCapacityPackQuoteRequestWithBody(server string, regionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/backup-capacity-packs/quote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetBackupServiceRequest constructs an http.Request for the GetBackupService method
+func NewGetBackupServiceRequest(server string, regionId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/backup-service", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateBackupServiceRequest calls the generic CreateBackupService builder with application/json body
+func NewCreateBackupServiceRequest(server string, regionId openapi_types.UUID, body CreateBackupServiceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateBackupServiceRequestWithBody(server, regionId, "application/json", bodyReader)
+}
+
+// NewCreateBackupServiceRequestWithBody constructs an http.Request for the CreateBackupService method, with any body, and a specified content type
+func NewCreateBackupServiceRequestWithBody(server string, regionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/backup-service", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateBackupServiceQuoteRequest constructs an http.Request for the CreateBackupServiceQuote method
+func NewCreateBackupServiceQuoteRequest(server string, regionId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/backup-service/quote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSnapshotQuotaRequest constructs an http.Request for the GetSnapshotQuota method
+func NewGetSnapshotQuotaRequest(server string, regionId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/snapshot-quota", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetSnapshotQuotaRequest calls the generic SetSnapshotQuota builder with application/json body
+func NewSetSnapshotQuotaRequest(server string, regionId openapi_types.UUID, body SetSnapshotQuotaJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetSnapshotQuotaRequestWithBody(server, regionId, "application/json", bodyReader)
+}
+
+// NewSetSnapshotQuotaRequestWithBody constructs an http.Request for the SetSnapshotQuota method, with any body, and a specified content type
+func NewSetSnapshotQuotaRequestWithBody(server string, regionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/snapshot-quota", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateSnapshotQuotaQuoteRequest calls the generic CreateSnapshotQuotaQuote builder with application/json body
+func NewCreateSnapshotQuotaQuoteRequest(server string, regionId openapi_types.UUID, body CreateSnapshotQuotaQuoteJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateSnapshotQuotaQuoteRequestWithBody(server, regionId, "application/json", bodyReader)
+}
+
+// NewCreateSnapshotQuotaQuoteRequestWithBody constructs an http.Request for the CreateSnapshotQuotaQuote method, with any body, and a specified content type
+func NewCreateSnapshotQuotaQuoteRequestWithBody(server string, regionId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/snapshot-quota/quote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListSecurityGroupsRequest constructs an http.Request for the ListSecurityGroups method
 func NewListSecurityGroupsRequest(server string, params *ListSecurityGroupsParams) (*http.Request, error) {
 	var err error
@@ -11076,40 +13745,6 @@ func NewRenameSnapshotRequestWithBody(server string, snapshotId openapi_types.UU
 	return req, nil
 }
 
-// NewGetTaskRequest constructs an http.Request for the GetTask method
-func NewGetTaskRequest(server string, taskId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "taskId", taskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/tasks/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -11167,9 +13802,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+	// No order is placed. The backup is metered on the backup service of the disk's region by its `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 	//
-	// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+	// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup until it is `available` or `failed`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11182,46 +13817,18 @@ type ClientWithResponsesInterface interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+	// No order is placed. The backup is metered on the backup service of the disk's region by its `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 	//
-	// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+	// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup until it is `available` or `failed`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 	CreateBackupWithResponse(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupResponse, error)
 
-	// CreateBackupQuoteWithBodyWithResponse Quote a backup
-	//
-	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
-	CreateBackupQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupQuoteResponse, error)
-
-	// CreateBackupQuoteWithResponse Quote a backup
-	//
-	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
-	CreateBackupQuoteWithResponse(ctx context.Context, body CreateBackupQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupQuoteResponse, error)
-
 	// DeleteBackupWithResponse Delete a backup
 	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of the backup ends once it is deleted.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11230,7 +13837,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetBackupWithResponse Retrieve a backup
 	//
-	// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
+	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation progress.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11255,7 +13862,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be attached until it is `available`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11266,12 +13873,30 @@ type ClientWithResponsesInterface interface {
 	//
 	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be attached until it is `available`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
 	RestoreBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RestoreBackupResponse, error)
+
+	// CreateBackupRestoreQuoteWithBodyWithResponse Quote restoring from a backup
+	//
+	// Prices what `restore-backup` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/backups/{backupId}/restore/quote (the `CreateBackupRestoreQuote` operationId).
+	CreateBackupRestoreQuoteWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupRestoreQuoteResponse, error)
+
+	// CreateBackupRestoreQuoteWithResponse Quote restoring from a backup
+	//
+	// Prices what `restore-backup` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/backups/{backupId}/restore/quote (the `CreateBackupRestoreQuote` operationId).
+	CreateBackupRestoreQuoteWithResponse(ctx context.Context, backupId openapi_types.UUID, body CreateBackupRestoreQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupRestoreQuoteResponse, error)
 
 	// ListDiskTypesWithResponse List disk types on sale
 	//
@@ -11322,6 +13947,24 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
 	CreateDiskWithResponse(ctx context.Context, body CreateDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDiskResponse, error)
 
+	// CreateDiskQuoteWithBodyWithResponse Quote creating a disk
+	//
+	// Prices what `create-disk` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/disks/quote (the `CreateDiskQuote` operationId).
+	CreateDiskQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDiskQuoteResponse, error)
+
+	// CreateDiskQuoteWithResponse Quote creating a disk
+	//
+	// Prices what `create-disk` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/disks/quote (the `CreateDiskQuote` operationId).
+	CreateDiskQuoteWithResponse(ctx context.Context, body CreateDiskQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDiskQuoteResponse, error)
+
 	// DeleteDiskWithResponse Delete a disk
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
@@ -11335,7 +13978,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetDiskWithResponse Retrieve a disk
 	//
-	// Queries the current state of the disk, which makes it slower but more accurate than the list endpoint.
+	// Returns the stored state of the disk; it does not query the cloud.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11362,7 +14005,7 @@ type ClientWithResponsesInterface interface {
 
 	// ResizeDiskWithBodyWithResponse Resize a disk
 	//
-	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
+	// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the file system inside the instance. If the order is not accepted or the resize fails, the disk keeps its size and the order shows the outcome.
 	//
 	// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
@@ -11377,7 +14020,7 @@ type ClientWithResponsesInterface interface {
 
 	// ResizeDiskWithResponse Resize a disk
 	//
-	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
+	// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the file system inside the instance. If the order is not accepted or the resize fails, the disk keeps its size and the order shows the outcome.
 	//
 	// **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 	//
@@ -11390,13 +14033,31 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
 	ResizeDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*ResizeDiskResponse, error)
 
+	// CreateDiskResizeQuoteWithBodyWithResponse Quote resizing a disk
+	//
+	// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/disks/{diskId}/resize/quote (the `CreateDiskResizeQuote` operationId).
+	CreateDiskResizeQuoteWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDiskResizeQuoteResponse, error)
+
+	// CreateDiskResizeQuoteWithResponse Quote resizing a disk
+	//
+	// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/disks/{diskId}/resize/quote (the `CreateDiskResizeQuote` operationId).
+	CreateDiskResizeQuoteWithResponse(ctx context.Context, diskId openapi_types.UUID, body CreateDiskResizeQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDiskResizeQuoteResponse, error)
+
 	// RevertDiskWithBodyWithResponse Revert to a snapshot
 	//
 	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 	//
 	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The disk shows the `revert` operation until the revert is complete.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11409,7 +14070,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The disk shows the `revert` operation until the revert is complete.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11427,6 +14088,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
+	// Returns the floating IP as `pending` with its order; `address` is null until the address is allocated after the order is accepted. A requested `address` is not held while pending; if it is no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is refunded.
+	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
 	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
@@ -11440,6 +14103,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
+	// Returns the floating IP as `pending` with its order; `address` is null until the address is allocated after the order is accepted. A requested `address` is not held while pending; if it is no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is refunded.
+	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
 	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
@@ -11449,9 +14114,27 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
 	AllocateFloatingIpWithResponse(ctx context.Context, body AllocateFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*AllocateFloatingIpResponse, error)
 
+	// CreateFloatingIpQuoteWithBodyWithResponse Quote allocating a floating IP
+	//
+	// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/floating-ips/quote (the `CreateFloatingIpQuote` operationId).
+	CreateFloatingIpQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFloatingIpQuoteResponse, error)
+
+	// CreateFloatingIpQuoteWithResponse Quote allocating a floating IP
+	//
+	// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/floating-ips/quote (the `CreateFloatingIpQuote` operationId).
+	CreateFloatingIpQuoteWithResponse(ctx context.Context, body CreateFloatingIpQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFloatingIpQuoteResponse, error)
+
 	// ReleaseFloatingIpWithResponse Release a floating IP
 	//
-	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+	// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it is released.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
@@ -11469,7 +14152,7 @@ type ClientWithResponsesInterface interface {
 
 	// SetFloatingIpBandwidthWithBodyWithResponse Set the bandwidth limit
 	//
-	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
+	// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The floating IP shows the `set_bandwidth` operation until the change is applied or its order is canceled, including while the order awaits checkout, so other operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows the outcome.
 	//
 	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
 	//
@@ -11480,7 +14163,7 @@ type ClientWithResponsesInterface interface {
 
 	// SetFloatingIpBandwidthWithResponse Set the bandwidth limit
 	//
-	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
+	// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The floating IP shows the `set_bandwidth` operation until the change is applied or its order is canceled, including while the order awaits checkout, so other operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows the outcome.
 	//
 	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
 	//
@@ -11489,9 +14172,27 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
 	SetFloatingIpBandwidthWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, body SetFloatingIpBandwidthJSONRequestBody, reqEditors ...RequestEditorFn) (*SetFloatingIpBandwidthResponse, error)
 
+	// CreateFloatingIpBandwidthQuoteWithBodyWithResponse Quote changing the bandwidth limit
+	//
+	// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote (the `CreateFloatingIpBandwidthQuote` operationId).
+	CreateFloatingIpBandwidthQuoteWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFloatingIpBandwidthQuoteResponse, error)
+
+	// CreateFloatingIpBandwidthQuoteWithResponse Quote changing the bandwidth limit
+	//
+	// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote (the `CreateFloatingIpBandwidthQuote` operationId).
+	CreateFloatingIpBandwidthQuoteWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, body CreateFloatingIpBandwidthQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFloatingIpBandwidthQuoteResponse, error)
+
 	// UnbindFloatingIpWithResponse Unbind a floating IP
 	//
-	// The address remains held by the project and simply no longer points at any network interface.
+	// The address remains held by the project and simply no longer points at any network interface. The floating IP shows the `unbind` operation until the change is confirmed.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11500,12 +14201,16 @@ type ClientWithResponsesInterface interface {
 
 	// BindFloatingIpWithBodyWithResponse Bind a floating IP to a network interface
 	//
+	// The floating IP shows the `bind` operation until the binding is confirmed.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
 	BindFloatingIpWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error)
 
 	// BindFloatingIpWithResponse Bind a floating IP to a network interface
+	//
+	// The floating IP shows the `bind` operation until the binding is confirmed.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11531,9 +14236,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.** The image is returned as `pending` with its order, and the capture starts only once the order is accepted.
 	//
-	// The capture has two phases, reported by the status of the image:
+	// The capture then has two phases, reported by the status of the image:
 	//
 	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -11542,7 +14247,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+	// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows. Obtain a quote with `create-image-quote` first.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11553,9 +14258,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.** The image is returned as `pending` with its order, and the capture starts only once the order is accepted.
 	//
-	// The capture has two phases, reported by the status of the image:
+	// The capture then has two phases, reported by the status of the image:
 	//
 	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -11564,7 +14269,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+	// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows. Obtain a quote with `create-image-quote` first.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11573,11 +14278,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreateImageQuoteWithBodyWithResponse Quote capturing an instance as a private image
 	//
-	// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	// Prices the capture `create-image` would order for the same instance, without ordering anything; nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. Prices may change, so quote again before final confirmation.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11586,11 +14287,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreateImageQuoteWithResponse Quote capturing an instance as a private image
 	//
-	// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+	// Prices the capture `create-image` would order for the same instance, without ordering anything; nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. Prices may change, so quote again before final confirmation.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11603,7 +14300,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 	//
-	// An image whose capture has not finished can be deleted; the capture is aborted.
+	// An image whose capture has not finished can be deleted; the capture is aborted. This is the one operation accepted while the `create` operation is in progress.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 	//
@@ -11614,7 +14311,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetImageWithResponse Retrieve an image
 	//
-	// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
+	// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure_reason` states why.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11650,7 +14347,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListInstancesWithResponse List instances
 	//
-	// Every instance in the project, newest first. This endpoint does not query backend state; for the accurate state of one instance, use the retrieve endpoint.
+	// Every instance in the project, newest first, in their stored state.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11659,11 +14356,13 @@ type ClientWithResponsesInterface interface {
 
 	// LaunchInstanceWithBodyWithResponse Create instances
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing order, including for metered pricing, and returns one `pending` instance per requested instance with the order. `billing` applies to the instance, its system disk and its floating IP alike. A pending instance has no virtual machine, system disk or address, and is not metered.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	//
+	// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 	//
 	// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 	//
@@ -11674,11 +14373,13 @@ type ClientWithResponsesInterface interface {
 
 	// LaunchInstanceWithResponse Create instances
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing order, including for metered pricing, and returns one `pending` instance per requested instance with the order. `billing` applies to the instance, its system disk and its floating IP alike. A pending instance has no virtual machine, system disk or address, and is not metered.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	//
+	// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 	//
 	// The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 	//
@@ -11686,6 +14387,24 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /api/v1/instances (the `LaunchInstance` operationId).
 	LaunchInstanceWithResponse(ctx context.Context, body LaunchInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*LaunchInstanceResponse, error)
+
+	// CreateInstanceQuoteWithBodyWithResponse Quote creating instances
+	//
+	// Prices what `launch-instance` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/quote (the `CreateInstanceQuote` operationId).
+	CreateInstanceQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateInstanceQuoteResponse, error)
+
+	// CreateInstanceQuoteWithResponse Quote creating instances
+	//
+	// Prices what `launch-instance` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/quote (the `CreateInstanceQuote` operationId).
+	CreateInstanceQuoteWithResponse(ctx context.Context, body CreateInstanceQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateInstanceQuoteResponse, error)
 
 	// DeleteInstanceWithResponse Release an instance
 	//
@@ -11702,7 +14421,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetInstanceWithResponse Retrieve an instance
 	//
-	// Queries the current state of the instance, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
+	// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation progress.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11737,7 +14456,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
-	// - it is `running`
+	// - it is `active`
 	// - a floating IP is bound to it, since this endpoint connects over the public internet
 	// - its security group permits inbound TCP 22
 	//
@@ -11762,7 +14481,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
-	// - it is `running`
+	// - it is `active`
 	// - a floating IP is bound to it, since this endpoint connects over the public internet
 	// - its security group permits inbound TCP 22
 	//
@@ -11808,7 +14527,7 @@ type ClientWithResponsesInterface interface {
 
 	// AttachDiskWithBodyWithResponse Attach a disk
 	//
-	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
+	// The disk must be in the same region and availability zone as the instance. Returns the disk; the instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11817,7 +14536,7 @@ type ClientWithResponsesInterface interface {
 
 	// AttachDiskWithResponse Attach a disk
 	//
-	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
+	// The disk must be in the same region and availability zone as the instance. Returns the disk; the instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11828,7 +14547,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 	//
-	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
+	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+	//
+	// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation until the disk is detached.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11837,7 +14558,7 @@ type ClientWithResponsesInterface interface {
 
 	// AttachInstanceFloatingIpWithBodyWithResponse Bind a floating IP to an instance
 	//
-	// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+	// Changes the public IP binding on the instance's primary network interface. The instance shows the `bind_floating_ip` operation until the binding is confirmed.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11846,7 +14567,7 @@ type ClientWithResponsesInterface interface {
 
 	// AttachInstanceFloatingIpWithResponse Bind a floating IP to an instance
 	//
-	// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+	// Changes the public IP binding on the instance's primary network interface. The instance shows the `bind_floating_ip` operation until the binding is confirmed.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11855,7 +14576,7 @@ type ClientWithResponsesInterface interface {
 
 	// DetachInstanceFloatingIpWithResponse Unbind the floating IP of an instance
 	//
-	// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+	// Changes the public IP binding on the instance's primary network interface. The instance shows the `unbind_floating_ip` operation until the change is confirmed.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11949,12 +14670,16 @@ type ClientWithResponsesInterface interface {
 
 	// AttachPortWithBodyWithResponse Attach a network interface
 	//
+	// Returns the network interface; the instance shows the `attach_port` operation and the interface the `attach` operation until the attachment is confirmed.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
 	AttachPortWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachPortResponse, error)
 
 	// AttachPortWithResponse Attach a network interface
+	//
+	// Returns the network interface; the instance shows the `attach_port` operation and the interface the `attach` operation until the attachment is confirmed.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11964,6 +14689,8 @@ type ClientWithResponsesInterface interface {
 	// DetachPortWithResponse Detach a network interface
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
+	//
+	// Returns the network interface; the instance shows the `detach_port` operation and the interface the `detach` operation until it is detached.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11976,11 +14703,11 @@ type ClientWithResponsesInterface interface {
 	//
 	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
 	//
-	// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient state, and a second soft reboot is refused as well.
+	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft reboot the instance never carried out. Any other request for an operation, including a second soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 	//
 	// An instance suspended by the platform must be unsuspended first.
 	//
-	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	// The instance shows the `reboot` operation until the reboot has finished.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11993,11 +14720,11 @@ type ClientWithResponsesInterface interface {
 	//
 	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
 	//
-	// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient state, and a second soft reboot is refused as well.
+	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft reboot the instance never carried out. Any other request for an operation, including a second soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 	//
 	// An instance suspended by the platform must be unsuspended first.
 	//
-	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	// The instance shows the `reboot` operation until the reboot has finished.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12010,6 +14737,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
+	// The instance shows the `rebuild` operation until the rebuild has finished.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -12021,6 +14750,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
+	// The instance shows the `rebuild` operation until the rebuild has finished.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -12028,9 +14759,9 @@ type ClientWithResponsesInterface interface {
 
 	// ResizeInstanceWithBodyWithResponse Resize an instance
 	//
-	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing change order, including for metered pricing, and returns the instance with the order. The instance keeps its billing mode and period, priced with the target type's matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+	// The instance shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12039,18 +14770,36 @@ type ClientWithResponsesInterface interface {
 
 	// ResizeInstanceWithResponse Resize an instance
 	//
-	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing change order, including for metered pricing, and returns the instance with the order. The instance keeps its billing mode and period, priced with the target type's matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+	// The instance shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 	ResizeInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ResizeInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ResizeInstanceResponse, error)
 
+	// CreateInstanceResizeQuoteWithBodyWithResponse Quote resizing an instance
+	//
+	// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/resize/quote (the `CreateInstanceResizeQuote` operationId).
+	CreateInstanceResizeQuoteWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateInstanceResizeQuoteResponse, error)
+
+	// CreateInstanceResizeQuoteWithResponse Quote resizing an instance
+	//
+	// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/resize/quote (the `CreateInstanceResizeQuote` operationId).
+	CreateInstanceResizeQuoteWithResponse(ctx context.Context, instanceId openapi_types.UUID, body CreateInstanceResizeQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateInstanceResizeQuoteResponse, error)
+
 	// StartInstanceWithBodyWithResponse Start an instance
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is running or the start has failed.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12059,7 +14808,7 @@ type ClientWithResponsesInterface interface {
 
 	// StartInstanceWithResponse Start an instance
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is running or the start has failed.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12068,7 +14817,7 @@ type ClientWithResponsesInterface interface {
 
 	// StopInstanceWithBodyWithResponse Stop an instance
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the `stop` operation until it is stopped or the stop has failed.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12077,7 +14826,7 @@ type ClientWithResponsesInterface interface {
 
 	// StopInstanceWithResponse Stop an instance
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+	// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the `stop` operation until it is stopped or the stop has failed.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12368,6 +15117,181 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
 	ListAvailabilityZonesWithResponse(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error)
 
+	// ListBackupCapacityPacksWithResponse List backup capacity packs
+	//
+	// The capacity packs of the authenticated project in this region, newest first, including ended ones.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/regions/{regionId}/backup-capacity-packs (the `ListBackupCapacityPacks` operationId).
+	ListBackupCapacityPacksWithResponse(ctx context.Context, regionId openapi_types.UUID, params *ListBackupCapacityPacksParams, reqEditors ...RequestEditorFn) (*ListBackupCapacityPacksResponse, error)
+
+	// CreateBackupCapacityPackWithBodyWithResponse Buy a backup capacity pack
+	//
+	// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or year: `billing` must be prepaid with a period, as offered in the backup service's `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the total `capacity_gib` of the packs active in the region is covered, and Compute meters only the excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing takes its order and payment and handles its renewal and cancellation through the pack's subscription.
+	//
+	// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs (the `CreateBackupCapacityPack` operationId).
+	CreateBackupCapacityPackWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupCapacityPackResponse, error)
+
+	// CreateBackupCapacityPackWithResponse Buy a backup capacity pack
+	//
+	// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or year: `billing` must be prepaid with a period, as offered in the backup service's `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the total `capacity_gib` of the packs active in the region is covered, and Compute meters only the excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing takes its order and payment and handles its renewal and cancellation through the pack's subscription.
+	//
+	// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs (the `CreateBackupCapacityPack` operationId).
+	CreateBackupCapacityPackWithResponse(ctx context.Context, regionId openapi_types.UUID, body CreateBackupCapacityPackJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupCapacityPackResponse, error)
+
+	// CreateBackupCapacityPackQuoteWithBodyWithResponse Quote buying a backup capacity pack
+	//
+	// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs/quote (the `CreateBackupCapacityPackQuote` operationId).
+	CreateBackupCapacityPackQuoteWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupCapacityPackQuoteResponse, error)
+
+	// CreateBackupCapacityPackQuoteWithResponse Quote buying a backup capacity pack
+	//
+	// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs/quote (the `CreateBackupCapacityPackQuote` operationId).
+	CreateBackupCapacityPackQuoteWithResponse(ctx context.Context, regionId openapi_types.UUID, body CreateBackupCapacityPackQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupCapacityPackQuoteResponse, error)
+
+	// GetBackupServiceWithResponse Get the backup service of a region
+	//
+	// The backup service of the authenticated project in this region. Backups can be created only while it is `active`. Each hour, Compute covers retained backup capacity up to the total `capacity_gib` of the capacity packs active in the region and meters only the excess on this service's subscription, per GiB-hour.
+	//
+	// Canceling the service's subscription through Billing is refused while any backup is retained in the region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment deletes its backups.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/regions/{regionId}/backup-service (the `GetBackupService` operationId).
+	GetBackupServiceWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetBackupServiceResponse, error)
+
+	// CreateBackupServiceWithBodyWithResponse Activate the backup service in a region
+	//
+	// Purchases the backup service for this project and region. The service itself has no charge; backups are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted.
+	//
+	// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or suspended.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-service (the `CreateBackupService` operationId).
+	CreateBackupServiceWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupServiceResponse, error)
+
+	// CreateBackupServiceWithResponse Activate the backup service in a region
+	//
+	// Purchases the backup service for this project and region. The service itself has no charge; backups are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted.
+	//
+	// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or suspended.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-service (the `CreateBackupService` operationId).
+	CreateBackupServiceWithResponse(ctx context.Context, regionId openapi_types.UUID, body CreateBackupServiceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupServiceResponse, error)
+
+	// CreateBackupServiceQuoteWithResponse Quote activating the backup service
+	//
+	// Prices what `create-backup-service` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/backup-service/quote (the `CreateBackupServiceQuote` operationId).
+	CreateBackupServiceQuoteWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CreateBackupServiceQuoteResponse, error)
+
+	// GetSnapshotQuotaWithResponse Get regional snapshot quota
+	//
+	// The snapshot count quota for the authenticated project in this region. Counts simultaneous
+	// snapshot holdings, not lifetime create calls or storage bytes. Without an active purchase,
+	// limit and available are zero; existing holdings, if any, still appear in used.
+	//
+	// pending and provisioning creations reserve a slot. Snapshots being deleted or whose cleanup
+	// is uncertain retain their slots until absence or deletion is confirmed. available is
+	// max(limit - used, 0) while active, and zero when creation is not permitted; additional
+	// creation is refused while the quota is inactive, suspended or exhausted.
+	//
+	// Canceling the quota's subscription through Billing is refused while any snapshot exists in
+	// the region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for
+	// non-payment deletes its snapshots, as for other reclaimed resources.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/regions/{regionId}/snapshot-quota (the `GetSnapshotQuota` operationId).
+	GetSnapshotQuotaWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSnapshotQuotaResponse, error)
+
+	// SetSnapshotQuotaWithBodyWithResponse Set regional snapshot quota
+	//
+	// Purchases or changes the maximum number of snapshots this project may hold in this region.
+	// limit is the target total, not an additional number of slots or a consumable create allowance.
+	// billing chooses one of the quota's pricing options; a change of an existing purchase keeps its
+	// billing mode and period, and billing must name that option. The purchased quantity is this count.
+	//
+	// Returns the quota with the order. pending_limit records the target while the current limit stays
+	// in force; the new limit applies once the order is accepted and the quota is activated. Snapshots
+	// create no further orders or subscriptions, and deleting one frees a slot without refunding the
+	// quota purchase.
+	//
+	// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+	// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+	// identical target and billing choice returns its existing purchase without charging again; renewing its
+	// term is a separate Billing renewal operation. A requested limit below used is refused with
+	// 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/regions/{regionId}/snapshot-quota (the `SetSnapshotQuota` operationId).
+	SetSnapshotQuotaWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSnapshotQuotaResponse, error)
+
+	// SetSnapshotQuotaWithResponse Set regional snapshot quota
+	//
+	// Purchases or changes the maximum number of snapshots this project may hold in this region.
+	// limit is the target total, not an additional number of slots or a consumable create allowance.
+	// billing chooses one of the quota's pricing options; a change of an existing purchase keeps its
+	// billing mode and period, and billing must name that option. The purchased quantity is this count.
+	//
+	// Returns the quota with the order. pending_limit records the target while the current limit stays
+	// in force; the new limit applies once the order is accepted and the quota is activated. Snapshots
+	// create no further orders or subscriptions, and deleting one frees a slot without refunding the
+	// quota purchase.
+	//
+	// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+	// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+	// identical target and billing choice returns its existing purchase without charging again; renewing its
+	// term is a separate Billing renewal operation. A requested limit below used is refused with
+	// 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/regions/{regionId}/snapshot-quota (the `SetSnapshotQuota` operationId).
+	SetSnapshotQuotaWithResponse(ctx context.Context, regionId openapi_types.UUID, body SetSnapshotQuotaJSONRequestBody, reqEditors ...RequestEditorFn) (*SetSnapshotQuotaResponse, error)
+
+	// CreateSnapshotQuotaQuoteWithBodyWithResponse Quote setting the regional snapshot quota
+	//
+	// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now, for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/snapshot-quota/quote (the `CreateSnapshotQuotaQuote` operationId).
+	CreateSnapshotQuotaQuoteWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSnapshotQuotaQuoteResponse, error)
+
+	// CreateSnapshotQuotaQuoteWithResponse Quote setting the regional snapshot quota
+	//
+	// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now, for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/regions/{regionId}/snapshot-quota/quote (the `CreateSnapshotQuotaQuote` operationId).
+	CreateSnapshotQuotaQuoteWithResponse(ctx context.Context, regionId openapi_types.UUID, body CreateSnapshotQuotaQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotQuotaQuoteResponse, error)
+
 	// ListSecurityGroupsWithResponse List security groups
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -12472,6 +15396,10 @@ type ClientWithResponsesInterface interface {
 	//
 	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
+	// Snapshot slots are purchased separately for this project and the source disk's region. This operation reserves one available slot and returns the snapshot as `pending`; it places no order and charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+	//
+	// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot data has been confirmed absent or removed.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -12483,6 +15411,10 @@ type ClientWithResponsesInterface interface {
 	//
 	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
+	// Snapshot slots are purchased separately for this project and the source disk's region. This operation reserves one available slot and returns the snapshot as `pending`; it places no order and charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+	//
+	// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot data has been confirmed absent or removed.
+	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -12490,7 +15422,7 @@ type ClientWithResponsesInterface interface {
 
 	// DeleteSnapshotWithResponse Delete a snapshot
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	// Deletes this snapshot without canceling the project's snapshot quota purchase. A snapshot has no individual Billing subscription. Its slot stays occupied until the deletion is confirmed.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12517,13 +15449,6 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
 	RenameSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error)
-
-	// GetTaskWithResponse Get a requested action
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/tasks/{taskId} (the `GetTask` operationId).
-	GetTaskWithResponse(ctx context.Context, taskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetTaskResponse, error)
 }
 
 type ListBackupsResponse struct {
@@ -12577,15 +15502,22 @@ func (r ListBackupsResponse) ContentType() string {
 type CreateBackupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PurchaseResult
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *BackupResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateBackupResponse) GetJSON201() *PurchaseResult {
-	return r.JSON201
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreateBackupResponse) GetJSON202() *BackupResource {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateBackupResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12622,72 +15554,24 @@ func (r CreateBackupResponse) ContentType() string {
 	return ""
 }
 
-type CreateBackupQuoteResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PurchaseQuote
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CreateBackupQuoteResponse) GetJSON200() *PurchaseQuote {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateBackupQuoteResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateBackupQuoteResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateBackupQuoteResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateBackupQuoteResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateBackupQuoteResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type DeleteBackupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *BackupResource
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DeleteBackupResponse) GetJSON202() *Task {
+func (r DeleteBackupResponse) GetJSON202() *BackupResource {
 	return r.JSON202
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeleteBackupResponse) GetJSON409() *Error {
+func (r DeleteBackupResponse) GetJSON409() *Conflict {
 	return r.JSON409
 }
 
@@ -12824,15 +15708,22 @@ func (r RenameBackupResponse) ContentType() string {
 type RestoreBackupResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PurchaseResult
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *CreateDiskResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r RestoreBackupResponse) GetJSON201() *PurchaseResult {
-	return r.JSON201
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r RestoreBackupResponse) GetJSON202() *CreateDiskResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RestoreBackupResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -12863,6 +15754,61 @@ func (r RestoreBackupResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RestoreBackupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateBackupRestoreQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateBackupRestoreQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateBackupRestoreQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateBackupRestoreQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateBackupRestoreQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateBackupRestoreQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateBackupRestoreQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateBackupRestoreQuoteResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -13016,15 +15962,22 @@ func (r ListDisksResponse) ContentType() string {
 type CreateDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PurchaseResult
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *CreateDiskResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateDiskResponse) GetJSON201() *PurchaseResult {
-	return r.JSON201
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreateDiskResponse) GetJSON202() *CreateDiskResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateDiskResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13061,24 +16014,79 @@ func (r CreateDiskResponse) ContentType() string {
 	return ""
 }
 
+type CreateDiskQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateDiskQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateDiskQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateDiskQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateDiskQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateDiskQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateDiskQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateDiskQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type DeleteDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *DiskResource
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DeleteDiskResponse) GetJSON202() *Task {
+func (r DeleteDiskResponse) GetJSON202() *DiskResource {
 	return r.JSON202
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeleteDiskResponse) GetJSON409() *Error {
+func (r DeleteDiskResponse) GetJSON409() *Conflict {
 	return r.JSON409
 }
 
@@ -13215,15 +16223,22 @@ func (r RenameDiskResponse) ContentType() string {
 type ResizeDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PurchaseResult
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *ResizeDiskResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ResizeDiskResponse) GetJSON200() *PurchaseResult {
-	return r.JSON200
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r ResizeDiskResponse) GetJSON202() *ResizeDiskResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ResizeDiskResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13260,18 +16275,80 @@ func (r ResizeDiskResponse) ContentType() string {
 	return ""
 }
 
+type CreateDiskResizeQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateDiskResizeQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateDiskResizeQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateDiskResizeQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateDiskResizeQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateDiskResizeQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateDiskResizeQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateDiskResizeQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type RevertDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *DiskResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r RevertDiskResponse) GetJSON202() *Task {
+func (r RevertDiskResponse) GetJSON202() *DiskResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RevertDiskResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13359,15 +16436,22 @@ func (r ListFloatingIpsResponse) ContentType() string {
 type AllocateFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PurchaseResult
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *AllocateFloatingIPResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r AllocateFloatingIpResponse) GetJSON201() *PurchaseResult {
-	return r.JSON201
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r AllocateFloatingIpResponse) GetJSON202() *AllocateFloatingIPResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AllocateFloatingIpResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13404,24 +16488,79 @@ func (r AllocateFloatingIpResponse) ContentType() string {
 	return ""
 }
 
+type CreateFloatingIpQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateFloatingIpQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateFloatingIpQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateFloatingIpQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateFloatingIpQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateFloatingIpQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateFloatingIpQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateFloatingIpQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ReleaseFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *FloatingIPResource
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r ReleaseFloatingIpResponse) GetJSON202() *Task {
+func (r ReleaseFloatingIpResponse) GetJSON202() *FloatingIPResource {
 	return r.JSON202
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r ReleaseFloatingIpResponse) GetJSON409() *Error {
+func (r ReleaseFloatingIpResponse) GetJSON409() *Conflict {
 	return r.JSON409
 }
 
@@ -13510,15 +16649,22 @@ func (r GetFloatingIpResponse) ContentType() string {
 type SetFloatingIpBandwidthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PurchaseResult
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *SetFloatingIPBandwidthResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SetFloatingIpBandwidthResponse) GetJSON200() *PurchaseResult {
-	return r.JSON200
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r SetFloatingIpBandwidthResponse) GetJSON202() *SetFloatingIPBandwidthResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r SetFloatingIpBandwidthResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13555,18 +16701,80 @@ func (r SetFloatingIpBandwidthResponse) ContentType() string {
 	return ""
 }
 
-type UnbindFloatingIpResponse struct {
+type CreateFloatingIpBandwidthQuoteResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *FloatingIPResource
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r UnbindFloatingIpResponse) GetJSON200() *FloatingIPResource {
+func (r CreateFloatingIpBandwidthQuoteResponse) GetJSON200() *Quote {
 	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateFloatingIpBandwidthQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateFloatingIpBandwidthQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateFloatingIpBandwidthQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateFloatingIpBandwidthQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateFloatingIpBandwidthQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateFloatingIpBandwidthQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UnbindFloatingIpResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *FloatingIPResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r UnbindFloatingIpResponse) GetJSON202() *FloatingIPResource {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UnbindFloatingIpResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13606,15 +16814,22 @@ func (r UnbindFloatingIpResponse) ContentType() string {
 type BindFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *FloatingIPResource
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *FloatingIPResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r BindFloatingIpResponse) GetJSON200() *FloatingIPResource {
-	return r.JSON200
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r BindFloatingIpResponse) GetJSON202() *FloatingIPResource {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r BindFloatingIpResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13702,15 +16917,22 @@ func (r ListImagesResponse) ContentType() string {
 type CreateImageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PurchaseResult
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *CreateImageResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateImageResponse) GetJSON201() *PurchaseResult {
-	return r.JSON201
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreateImageResponse) GetJSON202() *CreateImageResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateImageResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13751,14 +16973,21 @@ type CreateImageQuoteResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PurchaseQuote
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CreateImageQuoteResponse) GetJSON200() *PurchaseQuote {
+func (r CreateImageQuoteResponse) GetJSON200() *Quote {
 	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateImageQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13799,20 +17028,20 @@ type DeleteImageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *ImageResource
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DeleteImageResponse) GetJSON202() *Task {
+func (r DeleteImageResponse) GetJSON202() *ImageResource {
 	return r.JSON202
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeleteImageResponse) GetJSON409() *Error {
+func (r DeleteImageResponse) GetJSON409() *Conflict {
 	return r.JSON409
 }
 
@@ -14047,6 +17276,8 @@ type LaunchInstanceResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *LaunchInstanceResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -14054,6 +17285,11 @@ type LaunchInstanceResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r LaunchInstanceResponse) GetJSON202() *LaunchInstanceResponseBody {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r LaunchInstanceResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14090,24 +17326,79 @@ func (r LaunchInstanceResponse) ContentType() string {
 	return ""
 }
 
+type CreateInstanceQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateInstanceQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateInstanceQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateInstanceQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateInstanceQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateInstanceQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateInstanceQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateInstanceQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type DeleteInstanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *InstanceResource
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DeleteInstanceResponse) GetJSON202() *Task {
+func (r DeleteInstanceResponse) GetJSON202() *InstanceResource {
 	return r.JSON202
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeleteInstanceResponse) GetJSON409() *Error {
+func (r DeleteInstanceResponse) GetJSON409() *Conflict {
 	return r.JSON409
 }
 
@@ -14437,14 +17728,21 @@ type AttachDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *DiskResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r AttachDiskResponse) GetJSON202() *Task {
+func (r AttachDiskResponse) GetJSON202() *DiskResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AttachDiskResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14485,14 +17783,21 @@ type DetachDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *DiskResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DetachDiskResponse) GetJSON202() *Task {
+func (r DetachDiskResponse) GetJSON202() *DiskResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DetachDiskResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14532,15 +17837,22 @@ func (r DetachDiskResponse) ContentType() string {
 type AttachInstanceFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *FloatingIPResource
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *FloatingIPResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r AttachInstanceFloatingIpResponse) GetJSON200() *FloatingIPResource {
-	return r.JSON200
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r AttachInstanceFloatingIpResponse) GetJSON202() *FloatingIPResource {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AttachInstanceFloatingIpResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14580,15 +17892,22 @@ func (r AttachInstanceFloatingIpResponse) ContentType() string {
 type DetachInstanceFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *FloatingIPResource
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *FloatingIPResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DetachInstanceFloatingIpResponse) GetJSON200() *FloatingIPResource {
-	return r.JSON200
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r DetachInstanceFloatingIpResponse) GetJSON202() *FloatingIPResource {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DetachInstanceFloatingIpResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14726,6 +18045,8 @@ type ResetInstancePasswordResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *ResetPasswordResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -14733,6 +18054,11 @@ type ResetInstancePasswordResponse struct {
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ResetInstancePasswordResponse) GetJSON200() *ResetPasswordResponseBody {
 	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ResetInstancePasswordResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14821,14 +18147,21 @@ type AttachPortResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *PortResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r AttachPortResponse) GetJSON202() *Task {
+func (r AttachPortResponse) GetJSON202() *PortResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AttachPortResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14869,14 +18202,21 @@ type DetachPortResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *PortResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DetachPortResponse) GetJSON202() *Task {
+func (r DetachPortResponse) GetJSON202() *PortResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DetachPortResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14917,14 +18257,21 @@ type RebootInstanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *InstanceResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r RebootInstanceResponse) GetJSON202() *Task {
+func (r RebootInstanceResponse) GetJSON202() *InstanceResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RebootInstanceResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -14964,15 +18311,22 @@ func (r RebootInstanceResponse) ContentType() string {
 type RebuildInstanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *RebuildInstanceResponseBody
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *RebuildInstanceResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RebuildInstanceResponse) GetJSON200() *RebuildInstanceResponseBody {
-	return r.JSON200
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r RebuildInstanceResponse) GetJSON202() *RebuildInstanceResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RebuildInstanceResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15013,14 +18367,21 @@ type ResizeInstanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *PurchaseResult
+	JSON202 *ResizeInstanceResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r ResizeInstanceResponse) GetJSON202() *PurchaseResult {
+func (r ResizeInstanceResponse) GetJSON202() *ResizeInstanceResponseBody {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ResizeInstanceResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15057,18 +18418,80 @@ func (r ResizeInstanceResponse) ContentType() string {
 	return ""
 }
 
+type CreateInstanceResizeQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateInstanceResizeQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateInstanceResizeQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateInstanceResizeQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateInstanceResizeQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateInstanceResizeQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateInstanceResizeQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateInstanceResizeQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type StartInstanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *InstanceResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r StartInstanceResponse) GetJSON202() *Task {
+func (r StartInstanceResponse) GetJSON202() *InstanceResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r StartInstanceResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15109,14 +18532,21 @@ type StopInstanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *InstanceResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r StopInstanceResponse) GetJSON202() *Task {
+func (r StopInstanceResponse) GetJSON202() *InstanceResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r StopInstanceResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15350,6 +18780,8 @@ type DeletePeeringResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *PeeringResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -15357,6 +18789,11 @@ type DeletePeeringResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r DeletePeeringResponse) GetJSON202() *PeeringResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeletePeeringResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15446,6 +18883,8 @@ type AcceptPeeringResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *PeeringResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -15453,6 +18892,11 @@ type AcceptPeeringResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r AcceptPeeringResponse) GetJSON202() *PeeringResource {
 	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AcceptPeeringResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15588,15 +19032,15 @@ func (r ListPortsResponse) ContentType() string {
 type CreatePortResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PortResource
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *PortResource
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreatePortResponse) GetJSON201() *PortResource {
-	return r.JSON201
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreatePortResponse) GetJSON202() *PortResource {
+	return r.JSON202
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15636,8 +19080,22 @@ func (r CreatePortResponse) ContentType() string {
 type DeletePortResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *PortResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r DeletePortResponse) GetJSON202() *PortResource {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeletePortResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15725,15 +19183,15 @@ func (r ListPrivateNetworksResponse) ContentType() string {
 type CreatePrivateNetworkResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PrivateNetworkResource
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *PrivateNetworkResource
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreatePrivateNetworkResponse) GetJSON201() *PrivateNetworkResource {
-	return r.JSON201
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreatePrivateNetworkResponse) GetJSON202() *PrivateNetworkResource {
+	return r.JSON202
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15773,8 +19231,22 @@ func (r CreatePrivateNetworkResponse) ContentType() string {
 type DeletePrivateNetworkResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *PrivateNetworkResource
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r DeletePrivateNetworkResponse) GetJSON202() *PrivateNetworkResource {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeletePrivateNetworkResponse) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15910,8 +19382,22 @@ func (r RenamePrivateNetworkResponse) ContentType() string {
 type DisablePrivateNetworkIpv6Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *IPv6ResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r DisablePrivateNetworkIpv6Response) GetJSON202() *IPv6ResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DisablePrivateNetworkIpv6Response) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -15999,15 +19485,22 @@ func (r GetPrivateNetworkIpv6Response) ContentType() string {
 type EnablePrivateNetworkIpv6Response struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *IPv6ResponseBody
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *IPv6ResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r EnablePrivateNetworkIpv6Response) GetJSON200() *IPv6ResponseBody {
-	return r.JSON200
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r EnablePrivateNetworkIpv6Response) GetJSON202() *IPv6ResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r EnablePrivateNetworkIpv6Response) GetJSON409() *Conflict {
+	return r.JSON409
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -16462,6 +19955,480 @@ func (r ListAvailabilityZonesResponse) ContentType() string {
 	return ""
 }
 
+type ListBackupCapacityPacksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BackupCapacityPackListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListBackupCapacityPacksResponse) GetJSON200() *BackupCapacityPackListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListBackupCapacityPacksResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListBackupCapacityPacksResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListBackupCapacityPacksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListBackupCapacityPacksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListBackupCapacityPacksResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateBackupCapacityPackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *CreateBackupCapacityPackResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreateBackupCapacityPackResponse) GetJSON202() *CreateBackupCapacityPackResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateBackupCapacityPackResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateBackupCapacityPackResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateBackupCapacityPackResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateBackupCapacityPackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateBackupCapacityPackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateBackupCapacityPackResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateBackupCapacityPackQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateBackupCapacityPackQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateBackupCapacityPackQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateBackupCapacityPackQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateBackupCapacityPackQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateBackupCapacityPackQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateBackupCapacityPackQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateBackupCapacityPackQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetBackupServiceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BackupService
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetBackupServiceResponse) GetJSON200() *BackupService {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetBackupServiceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetBackupServiceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBackupServiceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBackupServiceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetBackupServiceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateBackupServiceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *CreateBackupServiceResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreateBackupServiceResponse) GetJSON202() *CreateBackupServiceResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateBackupServiceResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateBackupServiceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateBackupServiceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateBackupServiceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateBackupServiceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateBackupServiceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateBackupServiceQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateBackupServiceQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateBackupServiceQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateBackupServiceQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateBackupServiceQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateBackupServiceQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateBackupServiceQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateBackupServiceQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetSnapshotQuotaResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SnapshotQuota
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetSnapshotQuotaResponse) GetJSON200() *SnapshotQuota {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetSnapshotQuotaResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetSnapshotQuotaResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSnapshotQuotaResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSnapshotQuotaResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSnapshotQuotaResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetSnapshotQuotaResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *SetSnapshotQuotaResponseBody
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r SetSnapshotQuotaResponse) GetJSON202() *SetSnapshotQuotaResponseBody {
+	return r.JSON202
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r SetSnapshotQuotaResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SetSnapshotQuotaResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetSnapshotQuotaResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetSnapshotQuotaResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetSnapshotQuotaResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetSnapshotQuotaResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateSnapshotQuotaQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateSnapshotQuotaQuoteResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateSnapshotQuotaQuoteResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateSnapshotQuotaQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateSnapshotQuotaQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSnapshotQuotaQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSnapshotQuotaQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateSnapshotQuotaQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListSecurityGroupsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -16883,15 +20850,15 @@ func (r ListSnapshotsResponse) ContentType() string {
 type CreateSnapshotResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *PurchaseResult
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *SnapshotResource
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateSnapshotResponse) GetJSON201() *PurchaseResult {
-	return r.JSON201
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r CreateSnapshotResponse) GetJSON202() *SnapshotResource {
+	return r.JSON202
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -16932,20 +20899,20 @@ type DeleteSnapshotResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	JSON202 *SnapshotResource
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Error
+	JSON409 *Conflict
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DeleteSnapshotResponse) GetJSON202() *Task {
+func (r DeleteSnapshotResponse) GetJSON202() *SnapshotResource {
 	return r.JSON202
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeleteSnapshotResponse) GetJSON409() *Error {
+func (r DeleteSnapshotResponse) GetJSON409() *Conflict {
 	return r.JSON409
 }
 
@@ -17079,54 +21046,6 @@ func (r RenameSnapshotResponse) ContentType() string {
 	return ""
 }
 
-type GetTaskResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Task
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetTaskResponse) GetJSON200() *Task {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetTaskResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetTaskResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetTaskResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetTaskResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetTaskResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 // ListBackupsWithResponse List backups
 //
 // Returns a wrapper object for the known response body format(s).
@@ -17146,9 +21065,9 @@ func (c *ClientWithResponses) ListBackupsWithResponse(ctx context.Context, param
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+// No order is placed. The backup is metered on the backup service of the disk's region by its `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 //
-// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup until it is `available` or `failed`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17167,9 +21086,9 @@ func (c *ClientWithResponses) CreateBackupWithBodyWithResponse(ctx context.Conte
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns; track the returned task.
+// No order is placed. The backup is metered on the backup service of the disk's region by its `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 //
-// The backup is billed for its size, at the backup price of its region. Obtain a price with `create-backup-quote` first.
+// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup until it is `available` or `failed`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17182,49 +21101,9 @@ func (c *ClientWithResponses) CreateBackupWithResponse(ctx context.Context, body
 	return ParseCreateBackupResponse(rsp)
 }
 
-// CreateBackupQuoteWithBodyWithResponse Quote a backup
-//
-// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
-func (c *ClientWithResponses) CreateBackupQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupQuoteResponse, error) {
-	rsp, err := c.CreateBackupQuoteWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateBackupQuoteResponse(rsp)
-}
-
-// CreateBackupQuoteWithResponse Quote a backup
-//
-// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's backup offering is selected; the returned line names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/backups/quote (the `CreateBackupQuote` operationId).
-func (c *ClientWithResponses) CreateBackupQuoteWithResponse(ctx context.Context, body CreateBackupQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupQuoteResponse, error) {
-	rsp, err := c.CreateBackupQuote(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateBackupQuoteResponse(rsp)
-}
-
 // DeleteBackupWithResponse Delete a backup
 //
-// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of the backup ends once it is deleted.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17239,7 +21118,7 @@ func (c *ClientWithResponses) DeleteBackupWithResponse(ctx context.Context, back
 
 // GetBackupWithResponse Retrieve a backup
 //
-// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
+// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation progress.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17282,7 +21161,7 @@ func (c *ClientWithResponses) RenameBackupWithResponse(ctx context.Context, back
 //
 // Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be attached until it is `available`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17299,7 +21178,7 @@ func (c *ClientWithResponses) RestoreBackupWithBodyWithResponse(ctx context.Cont
 //
 // Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; track the returned task.
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be attached until it is `available`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17310,6 +21189,36 @@ func (c *ClientWithResponses) RestoreBackupWithResponse(ctx context.Context, bac
 		return nil, err
 	}
 	return ParseRestoreBackupResponse(rsp)
+}
+
+// CreateBackupRestoreQuoteWithBodyWithResponse Quote restoring from a backup
+//
+// Prices what `restore-backup` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/backups/{backupId}/restore/quote (the `CreateBackupRestoreQuote` operationId).
+func (c *ClientWithResponses) CreateBackupRestoreQuoteWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupRestoreQuoteResponse, error) {
+	rsp, err := c.CreateBackupRestoreQuoteWithBody(ctx, backupId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupRestoreQuoteResponse(rsp)
+}
+
+// CreateBackupRestoreQuoteWithResponse Quote restoring from a backup
+//
+// Prices what `restore-backup` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/backups/{backupId}/restore/quote (the `CreateBackupRestoreQuote` operationId).
+func (c *ClientWithResponses) CreateBackupRestoreQuoteWithResponse(ctx context.Context, backupId openapi_types.UUID, body CreateBackupRestoreQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupRestoreQuoteResponse, error) {
+	rsp, err := c.CreateBackupRestoreQuote(ctx, backupId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupRestoreQuoteResponse(rsp)
 }
 
 // ListDiskTypesWithResponse List disk types on sale
@@ -17391,6 +21300,36 @@ func (c *ClientWithResponses) CreateDiskWithResponse(ctx context.Context, body C
 	return ParseCreateDiskResponse(rsp)
 }
 
+// CreateDiskQuoteWithBodyWithResponse Quote creating a disk
+//
+// Prices what `create-disk` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/disks/quote (the `CreateDiskQuote` operationId).
+func (c *ClientWithResponses) CreateDiskQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDiskQuoteResponse, error) {
+	rsp, err := c.CreateDiskQuoteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDiskQuoteResponse(rsp)
+}
+
+// CreateDiskQuoteWithResponse Quote creating a disk
+//
+// Prices what `create-disk` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/disks/quote (the `CreateDiskQuote` operationId).
+func (c *ClientWithResponses) CreateDiskQuoteWithResponse(ctx context.Context, body CreateDiskQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDiskQuoteResponse, error) {
+	rsp, err := c.CreateDiskQuote(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDiskQuoteResponse(rsp)
+}
+
 // DeleteDiskWithResponse Delete a disk
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
@@ -17410,7 +21349,7 @@ func (c *ClientWithResponses) DeleteDiskWithResponse(ctx context.Context, diskId
 
 // GetDiskWithResponse Retrieve a disk
 //
-// Queries the current state of the disk, which makes it slower but more accurate than the list endpoint.
+// Returns the stored state of the disk; it does not query the cloud.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17455,7 +21394,7 @@ func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId
 
 // ResizeDiskWithBodyWithResponse Resize a disk
 //
-// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
+// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the file system inside the instance. If the order is not accepted or the resize fails, the disk keeps its size and the order shows the outcome.
 //
 // **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
@@ -17476,7 +21415,7 @@ func (c *ClientWithResponses) ResizeDiskWithBodyWithResponse(ctx context.Context
 
 // ResizeDiskWithResponse Resize a disk
 //
-// Capacity can only be increased; shrinking is not supported. The resize is not complete when this endpoint returns; track the returned task, then extend the file system inside the instance.
+// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the file system inside the instance. If the order is not accepted or the resize fails, the disk keeps its size and the order shows the outcome.
 //
 // **An attached data disk whose performance scales with its size must be detached before it is resized.** The performance of an attached disk does not change until the disk is detached and attached again, so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity at the performance of the previous size. Detach the disk, resize it, and attach it again.
 //
@@ -17495,13 +21434,43 @@ func (c *ClientWithResponses) ResizeDiskWithResponse(ctx context.Context, diskId
 	return ParseResizeDiskResponse(rsp)
 }
 
+// CreateDiskResizeQuoteWithBodyWithResponse Quote resizing a disk
+//
+// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/disks/{diskId}/resize/quote (the `CreateDiskResizeQuote` operationId).
+func (c *ClientWithResponses) CreateDiskResizeQuoteWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDiskResizeQuoteResponse, error) {
+	rsp, err := c.CreateDiskResizeQuoteWithBody(ctx, diskId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDiskResizeQuoteResponse(rsp)
+}
+
+// CreateDiskResizeQuoteWithResponse Quote resizing a disk
+//
+// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/disks/{diskId}/resize/quote (the `CreateDiskResizeQuote` operationId).
+func (c *ClientWithResponses) CreateDiskResizeQuoteWithResponse(ctx context.Context, diskId openapi_types.UUID, body CreateDiskResizeQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDiskResizeQuoteResponse, error) {
+	rsp, err := c.CreateDiskResizeQuote(ctx, diskId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDiskResizeQuoteResponse(rsp)
+}
+
 // RevertDiskWithBodyWithResponse Revert to a snapshot
 //
 // Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 //
 // Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+// The disk shows the `revert` operation until the revert is complete.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17520,7 +21489,7 @@ func (c *ClientWithResponses) RevertDiskWithBodyWithResponse(ctx context.Context
 //
 // Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+// The disk shows the `revert` operation until the revert is complete.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17550,6 +21519,8 @@ func (c *ClientWithResponses) ListFloatingIpsWithResponse(ctx context.Context, p
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
+// Returns the floating IP as `pending` with its order; `address` is null until the address is allocated after the order is accepted. A requested `address` is not held while pending; if it is no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is refunded.
+//
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
 // Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
@@ -17569,6 +21540,8 @@ func (c *ClientWithResponses) AllocateFloatingIpWithBodyWithResponse(ctx context
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
+// Returns the floating IP as `pending` with its order; `address` is null until the address is allocated after the order is accepted. A requested `address` is not held while pending; if it is no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is refunded.
+//
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
 // Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's `status` is not `available`. `meta.private_network_id` names it.
@@ -17584,9 +21557,39 @@ func (c *ClientWithResponses) AllocateFloatingIpWithResponse(ctx context.Context
 	return ParseAllocateFloatingIpResponse(rsp)
 }
 
+// CreateFloatingIpQuoteWithBodyWithResponse Quote allocating a floating IP
+//
+// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/floating-ips/quote (the `CreateFloatingIpQuote` operationId).
+func (c *ClientWithResponses) CreateFloatingIpQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFloatingIpQuoteResponse, error) {
+	rsp, err := c.CreateFloatingIpQuoteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFloatingIpQuoteResponse(rsp)
+}
+
+// CreateFloatingIpQuoteWithResponse Quote allocating a floating IP
+//
+// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/floating-ips/quote (the `CreateFloatingIpQuote` operationId).
+func (c *ClientWithResponses) CreateFloatingIpQuoteWithResponse(ctx context.Context, body CreateFloatingIpQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFloatingIpQuoteResponse, error) {
+	rsp, err := c.CreateFloatingIpQuote(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFloatingIpQuoteResponse(rsp)
+}
+
 // ReleaseFloatingIpWithResponse Release a floating IP
 //
-// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it is released.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
@@ -17616,7 +21619,7 @@ func (c *ClientWithResponses) GetFloatingIpWithResponse(ctx context.Context, flo
 
 // SetFloatingIpBandwidthWithBodyWithResponse Set the bandwidth limit
 //
-// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
+// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The floating IP shows the `set_bandwidth` operation until the change is applied or its order is canceled, including while the order awaits checkout, so other operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows the outcome.
 //
 // While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
 //
@@ -17633,7 +21636,7 @@ func (c *ClientWithResponses) SetFloatingIpBandwidthWithBodyWithResponse(ctx con
 
 // SetFloatingIpBandwidthWithResponse Set the bandwidth limit
 //
-// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this endpoint returns; track the returned task.
+// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The floating IP shows the `set_bandwidth` operation until the change is applied or its order is canceled, including while the order awaits checkout, so other operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows the outcome.
 //
 // While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not bound is checked when the address is bound to an instance.
 //
@@ -17648,9 +21651,39 @@ func (c *ClientWithResponses) SetFloatingIpBandwidthWithResponse(ctx context.Con
 	return ParseSetFloatingIpBandwidthResponse(rsp)
 }
 
+// CreateFloatingIpBandwidthQuoteWithBodyWithResponse Quote changing the bandwidth limit
+//
+// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote (the `CreateFloatingIpBandwidthQuote` operationId).
+func (c *ClientWithResponses) CreateFloatingIpBandwidthQuoteWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFloatingIpBandwidthQuoteResponse, error) {
+	rsp, err := c.CreateFloatingIpBandwidthQuoteWithBody(ctx, floatingIpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFloatingIpBandwidthQuoteResponse(rsp)
+}
+
+// CreateFloatingIpBandwidthQuoteWithResponse Quote changing the bandwidth limit
+//
+// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote (the `CreateFloatingIpBandwidthQuote` operationId).
+func (c *ClientWithResponses) CreateFloatingIpBandwidthQuoteWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, body CreateFloatingIpBandwidthQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFloatingIpBandwidthQuoteResponse, error) {
+	rsp, err := c.CreateFloatingIpBandwidthQuote(ctx, floatingIpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFloatingIpBandwidthQuoteResponse(rsp)
+}
+
 // UnbindFloatingIpWithResponse Unbind a floating IP
 //
-// The address remains held by the project and simply no longer points at any network interface.
+// The address remains held by the project and simply no longer points at any network interface. The floating IP shows the `unbind` operation until the change is confirmed.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17665,6 +21698,8 @@ func (c *ClientWithResponses) UnbindFloatingIpWithResponse(ctx context.Context, 
 
 // BindFloatingIpWithBodyWithResponse Bind a floating IP to a network interface
 //
+// The floating IP shows the `bind` operation until the binding is confirmed.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
@@ -17677,6 +21712,8 @@ func (c *ClientWithResponses) BindFloatingIpWithBodyWithResponse(ctx context.Con
 }
 
 // BindFloatingIpWithResponse Bind a floating IP to a network interface
+//
+// The floating IP shows the `bind` operation until the binding is confirmed.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17714,9 +21751,9 @@ func (c *ClientWithResponses) ListImagesWithResponse(ctx context.Context, params
 //
 // Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 //
-// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+// **The image reflects the moment the capture started. Later changes to the instance are not included.** The image is returned as `pending` with its order, and the capture starts only once the order is accepted.
 //
-// The capture has two phases, reported by the status of the image:
+// The capture then has two phases, reported by the status of the image:
 //
 // - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 // - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -17725,7 +21762,7 @@ func (c *ClientWithResponses) ListImagesWithResponse(ctx context.Context, params
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows. Obtain a quote with `create-image-quote` first.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17742,9 +21779,9 @@ func (c *ClientWithResponses) CreateImageWithBodyWithResponse(ctx context.Contex
 //
 // Creates a private image of this project from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 //
-// **The image reflects the moment the capture started. Later changes to the instance are not included.**
+// **The image reflects the moment the capture started. Later changes to the instance are not included.** The image is returned as `pending` with its order, and the capture starts only once the order is accepted.
 //
-// The capture has two phases, reported by the status of the image:
+// The capture then has two phases, reported by the status of the image:
 //
 // - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
 // - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
@@ -17753,7 +21790,7 @@ func (c *ClientWithResponses) CreateImageWithBodyWithResponse(ctx context.Contex
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// The image is billed for the storage it occupies, at the private image price of its region. Obtain a price with `create-image-quote` first.
+// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows. Obtain a quote with `create-image-quote` first.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17768,11 +21805,7 @@ func (c *ClientWithResponses) CreateImageWithResponse(ctx context.Context, body 
 
 // CreateImageQuoteWithBodyWithResponse Quote capturing an instance as a private image
 //
-// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+// Prices the capture `create-image` would order for the same instance, without ordering anything; nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. Prices may change, so quote again before final confirmation.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17787,11 +21820,7 @@ func (c *ClientWithResponses) CreateImageQuoteWithBodyWithResponse(ctx context.C
 
 // CreateImageQuoteWithResponse Quote capturing an instance as a private image
 //
-// Prices the capture `create-image` would order for the same instance, without ordering anything. Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the system disk, which is the most the image can occupy. When `price_id` is omitted, a price of the region's private image offering is selected; the returned line names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it is placed, so a quote should be refreshed before a final confirmation is shown.
+// Prices the capture `create-image` would order for the same instance, without ordering anything; nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. Prices may change, so quote again before final confirmation.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17810,7 +21839,7 @@ func (c *ClientWithResponses) CreateImageQuoteWithResponse(ctx context.Context, 
 //
 // Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 //
-// An image whose capture has not finished can be deleted; the capture is aborted.
+// An image whose capture has not finished can be deleted; the capture is aborted. This is the one operation accepted while the `create` operation is in progress.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
 //
@@ -17827,7 +21856,7 @@ func (c *ClientWithResponses) DeleteImageWithResponse(ctx context.Context, image
 
 // GetImageWithResponse Retrieve an image
 //
-// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
+// Returns a public image, or a private image of this project; any other image is reported as not found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure_reason` states why.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17887,7 +21916,7 @@ func (c *ClientWithResponses) ListInstanceTypesWithResponse(ctx context.Context,
 
 // ListInstancesWithResponse List instances
 //
-// Every instance in the project, newest first. This endpoint does not query backend state; for the accurate state of one instance, use the retrieve endpoint.
+// Every instance in the project, newest first, in their stored state.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17902,11 +21931,13 @@ func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, par
 
 // LaunchInstanceWithBodyWithResponse Create instances
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+// Creates a Billing order, including for metered pricing, and returns one `pending` instance per requested instance with the order. `billing` applies to the instance, its system disk and its floating IP alike. A pending instance has no virtual machine, system disk or address, and is not metered.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 //
-// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 //
 // The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 //
@@ -17923,11 +21954,13 @@ func (c *ClientWithResponses) LaunchInstanceWithBodyWithResponse(ctx context.Con
 
 // LaunchInstanceWithResponse Create instances
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+// Creates a Billing order, including for metered pricing, and returns one `pending` instance per requested instance with the order. `billing` applies to the instance, its system disk and its floating IP alike. A pending instance has no virtual machine, system disk or address, and is not metered.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 //
-// A request for several instances is all or nothing: if any instance cannot be created, every instance of that request is released, the order fails, and any payment for it is refunded. Each instance is named after this request with a number appended, and each has its own task.
+// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 //
 // The network is checked before the order is created, and a request it refuses orders and charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names the resource.
 //
@@ -17940,6 +21973,36 @@ func (c *ClientWithResponses) LaunchInstanceWithResponse(ctx context.Context, bo
 		return nil, err
 	}
 	return ParseLaunchInstanceResponse(rsp)
+}
+
+// CreateInstanceQuoteWithBodyWithResponse Quote creating instances
+//
+// Prices what `launch-instance` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/quote (the `CreateInstanceQuote` operationId).
+func (c *ClientWithResponses) CreateInstanceQuoteWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateInstanceQuoteResponse, error) {
+	rsp, err := c.CreateInstanceQuoteWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateInstanceQuoteResponse(rsp)
+}
+
+// CreateInstanceQuoteWithResponse Quote creating instances
+//
+// Prices what `launch-instance` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/quote (the `CreateInstanceQuote` operationId).
+func (c *ClientWithResponses) CreateInstanceQuoteWithResponse(ctx context.Context, body CreateInstanceQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateInstanceQuoteResponse, error) {
+	rsp, err := c.CreateInstanceQuote(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateInstanceQuoteResponse(rsp)
 }
 
 // DeleteInstanceWithResponse Release an instance
@@ -17963,7 +22026,7 @@ func (c *ClientWithResponses) DeleteInstanceWithResponse(ctx context.Context, in
 
 // GetInstanceWithResponse Retrieve an instance
 //
-// Queries the current state of the instance, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
+// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation progress.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18016,7 +22079,7 @@ func (c *ClientWithResponses) RenameInstanceWithResponse(ctx context.Context, in
 //
 // Three conditions must hold; the instance is unreachable otherwise:
 //
-// - it is `running`
+// - it is `active`
 // - a floating IP is bound to it, since this endpoint connects over the public internet
 // - its security group permits inbound TCP 22
 //
@@ -18047,7 +22110,7 @@ func (c *ClientWithResponses) RunInstanceCommandWithBodyWithResponse(ctx context
 //
 // Three conditions must hold; the instance is unreachable otherwise:
 //
-// - it is `running`
+// - it is `active`
 // - a floating IP is bound to it, since this endpoint connects over the public internet
 // - its security group permits inbound TCP 22
 //
@@ -18117,7 +22180,7 @@ func (c *ClientWithResponses) ListInstanceDisksWithResponse(ctx context.Context,
 
 // AttachDiskWithBodyWithResponse Attach a disk
 //
-// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
+// The disk must be in the same region and availability zone as the instance. Returns the disk; the instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18132,7 +22195,7 @@ func (c *ClientWithResponses) AttachDiskWithBodyWithResponse(ctx context.Context
 
 // AttachDiskWithResponse Attach a disk
 //
-// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
+// The disk must be in the same region and availability zone as the instance. Returns the disk; the instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18149,7 +22212,9 @@ func (c *ClientWithResponses) AttachDiskWithResponse(ctx context.Context, instan
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 //
-// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
+// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+//
+// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation until the disk is detached.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18164,7 +22229,7 @@ func (c *ClientWithResponses) DetachDiskWithResponse(ctx context.Context, instan
 
 // AttachInstanceFloatingIpWithBodyWithResponse Bind a floating IP to an instance
 //
-// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+// Changes the public IP binding on the instance's primary network interface. The instance shows the `bind_floating_ip` operation until the binding is confirmed.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18179,7 +22244,7 @@ func (c *ClientWithResponses) AttachInstanceFloatingIpWithBodyWithResponse(ctx c
 
 // AttachInstanceFloatingIpWithResponse Bind a floating IP to an instance
 //
-// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+// Changes the public IP binding on the instance's primary network interface. The instance shows the `bind_floating_ip` operation until the binding is confirmed.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18194,7 +22259,7 @@ func (c *ClientWithResponses) AttachInstanceFloatingIpWithResponse(ctx context.C
 
 // DetachInstanceFloatingIpWithResponse Unbind the floating IP of an instance
 //
-// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
+// Changes the public IP binding on the instance's primary network interface. The instance shows the `unbind_floating_ip` operation until the change is confirmed.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18336,6 +22401,8 @@ func (c *ClientWithResponses) ListInstancePortsWithResponse(ctx context.Context,
 
 // AttachPortWithBodyWithResponse Attach a network interface
 //
+// Returns the network interface; the instance shows the `attach_port` operation and the interface the `attach` operation until the attachment is confirmed.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
@@ -18348,6 +22415,8 @@ func (c *ClientWithResponses) AttachPortWithBodyWithResponse(ctx context.Context
 }
 
 // AttachPortWithResponse Attach a network interface
+//
+// Returns the network interface; the instance shows the `attach_port` operation and the interface the `attach` operation until the attachment is confirmed.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18363,6 +22432,8 @@ func (c *ClientWithResponses) AttachPortWithResponse(ctx context.Context, instan
 // DetachPortWithResponse Detach a network interface
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
+//
+// Returns the network interface; the instance shows the `detach_port` operation and the interface the `detach` operation until it is detached.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18381,11 +22452,11 @@ func (c *ClientWithResponses) DetachPortWithResponse(ctx context.Context, instan
 //
 // A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
 //
-// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient state, and a second soft reboot is refused as well.
+// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft reboot the instance never carried out. Any other request for an operation, including a second soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 //
 // An instance suspended by the platform must be unsuspended first.
 //
-// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+// The instance shows the `reboot` operation until the reboot has finished.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18404,11 +22475,11 @@ func (c *ClientWithResponses) RebootInstanceWithBodyWithResponse(ctx context.Con
 //
 // A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
 //
-// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient state, and a second soft reboot is refused as well.
+// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft reboot the instance never carried out. Any other request for an operation, including a second soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 //
 // An instance suspended by the platform must be unsuspended first.
 //
-// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+// The instance shows the `reboot` operation until the reboot has finished.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18427,6 +22498,8 @@ func (c *ClientWithResponses) RebootInstanceWithResponse(ctx context.Context, in
 //
 // The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
+// The instance shows the `rebuild` operation until the rebuild has finished.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -18444,6 +22517,8 @@ func (c *ClientWithResponses) RebuildInstanceWithBodyWithResponse(ctx context.Co
 //
 // The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
+// The instance shows the `rebuild` operation until the rebuild has finished.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -18457,9 +22532,9 @@ func (c *ClientWithResponses) RebuildInstanceWithResponse(ctx context.Context, i
 
 // ResizeInstanceWithBodyWithResponse Resize an instance
 //
-// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+// Creates a Billing change order, including for metered pricing, and returns the instance with the order. The instance keeps its billing mode and period, priced with the target type's matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
-// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+// The instance shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18474,9 +22549,9 @@ func (c *ClientWithResponses) ResizeInstanceWithBodyWithResponse(ctx context.Con
 
 // ResizeInstanceWithResponse Resize an instance
 //
-// Creates a Billing change order, including for metered pricing. The price must belong to the Billing Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is applied after the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
+// Creates a Billing change order, including for metered pricing, and returns the instance with the order. The instance keeps its billing mode and period, priced with the target type's matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
-// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
+// The instance shows the `resize` operation until the resize is applied or its order is canceled, including while the order awaits checkout, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A completed resize is final and cannot be reverted; to return to the previous type, submit another resize.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18489,9 +22564,39 @@ func (c *ClientWithResponses) ResizeInstanceWithResponse(ctx context.Context, in
 	return ParseResizeInstanceResponse(rsp)
 }
 
+// CreateInstanceResizeQuoteWithBodyWithResponse Quote resizing an instance
+//
+// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/resize/quote (the `CreateInstanceResizeQuote` operationId).
+func (c *ClientWithResponses) CreateInstanceResizeQuoteWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateInstanceResizeQuoteResponse, error) {
+	rsp, err := c.CreateInstanceResizeQuoteWithBody(ctx, instanceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateInstanceResizeQuoteResponse(rsp)
+}
+
+// CreateInstanceResizeQuoteWithResponse Quote resizing an instance
+//
+// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A change that raises the price has the charge for the rest of the paid period as `total`; one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`. A request the change would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/resize/quote (the `CreateInstanceResizeQuote` operationId).
+func (c *ClientWithResponses) CreateInstanceResizeQuoteWithResponse(ctx context.Context, instanceId openapi_types.UUID, body CreateInstanceResizeQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateInstanceResizeQuoteResponse, error) {
+	rsp, err := c.CreateInstanceResizeQuote(ctx, instanceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateInstanceResizeQuoteResponse(rsp)
+}
+
 // StartInstanceWithBodyWithResponse Start an instance
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is running or the start has failed.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18506,7 +22611,7 @@ func (c *ClientWithResponses) StartInstanceWithBodyWithResponse(ctx context.Cont
 
 // StartInstanceWithResponse Start an instance
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is running or the start has failed.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18521,7 +22626,7 @@ func (c *ClientWithResponses) StartInstanceWithResponse(ctx context.Context, ins
 
 // StopInstanceWithBodyWithResponse Stop an instance
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the `stop` operation until it is stopped or the stop has failed.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18536,7 +22641,7 @@ func (c *ClientWithResponses) StopInstanceWithBodyWithResponse(ctx context.Conte
 
 // StopInstanceWithResponse Stop an instance
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to determine completion.
+// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the `stop` operation until it is stopped or the stop has failed.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19037,6 +23142,265 @@ func (c *ClientWithResponses) ListAvailabilityZonesWithResponse(ctx context.Cont
 	return ParseListAvailabilityZonesResponse(rsp)
 }
 
+// ListBackupCapacityPacksWithResponse List backup capacity packs
+//
+// The capacity packs of the authenticated project in this region, newest first, including ended ones.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/regions/{regionId}/backup-capacity-packs (the `ListBackupCapacityPacks` operationId).
+func (c *ClientWithResponses) ListBackupCapacityPacksWithResponse(ctx context.Context, regionId openapi_types.UUID, params *ListBackupCapacityPacksParams, reqEditors ...RequestEditorFn) (*ListBackupCapacityPacksResponse, error) {
+	rsp, err := c.ListBackupCapacityPacks(ctx, regionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListBackupCapacityPacksResponse(rsp)
+}
+
+// CreateBackupCapacityPackWithBodyWithResponse Buy a backup capacity pack
+//
+// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or year: `billing` must be prepaid with a period, as offered in the backup service's `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the total `capacity_gib` of the packs active in the region is covered, and Compute meters only the excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing takes its order and payment and handles its renewal and cancellation through the pack's subscription.
+//
+// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs (the `CreateBackupCapacityPack` operationId).
+func (c *ClientWithResponses) CreateBackupCapacityPackWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupCapacityPackResponse, error) {
+	rsp, err := c.CreateBackupCapacityPackWithBody(ctx, regionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupCapacityPackResponse(rsp)
+}
+
+// CreateBackupCapacityPackWithResponse Buy a backup capacity pack
+//
+// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or year: `billing` must be prepaid with a period, as offered in the backup service's `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the total `capacity_gib` of the packs active in the region is covered, and Compute meters only the excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing takes its order and payment and handles its renewal and cancellation through the pack's subscription.
+//
+// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs (the `CreateBackupCapacityPack` operationId).
+func (c *ClientWithResponses) CreateBackupCapacityPackWithResponse(ctx context.Context, regionId openapi_types.UUID, body CreateBackupCapacityPackJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupCapacityPackResponse, error) {
+	rsp, err := c.CreateBackupCapacityPack(ctx, regionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupCapacityPackResponse(rsp)
+}
+
+// CreateBackupCapacityPackQuoteWithBodyWithResponse Quote buying a backup capacity pack
+//
+// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs/quote (the `CreateBackupCapacityPackQuote` operationId).
+func (c *ClientWithResponses) CreateBackupCapacityPackQuoteWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupCapacityPackQuoteResponse, error) {
+	rsp, err := c.CreateBackupCapacityPackQuoteWithBody(ctx, regionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupCapacityPackQuoteResponse(rsp)
+}
+
+// CreateBackupCapacityPackQuoteWithResponse Quote buying a backup capacity pack
+//
+// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-capacity-packs/quote (the `CreateBackupCapacityPackQuote` operationId).
+func (c *ClientWithResponses) CreateBackupCapacityPackQuoteWithResponse(ctx context.Context, regionId openapi_types.UUID, body CreateBackupCapacityPackQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupCapacityPackQuoteResponse, error) {
+	rsp, err := c.CreateBackupCapacityPackQuote(ctx, regionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupCapacityPackQuoteResponse(rsp)
+}
+
+// GetBackupServiceWithResponse Get the backup service of a region
+//
+// The backup service of the authenticated project in this region. Backups can be created only while it is `active`. Each hour, Compute covers retained backup capacity up to the total `capacity_gib` of the capacity packs active in the region and meters only the excess on this service's subscription, per GiB-hour.
+//
+// Canceling the service's subscription through Billing is refused while any backup is retained in the region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment deletes its backups.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/regions/{regionId}/backup-service (the `GetBackupService` operationId).
+func (c *ClientWithResponses) GetBackupServiceWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetBackupServiceResponse, error) {
+	rsp, err := c.GetBackupService(ctx, regionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBackupServiceResponse(rsp)
+}
+
+// CreateBackupServiceWithBodyWithResponse Activate the backup service in a region
+//
+// Purchases the backup service for this project and region. The service itself has no charge; backups are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted.
+//
+// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or suspended.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-service (the `CreateBackupService` operationId).
+func (c *ClientWithResponses) CreateBackupServiceWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupServiceResponse, error) {
+	rsp, err := c.CreateBackupServiceWithBody(ctx, regionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupServiceResponse(rsp)
+}
+
+// CreateBackupServiceWithResponse Activate the backup service in a region
+//
+// Purchases the backup service for this project and region. The service itself has no charge; backups are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service as `pending` with its order; it becomes `active` once the order is accepted.
+//
+// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or suspended.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-service (the `CreateBackupService` operationId).
+func (c *ClientWithResponses) CreateBackupServiceWithResponse(ctx context.Context, regionId openapi_types.UUID, body CreateBackupServiceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupServiceResponse, error) {
+	rsp, err := c.CreateBackupService(ctx, regionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupServiceResponse(rsp)
+}
+
+// CreateBackupServiceQuoteWithResponse Quote activating the backup service
+//
+// Prices what `create-backup-service` would order for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/backup-service/quote (the `CreateBackupServiceQuote` operationId).
+func (c *ClientWithResponses) CreateBackupServiceQuoteWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CreateBackupServiceQuoteResponse, error) {
+	rsp, err := c.CreateBackupServiceQuote(ctx, regionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBackupServiceQuoteResponse(rsp)
+}
+
+// GetSnapshotQuotaWithResponse Get regional snapshot quota
+//
+// The snapshot count quota for the authenticated project in this region. Counts simultaneous
+// snapshot holdings, not lifetime create calls or storage bytes. Without an active purchase,
+// limit and available are zero; existing holdings, if any, still appear in used.
+//
+// pending and provisioning creations reserve a slot. Snapshots being deleted or whose cleanup
+// is uncertain retain their slots until absence or deletion is confirmed. available is
+// max(limit - used, 0) while active, and zero when creation is not permitted; additional
+// creation is refused while the quota is inactive, suspended or exhausted.
+//
+// Canceling the quota's subscription through Billing is refused while any snapshot exists in
+// the region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for
+// non-payment deletes its snapshots, as for other reclaimed resources.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/regions/{regionId}/snapshot-quota (the `GetSnapshotQuota` operationId).
+func (c *ClientWithResponses) GetSnapshotQuotaWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSnapshotQuotaResponse, error) {
+	rsp, err := c.GetSnapshotQuota(ctx, regionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSnapshotQuotaResponse(rsp)
+}
+
+// SetSnapshotQuotaWithBodyWithResponse Set regional snapshot quota
+//
+// Purchases or changes the maximum number of snapshots this project may hold in this region.
+// limit is the target total, not an additional number of slots or a consumable create allowance.
+// billing chooses one of the quota's pricing options; a change of an existing purchase keeps its
+// billing mode and period, and billing must name that option. The purchased quantity is this count.
+//
+// Returns the quota with the order. pending_limit records the target while the current limit stays
+// in force; the new limit applies once the order is accepted and the quota is activated. Snapshots
+// create no further orders or subscriptions, and deleting one frees a slot without refunding the
+// quota purchase.
+//
+// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+// identical target and billing choice returns its existing purchase without charging again; renewing its
+// term is a separate Billing renewal operation. A requested limit below used is refused with
+// 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/regions/{regionId}/snapshot-quota (the `SetSnapshotQuota` operationId).
+func (c *ClientWithResponses) SetSnapshotQuotaWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSnapshotQuotaResponse, error) {
+	rsp, err := c.SetSnapshotQuotaWithBody(ctx, regionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetSnapshotQuotaResponse(rsp)
+}
+
+// SetSnapshotQuotaWithResponse Set regional snapshot quota
+//
+// Purchases or changes the maximum number of snapshots this project may hold in this region.
+// limit is the target total, not an additional number of slots or a consumable create allowance.
+// billing chooses one of the quota's pricing options; a change of an existing purchase keeps its
+// billing mode and period, and billing must name that option. The purchased quantity is this count.
+//
+// Returns the quota with the order. pending_limit records the target while the current limit stays
+// in force; the new limit applies once the order is accepted and the quota is activated. Snapshots
+// create no further orders or subscriptions, and deleting one frees a slot without refunding the
+// quota purchase.
+//
+// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+// identical target and billing choice returns its existing purchase without charging again; renewing its
+// term is a separate Billing renewal operation. A requested limit below used is refused with
+// 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/regions/{regionId}/snapshot-quota (the `SetSnapshotQuota` operationId).
+func (c *ClientWithResponses) SetSnapshotQuotaWithResponse(ctx context.Context, regionId openapi_types.UUID, body SetSnapshotQuotaJSONRequestBody, reqEditors ...RequestEditorFn) (*SetSnapshotQuotaResponse, error) {
+	rsp, err := c.SetSnapshotQuota(ctx, regionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetSnapshotQuotaResponse(rsp)
+}
+
+// CreateSnapshotQuotaQuoteWithBodyWithResponse Quote setting the regional snapshot quota
+//
+// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now, for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/snapshot-quota/quote (the `CreateSnapshotQuotaQuote` operationId).
+func (c *ClientWithResponses) CreateSnapshotQuotaQuoteWithBodyWithResponse(ctx context.Context, regionId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSnapshotQuotaQuoteResponse, error) {
+	rsp, err := c.CreateSnapshotQuotaQuoteWithBody(ctx, regionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSnapshotQuotaQuoteResponse(rsp)
+}
+
+// CreateSnapshotQuotaQuoteWithResponse Quote setting the regional snapshot quota
+//
+// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now, for the same request, without ordering or creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote again before final confirmation.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/regions/{regionId}/snapshot-quota/quote (the `CreateSnapshotQuotaQuote` operationId).
+func (c *ClientWithResponses) CreateSnapshotQuotaQuoteWithResponse(ctx context.Context, regionId openapi_types.UUID, body CreateSnapshotQuotaQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotQuotaQuoteResponse, error) {
+	rsp, err := c.CreateSnapshotQuotaQuote(ctx, regionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSnapshotQuotaQuoteResponse(rsp)
+}
+
 // ListSecurityGroupsWithResponse List security groups
 //
 // Returns a wrapper object for the known response body format(s).
@@ -19213,6 +23577,10 @@ func (c *ClientWithResponses) ListSnapshotsWithResponse(ctx context.Context, par
 //
 // **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
+// Snapshot slots are purchased separately for this project and the source disk's region. This operation reserves one available slot and returns the snapshot as `pending`; it places no order and charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+//
+// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot data has been confirmed absent or removed.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -19230,6 +23598,10 @@ func (c *ClientWithResponses) CreateSnapshotWithBodyWithResponse(ctx context.Con
 //
 // **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
+// Snapshot slots are purchased separately for this project and the source disk's region. This operation reserves one available slot and returns the snapshot as `pending`; it places no order and charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+//
+// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot data has been confirmed absent or removed.
+//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
@@ -19243,7 +23615,7 @@ func (c *ClientWithResponses) CreateSnapshotWithResponse(ctx context.Context, bo
 
 // DeleteSnapshotWithResponse Delete a snapshot
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+// Deletes this snapshot without canceling the project's snapshot quota purchase. A snapshot has no individual Billing subscription. Its slot stays occupied until the deletion is confirmed.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -19295,19 +23667,6 @@ func (c *ClientWithResponses) RenameSnapshotWithResponse(ctx context.Context, sn
 	return ParseRenameSnapshotResponse(rsp)
 }
 
-// GetTaskWithResponse Get a requested action
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/tasks/{taskId} (the `GetTask` operationId).
-func (c *ClientWithResponses) GetTaskWithResponse(ctx context.Context, taskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetTaskResponse, error) {
-	rsp, err := c.GetTask(ctx, taskId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetTaskResponse(rsp)
-}
-
 // ParseListBackupsResponse parses an HTTP response from a ListBackupsWithResponse call
 func ParseListBackupsResponse(rsp *http.Response) (*ListBackupsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -19355,45 +23714,19 @@ func ParseCreateBackupResponse(rsp *http.Response) (*CreateBackupResponse, error
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PurchaseResult
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest BackupResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON202 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateBackupQuoteResponse parses an HTTP response from a CreateBackupQuoteWithResponse call
-func ParseCreateBackupQuoteResponse(rsp *http.Response) (*CreateBackupQuoteResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateBackupQuoteResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PurchaseQuote
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19422,14 +23755,14 @@ func ParseDeleteBackupResponse(rsp *http.Response) (*DeleteBackupResponse, error
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest BackupResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
+		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -19527,12 +23860,59 @@ func ParseRestoreBackupResponse(rsp *http.Response) (*RestoreBackupResponse, err
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PurchaseResult
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest CreateDiskResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateBackupRestoreQuoteResponse parses an HTTP response from a CreateBackupRestoreQuoteWithResponse call
+func ParseCreateBackupRestoreQuoteResponse(rsp *http.Response) (*CreateBackupRestoreQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateBackupRestoreQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19659,12 +24039,59 @@ func ParseCreateDiskResponse(rsp *http.Response) (*CreateDiskResponse, error) {
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PurchaseResult
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest CreateDiskResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateDiskQuoteResponse parses an HTTP response from a CreateDiskQuoteWithResponse call
+func ParseCreateDiskQuoteResponse(rsp *http.Response) (*CreateDiskQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateDiskQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19693,14 +24120,14 @@ func ParseDeleteDiskResponse(rsp *http.Response) (*DeleteDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest DiskResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
+		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -19798,12 +24225,59 @@ func ParseResizeDiskResponse(rsp *http.Response) (*ResizeDiskResponse, error) {
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest ResizeDiskResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateDiskResizeQuoteResponse parses an HTTP response from a CreateDiskResizeQuoteWithResponse call
+func ParseCreateDiskResizeQuoteResponse(rsp *http.Response) (*CreateDiskResizeQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateDiskResizeQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PurchaseResult
+		var dest Quote
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19832,11 +24306,18 @@ func ParseRevertDiskResponse(rsp *http.Response) (*RevertDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest DiskResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19897,12 +24378,59 @@ func ParseAllocateFloatingIpResponse(rsp *http.Response) (*AllocateFloatingIpRes
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PurchaseResult
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AllocateFloatingIPResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateFloatingIpQuoteResponse parses an HTTP response from a CreateFloatingIpQuoteWithResponse call
+func ParseCreateFloatingIpQuoteResponse(rsp *http.Response) (*CreateFloatingIpQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateFloatingIpQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19931,14 +24459,14 @@ func ParseReleaseFloatingIpResponse(rsp *http.Response) (*ReleaseFloatingIpRespo
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest FloatingIPResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
+		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20003,12 +24531,59 @@ func ParseSetFloatingIpBandwidthResponse(rsp *http.Response) (*SetFloatingIpBand
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SetFloatingIPBandwidthResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateFloatingIpBandwidthQuoteResponse parses an HTTP response from a CreateFloatingIpBandwidthQuoteWithResponse call
+func ParseCreateFloatingIpBandwidthQuoteResponse(rsp *http.Response) (*CreateFloatingIpBandwidthQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateFloatingIpBandwidthQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PurchaseResult
+		var dest Quote
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20036,12 +24611,19 @@ func ParseUnbindFloatingIpResponse(rsp *http.Response) (*UnbindFloatingIpRespons
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest FloatingIPResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20069,12 +24651,19 @@ func ParseBindFloatingIpResponse(rsp *http.Response) (*BindFloatingIpResponse, e
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest FloatingIPResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20135,12 +24724,19 @@ func ParseCreateImageResponse(rsp *http.Response) (*CreateImageResponse, error) 
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PurchaseResult
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest CreateImageResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20169,11 +24765,18 @@ func ParseCreateImageQuoteResponse(rsp *http.Response) (*CreateImageQuoteRespons
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PurchaseQuote
+		var dest Quote
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20202,14 +24805,14 @@ func ParseDeleteImageResponse(rsp *http.Response) (*DeleteImageResponse, error) 
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest ImageResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
+		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20380,6 +24983,53 @@ func ParseLaunchInstanceResponse(rsp *http.Response) (*LaunchInstanceResponse, e
 		}
 		response.JSON202 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateInstanceQuoteResponse parses an HTTP response from a CreateInstanceQuoteWithResponse call
+func ParseCreateInstanceQuoteResponse(rsp *http.Response) (*CreateInstanceQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateInstanceQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -20407,14 +25057,14 @@ func ParseDeleteInstanceResponse(rsp *http.Response) (*DeleteInstanceResponse, e
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest InstanceResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
+		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -20645,11 +25295,18 @@ func ParseAttachDiskResponse(rsp *http.Response) (*AttachDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest DiskResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20678,11 +25335,18 @@ func ParseDetachDiskResponse(rsp *http.Response) (*DetachDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest DiskResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20710,12 +25374,19 @@ func ParseAttachInstanceFloatingIpResponse(rsp *http.Response) (*AttachInstanceF
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest FloatingIPResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20743,12 +25414,19 @@ func ParseDetachInstanceFloatingIpResponse(rsp *http.Response) (*DetachInstanceF
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest FloatingIPResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20849,6 +25527,13 @@ func ParseResetInstancePasswordResponse(rsp *http.Response) (*ResetInstancePassw
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -20909,11 +25594,18 @@ func ParseAttachPortResponse(rsp *http.Response) (*AttachPortResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest PortResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20942,11 +25634,18 @@ func ParseDetachPortResponse(rsp *http.Response) (*DetachPortResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest PortResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -20975,11 +25674,18 @@ func ParseRebootInstanceResponse(rsp *http.Response) (*RebootInstanceResponse, e
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest InstanceResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21007,12 +25713,19 @@ func ParseRebuildInstanceResponse(rsp *http.Response) (*RebuildInstanceResponse,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest RebuildInstanceResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21041,11 +25754,58 @@ func ParseResizeInstanceResponse(rsp *http.Response) (*ResizeInstanceResponse, e
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest PurchaseResult
+		var dest ResizeInstanceResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateInstanceResizeQuoteResponse parses an HTTP response from a CreateInstanceResizeQuoteWithResponse call
+func ParseCreateInstanceResizeQuoteResponse(rsp *http.Response) (*CreateInstanceResizeQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateInstanceResizeQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21074,11 +25834,18 @@ func ParseStartInstanceResponse(rsp *http.Response) (*StartInstanceResponse, err
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest InstanceResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21107,11 +25874,18 @@ func ParseStopInstanceResponse(rsp *http.Response) (*StopInstanceResponse, error
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest InstanceResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21278,6 +26052,13 @@ func ParseDeletePeeringResponse(rsp *http.Response) (*DeletePeeringResponse, err
 		}
 		response.JSON202 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -21343,6 +26124,13 @@ func ParseAcceptPeeringResponse(rsp *http.Response) (*AcceptPeeringResponse, err
 			return nil, err
 		}
 		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21436,12 +26224,12 @@ func ParseCreatePortResponse(rsp *http.Response) (*CreatePortResponse, error) {
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest PortResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21469,8 +26257,19 @@ func ParseDeletePortResponse(rsp *http.Response) (*DeletePortResponse, error) {
 	}
 
 	switch {
-	case rsp.StatusCode == 204:
-		break // No content-type
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest PortResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21531,12 +26330,12 @@ func ParseCreatePrivateNetworkResponse(rsp *http.Response) (*CreatePrivateNetwor
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest PrivateNetworkResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21564,8 +26363,19 @@ func ParseDeletePrivateNetworkResponse(rsp *http.Response) (*DeletePrivateNetwor
 	}
 
 	switch {
-	case rsp.StatusCode == 204:
-		break // No content-type
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest PrivateNetworkResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21659,8 +26469,19 @@ func ParseDisablePrivateNetworkIpv6Response(rsp *http.Response) (*DisablePrivate
 	}
 
 	switch {
-	case rsp.StatusCode == 204:
-		break // No content-type
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest IPv6ResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -21721,12 +26542,19 @@ func ParseEnablePrivateNetworkIpv6Response(rsp *http.Response) (*EnablePrivateNe
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
 		var dest IPv6ResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON200 = &dest
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -22016,6 +26844,345 @@ func ParseListAvailabilityZonesResponse(rsp *http.Response) (*ListAvailabilityZo
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListBackupCapacityPacksResponse parses an HTTP response from a ListBackupCapacityPacksWithResponse call
+func ParseListBackupCapacityPacksResponse(rsp *http.Response) (*ListBackupCapacityPacksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListBackupCapacityPacksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BackupCapacityPackListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateBackupCapacityPackResponse parses an HTTP response from a CreateBackupCapacityPackWithResponse call
+func ParseCreateBackupCapacityPackResponse(rsp *http.Response) (*CreateBackupCapacityPackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateBackupCapacityPackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest CreateBackupCapacityPackResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateBackupCapacityPackQuoteResponse parses an HTTP response from a CreateBackupCapacityPackQuoteWithResponse call
+func ParseCreateBackupCapacityPackQuoteResponse(rsp *http.Response) (*CreateBackupCapacityPackQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateBackupCapacityPackQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBackupServiceResponse parses an HTTP response from a GetBackupServiceWithResponse call
+func ParseGetBackupServiceResponse(rsp *http.Response) (*GetBackupServiceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBackupServiceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BackupService
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateBackupServiceResponse parses an HTTP response from a CreateBackupServiceWithResponse call
+func ParseCreateBackupServiceResponse(rsp *http.Response) (*CreateBackupServiceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateBackupServiceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest CreateBackupServiceResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateBackupServiceQuoteResponse parses an HTTP response from a CreateBackupServiceQuoteWithResponse call
+func ParseCreateBackupServiceQuoteResponse(rsp *http.Response) (*CreateBackupServiceQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateBackupServiceQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSnapshotQuotaResponse parses an HTTP response from a GetSnapshotQuotaWithResponse call
+func ParseGetSnapshotQuotaResponse(rsp *http.Response) (*GetSnapshotQuotaResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSnapshotQuotaResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SnapshotQuota
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetSnapshotQuotaResponse parses an HTTP response from a SetSnapshotQuotaWithResponse call
+func ParseSetSnapshotQuotaResponse(rsp *http.Response) (*SetSnapshotQuotaResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetSnapshotQuotaResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SetSnapshotQuotaResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateSnapshotQuotaQuoteResponse parses an HTTP response from a CreateSnapshotQuotaQuoteWithResponse call
+func ParseCreateSnapshotQuotaQuoteResponse(rsp *http.Response) (*CreateSnapshotQuotaQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSnapshotQuotaQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -22332,12 +27499,12 @@ func ParseCreateSnapshotResponse(rsp *http.Response) (*CreateSnapshotResponse, e
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest PurchaseResult
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SnapshotResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON201 = &dest
+		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -22366,14 +27533,14 @@ func ParseDeleteSnapshotResponse(rsp *http.Response) (*DeleteSnapshotResponse, e
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+		var dest SnapshotResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Error
+		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -22440,39 +27607,6 @@ func ParseRenameSnapshotResponse(rsp *http.Response) (*RenameSnapshotResponse, e
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest SnapshotResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetTaskResponse parses an HTTP response from a GetTaskWithResponse call
-func ParseGetTaskResponse(rsp *http.Response) (*GetTaskResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetTaskResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Task
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

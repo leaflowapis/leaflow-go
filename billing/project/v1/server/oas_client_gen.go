@@ -59,7 +59,7 @@ type Invoker interface {
 	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//    different times;
 	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//    (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 	//    progress;
 	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -107,7 +107,7 @@ type Invoker interface {
 	// subscription to be renewed or canceled does not belong to this project.
 	//
 	// POST /api/v1/projects/{projectId}/quotes
-	CreateProjectQuote(ctx context.Context, request QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
+	CreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
 	// GetProjectBillingAccount invokes get-project-billing-account operation.
 	//
 	// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
@@ -289,7 +289,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -466,12 +466,12 @@ func (c *Client) sendCreateProjectCancellation(ctx context.Context, request *Can
 // subscription to be renewed or canceled does not belong to this project.
 //
 // POST /api/v1/projects/{projectId}/quotes
-func (c *Client) CreateProjectQuote(ctx context.Context, request QuoteRequest, params CreateProjectQuoteParams) (*Quote, error) {
+func (c *Client) CreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error) {
 	res, err := c.sendCreateProjectQuote(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendCreateProjectQuote(ctx context.Context, request QuoteRequest, params CreateProjectQuoteParams) (res *Quote, err error) {
+func (c *Client) sendCreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (res *Quote, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-project-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),

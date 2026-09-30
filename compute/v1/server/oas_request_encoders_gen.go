@@ -94,8 +94,50 @@ func encodeCreateBackupRequest(
 	return nil
 }
 
-func encodeCreateBackupQuoteRequest(
-	req *CreateBackupQuoteRequestBody,
+func encodeCreateBackupCapacityPackRequest(
+	req *CreateBackupCapacityPackRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateBackupCapacityPackQuoteRequest(
+	req *CreateBackupCapacityPackQuoteRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateBackupRestoreQuoteRequest(
+	req *RestoreBackupQuoteRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateBackupServiceRequest(
+	req *CreateBackupServiceRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -110,6 +152,62 @@ func encodeCreateBackupQuoteRequest(
 
 func encodeCreateDiskRequest(
 	req *CreateDiskRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateDiskQuoteRequest(
+	req *CreateDiskQuoteRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateDiskResizeQuoteRequest(
+	req *ResizeDiskQuoteRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateFloatingIPBandwidthQuoteRequest(
+	req *SetFloatingIPBandwidthQuoteRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateFloatingIPQuoteRequest(
+	req *AllocateFloatingIPQuoteRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -138,6 +236,34 @@ func encodeCreateImageRequest(
 
 func encodeCreateImageQuoteRequest(
 	req *CreateImageQuoteRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateInstanceQuoteRequest(
+	req *LaunchInstanceQuoteRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateInstanceResizeQuoteRequest(
+	req *ResizeInstanceQuoteRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -236,6 +362,20 @@ func encodeCreateSecurityGroupRuleRequest(
 
 func encodeCreateSnapshotRequest(
 	req *CreateSnapshotRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateSnapshotQuotaQuoteRequest(
+	req *SetSnapshotQuotaQuoteRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -487,7 +627,7 @@ func encodeRunInstanceCommandRequest(
 }
 
 func encodeSetFloatingIPBandwidthRequest(
-	req *SetBandwidthRequestBody,
+	req *SetFloatingIPBandwidthRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -516,6 +656,20 @@ func encodeSetInstanceLabelsRequest(
 
 func encodeSetInstanceNotesRequest(
 	req *SetInstanceNotesRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSetSnapshotQuotaRequest(
+	req *SetSnapshotQuotaRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

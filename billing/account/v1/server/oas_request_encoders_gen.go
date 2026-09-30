@@ -24,26 +24,6 @@ func encodeCheckoutOrderRequest(
 	return nil
 }
 
-func encodeCollectInvoicePaymentRequest(
-	req OptCollectInvoicePaymentRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	if !req.Set {
-		// Keep request with empty body if value is not set.
-		return nil
-	}
-	e := new(jx.Encoder)
-	{
-		if req.Set {
-			req.Encode(e)
-		}
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeCreateBillingAccountRequest(
 	req *BillingAccountCreate,
 	r *http.Request,
@@ -87,7 +67,7 @@ func encodeCreatePaymentMethodSetupRequest(
 }
 
 func encodeCreateQuoteRequest(
-	req QuoteRequest,
+	req *QuoteRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -128,6 +108,26 @@ func encodeCreateTopUpRequest(
 	return nil
 }
 
+func encodePayInvoiceRequest(
+	req OptPayInvoiceRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	if !req.Set {
+		// Keep request with empty body if value is not set.
+		return nil
+	}
+	e := new(jx.Encoder)
+	{
+		if req.Set {
+			req.Encode(e)
+		}
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodePayTogetherRequest(
 	req *PayTogetherRequest,
 	r *http.Request,
@@ -144,20 +144,6 @@ func encodePayTogetherRequest(
 
 func encodePreviewPayTogetherRequest(
 	req *PayTogetherRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodePreviewPromotionCodeRequest(
-	req *PromotionCodePreviewRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

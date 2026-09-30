@@ -19,6 +19,7 @@ import (
 
 var regexMap = map[string]ogenregex.Regexp{
 	"^[a-z][a-z0-9]*(-[a-z0-9]+)*$": ogenregex.MustCompile("^[a-z][a-z0-9]*(-[a-z0-9]+)*$"),
+	"^\\d+(\\.\\d{1,10})?$":         ogenregex.MustCompile("^\\d+(\\.\\d{1,10})?$"),
 }
 var (
 	// Allocate option closure once.

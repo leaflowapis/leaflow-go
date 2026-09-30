@@ -278,8 +278,9 @@ type ObjectIdentity struct {
 
 // Plan defines model for Plan.
 type Plan struct {
+	// Active False once archived. An archived plan cannot be bought until it is active again.
+	Active      bool               `json:"active"`
 	Description *string            `json:"description,omitempty"`
-	Enabled     bool               `json:"enabled"`
 	Features    []PlanFeature      `json:"features"`
 	Id          openapi_types.UUID `json:"id"`
 	LookupKey   *string            `json:"lookup_key,omitempty"`
@@ -307,11 +308,13 @@ type PlanList struct {
 
 // Price defines model for Price.
 type Price struct {
+	// Active False once archived. An archived price cannot be bought until it is active again.
+	Active bool `json:"active"`
+
 	// BillingScheme How the amount is arrived at. `rated` means the rate depends on attributes such as
 	// region or machine type, and is looked up on a price list.
 	BillingScheme PriceBillingScheme `json:"billing_scheme"`
 	Currency      string             `json:"currency"`
-	Enabled       *bool              `json:"enabled,omitempty"`
 	Id            openapi_types.UUID `json:"id"`
 	Interval      PriceInterval      `json:"interval"`
 
@@ -347,7 +350,16 @@ type Price struct {
 	// RateCardId For `rated` prices, the price list the rates are read from.
 	RateCardId *openapi_types.UUID `json:"rate_card_id,omitempty"`
 
-	// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+	// RefundPolicy none refunds nothing. prorated refunds the amount paid for the current period minus the value of
+	// the time used, never below zero and never more than what remains unrefunded. The time used runs
+	// from the period start to the effective cancellation time and is valued at the plan's
+	// shorter-period prices in the same currency, frozen at purchase as the order item's
+	// refund_monthly_amount and refund_hourly_amount: each full calendar month at the one-month prepaid
+	// price, the remainder at the postpaid hourly price or, without one, at the one-month price by the
+	// second. When the plan has no prepaid period shorter than the one bought, the time used is valued
+	// at the price paid, pro rata by the second. Discounts are not refunded, as they were never paid,
+	// and setup fees are excluded. The refunded part returns to the payment sources it came from. Tax
+	// paid is refunded in the same proportion as the amount it was paid on.
 	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
 
 	// SetupFee A decimal string, in the currency stated alongside it.
@@ -588,7 +600,16 @@ type RateList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+// RefundPolicy none refunds nothing. prorated refunds the amount paid for the current period minus the value of
+// the time used, never below zero and never more than what remains unrefunded. The time used runs
+// from the period start to the effective cancellation time and is valued at the plan's
+// shorter-period prices in the same currency, frozen at purchase as the order item's
+// refund_monthly_amount and refund_hourly_amount: each full calendar month at the one-month prepaid
+// price, the remainder at the postpaid hourly price or, without one, at the one-month price by the
+// second. When the plan has no prepaid period shorter than the one bought, the time used is valued
+// at the price paid, pro rata by the second. Discounts are not refunded, as they were never paid,
+// and setup fees are excluded. The refunded part returns to the payment sources it came from. Tax
+// paid is refunded in the same proportion as the amount it was paid on.
 type RefundPolicy string
 
 // TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
@@ -886,15 +907,15 @@ type ClientInterface interface {
 	// `currency` is required: a plan has a price in each currency it is sold in, so "what does
 	// this cost" has no answer without one.
 	//
-	// Retired prices are left out. Existing subscriptions still reference them, so this is not
-	// the place to look up what an existing purchase is paying.
+	// Archived prices are left out. Existing subscriptions keep the terms they were bought at, so
+	// this is not the place to look up what an existing purchase is paying.
 	//
 	// Corresponds with GET /catalog/v1/prices (the `ListPrices` operationId).
 	ListPrices(ctx context.Context, params *ListPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPrice Get a price
 	//
-	// Returns the catalog price, including retired prices. Fixed purchase history and renewal agreements are shown on orders and subscriptions rather than reconstructed from today's catalog.
+	// Returns the catalog price, including archived prices. Fixed purchase history and renewal agreements are shown on orders and subscriptions rather than reconstructed from today's catalog.
 	//
 	// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetPrice` operationId).
 	GetPrice(ctx context.Context, priceId openapi_types.UUID, params *GetPriceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1031,8 +1052,8 @@ func (c *Client) ListPricesByPlan(ctx context.Context, planId PlanId, params *Li
 // `currency` is required: a plan has a price in each currency it is sold in, so "what does
 // this cost" has no answer without one.
 //
-// Retired prices are left out. Existing subscriptions still reference them, so this is not
-// the place to look up what an existing purchase is paying.
+// Archived prices are left out. Existing subscriptions keep the terms they were bought at, so
+// this is not the place to look up what an existing purchase is paying.
 //
 // Corresponds with GET /catalog/v1/prices (the `ListPrices` operationId).
 func (c *Client) ListPrices(ctx context.Context, params *ListPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1049,7 +1070,7 @@ func (c *Client) ListPrices(ctx context.Context, params *ListPricesParams, reqEd
 
 // GetPrice Get a price
 //
-// Returns the catalog price, including retired prices. Fixed purchase history and renewal agreements are shown on orders and subscriptions rather than reconstructed from today's catalog.
+// Returns the catalog price, including archived prices. Fixed purchase history and renewal agreements are shown on orders and subscriptions rather than reconstructed from today's catalog.
 //
 // Corresponds with GET /catalog/v1/prices/{priceId} (the `GetPrice` operationId).
 func (c *Client) GetPrice(ctx context.Context, priceId openapi_types.UUID, params *GetPriceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1907,8 +1928,8 @@ type ClientWithResponsesInterface interface {
 	// `currency` is required: a plan has a price in each currency it is sold in, so "what does
 	// this cost" has no answer without one.
 	//
-	// Retired prices are left out. Existing subscriptions still reference them, so this is not
-	// the place to look up what an existing purchase is paying.
+	// Archived prices are left out. Existing subscriptions keep the terms they were bought at, so
+	// this is not the place to look up what an existing purchase is paying.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -1917,7 +1938,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetPriceWithResponse Get a price
 	//
-	// Returns the catalog price, including retired prices. Fixed purchase history and renewal agreements are shown on orders and subscriptions rather than reconstructed from today's catalog.
+	// Returns the catalog price, including archived prices. Fixed purchase history and renewal agreements are shown on orders and subscriptions rather than reconstructed from today's catalog.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2564,8 +2585,8 @@ func (c *ClientWithResponses) ListPricesByPlanWithResponse(ctx context.Context, 
 // `currency` is required: a plan has a price in each currency it is sold in, so "what does
 // this cost" has no answer without one.
 //
-// Retired prices are left out. Existing subscriptions still reference them, so this is not
-// the place to look up what an existing purchase is paying.
+// Archived prices are left out. Existing subscriptions keep the terms they were bought at, so
+// this is not the place to look up what an existing purchase is paying.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -2580,7 +2601,7 @@ func (c *ClientWithResponses) ListPricesWithResponse(ctx context.Context, params
 
 // GetPriceWithResponse Get a price
 //
-// Returns the catalog price, including retired prices. Fixed purchase history and renewal agreements are shown on orders and subscriptions rather than reconstructed from today's catalog.
+// Returns the catalog price, including archived prices. Fixed purchase history and renewal agreements are shown on orders and subscriptions rather than reconstructed from today's catalog.
 //
 // Returns a wrapper object for the known response body format(s).
 //

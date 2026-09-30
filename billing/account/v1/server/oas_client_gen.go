@@ -76,11 +76,11 @@ type Invoker interface {
 	// A successful confirmation records the discount, including any recurring discount terms, reserves its
 	// redemption, moves pending_checkout to pending and finalizes the invoice when one is required. The
 	// reservation counts toward the code's limits and is consumed when the invoice is paid, or at
-	// confirmation when nothing is due. Use collect-invoice-payment to collect its outstanding amount from
-	// account funds or a payment gateway. No payment attempt or checkout session is created by this
-	// operation. A purchase with nothing to collect can proceed to Billing admission without a payment
-	// transaction. An absent invoice or zero immediate amount still requires checkout confirmation;
-	// checkout alone does not confirm resource delivery.
+	// confirmation when nothing is due. Use pay-invoice to collect its outstanding amount from account
+	// funds or a payment gateway. No payment attempt or checkout session is created by this operation. An
+	// order whose total is zero completes checkout at placement in either mode and does not need this
+	// operation; an order with an amount due, even when credits would cover it, still does. Checkout alone
+	// does not confirm resource delivery.
 	//
 	// Retrying with the same code and expected amount returns the existing order without another
 	// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing that
@@ -95,25 +95,6 @@ type Invoker interface {
 	//
 	// POST /account/v1/orders/{orderId}/checkout
 	CheckoutOrder(ctx context.Context, request *CheckoutOrderRequest, params CheckoutOrderParams) (CheckoutOrderRes, error)
-	// CollectInvoicePayment invokes collect-invoice-payment operation.
-	//
-	// Applies eligible credit grants and available balance as requested, then collects the remainder
-	// through the selected payment gateway and method. With no gateway selection, insufficient account
-	// funds fail without starting an online payment. Card and non-card methods use this same operation.
-	// Promotion codes are confirmed by checkout, before collecting payment.
-	//
-	// Returns a payment action when customer interaction is required. requires_action and processing do
-	// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
-	// is reused, and retries do not apply credit grants or balance twice.
-	//
-	// Calling this on an invoice that is already paid returns the existing payment result without another
-	// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
-	// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
-	// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
-	// has passed, with `BILLING_ORDER_EXPIRED`.
-	//
-	// POST /account/v1/invoices/{invoiceId}/collect-payment
-	CollectInvoicePayment(ctx context.Context, request OptCollectInvoicePaymentRequest, params CollectInvoicePaymentParams) (*PaymentResult, error)
 	// CreateBillingAccount invokes create-billing-account operation.
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
@@ -153,7 +134,7 @@ type Invoker interface {
 	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//    different times;
 	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//    (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 	//    progress;
 	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -207,7 +188,7 @@ type Invoker interface {
 	// `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 	//
 	// POST /account/v1/quotes
-	CreateQuote(ctx context.Context, request QuoteRequest) (*Quote, error)
+	CreateQuote(ctx context.Context, request *QuoteRequest) (*Quote, error)
 	// CreateRenewalOrder invokes create-renewal-order operation.
 	//
 	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
@@ -445,6 +426,25 @@ type Invoker interface {
 	//
 	// GET /account/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
+	// PayInvoice invokes pay-invoice operation.
+	//
+	// Applies eligible credit grants and available balance as requested, then collects the remainder
+	// through the selected payment gateway and method. With no gateway selection, insufficient account
+	// funds fail without starting an online payment. Card and non-card methods use this same operation.
+	// Promotion codes are confirmed by checkout, before collecting payment.
+	//
+	// Returns a payment action when customer interaction is required. requires_action and processing do
+	// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
+	// is reused, and retries do not apply credit grants or balance twice.
+	//
+	// Calling this on an invoice that is already paid returns the existing payment result without another
+	// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
+	// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
+	// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
+	// has passed, with `BILLING_ORDER_EXPIRED`.
+	//
+	// POST /account/v1/invoices/{invoiceId}/pay
+	PayInvoice(ctx context.Context, request OptPayInvoiceRequest, params PayInvoiceParams) (*PaymentResult, error)
 	// PayTogether invokes pay-together operation.
 	//
 	// Pays outstanding invoices, including the invoices of the listed orders, from the account's eligible
@@ -485,13 +485,6 @@ type Invoker interface {
 	//
 	// POST /account/v1/payments/preview
 	PreviewPayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentPreview, error)
-	// PreviewPromotionCode invokes preview-promotion-code operation.
-	//
-	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
-	// commit.
-	//
-	// POST /account/v1/promotion-codes/preview
-	PreviewPromotionCode(ctx context.Context, request *PromotionCodePreviewRequest) (*PromotionCodePreview, error)
 	// RenewSubscription invokes renew-subscription operation.
 	//
 	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
@@ -914,11 +907,11 @@ func (c *Client) sendCancelTopUp(ctx context.Context, params CancelTopUpParams) 
 // A successful confirmation records the discount, including any recurring discount terms, reserves its
 // redemption, moves pending_checkout to pending and finalizes the invoice when one is required. The
 // reservation counts toward the code's limits and is consumed when the invoice is paid, or at
-// confirmation when nothing is due. Use collect-invoice-payment to collect its outstanding amount from
-// account funds or a payment gateway. No payment attempt or checkout session is created by this
-// operation. A purchase with nothing to collect can proceed to Billing admission without a payment
-// transaction. An absent invoice or zero immediate amount still requires checkout confirmation;
-// checkout alone does not confirm resource delivery.
+// confirmation when nothing is due. Use pay-invoice to collect its outstanding amount from account
+// funds or a payment gateway. No payment attempt or checkout session is created by this operation. An
+// order whose total is zero completes checkout at placement in either mode and does not need this
+// operation; an order with an amount due, even when credits would cover it, still does. Checkout alone
+// does not confirm resource delivery.
 //
 // Retrying with the same code and expected amount returns the existing order without another
 // redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing that
@@ -1055,154 +1048,6 @@ func (c *Client) sendCheckoutOrder(ctx context.Context, request *CheckoutOrderRe
 
 	stage = "DecodeResponse"
 	result, err := decodeCheckoutOrderResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CollectInvoicePayment invokes collect-invoice-payment operation.
-//
-// Applies eligible credit grants and available balance as requested, then collects the remainder
-// through the selected payment gateway and method. With no gateway selection, insufficient account
-// funds fail without starting an online payment. Card and non-card methods use this same operation.
-// Promotion codes are confirmed by checkout, before collecting payment.
-//
-// Returns a payment action when customer interaction is required. requires_action and processing do
-// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
-// is reused, and retries do not apply credit grants or balance twice.
-//
-// Calling this on an invoice that is already paid returns the existing payment result without another
-// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
-// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
-// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
-// has passed, with `BILLING_ORDER_EXPIRED`.
-//
-// POST /account/v1/invoices/{invoiceId}/collect-payment
-func (c *Client) CollectInvoicePayment(ctx context.Context, request OptCollectInvoicePaymentRequest, params CollectInvoicePaymentParams) (*PaymentResult, error) {
-	res, err := c.sendCollectInvoicePayment(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCollectInvoicePayment(ctx context.Context, request OptCollectInvoicePaymentRequest, params CollectInvoicePaymentParams) (res *PaymentResult, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("collect-invoice-payment"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/invoices/{invoiceId}/collect-payment"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CollectInvoicePaymentOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/invoices/"
-	{
-		// Encode "invoiceId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "invoiceId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.InvoiceId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/collect-payment"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCollectInvoicePaymentRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, CollectInvoicePaymentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCollectInvoicePaymentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1359,7 +1204,7 @@ func (c *Client) sendCreateBillingAccount(ctx context.Context, request *BillingA
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -1633,12 +1478,12 @@ func (c *Client) sendCreatePaymentMethodSetup(ctx context.Context, request *Paym
 // `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 //
 // POST /account/v1/quotes
-func (c *Client) CreateQuote(ctx context.Context, request QuoteRequest) (*Quote, error) {
+func (c *Client) CreateQuote(ctx context.Context, request *QuoteRequest) (*Quote, error) {
 	res, err := c.sendCreateQuote(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateQuote(ctx context.Context, request QuoteRequest) (res *Quote, err error) {
+func (c *Client) sendCreateQuote(ctx context.Context, request *QuoteRequest) (res *Quote, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -7135,6 +6980,154 @@ func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageCharg
 	return result, nil
 }
 
+// PayInvoice invokes pay-invoice operation.
+//
+// Applies eligible credit grants and available balance as requested, then collects the remainder
+// through the selected payment gateway and method. With no gateway selection, insufficient account
+// funds fail without starting an online payment. Card and non-card methods use this same operation.
+// Promotion codes are confirmed by checkout, before collecting payment.
+//
+// Returns a payment action when customer interaction is required. requires_action and processing do
+// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
+// is reused, and retries do not apply credit grants or balance twice.
+//
+// Calling this on an invoice that is already paid returns the existing payment result without another
+// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
+// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
+// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
+// has passed, with `BILLING_ORDER_EXPIRED`.
+//
+// POST /account/v1/invoices/{invoiceId}/pay
+func (c *Client) PayInvoice(ctx context.Context, request OptPayInvoiceRequest, params PayInvoiceParams) (*PaymentResult, error) {
+	res, err := c.sendPayInvoice(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendPayInvoice(ctx context.Context, request OptPayInvoiceRequest, params PayInvoiceParams) (res *PaymentResult, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("pay-invoice"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/invoices/{invoiceId}/pay"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PayInvoiceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/invoices/"
+	{
+		// Encode "invoiceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "invoiceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InvoiceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/pay"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePayInvoiceRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, PayInvoiceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePayInvoiceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // PayTogether invokes pay-together operation.
 //
 // Pays outstanding invoices, including the invoices of the listed orders, from the account's eligible
@@ -7552,123 +7545,6 @@ func (c *Client) sendPreviewPayTogether(ctx context.Context, request *PayTogethe
 
 	stage = "DecodeResponse"
 	result, err := decodePreviewPayTogetherResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// PreviewPromotionCode invokes preview-promotion-code operation.
-//
-// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
-// commit.
-//
-// POST /account/v1/promotion-codes/preview
-func (c *Client) PreviewPromotionCode(ctx context.Context, request *PromotionCodePreviewRequest) (*PromotionCodePreview, error) {
-	res, err := c.sendPreviewPromotionCode(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendPreviewPromotionCode(ctx context.Context, request *PromotionCodePreviewRequest) (res *PromotionCodePreview, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("preview-promotion-code"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/promotion-codes/preview"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, PreviewPromotionCodeOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/account/v1/promotion-codes/preview"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodePreviewPromotionCodeRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, PreviewPromotionCodeOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodePreviewPromotionCodeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -55,11 +55,11 @@ type Handler interface {
 	// A successful confirmation records the discount, including any recurring discount terms, reserves its
 	// redemption, moves pending_checkout to pending and finalizes the invoice when one is required. The
 	// reservation counts toward the code's limits and is consumed when the invoice is paid, or at
-	// confirmation when nothing is due. Use collect-invoice-payment to collect its outstanding amount from
-	// account funds or a payment gateway. No payment attempt or checkout session is created by this
-	// operation. A purchase with nothing to collect can proceed to Billing admission without a payment
-	// transaction. An absent invoice or zero immediate amount still requires checkout confirmation;
-	// checkout alone does not confirm resource delivery.
+	// confirmation when nothing is due. Use pay-invoice to collect its outstanding amount from account
+	// funds or a payment gateway. No payment attempt or checkout session is created by this operation. An
+	// order whose total is zero completes checkout at placement in either mode and does not need this
+	// operation; an order with an amount due, even when credits would cover it, still does. Checkout alone
+	// does not confirm resource delivery.
 	//
 	// Retrying with the same code and expected amount returns the existing order without another
 	// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing that
@@ -74,25 +74,6 @@ type Handler interface {
 	//
 	// POST /account/v1/orders/{orderId}/checkout
 	CheckoutOrder(ctx context.Context, req *CheckoutOrderRequest, params CheckoutOrderParams) (CheckoutOrderRes, error)
-	// CollectInvoicePayment implements collect-invoice-payment operation.
-	//
-	// Applies eligible credit grants and available balance as requested, then collects the remainder
-	// through the selected payment gateway and method. With no gateway selection, insufficient account
-	// funds fail without starting an online payment. Card and non-card methods use this same operation.
-	// Promotion codes are confirmed by checkout, before collecting payment.
-	//
-	// Returns a payment action when customer interaction is required. requires_action and processing do
-	// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
-	// is reused, and retries do not apply credit grants or balance twice.
-	//
-	// Calling this on an invoice that is already paid returns the existing payment result without another
-	// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
-	// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
-	// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
-	// has passed, with `BILLING_ORDER_EXPIRED`.
-	//
-	// POST /account/v1/invoices/{invoiceId}/collect-payment
-	CollectInvoicePayment(ctx context.Context, req OptCollectInvoicePaymentRequest, params CollectInvoicePaymentParams) (*PaymentResult, error)
 	// CreateBillingAccount implements create-billing-account operation.
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
@@ -132,7 +113,7 @@ type Handler interface {
 	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//    different times;
 	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//    (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 	//    progress;
 	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -186,7 +167,7 @@ type Handler interface {
 	// `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 	//
 	// POST /account/v1/quotes
-	CreateQuote(ctx context.Context, req QuoteRequest) (*Quote, error)
+	CreateQuote(ctx context.Context, req *QuoteRequest) (*Quote, error)
 	// CreateRenewalOrder implements create-renewal-order operation.
 	//
 	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
@@ -424,6 +405,25 @@ type Handler interface {
 	//
 	// GET /account/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
+	// PayInvoice implements pay-invoice operation.
+	//
+	// Applies eligible credit grants and available balance as requested, then collects the remainder
+	// through the selected payment gateway and method. With no gateway selection, insufficient account
+	// funds fail without starting an online payment. Card and non-card methods use this same operation.
+	// Promotion codes are confirmed by checkout, before collecting payment.
+	//
+	// Returns a payment action when customer interaction is required. requires_action and processing do
+	// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
+	// is reused, and retries do not apply credit grants or balance twice.
+	//
+	// Calling this on an invoice that is already paid returns the existing payment result without another
+	// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
+	// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
+	// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
+	// has passed, with `BILLING_ORDER_EXPIRED`.
+	//
+	// POST /account/v1/invoices/{invoiceId}/pay
+	PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (*PaymentResult, error)
 	// PayTogether implements pay-together operation.
 	//
 	// Pays outstanding invoices, including the invoices of the listed orders, from the account's eligible
@@ -464,13 +464,6 @@ type Handler interface {
 	//
 	// POST /account/v1/payments/preview
 	PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentPreview, error)
-	// PreviewPromotionCode implements preview-promotion-code operation.
-	//
-	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
-	// commit.
-	//
-	// POST /account/v1/promotion-codes/preview
-	PreviewPromotionCode(ctx context.Context, req *PromotionCodePreviewRequest) (*PromotionCodePreview, error)
 	// RenewSubscription implements renew-subscription operation.
 	//
 	// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at

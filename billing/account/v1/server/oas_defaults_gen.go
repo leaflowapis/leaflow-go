@@ -3,7 +3,7 @@
 package billingaccountv1server
 
 // setDefaults set default value of fields.
-func (s *CollectInvoicePaymentRequest) setDefaults() {
+func (s *PayInvoiceRequest) setDefaults() {
 	{
 		val := bool(true)
 		s.UseBalance.SetTo(val)

@@ -38,7 +38,7 @@ type Handler interface {
 	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//    different times;
 	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//    (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//    (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 	//    progress;
 	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -86,7 +86,7 @@ type Handler interface {
 	// subscription to be renewed or canceled does not belong to this project.
 	//
 	// POST /api/v1/projects/{projectId}/quotes
-	CreateProjectQuote(ctx context.Context, req QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
+	CreateProjectQuote(ctx context.Context, req *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
 	// GetProjectBillingAccount implements get-project-billing-account operation.
 	//
 	// Returns the billing account's identity, its currency, and how much can still be spent. Cards,

@@ -57,48 +57,18 @@ func (e CheckoutMode) Valid() bool {
 	}
 }
 
-// Defines values for PurchaseQuoteLineUnpricedReason.
-const (
-	PurchaseQuoteLineUnpricedReasonNoDimensions    PurchaseQuoteLineUnpricedReason = "no_dimensions"
-	PurchaseQuoteLineUnpricedReasonNoEffectiveRule PurchaseQuoteLineUnpricedReason = "no_effective_rule"
-	PurchaseQuoteLineUnpricedReasonNoMeter         PurchaseQuoteLineUnpricedReason = "no_meter"
-	PurchaseQuoteLineUnpricedReasonNoPrice         PurchaseQuoteLineUnpricedReason = "no_price"
-	PurchaseQuoteLineUnpricedReasonNoRateCard      PurchaseQuoteLineUnpricedReason = "no_rate_card"
-	PurchaseQuoteLineUnpricedReasonNone            PurchaseQuoteLineUnpricedReason = "none"
-)
-
-// Valid indicates whether the value is a known member of the PurchaseQuoteLineUnpricedReason enum.
-func (e PurchaseQuoteLineUnpricedReason) Valid() bool {
-	switch e {
-	case PurchaseQuoteLineUnpricedReasonNoDimensions:
-		return true
-	case PurchaseQuoteLineUnpricedReasonNoEffectiveRule:
-		return true
-	case PurchaseQuoteLineUnpricedReasonNoMeter:
-		return true
-	case PurchaseQuoteLineUnpricedReasonNoPrice:
-		return true
-	case PurchaseQuoteLineUnpricedReasonNoRateCard:
-		return true
-	case PurchaseQuoteLineUnpricedReasonNone:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for QuotedLineUnpricedReason.
 const (
-	QuotedLineUnpricedReasonNoPrice QuotedLineUnpricedReason = "no_price"
-	QuotedLineUnpricedReasonNone    QuotedLineUnpricedReason = "none"
+	NoPrice QuotedLineUnpricedReason = "no_price"
+	None    QuotedLineUnpricedReason = "none"
 )
 
 // Valid indicates whether the value is a known member of the QuotedLineUnpricedReason enum.
 func (e QuotedLineUnpricedReason) Valid() bool {
 	switch e {
-	case QuotedLineUnpricedReasonNoPrice:
+	case NoPrice:
 		return true
-	case QuotedLineUnpricedReasonNone:
+	case None:
 		return true
 	default:
 		return false
@@ -174,33 +144,6 @@ func (e ResourceUsageState) Valid() bool {
 	}
 }
 
-// Defines values for TaskState.
-const (
-	Canceled  TaskState = "canceled"
-	Failed    TaskState = "failed"
-	Pending   TaskState = "pending"
-	Running   TaskState = "running"
-	Succeeded TaskState = "succeeded"
-)
-
-// Valid indicates whether the value is a known member of the TaskState enum.
-func (e TaskState) Valid() bool {
-	switch e {
-	case Canceled:
-		return true
-	case Failed:
-		return true
-	case Pending:
-		return true
-	case Running:
-		return true
-	case Succeeded:
-		return true
-	default:
-		return false
-	}
-}
-
 // Attachment defines model for Attachment.
 type Attachment struct {
 	// Consumer A resource identified within its owning service. The project is taken from the containing usage or request.
@@ -233,8 +176,8 @@ type AttachmentList struct {
 // credit grants and available balance. Insufficient funds fail the purchase with HTTP 422
 // BILLING_INSUFFICIENT_FUNDS; no Billing order, charge or discount redemption is committed.
 // deferred creates a pending_checkout order for subsequent confirmation and payment through Billing.
-// An absent invoice or zero immediate amount does not bypass confirmation. No new discount
-// redemption or payment is made when the order is created.
+// No new discount redemption or payment is made when the order is created. An order whose total is
+// zero, with nothing to pay or discount, completes checkout at placement in either mode.
 type CheckoutMode string
 
 // CheckoutOptions Shared checkout choices for a product purchase. Omitting this object or mode selects
@@ -304,14 +247,6 @@ type OffsetPagination struct {
 	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
-// OrderOptions Purchase options. Every request places an order of its own.
-type OrderOptions struct {
-	// AutoPay Defaults to true. When true, the purchase is paid from available account funds and applicable grants when it is placed. If they do not cover the amount due, the request fails with HTTP 422 and code BILLING_INSUFFICIENT_FUNDS; no order is created and nothing is charged. When false, the order is created without payment, and its invoice, if any, is paid through Billing.
-	AutoPay        *bool   `json:"auto_pay,omitempty"`
-	ExpectedAmount *string `json:"expected_amount,omitempty"`
-	RedemptionCode *string `json:"redemption_code,omitempty"`
-}
-
 // PlacedOrder Identifies the purchase. Read the order for purchase progress and its invoice for amounts and payment status.
 type PlacedOrder struct {
 	// InvoiceId The invoice for this purchase, which may still be a draft awaiting checkout. Null when no invoice has been created. Its presence or absence does not establish whether delivery may begin.
@@ -320,42 +255,6 @@ type PlacedOrder struct {
 	// OrderId The order, including for purchases without an immediate charge. Payment alone does not imply that the service has completed delivery.
 	OrderId openapi_types.UUID `json:"order_id"`
 }
-
-// PurchaseQuote What a purchase would be charged, priced as a service would order it, without ordering anything. Nothing is reserved and nothing is recorded.
-type PurchaseQuote struct {
-	Currency string `json:"currency"`
-
-	// Lines One line for each item the purchase would order, in the order it would order them.
-	Lines []PurchaseQuoteLine `json:"lines"`
-
-	// Total What would be owed for the whole purchase. Null when any line could not be priced: what would be owed is not knowable then.
-	Total *Money `json:"total"`
-}
-
-// PurchaseQuoteLine defines model for PurchaseQuoteLine.
-type PurchaseQuoteLine struct {
-	// Amount Not rounded. Round only for display.
-	Amount   *Money `json:"amount"`
-	Currency string `json:"currency"`
-	PlanName string `json:"plan_name"`
-
-	// PriceId The price selected, including when the request left the choice to the service. Order with this price.
-	PriceId *openapi_types.UUID `json:"price_id"`
-
-	// Priced Whether a price was found for this line. When false, `price_id`, `unit_amount` and `amount` are null and `unpriced_reason` states what is missing.
-	Priced bool `json:"priced"`
-
-	// Quantity The quantity priced.
-	Quantity   string `json:"quantity"`
-	TaxAmount  *Money `json:"tax_amount"`
-	UnitAmount *Money `json:"unit_amount"`
-
-	// UnpricedReason Why no price was found; `none` while `priced` is true.
-	UnpricedReason PurchaseQuoteLineUnpricedReason `json:"unpriced_reason"`
-}
-
-// PurchaseQuoteLineUnpricedReason Why no price was found; `none` while `priced` is true.
-type PurchaseQuoteLineUnpricedReason string
 
 // Quote A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
 // charged or reserved, and no discount redemption is consumed. Account discounts and tax are
@@ -374,6 +273,14 @@ type Quote struct {
 	// Lines One line for each item the purchase would order, in the order it would order them.
 	Lines []QuotedLine `json:"lines"`
 
+	// ProrationDate Changes only; null otherwise. The instant the change is priced from. Pass it with the change so the
+	// order is priced from the same instant.
+	ProrationDate *time.Time `json:"proration_date"`
+
+	// RefundableAmount Changes that lower the price only; null otherwise. What the change would return to the original
+	// payment sources, including the tax paid on it. total is zero for such a change.
+	RefundableAmount *Money `json:"refundable_amount"`
+
 	// Subtotal Sum of line amounts before discounts, less tax already included in the discounted line
 	// amounts, as on an invoice. Null when any line cannot be priced.
 	Subtotal *Money `json:"subtotal"`
@@ -388,7 +295,7 @@ type Quote struct {
 }
 
 // QuotedLine One calculated purchase line. Fixed purchase amounts are rounded as checkout rounds them.
-// When priced is false, price_id and every monetary field are null. A priced line without an
+// When priced is false, every monetary field is null. A priced line without an
 // immediate charge has zero amounts; an unavailable unit price remains null.
 type QuotedLine struct {
 	// Amount Before discounts, including any setup charges. Contains tax only where the price includes it.
@@ -405,9 +312,6 @@ type QuotedLine struct {
 	// priced.
 	EstimatedUsageAmount *Money `json:"estimated_usage_amount"`
 	PlanName             string `json:"plan_name"`
-
-	// PriceId The price selected, including when the request left the choice to the service. Order with this price.
-	PriceId *openapi_types.UUID `json:"price_id"`
 
 	// Priced Whether the line can be priced. When false, unpriced_reason states what is missing.
 	Priced bool `json:"priced"`
@@ -510,24 +414,6 @@ type ResourceUsageList struct {
 	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
 	Pagination OffsetPagination `json:"pagination"`
 }
-
-// Task A requested action and its outcome. Query it through the service that accepted the request, using the same project or administrator credentials. Only succeeded confirms completion. Stopping a wait does not cancel the action. Cancellation is available only where the action explicitly supports it.
-type Task struct {
-	CompletedAt *time.Time `json:"completed_at"`
-	CreatedAt   time.Time  `json:"created_at"`
-
-	// Error Terminal failure. Absent while work can still recover.
-	Error     *Error             `json:"error,omitempty"`
-	Id        openapi_types.UUID `json:"id"`
-	StartedAt *time.Time         `json:"started_at"`
-	State     TaskState          `json:"state"`
-
-	// Type Action requested from the owning service.
-	Type string `json:"type"`
-}
-
-// TaskState defines model for Task.State.
-type TaskState string
 
 // Cursor defines model for Cursor.
 type Cursor = string

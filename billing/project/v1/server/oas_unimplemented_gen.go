@@ -43,7 +43,7 @@ var _ Handler = UnimplementedHandler{}
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -94,7 +94,7 @@ func (UnimplementedHandler) CreateProjectCancellation(ctx context.Context, req *
 // subscription to be renewed or canceled does not belong to this project.
 //
 // POST /api/v1/projects/{projectId}/quotes
-func (UnimplementedHandler) CreateProjectQuote(ctx context.Context, req QuoteRequest, params CreateProjectQuoteParams) (r *Quote, _ error) {
+func (UnimplementedHandler) CreateProjectQuote(ctx context.Context, req *QuoteRequest, params CreateProjectQuoteParams) (r *Quote, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

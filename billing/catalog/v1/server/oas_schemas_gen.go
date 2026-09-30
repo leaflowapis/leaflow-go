@@ -298,52 +298,6 @@ func (s *OffsetPagination) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// NewOptBool returns new OptBool with value set to v.
-func NewOptBool(v bool) OptBool {
-	return OptBool{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptBool is optional bool.
-type OptBool struct {
-	Value bool
-	Set   bool
-}
-
-// IsSet returns true if OptBool was set.
-func (o OptBool) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptBool) Reset() {
-	var v bool
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptBool) SetTo(v bool) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptBool) Get() (v bool, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptBool) Or(d bool) bool {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptDateTime returns new OptDateTime with value set to v.
 func NewOptDateTime(v time.Time) OptDateTime {
 	return OptDateTime{
@@ -1378,7 +1332,8 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 
 // Ref: #/components/schemas/Plan
 type Plan struct {
-	Enabled     bool          `json:"enabled"`
+	// False once archived. An archived plan cannot be bought until it is active again.
+	Active      bool          `json:"active"`
 	LookupKey   OptString     `json:"lookup_key"`
 	Product     Product       `json:"product"`
 	Features    []PlanFeature `json:"features"`
@@ -1388,9 +1343,9 @@ type Plan struct {
 	Description OptString     `json:"description"`
 }
 
-// GetEnabled returns the value of Enabled.
-func (s *Plan) GetEnabled() bool {
-	return s.Enabled
+// GetActive returns the value of Active.
+func (s *Plan) GetActive() bool {
+	return s.Active
 }
 
 // GetLookupKey returns the value of LookupKey.
@@ -1428,9 +1383,9 @@ func (s *Plan) GetDescription() OptString {
 	return s.Description
 }
 
-// SetEnabled sets the value of Enabled.
-func (s *Plan) SetEnabled(val bool) {
-	s.Enabled = val
+// SetActive sets the value of Active.
+func (s *Plan) SetActive(val bool) {
+	s.Active = val
 }
 
 // SetLookupKey sets the value of LookupKey.
@@ -1578,14 +1533,15 @@ func (*PlanListHeaders) listPlansRes() {}
 
 // Ref: #/components/schemas/Price
 type Price struct {
-	RateCard          OptObjectIdentity    `json:"rate_card"`
-	LookupKey         OptString            `json:"lookup_key"`
-	Product           Product              `json:"product"`
-	Plan              ObjectIdentity       `json:"plan"`
-	MeterID           OptUUID              `json:"meter_id"`
-	Meter             OptObjectIdentity    `json:"meter"`
-	UnitQuantity      string               `json:"unit_quantity"`
-	Enabled           OptBool              `json:"enabled"`
+	RateCard     OptObjectIdentity `json:"rate_card"`
+	LookupKey    OptString         `json:"lookup_key"`
+	Product      Product           `json:"product"`
+	Plan         ObjectIdentity    `json:"plan"`
+	MeterID      OptUUID           `json:"meter_id"`
+	Meter        OptObjectIdentity `json:"meter"`
+	UnitQuantity string            `json:"unit_quantity"`
+	// False once archived. An archived price cannot be bought until it is active again.
+	Active            bool                 `json:"active"`
 	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
 	ProductID         OptProductID         `json:"product_id"`
@@ -1656,9 +1612,9 @@ func (s *Price) GetUnitQuantity() string {
 	return s.UnitQuantity
 }
 
-// GetEnabled returns the value of Enabled.
-func (s *Price) GetEnabled() OptBool {
-	return s.Enabled
+// GetActive returns the value of Active.
+func (s *Price) GetActive() bool {
+	return s.Active
 }
 
 // GetTerminationPolicy returns the value of TerminationPolicy.
@@ -1786,9 +1742,9 @@ func (s *Price) SetUnitQuantity(val string) {
 	s.UnitQuantity = val
 }
 
-// SetEnabled sets the value of Enabled.
-func (s *Price) SetEnabled(val OptBool) {
-	s.Enabled = val
+// SetActive sets the value of Active.
+func (s *Price) SetActive(val bool) {
+	s.Active = val
 }
 
 // SetTerminationPolicy sets the value of TerminationPolicy.
@@ -3081,8 +3037,16 @@ func (s *RatePricingModel) UnmarshalText(data []byte) error {
 	}
 }
 
-// Prorated returns the unused value of paid service periods using integer-second duration ratios.
-// Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+// None refunds nothing. prorated refunds the amount paid for the current period minus the value of the
+// time used, never below zero and never more than what remains unrefunded. The time used runs from the
+// period start to the effective cancellation time and is valued at the plan's shorter-period prices in
+// the same currency, frozen at purchase as the order item's refund_monthly_amount and
+// refund_hourly_amount: each full calendar month at the one-month prepaid price, the remainder at the
+// postpaid hourly price or, without one, at the one-month price by the second. When the plan has no
+// prepaid period shorter than the one bought, the time used is valued at the price paid, pro rata by
+// the second. Discounts are not refunded, as they were never paid, and setup fees are excluded. The
+// refunded part returns to the payment sources it came from. Tax paid is refunded in the same
+// proportion as the amount it was paid on.
 // Ref: #/components/schemas/RefundPolicy
 type RefundPolicy string
 

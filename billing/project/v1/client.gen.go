@@ -642,11 +642,12 @@ func (e SubscriptionInterval) Valid() bool {
 
 // Defines values for SubscriptionStatus.
 const (
-	SubscriptionStatusActive     SubscriptionStatus = "active"
-	SubscriptionStatusCanceled   SubscriptionStatus = "canceled"
-	SubscriptionStatusPending    SubscriptionStatus = "pending"
-	SubscriptionStatusSuspended  SubscriptionStatus = "suspended"
-	SubscriptionStatusTerminated SubscriptionStatus = "terminated"
+	SubscriptionStatusActive       SubscriptionStatus = "active"
+	SubscriptionStatusCanceled     SubscriptionStatus = "canceled"
+	SubscriptionStatusPending      SubscriptionStatus = "pending"
+	SubscriptionStatusProvisioning SubscriptionStatus = "provisioning"
+	SubscriptionStatusSuspended    SubscriptionStatus = "suspended"
+	SubscriptionStatusTerminated   SubscriptionStatus = "terminated"
 )
 
 // Valid indicates whether the value is a known member of the SubscriptionStatus enum.
@@ -657,6 +658,8 @@ func (e SubscriptionStatus) Valid() bool {
 	case SubscriptionStatusCanceled:
 		return true
 	case SubscriptionStatusPending:
+		return true
+	case SubscriptionStatusProvisioning:
 		return true
 	case SubscriptionStatusSuspended:
 		return true
@@ -950,18 +953,11 @@ type CancellationList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// CancellationQuoteRequest Preview one cancellation without combining it with a purchase, renewal or promotion code.
-type CancellationQuoteRequest struct {
-	// Cancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
-	// request; to compare, quote `immediate` and `period_end` separately.
-	Cancellation QuoteCancellation `json:"cancellation"`
-}
-
 // CancellationRefundPreview What the cancellation would return, subscription by subscription and in total, as of now. Give
 // `proration_date` and `refundable_amount` when creating the cancellation.
 //
-//   - `unused_amount`: before tax, the value of the paid service still unused, whatever the refund
-//     terms say.
+//   - `unused_amount`: before tax, the amount paid for the current periods minus the value of the
+//     time used, valued as refund policy `prorated` describes, whatever the refund terms say.
 //   - `refundable_amount`: what is returned the way it was paid, including the tax paid on it;
 //     `refund_amount` plus `credit_amount`.
 //   - `refund_amount`: the part returned to the balance or to the payment method.
@@ -1200,6 +1196,8 @@ type InvoiceStatus string
 // order invoice shows base amounts awaiting checkout, not a confirmed discount or collectible total.
 // Absent when no invoice has been created; absence does not establish acceptance or delivery.
 type InvoiceSummary struct {
+	// AmountDue What is still collectible after applied credits and successful payments; never below zero.
+	AmountDue      string `json:"amount_due"`
 	AmountPaid     string `json:"amount_paid"`
 	AmountRefunded string `json:"amount_refunded"`
 	Currency       string `json:"currency"`
@@ -1294,8 +1292,9 @@ type Order struct {
 	PromotionCode   *string             `json:"promotion_code,omitempty"`
 	PromotionCodeId *openapi_types.UUID `json:"promotion_code_id,omitempty"`
 
-	// Status pending_checkout has recorded purchase terms but no confirmed checkout. An absent invoice
-	// or zero total does not permit acceptance. Confirmation moves it to pending. Both pending_checkout
+	// Status pending_checkout has recorded purchase terms but no confirmed checkout; only a deferred order
+	// with an amount due reaches it, since a zero-total order completes checkout at placement.
+	// Confirmation moves it to pending. Both pending_checkout
 	// and pending can expire or be canceled; neither establishes service delivery.
 	//
 	// Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid. `active` is
@@ -1346,8 +1345,10 @@ type OrderItem struct {
 	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
 
 	// GrossAmount Before discounts: the price applied to the quantity, which for a per-unit price is `unit_amount`
-	// times `quantity`; a minimum charge can make it higher. For a change that takes effect at once it is
-	// the prorated difference. The setup fee is not part of it; see `setup_amount`.
+	// times `quantity`; a minimum charge can make it higher. For an upgrade that takes effect at once it is
+	// the new price minus the old price for the time left in the paid period, both at the subscription's
+	// own period price, and the period end does not move; a downgrade charges nothing and may refund the
+	// difference instead. A change between equal period prices charges and refunds nothing. The setup fee is not part of it; see `setup_amount`.
 	//
 	// Under an inclusive tax rate it includes tax, as the price does, and the included part is
 	// `tax_included_amount`. A renewal at the agreed terms is the exception: the agreed amount excludes
@@ -1375,7 +1376,25 @@ type OrderItem struct {
 	Quantity        string     `json:"quantity"`
 	RecurringAmount *string    `json:"recurring_amount,omitempty"`
 
-	// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+	// RefundHourlyAmount Prepaid items only: the plan's postpaid hourly price for this item's quantity before tax, frozen at
+	// purchase, used for time used short of a full month. Null when the plan has no postpaid price.
+	RefundHourlyAmount *string `json:"refund_hourly_amount,omitempty"`
+
+	// RefundMonthlyAmount Prepaid items only: the plan's one-month prepaid price for this item's quantity before tax, frozen
+	// at purchase, used to value time used under a prorated refund or a downgrade. Null when the plan has
+	// no prepaid period shorter than the one bought.
+	RefundMonthlyAmount *string `json:"refund_monthly_amount,omitempty"`
+
+	// RefundPolicy none refunds nothing. prorated refunds the amount paid for the current period minus the value of
+	// the time used, never below zero and never more than what remains unrefunded. The time used runs
+	// from the period start to the effective cancellation time and is valued at the plan's
+	// shorter-period prices in the same currency, frozen at purchase as the order item's
+	// refund_monthly_amount and refund_hourly_amount: each full calendar month at the one-month prepaid
+	// price, the remainder at the postpaid hourly price or, without one, at the one-month price by the
+	// second. When the plan has no prepaid period shorter than the one bought, the time used is valued
+	// at the price paid, pro rata by the second. Discounts are not refunded, as they were never paid,
+	// and setup fees are excluded. The refunded part returns to the payment sources it came from. Tax
+	// paid is refunded in the same proportion as the amount it was paid on.
 	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
 	SetupAmount  *string       `json:"setup_amount,omitempty"`
 
@@ -1386,8 +1405,8 @@ type OrderItem struct {
 	Status OrderItemStatus `json:"status"`
 
 	// SubscriptionId Stable Billing subscription ID. A new prepaid or postpaid service purchase returns the
-	// pending subscription here; renewals reference the existing subscription and changes the
-	// replacement. Absent for delivery without a subscription. This is not a business resource ID.
+	// pending subscription here; renewals and changes reference the existing subscription, which
+	// keeps its ID. Absent for delivery without a subscription. This is not a business resource ID.
 	SubscriptionId *openapi_types.UUID `json:"subscription_id,omitempty"`
 
 	// TaxAmount Total tax after discounts, including any tax already included in the price.
@@ -1400,8 +1419,8 @@ type OrderItem struct {
 	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
 
 	// UnitAmount The unit amount of the price this line is charged under. Absent for a tiered price, which has no
-	// single unit amount, and for a change that takes effect at once, which is charged the prorated
-	// difference.
+	// single unit amount, and for a change that takes effect at once, which is charged as `gross_amount`
+	// describes.
 	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 }
 
@@ -1433,18 +1452,9 @@ type OrderList struct {
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// OrderQuoteRequest Preview checkout of one existing order. Its recorded purchase terms supply every line.
-// Without a code, an applicable account discount is selected. A preview neither changes the
-// order nor reserves or consumes a redemption. A confirmed order returns its recorded amounts.
-type OrderQuoteRequest struct {
-	OrderId openapi_types.UUID `json:"order_id"`
-
-	// PromotionCode Code to evaluate for this order. Must be supplied again when confirming checkout.
-	PromotionCode *string `json:"promotion_code,omitempty"`
-}
-
-// OrderStatus pending_checkout has recorded purchase terms but no confirmed checkout. An absent invoice
-// or zero total does not permit acceptance. Confirmation moves it to pending. Both pending_checkout
+// OrderStatus pending_checkout has recorded purchase terms but no confirmed checkout; only a deferred order
+// with an amount due reaches it, since a zero-total order completes checkout at placement.
+// Confirmation moves it to pending. Both pending_checkout
 // and pending can expire or be canceled; neither establishes service delivery.
 //
 // Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid. `active` is
@@ -1512,15 +1522,6 @@ type ProjectBillingAccount struct {
 // ProjectBillingAccountStatus `active` — nothing is owed. `past_due` — the account owes money and resources are
 // still running. `suspended` — resources have been stopped for non-payment.
 type ProjectBillingAccountStatus string
-
-// PurchaseQuoteRequest Preview one proposed purchase using the project's current billing account. Without a code,
-// an applicable account discount is selected. An explicit code is evaluated without reserving or
-// consuming a redemption and must be supplied again when confirming checkout through Billing.
-// Future usage estimates cannot be combined with a promotion code or used as a checkout amount.
-type PurchaseQuoteRequest struct {
-	Lines         []QuoteLine `json:"lines"`
-	PromotionCode *string     `json:"promotion_code,omitempty"`
-}
 
 // Quote A computed price preview, without a saved quote or a price guarantee. No funds or discount
 // redemptions are reserved. Amounts use currency and exclude payment from credit grants or balance.
@@ -1596,7 +1597,9 @@ type QuoteLinePriceType string
 
 // QuoteRenewal Price renewing a prepaid subscription. Give `price_id`, or `interval` with
 // `interval_count`, to renew for another term at the price currently sold for it. Naming
-// the current term, or giving neither, renews at the agreed amount.
+// the current term, or giving neither, renews at the agreed amount. A term sold at several
+// prices that differ in termination policy is refused with 409
+// `BILLING_RENEWAL_OPTION_AMBIGUOUS` unless `termination_policy` or `price_id` is given.
 type QuoteRenewal struct {
 	Interval      *QuoteRenewalInterval `json:"interval,omitempty"`
 	IntervalCount *int                  `json:"interval_count,omitempty"`
@@ -1605,6 +1608,9 @@ type QuoteRenewal struct {
 	Periods        *int                `json:"periods,omitempty"`
 	PriceId        *openapi_types.UUID `json:"price_id,omitempty"`
 	SubscriptionId openapi_types.UUID  `json:"subscription_id"`
+
+	// TerminationPolicy With `interval` and `interval_count`, chooses among prices of that term that differ in termination policy.
+	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
 }
 
 // QuoteRenewalInterval defines model for QuoteRenewal.Interval.
@@ -1646,9 +1652,28 @@ type QuoteRenewalResult struct {
 // QuoteRenewalResultInterval defines model for QuoteRenewalResult.Interval.
 type QuoteRenewalResultInterval string
 
-// QuoteRequest Quote exactly one target. Purchase lines, an existing order, a renewal list and a cancellation are mutually exclusive.
+// QuoteRequest Quote exactly one target: purchase `lines`, an existing `order_id`, `renewals` or a `cancellation`. Giving none or
+// more than one, or a `promotion_code` with `renewals` or a `cancellation`, fails with HTTP 400
+// `BILLING_PURCHASE_INVALID` and `meta.field` naming the offending field. Without a code, an
+// applicable account discount is selected. An explicit code is evaluated without reserving or
+// consuming a redemption and must be supplied again when confirming checkout through Billing.
 type QuoteRequest struct {
-	union json.RawMessage
+	// Cancellation A cancellation to quote: what ending these subscriptions together would return. One mode per
+	// request; to compare, quote `immediate` and `period_end` separately.
+	Cancellation *QuoteCancellation `json:"cancellation,omitempty"`
+
+	// Lines A proposed purchase, priced with the project's current billing account. Future usage
+	// estimates cannot be combined with a promotion code or used as a checkout amount.
+	Lines []QuoteLine `json:"lines,omitempty"`
+
+	// OrderId Preview checkout of this existing order. Its recorded purchase terms supply every line, and a
+	// confirmed order returns its recorded amounts. A preview does not change the order.
+	OrderId       *openapi_types.UUID `json:"order_id,omitempty"`
+	PromotionCode *string             `json:"promotion_code,omitempty"`
+
+	// Renewals Preview renewing these subscriptions, each at most once. Each entry represents a separate
+	// renewal order. To preview a new promotion code, create a renewal order and quote it by order_id.
+	Renewals []QuoteRenewal `json:"renewals,omitempty"`
 }
 
 // QuotedDiscount The discount selected for this calculation. Its presence in a quote does not apply it or
@@ -1719,14 +1744,17 @@ type QuotedLine struct {
 // QuotedLineUnpricedReason Why no price was found; `none` while `priced` is true.
 type QuotedLineUnpricedReason string
 
-// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+// RefundPolicy none refunds nothing. prorated refunds the amount paid for the current period minus the value of
+// the time used, never below zero and never more than what remains unrefunded. The time used runs
+// from the period start to the effective cancellation time and is valued at the plan's
+// shorter-period prices in the same currency, frozen at purchase as the order item's
+// refund_monthly_amount and refund_hourly_amount: each full calendar month at the one-month prepaid
+// price, the remainder at the postpaid hourly price or, without one, at the one-month price by the
+// second. When the plan has no prepaid period shorter than the one bought, the time used is valued
+// at the price paid, pro rata by the second. Discounts are not refunded, as they were never paid,
+// and setup fees are excluded. The refunded part returns to the payment sources it came from. Tax
+// paid is refunded in the same proportion as the amount it was paid on.
 type RefundPolicy string
-
-// RenewalQuoteRequest Preview renewing subscriptions, each at most once. Each entry represents a separate renewal
-// order. To preview a new promotion code, create a renewal order and quote it by order_id.
-type RenewalQuoteRequest struct {
-	Renewals []QuoteRenewal `json:"renewals"`
-}
 
 // SpendRow defines model for SpendRow.
 type SpendRow struct {
@@ -1767,14 +1795,15 @@ type SpendRowList struct {
 // through checkout and delivery. One order may create several subscriptions, such as an instance,
 // its system disk and its address; it has no single subscription ID.
 //
-// Pending does not grant service or accrue usage. Payment confirmation and order acceptance do
-// not activate a service-owned subscription. It becomes active when the owning service confirms
-// delivery, with started_at set to the confirmed effective time. Prepaid service periods start
+// Pending and provisioning do not grant service or accrue usage. A service-owned subscription
+// becomes provisioning when the owning service accepts the order, and active when the service
+// confirms delivery, with started_at set to the confirmed effective time; payment changes neither. Prepaid service periods start
 // then; postpaid usage starts only when the service reports actual delivery and metering.
 //
 // One-time delivery may omit a subscription. Renewals reference and extend existing subscriptions
-// rather than creating another; changes may create pending replacements. Canceling or failing an
-// unfulfilled purchase closes its pending subscriptions without starting a service period.
+// rather than creating another; a change keeps the subscription ID and switches its terms when it
+// takes effect. Canceling or failing an
+// unfulfilled purchase closes its pending or provisioning subscriptions without starting a service period.
 // Fixed renewals use the agreed recurring_amount and interval; already paid periods retain their
 // original value. Technical state belongs to the owning service.
 //
@@ -1806,8 +1835,8 @@ type Subscription struct {
 	IntervalCount               *int                 `json:"interval_count,omitempty"`
 	OrderItemId                 *openapi_types.UUID  `json:"order_item_id,omitempty"`
 
-	// PaidUntil End of the prepaid service already activated. Null for a new pending subscription, even
-	// when its purchase has been paid, and for postpaid subscriptions with no prepaid end date.
+	// PaidUntil End of the prepaid service already activated. Null until a new subscription becomes active,
+	// even when its purchase has been paid, and for postpaid subscriptions with no prepaid end date.
 	PaidUntil *time.Time `json:"paid_until,omitempty"`
 
 	// PaidWith How the purchase, or the latest renewal paid with a saved card, was paid. Automatic renewal
@@ -1837,15 +1866,27 @@ type Subscription struct {
 	// Absent for other billing types.
 	RecurringAmount *string `json:"recurring_amount,omitempty"`
 
-	// RefundPolicy Prorated returns the unused value of paid service periods using integer-second duration ratios. Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
-	RefundPolicy           *RefundPolicy       `json:"refund_policy,omitempty"`
+	// RefundPolicy none refunds nothing. prorated refunds the amount paid for the current period minus the value of
+	// the time used, never below zero and never more than what remains unrefunded. The time used runs
+	// from the period start to the effective cancellation time and is valued at the plan's
+	// shorter-period prices in the same currency, frozen at purchase as the order item's
+	// refund_monthly_amount and refund_hourly_amount: each full calendar month at the one-month prepaid
+	// price, the remainder at the postpaid hourly price or, without one, at the one-month price by the
+	// second. When the plan has no prepaid period shorter than the one bought, the time used is valued
+	// at the price paid, pro rata by the second. Discounts are not refunded, as they were never paid,
+	// and setup fees are excluded. The refunded part returns to the payment sources it came from. Tax
+	// paid is refunded in the same proportion as the amount it was paid on.
+	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
+
+	// ReplacesSubscriptionId Present only on subscriptions created by an earlier change that replaced the subscription. A change now keeps the subscription ID.
 	ReplacesSubscriptionId *openapi_types.UUID `json:"replaces_subscription_id,omitempty"`
 
-	// StartedAt Confirmed start of service. Null for a new pending subscription, including after payment.
+	// StartedAt Confirmed start of service. Null until a new subscription becomes active, including after payment.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 
-	// Status pending means the purchase relationship exists but service has not started. For a
-	// service-owned purchase, only confirmed delivery moves it to active; paying alone does not.
+	// Status pending means the purchase relationship exists but its order has not been accepted.
+	// provisioning means the service accepted the order and is delivering. For a service-owned
+	// purchase, only confirmed delivery moves it to active; paying alone does not.
 	Status        SubscriptionStatus `json:"status"`
 	SuspendReason *string            `json:"suspend_reason,omitempty"`
 
@@ -1859,8 +1900,9 @@ type SubscriptionBillingType string
 // SubscriptionInterval defines model for Subscription.Interval.
 type SubscriptionInterval string
 
-// SubscriptionStatus pending means the purchase relationship exists but service has not started. For a
-// service-owned purchase, only confirmed delivery moves it to active; paying alone does not.
+// SubscriptionStatus pending means the purchase relationship exists but its order has not been accepted.
+// provisioning means the service accepted the order and is delivering. For a service-owned
+// purchase, only confirmed delivery moves it to active; paying alone does not.
 type SubscriptionStatus string
 
 // SubscriptionList defines model for SubscriptionList.
@@ -2112,120 +2154,6 @@ type CreateProjectQuoteJSONRequestBody = QuoteRequest
 // SetProjectAutoRenewJSONRequestBody defines body for SetProjectAutoRenew for application/json ContentType.
 type SetProjectAutoRenewJSONRequestBody = AutoRenewSet
 
-// AsPurchaseQuoteRequest returns the union data inside the QuoteRequest as a PurchaseQuoteRequest
-func (t QuoteRequest) AsPurchaseQuoteRequest() (PurchaseQuoteRequest, error) {
-	var body PurchaseQuoteRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPurchaseQuoteRequest overwrites any union data inside the QuoteRequest as the provided PurchaseQuoteRequest
-func (t *QuoteRequest) FromPurchaseQuoteRequest(v PurchaseQuoteRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePurchaseQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided PurchaseQuoteRequest
-func (t *QuoteRequest) MergePurchaseQuoteRequest(v PurchaseQuoteRequest) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsOrderQuoteRequest returns the union data inside the QuoteRequest as a OrderQuoteRequest
-func (t QuoteRequest) AsOrderQuoteRequest() (OrderQuoteRequest, error) {
-	var body OrderQuoteRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromOrderQuoteRequest overwrites any union data inside the QuoteRequest as the provided OrderQuoteRequest
-func (t *QuoteRequest) FromOrderQuoteRequest(v OrderQuoteRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeOrderQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided OrderQuoteRequest
-func (t *QuoteRequest) MergeOrderQuoteRequest(v OrderQuoteRequest) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsRenewalQuoteRequest returns the union data inside the QuoteRequest as a RenewalQuoteRequest
-func (t QuoteRequest) AsRenewalQuoteRequest() (RenewalQuoteRequest, error) {
-	var body RenewalQuoteRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromRenewalQuoteRequest overwrites any union data inside the QuoteRequest as the provided RenewalQuoteRequest
-func (t *QuoteRequest) FromRenewalQuoteRequest(v RenewalQuoteRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeRenewalQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided RenewalQuoteRequest
-func (t *QuoteRequest) MergeRenewalQuoteRequest(v RenewalQuoteRequest) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCancellationQuoteRequest returns the union data inside the QuoteRequest as a CancellationQuoteRequest
-func (t QuoteRequest) AsCancellationQuoteRequest() (CancellationQuoteRequest, error) {
-	var body CancellationQuoteRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromCancellationQuoteRequest overwrites any union data inside the QuoteRequest as the provided CancellationQuoteRequest
-func (t *QuoteRequest) FromCancellationQuoteRequest(v CancellationQuoteRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeCancellationQuoteRequest performs a merge with any union data inside the QuoteRequest, using the provided CancellationQuoteRequest
-func (t *QuoteRequest) MergeCancellationQuoteRequest(v CancellationQuoteRequest) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t QuoteRequest) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *QuoteRequest) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -2365,7 +2293,7 @@ type ClientInterface interface {
 	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//   different times;
 	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//   (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -2412,7 +2340,7 @@ type ClientInterface interface {
 	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//   different times;
 	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//   (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -2709,7 +2637,7 @@ func (c *Client) ListProjectCancellations(ctx context.Context, projectId Project
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -2766,7 +2694,7 @@ func (c *Client) CreateProjectCancellationWithBody(ctx context.Context, projectI
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -4403,7 +4331,7 @@ type ClientWithResponsesInterface interface {
 	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//   different times;
 	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//   (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -4450,7 +4378,7 @@ type ClientWithResponsesInterface interface {
 	// - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//   different times;
 	// - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//   (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+	//   (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 	// - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 	//   is in progress;
 	// - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -5532,7 +5460,7 @@ func (c *ClientWithResponses) ListProjectCancellationsWithResponse(ctx context.C
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -5585,7 +5513,7 @@ func (c *ClientWithResponses) CreateProjectCancellationWithBodyWithResponse(ctx 
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them
 //     is in progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer

@@ -13,11 +13,16 @@ type Handler interface {
 	// Accept peering.
 	//
 	// POST /api/v1/peerings/{peeringId}/accept
-	AcceptPeering(ctx context.Context, params AcceptPeeringParams) (*PeeringResource, error)
+	AcceptPeering(ctx context.Context, params AcceptPeeringParams) (AcceptPeeringRes, error)
 	// AllocateFloatingIP implements allocate-floating-ip operation.
 	//
 	// If the private network is not yet connected to the internet, connectivity is established as part of
 	// this call.
+	//
+	// Returns the floating IP as `pending` with its order; `address` is null until the address is
+	// allocated after the order is accepted. A requested `address` is not held while pending; if it is no
+	// longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is
+	// refunded.
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
 	// network; enable IPv6 on that network instead.
@@ -26,33 +31,35 @@ type Handler interface {
 	// `status` is not `available`. `meta.private_network_id` names it.
 	//
 	// POST /api/v1/floating-ips
-	AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (*PurchaseResult, error)
+	AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (AllocateFloatingIPRes, error)
 	// AttachDisk implements attach-disk operation.
 	//
-	// The disk must be in the same region and availability zone as the instance. Partition it and mount
-	// the file system inside the instance once it is attached.
+	// The disk must be in the same region and availability zone as the instance. Returns the disk; the
+	// instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment
+	// is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 	//
 	// POST /api/v1/instances/{instanceId}/disks
-	AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (*Task, error)
+	AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error)
 	// AttachInstanceFloatingIP implements attach-instance-floating-ip operation.
 	//
-	// Changes the public IP binding on the instance's primary network interface. The returned task tracks
-	// confirmation of the binding change.
+	// Changes the public IP binding on the instance's primary network interface. The instance shows the
+	// `bind_floating_ip` operation until the binding is confirmed.
 	//
 	// POST /api/v1/instances/{instanceId}/floating-ips
-	AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error)
+	AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (AttachInstanceFloatingIPRes, error)
 	// AttachPort implements attach-port operation.
 	//
-	// Attach a network interface.
+	// Returns the network interface; the instance shows the `attach_port` operation and the interface the
+	// `attach` operation until the attachment is confirmed.
 	//
 	// POST /api/v1/instances/{instanceId}/ports
-	AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (*Task, error)
+	AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (AttachPortRes, error)
 	// BindFloatingIP implements bind-floating-ip operation.
 	//
-	// Bind a floating IP to a network interface.
+	// The floating IP shows the `bind` operation until the binding is confirmed.
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/binding
-	BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (*FloatingIPResource, error)
+	BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (BindFloatingIPRes, error)
 	// CreateBackup implements create-backup operation.
 	//
 	// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
@@ -62,28 +69,77 @@ type Handler interface {
 	//
 	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-	// track the returned task.
+	// No order is placed. The backup is metered on the backup service of the disk's region by its
+	// `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused
+	// with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 	//
-	// The backup is billed for its size, at the backup price of its region. Obtain a price with
-	// `create-backup-quote` first.
+	// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup
+	// until it is `available` or `failed`.
 	//
 	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (*PurchaseResult, error)
-	// CreateBackupQuote implements create-backup-quote operation.
+	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (CreateBackupRes, error)
+	// CreateBackupCapacityPack implements create-backup-capacity-pack operation.
 	//
-	// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing
-	// is reserved and nothing is recorded, so this may be called as often as required.
+	// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or
+	// year: `billing` must be prepaid with a period, as offered in the backup service's
+	// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
+	// total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
+	// excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
+	// takes its order and payment and handles its renewal and cancellation through the pack's
+	// subscription.
 	//
-	// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's
-	// backup offering is selected; the returned line names it, and that `price_id` is the one to order
-	// with.
+	// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with
+	// 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
 	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
-	// is placed, so a quote should be refreshed before a final confirmation is shown.
+	// POST /api/v1/regions/{regionId}/backup-capacity-packs
+	CreateBackupCapacityPack(ctx context.Context, req *CreateBackupCapacityPackRequestBody, params CreateBackupCapacityPackParams) (CreateBackupCapacityPackRes, error)
+	// CreateBackupCapacityPackQuote implements create-backup-capacity-pack-quote operation.
 	//
-	// POST /api/v1/backups/quote
-	CreateBackupQuote(ctx context.Context, req *CreateBackupQuoteRequestBody) (*PurchaseQuote, error)
+	// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or
+	// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
+	// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
+	// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
+	// different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and
+	// is not collected at checkout. A request the purchase would refuse is refused the same way. Prices
+	// may change, so quote again before final confirmation.
+	//
+	// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
+	CreateBackupCapacityPackQuote(ctx context.Context, req *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (CreateBackupCapacityPackQuoteRes, error)
+	// CreateBackupRestoreQuote implements create-backup-restore-quote operation.
+	//
+	// Prices what `restore-backup` would order for the same request, without ordering or creating
+	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
+	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
+	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+	// again before final confirmation.
+	//
+	// POST /api/v1/backups/{backupId}/restore/quote
+	CreateBackupRestoreQuote(ctx context.Context, req *RestoreBackupQuoteRequestBody, params CreateBackupRestoreQuoteParams) (CreateBackupRestoreQuoteRes, error)
+	// CreateBackupService implements create-backup-service operation.
+	//
+	// Purchases the backup service for this project and region. The service itself has no charge; backups
+	// are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service
+	// as `pending` with its order; it becomes `active` once the order is accepted.
+	//
+	// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or
+	// suspended.
+	//
+	// POST /api/v1/regions/{regionId}/backup-service
+	CreateBackupService(ctx context.Context, req *CreateBackupServiceRequestBody, params CreateBackupServiceParams) (CreateBackupServiceRes, error)
+	// CreateBackupServiceQuote implements create-backup-service-quote operation.
+	//
+	// Prices what `create-backup-service` would order for the same request, without ordering or creating
+	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
+	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
+	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+	// again before final confirmation.
+	//
+	// POST /api/v1/regions/{regionId}/backup-service/quote
+	CreateBackupServiceQuote(ctx context.Context, params CreateBackupServiceQuoteParams) (CreateBackupServiceQuoteRes, error)
 	// CreateDisk implements create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -94,7 +150,53 @@ type Handler interface {
 	// one keep working and can still be resized.
 	//
 	// POST /api/v1/disks
-	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (*PurchaseResult, error)
+	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (CreateDiskRes, error)
+	// CreateDiskQuote implements create-disk-quote operation.
+	//
+	// Prices what `create-disk` would order for the same request, without ordering or creating anything;
+	// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
+	// automatic checkout. `total` is what automatic checkout would collect before credit grants and
+	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+	// again before final confirmation.
+	//
+	// POST /api/v1/disks/quote
+	CreateDiskQuote(ctx context.Context, req *CreateDiskQuoteRequestBody) (CreateDiskQuoteRes, error)
+	// CreateDiskResizeQuote implements create-disk-resize-quote operation.
+	//
+	// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A
+	// change that raises the price has the charge for the rest of the paid period as `total`; one that
+	// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
+	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
+	// A request the change would refuse is refused the same way. Prices may change, so quote again before
+	// final confirmation.
+	//
+	// POST /api/v1/disks/{diskId}/resize/quote
+	CreateDiskResizeQuote(ctx context.Context, req *ResizeDiskQuoteRequestBody, params CreateDiskResizeQuoteParams) (CreateDiskResizeQuoteRes, error)
+	// CreateFloatingIPBandwidthQuote implements create-floating-ip-bandwidth-quote operation.
+	//
+	// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing
+	// anything. A change that raises the price has the charge for the rest of the paid period as `total`;
+	// one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
+	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
+	// A request the change would refuse is refused the same way. Prices may change, so quote again before
+	// final confirmation.
+	//
+	// POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote
+	CreateFloatingIPBandwidthQuote(ctx context.Context, req *SetFloatingIPBandwidthQuoteRequestBody, params CreateFloatingIPBandwidthQuoteParams) (CreateFloatingIPBandwidthQuoteRes, error)
+	// CreateFloatingIPQuote implements create-floating-ip-quote operation.
+	//
+	// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating
+	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
+	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
+	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+	// again before final confirmation.
+	//
+	// POST /api/v1/floating-ips/quote
+	CreateFloatingIPQuote(ctx context.Context, req *AllocateFloatingIPQuoteRequestBody) (CreateFloatingIPQuoteRes, error)
 	// CreateImage implements create-image operation.
 	//
 	// Creates a private image of this project from the system disk of the instance; data disks are not
@@ -102,8 +204,10 @@ type Handler interface {
 	// source instance is released.
 	//
 	// The image reflects the moment the capture started. Later changes to the instance are not included.
+	// The image is returned as `pending` with its order, and the capture starts only once the order is
+	// accepted.
 	//
-	// The capture has two phases, reported by the status of the image:
+	// The capture then has two phases, reported by the status of the image:
 	//
 	//  - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
 	//    remains usable during this phase, although stopping it first is recommended for consistency.
@@ -117,25 +221,45 @@ type Handler interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// The image is billed for the storage it occupies, at the private image price of its region. Obtain a
-	// price with `create-image-quote` first.
+	// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows.
+	// Obtain a quote with `create-image-quote` first.
 	//
 	// POST /api/v1/images
-	CreateImage(ctx context.Context, req *CreateImageRequestBody) (*PurchaseResult, error)
+	CreateImage(ctx context.Context, req *CreateImageRequestBody) (CreateImageRes, error)
 	// CreateImageQuote implements create-image-quote operation.
 	//
-	// Prices the capture `create-image` would order for the same instance, without ordering anything.
-	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
-	//
-	// The quantity priced is the size of the system disk, which is the most the image can occupy. When
-	// `price_id` is omitted, a price of the region's private image offering is selected; the returned line
-	// names it, and that `price_id` is the one to order with.
-	//
-	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
-	// is placed, so a quote should be refreshed before a final confirmation is shown.
+	// Prices the capture `create-image` would order for the same instance, without ordering anything;
+	// nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the
+	// most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account
+	// discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before
+	// credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
+	// different amount. Prices may change, so quote again before final confirmation.
 	//
 	// POST /api/v1/images/quote
-	CreateImageQuote(ctx context.Context, req *CreateImageQuoteRequestBody) (*PurchaseQuote, error)
+	CreateImageQuote(ctx context.Context, req *CreateImageQuoteRequestBody) (CreateImageQuoteRes, error)
+	// CreateInstanceQuote implements create-instance-quote operation.
+	//
+	// Prices what `launch-instance` would order for the same request, without ordering or creating
+	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
+	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
+	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+	// again before final confirmation.
+	//
+	// POST /api/v1/instances/quote
+	CreateInstanceQuote(ctx context.Context, req *LaunchInstanceQuoteRequestBody) (CreateInstanceQuoteRes, error)
+	// CreateInstanceResizeQuote implements create-instance-resize-quote operation.
+	//
+	// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A
+	// change that raises the price has the charge for the rest of the paid period as `total`; one that
+	// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
+	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
+	// A request the change would refuse is refused the same way. Prices may change, so quote again before
+	// final confirmation.
+	//
+	// POST /api/v1/instances/{instanceId}/resize/quote
+	CreateInstanceResizeQuote(ctx context.Context, req *ResizeInstanceQuoteRequestBody, params CreateInstanceResizeQuoteParams) (CreateInstanceResizeQuoteRes, error)
 	// CreatePeering implements create-peering operation.
 	//
 	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
@@ -192,8 +316,30 @@ type Handler interface {
 	// preserve and restore an entire system, use a private image; for a copy that crosses availability
 	// zones and survives deletion of the disk, use a backup.
 	//
+	// Snapshot slots are purchased separately for this project and the source disk's region. This
+	// operation reserves one available slot and returns the snapshot as `pending`; it places no order and
+	// charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot
+	// exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+	//
+	// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and
+	// meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot
+	// data has been confirmed absent or removed.
+	//
 	// POST /api/v1/snapshots
-	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (*PurchaseResult, error)
+	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (*SnapshotResource, error)
+	// CreateSnapshotQuotaQuote implements create-snapshot-quota-quote operation.
+	//
+	// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now,
+	// for the same request, without ordering or creating anything; nothing is reserved or recorded.
+	// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
+	// automatic checkout would collect before credit grants and balance; give it as
+	// `checkout.expected_amount` to be refused rather than charged a different amount.
+	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+	// again before final confirmation.
+	//
+	// POST /api/v1/regions/{regionId}/snapshot-quota/quote
+	CreateSnapshotQuotaQuote(ctx context.Context, req *SetSnapshotQuotaQuoteRequestBody, params CreateSnapshotQuotaQuoteParams) (CreateSnapshotQuotaQuoteRes, error)
 	// CreateSubnet implements create-subnet operation.
 	//
 	// Create a subnet.
@@ -202,12 +348,8 @@ type Handler interface {
 	CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody, params CreateSubnetParams) (*SubnetResource, error)
 	// DeleteBackup implements delete-backup operation.
 	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
+	// the backup ends once it is deleted.
 	//
 	// DELETE /api/v1/backups/{backupId}
 	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
@@ -229,7 +371,8 @@ type Handler interface {
 	// Deletion is rejected while instances created from the image still exist, as they need it in order to
 	// be rebuilt.
 	//
-	// An image whose capture has not finished can be deleted; the capture is aborted.
+	// An image whose capture has not finished can be deleted; the capture is aborted. This is the one
+	// operation accepted while the `create` operation is in progress.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
 	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
@@ -259,21 +402,21 @@ type Handler interface {
 	// Delete peering.
 	//
 	// DELETE /api/v1/peerings/{peeringId}
-	DeletePeering(ctx context.Context, params DeletePeeringParams) (*PeeringResource, error)
+	DeletePeering(ctx context.Context, params DeletePeeringParams) (DeletePeeringRes, error)
 	// DeletePort implements delete-port operation.
 	//
 	// The primary network interface cannot be deleted on its own, as it is released with the instance. A
 	// network interface still attached to an instance cannot be deleted either.
 	//
 	// DELETE /api/v1/ports/{portId}
-	DeletePort(ctx context.Context, params DeletePortParams) error
+	DeletePort(ctx context.Context, params DeletePortParams) (DeletePortRes, error)
 	// DeletePrivateNetwork implements delete-private-network operation.
 	//
 	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
 	// and the security groups are released with it.
 	//
 	// DELETE /api/v1/private-networks/{privateNetworkId}
-	DeletePrivateNetwork(ctx context.Context, params DeletePrivateNetworkParams) error
+	DeletePrivateNetwork(ctx context.Context, params DeletePrivateNetworkParams) (DeletePrivateNetworkRes, error)
 	// DeleteRoute implements delete-route operation.
 	//
 	// Delete a static route.
@@ -295,10 +438,8 @@ type Handler interface {
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot implements delete-snapshot operation.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// Deletes this snapshot without canceling the project's snapshot quota purchase. A snapshot has no
+	// individual Billing subscription. Its slot stays occupied until the deletion is confirmed.
 	//
 	// DELETE /api/v1/snapshots/{snapshotId}
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
@@ -316,29 +457,35 @@ type Handler interface {
 	//
 	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the
 	// instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with
-	// `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
+	// `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+	//
+	// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation
+	// until the disk is detached.
 	//
 	// DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-	DetachDisk(ctx context.Context, params DetachDiskParams) (*Task, error)
+	DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error)
 	// DetachInstanceFloatingIP implements detach-instance-floating-ip operation.
 	//
-	// Changes the public IP binding on the instance's primary network interface. The returned task tracks
-	// confirmation of the binding change.
+	// Changes the public IP binding on the instance's primary network interface. The instance shows the
+	// `unbind_floating_ip` operation until the change is confirmed.
 	//
 	// DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*FloatingIPResource, error)
+	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (DetachInstanceFloatingIPRes, error)
 	// DetachPort implements detach-port operation.
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
+	// Returns the network interface; the instance shows the `detach_port` operation and the interface the
+	// `detach` operation until it is detached.
+	//
 	// DELETE /api/v1/instances/{instanceId}/ports/{portId}
-	DetachPort(ctx context.Context, params DetachPortParams) (*Task, error)
+	DetachPort(ctx context.Context, params DetachPortParams) (DetachPortRes, error)
 	// DisablePrivateNetworkIpv6 implements disable-private-network-ipv6 operation.
 	//
 	// A released prefix is not re-allocated immediately.
 	//
 	// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
-	DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) error
+	DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) (DisablePrivateNetworkIpv6Res, error)
 	// EnablePrivateNetworkIpv6 implements enable-private-network-ipv6 operation.
 	//
 	// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network
@@ -348,18 +495,31 @@ type Handler interface {
 	// this call.
 	//
 	// POST /api/v1/private-networks/{privateNetworkId}/ipv6
-	EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (*IPv6ResponseBody, error)
+	EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (EnablePrivateNetworkIpv6Res, error)
 	// GetBackup implements get-backup operation.
 	//
-	// Queries the current state of the backup, which makes it slower but more accurate than the list
-	// endpoint. Use it to poll creation progress.
+	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+	// progress.
 	//
 	// GET /api/v1/backups/{backupId}
 	GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error)
+	// GetBackupService implements get-backup-service operation.
+	//
+	// The backup service of the authenticated project in this region. Backups can be created only while it
+	// is `active`. Each hour, Compute covers retained backup capacity up to the total `capacity_gib` of
+	// the capacity packs active in the region and meters only the excess on this service's subscription,
+	// per GiB-hour.
+	//
+	// Canceling the service's subscription through Billing is refused while any backup is retained in the
+	// region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity
+	// packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment
+	// deletes its backups.
+	//
+	// GET /api/v1/regions/{regionId}/backup-service
+	GetBackupService(ctx context.Context, params GetBackupServiceParams) (*BackupService, error)
 	// GetDisk implements get-disk operation.
 	//
-	// Queries the current state of the disk, which makes it slower but more accurate than the list
-	// endpoint.
+	// Returns the stored state of the disk; it does not query the cloud.
 	//
 	// GET /api/v1/disks/{diskId}
 	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
@@ -379,15 +539,15 @@ type Handler interface {
 	// GetImage implements get-image operation.
 	//
 	// Returns a public image, or a private image of this project; any other image is reported as not
-	// found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the
-	// reason.
+	// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure_reason`
+	// states why.
 	//
 	// GET /api/v1/images/{imageId}
 	GetImage(ctx context.Context, params GetImageParams) (*ImageResource, error)
 	// GetInstance implements get-instance operation.
 	//
-	// Queries the current state of the instance, which makes it slower but more accurate than the list
-	// endpoint. Use it to poll creation progress.
+	// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
+	// progress.
 	//
 	// GET /api/v1/instances/{instanceId}
 	GetInstance(ctx context.Context, params GetInstanceParams) (*InstanceResource, error)
@@ -431,28 +591,48 @@ type Handler interface {
 	//
 	// GET /api/v1/snapshots/{snapshotId}
 	GetSnapshot(ctx context.Context, params GetSnapshotParams) (*SnapshotResource, error)
-	// GetTask implements get-task operation.
+	// GetSnapshotQuota implements get-snapshot-quota operation.
 	//
-	// Get a requested action.
+	// The snapshot count quota for the authenticated project in this region. Counts simultaneous snapshot
+	// holdings, not lifetime create calls or storage bytes. Without an active purchase, limit and
+	// available are zero; existing holdings, if any, still appear in used.
 	//
-	// GET /api/v1/tasks/{taskId}
-	GetTask(ctx context.Context, params GetTaskParams) (*Task, error)
+	// pending and provisioning creations reserve a slot. Snapshots being deleted or whose cleanup is
+	// uncertain retain their slots until absence or deletion is confirmed. available is max(limit - used,
+	// 0) while active, and zero when creation is not permitted; additional creation is refused while the
+	// quota is inactive, suspended or exhausted.
+	//
+	// Canceling the quota's subscription through Billing is refused while any snapshot exists in the
+	// region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment
+	// deletes its snapshots, as for other reclaimed resources.
+	//
+	// GET /api/v1/regions/{regionId}/snapshot-quota
+	GetSnapshotQuota(ctx context.Context, params GetSnapshotQuotaParams) (*SnapshotQuota, error)
 	// LaunchInstance implements launch-instance operation.
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
-	// the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
-	// submit a new purchase after paying. After an uncertain response, look the order up before submitting
-	// again.
+	// Creates a Billing order, including for metered pricing, and returns one `pending` instance per
+	// requested instance with the order. `billing` applies to the instance, its system disk and its
+	// floating IP alike. A pending instance has no virtual machine, system disk or address, and is not
+	// metered.
+	//
+	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`.
+	// With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred
+	// checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid
+	// through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or
+	// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
+	// look the order up before submitting again.
 	//
 	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id.
-	// Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing
-	// disks retain their own subscription. Instances, disks and public IPs keep their own subscription
-	// items on the same order.
+	// Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is
+	// pending; if one is no longer usable when the order is accepted, the instance ends `failed` with
+	// `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription.
+	// Instances, disks and public IPs keep their own subscription items on the same order.
 	//
-	// A request for several instances is all or nothing: if any instance cannot be created, every instance
-	// of that request is released, the order fails, and any payment for it is refunded. Each instance is
-	// named after this request with a number appended, and each has its own task.
+	// Instances of one request succeed or fail individually. Each instance, with its system disk, network
+	// interface and floating IP, is created or fails as a whole. Instances that were created are kept;
+	// each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded,
+	// and the order then ends `partially_completed`. Each instance is named after this request with a
+	// number appended.
 	//
 	// The network is checked before the order is created, and a request it refuses orders and charges
 	// nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not
@@ -462,7 +642,7 @@ type Handler interface {
 	// the resource.
 	//
 	// POST /api/v1/instances
-	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
+	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (LaunchInstanceRes, error)
 	// ListAvailabilityZones implements list-availability-zones operation.
 	//
 	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
@@ -470,6 +650,12 @@ type Handler interface {
 	//
 	// GET /api/v1/regions/{regionId}/availability-zones
 	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*ZoneListResponseBody, error)
+	// ListBackupCapacityPacks implements list-backup-capacity-packs operation.
+	//
+	// The capacity packs of the authenticated project in this region, newest first, including ended ones.
+	//
+	// GET /api/v1/regions/{regionId}/backup-capacity-packs
+	ListBackupCapacityPacks(ctx context.Context, params ListBackupCapacityPacksParams) (*BackupCapacityPackListResponseBody, error)
 	// ListBackups implements list-backups operation.
 	//
 	// List backups.
@@ -535,8 +721,7 @@ type Handler interface {
 	ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (*InstanceTypeListResponseBody, error)
 	// ListInstances implements list-instances operation.
 	//
-	// Every instance in the project, newest first. This endpoint does not query backend state; for the
-	// accurate state of one instance, use the retrieve endpoint.
+	// Every instance in the project, newest first, in their stored state.
 	//
 	// GET /api/v1/instances
 	ListInstances(ctx context.Context, params ListInstancesParams) (*InstanceListResponseBody, error)
@@ -631,17 +816,16 @@ type Handler interface {
 	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
 	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
 	//
-	// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a
-	// soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient
-	// state, and a second soft reboot is refused as well.
+	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
+	// reboot the instance never carried out. Any other request for an operation, including a second soft
+	// reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 	//
 	// An instance suspended by the platform must be unsuspended first.
 	//
-	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
-	// instance until it settles at `running`.
+	// The instance shows the `reboot` operation until the reboot has finished.
 	//
 	// POST /api/v1/instances/{instanceId}/reboot
-	RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (*Task, error)
+	RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error)
 	// RebuildInstance implements rebuild-instance operation.
 	//
 	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
@@ -650,8 +834,10 @@ type Handler interface {
 	// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
 	// is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
+	// The instance shows the `rebuild` operation until the rebuild has finished.
+	//
 	// POST /api/v1/instances/{instanceId}/rebuild
-	RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (*RebuildInstanceResponseBody, error)
+	RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (RebuildInstanceRes, error)
 	// RejectPeering implements reject-peering operation.
 	//
 	// Reject peering.
@@ -660,7 +846,8 @@ type Handler interface {
 	RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error)
 	// ReleaseFloatingIP implements release-floating-ip operation.
 	//
-	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+	// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
+	// is released.
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
 	// bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
@@ -724,11 +911,16 @@ type Handler interface {
 	// has been removed or stopped inside the instance.
 	//
 	// POST /api/v1/instances/{instanceId}/password
-	ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (*ResetPasswordResponseBody, error)
+	ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (ResetInstancePasswordRes, error)
 	// ResizeDisk implements resize-disk operation.
 	//
-	// Capacity can only be increased; shrinking is not supported. The resize is not complete when this
-	// endpoint returns; track the returned task, then extend the file system inside the instance.
+	// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the
+	// resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until
+	// the resize is applied or its order is canceled, including while the order awaits checkout, so other
+	// operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps
+	// its current size until the resize is applied; once `size_gb` shows the new size, extend the file
+	// system inside the instance. If the order is not accepted or the resize fails, the disk keeps its
+	// size and the order shows the outcome.
 	//
 	// An attached data disk whose performance scales with its size must be detached before it is resized.
 	// The performance of an attached disk does not change until the disk is detached and attached again,
@@ -744,31 +936,35 @@ type Handler interface {
 	// change its performance.
 	//
 	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (*PurchaseResult, error)
+	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
 	// ResizeInstance implements resize-instance operation.
 	//
-	// Creates a Billing change order, including for metered pricing. The price must belong to the Billing
-	// Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
-	// applied after the order's invoice is paid, or without waiting when the order has no immediate
-	// invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up
-	// before submitting again.
+	// Creates a Billing change order, including for metered pricing, and returns the instance with the
+	// order. The instance keeps its billing mode and period, priced with the target type's matching
+	// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not
+	// submit a new purchase after paying. After an uncertain response, look the order up before submitting
+	// again.
 	//
-	// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
+	// The instance shows the `resize` operation until the resize is applied or its order is canceled,
+	// including while the order awaits checkout, so other operations and a second resize are refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
+	// type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not
+	// accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A
 	// completed resize is final and cannot be reverted; to return to the previous type, submit another
 	// resize.
 	//
 	// POST /api/v1/instances/{instanceId}/resize
-	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (*PurchaseResult, error)
+	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error)
 	// RestoreBackup implements restore-backup operation.
 	//
 	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 	//
 	// The target disk type may belong to another availability zone of the same region, and its capacity
-	// must not be smaller than the backup. The disk cannot be attached until the restore completes; track
-	// the returned task.
+	// must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be
+	// attached until it is `available`.
 	//
 	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (*PurchaseResult, error)
+	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
 	// RevertDisk implements revert-disk operation.
 	//
 	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
@@ -779,10 +975,10 @@ type Handler interface {
 	// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
 	// from the snapshot instead.
 	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+	// The disk shows the `revert` operation until the revert is complete.
 	//
 	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (*Task, error)
+	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
 	// RunInstanceCommand implements run-instance-command operation.
 	//
 	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
@@ -800,7 +996,7 @@ type Handler interface {
 	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
-	//  - it is `running`
+	//  - it is `active`
 	//  - a floating IP is bound to it, since this endpoint connects over the public internet
 	//  - its security group permits inbound TCP 22
 	//
@@ -817,15 +1013,20 @@ type Handler interface {
 	RunInstanceCommand(ctx context.Context, req *RunCommandRequestBody, params RunInstanceCommandParams) (*CommandResultResponseBody, error)
 	// SetFloatingIPBandwidth implements set-floating-ip-bandwidth operation.
 	//
-	// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this
-	// endpoint returns; track the returned task.
+	// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period;
+	// no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike.
+	// The floating IP shows the `set_bandwidth` operation until the change is applied or its order is
+	// canceled, including while the order awaits checkout, so other operations and a second change are
+	// refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change
+	// is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
+	// the order shows the outcome.
 	//
 	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
 	// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
 	// address that is not bound is checked when the address is bound to an instance.
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-	SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*PurchaseResult, error)
+	SetFloatingIPBandwidth(ctx context.Context, req *SetFloatingIPBandwidthRequestBody, params SetFloatingIPBandwidthParams) (SetFloatingIPBandwidthRes, error)
 	// SetInstanceLabels implements set-instance-labels operation.
 	//
 	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
@@ -847,24 +1048,40 @@ type Handler interface {
 	//
 	// PUT /api/v1/instances/{instanceId}/notes
 	SetInstanceNotes(ctx context.Context, req *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (*InstanceResource, error)
+	// SetSnapshotQuota implements set-snapshot-quota operation.
+	//
+	// Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
+	// the target total, not an additional number of slots or a consumable create allowance. billing
+	// chooses one of the quota's pricing options; a change of an existing purchase keeps its billing mode
+	// and period, and billing must name that option. The purchased quantity is this count.
+	//
+	// Returns the quota with the order. pending_limit records the target while the current limit stays in
+	// force; the new limit applies once the order is accepted and the quota is activated. Snapshots create
+	// no further orders or subscriptions, and deleting one frees a slot without refunding the quota
+	// purchase.
+	//
+	// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+	// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+	// identical target and billing choice returns its existing purchase without charging again; renewing
+	// its term is a separate Billing renewal operation. A requested limit below used is refused with 409
+	// SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+	//
+	// PUT /api/v1/regions/{regionId}/snapshot-quota
+	SetSnapshotQuota(ctx context.Context, req *SetSnapshotQuotaRequestBody, params SetSnapshotQuotaParams) (SetSnapshotQuotaRes, error)
 	// StartInstance implements start-instance operation.
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
-	// start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network
-	// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
-	// determine completion.
+	// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
+	// running or the start has failed.
 	//
 	// POST /api/v1/instances/{instanceId}/start
-	StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (*Task, error)
+	StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (StartInstanceRes, error)
 	// StopInstance implements stop-instance operation.
 	//
-	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
-	// start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network
-	// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
-	// determine completion.
+	// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
+	// `stop` operation until it is stopped or the stop has failed.
 	//
 	// POST /api/v1/instances/{instanceId}/stop
-	StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (*Task, error)
+	StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (StopInstanceRes, error)
 	// SuggestSubnetCidr implements suggest-subnet-cidr operation.
 	//
 	// The returned value is a suggestion and is validated again when the subnet is created. It exists to
@@ -874,10 +1091,11 @@ type Handler interface {
 	SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (*NextFreeCidrResponseBody, error)
 	// UnbindFloatingIP implements unbind-floating-ip operation.
 	//
-	// The address remains held by the project and simply no longer points at any network interface.
+	// The address remains held by the project and simply no longer points at any network interface. The
+	// floating IP shows the `unbind` operation until the change is confirmed.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}/binding
-	UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (*FloatingIPResource, error)
+	UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (UnbindFloatingIPRes, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

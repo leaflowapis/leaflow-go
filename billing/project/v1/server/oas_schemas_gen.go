@@ -1200,27 +1200,11 @@ func (s *CancellationOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
-// Preview one cancellation without combining it with a purchase, renewal or promotion code.
-// Ref: #/components/schemas/CancellationQuoteRequest
-type CancellationQuoteRequest struct {
-	Cancellation QuoteCancellation `json:"cancellation"`
-}
-
-// GetCancellation returns the value of Cancellation.
-func (s *CancellationQuoteRequest) GetCancellation() QuoteCancellation {
-	return s.Cancellation
-}
-
-// SetCancellation sets the value of Cancellation.
-func (s *CancellationQuoteRequest) SetCancellation(val QuoteCancellation) {
-	s.Cancellation = val
-}
-
 // What the cancellation would return, subscription by subscription and in total, as of now. Give
 // `proration_date` and `refundable_amount` when creating the cancellation.
 //
-//   - `unused_amount`: before tax, the value of the paid service still unused, whatever the refund
-//     terms say.
+//   - `unused_amount`: before tax, the amount paid for the current periods minus the value of the time
+//     used, valued as refund policy `prorated` describes, whatever the refund terms say.
 //   - `refundable_amount`: what is returned the way it was paid, including the tax paid on it;
 //     `refund_amount` plus `credit_amount`.
 //   - `refund_amount`: the part returned to the balance or to the payment method.
@@ -2172,10 +2156,12 @@ type InvoiceSummary struct {
 	// holds.
 	Subtotal string `json:"subtotal"`
 	// Sum of the line discounts, taken off before tax.
-	DiscountAmount string      `json:"discount_amount"`
-	TaxAmount      string      `json:"tax_amount"`
-	Total          string      `json:"total"`
-	AmountPaid     string      `json:"amount_paid"`
+	DiscountAmount string `json:"discount_amount"`
+	TaxAmount      string `json:"tax_amount"`
+	Total          string `json:"total"`
+	AmountPaid     string `json:"amount_paid"`
+	// What is still collectible after applied credits and successful payments; never below zero.
+	AmountDue      string      `json:"amount_due"`
 	AmountRefunded string      `json:"amount_refunded"`
 	DueAt          OptDateTime `json:"due_at"`
 }
@@ -2223,6 +2209,11 @@ func (s *InvoiceSummary) GetTotal() string {
 // GetAmountPaid returns the value of AmountPaid.
 func (s *InvoiceSummary) GetAmountPaid() string {
 	return s.AmountPaid
+}
+
+// GetAmountDue returns the value of AmountDue.
+func (s *InvoiceSummary) GetAmountDue() string {
+	return s.AmountDue
 }
 
 // GetAmountRefunded returns the value of AmountRefunded.
@@ -2278,6 +2269,11 @@ func (s *InvoiceSummary) SetTotal(val string) {
 // SetAmountPaid sets the value of AmountPaid.
 func (s *InvoiceSummary) SetAmountPaid(val string) {
 	s.AmountPaid = val
+}
+
+// SetAmountDue sets the value of AmountDue.
+func (s *InvoiceSummary) SetAmountDue(val string) {
+	s.AmountDue = val
 }
 
 // SetAmountRefunded sets the value of AmountRefunded.
@@ -3396,6 +3392,74 @@ func (o OptNilNamedIdentity) Or(d NamedIdentity) NamedIdentity {
 	return d
 }
 
+// NewOptNilString returns new OptNilString with value set to v.
+func NewOptNilString(v string) OptNilString {
+	return OptNilString{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilString is optional nullable string.
+type OptNilString struct {
+	Value string
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilString was set.
+func (o OptNilString) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilString) Reset() {
+	var v string
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilString) SetTo(v string) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilString) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilString) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v string
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilString) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilString) Get() (v string, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilUUID returns new OptNilUUID with value set to v.
 func NewOptNilUUID(v uuid.UUID) OptNilUUID {
 	return OptNilUUID{
@@ -3780,6 +3844,52 @@ func (o OptProductID) Get() (v ProductID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptProductID) Or(d ProductID) ProductID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptQuoteCancellation returns new OptQuoteCancellation with value set to v.
+func NewOptQuoteCancellation(v QuoteCancellation) OptQuoteCancellation {
+	return OptQuoteCancellation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteCancellation is optional QuoteCancellation.
+type OptQuoteCancellation struct {
+	Value QuoteCancellation
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteCancellation was set.
+func (o OptQuoteCancellation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteCancellation) Reset() {
+	var v QuoteCancellation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteCancellation) SetTo(v QuoteCancellation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteCancellation) Get() (v QuoteCancellation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteCancellation) Or(d QuoteCancellation) QuoteCancellation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4511,16 +4621,23 @@ type OrderItem struct {
 	Position      OptInt                    `json:"position"`
 	Configuration OptOrderItemConfiguration `json:"configuration"`
 	// Stable Billing subscription ID. A new prepaid or postpaid service purchase returns the pending
-	// subscription here; renewals reference the existing subscription and changes the replacement. Absent
-	// for delivery without a subscription. This is not a business resource ID.
-	SubscriptionID     OptUUID              `json:"subscription_id"`
-	Interval           OrderItemInterval    `json:"interval"`
-	IntervalCount      OptInt               `json:"interval_count"`
-	TerminationPolicy  OptTerminationPolicy `json:"termination_policy"`
-	RefundPolicy       OptRefundPolicy      `json:"refund_policy"`
-	CompletesOnPayment bool                 `json:"completes_on_payment"`
-	RecurringAmount    OptString            `json:"recurring_amount"`
-	SetupAmount        OptString            `json:"setup_amount"`
+	// subscription here; renewals and changes reference the existing subscription, which keeps its ID.
+	// Absent for delivery without a subscription. This is not a business resource ID.
+	SubscriptionID    OptUUID              `json:"subscription_id"`
+	Interval          OrderItemInterval    `json:"interval"`
+	IntervalCount     OptInt               `json:"interval_count"`
+	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
+	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
+	// Prepaid items only: the plan's one-month prepaid price for this item's quantity before tax, frozen
+	// at purchase, used to value time used under a prorated refund or a downgrade. Null when the plan has
+	// no prepaid period shorter than the one bought.
+	RefundMonthlyAmount OptNilString `json:"refund_monthly_amount"`
+	// Prepaid items only: the plan's postpaid hourly price for this item's quantity before tax, frozen at
+	// purchase, used for time used short of a full month. Null when the plan has no postpaid price.
+	RefundHourlyAmount OptNilString `json:"refund_hourly_amount"`
+	CompletesOnPayment bool         `json:"completes_on_payment"`
+	RecurringAmount    OptString    `json:"recurring_amount"`
+	SetupAmount        OptString    `json:"setup_amount"`
 	// The payment timing of the selected price.
 	BillingType OrderItemBillingType `json:"billing_type"`
 	// Total tax after discounts, including any tax already included in the price.
@@ -4539,12 +4656,15 @@ type OrderItem struct {
 	PlanName string `json:"plan_name"`
 	Quantity string `json:"quantity"`
 	// The unit amount of the price this line is charged under. Absent for a tiered price, which has no
-	// single unit amount, and for a change that takes effect at once, which is charged the prorated
-	// difference.
+	// single unit amount, and for a change that takes effect at once, which is charged as `gross_amount`
+	// describes.
 	UnitAmount OptMoney `json:"unit_amount"`
 	// Before discounts: the price applied to the quantity, which for a per-unit price is `unit_amount`
-	// times `quantity`; a minimum charge can make it higher. For a change that takes effect at once it is
-	// the prorated difference. The setup fee is not part of it; see `setup_amount`.
+	// times `quantity`; a minimum charge can make it higher. For an upgrade that takes effect at once it
+	// is the new price minus the old price for the time left in the paid period, both at the
+	// subscription's own period price, and the period end does not move; a downgrade charges nothing and
+	// may refund the difference instead. A change between equal period prices charges and refunds nothing.
+	// The setup fee is not part of it; see `setup_amount`.
 	//
 	// Under an inclusive tax rate it includes tax, as the price does, and the included part is
 	// `tax_included_amount`. A renewal at the agreed terms is the exception: the agreed amount excludes
@@ -4599,6 +4719,16 @@ func (s *OrderItem) GetTerminationPolicy() OptTerminationPolicy {
 // GetRefundPolicy returns the value of RefundPolicy.
 func (s *OrderItem) GetRefundPolicy() OptRefundPolicy {
 	return s.RefundPolicy
+}
+
+// GetRefundMonthlyAmount returns the value of RefundMonthlyAmount.
+func (s *OrderItem) GetRefundMonthlyAmount() OptNilString {
+	return s.RefundMonthlyAmount
+}
+
+// GetRefundHourlyAmount returns the value of RefundHourlyAmount.
+func (s *OrderItem) GetRefundHourlyAmount() OptNilString {
+	return s.RefundHourlyAmount
 }
 
 // GetCompletesOnPayment returns the value of CompletesOnPayment.
@@ -4744,6 +4874,16 @@ func (s *OrderItem) SetTerminationPolicy(val OptTerminationPolicy) {
 // SetRefundPolicy sets the value of RefundPolicy.
 func (s *OrderItem) SetRefundPolicy(val OptRefundPolicy) {
 	s.RefundPolicy = val
+}
+
+// SetRefundMonthlyAmount sets the value of RefundMonthlyAmount.
+func (s *OrderItem) SetRefundMonthlyAmount(val OptNilString) {
+	s.RefundMonthlyAmount = val
+}
+
+// SetRefundHourlyAmount sets the value of RefundHourlyAmount.
+func (s *OrderItem) SetRefundHourlyAmount(val OptNilString) {
+	s.RefundHourlyAmount = val
 }
 
 // SetCompletesOnPayment sets the value of CompletesOnPayment.
@@ -5082,39 +5222,10 @@ func (s *OrderList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Preview checkout of one existing order. Its recorded purchase terms supply every line. Without a
-// code, an applicable account discount is selected. A preview neither changes the order nor reserves
-// or consumes a redemption. A confirmed order returns its recorded amounts.
-// Ref: #/components/schemas/OrderQuoteRequest
-type OrderQuoteRequest struct {
-	OrderID uuid.UUID `json:"order_id"`
-	// Code to evaluate for this order. Must be supplied again when confirming checkout.
-	PromotionCode OptString `json:"promotion_code"`
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *OrderQuoteRequest) GetOrderID() uuid.UUID {
-	return s.OrderID
-}
-
-// GetPromotionCode returns the value of PromotionCode.
-func (s *OrderQuoteRequest) GetPromotionCode() OptString {
-	return s.PromotionCode
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *OrderQuoteRequest) SetOrderID(val uuid.UUID) {
-	s.OrderID = val
-}
-
-// SetPromotionCode sets the value of PromotionCode.
-func (s *OrderQuoteRequest) SetPromotionCode(val OptString) {
-	s.PromotionCode = val
-}
-
-// Pending_checkout has recorded purchase terms but no confirmed checkout. An absent invoice or zero
-// total does not permit acceptance. Confirmation moves it to pending. Both pending_checkout and
-// pending can expire or be canceled; neither establishes service delivery.
+// Pending_checkout has recorded purchase terms but no confirmed checkout; only a deferred order with
+// an amount due reaches it, since a zero-total order completes checkout at placement. Confirmation
+// moves it to pending. Both pending_checkout and pending can expire or be canceled; neither
+// establishes service delivery.
 //
 // Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid.
 // `active` is accepted with items still being set up. `completed` means every item was set up.
@@ -5491,36 +5602,6 @@ func (s *ProjectBillingAccountStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Preview one proposed purchase using the project's current billing account. Without a code, an
-// applicable account discount is selected. An explicit code is evaluated without reserving or
-// consuming a redemption and must be supplied again when confirming checkout through Billing. Future
-// usage estimates cannot be combined with a promotion code or used as a checkout amount.
-// Ref: #/components/schemas/PurchaseQuoteRequest
-type PurchaseQuoteRequest struct {
-	Lines         []QuoteLine `json:"lines"`
-	PromotionCode OptString   `json:"promotion_code"`
-}
-
-// GetLines returns the value of Lines.
-func (s *PurchaseQuoteRequest) GetLines() []QuoteLine {
-	return s.Lines
-}
-
-// GetPromotionCode returns the value of PromotionCode.
-func (s *PurchaseQuoteRequest) GetPromotionCode() OptString {
-	return s.PromotionCode
-}
-
-// SetLines sets the value of Lines.
-func (s *PurchaseQuoteRequest) SetLines(val []QuoteLine) {
-	s.Lines = val
-}
-
-// SetPromotionCode sets the value of PromotionCode.
-func (s *PurchaseQuoteRequest) SetPromotionCode(val OptString) {
-	s.PromotionCode = val
-}
-
 // A computed price preview, without a saved quote or a price guarantee. No funds or discount
 // redemptions are reserved. Amounts use currency and exclude payment from credit grants or balance.
 // Ref: #/components/schemas/Quote
@@ -5889,13 +5970,18 @@ func (s *QuoteLinePriceType) UnmarshalText(data []byte) error {
 
 // Price renewing a prepaid subscription. Give `price_id`, or `interval` with `interval_count`, to
 // renew for another term at the price currently sold for it. Naming the current term, or giving
-// neither, renews at the agreed amount.
+// neither, renews at the agreed amount. A term sold at several prices that differ in termination
+// policy is refused with 409 `BILLING_RENEWAL_OPTION_AMBIGUOUS` unless `termination_policy` or
+// `price_id` is given.
 // Ref: #/components/schemas/QuoteRenewal
 type QuoteRenewal struct {
 	SubscriptionID uuid.UUID               `json:"subscription_id"`
 	PriceID        OptUUID                 `json:"price_id"`
 	Interval       OptQuoteRenewalInterval `json:"interval"`
 	IntervalCount  OptInt                  `json:"interval_count"`
+	// With `interval` and `interval_count`, chooses among prices of that term that differ in termination
+	// policy.
+	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 	// How many consecutive periods to renew for.
 	Periods OptInt `json:"periods"`
 }
@@ -5918,6 +6004,11 @@ func (s *QuoteRenewal) GetInterval() OptQuoteRenewalInterval {
 // GetIntervalCount returns the value of IntervalCount.
 func (s *QuoteRenewal) GetIntervalCount() OptInt {
 	return s.IntervalCount
+}
+
+// GetTerminationPolicy returns the value of TerminationPolicy.
+func (s *QuoteRenewal) GetTerminationPolicy() OptTerminationPolicy {
+	return s.TerminationPolicy
 }
 
 // GetPeriods returns the value of Periods.
@@ -5943,6 +6034,11 @@ func (s *QuoteRenewal) SetInterval(val OptQuoteRenewalInterval) {
 // SetIntervalCount sets the value of IntervalCount.
 func (s *QuoteRenewal) SetIntervalCount(val OptInt) {
 	s.IntervalCount = val
+}
+
+// SetTerminationPolicy sets the value of TerminationPolicy.
+func (s *QuoteRenewal) SetTerminationPolicy(val OptTerminationPolicy) {
+	s.TerminationPolicy = val
 }
 
 // SetPeriods sets the value of Periods.
@@ -6182,128 +6278,74 @@ func (s *QuoteRenewalResultInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// Quote exactly one target. Purchase lines, an existing order, a renewal list and a cancellation are
-// mutually exclusive.
+// Quote exactly one target: purchase `lines`, an existing `order_id`, `renewals` or a `cancellation`.
+// Giving none or more than one, or a `promotion_code` with `renewals` or a `cancellation`, fails with
+// HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field` naming the offending field. Without a code, an
+// applicable account discount is selected. An explicit code is evaluated without reserving or
+// consuming a redemption and must be supplied again when confirming checkout through Billing.
 // Ref: #/components/schemas/QuoteRequest
-// QuoteRequest represents sum type.
 type QuoteRequest struct {
-	// Type selects the active sum variant, switch on this field.
-	Type                     QuoteRequestType
-	PurchaseQuoteRequest     PurchaseQuoteRequest
-	OrderQuoteRequest        OrderQuoteRequest
-	RenewalQuoteRequest      RenewalQuoteRequest
-	CancellationQuoteRequest CancellationQuoteRequest
+	// A proposed purchase, priced with the project's current billing account. Future usage estimates
+	// cannot be combined with a promotion code or used as a checkout amount.
+	Lines []QuoteLine `json:"lines"`
+	// Preview checkout of this existing order. Its recorded purchase terms supply every line, and a
+	// confirmed order returns its recorded amounts. A preview does not change the order.
+	OrderID OptUUID `json:"order_id"`
+	// Preview renewing these subscriptions, each at most once. Each entry represents a separate renewal
+	// order. To preview a new promotion code, create a renewal order and quote it by order_id.
+	Renewals      []QuoteRenewal       `json:"renewals"`
+	Cancellation  OptQuoteCancellation `json:"cancellation"`
+	PromotionCode OptString            `json:"promotion_code"`
 }
 
-// QuoteRequestType is oneOf type of QuoteRequest.
-type QuoteRequestType string
-
-// Possible values for QuoteRequestType.
-const (
-	PurchaseQuoteRequestQuoteRequest     QuoteRequestType = "PurchaseQuoteRequest"
-	OrderQuoteRequestQuoteRequest        QuoteRequestType = "OrderQuoteRequest"
-	RenewalQuoteRequestQuoteRequest      QuoteRequestType = "RenewalQuoteRequest"
-	CancellationQuoteRequestQuoteRequest QuoteRequestType = "CancellationQuoteRequest"
-)
-
-// IsPurchaseQuoteRequest reports whether QuoteRequest is PurchaseQuoteRequest.
-func (s QuoteRequest) IsPurchaseQuoteRequest() bool {
-	return s.Type == PurchaseQuoteRequestQuoteRequest
+// GetLines returns the value of Lines.
+func (s *QuoteRequest) GetLines() []QuoteLine {
+	return s.Lines
 }
 
-// IsOrderQuoteRequest reports whether QuoteRequest is OrderQuoteRequest.
-func (s QuoteRequest) IsOrderQuoteRequest() bool { return s.Type == OrderQuoteRequestQuoteRequest }
-
-// IsRenewalQuoteRequest reports whether QuoteRequest is RenewalQuoteRequest.
-func (s QuoteRequest) IsRenewalQuoteRequest() bool { return s.Type == RenewalQuoteRequestQuoteRequest }
-
-// IsCancellationQuoteRequest reports whether QuoteRequest is CancellationQuoteRequest.
-func (s QuoteRequest) IsCancellationQuoteRequest() bool {
-	return s.Type == CancellationQuoteRequestQuoteRequest
+// GetOrderID returns the value of OrderID.
+func (s *QuoteRequest) GetOrderID() OptUUID {
+	return s.OrderID
 }
 
-// SetPurchaseQuoteRequest sets QuoteRequest to PurchaseQuoteRequest.
-func (s *QuoteRequest) SetPurchaseQuoteRequest(v PurchaseQuoteRequest) {
-	s.Type = PurchaseQuoteRequestQuoteRequest
-	s.PurchaseQuoteRequest = v
+// GetRenewals returns the value of Renewals.
+func (s *QuoteRequest) GetRenewals() []QuoteRenewal {
+	return s.Renewals
 }
 
-// GetPurchaseQuoteRequest returns PurchaseQuoteRequest and true boolean if QuoteRequest is PurchaseQuoteRequest.
-func (s QuoteRequest) GetPurchaseQuoteRequest() (v PurchaseQuoteRequest, ok bool) {
-	if !s.IsPurchaseQuoteRequest() {
-		return v, false
-	}
-	return s.PurchaseQuoteRequest, true
+// GetCancellation returns the value of Cancellation.
+func (s *QuoteRequest) GetCancellation() OptQuoteCancellation {
+	return s.Cancellation
 }
 
-// NewPurchaseQuoteRequestQuoteRequest returns new QuoteRequest from PurchaseQuoteRequest.
-func NewPurchaseQuoteRequestQuoteRequest(v PurchaseQuoteRequest) QuoteRequest {
-	var s QuoteRequest
-	s.SetPurchaseQuoteRequest(v)
-	return s
+// GetPromotionCode returns the value of PromotionCode.
+func (s *QuoteRequest) GetPromotionCode() OptString {
+	return s.PromotionCode
 }
 
-// SetOrderQuoteRequest sets QuoteRequest to OrderQuoteRequest.
-func (s *QuoteRequest) SetOrderQuoteRequest(v OrderQuoteRequest) {
-	s.Type = OrderQuoteRequestQuoteRequest
-	s.OrderQuoteRequest = v
+// SetLines sets the value of Lines.
+func (s *QuoteRequest) SetLines(val []QuoteLine) {
+	s.Lines = val
 }
 
-// GetOrderQuoteRequest returns OrderQuoteRequest and true boolean if QuoteRequest is OrderQuoteRequest.
-func (s QuoteRequest) GetOrderQuoteRequest() (v OrderQuoteRequest, ok bool) {
-	if !s.IsOrderQuoteRequest() {
-		return v, false
-	}
-	return s.OrderQuoteRequest, true
+// SetOrderID sets the value of OrderID.
+func (s *QuoteRequest) SetOrderID(val OptUUID) {
+	s.OrderID = val
 }
 
-// NewOrderQuoteRequestQuoteRequest returns new QuoteRequest from OrderQuoteRequest.
-func NewOrderQuoteRequestQuoteRequest(v OrderQuoteRequest) QuoteRequest {
-	var s QuoteRequest
-	s.SetOrderQuoteRequest(v)
-	return s
+// SetRenewals sets the value of Renewals.
+func (s *QuoteRequest) SetRenewals(val []QuoteRenewal) {
+	s.Renewals = val
 }
 
-// SetRenewalQuoteRequest sets QuoteRequest to RenewalQuoteRequest.
-func (s *QuoteRequest) SetRenewalQuoteRequest(v RenewalQuoteRequest) {
-	s.Type = RenewalQuoteRequestQuoteRequest
-	s.RenewalQuoteRequest = v
+// SetCancellation sets the value of Cancellation.
+func (s *QuoteRequest) SetCancellation(val OptQuoteCancellation) {
+	s.Cancellation = val
 }
 
-// GetRenewalQuoteRequest returns RenewalQuoteRequest and true boolean if QuoteRequest is RenewalQuoteRequest.
-func (s QuoteRequest) GetRenewalQuoteRequest() (v RenewalQuoteRequest, ok bool) {
-	if !s.IsRenewalQuoteRequest() {
-		return v, false
-	}
-	return s.RenewalQuoteRequest, true
-}
-
-// NewRenewalQuoteRequestQuoteRequest returns new QuoteRequest from RenewalQuoteRequest.
-func NewRenewalQuoteRequestQuoteRequest(v RenewalQuoteRequest) QuoteRequest {
-	var s QuoteRequest
-	s.SetRenewalQuoteRequest(v)
-	return s
-}
-
-// SetCancellationQuoteRequest sets QuoteRequest to CancellationQuoteRequest.
-func (s *QuoteRequest) SetCancellationQuoteRequest(v CancellationQuoteRequest) {
-	s.Type = CancellationQuoteRequestQuoteRequest
-	s.CancellationQuoteRequest = v
-}
-
-// GetCancellationQuoteRequest returns CancellationQuoteRequest and true boolean if QuoteRequest is CancellationQuoteRequest.
-func (s QuoteRequest) GetCancellationQuoteRequest() (v CancellationQuoteRequest, ok bool) {
-	if !s.IsCancellationQuoteRequest() {
-		return v, false
-	}
-	return s.CancellationQuoteRequest, true
-}
-
-// NewCancellationQuoteRequestQuoteRequest returns new QuoteRequest from CancellationQuoteRequest.
-func NewCancellationQuoteRequestQuoteRequest(v CancellationQuoteRequest) QuoteRequest {
-	var s QuoteRequest
-	s.SetCancellationQuoteRequest(v)
-	return s
+// SetPromotionCode sets the value of PromotionCode.
+func (s *QuoteRequest) SetPromotionCode(val OptString) {
+	s.PromotionCode = val
 }
 
 // The discount selected for this calculation. Its presence in a quote does not apply it or reserve a
@@ -6611,8 +6653,16 @@ func (s *QuotedLineUnpricedReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// Prorated returns the unused value of paid service periods using integer-second duration ratios.
-// Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+// None refunds nothing. prorated refunds the amount paid for the current period minus the value of the
+// time used, never below zero and never more than what remains unrefunded. The time used runs from the
+// period start to the effective cancellation time and is valued at the plan's shorter-period prices in
+// the same currency, frozen at purchase as the order item's refund_monthly_amount and
+// refund_hourly_amount: each full calendar month at the one-month prepaid price, the remainder at the
+// postpaid hourly price or, without one, at the one-month price by the second. When the plan has no
+// prepaid period shorter than the one bought, the time used is valued at the price paid, pro rata by
+// the second. Discounts are not refunded, as they were never paid, and setup fees are excluded. The
+// refunded part returns to the payment sources it came from. Tax paid is refunded in the same
+// proportion as the amount it was paid on.
 // Ref: #/components/schemas/RefundPolicy
 type RefundPolicy string
 
@@ -6653,23 +6703,6 @@ func (s *RefundPolicy) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
-}
-
-// Preview renewing subscriptions, each at most once. Each entry represents a separate renewal order.
-// To preview a new promotion code, create a renewal order and quote it by order_id.
-// Ref: #/components/schemas/RenewalQuoteRequest
-type RenewalQuoteRequest struct {
-	Renewals []QuoteRenewal `json:"renewals"`
-}
-
-// GetRenewals returns the value of Renewals.
-func (s *RenewalQuoteRequest) GetRenewals() []QuoteRenewal {
-	return s.Renewals
-}
-
-// SetRenewals sets the value of Renewals.
-func (s *RenewalQuoteRequest) SetRenewals(val []QuoteRenewal) {
-	s.Renewals = val
 }
 
 type ScopedTokenAuth struct {
@@ -6823,16 +6856,18 @@ func (s *SpendRowList) SetPagination(val OffsetPagination) {
 // delivery. One order may create several subscriptions, such as an instance, its system disk and its
 // address; it has no single subscription ID.
 //
-// Pending does not grant service or accrue usage. Payment confirmation and order acceptance do not
-// activate a service-owned subscription. It becomes active when the owning service confirms delivery,
-// with started_at set to the confirmed effective time. Prepaid service periods start then; postpaid
-// usage starts only when the service reports actual delivery and metering.
+// Pending and provisioning do not grant service or accrue usage. A service-owned subscription becomes
+// provisioning when the owning service accepts the order, and active when the service confirms
+// delivery, with started_at set to the confirmed effective time; payment changes neither. Prepaid
+// service periods start then; postpaid usage starts only when the service reports actual delivery and
+// metering.
 //
 // One-time delivery may omit a subscription. Renewals reference and extend existing subscriptions
-// rather than creating another; changes may create pending replacements. Canceling or failing an
-// unfulfilled purchase closes its pending subscriptions without starting a service period. Fixed
-// renewals use the agreed recurring_amount and interval; already paid periods retain their original
-// value. Technical state belongs to the owning service.
+// rather than creating another; a change keeps the subscription ID and switches its terms when it
+// takes effect. Canceling or failing an unfulfilled purchase closes its pending or provisioning
+// subscriptions without starting a service period. Fixed renewals use the agreed recurring_amount and
+// interval; already paid periods retain their original value. Technical state belongs to the owning
+// service.
 //
 // A purchased shared capacity limit, such as a regional snapshot count quota, can have its own
 // subscription. Activating that capacity confirms delivery of the quota, not individual snapshots.
@@ -6847,10 +6882,12 @@ type Subscription struct {
 	// Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Pending
 	// subscriptions show base terms until checkout confirms any new continuing discount. Absent for other
 	// billing types.
-	RecurringAmount             OptString              `json:"recurring_amount"`
-	TerminationPolicy           OptTerminationPolicy   `json:"termination_policy"`
-	RefundPolicy                OptRefundPolicy        `json:"refund_policy"`
-	OrderItemID                 OptUUID                `json:"order_item_id"`
+	RecurringAmount   OptString            `json:"recurring_amount"`
+	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
+	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
+	OrderItemID       OptUUID              `json:"order_item_id"`
+	// Present only on subscriptions created by an earlier change that replaced the subscription. A change
+	// now keeps the subscription ID.
 	ReplacesSubscriptionID      OptUUID                `json:"replaces_subscription_id"`
 	CouponID                    OptUUID                `json:"coupon_id"`
 	Coupon                      OptObjectIdentity      `json:"coupon"`
@@ -6880,14 +6917,15 @@ type Subscription struct {
 	PlanName string              `json:"plan_name"`
 	PriceID  uuid.UUID           `json:"price_id"`
 	Quantity string              `json:"quantity"`
-	// End of the prepaid service already activated. Null for a new pending subscription, even when its
-	// purchase has been paid, and for postpaid subscriptions with no prepaid end date.
+	// End of the prepaid service already activated. Null until a new subscription becomes active, even
+	// when its purchase has been paid, and for postpaid subscriptions with no prepaid end date.
 	PaidUntil OptNilDateTime `json:"paid_until"`
 	AutoRenew bool           `json:"auto_renew"`
-	// Pending means the purchase relationship exists but service has not started. For a service-owned
-	// purchase, only confirmed delivery moves it to active; paying alone does not.
+	// Pending means the purchase relationship exists but its order has not been accepted. provisioning
+	// means the service accepted the order and is delivering. For a service-owned purchase, only confirmed
+	// delivery moves it to active; paying alone does not.
 	Status SubscriptionStatus `json:"status"`
-	// Confirmed start of service. Null for a new pending subscription, including after payment.
+	// Confirmed start of service. Null until a new subscription becomes active, including after payment.
 	StartedAt OptNilDateTime `json:"started_at"`
 	EndedAt   OptNilDateTime `json:"ended_at"`
 }
@@ -7351,22 +7389,25 @@ func (s *SubscriptionList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Pending means the purchase relationship exists but service has not started. For a service-owned
-// purchase, only confirmed delivery moves it to active; paying alone does not.
+// Pending means the purchase relationship exists but its order has not been accepted. provisioning
+// means the service accepted the order and is delivering. For a service-owned purchase, only confirmed
+// delivery moves it to active; paying alone does not.
 type SubscriptionStatus string
 
 const (
-	SubscriptionStatusPending    SubscriptionStatus = "pending"
-	SubscriptionStatusActive     SubscriptionStatus = "active"
-	SubscriptionStatusSuspended  SubscriptionStatus = "suspended"
-	SubscriptionStatusCanceled   SubscriptionStatus = "canceled"
-	SubscriptionStatusTerminated SubscriptionStatus = "terminated"
+	SubscriptionStatusPending      SubscriptionStatus = "pending"
+	SubscriptionStatusProvisioning SubscriptionStatus = "provisioning"
+	SubscriptionStatusActive       SubscriptionStatus = "active"
+	SubscriptionStatusSuspended    SubscriptionStatus = "suspended"
+	SubscriptionStatusCanceled     SubscriptionStatus = "canceled"
+	SubscriptionStatusTerminated   SubscriptionStatus = "terminated"
 )
 
 // AllValues returns all SubscriptionStatus values.
 func (SubscriptionStatus) AllValues() []SubscriptionStatus {
 	return []SubscriptionStatus{
 		SubscriptionStatusPending,
+		SubscriptionStatusProvisioning,
 		SubscriptionStatusActive,
 		SubscriptionStatusSuspended,
 		SubscriptionStatusCanceled,
@@ -7378,6 +7419,8 @@ func (SubscriptionStatus) AllValues() []SubscriptionStatus {
 func (s SubscriptionStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case SubscriptionStatusPending:
+		return []byte(s), nil
+	case SubscriptionStatusProvisioning:
 		return []byte(s), nil
 	case SubscriptionStatusActive:
 		return []byte(s), nil
@@ -7397,6 +7440,9 @@ func (s *SubscriptionStatus) UnmarshalText(data []byte) error {
 	switch SubscriptionStatus(data) {
 	case SubscriptionStatusPending:
 		*s = SubscriptionStatusPending
+		return nil
+	case SubscriptionStatusProvisioning:
+		*s = SubscriptionStatusProvisioning
 		return nil
 	case SubscriptionStatusActive:
 		*s = SubscriptionStatusActive

@@ -63,7 +63,7 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -484,7 +484,7 @@ func (s *Server) handleCreateProjectQuoteRequest(args [1]string, argsEscaped boo
 		}
 
 		type (
-			Request  = QuoteRequest
+			Request  = *QuoteRequest
 			Params   = CreateProjectQuoteParams
 			Response = *Quote
 		)
