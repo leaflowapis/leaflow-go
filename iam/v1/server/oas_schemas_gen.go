@@ -968,10 +968,27 @@ func (s *MemberResource) SetUserID(val string) {
 
 // Ref: #/components/schemas/MembershipResource
 type MembershipResource struct {
-	Grant         GrantResource `json:"grant"`
-	Member        bool          `json:"member"`
-	ProjectStatus string        `json:"project_status"`
-	UserStatus    string        `json:"user_status"`
+	Traits              []ProjectTraitResource `json:"traits"`
+	DeletedAt           NilDateTime            `json:"deleted_at"`
+	DeletionRequestedAt NilDateTime            `json:"deletion_requested_at"`
+	Grant               GrantResource          `json:"grant"`
+	Member              bool                   `json:"member"`
+	UserStatus          string                 `json:"user_status"`
+}
+
+// GetTraits returns the value of Traits.
+func (s *MembershipResource) GetTraits() []ProjectTraitResource {
+	return s.Traits
+}
+
+// GetDeletedAt returns the value of DeletedAt.
+func (s *MembershipResource) GetDeletedAt() NilDateTime {
+	return s.DeletedAt
+}
+
+// GetDeletionRequestedAt returns the value of DeletionRequestedAt.
+func (s *MembershipResource) GetDeletionRequestedAt() NilDateTime {
+	return s.DeletionRequestedAt
 }
 
 // GetGrant returns the value of Grant.
@@ -984,14 +1001,24 @@ func (s *MembershipResource) GetMember() bool {
 	return s.Member
 }
 
-// GetProjectStatus returns the value of ProjectStatus.
-func (s *MembershipResource) GetProjectStatus() string {
-	return s.ProjectStatus
-}
-
 // GetUserStatus returns the value of UserStatus.
 func (s *MembershipResource) GetUserStatus() string {
 	return s.UserStatus
+}
+
+// SetTraits sets the value of Traits.
+func (s *MembershipResource) SetTraits(val []ProjectTraitResource) {
+	s.Traits = val
+}
+
+// SetDeletedAt sets the value of DeletedAt.
+func (s *MembershipResource) SetDeletedAt(val NilDateTime) {
+	s.DeletedAt = val
+}
+
+// SetDeletionRequestedAt sets the value of DeletionRequestedAt.
+func (s *MembershipResource) SetDeletionRequestedAt(val NilDateTime) {
+	s.DeletionRequestedAt = val
 }
 
 // SetGrant sets the value of Grant.
@@ -1002,11 +1029,6 @@ func (s *MembershipResource) SetGrant(val GrantResource) {
 // SetMember sets the value of Member.
 func (s *MembershipResource) SetMember(val bool) {
 	s.Member = val
-}
-
-// SetProjectStatus sets the value of ProjectStatus.
-func (s *MembershipResource) SetProjectStatus(val string) {
-	s.ProjectStatus = val
 }
 
 // SetUserStatus sets the value of UserStatus.
@@ -1704,37 +1726,26 @@ func (s *ProjectAccessResource) SetProject(val ProjectResource) {
 
 // Ref: #/components/schemas/ProjectResource
 type ProjectResource struct {
-	// A read-only management lock. Running resources and billing remain unchanged. Only an operator can
-	// release it.
-	LockedAt   NilDateTime `json:"locked_at"`
-	LockReason string      `json:"lock_reason"`
-	BanReason  string      `json:"ban_reason"`
-	CreatedAt  time.Time   `json:"created_at"`
-	CreatedBy  string      `json:"created_by"`
+	Traits              []ProjectTraitResource `json:"traits"`
+	DeletionRequestedAt NilDateTime            `json:"deletion_requested_at"`
+	CreatedAt           time.Time              `json:"created_at"`
+	CreatedBy           string                 `json:"created_by"`
 	// When the project was deleted.
-	DeletedAt   NilDateTime           `json:"deleted_at"`
-	Description string                `json:"description"`
-	ID          uuid.UUID             `json:"id"`
-	Name        string                `json:"name"`
-	Status      ProjectResourceStatus `json:"status"`
-	// Written for a reader; it takes part in no query.
-	StatusReason string    `json:"status_reason"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	DeletedAt   NilDateTime `json:"deleted_at"`
+	Description string      `json:"description"`
+	ID          uuid.UUID   `json:"id"`
+	Name        string      `json:"name"`
+	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
-// GetLockedAt returns the value of LockedAt.
-func (s *ProjectResource) GetLockedAt() NilDateTime {
-	return s.LockedAt
+// GetTraits returns the value of Traits.
+func (s *ProjectResource) GetTraits() []ProjectTraitResource {
+	return s.Traits
 }
 
-// GetLockReason returns the value of LockReason.
-func (s *ProjectResource) GetLockReason() string {
-	return s.LockReason
-}
-
-// GetBanReason returns the value of BanReason.
-func (s *ProjectResource) GetBanReason() string {
-	return s.BanReason
+// GetDeletionRequestedAt returns the value of DeletionRequestedAt.
+func (s *ProjectResource) GetDeletionRequestedAt() NilDateTime {
+	return s.DeletionRequestedAt
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -1767,34 +1778,19 @@ func (s *ProjectResource) GetName() string {
 	return s.Name
 }
 
-// GetStatus returns the value of Status.
-func (s *ProjectResource) GetStatus() ProjectResourceStatus {
-	return s.Status
-}
-
-// GetStatusReason returns the value of StatusReason.
-func (s *ProjectResource) GetStatusReason() string {
-	return s.StatusReason
-}
-
 // GetUpdatedAt returns the value of UpdatedAt.
 func (s *ProjectResource) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
 }
 
-// SetLockedAt sets the value of LockedAt.
-func (s *ProjectResource) SetLockedAt(val NilDateTime) {
-	s.LockedAt = val
+// SetTraits sets the value of Traits.
+func (s *ProjectResource) SetTraits(val []ProjectTraitResource) {
+	s.Traits = val
 }
 
-// SetLockReason sets the value of LockReason.
-func (s *ProjectResource) SetLockReason(val string) {
-	s.LockReason = val
-}
-
-// SetBanReason sets the value of BanReason.
-func (s *ProjectResource) SetBanReason(val string) {
-	s.BanReason = val
+// SetDeletionRequestedAt sets the value of DeletionRequestedAt.
+func (s *ProjectResource) SetDeletionRequestedAt(val NilDateTime) {
+	s.DeletionRequestedAt = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -1827,54 +1823,80 @@ func (s *ProjectResource) SetName(val string) {
 	s.Name = val
 }
 
-// SetStatus sets the value of Status.
-func (s *ProjectResource) SetStatus(val ProjectResourceStatus) {
-	s.Status = val
-}
-
-// SetStatusReason sets the value of StatusReason.
-func (s *ProjectResource) SetStatusReason(val string) {
-	s.StatusReason = val
-}
-
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *ProjectResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
-type ProjectResourceStatus string
+// Ref: #/components/schemas/ProjectTraitResource
+type ProjectTraitResource struct {
+	Key    string                     `json:"key"`
+	Value  string                     `json:"value"`
+	Effect ProjectTraitResourceEffect `json:"effect"`
+	Reason string                     `json:"reason"`
+}
+
+// GetKey returns the value of Key.
+func (s *ProjectTraitResource) GetKey() string {
+	return s.Key
+}
+
+// GetValue returns the value of Value.
+func (s *ProjectTraitResource) GetValue() string {
+	return s.Value
+}
+
+// GetEffect returns the value of Effect.
+func (s *ProjectTraitResource) GetEffect() ProjectTraitResourceEffect {
+	return s.Effect
+}
+
+// GetReason returns the value of Reason.
+func (s *ProjectTraitResource) GetReason() string {
+	return s.Reason
+}
+
+// SetKey sets the value of Key.
+func (s *ProjectTraitResource) SetKey(val string) {
+	s.Key = val
+}
+
+// SetValue sets the value of Value.
+func (s *ProjectTraitResource) SetValue(val string) {
+	s.Value = val
+}
+
+// SetEffect sets the value of Effect.
+func (s *ProjectTraitResource) SetEffect(val ProjectTraitResourceEffect) {
+	s.Effect = val
+}
+
+// SetReason sets the value of Reason.
+func (s *ProjectTraitResource) SetReason(val string) {
+	s.Reason = val
+}
+
+type ProjectTraitResourceEffect string
 
 const (
-	ProjectResourceStatusACTIVE    ProjectResourceStatus = "ACTIVE"
-	ProjectResourceStatusSUSPENDED ProjectResourceStatus = "SUSPENDED"
-	ProjectResourceStatusBANNED    ProjectResourceStatus = "BANNED"
-	ProjectResourceStatusDELETING  ProjectResourceStatus = "DELETING"
-	ProjectResourceStatusDELETED   ProjectResourceStatus = "DELETED"
+	ProjectTraitResourceEffectNoWrite  ProjectTraitResourceEffect = "NoWrite"
+	ProjectTraitResourceEffectNoAccess ProjectTraitResourceEffect = "NoAccess"
 )
 
-// AllValues returns all ProjectResourceStatus values.
-func (ProjectResourceStatus) AllValues() []ProjectResourceStatus {
-	return []ProjectResourceStatus{
-		ProjectResourceStatusACTIVE,
-		ProjectResourceStatusSUSPENDED,
-		ProjectResourceStatusBANNED,
-		ProjectResourceStatusDELETING,
-		ProjectResourceStatusDELETED,
+// AllValues returns all ProjectTraitResourceEffect values.
+func (ProjectTraitResourceEffect) AllValues() []ProjectTraitResourceEffect {
+	return []ProjectTraitResourceEffect{
+		ProjectTraitResourceEffectNoWrite,
+		ProjectTraitResourceEffectNoAccess,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ProjectResourceStatus) MarshalText() ([]byte, error) {
+func (s ProjectTraitResourceEffect) MarshalText() ([]byte, error) {
 	switch s {
-	case ProjectResourceStatusACTIVE:
+	case ProjectTraitResourceEffectNoWrite:
 		return []byte(s), nil
-	case ProjectResourceStatusSUSPENDED:
-		return []byte(s), nil
-	case ProjectResourceStatusBANNED:
-		return []byte(s), nil
-	case ProjectResourceStatusDELETING:
-		return []byte(s), nil
-	case ProjectResourceStatusDELETED:
+	case ProjectTraitResourceEffectNoAccess:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1882,22 +1904,13 @@ func (s ProjectResourceStatus) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ProjectResourceStatus) UnmarshalText(data []byte) error {
-	switch ProjectResourceStatus(data) {
-	case ProjectResourceStatusACTIVE:
-		*s = ProjectResourceStatusACTIVE
+func (s *ProjectTraitResourceEffect) UnmarshalText(data []byte) error {
+	switch ProjectTraitResourceEffect(data) {
+	case ProjectTraitResourceEffectNoWrite:
+		*s = ProjectTraitResourceEffectNoWrite
 		return nil
-	case ProjectResourceStatusSUSPENDED:
-		*s = ProjectResourceStatusSUSPENDED
-		return nil
-	case ProjectResourceStatusBANNED:
-		*s = ProjectResourceStatusBANNED
-		return nil
-	case ProjectResourceStatusDELETING:
-		*s = ProjectResourceStatusDELETING
-		return nil
-	case ProjectResourceStatusDELETED:
-		*s = ProjectResourceStatusDELETED
+	case ProjectTraitResourceEffectNoAccess:
+		*s = ProjectTraitResourceEffectNoAccess
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

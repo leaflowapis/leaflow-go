@@ -73,27 +73,18 @@ func (e PolicyResourceEffect) Valid() bool {
 	}
 }
 
-// Defines values for ProjectResourceStatus.
+// Defines values for ProjectTraitResourceEffect.
 const (
-	ProjectResourceStatusACTIVE    ProjectResourceStatus = "ACTIVE"
-	ProjectResourceStatusBANNED    ProjectResourceStatus = "BANNED"
-	ProjectResourceStatusDELETED   ProjectResourceStatus = "DELETED"
-	ProjectResourceStatusDELETING  ProjectResourceStatus = "DELETING"
-	ProjectResourceStatusSUSPENDED ProjectResourceStatus = "SUSPENDED"
+	NoAccess ProjectTraitResourceEffect = "NoAccess"
+	NoWrite  ProjectTraitResourceEffect = "NoWrite"
 )
 
-// Valid indicates whether the value is a known member of the ProjectResourceStatus enum.
-func (e ProjectResourceStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the ProjectTraitResourceEffect enum.
+func (e ProjectTraitResourceEffect) Valid() bool {
 	switch e {
-	case ProjectResourceStatusACTIVE:
+	case NoAccess:
 		return true
-	case ProjectResourceStatusBANNED:
-		return true
-	case ProjectResourceStatusDELETED:
-		return true
-	case ProjectResourceStatusDELETING:
-		return true
-	case ProjectResourceStatusSUSPENDED:
+	case NoWrite:
 		return true
 	default:
 		return false
@@ -352,10 +343,12 @@ type MemberResource struct {
 
 // MembershipResource defines model for MembershipResource.
 type MembershipResource struct {
-	Grant         GrantResource `json:"grant"`
-	Member        bool          `json:"member"`
-	ProjectStatus string        `json:"project_status"`
-	UserStatus    string        `json:"user_status"`
+	DeletedAt           *time.Time             `json:"deleted_at"`
+	DeletionRequestedAt *time.Time             `json:"deletion_requested_at"`
+	Grant               GrantResource          `json:"grant"`
+	Member              bool                   `json:"member"`
+	Traits              []ProjectTraitResource `json:"traits"`
+	UserStatus          string                 `json:"user_status"`
 }
 
 // OwnershipTransferResponseBody defines model for OwnershipTransferResponseBody.
@@ -416,28 +409,29 @@ type ProjectAccessResource struct {
 
 // ProjectResource defines model for ProjectResource.
 type ProjectResource struct {
-	BanReason string    `json:"ban_reason"`
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
 
 	// DeletedAt When the project was deleted
-	DeletedAt   *time.Time         `json:"deleted_at"`
-	Description string             `json:"description"`
-	Id          openapi_types.UUID `json:"id"`
-	LockReason  string             `json:"lock_reason"`
-
-	// LockedAt A read-only management lock. Running resources and billing remain unchanged. Only an operator can release it.
-	LockedAt *time.Time            `json:"locked_at"`
-	Name     string                `json:"name"`
-	Status   ProjectResourceStatus `json:"status"`
-
-	// StatusReason Written for a reader; it takes part in no query
-	StatusReason string    `json:"status_reason"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	DeletedAt           *time.Time             `json:"deleted_at"`
+	DeletionRequestedAt *time.Time             `json:"deletion_requested_at"`
+	Description         string                 `json:"description"`
+	Id                  openapi_types.UUID     `json:"id"`
+	Name                string                 `json:"name"`
+	Traits              []ProjectTraitResource `json:"traits"`
+	UpdatedAt           time.Time              `json:"updated_at"`
 }
 
-// ProjectResourceStatus defines model for ProjectResource.Status.
-type ProjectResourceStatus string
+// ProjectTraitResource defines model for ProjectTraitResource.
+type ProjectTraitResource struct {
+	Effect ProjectTraitResourceEffect `json:"effect"`
+	Key    string                     `json:"key"`
+	Reason string                     `json:"reason"`
+	Value  string                     `json:"value"`
+}
+
+// ProjectTraitResourceEffect defines model for ProjectTraitResource.Effect.
+type ProjectTraitResourceEffect string
 
 // RenameSSHKeyRequestBody defines model for RenameSSHKeyRequestBody.
 type RenameSSHKeyRequestBody struct {

@@ -1708,16 +1708,16 @@ func (c *Client) sendListProjects(ctx context.Context, params ListProjectsParams
 		}
 	}
 	{
-		// Encode "status" parameter.
+		// Encode "include_deleted" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "status",
+			Name:    "include_deleted",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Status.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
+			if val, ok := params.IncludeDeleted.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
 			}
 			return nil
 		}); err != nil {

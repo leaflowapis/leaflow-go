@@ -3589,16 +3589,16 @@ func (s *ProjectResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *ProjectResource) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("locked_at")
-		s.LockedAt.Encode(e, json.EncodeDateTime)
+		e.FieldStart("traits")
+		e.ArrStart()
+		for _, elem := range s.Traits {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
 	}
 	{
-		e.FieldStart("lock_reason")
-		e.Str(s.LockReason)
-	}
-	{
-		e.FieldStart("ban_reason")
-		e.Str(s.BanReason)
+		e.FieldStart("deletion_requested_at")
+		s.DeletionRequestedAt.Encode(e, json.EncodeDateTime)
 	}
 	{
 		e.FieldStart("created_at")
@@ -3625,32 +3625,21 @@ func (s *ProjectResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("status")
-		s.Status.Encode(e)
-	}
-	{
-		e.FieldStart("status_reason")
-		e.Str(s.StatusReason)
-	}
-	{
 		e.FieldStart("updated_at")
 		json.EncodeDateTime(e, s.UpdatedAt)
 	}
 }
 
-var jsonFieldsNameOfProjectResource = [12]string{
-	0:  "locked_at",
-	1:  "lock_reason",
-	2:  "ban_reason",
-	3:  "created_at",
-	4:  "created_by",
-	5:  "deleted_at",
-	6:  "description",
-	7:  "id",
-	8:  "name",
-	9:  "status",
-	10: "status_reason",
-	11: "updated_at",
+var jsonFieldsNameOfProjectResource = [9]string{
+	0: "traits",
+	1: "deletion_requested_at",
+	2: "created_at",
+	3: "created_by",
+	4: "deleted_at",
+	5: "description",
+	6: "id",
+	7: "name",
+	8: "updated_at",
 }
 
 // Decode decodes ProjectResource from json.
@@ -3662,42 +3651,36 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "locked_at":
+		case "traits":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.LockedAt.Decode(d, json.DecodeDateTime); err != nil {
+				s.Traits = make([]ProjectTraitResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem ProjectTraitResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Traits = append(s.Traits, elem)
+					return nil
+				}); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"locked_at\"")
+				return errors.Wrap(err, "decode field \"traits\"")
 			}
-		case "lock_reason":
+		case "deletion_requested_at":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.Str()
-				s.LockReason = string(v)
-				if err != nil {
+				if err := s.DeletionRequestedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lock_reason\"")
-			}
-		case "ban_reason":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				v, err := d.Str()
-				s.BanReason = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"ban_reason\"")
+				return errors.Wrap(err, "decode field \"deletion_requested_at\"")
 			}
 		case "created_at":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -3709,7 +3692,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "created_by":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.CreatedBy = string(v)
@@ -3721,7 +3704,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
 		case "deleted_at":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.DeletedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -3731,7 +3714,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"deleted_at\"")
 			}
 		case "description":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Str()
 				s.Description = string(v)
@@ -3743,7 +3726,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"description\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -3755,7 +3738,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "name":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -3766,30 +3749,8 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "status":
-			requiredBitSet[1] |= 1 << 1
-			if err := func() error {
-				if err := s.Status.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"status\"")
-			}
-		case "status_reason":
-			requiredBitSet[1] |= 1 << 2
-			if err := func() error {
-				v, err := d.Str()
-				s.StatusReason = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"status_reason\"")
-			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -3811,7 +3772,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00001111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3857,48 +3818,187 @@ func (s *ProjectResource) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes ProjectResourceStatus as json.
-func (s ProjectResourceStatus) Encode(e *jx.Encoder) {
-	e.Str(string(s))
+// Encode implements json.Marshaler.
+func (s *ProjectTraitResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
 }
 
-// Decode decodes ProjectResourceStatus from json.
-func (s *ProjectResourceStatus) Decode(d *jx.Decoder) error {
+// encodeFields encodes fields.
+func (s *ProjectTraitResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("key")
+		e.Str(s.Key)
+	}
+	{
+		e.FieldStart("value")
+		e.Str(s.Value)
+	}
+	{
+		e.FieldStart("effect")
+		s.Effect.Encode(e)
+	}
+	{
+		e.FieldStart("reason")
+		e.Str(s.Reason)
+	}
+}
+
+var jsonFieldsNameOfProjectTraitResource = [4]string{
+	0: "key",
+	1: "value",
+	2: "effect",
+	3: "reason",
+}
+
+// Decode decodes ProjectTraitResource from json.
+func (s *ProjectTraitResource) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode ProjectResourceStatus to nil")
+		return errors.New("invalid: unable to decode ProjectTraitResource to nil")
 	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "key":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Key = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"key\"")
+			}
+		case "value":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Value = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"value\"")
+			}
+		case "effect":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Effect.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"effect\"")
+			}
+		case "reason":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Reason = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reason\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ProjectTraitResource")
 	}
-	// Try to use constant string.
-	switch ProjectResourceStatus(v) {
-	case ProjectResourceStatusACTIVE:
-		*s = ProjectResourceStatusACTIVE
-	case ProjectResourceStatusSUSPENDED:
-		*s = ProjectResourceStatusSUSPENDED
-	case ProjectResourceStatusBANNED:
-		*s = ProjectResourceStatusBANNED
-	case ProjectResourceStatusDELETING:
-		*s = ProjectResourceStatusDELETING
-	case ProjectResourceStatusDELETED:
-		*s = ProjectResourceStatusDELETED
-	default:
-		*s = ProjectResourceStatus(v)
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfProjectTraitResource) {
+					name = jsonFieldsNameOfProjectTraitResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
 	}
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s ProjectResourceStatus) MarshalJSON() ([]byte, error) {
+func (s *ProjectTraitResource) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ProjectResourceStatus) UnmarshalJSON(data []byte) error {
+func (s *ProjectTraitResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ProjectTraitResourceEffect as json.
+func (s ProjectTraitResourceEffect) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ProjectTraitResourceEffect from json.
+func (s *ProjectTraitResourceEffect) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ProjectTraitResourceEffect to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ProjectTraitResourceEffect(v) {
+	case ProjectTraitResourceEffectNoWrite:
+		*s = ProjectTraitResourceEffectNoWrite
+	case ProjectTraitResourceEffectNoAccess:
+		*s = ProjectTraitResourceEffectNoAccess
+	default:
+		*s = ProjectTraitResourceEffect(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ProjectTraitResourceEffect) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ProjectTraitResourceEffect) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
