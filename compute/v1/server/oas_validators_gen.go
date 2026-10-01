@@ -718,6 +718,24 @@ func (s *BillingChoice) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.TerminationPolicy.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "termination_policy",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -787,6 +805,23 @@ func (s BillingPeriodUnit) Validate() error {
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s BootDisk) Validate() error {
+	switch s.Type {
+	case NewBootDiskBootDisk:
+		if err := s.NewBootDisk.Validate(); err != nil {
+			return err
+		}
+		return nil
+	case ExistingBootDiskBootDisk:
+		if err := s.ExistingBootDisk.Validate(); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.Errorf("invalid type %q", s.Type)
 	}
 }
 
@@ -2476,6 +2511,61 @@ func (s DiskTypeResourceMedia) Validate() error {
 	}
 }
 
+func (s *ExistingBootDisk) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     1,
+			MinLengthSet:  true,
+			MaxLength:     32,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.LoginUsername)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "login_username",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s ExistingBootDiskType) Validate() error {
+	switch s {
+	case "disk":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *FloatingIPListResponseBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -3903,32 +3993,13 @@ func (s *LaunchInstanceQuoteRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.LoginUsername.Get(); ok {
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     0,
-					MinLengthSet:  false,
-					MaxLength:     32,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(value)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
+		if err := s.Compute.Validate(); err != nil {
+			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "login_username",
+			Name:  "compute",
 			Error: err,
 		})
 	}
@@ -4012,26 +4083,8 @@ func (s *LaunchInstanceQuoteRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Billing.Validate(); err != nil {
+		if err := s.BootDisk.Validate(); err != nil {
 			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "billing",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.BootDisk.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
 		}
 		return nil
 	}(); err != nil {
@@ -4099,32 +4152,13 @@ func (s *LaunchInstanceRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.LoginUsername.Get(); ok {
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     0,
-					MinLengthSet:  false,
-					MaxLength:     32,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(value)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
+		if err := s.Compute.Validate(); err != nil {
+			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "login_username",
+			Name:  "compute",
 			Error: err,
 		})
 	}
@@ -4226,26 +4260,8 @@ func (s *LaunchInstanceRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Billing.Validate(); err != nil {
+		if err := s.BootDisk.Validate(); err != nil {
 			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "billing",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.BootDisk.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
 		}
 		return nil
 	}(); err != nil {
@@ -4333,6 +4349,17 @@ func (s *NewBootDisk) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := (validate.Int{
 			MinSet:        true,
 			Min:           1,
@@ -4350,6 +4377,49 @@ func (s *NewBootDisk) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "size_gb",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Billing.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "billing",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s NewBootDiskType) Validate() error {
+	switch s {
+	case "image":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *NewCompute) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Billing.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -4383,6 +4453,17 @@ func (s *NewFloatingIP) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "bandwidth_mbps",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Billing.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -5178,13 +5259,20 @@ func (s *PricingOption) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Termination.Validate(); err != nil {
-			return err
+		if value, ok := s.TerminationPolicy.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination",
+			Name:  "termination_policy",
 			Error: err,
 		})
 	}
@@ -5220,7 +5308,7 @@ func (s PricingOptionQuantityUnit) Validate() error {
 	}
 }
 
-func (s PricingOptionTermination) Validate() error {
+func (s PricingOptionTerminationPolicy) Validate() error {
 	switch s {
 	case "immediate":
 		return nil
@@ -7278,6 +7366,17 @@ func (s SubnetResourceIPVersion) Validate() error {
 	case 4:
 		return nil
 	case 6:
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s TerminationPolicy) Validate() error {
+	switch s {
+	case "immediate":
+		return nil
+	case "period_end":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

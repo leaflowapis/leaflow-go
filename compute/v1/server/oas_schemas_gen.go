@@ -1088,14 +1088,14 @@ func (s *BackupServiceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period`
-// and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a
-// component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component`
-// names it.
+// The commercial terms for one newly purchased component. Prepaid requires period and
+// termination_policy; postpaid refuses both. Components in one instance order must use the same mode
+// and period, while their termination policies may differ.
 // Ref: #/components/schemas/BillingChoice
 type BillingChoice struct {
-	Mode   BillingChoiceMode `json:"mode"`
-	Period OptBillingPeriod  `json:"period"`
+	Mode              BillingChoiceMode    `json:"mode"`
+	Period            OptBillingPeriod     `json:"period"`
+	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 }
 
 // GetMode returns the value of Mode.
@@ -1108,6 +1108,11 @@ func (s *BillingChoice) GetPeriod() OptBillingPeriod {
 	return s.Period
 }
 
+// GetTerminationPolicy returns the value of TerminationPolicy.
+func (s *BillingChoice) GetTerminationPolicy() OptTerminationPolicy {
+	return s.TerminationPolicy
+}
+
 // SetMode sets the value of Mode.
 func (s *BillingChoice) SetMode(val BillingChoiceMode) {
 	s.Mode = val
@@ -1116,6 +1121,11 @@ func (s *BillingChoice) SetMode(val BillingChoiceMode) {
 // SetPeriod sets the value of Period.
 func (s *BillingChoice) SetPeriod(val OptBillingPeriod) {
 	s.Period = val
+}
+
+// SetTerminationPolicy sets the value of TerminationPolicy.
+func (s *BillingChoice) SetTerminationPolicy(val OptTerminationPolicy) {
+	s.TerminationPolicy = val
 }
 
 type BillingChoiceMode string
@@ -1162,7 +1172,7 @@ func (s *BillingChoiceMode) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/BillingPeriod
 type BillingPeriod struct {
 	Unit  BillingPeriodUnit `json:"unit"`
-	Count int64             `json:"count"`
+	Count int32             `json:"count"`
 }
 
 // GetUnit returns the value of Unit.
@@ -1171,7 +1181,7 @@ func (s *BillingPeriod) GetUnit() BillingPeriodUnit {
 }
 
 // GetCount returns the value of Count.
-func (s *BillingPeriod) GetCount() int64 {
+func (s *BillingPeriod) GetCount() int32 {
 	return s.Count
 }
 
@@ -1181,7 +1191,7 @@ func (s *BillingPeriod) SetUnit(val BillingPeriodUnit) {
 }
 
 // SetCount sets the value of Count.
-func (s *BillingPeriod) SetCount(val int64) {
+func (s *BillingPeriod) SetCount(val int32) {
 	s.Count = val
 }
 
@@ -1239,6 +1249,74 @@ func (s *BindFloatingIPRequestBody) GetPortAddressID() uuid.UUID {
 // SetPortAddressID sets the value of PortAddressID.
 func (s *BindFloatingIPRequestBody) SetPortAddressID(val uuid.UUID) {
 	s.PortAddressID = val
+}
+
+// Create a boot disk from an image, or use a prepared disk already held by this project. Using an
+// existing disk does not buy it again and always keeps it when the instance is released.
+// Ref: #/components/schemas/BootDisk
+// BootDisk represents sum type.
+type BootDisk struct {
+	// Type selects the active sum variant, switch on this field.
+	Type             BootDiskType
+	NewBootDisk      NewBootDisk
+	ExistingBootDisk ExistingBootDisk
+}
+
+// BootDiskType is oneOf type of BootDisk.
+type BootDiskType string
+
+// Possible values for BootDiskType.
+const (
+	NewBootDiskBootDisk      BootDiskType = "image"
+	ExistingBootDiskBootDisk BootDiskType = "disk"
+)
+
+// IsNewBootDisk reports whether BootDisk is NewBootDisk.
+func (s BootDisk) IsNewBootDisk() bool { return s.Type == NewBootDiskBootDisk }
+
+// IsExistingBootDisk reports whether BootDisk is ExistingBootDisk.
+func (s BootDisk) IsExistingBootDisk() bool { return s.Type == ExistingBootDiskBootDisk }
+
+// SetNewBootDisk sets BootDisk to NewBootDisk.
+func (s *BootDisk) SetNewBootDisk(v NewBootDisk) {
+	s.Type = NewBootDiskBootDisk
+	s.NewBootDisk = v
+}
+
+// GetNewBootDisk returns NewBootDisk and true boolean if BootDisk is NewBootDisk.
+func (s BootDisk) GetNewBootDisk() (v NewBootDisk, ok bool) {
+	if !s.IsNewBootDisk() {
+		return v, false
+	}
+	return s.NewBootDisk, true
+}
+
+// NewNewBootDiskBootDisk returns new BootDisk from NewBootDisk.
+func NewNewBootDiskBootDisk(v NewBootDisk) BootDisk {
+	var s BootDisk
+	s.SetNewBootDisk(v)
+	return s
+}
+
+// SetExistingBootDisk sets BootDisk to ExistingBootDisk.
+func (s *BootDisk) SetExistingBootDisk(v ExistingBootDisk) {
+	s.Type = ExistingBootDiskBootDisk
+	s.ExistingBootDisk = v
+}
+
+// GetExistingBootDisk returns ExistingBootDisk and true boolean if BootDisk is ExistingBootDisk.
+func (s BootDisk) GetExistingBootDisk() (v ExistingBootDisk, ok bool) {
+	if !s.IsExistingBootDisk() {
+		return v, false
+	}
+	return s.ExistingBootDisk, true
+}
+
+// NewExistingBootDiskBootDisk returns new BootDisk from ExistingBootDisk.
+func NewExistingBootDiskBootDisk(v ExistingBootDisk) BootDisk {
+	var s BootDisk
+	s.SetExistingBootDisk(v)
+	return s
 }
 
 // Shared checkout choices for a product purchase. Omitting this object or mode selects automatic
@@ -3556,6 +3634,80 @@ func (s *ErrorStatusCode) SetStatusCode(val int) {
 // SetResponse sets the value of Response.
 func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
+}
+
+// Ref: #/components/schemas/ExistingBootDisk
+type ExistingBootDisk struct {
+	Type ExistingBootDiskType `json:"type"`
+	// A prepared boot disk owned by this project, available and unattached in the same availability zone
+	// as the instance type. Only one instance may be created when used.
+	DiskID uuid.UUID `json:"disk_id"`
+	// The existing account used to log in to this disk's operating system.
+	LoginUsername string `json:"login_username"`
+}
+
+// GetType returns the value of Type.
+func (s *ExistingBootDisk) GetType() ExistingBootDiskType {
+	return s.Type
+}
+
+// GetDiskID returns the value of DiskID.
+func (s *ExistingBootDisk) GetDiskID() uuid.UUID {
+	return s.DiskID
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *ExistingBootDisk) GetLoginUsername() string {
+	return s.LoginUsername
+}
+
+// SetType sets the value of Type.
+func (s *ExistingBootDisk) SetType(val ExistingBootDiskType) {
+	s.Type = val
+}
+
+// SetDiskID sets the value of DiskID.
+func (s *ExistingBootDisk) SetDiskID(val uuid.UUID) {
+	s.DiskID = val
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *ExistingBootDisk) SetLoginUsername(val string) {
+	s.LoginUsername = val
+}
+
+type ExistingBootDiskType string
+
+const (
+	ExistingBootDiskTypeDisk ExistingBootDiskType = "disk"
+)
+
+// AllValues returns all ExistingBootDiskType values.
+func (ExistingBootDiskType) AllValues() []ExistingBootDiskType {
+	return []ExistingBootDiskType{
+		ExistingBootDiskTypeDisk,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ExistingBootDiskType) MarshalText() ([]byte, error) {
+	switch s {
+	case ExistingBootDiskTypeDisk:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ExistingBootDiskType) UnmarshalText(data []byte) error {
+	switch ExistingBootDiskType(data) {
+	case ExistingBootDiskTypeDisk:
+		*s = ExistingBootDiskTypeDisk
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/FloatingIPListResponseBody
@@ -6225,20 +6377,9 @@ type LaunchInstanceQuoteRequestBody struct {
 	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
 	Count OptInt64 `json:"count"`
 	// Have the platform generate a random password, returned only in this response.
-	GeneratePassword OptBool `json:"generate_password"`
-	// Boot a disk you already have instead of installing an image. The disk must be available, unattached,
-	// and in the same availability zone as the instance type. Exactly one of this and `image_id`.
-	BootDiskID OptUUID `json:"boot_disk_id"`
-	// A public image currently on sale, or an available private image of this project. Exactly one of this
-	// and `boot_disk_id`.
-	ImageID OptUUID `json:"image_id"`
-	// An instance type currently on sale. A withdrawn one is rejected even though its identifier still
-	// resolves.
-	InstanceTypeID uuid.UUID `json:"instance_type_id"`
-	// The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since
-	// an image states its own.
-	LoginUsername OptString `json:"login_username"`
-	Name          string    `json:"name"`
+	GeneratePassword OptBool    `json:"generate_password"`
+	Compute          NewCompute `json:"compute"`
+	Name             string     `json:"name"`
 	// The password to set, on the login account and on root. Only the SSH public keys of the project are
 	// used when omitted.
 	Password OptString `json:"password"`
@@ -6251,8 +6392,7 @@ type LaunchInstanceQuoteRequestBody struct {
 	SecurityGroupIds OptNilUUIDArray `json:"security_group_ids"`
 	// Create the primary network interface in this subnet. Exactly one of this and `port_id`.
 	SubnetID   OptUUID          `json:"subnet_id"`
-	Billing    BillingChoice    `json:"billing"`
-	BootDisk   OptNewBootDisk   `json:"boot_disk"`
+	BootDisk   BootDisk         `json:"boot_disk"`
 	FloatingIP OptNewFloatingIP `json:"floating_ip"`
 }
 
@@ -6271,24 +6411,9 @@ func (s *LaunchInstanceQuoteRequestBody) GetGeneratePassword() OptBool {
 	return s.GeneratePassword
 }
 
-// GetBootDiskID returns the value of BootDiskID.
-func (s *LaunchInstanceQuoteRequestBody) GetBootDiskID() OptUUID {
-	return s.BootDiskID
-}
-
-// GetImageID returns the value of ImageID.
-func (s *LaunchInstanceQuoteRequestBody) GetImageID() OptUUID {
-	return s.ImageID
-}
-
-// GetInstanceTypeID returns the value of InstanceTypeID.
-func (s *LaunchInstanceQuoteRequestBody) GetInstanceTypeID() uuid.UUID {
-	return s.InstanceTypeID
-}
-
-// GetLoginUsername returns the value of LoginUsername.
-func (s *LaunchInstanceQuoteRequestBody) GetLoginUsername() OptString {
-	return s.LoginUsername
+// GetCompute returns the value of Compute.
+func (s *LaunchInstanceQuoteRequestBody) GetCompute() NewCompute {
+	return s.Compute
 }
 
 // GetName returns the value of Name.
@@ -6316,13 +6441,8 @@ func (s *LaunchInstanceQuoteRequestBody) GetSubnetID() OptUUID {
 	return s.SubnetID
 }
 
-// GetBilling returns the value of Billing.
-func (s *LaunchInstanceQuoteRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
 // GetBootDisk returns the value of BootDisk.
-func (s *LaunchInstanceQuoteRequestBody) GetBootDisk() OptNewBootDisk {
+func (s *LaunchInstanceQuoteRequestBody) GetBootDisk() BootDisk {
 	return s.BootDisk
 }
 
@@ -6346,24 +6466,9 @@ func (s *LaunchInstanceQuoteRequestBody) SetGeneratePassword(val OptBool) {
 	s.GeneratePassword = val
 }
 
-// SetBootDiskID sets the value of BootDiskID.
-func (s *LaunchInstanceQuoteRequestBody) SetBootDiskID(val OptUUID) {
-	s.BootDiskID = val
-}
-
-// SetImageID sets the value of ImageID.
-func (s *LaunchInstanceQuoteRequestBody) SetImageID(val OptUUID) {
-	s.ImageID = val
-}
-
-// SetInstanceTypeID sets the value of InstanceTypeID.
-func (s *LaunchInstanceQuoteRequestBody) SetInstanceTypeID(val uuid.UUID) {
-	s.InstanceTypeID = val
-}
-
-// SetLoginUsername sets the value of LoginUsername.
-func (s *LaunchInstanceQuoteRequestBody) SetLoginUsername(val OptString) {
-	s.LoginUsername = val
+// SetCompute sets the value of Compute.
+func (s *LaunchInstanceQuoteRequestBody) SetCompute(val NewCompute) {
+	s.Compute = val
 }
 
 // SetName sets the value of Name.
@@ -6391,13 +6496,8 @@ func (s *LaunchInstanceQuoteRequestBody) SetSubnetID(val OptUUID) {
 	s.SubnetID = val
 }
 
-// SetBilling sets the value of Billing.
-func (s *LaunchInstanceQuoteRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
 // SetBootDisk sets the value of BootDisk.
-func (s *LaunchInstanceQuoteRequestBody) SetBootDisk(val OptNewBootDisk) {
+func (s *LaunchInstanceQuoteRequestBody) SetBootDisk(val BootDisk) {
 	s.BootDisk = val
 }
 
@@ -6423,20 +6523,9 @@ type LaunchInstanceRequestBody struct {
 	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
 	Count OptInt64 `json:"count"`
 	// Have the platform generate a random password, returned only in this response.
-	GeneratePassword OptBool `json:"generate_password"`
-	// Boot a disk you already have instead of installing an image. The disk must be available, unattached,
-	// and in the same availability zone as the instance type. Exactly one of this and `image_id`.
-	BootDiskID OptUUID `json:"boot_disk_id"`
-	// A public image currently on sale, or an available private image of this project. Exactly one of this
-	// and `boot_disk_id`.
-	ImageID OptUUID `json:"image_id"`
-	// An instance type currently on sale. A withdrawn one is rejected even though its identifier still
-	// resolves.
-	InstanceTypeID uuid.UUID `json:"instance_type_id"`
-	// The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since
-	// an image states its own.
-	LoginUsername OptString `json:"login_username"`
-	Name          string    `json:"name"`
+	GeneratePassword OptBool    `json:"generate_password"`
+	Compute          NewCompute `json:"compute"`
+	Name             string     `json:"name"`
 	// The password to set, on the login account and on root. Only the SSH public keys of the project are
 	// used when omitted.
 	Password OptString `json:"password"`
@@ -6450,8 +6539,7 @@ type LaunchInstanceRequestBody struct {
 	// Create the primary network interface in this subnet. Exactly one of this and `port_id`.
 	SubnetID   OptUUID            `json:"subnet_id"`
 	Checkout   OptCheckoutOptions `json:"checkout"`
-	Billing    BillingChoice      `json:"billing"`
-	BootDisk   OptNewBootDisk     `json:"boot_disk"`
+	BootDisk   BootDisk           `json:"boot_disk"`
 	FloatingIP OptNewFloatingIP   `json:"floating_ip"`
 }
 
@@ -6470,24 +6558,9 @@ func (s *LaunchInstanceRequestBody) GetGeneratePassword() OptBool {
 	return s.GeneratePassword
 }
 
-// GetBootDiskID returns the value of BootDiskID.
-func (s *LaunchInstanceRequestBody) GetBootDiskID() OptUUID {
-	return s.BootDiskID
-}
-
-// GetImageID returns the value of ImageID.
-func (s *LaunchInstanceRequestBody) GetImageID() OptUUID {
-	return s.ImageID
-}
-
-// GetInstanceTypeID returns the value of InstanceTypeID.
-func (s *LaunchInstanceRequestBody) GetInstanceTypeID() uuid.UUID {
-	return s.InstanceTypeID
-}
-
-// GetLoginUsername returns the value of LoginUsername.
-func (s *LaunchInstanceRequestBody) GetLoginUsername() OptString {
-	return s.LoginUsername
+// GetCompute returns the value of Compute.
+func (s *LaunchInstanceRequestBody) GetCompute() NewCompute {
+	return s.Compute
 }
 
 // GetName returns the value of Name.
@@ -6520,13 +6593,8 @@ func (s *LaunchInstanceRequestBody) GetCheckout() OptCheckoutOptions {
 	return s.Checkout
 }
 
-// GetBilling returns the value of Billing.
-func (s *LaunchInstanceRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
 // GetBootDisk returns the value of BootDisk.
-func (s *LaunchInstanceRequestBody) GetBootDisk() OptNewBootDisk {
+func (s *LaunchInstanceRequestBody) GetBootDisk() BootDisk {
 	return s.BootDisk
 }
 
@@ -6550,24 +6618,9 @@ func (s *LaunchInstanceRequestBody) SetGeneratePassword(val OptBool) {
 	s.GeneratePassword = val
 }
 
-// SetBootDiskID sets the value of BootDiskID.
-func (s *LaunchInstanceRequestBody) SetBootDiskID(val OptUUID) {
-	s.BootDiskID = val
-}
-
-// SetImageID sets the value of ImageID.
-func (s *LaunchInstanceRequestBody) SetImageID(val OptUUID) {
-	s.ImageID = val
-}
-
-// SetInstanceTypeID sets the value of InstanceTypeID.
-func (s *LaunchInstanceRequestBody) SetInstanceTypeID(val uuid.UUID) {
-	s.InstanceTypeID = val
-}
-
-// SetLoginUsername sets the value of LoginUsername.
-func (s *LaunchInstanceRequestBody) SetLoginUsername(val OptString) {
-	s.LoginUsername = val
+// SetCompute sets the value of Compute.
+func (s *LaunchInstanceRequestBody) SetCompute(val NewCompute) {
+	s.Compute = val
 }
 
 // SetName sets the value of Name.
@@ -6600,13 +6653,8 @@ func (s *LaunchInstanceRequestBody) SetCheckout(val OptCheckoutOptions) {
 	s.Checkout = val
 }
 
-// SetBilling sets the value of Billing.
-func (s *LaunchInstanceRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
 // SetBootDisk sets the value of BootDisk.
-func (s *LaunchInstanceRequestBody) SetBootDisk(val OptNewBootDisk) {
+func (s *LaunchInstanceRequestBody) SetBootDisk(val BootDisk) {
 	s.BootDisk = val
 }
 
@@ -6660,14 +6708,28 @@ func (*LaunchInstanceResponseBody) launchInstanceRes() {}
 
 type Money string
 
-// A system disk purchased in the same order. Required when booting from an image; mutually exclusive
-// with boot_disk_id.
+// A system disk created from an image and purchased in the instance order. Its commercial terms are
+// explicit and its release policy does not override them.
 // Ref: #/components/schemas/NewBootDisk
 type NewBootDisk struct {
+	Type NewBootDiskType `json:"type"`
+	// A public image on sale, or an available private image of this project.
+	ImageID uuid.UUID `json:"image_id"`
 	// A system disk type on sale in the availability zone of the instance, one whose `purpose` is `system`.
-	DiskTypeID         uuid.UUID `json:"disk_type_id"`
-	SizeGB             int64     `json:"size_gb"`
-	DeleteWithInstance OptBool   `json:"delete_with_instance"`
+	DiskTypeID         uuid.UUID     `json:"disk_type_id"`
+	SizeGB             int64         `json:"size_gb"`
+	DeleteWithInstance OptBool       `json:"delete_with_instance"`
+	Billing            BillingChoice `json:"billing"`
+}
+
+// GetType returns the value of Type.
+func (s *NewBootDisk) GetType() NewBootDiskType {
+	return s.Type
+}
+
+// GetImageID returns the value of ImageID.
+func (s *NewBootDisk) GetImageID() uuid.UUID {
+	return s.ImageID
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
@@ -6685,6 +6747,21 @@ func (s *NewBootDisk) GetDeleteWithInstance() OptBool {
 	return s.DeleteWithInstance
 }
 
+// GetBilling returns the value of Billing.
+func (s *NewBootDisk) GetBilling() BillingChoice {
+	return s.Billing
+}
+
+// SetType sets the value of Type.
+func (s *NewBootDisk) SetType(val NewBootDiskType) {
+	s.Type = val
+}
+
+// SetImageID sets the value of ImageID.
+func (s *NewBootDisk) SetImageID(val uuid.UUID) {
+	s.ImageID = val
+}
+
 // SetDiskTypeID sets the value of DiskTypeID.
 func (s *NewBootDisk) SetDiskTypeID(val uuid.UUID) {
 	s.DiskTypeID = val
@@ -6700,12 +6777,80 @@ func (s *NewBootDisk) SetDeleteWithInstance(val OptBool) {
 	s.DeleteWithInstance = val
 }
 
+// SetBilling sets the value of Billing.
+func (s *NewBootDisk) SetBilling(val BillingChoice) {
+	s.Billing = val
+}
+
+type NewBootDiskType string
+
+const (
+	NewBootDiskTypeImage NewBootDiskType = "image"
+)
+
+// AllValues returns all NewBootDiskType values.
+func (NewBootDiskType) AllValues() []NewBootDiskType {
+	return []NewBootDiskType{
+		NewBootDiskTypeImage,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NewBootDiskType) MarshalText() ([]byte, error) {
+	switch s {
+	case NewBootDiskTypeImage:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NewBootDiskType) UnmarshalText(data []byte) error {
+	switch NewBootDiskType(data) {
+	case NewBootDiskTypeImage:
+		*s = NewBootDiskTypeImage
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The compute capacity purchased for each instance in this order.
+// Ref: #/components/schemas/NewCompute
+type NewCompute struct {
+	// An instance type currently on sale.
+	InstanceTypeID uuid.UUID     `json:"instance_type_id"`
+	Billing        BillingChoice `json:"billing"`
+}
+
+// GetInstanceTypeID returns the value of InstanceTypeID.
+func (s *NewCompute) GetInstanceTypeID() uuid.UUID {
+	return s.InstanceTypeID
+}
+
+// GetBilling returns the value of Billing.
+func (s *NewCompute) GetBilling() BillingChoice {
+	return s.Billing
+}
+
+// SetInstanceTypeID sets the value of InstanceTypeID.
+func (s *NewCompute) SetInstanceTypeID(val uuid.UUID) {
+	s.InstanceTypeID = val
+}
+
+// SetBilling sets the value of Billing.
+func (s *NewCompute) SetBilling(val BillingChoice) {
+	s.Billing = val
+}
+
 // One floating IP purchased with this bandwidth configuration in the instance's order. Mutually
 // exclusive with floating_ip_id.
 // Ref: #/components/schemas/NewFloatingIP
 type NewFloatingIP struct {
-	BandwidthMbps int64     `json:"bandwidth_mbps"`
-	Ipv4PoolID    uuid.UUID `json:"ipv4_pool_id"`
+	BandwidthMbps int64         `json:"bandwidth_mbps"`
+	Ipv4PoolID    uuid.UUID     `json:"ipv4_pool_id"`
+	Billing       BillingChoice `json:"billing"`
 }
 
 // GetBandwidthMbps returns the value of BandwidthMbps.
@@ -6718,6 +6863,11 @@ func (s *NewFloatingIP) GetIpv4PoolID() uuid.UUID {
 	return s.Ipv4PoolID
 }
 
+// GetBilling returns the value of Billing.
+func (s *NewFloatingIP) GetBilling() BillingChoice {
+	return s.Billing
+}
+
 // SetBandwidthMbps sets the value of BandwidthMbps.
 func (s *NewFloatingIP) SetBandwidthMbps(val int64) {
 	s.BandwidthMbps = val
@@ -6726,6 +6876,11 @@ func (s *NewFloatingIP) SetBandwidthMbps(val int64) {
 // SetIpv4PoolID sets the value of Ipv4PoolID.
 func (s *NewFloatingIP) SetIpv4PoolID(val uuid.UUID) {
 	s.Ipv4PoolID = val
+}
+
+// SetBilling sets the value of Billing.
+func (s *NewFloatingIP) SetBilling(val BillingChoice) {
+	s.Billing = val
 }
 
 // Ref: #/components/schemas/NextFreeCidrResponseBody
@@ -7824,6 +7979,51 @@ func (o NilPricing) Or(d Pricing) Pricing {
 	return d
 }
 
+// NewNilPricingOptionTerminationPolicy returns new NilPricingOptionTerminationPolicy with value set to v.
+func NewNilPricingOptionTerminationPolicy(v PricingOptionTerminationPolicy) NilPricingOptionTerminationPolicy {
+	return NilPricingOptionTerminationPolicy{
+		Value: v,
+	}
+}
+
+// NilPricingOptionTerminationPolicy is nullable PricingOptionTerminationPolicy.
+type NilPricingOptionTerminationPolicy struct {
+	Value PricingOptionTerminationPolicy
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilPricingOptionTerminationPolicy) SetTo(v PricingOptionTerminationPolicy) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilPricingOptionTerminationPolicy) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilPricingOptionTerminationPolicy) SetToNull() {
+	o.Null = true
+	var v PricingOptionTerminationPolicy
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilPricingOptionTerminationPolicy) Get() (v PricingOptionTerminationPolicy, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilPricingOptionTerminationPolicy) Or(d PricingOptionTerminationPolicy) PricingOptionTerminationPolicy {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilPricingOptionUnit returns new NilPricingOptionUnit with value set to v.
 func NewNilPricingOptionUnit(v PricingOptionUnit) NilPricingOptionUnit {
 	return NilPricingOptionUnit{
@@ -8733,52 +8933,6 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewOptNewBootDisk returns new OptNewBootDisk with value set to v.
-func NewOptNewBootDisk(v NewBootDisk) OptNewBootDisk {
-	return OptNewBootDisk{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNewBootDisk is optional NewBootDisk.
-type OptNewBootDisk struct {
-	Value NewBootDisk
-	Set   bool
-}
-
-// IsSet returns true if OptNewBootDisk was set.
-func (o OptNewBootDisk) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNewBootDisk) Reset() {
-	var v NewBootDisk
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptNewBootDisk) SetTo(v NewBootDisk) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNewBootDisk) Get() (v NewBootDisk, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNewBootDisk) Or(d NewBootDisk) NewBootDisk {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNewFloatingIP returns new OptNewFloatingIP with value set to v.
 func NewOptNewFloatingIP(v NewFloatingIP) OptNewFloatingIP {
 	return OptNewFloatingIP{
@@ -9137,6 +9291,52 @@ func (o OptString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTerminationPolicy returns new OptTerminationPolicy with value set to v.
+func NewOptTerminationPolicy(v TerminationPolicy) OptTerminationPolicy {
+	return OptTerminationPolicy{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTerminationPolicy is optional TerminationPolicy.
+type OptTerminationPolicy struct {
+	Value TerminationPolicy
+	Set   bool
+}
+
+// IsSet returns true if OptTerminationPolicy was set.
+func (o OptTerminationPolicy) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTerminationPolicy) Reset() {
+	var v TerminationPolicy
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTerminationPolicy) SetTo(v TerminationPolicy) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTerminationPolicy) Get() (v TerminationPolicy, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTerminationPolicy) Or(d TerminationPolicy) TerminationPolicy {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10227,7 +10427,8 @@ func (s *Pricing) SetOptions(val []PricingOption) {
 	s.Options = val
 }
 
-// One way to buy an item. Choose it by giving its `mode` and `period` as `billing`.
+// One way to buy an item. Choose it by giving its mode, period and explicit prepaid termination_policy
+// as billing.
 // Ref: #/components/schemas/PricingOption
 type PricingOption struct {
 	Mode PricingOptionMode `json:"mode"`
@@ -10248,8 +10449,9 @@ type PricingOption struct {
 	// Postpaid only; null for prepaid. The time unit of `unit_amount`.
 	Unit NilPricingOptionUnit `json:"unit"`
 	// What canceling does under this option: `immediate` ends the service at once, with any refund
-	// following the option's terms; `period_end` ends it at the end of the paid period.
-	Termination PricingOptionTermination `json:"termination"`
+	// following the option's terms; `period_end` ends it at the end of the paid period. Null means no
+	// explicit policy was recorded; it must not be interpreted as immediate.
+	TerminationPolicy NilPricingOptionTerminationPolicy `json:"termination_policy"`
 }
 
 // GetMode returns the value of Mode.
@@ -10292,9 +10494,9 @@ func (s *PricingOption) GetUnit() NilPricingOptionUnit {
 	return s.Unit
 }
 
-// GetTermination returns the value of Termination.
-func (s *PricingOption) GetTermination() PricingOptionTermination {
-	return s.Termination
+// GetTerminationPolicy returns the value of TerminationPolicy.
+func (s *PricingOption) GetTerminationPolicy() NilPricingOptionTerminationPolicy {
+	return s.TerminationPolicy
 }
 
 // SetMode sets the value of Mode.
@@ -10337,9 +10539,9 @@ func (s *PricingOption) SetUnit(val NilPricingOptionUnit) {
 	s.Unit = val
 }
 
-// SetTermination sets the value of Termination.
-func (s *PricingOption) SetTermination(val PricingOptionTermination) {
-	s.Termination = val
+// SetTerminationPolicy sets the value of TerminationPolicy.
+func (s *PricingOption) SetTerminationPolicy(val NilPricingOptionTerminationPolicy) {
+	s.TerminationPolicy = val
 }
 
 type PricingOptionMode string
@@ -10441,28 +10643,29 @@ func (s *PricingOptionQuantityUnit) UnmarshalText(data []byte) error {
 }
 
 // What canceling does under this option: `immediate` ends the service at once, with any refund
-// following the option's terms; `period_end` ends it at the end of the paid period.
-type PricingOptionTermination string
+// following the option's terms; `period_end` ends it at the end of the paid period. Null means no
+// explicit policy was recorded; it must not be interpreted as immediate.
+type PricingOptionTerminationPolicy string
 
 const (
-	PricingOptionTerminationImmediate PricingOptionTermination = "immediate"
-	PricingOptionTerminationPeriodEnd PricingOptionTermination = "period_end"
+	PricingOptionTerminationPolicyImmediate PricingOptionTerminationPolicy = "immediate"
+	PricingOptionTerminationPolicyPeriodEnd PricingOptionTerminationPolicy = "period_end"
 )
 
-// AllValues returns all PricingOptionTermination values.
-func (PricingOptionTermination) AllValues() []PricingOptionTermination {
-	return []PricingOptionTermination{
-		PricingOptionTerminationImmediate,
-		PricingOptionTerminationPeriodEnd,
+// AllValues returns all PricingOptionTerminationPolicy values.
+func (PricingOptionTerminationPolicy) AllValues() []PricingOptionTerminationPolicy {
+	return []PricingOptionTerminationPolicy{
+		PricingOptionTerminationPolicyImmediate,
+		PricingOptionTerminationPolicyPeriodEnd,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s PricingOptionTermination) MarshalText() ([]byte, error) {
+func (s PricingOptionTerminationPolicy) MarshalText() ([]byte, error) {
 	switch s {
-	case PricingOptionTerminationImmediate:
+	case PricingOptionTerminationPolicyImmediate:
 		return []byte(s), nil
-	case PricingOptionTerminationPeriodEnd:
+	case PricingOptionTerminationPolicyPeriodEnd:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -10470,13 +10673,13 @@ func (s PricingOptionTermination) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PricingOptionTermination) UnmarshalText(data []byte) error {
-	switch PricingOptionTermination(data) {
-	case PricingOptionTerminationImmediate:
-		*s = PricingOptionTerminationImmediate
+func (s *PricingOptionTerminationPolicy) UnmarshalText(data []byte) error {
+	switch PricingOptionTerminationPolicy(data) {
+	case PricingOptionTerminationPolicyImmediate:
+		*s = PricingOptionTerminationPolicyImmediate
 		return nil
-	case PricingOptionTerminationPeriodEnd:
-		*s = PricingOptionTerminationPeriodEnd
+	case PricingOptionTerminationPolicyPeriodEnd:
+		*s = PricingOptionTerminationPolicyPeriodEnd
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -13339,6 +13542,50 @@ func (SubnetResourceIPVersion) AllValues() []SubnetResourceIPVersion {
 	return []SubnetResourceIPVersion{
 		SubnetResourceIPVersion4,
 		SubnetResourceIPVersion6,
+	}
+}
+
+// Immediate ends service when cancellation takes effect, with refunds governed by the purchased terms.
+// Period-end keeps service until the paid period ends.
+// Ref: #/components/schemas/TerminationPolicy
+type TerminationPolicy string
+
+const (
+	TerminationPolicyImmediate TerminationPolicy = "immediate"
+	TerminationPolicyPeriodEnd TerminationPolicy = "period_end"
+)
+
+// AllValues returns all TerminationPolicy values.
+func (TerminationPolicy) AllValues() []TerminationPolicy {
+	return []TerminationPolicy{
+		TerminationPolicyImmediate,
+		TerminationPolicyPeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TerminationPolicy) MarshalText() ([]byte, error) {
+	switch s {
+	case TerminationPolicyImmediate:
+		return []byte(s), nil
+	case TerminationPolicyPeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TerminationPolicy) UnmarshalText(data []byte) error {
+	switch TerminationPolicy(data) {
+	case TerminationPolicyImmediate:
+		*s = TerminationPolicyImmediate
+		return nil
+	case TerminationPolicyPeriodEnd:
+		*s = TerminationPolicyPeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
 	}
 }
 

@@ -456,7 +456,7 @@ type Handler interface {
 	// system that is being written to corrupts data.
 	//
 	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the
-	// instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with
+	// instance or a disk supplied as the existing boot_disk at launch. Such a request is refused with
 	// `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
 	//
 	// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation
@@ -622,7 +622,7 @@ type Handler interface {
 	// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
 	// look the order up before submitting again.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id.
+	// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id.
 	// Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is
 	// pending; if one is no longer usable when the order is accepted, the instance ends `failed` with
 	// `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription.

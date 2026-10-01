@@ -2174,11 +2174,18 @@ func (s *BillingChoice) encodeFields(e *jx.Encoder) {
 			s.Period.Encode(e)
 		}
 	}
+	{
+		if s.TerminationPolicy.Set {
+			e.FieldStart("termination_policy")
+			s.TerminationPolicy.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfBillingChoice = [2]string{
+var jsonFieldsNameOfBillingChoice = [3]string{
 	0: "mode",
 	1: "period",
+	2: "termination_policy",
 }
 
 // Decode decodes BillingChoice from json.
@@ -2209,6 +2216,16 @@ func (s *BillingChoice) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"period\"")
+			}
+		case "termination_policy":
+			if err := func() error {
+				s.TerminationPolicy.Reset()
+				if err := s.TerminationPolicy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"termination_policy\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -2321,7 +2338,7 @@ func (s *BillingPeriod) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("count")
-		e.Int64(s.Count)
+		e.Int32(s.Count)
 	}
 }
 
@@ -2352,8 +2369,8 @@ func (s *BillingPeriod) Decode(d *jx.Decoder) error {
 		case "count":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.Int64()
-				s.Count = int64(v)
+				v, err := d.Int32()
+				s.Count = int32(v)
 				if err != nil {
 					return err
 				}
@@ -2549,6 +2566,130 @@ func (s *BindFloatingIPRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *BindFloatingIPRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes BootDisk as json.
+func (s BootDisk) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+func (s BootDisk) encodeFields(e *jx.Encoder) {
+	switch s.Type {
+	case NewBootDiskBootDisk:
+		e.FieldStart("type")
+		e.Str("image")
+		{
+			s := s.NewBootDisk
+			{
+				e.FieldStart("image_id")
+				json.EncodeUUID(e, s.ImageID)
+			}
+			{
+				e.FieldStart("disk_type_id")
+				json.EncodeUUID(e, s.DiskTypeID)
+			}
+			{
+				e.FieldStart("size_gb")
+				e.Int64(s.SizeGB)
+			}
+			{
+				if s.DeleteWithInstance.Set {
+					e.FieldStart("delete_with_instance")
+					s.DeleteWithInstance.Encode(e)
+				}
+			}
+			{
+				e.FieldStart("billing")
+				s.Billing.Encode(e)
+			}
+		}
+	case ExistingBootDiskBootDisk:
+		e.FieldStart("type")
+		e.Str("disk")
+		{
+			s := s.ExistingBootDisk
+			{
+				e.FieldStart("disk_id")
+				json.EncodeUUID(e, s.DiskID)
+			}
+			{
+				e.FieldStart("login_username")
+				e.Str(s.LoginUsername)
+			}
+		}
+	}
+}
+
+// Decode decodes BootDisk from json.
+func (s *BootDisk) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode BootDisk to nil")
+	}
+	// Sum type discriminator.
+	if typ := d.Next(); typ != jx.Object {
+		return errors.Errorf("unexpected json type %q", typ)
+	}
+
+	var found bool
+	if err := d.Capture(func(d *jx.Decoder) error {
+		return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
+			if found {
+				return d.Skip()
+			}
+			switch string(key) {
+			case "type":
+				typ, err := d.Str()
+				if err != nil {
+					return err
+				}
+				switch typ {
+				case "image":
+					s.Type = NewBootDiskBootDisk
+					found = true
+				case "disk":
+					s.Type = ExistingBootDiskBootDisk
+					found = true
+				default:
+					return errors.Errorf("unknown type %s", typ)
+				}
+				return nil
+			}
+			return d.Skip()
+		})
+	}); err != nil {
+		return errors.Wrap(err, "capture")
+	}
+	if !found {
+		return errors.New("unable to detect sum type variant")
+	}
+	switch s.Type {
+	case NewBootDiskBootDisk:
+		if err := s.NewBootDisk.Decode(d); err != nil {
+			return err
+		}
+	case ExistingBootDiskBootDisk:
+		if err := s.ExistingBootDisk.Decode(d); err != nil {
+			return err
+		}
+	default:
+		return errors.Errorf("inferred invalid type: %s", s.Type)
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s BootDisk) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *BootDisk) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -7725,6 +7866,172 @@ func (s *ErrorMeta) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *ExistingBootDisk) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ExistingBootDisk) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("disk_id")
+		json.EncodeUUID(e, s.DiskID)
+	}
+	{
+		e.FieldStart("login_username")
+		e.Str(s.LoginUsername)
+	}
+}
+
+var jsonFieldsNameOfExistingBootDisk = [3]string{
+	0: "type",
+	1: "disk_id",
+	2: "login_username",
+}
+
+// Decode decodes ExistingBootDisk from json.
+func (s *ExistingBootDisk) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ExistingBootDisk to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "type":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "disk_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.DiskID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"disk_id\"")
+			}
+		case "login_username":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.LoginUsername = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"login_username\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ExistingBootDisk")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfExistingBootDisk) {
+					name = jsonFieldsNameOfExistingBootDisk[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ExistingBootDisk) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ExistingBootDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ExistingBootDiskType as json.
+func (s ExistingBootDiskType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ExistingBootDiskType from json.
+func (s *ExistingBootDiskType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ExistingBootDiskType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ExistingBootDiskType(v) {
+	case ExistingBootDiskTypeDisk:
+		*s = ExistingBootDiskTypeDisk
+	default:
+		*s = ExistingBootDiskType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ExistingBootDiskType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ExistingBootDiskType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *FloatingIPListResponseBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -11992,26 +12299,8 @@ func (s *LaunchInstanceQuoteRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.BootDiskID.Set {
-			e.FieldStart("boot_disk_id")
-			s.BootDiskID.Encode(e)
-		}
-	}
-	{
-		if s.ImageID.Set {
-			e.FieldStart("image_id")
-			s.ImageID.Encode(e)
-		}
-	}
-	{
-		e.FieldStart("instance_type_id")
-		json.EncodeUUID(e, s.InstanceTypeID)
-	}
-	{
-		if s.LoginUsername.Set {
-			e.FieldStart("login_username")
-			s.LoginUsername.Encode(e)
-		}
+		e.FieldStart("compute")
+		s.Compute.Encode(e)
 	}
 	{
 		e.FieldStart("name")
@@ -12042,14 +12331,8 @@ func (s *LaunchInstanceQuoteRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("billing")
-		s.Billing.Encode(e)
-	}
-	{
-		if s.BootDisk.Set {
-			e.FieldStart("boot_disk")
-			s.BootDisk.Encode(e)
-		}
+		e.FieldStart("boot_disk")
+		s.BootDisk.Encode(e)
 	}
 	{
 		if s.FloatingIP.Set {
@@ -12059,22 +12342,18 @@ func (s *LaunchInstanceQuoteRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLaunchInstanceQuoteRequestBody = [15]string{
+var jsonFieldsNameOfLaunchInstanceQuoteRequestBody = [11]string{
 	0:  "floating_ip_id",
 	1:  "count",
 	2:  "generate_password",
-	3:  "boot_disk_id",
-	4:  "image_id",
-	5:  "instance_type_id",
-	6:  "login_username",
-	7:  "name",
-	8:  "password",
-	9:  "port_id",
-	10: "security_group_ids",
-	11: "subnet_id",
-	12: "billing",
-	13: "boot_disk",
-	14: "floating_ip",
+	3:  "compute",
+	4:  "name",
+	5:  "password",
+	6:  "port_id",
+	7:  "security_group_ids",
+	8:  "subnet_id",
+	9:  "boot_disk",
+	10: "floating_ip",
 }
 
 // Decode decodes LaunchInstanceQuoteRequestBody from json.
@@ -12117,50 +12396,18 @@ func (s *LaunchInstanceQuoteRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"generate_password\"")
 			}
-		case "boot_disk_id":
+		case "compute":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
-				s.BootDiskID.Reset()
-				if err := s.BootDiskID.Decode(d); err != nil {
+				if err := s.Compute.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"boot_disk_id\"")
-			}
-		case "image_id":
-			if err := func() error {
-				s.ImageID.Reset()
-				if err := s.ImageID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"image_id\"")
-			}
-		case "instance_type_id":
-			requiredBitSet[0] |= 1 << 5
-			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.InstanceTypeID = v
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"instance_type_id\"")
-			}
-		case "login_username":
-			if err := func() error {
-				s.LoginUsername.Reset()
-				if err := s.LoginUsername.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"login_username\"")
+				return errors.Wrap(err, "decode field \"compute\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -12211,19 +12458,9 @@ func (s *LaunchInstanceQuoteRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"subnet_id\"")
 			}
-		case "billing":
-			requiredBitSet[1] |= 1 << 4
-			if err := func() error {
-				if err := s.Billing.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"billing\"")
-			}
 		case "boot_disk":
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
-				s.BootDisk.Reset()
 				if err := s.BootDisk.Decode(d); err != nil {
 					return err
 				}
@@ -12251,8 +12488,8 @@ func (s *LaunchInstanceQuoteRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10100000,
-		0b00010000,
+		0b00011000,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12326,26 +12563,8 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.BootDiskID.Set {
-			e.FieldStart("boot_disk_id")
-			s.BootDiskID.Encode(e)
-		}
-	}
-	{
-		if s.ImageID.Set {
-			e.FieldStart("image_id")
-			s.ImageID.Encode(e)
-		}
-	}
-	{
-		e.FieldStart("instance_type_id")
-		json.EncodeUUID(e, s.InstanceTypeID)
-	}
-	{
-		if s.LoginUsername.Set {
-			e.FieldStart("login_username")
-			s.LoginUsername.Encode(e)
-		}
+		e.FieldStart("compute")
+		s.Compute.Encode(e)
 	}
 	{
 		e.FieldStart("name")
@@ -12382,14 +12601,8 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("billing")
-		s.Billing.Encode(e)
-	}
-	{
-		if s.BootDisk.Set {
-			e.FieldStart("boot_disk")
-			s.BootDisk.Encode(e)
-		}
+		e.FieldStart("boot_disk")
+		s.BootDisk.Encode(e)
 	}
 	{
 		if s.FloatingIP.Set {
@@ -12399,23 +12612,19 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLaunchInstanceRequestBody = [16]string{
+var jsonFieldsNameOfLaunchInstanceRequestBody = [12]string{
 	0:  "floating_ip_id",
 	1:  "count",
 	2:  "generate_password",
-	3:  "boot_disk_id",
-	4:  "image_id",
-	5:  "instance_type_id",
-	6:  "login_username",
-	7:  "name",
-	8:  "password",
-	9:  "port_id",
-	10: "security_group_ids",
-	11: "subnet_id",
-	12: "checkout",
-	13: "billing",
-	14: "boot_disk",
-	15: "floating_ip",
+	3:  "compute",
+	4:  "name",
+	5:  "password",
+	6:  "port_id",
+	7:  "security_group_ids",
+	8:  "subnet_id",
+	9:  "checkout",
+	10: "boot_disk",
+	11: "floating_ip",
 }
 
 // Decode decodes LaunchInstanceRequestBody from json.
@@ -12458,50 +12667,18 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"generate_password\"")
 			}
-		case "boot_disk_id":
+		case "compute":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
-				s.BootDiskID.Reset()
-				if err := s.BootDiskID.Decode(d); err != nil {
+				if err := s.Compute.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"boot_disk_id\"")
-			}
-		case "image_id":
-			if err := func() error {
-				s.ImageID.Reset()
-				if err := s.ImageID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"image_id\"")
-			}
-		case "instance_type_id":
-			requiredBitSet[0] |= 1 << 5
-			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.InstanceTypeID = v
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"instance_type_id\"")
-			}
-		case "login_username":
-			if err := func() error {
-				s.LoginUsername.Reset()
-				if err := s.LoginUsername.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"login_username\"")
+				return errors.Wrap(err, "decode field \"compute\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -12562,19 +12739,9 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"checkout\"")
 			}
-		case "billing":
-			requiredBitSet[1] |= 1 << 5
-			if err := func() error {
-				if err := s.Billing.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"billing\"")
-			}
 		case "boot_disk":
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
-				s.BootDisk.Reset()
 				if err := s.BootDisk.Decode(d); err != nil {
 					return err
 				}
@@ -12602,8 +12769,8 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10100000,
-		0b00100000,
+		0b00011000,
+		0b00000100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12835,6 +13002,14 @@ func (s *NewBootDisk) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *NewBootDisk) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("image_id")
+		json.EncodeUUID(e, s.ImageID)
+	}
+	{
 		e.FieldStart("disk_type_id")
 		json.EncodeUUID(e, s.DiskTypeID)
 	}
@@ -12848,12 +13023,19 @@ func (s *NewBootDisk) encodeFields(e *jx.Encoder) {
 			s.DeleteWithInstance.Encode(e)
 		}
 	}
+	{
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfNewBootDisk = [3]string{
-	0: "disk_type_id",
-	1: "size_gb",
-	2: "delete_with_instance",
+var jsonFieldsNameOfNewBootDisk = [6]string{
+	0: "type",
+	1: "image_id",
+	2: "disk_type_id",
+	3: "size_gb",
+	4: "delete_with_instance",
+	5: "billing",
 }
 
 // Decode decodes NewBootDisk from json.
@@ -12866,8 +13048,30 @@ func (s *NewBootDisk) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "disk_type_id":
+		case "type":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "image_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ImageID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"image_id\"")
+			}
+		case "disk_type_id":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.DiskTypeID = v
@@ -12879,7 +13083,7 @@ func (s *NewBootDisk) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"disk_type_id\"")
 			}
 		case "size_gb":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.SizeGB = int64(v)
@@ -12900,6 +13104,16 @@ func (s *NewBootDisk) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"delete_with_instance\"")
 			}
+		case "billing":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.Billing.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billing\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -12910,7 +13124,7 @@ func (s *NewBootDisk) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00101111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12956,6 +13170,155 @@ func (s *NewBootDisk) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes NewBootDiskType as json.
+func (s NewBootDiskType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes NewBootDiskType from json.
+func (s *NewBootDiskType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewBootDiskType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch NewBootDiskType(v) {
+	case NewBootDiskTypeImage:
+		*s = NewBootDiskTypeImage
+	default:
+		*s = NewBootDiskType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NewBootDiskType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewBootDiskType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *NewCompute) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *NewCompute) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("instance_type_id")
+		json.EncodeUUID(e, s.InstanceTypeID)
+	}
+	{
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfNewCompute = [2]string{
+	0: "instance_type_id",
+	1: "billing",
+}
+
+// Decode decodes NewCompute from json.
+func (s *NewCompute) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewCompute to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "instance_type_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.InstanceTypeID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"instance_type_id\"")
+			}
+		case "billing":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Billing.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billing\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NewCompute")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfNewCompute) {
+					name = jsonFieldsNameOfNewCompute[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *NewCompute) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewCompute) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *NewFloatingIP) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -12973,11 +13336,16 @@ func (s *NewFloatingIP) encodeFields(e *jx.Encoder) {
 		e.FieldStart("ipv4_pool_id")
 		json.EncodeUUID(e, s.Ipv4PoolID)
 	}
+	{
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfNewFloatingIP = [2]string{
+var jsonFieldsNameOfNewFloatingIP = [3]string{
 	0: "bandwidth_mbps",
 	1: "ipv4_pool_id",
+	2: "billing",
 }
 
 // Decode decodes NewFloatingIP from json.
@@ -13013,6 +13381,16 @@ func (s *NewFloatingIP) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"ipv4_pool_id\"")
 			}
+		case "billing":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Billing.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billing\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -13023,7 +13401,7 @@ func (s *NewFloatingIP) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -14225,6 +14603,50 @@ func (s *NilPricing) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes PricingOptionTerminationPolicy as json.
+func (o NilPricingOptionTerminationPolicy) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes PricingOptionTerminationPolicy from json.
+func (o *NilPricingOptionTerminationPolicy) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilPricingOptionTerminationPolicy to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v PricingOptionTerminationPolicy
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilPricingOptionTerminationPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilPricingOptionTerminationPolicy) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes PricingOptionUnit as json.
 func (o NilPricingOptionUnit) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -15314,39 +15736,6 @@ func (s *OptInt64) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes NewBootDisk as json.
-func (o OptNewBootDisk) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes NewBootDisk from json.
-func (o *OptNewBootDisk) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptNewBootDisk to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptNewBootDisk) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNewBootDisk) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes NewFloatingIP as json.
 func (o OptNewFloatingIP) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -15623,6 +16012,39 @@ func (s OptString) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptString) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TerminationPolicy as json.
+func (o OptTerminationPolicy) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes TerminationPolicy from json.
+func (o *OptTerminationPolicy) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptTerminationPolicy to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptTerminationPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptTerminationPolicy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -17874,8 +18296,8 @@ func (s *PricingOption) encodeFields(e *jx.Encoder) {
 		s.Unit.Encode(e)
 	}
 	{
-		e.FieldStart("termination")
-		s.Termination.Encode(e)
+		e.FieldStart("termination_policy")
+		s.TerminationPolicy.Encode(e)
 	}
 }
 
@@ -17888,7 +18310,7 @@ var jsonFieldsNameOfPricingOption = [9]string{
 	5: "saving_percent",
 	6: "unit_amount",
 	7: "unit",
-	8: "termination",
+	8: "termination_policy",
 }
 
 // Decode decodes PricingOption from json.
@@ -17980,15 +18402,15 @@ func (s *PricingOption) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"unit\"")
 			}
-		case "termination":
+		case "termination_policy":
 			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
-				if err := s.Termination.Decode(d); err != nil {
+				if err := s.TerminationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination\"")
+				return errors.Wrap(err, "decode field \"termination_policy\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -18131,42 +18553,42 @@ func (s *PricingOptionQuantityUnit) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes PricingOptionTermination as json.
-func (s PricingOptionTermination) Encode(e *jx.Encoder) {
+// Encode encodes PricingOptionTerminationPolicy as json.
+func (s PricingOptionTerminationPolicy) Encode(e *jx.Encoder) {
 	e.Str(string(s))
 }
 
-// Decode decodes PricingOptionTermination from json.
-func (s *PricingOptionTermination) Decode(d *jx.Decoder) error {
+// Decode decodes PricingOptionTerminationPolicy from json.
+func (s *PricingOptionTerminationPolicy) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode PricingOptionTermination to nil")
+		return errors.New("invalid: unable to decode PricingOptionTerminationPolicy to nil")
 	}
 	v, err := d.StrBytes()
 	if err != nil {
 		return err
 	}
 	// Try to use constant string.
-	switch PricingOptionTermination(v) {
-	case PricingOptionTerminationImmediate:
-		*s = PricingOptionTerminationImmediate
-	case PricingOptionTerminationPeriodEnd:
-		*s = PricingOptionTerminationPeriodEnd
+	switch PricingOptionTerminationPolicy(v) {
+	case PricingOptionTerminationPolicyImmediate:
+		*s = PricingOptionTerminationPolicyImmediate
+	case PricingOptionTerminationPolicyPeriodEnd:
+		*s = PricingOptionTerminationPolicyPeriodEnd
 	default:
-		*s = PricingOptionTermination(v)
+		*s = PricingOptionTerminationPolicy(v)
 	}
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s PricingOptionTermination) MarshalJSON() ([]byte, error) {
+func (s PricingOptionTerminationPolicy) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *PricingOptionTermination) UnmarshalJSON(data []byte) error {
+func (s *PricingOptionTerminationPolicy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -25567,6 +25989,46 @@ func (s SubnetResourceIPVersion) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *SubnetResourceIPVersion) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TerminationPolicy as json.
+func (s TerminationPolicy) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes TerminationPolicy from json.
+func (s *TerminationPolicy) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TerminationPolicy to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch TerminationPolicy(v) {
+	case TerminationPolicyImmediate:
+		*s = TerminationPolicyImmediate
+	case TerminationPolicyPeriodEnd:
+		*s = TerminationPolicyPeriodEnd
+	default:
+		*s = TerminationPolicy(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s TerminationPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TerminationPolicy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

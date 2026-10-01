@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -454,6 +455,21 @@ func (e DiskTypeResourceMedia) Valid() bool {
 	case Nvme:
 		return true
 	case Ssd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExistingBootDiskType.
+const (
+	ExistingBootDiskTypeDisk ExistingBootDiskType = "disk"
+)
+
+// Valid indicates whether the value is a known member of the ExistingBootDiskType enum.
+func (e ExistingBootDiskType) Valid() bool {
+	switch e {
+	case ExistingBootDiskTypeDisk:
 		return true
 	default:
 		return false
@@ -946,6 +962,21 @@ func (e InstanceRestrictionSource) Valid() bool {
 	}
 }
 
+// Defines values for NewBootDiskType.
+const (
+	NewBootDiskTypeImage NewBootDiskType = "image"
+)
+
+// Valid indicates whether the value is a known member of the NewBootDiskType enum.
+func (e NewBootDiskType) Valid() bool {
+	switch e {
+	case NewBootDiskTypeImage:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PeeringOperationType.
 const (
 	PeeringOperationTypeDelete    PeeringOperationType = "delete"
@@ -1153,18 +1184,21 @@ func (e PricingOptionQuantityUnit) Valid() bool {
 	}
 }
 
-// Defines values for PricingOptionTermination.
+// Defines values for PricingOptionTerminationPolicy.
 const (
-	Immediate PricingOptionTermination = "immediate"
-	PeriodEnd PricingOptionTermination = "period_end"
+	PricingOptionTerminationPolicyImmediate   PricingOptionTerminationPolicy = "immediate"
+	PricingOptionTerminationPolicyLessThannil PricingOptionTerminationPolicy = "<nil>"
+	PricingOptionTerminationPolicyPeriodEnd   PricingOptionTerminationPolicy = "period_end"
 )
 
-// Valid indicates whether the value is a known member of the PricingOptionTermination enum.
-func (e PricingOptionTermination) Valid() bool {
+// Valid indicates whether the value is a known member of the PricingOptionTerminationPolicy enum.
+func (e PricingOptionTerminationPolicy) Valid() bool {
 	switch e {
-	case Immediate:
+	case PricingOptionTerminationPolicyImmediate:
 		return true
-	case PeriodEnd:
+	case PricingOptionTerminationPolicyLessThannil:
+		return true
+	case PricingOptionTerminationPolicyPeriodEnd:
 		return true
 	default:
 		return false
@@ -1438,6 +1472,24 @@ func (e SubnetResourceIpVersion) Valid() bool {
 	}
 }
 
+// Defines values for TerminationPolicy.
+const (
+	TerminationPolicyImmediate TerminationPolicy = "immediate"
+	TerminationPolicyPeriodEnd TerminationPolicy = "period_end"
+)
+
+// Valid indicates whether the value is a known member of the TerminationPolicy enum.
+func (e TerminationPolicy) Valid() bool {
+	switch e {
+	case TerminationPolicyImmediate:
+		return true
+	case TerminationPolicyPeriodEnd:
+		return true
+	default:
+		return false
+	}
+}
+
 // AllocateFloatingIPQuoteRequestBody The request of `allocate-floating-ip`, without `checkout`.
 type AllocateFloatingIPQuoteRequestBody struct {
 	// Address The address to allocate. Allocated by the platform when omitted
@@ -1454,7 +1506,7 @@ type AllocateFloatingIPQuoteRequestBody struct {
 	// same floating IP through its bandwidth endpoint, not an independent bandwidth resource.
 	BandwidthMbps int64 `json:"bandwidth_mbps"`
 
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing          BillingChoice      `json:"billing"`
 	Ipv4PoolId       openapi_types.UUID `json:"ipv4_pool_id"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
@@ -1476,7 +1528,7 @@ type AllocateFloatingIPRequestBody struct {
 	// same floating IP through its bandwidth endpoint, not an independent bandwidth resource.
 	BandwidthMbps int64 `json:"bandwidth_mbps"`
 
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
@@ -1636,10 +1688,13 @@ type BackupServiceFailureReason string
 // BackupServiceStatus `inactive` has never been activated or its subscription has ended; `pending` awaits acceptance of its order; `provisioning` is being activated; `active` accepts new backups; `suspended` refuses new backups and keeps existing ones; `failed` means the activation failed, as `failure_reason` states.
 type BackupServiceStatus string
 
-// BillingChoice How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+// BillingChoice The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 type BillingChoice struct {
 	Mode   BillingChoiceMode `json:"mode"`
 	Period *BillingPeriod    `json:"period,omitempty"`
+
+	// TerminationPolicy Immediate ends service when cancellation takes effect, with refunds governed by the purchased terms. Period-end keeps service until the paid period ends.
+	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
 }
 
 // BillingChoiceMode defines model for BillingChoice.Mode.
@@ -1647,7 +1702,7 @@ type BillingChoiceMode string
 
 // BillingPeriod defines model for BillingPeriod.
 type BillingPeriod struct {
-	Count int64             `json:"count"`
+	Count int32             `json:"count"`
 	Unit  BillingPeriodUnit `json:"unit"`
 }
 
@@ -1657,6 +1712,11 @@ type BillingPeriodUnit string
 // BindFloatingIPRequestBody defines model for BindFloatingIPRequestBody.
 type BindFloatingIPRequestBody struct {
 	PortAddressId openapi_types.UUID `json:"port_address_id"`
+}
+
+// BootDisk Create a boot disk from an image, or use a prepared disk already held by this project. Using an existing disk does not buy it again and always keeps it when the instance is released.
+type BootDisk struct {
+	union json.RawMessage
 }
 
 // CheckoutOptions Shared checkout choices for a product purchase. Omitting this object or mode selects
@@ -1693,14 +1753,14 @@ type ConsoleResponseBody struct {
 
 // CreateBackupCapacityPackQuoteRequestBody The request of `create-backup-capacity-pack`, without `checkout`.
 type CreateBackupCapacityPackQuoteRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing     BillingChoice `json:"billing"`
 	CapacityGib int64         `json:"capacity_gib"`
 }
 
 // CreateBackupCapacityPackRequestBody defines model for CreateBackupCapacityPackRequestBody.
 type CreateBackupCapacityPackRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing     BillingChoice `json:"billing"`
 	CapacityGib int64         `json:"capacity_gib"`
 
@@ -1746,7 +1806,7 @@ type CreateBackupServiceResponseBody struct {
 
 // CreateDiskQuoteRequestBody The request of `create-disk`, without `checkout`.
 type CreateDiskQuoteRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// DiskTypeId A data disk type currently on sale, one whose `purpose` is `data`. A withdrawn one is rejected even though its identifier still resolves
@@ -1760,7 +1820,7 @@ type CreateDiskQuoteRequestBody struct {
 
 // CreateDiskRequestBody defines model for CreateDiskRequestBody.
 type CreateDiskRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
@@ -1789,7 +1849,7 @@ type CreateDiskResponseBody struct {
 
 // CreateImageQuoteRequestBody The fields of `CreateImageRequestBody` that decide the price
 type CreateImageQuoteRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// InstanceId The instance whose system disk would be captured
@@ -1798,7 +1858,7 @@ type CreateImageQuoteRequestBody struct {
 
 // CreateImageRequestBody defines model for CreateImageRequestBody.
 type CreateImageRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
@@ -2065,6 +2125,19 @@ type DiskTypeResourceMedia string
 
 // Error defines model for Error.
 type Error = externalRef0.Error
+
+// ExistingBootDisk defines model for ExistingBootDisk.
+type ExistingBootDisk struct {
+	// DiskId A prepared boot disk owned by this project, available and unattached in the same availability zone as the instance type. Only one instance may be created when used.
+	DiskId openapi_types.UUID `json:"disk_id"`
+
+	// LoginUsername The existing account used to log in to this disk's operating system.
+	LoginUsername string               `json:"login_username"`
+	Type          ExistingBootDiskType `json:"type"`
+}
+
+// ExistingBootDiskType defines model for ExistingBootDisk.Type.
+type ExistingBootDiskType string
 
 // FloatingIPListResponseBody defines model for FloatingIPListResponseBody.
 type FloatingIPListResponseBody struct {
@@ -2424,14 +2497,11 @@ type InstanceTypeResource struct {
 
 // LaunchInstanceQuoteRequestBody The request of `launch-instance`, without `checkout`.
 type LaunchInstanceQuoteRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
-	Billing BillingChoice `json:"billing"`
+	// BootDisk Create a boot disk from an image, or use a prepared disk already held by this project. Using an existing disk does not buy it again and always keeps it when the instance is released.
+	BootDisk BootDisk `json:"boot_disk"`
 
-	// BootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
-	BootDisk *NewBootDisk `json:"boot_disk,omitempty"`
-
-	// BootDiskId Boot a disk you already have instead of installing an image. The disk must be available, unattached, and in the same availability zone as the instance type. Exactly one of this and `image_id`
-	BootDiskId *openapi_types.UUID `json:"boot_disk_id,omitempty"`
+	// Compute The compute capacity purchased for each instance in this order.
+	Compute NewCompute `json:"compute"`
 
 	// Count Number of instances to create; 1 when omitted. Names are numbered automatically for several
 	Count *int64 `json:"count,omitempty"`
@@ -2453,17 +2523,8 @@ type LaunchInstanceQuoteRequestBody struct {
 	FloatingIpId *openapi_types.UUID `json:"floating_ip_id,omitempty"`
 
 	// GeneratePassword Have the platform generate a random password, returned only in this response
-	GeneratePassword *bool `json:"generate_password,omitempty"`
-
-	// ImageId A public image currently on sale, or an available private image of this project. Exactly one of this and `boot_disk_id`
-	ImageId *openapi_types.UUID `json:"image_id,omitempty"`
-
-	// InstanceTypeId An instance type currently on sale. A withdrawn one is rejected even though its identifier still resolves
-	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
-
-	// LoginUsername The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since an image states its own
-	LoginUsername *string `json:"login_username,omitempty"`
-	Name          string  `json:"name"`
+	GeneratePassword *bool  `json:"generate_password,omitempty"`
+	Name             string `json:"name"`
 
 	// Password The password to set, on the login account and on root. Only the SSH public keys of the project are used when omitted
 	Password *string `json:"password,omitempty"`
@@ -2480,20 +2541,17 @@ type LaunchInstanceQuoteRequestBody struct {
 
 // LaunchInstanceRequestBody defines model for LaunchInstanceRequestBody.
 type LaunchInstanceRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
-	Billing BillingChoice `json:"billing"`
-
-	// BootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
-	BootDisk *NewBootDisk `json:"boot_disk,omitempty"`
-
-	// BootDiskId Boot a disk you already have instead of installing an image. The disk must be available, unattached, and in the same availability zone as the instance type. Exactly one of this and `image_id`
-	BootDiskId *openapi_types.UUID `json:"boot_disk_id,omitempty"`
+	// BootDisk Create a boot disk from an image, or use a prepared disk already held by this project. Using an existing disk does not buy it again and always keeps it when the instance is released.
+	BootDisk BootDisk `json:"boot_disk"`
 
 	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
 	// automatic checkout. Each purchase creates its own order. Promotion codes are supplied only to
 	// Billing quote and checkout operations. A service may retain a failed creation record when Billing
 	// refuses a purchase; no infrastructure is created for that refusal.
 	Checkout *CheckoutOptions `json:"checkout,omitempty"`
+
+	// Compute The compute capacity purchased for each instance in this order.
+	Compute NewCompute `json:"compute"`
 
 	// Count Number of instances to create; 1 when omitted. Names are numbered automatically for several
 	Count *int64 `json:"count,omitempty"`
@@ -2515,17 +2573,8 @@ type LaunchInstanceRequestBody struct {
 	FloatingIpId *openapi_types.UUID `json:"floating_ip_id,omitempty"`
 
 	// GeneratePassword Have the platform generate a random password, returned only in this response
-	GeneratePassword *bool `json:"generate_password,omitempty"`
-
-	// ImageId A public image currently on sale, or an available private image of this project. Exactly one of this and `boot_disk_id`
-	ImageId *openapi_types.UUID `json:"image_id,omitempty"`
-
-	// InstanceTypeId An instance type currently on sale. A withdrawn one is rejected even though its identifier still resolves
-	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
-
-	// LoginUsername The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since an image states its own
-	LoginUsername *string `json:"login_username,omitempty"`
-	Name          string  `json:"name"`
+	GeneratePassword *bool  `json:"generate_password,omitempty"`
+	Name             string `json:"name"`
 
 	// Password The password to set, on the login account and on root. Only the SSH public keys of the project are used when omitted
 	Password *string `json:"password,omitempty"`
@@ -2553,19 +2602,40 @@ type LaunchInstanceResponseBody struct {
 	Password *string `json:"password"`
 }
 
-// NewBootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
+// NewBootDisk A system disk created from an image and purchased in the instance order. Its commercial terms are explicit and its release policy does not override them.
 type NewBootDisk struct {
-	DeleteWithInstance *bool `json:"delete_with_instance,omitempty"`
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
+	Billing            BillingChoice `json:"billing"`
+	DeleteWithInstance *bool         `json:"delete_with_instance,omitempty"`
 
 	// DiskTypeId A system disk type on sale in the availability zone of the instance, one whose `purpose` is `system`
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
-	SizeGb     int64              `json:"size_gb"`
+
+	// ImageId A public image on sale, or an available private image of this project.
+	ImageId openapi_types.UUID `json:"image_id"`
+	SizeGb  int64              `json:"size_gb"`
+	Type    NewBootDiskType    `json:"type"`
+}
+
+// NewBootDiskType defines model for NewBootDisk.Type.
+type NewBootDiskType string
+
+// NewCompute The compute capacity purchased for each instance in this order.
+type NewCompute struct {
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
+	Billing BillingChoice `json:"billing"`
+
+	// InstanceTypeId An instance type currently on sale.
+	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
 }
 
 // NewFloatingIP One floating IP purchased with this bandwidth configuration in the instance's order. Mutually exclusive with floating_ip_id.
 type NewFloatingIP struct {
-	BandwidthMbps int64              `json:"bandwidth_mbps"`
-	Ipv4PoolId    openapi_types.UUID `json:"ipv4_pool_id"`
+	BandwidthMbps int64 `json:"bandwidth_mbps"`
+
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
+	Billing    BillingChoice      `json:"billing"`
+	Ipv4PoolId openapi_types.UUID `json:"ipv4_pool_id"`
 }
 
 // NextFreeCidrResponseBody defines model for NextFreeCidrResponseBody.
@@ -2750,7 +2820,7 @@ type Pricing struct {
 	Options []PricingOption `json:"options"`
 }
 
-// PricingOption One way to buy an item. Choose it by giving its `mode` and `period` as `billing`.
+// PricingOption One way to buy an item. Choose it by giving its mode, period and explicit prepaid termination_policy as billing.
 type PricingOption struct {
 	// Amount Prepaid only; null for postpaid. The amount for one period, per quantity unit.
 	Amount *string           `json:"amount"`
@@ -2768,8 +2838,8 @@ type PricingOption struct {
 	// SavingPercent Prepaid only. How much lower `monthly_amount` is than that of the shortest prepaid period of the same item, as a decimal percentage. Null for that shortest period and for postpaid.
 	SavingPercent *string `json:"saving_percent"`
 
-	// Termination What canceling does under this option: `immediate` ends the service at once, with any refund following the option's terms; `period_end` ends it at the end of the paid period.
-	Termination PricingOptionTermination `json:"termination"`
+	// TerminationPolicy What canceling does under this option: `immediate` ends the service at once, with any refund following the option's terms; `period_end` ends it at the end of the paid period. Null means no explicit policy was recorded; it must not be interpreted as immediate.
+	TerminationPolicy *PricingOptionTerminationPolicy `json:"termination_policy"`
 
 	// Unit Postpaid only; null for prepaid. The time unit of `unit_amount`.
 	Unit *PricingOptionUnit `json:"unit"`
@@ -2784,8 +2854,8 @@ type PricingOptionMode string
 // PricingOptionQuantityUnit What the amounts are for: one `item`, such as an instance or an address; one `gib` of size or capacity; one `mbps` of bandwidth; or one `snapshot` slot.
 type PricingOptionQuantityUnit string
 
-// PricingOptionTermination What canceling does under this option: `immediate` ends the service at once, with any refund following the option's terms; `period_end` ends it at the end of the paid period.
-type PricingOptionTermination string
+// PricingOptionTerminationPolicy What canceling does under this option: `immediate` ends the service at once, with any refund following the option's terms; `period_end` ends it at the end of the paid period. Null means no explicit policy was recorded; it must not be interpreted as immediate.
+type PricingOptionTerminationPolicy string
 
 // PricingOptionUnit Postpaid only; null for prepaid. The time unit of `unit_amount`.
 type PricingOptionUnit string
@@ -3011,7 +3081,7 @@ type ResizeInstanceResponseBody struct {
 
 // RestoreBackupQuoteRequestBody The request of `restore-backup`, without `checkout`.
 type RestoreBackupQuoteRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region. It has to be a data disk type on sale — restoring creates a new data disk, so a withdrawn type or a system disk type is rejected here as well
@@ -3024,7 +3094,7 @@ type RestoreBackupQuoteRequestBody struct {
 
 // RestoreBackupRequestBody defines model for RestoreBackupRequestBody.
 type RestoreBackupRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
@@ -3176,7 +3246,7 @@ type SetInstanceNotesRequestBody struct {
 
 // SetSnapshotQuotaQuoteRequestBody The request of `set-snapshot-quota`, without `checkout` and `proration_date`.
 type SetSnapshotQuotaQuoteRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// Limit Desired total concurrent snapshot count for this project and region, not additional slots.
@@ -3185,7 +3255,7 @@ type SetSnapshotQuotaQuoteRequestBody struct {
 
 // SetSnapshotQuotaRequestBody defines model for SetSnapshotQuotaRequestBody.
 type SetSnapshotQuotaRequestBody struct {
-	// Billing How to pay for a purchase: one of the options in the items' `pricing`. `prepaid` requires `period` and `postpaid` refuses it, with HTTP 400. The choice applies to every component of the purchase; a component without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`, and `meta.component` names it.
+	// Billing The commercial terms for one newly purchased component. Prepaid requires period and termination_policy; postpaid refuses both. Components in one instance order must use the same mode and period, while their termination policies may differ.
 	Billing BillingChoice `json:"billing"`
 
 	// Checkout Shared checkout choices for a product purchase. Omitting this object or mode selects
@@ -3336,6 +3406,9 @@ type SubnetResource struct {
 
 // SubnetResourceIpVersion defines model for SubnetResource.IpVersion.
 type SubnetResourceIpVersion int64
+
+// TerminationPolicy Immediate ends service when cancellation takes effect, with refunds governed by the purchased terms. Period-end keeps service until the paid period ends.
+type TerminationPolicy string
 
 // ZoneListResponseBody defines model for ZoneListResponseBody.
 type ZoneListResponseBody struct {
@@ -3685,6 +3758,107 @@ type CreateSnapshotJSONRequestBody = CreateSnapshotRequestBody
 
 // RenameSnapshotJSONRequestBody defines body for RenameSnapshot for application/json ContentType.
 type RenameSnapshotJSONRequestBody = RenameSnapshotRequestBody
+
+// AsNewBootDisk returns the union data inside the BootDisk as a NewBootDisk
+func (t BootDisk) AsNewBootDisk() (NewBootDisk, error) {
+	var body NewBootDisk
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNewBootDisk overwrites any union data inside the BootDisk as the provided NewBootDisk
+func (t *BootDisk) FromNewBootDisk(v NewBootDisk) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"type":"image"}`))
+	t.union = b
+	return err
+}
+
+// MergeNewBootDisk performs a merge with any union data inside the BootDisk, using the provided NewBootDisk
+func (t *BootDisk) MergeNewBootDisk(v NewBootDisk) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"type":"image"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsExistingBootDisk returns the union data inside the BootDisk as a ExistingBootDisk
+func (t BootDisk) AsExistingBootDisk() (ExistingBootDisk, error) {
+	var body ExistingBootDisk
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromExistingBootDisk overwrites any union data inside the BootDisk as the provided ExistingBootDisk
+func (t *BootDisk) FromExistingBootDisk(v ExistingBootDisk) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"type":"disk"}`))
+	t.union = b
+	return err
+}
+
+// MergeExistingBootDisk performs a merge with any union data inside the BootDisk, using the provided ExistingBootDisk
+func (t *BootDisk) MergeExistingBootDisk(v ExistingBootDisk) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	b, err = runtime.JSONMerge(b, []byte(`{"type":"disk"}`))
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t BootDisk) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t BootDisk) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "disk":
+		return t.AsExistingBootDisk()
+	case "image":
+		return t.AsNewBootDisk()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t BootDisk) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *BootDisk) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -4297,7 +4471,7 @@ type ClientInterface interface {
 	//
 	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 	//
@@ -4314,7 +4488,7 @@ type ClientInterface interface {
 	//
 	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 	//
@@ -4474,7 +4648,7 @@ type ClientInterface interface {
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 	//
-	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk supplied as the existing boot_disk at launch. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
 	//
 	// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation until the disk is detached.
 	//
@@ -6369,7 +6543,7 @@ func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams,
 //
 // Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 //
@@ -6396,7 +6570,7 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 //
 // Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 //
@@ -6696,7 +6870,7 @@ func (c *Client) AttachDisk(ctx context.Context, instanceId openapi_types.UUID, 
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 //
-// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk supplied as the existing boot_disk at launch. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
 //
 // Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation until the disk is detached.
 //
@@ -14379,7 +14553,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 	//
@@ -14396,7 +14570,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 	//
-	// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+	// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 	//
 	// Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 	//
@@ -14566,7 +14740,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 	//
-	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+	// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk supplied as the existing boot_disk at launch. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
 	//
 	// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation until the disk is detached.
 	//
@@ -21954,7 +22128,7 @@ func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, par
 //
 // Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 //
@@ -21977,7 +22151,7 @@ func (c *ClientWithResponses) LaunchInstanceWithBodyWithResponse(ctx context.Con
 //
 // Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`. With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an uncertain response, look the order up before submitting again.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
+// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id. Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is pending; if one is no longer usable when the order is accepted, the instance ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their own subscription items on the same order.
 //
 // Instances of one request succeed or fail individually. Each instance, with its system disk, network interface and floating IP, is created or fails as a whole. Instances that were created are kept; each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the order then ends `partially_completed`. Each instance is named after this request with a number appended.
 //
@@ -22231,7 +22405,7 @@ func (c *ClientWithResponses) AttachDiskWithResponse(ctx context.Context, instan
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 //
-// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+// The disk the instance boots from cannot be detached, whether it is the system disk bought with the instance or a disk supplied as the existing boot_disk at launch. Such a request is refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
 //
 // Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation until the disk is detached.
 //
