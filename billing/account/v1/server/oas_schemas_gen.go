@@ -2379,8 +2379,10 @@ type CheckoutOrderRequest struct {
 	// On an already confirmed checkout, omission retains the recorded discount.
 	PromotionCode OptString `json:"promotion_code"`
 	// Quote.total in the order's currency, after discounts and tax but before applying credit grants or
-	// balance. A different total fails with BILLING_AMOUNT_CHANGED.
-	ExpectedAmount string `json:"expected_amount"`
+	// balance. Omit to skip the amount comparison; an explicit zero is compared. A different total fails
+	// with BILLING_AMOUNT_CHANGED. Must be a non-negative decimal string; empty strings, null, JSON
+	// numbers, signs and exponent notation are rejected.
+	ExpectedAmount OptString `json:"expected_amount"`
 }
 
 // GetPromotionCode returns the value of PromotionCode.
@@ -2389,7 +2391,7 @@ func (s *CheckoutOrderRequest) GetPromotionCode() OptString {
 }
 
 // GetExpectedAmount returns the value of ExpectedAmount.
-func (s *CheckoutOrderRequest) GetExpectedAmount() string {
+func (s *CheckoutOrderRequest) GetExpectedAmount() OptString {
 	return s.ExpectedAmount
 }
 
@@ -2399,7 +2401,7 @@ func (s *CheckoutOrderRequest) SetPromotionCode(val OptString) {
 }
 
 // SetExpectedAmount sets the value of ExpectedAmount.
-func (s *CheckoutOrderRequest) SetExpectedAmount(val string) {
+func (s *CheckoutOrderRequest) SetExpectedAmount(val OptString) {
 	s.ExpectedAmount = val
 }
 
@@ -9467,8 +9469,10 @@ func (s *Product) SetDescription(val OptString) {
 
 type ProductID string
 
-// Ref: #/components/schemas/ProjectBillingInfo
-type ProjectBillingInfo struct {
+// A project's assignment to a billing account for the interval from effective_from to effective_to. An
+// open-ended assignment has no end time.
+// Ref: #/components/schemas/ProjectAssignment
+type ProjectAssignment struct {
 	ProjectID uuid.UUID `json:"project_id"`
 	// The project and its current name, for display. Absent when the project no longer exists or its
 	// details cannot be read at the moment; `project_id` still identifies it.
@@ -9481,114 +9485,99 @@ type ProjectBillingInfo struct {
 }
 
 // GetProjectID returns the value of ProjectID.
-func (s *ProjectBillingInfo) GetProjectID() uuid.UUID {
+func (s *ProjectAssignment) GetProjectID() uuid.UUID {
 	return s.ProjectID
 }
 
 // GetProject returns the value of Project.
-func (s *ProjectBillingInfo) GetProject() OptNilNamedIdentity {
+func (s *ProjectAssignment) GetProject() OptNilNamedIdentity {
 	return s.Project
 }
 
 // GetBillingAccountID returns the value of BillingAccountID.
-func (s *ProjectBillingInfo) GetBillingAccountID() int64 {
+func (s *ProjectAssignment) GetBillingAccountID() int64 {
 	return s.BillingAccountID
 }
 
 // GetAccountName returns the value of AccountName.
-func (s *ProjectBillingInfo) GetAccountName() OptString {
+func (s *ProjectAssignment) GetAccountName() OptString {
 	return s.AccountName
 }
 
 // GetCurrency returns the value of Currency.
-func (s *ProjectBillingInfo) GetCurrency() string {
+func (s *ProjectAssignment) GetCurrency() string {
 	return s.Currency
 }
 
 // GetEffectiveFrom returns the value of EffectiveFrom.
-func (s *ProjectBillingInfo) GetEffectiveFrom() time.Time {
+func (s *ProjectAssignment) GetEffectiveFrom() time.Time {
 	return s.EffectiveFrom
 }
 
 // GetEffectiveTo returns the value of EffectiveTo.
-func (s *ProjectBillingInfo) GetEffectiveTo() OptNilDateTime {
+func (s *ProjectAssignment) GetEffectiveTo() OptNilDateTime {
 	return s.EffectiveTo
 }
 
 // SetProjectID sets the value of ProjectID.
-func (s *ProjectBillingInfo) SetProjectID(val uuid.UUID) {
+func (s *ProjectAssignment) SetProjectID(val uuid.UUID) {
 	s.ProjectID = val
 }
 
 // SetProject sets the value of Project.
-func (s *ProjectBillingInfo) SetProject(val OptNilNamedIdentity) {
+func (s *ProjectAssignment) SetProject(val OptNilNamedIdentity) {
 	s.Project = val
 }
 
 // SetBillingAccountID sets the value of BillingAccountID.
-func (s *ProjectBillingInfo) SetBillingAccountID(val int64) {
+func (s *ProjectAssignment) SetBillingAccountID(val int64) {
 	s.BillingAccountID = val
 }
 
 // SetAccountName sets the value of AccountName.
-func (s *ProjectBillingInfo) SetAccountName(val OptString) {
+func (s *ProjectAssignment) SetAccountName(val OptString) {
 	s.AccountName = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *ProjectBillingInfo) SetCurrency(val string) {
+func (s *ProjectAssignment) SetCurrency(val string) {
 	s.Currency = val
 }
 
 // SetEffectiveFrom sets the value of EffectiveFrom.
-func (s *ProjectBillingInfo) SetEffectiveFrom(val time.Time) {
+func (s *ProjectAssignment) SetEffectiveFrom(val time.Time) {
 	s.EffectiveFrom = val
 }
 
 // SetEffectiveTo sets the value of EffectiveTo.
-func (s *ProjectBillingInfo) SetEffectiveTo(val OptNilDateTime) {
+func (s *ProjectAssignment) SetEffectiveTo(val OptNilDateTime) {
 	s.EffectiveTo = val
 }
 
-// Ref: #/components/schemas/ProjectBillingInfoList
-type ProjectBillingInfoList struct {
-	Items      []ProjectBillingInfo `json:"items"`
-	Pagination OffsetPagination     `json:"pagination"`
+// Ref: #/components/schemas/ProjectAssignmentList
+type ProjectAssignmentList struct {
+	Items      []ProjectAssignment `json:"items"`
+	Pagination OffsetPagination    `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
-func (s *ProjectBillingInfoList) GetItems() []ProjectBillingInfo {
+func (s *ProjectAssignmentList) GetItems() []ProjectAssignment {
 	return s.Items
 }
 
 // GetPagination returns the value of Pagination.
-func (s *ProjectBillingInfoList) GetPagination() OffsetPagination {
+func (s *ProjectAssignmentList) GetPagination() OffsetPagination {
 	return s.Pagination
 }
 
 // SetItems sets the value of Items.
-func (s *ProjectBillingInfoList) SetItems(val []ProjectBillingInfo) {
+func (s *ProjectAssignmentList) SetItems(val []ProjectAssignment) {
 	s.Items = val
 }
 
 // SetPagination sets the value of Pagination.
-func (s *ProjectBillingInfoList) SetPagination(val OffsetPagination) {
+func (s *ProjectAssignmentList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-// Ref: #/components/schemas/ProjectBillingInfoSet
-type ProjectBillingInfoSet struct {
-	BillingAccountID int64 `json:"billing_account_id"`
-}
-
-// GetBillingAccountID returns the value of BillingAccountID.
-func (s *ProjectBillingInfoSet) GetBillingAccountID() int64 {
-	return s.BillingAccountID
-}
-
-// SetBillingAccountID sets the value of BillingAccountID.
-func (s *ProjectBillingInfoSet) SetBillingAccountID(val int64) {
-	s.BillingAccountID = val
 }
 
 // Which purchase this applies to. `upgrade` and `downgrade` are told apart by money: a change that
@@ -11460,6 +11449,21 @@ func (s *RenewalPriceList) SetItems(val []RenewalPrice) {
 // SetPagination sets the value of Pagination.
 func (s *RenewalPriceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// Ref: #/components/schemas/SetProjectAssignmentRequest
+type SetProjectAssignmentRequest struct {
+	BillingAccountID int64 `json:"billing_account_id"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *SetProjectAssignmentRequest) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *SetProjectAssignmentRequest) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
 }
 
 // An independently billed purchase relationship, separate from the owning service's resource. Placing

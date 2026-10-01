@@ -184,8 +184,8 @@ func encodeSetAutoRenewRequest(
 	return nil
 }
 
-func encodeSetProjectBillingAccountRequest(
-	req *ProjectBillingInfoSet,
+func encodeSetProjectAssignmentRequest(
+	req *SetProjectAssignmentRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

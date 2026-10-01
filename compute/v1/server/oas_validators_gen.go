@@ -2400,12 +2400,34 @@ func (s *DiskTypeListResponseBody) Validate() error {
 	return nil
 }
 
+func (s DiskTypePurpose) Validate() error {
+	switch s {
+	case "system":
+		return nil
+	case "data":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *DiskTypeResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
 
 	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Purpose.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "purpose",
+			Error: err,
+		})
+	}
 	if err := func() error {
 		if err := s.Media.Validate(); err != nil {
 			return err

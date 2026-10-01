@@ -4222,10 +4222,10 @@ func decodeListBackupsParams(args [0]string, argsEscaped bool, r *http.Request) 
 // ListDiskTypesParams is parameters of list-disk-types operation.
 type ListDiskTypesParams struct {
 	RegionID OptUUID `json:",omitempty,omitzero"`
-	// `true` lists only system disk types and `false` only data disk types. Both are listed when omitted.
-	ForSystem OptBool  `json:",omitempty,omitzero"`
-	Page      OptInt64 `json:",omitempty,omitzero"`
-	PageSize  OptInt64 `json:",omitempty,omitzero"`
+	// Filter by intended purchase use. Omit to include both system and data disk types.
+	Purpose  OptDiskTypePurpose `json:",omitempty,omitzero"`
+	Page     OptInt64           `json:",omitempty,omitzero"`
+	PageSize OptInt64           `json:",omitempty,omitzero"`
 }
 
 func unpackListDiskTypesParams(packed middleware.Parameters) (params ListDiskTypesParams) {
@@ -4240,11 +4240,11 @@ func unpackListDiskTypesParams(packed middleware.Parameters) (params ListDiskTyp
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "for_system",
+			Name: "purpose",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ForSystem = v.(OptBool)
+			params.Purpose = v.(OptDiskTypePurpose)
 		}
 	}
 	{
@@ -4311,43 +4311,58 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 			Err:  err,
 		}
 	}
-	// Decode query: for_system.
+	// Decode query: purpose.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "for_system",
+			Name:    "purpose",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotForSystemVal bool
+				var paramsDotPurposeVal DiskTypePurpose
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
 						return err
 					}
 
-					c, err := conv.ToBool(val)
+					c, err := conv.ToString(val)
 					if err != nil {
 						return err
 					}
 
-					paramsDotForSystemVal = c
+					paramsDotPurposeVal = DiskTypePurpose(c)
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.ForSystem.SetTo(paramsDotForSystemVal)
+				params.Purpose.SetTo(paramsDotPurposeVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Purpose.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "for_system",
+			Name: "purpose",
 			In:   "query",
 			Err:  err,
 		}

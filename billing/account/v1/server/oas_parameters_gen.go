@@ -731,12 +731,12 @@ func decodeGetOrderParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 	return params, nil
 }
 
-// GetProjectBillingAccountParams is parameters of get-project-billing-account operation.
-type GetProjectBillingAccountParams struct {
+// GetProjectAssignmentParams is parameters of get-project-assignment operation.
+type GetProjectAssignmentParams struct {
 	ProjectId uuid.UUID
 }
 
-func unpackGetProjectBillingAccountParams(packed middleware.Parameters) (params GetProjectBillingAccountParams) {
+func unpackGetProjectAssignmentParams(packed middleware.Parameters) (params GetProjectAssignmentParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "projectId",
@@ -747,7 +747,7 @@ func unpackGetProjectBillingAccountParams(packed middleware.Parameters) (params 
 	return params
 }
 
-func decodeGetProjectBillingAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params GetProjectBillingAccountParams, _ error) {
+func decodeGetProjectAssignmentParams(args [1]string, argsEscaped bool, r *http.Request) (params GetProjectAssignmentParams, _ error) {
 	// Decode path: projectId.
 	if err := func() error {
 		param := args[0]
@@ -1548,224 +1548,6 @@ func decodeListAllowancesParams(args [0]string, argsEscaped bool, r *http.Reques
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "product_id",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ListBillingAccountProjectsParams is parameters of list-billing-account-projects operation.
-type ListBillingAccountProjectsParams struct {
-	// 1-based page number; the first page when omitted.
-	Page OptInt32 `json:",omitempty,omitzero"`
-	// How many per page, 100 at most.
-	PageSize         OptInt32 `json:",omitempty,omitzero"`
-	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
-}
-
-func unpackListBillingAccountProjectsParams(packed middleware.Parameters) (params ListBillingAccountProjectsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "page",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Page = v.(OptInt32)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "page_size",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.PageSize = v.(OptInt32)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "billing_account_id",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.BillingAccountID = v.(OptInt64)
-		}
-	}
-	return params
-}
-
-func decodeListBillingAccountProjectsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListBillingAccountProjectsParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode query: page.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageVal int32
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt32(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPageVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Page.SetTo(paramsDotPageVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Page.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        false,
-							Max:           0,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "page",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Decode query: page_size.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageSizeVal int32
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt32(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPageSizeVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.PageSize.SetTo(paramsDotPageSizeVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.PageSize.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        true,
-							Max:           100,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "page_size",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Decode query: billing_account_id.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "billing_account_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotBillingAccountIDVal int64
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt64(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotBillingAccountIDVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.BillingAccountID.SetTo(paramsDotBillingAccountIDVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "billing_account_id",
 			In:   "query",
 			Err:  err,
 		}
@@ -4707,6 +4489,224 @@ func decodeListPaymentOptionsParams(args [1]string, argsEscaped bool, r *http.Re
 	return params, nil
 }
 
+// ListProjectAssignmentsParams is parameters of list-project-assignments operation.
+type ListProjectAssignmentsParams struct {
+	// 1-based page number; the first page when omitted.
+	Page OptInt32 `json:",omitempty,omitzero"`
+	// How many per page, 100 at most.
+	PageSize         OptInt32 `json:",omitempty,omitzero"`
+	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+}
+
+func unpackListProjectAssignmentsParams(packed middleware.Parameters) (params ListProjectAssignmentsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "page",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Page = v.(OptInt32)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page_size",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt32)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "billing_account_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.BillingAccountID = v.(OptInt64)
+		}
+	}
+	return params
+}
+
+func decodeListProjectAssignmentsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListProjectAssignmentsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: page.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageVal int32
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt32(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Page.SetTo(paramsDotPageVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Page.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        false,
+							Max:           0,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: page_size.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int32
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt32(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PageSize.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           100,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: billing_account_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotBillingAccountIDVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotBillingAccountIDVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.BillingAccountID.SetTo(paramsDotBillingAccountIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "billing_account_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListRefundsParams is parameters of list-refunds operation.
 type ListRefundsParams struct {
 	// 1-based page number; the first page when omitted.
@@ -7103,12 +7103,12 @@ func decodeSetDefaultPaymentMethodParams(args [1]string, argsEscaped bool, r *ht
 	return params, nil
 }
 
-// SetProjectBillingAccountParams is parameters of set-project-billing-account operation.
-type SetProjectBillingAccountParams struct {
+// SetProjectAssignmentParams is parameters of set-project-assignment operation.
+type SetProjectAssignmentParams struct {
 	ProjectId uuid.UUID
 }
 
-func unpackSetProjectBillingAccountParams(packed middleware.Parameters) (params SetProjectBillingAccountParams) {
+func unpackSetProjectAssignmentParams(packed middleware.Parameters) (params SetProjectAssignmentParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "projectId",
@@ -7119,7 +7119,7 @@ func unpackSetProjectBillingAccountParams(packed middleware.Parameters) (params 
 	return params
 }
 
-func decodeSetProjectBillingAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params SetProjectBillingAccountParams, _ error) {
+func decodeSetProjectAssignmentParams(args [1]string, argsEscaped bool, r *http.Request) (params SetProjectAssignmentParams, _ error) {
 	// Decode path: projectId.
 	if err := func() error {
 		param := args[0]

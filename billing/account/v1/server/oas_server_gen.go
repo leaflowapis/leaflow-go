@@ -236,13 +236,13 @@ type Handler interface {
 	//
 	// GET /account/v1/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
-	// GetProjectBillingAccount implements get-project-billing-account operation.
+	// GetProjectAssignment implements get-project-assignment operation.
 	//
 	// Returns 404 when the project has no billing account. No resources can be created until one is
 	// linked.
 	//
 	// GET /account/v1/projects/{projectId}/billing-account
-	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectBillingInfo, error)
+	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
 	// GetSubscription implements get-subscription operation.
 	//
 	// Get subscription.
@@ -279,12 +279,6 @@ type Handler interface {
 	//
 	// GET /account/v1/allowances
 	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
-	// ListBillingAccountProjects implements list-billing-account-projects operation.
-	//
-	// List projects linked to billing accounts.
-	//
-	// GET /account/v1/projects
-	ListBillingAccountProjects(ctx context.Context, params ListBillingAccountProjectsParams) (*ProjectBillingInfoList, error)
 	// ListBillingAccounts implements list-billing-accounts operation.
 	//
 	// List billing accounts.
@@ -363,6 +357,12 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountId}/payment-options
 	ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error)
+	// ListProjectAssignments implements list-project-assignments operation.
+	//
+	// List project assignments.
+	//
+	// GET /account/v1/projects
+	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
 	// ListRefunds implements list-refunds operation.
 	//
 	// Newest first.
@@ -497,7 +497,7 @@ type Handler interface {
 	//
 	// PUT /account/v1/payment-methods/{paymentMethodId}/default
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
-	// SetProjectBillingAccount implements set-project-billing-account operation.
+	// SetProjectAssignment implements set-project-assignment operation.
 	//
 	// Charges already incurred remain with the billing account that was linked when they occurred, and are
 	// still invoiced to it. Metered resources are settled up to the moment of the change. Amounts owed by
@@ -511,7 +511,7 @@ type Handler interface {
 	// new billing account.
 	//
 	// PUT /account/v1/projects/{projectId}/billing-account
-	SetProjectBillingAccount(ctx context.Context, req *ProjectBillingInfoSet, params SetProjectBillingAccountParams) (*ProjectBillingInfo, error)
+	SetProjectAssignment(ctx context.Context, req *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
 	// UnlinkProjectBillingAccount implements unlink-project-billing-account operation.
 	//
 	// Permitted only when nothing in the project is still running or in progress: no metered resources, no

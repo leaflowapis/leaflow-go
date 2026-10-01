@@ -1577,8 +1577,8 @@ func (*CreateBackupServiceResponseBody) createBackupServiceRes() {}
 // The request of `create-disk`, without `checkout`.
 // Ref: #/components/schemas/CreateDiskQuoteRequestBody
 type CreateDiskQuoteRequestBody struct {
-	// A data disk type currently on sale, one whose `for_system` is false. A withdrawn one is rejected
-	// even though its identifier still resolves.
+	// A data disk type currently on sale, one whose `purpose` is `data`. A withdrawn one is rejected even
+	// though its identifier still resolves.
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
 	SizeGB     int64     `json:"size_gb"`
@@ -1639,8 +1639,8 @@ func (s *CreateDiskQuoteRequestBody) SetBilling(val BillingChoice) {
 
 // Ref: #/components/schemas/CreateDiskRequestBody
 type CreateDiskRequestBody struct {
-	// A data disk type currently on sale, one whose `for_system` is false. A withdrawn one is rejected
-	// even though its identifier still resolves.
+	// A data disk type currently on sale, one whose `purpose` is `data`. A withdrawn one is rejected even
+	// though its identifier still resolves.
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
 	SizeGB     int64     `json:"size_gb"`
@@ -3156,14 +3156,55 @@ func (s *DiskTypeListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// The intended purchase use of a disk type, not the current boot role or deletion policy of an
+// individual disk.
+// Ref: #/components/schemas/DiskTypePurpose
+type DiskTypePurpose string
+
+const (
+	DiskTypePurposeSystem DiskTypePurpose = "system"
+	DiskTypePurposeData   DiskTypePurpose = "data"
+)
+
+// AllValues returns all DiskTypePurpose values.
+func (DiskTypePurpose) AllValues() []DiskTypePurpose {
+	return []DiskTypePurpose{
+		DiskTypePurposeSystem,
+		DiskTypePurposeData,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s DiskTypePurpose) MarshalText() ([]byte, error) {
+	switch s {
+	case DiskTypePurposeSystem:
+		return []byte(s), nil
+	case DiskTypePurposeData:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *DiskTypePurpose) UnmarshalText(data []byte) error {
+	switch DiskTypePurpose(data) {
+	case DiskTypePurposeSystem:
+		*s = DiskTypePurposeSystem
+		return nil
+	case DiskTypePurposeData:
+		*s = DiskTypePurposeData
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/DiskTypeResource
 type DiskTypeResource struct {
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	ID                 uuid.UUID `json:"id"`
-	// True for a system disk type, the one chosen as `boot_disk.disk_type_id` when creating an instance
-	// from an image. A system disk type cannot be used to create a data disk, and a data disk type cannot
-	// be used for a system disk.
-	ForSystem bool `json:"for_system"`
+	AvailabilityZoneID uuid.UUID       `json:"availability_zone_id"`
+	ID                 uuid.UUID       `json:"id"`
+	Purpose            DiskTypePurpose `json:"purpose"`
 	// IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
 	//
 	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the range. The
@@ -3200,9 +3241,9 @@ func (s *DiskTypeResource) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetForSystem returns the value of ForSystem.
-func (s *DiskTypeResource) GetForSystem() bool {
-	return s.ForSystem
+// GetPurpose returns the value of Purpose.
+func (s *DiskTypeResource) GetPurpose() DiskTypePurpose {
+	return s.Purpose
 }
 
 // GetIopsAtMinSize returns the value of IopsAtMinSize.
@@ -3270,9 +3311,9 @@ func (s *DiskTypeResource) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetForSystem sets the value of ForSystem.
-func (s *DiskTypeResource) SetForSystem(val bool) {
-	s.ForSystem = val
+// SetPurpose sets the value of Purpose.
+func (s *DiskTypeResource) SetPurpose(val DiskTypePurpose) {
+	s.Purpose = val
 }
 
 // SetIopsAtMinSize sets the value of IopsAtMinSize.
@@ -6623,7 +6664,7 @@ type Money string
 // with boot_disk_id.
 // Ref: #/components/schemas/NewBootDisk
 type NewBootDisk struct {
-	// A system disk type on sale in the availability zone of the instance, one whose `for_system` is true.
+	// A system disk type on sale in the availability zone of the instance, one whose `purpose` is `system`.
 	DiskTypeID         uuid.UUID `json:"disk_type_id"`
 	SizeGB             int64     `json:"size_gb"`
 	DeleteWithInstance OptBool   `json:"delete_with_instance"`
@@ -8502,6 +8543,52 @@ func (o OptDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptDiskTypePurpose returns new OptDiskTypePurpose with value set to v.
+func NewOptDiskTypePurpose(v DiskTypePurpose) OptDiskTypePurpose {
+	return OptDiskTypePurpose{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDiskTypePurpose is optional DiskTypePurpose.
+type OptDiskTypePurpose struct {
+	Value DiskTypePurpose
+	Set   bool
+}
+
+// IsSet returns true if OptDiskTypePurpose was set.
+func (o OptDiskTypePurpose) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDiskTypePurpose) Reset() {
+	var v DiskTypePurpose
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDiskTypePurpose) SetTo(v DiskTypePurpose) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDiskTypePurpose) Get() (v DiskTypePurpose, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDiskTypePurpose) Or(d DiskTypePurpose) DiskTypePurpose {
 	if v, ok := o.Get(); ok {
 		return v
 	}

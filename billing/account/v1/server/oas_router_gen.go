@@ -28,7 +28,7 @@ var (
 	rn24AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn46AllowedHeaders = map[string]string{
+	rn45AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn11AllowedHeaders = map[string]string{
@@ -41,25 +41,25 @@ var (
 	rn64AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn37AllowedHeaders = map[string]string{
+	rn36AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn38AllowedHeaders = map[string]string{
+	rn37AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn33AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn39AllowedHeaders = map[string]string{
+	rn38AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn41AllowedHeaders = map[string]string{
+	rn40AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn28AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn40AllowedHeaders = map[string]string{
+	rn39AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn55AllowedHeaders = map[string]string{
@@ -68,7 +68,7 @@ var (
 	rn58AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn44AllowedHeaders = map[string]string{
+	rn43AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn2AllowedHeaders = map[string]string{
@@ -80,10 +80,10 @@ var (
 	rn9AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn43AllowedHeaders = map[string]string{
+	rn42AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn45AllowedHeaders = map[string]string{
+	rn44AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn12AllowedHeaders = map[string]string{
@@ -101,7 +101,7 @@ var (
 	rn59AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn35AllowedHeaders = map[string]string{
+	rn46AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn32AllowedHeaders = map[string]string{
@@ -376,7 +376,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn46AllowedHeaders,
+										allowedHeaders: rn45AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -511,7 +511,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn37AllowedHeaders,
+								allowedHeaders: rn36AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -536,7 +536,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn38AllowedHeaders,
+								allowedHeaders: rn37AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -588,7 +588,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn39AllowedHeaders,
+							allowedHeaders: rn38AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -612,7 +612,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn41AllowedHeaders,
+							allowedHeaders: rn40AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -686,7 +686,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn40AllowedHeaders,
+										allowedHeaders: rn39AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -771,7 +771,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn44AllowedHeaders,
+							allowedHeaders: rn43AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -913,7 +913,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn43AllowedHeaders,
+										allowedHeaders: rn42AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -967,7 +967,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn45AllowedHeaders,
+									allowedHeaders: rn44AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -1137,11 +1137,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					if len(elem) == 0 {
 						switch r.Method {
 						case "GET":
-							s.handleListBillingAccountProjectsRequest([0]string{}, elemIsEscaped, w, r)
+							s.handleListProjectAssignmentsRequest([0]string{}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn35AllowedHeaders,
+								allowedHeaders: rn46AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -1187,11 +1187,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										args[0],
 									}, elemIsEscaped, w, r)
 								case "GET":
-									s.handleGetProjectBillingAccountRequest([1]string{
+									s.handleGetProjectAssignmentRequest([1]string{
 										args[0],
 									}, elemIsEscaped, w, r)
 								case "PUT":
-									s.handleSetProjectBillingAccountRequest([1]string{
+									s.handleSetProjectAssignmentRequest([1]string{
 										args[0],
 									}, elemIsEscaped, w, r)
 								default:
@@ -2640,9 +2640,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					if len(elem) == 0 {
 						switch method {
 						case "GET":
-							r.name = ListBillingAccountProjectsOperation
-							r.summary = "List projects linked to billing accounts"
-							r.operationID = "list-billing-account-projects"
+							r.name = ListProjectAssignmentsOperation
+							r.summary = "List project assignments"
+							r.operationID = "list-project-assignments"
 							r.operationGroup = ""
 							r.pathPattern = "/account/v1/projects"
 							r.args = args
@@ -2695,18 +2695,18 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									r.count = 1
 									return r, true
 								case "GET":
-									r.name = GetProjectBillingAccountOperation
-									r.summary = "Get project billing account"
-									r.operationID = "get-project-billing-account"
+									r.name = GetProjectAssignmentOperation
+									r.summary = "Get project assignment"
+									r.operationID = "get-project-assignment"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/projects/{projectId}/billing-account"
 									r.args = args
 									r.count = 1
 									return r, true
 								case "PUT":
-									r.name = SetProjectBillingAccountOperation
-									r.summary = "Set project billing account"
-									r.operationID = "set-project-billing-account"
+									r.name = SetProjectAssignmentOperation
+									r.summary = "Set project assignment"
+									r.operationID = "set-project-assignment"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/projects/{projectId}/billing-account"
 									r.args = args

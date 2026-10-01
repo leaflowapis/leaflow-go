@@ -257,13 +257,13 @@ type Invoker interface {
 	//
 	// GET /account/v1/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
-	// GetProjectBillingAccount invokes get-project-billing-account operation.
+	// GetProjectAssignment invokes get-project-assignment operation.
 	//
 	// Returns 404 when the project has no billing account. No resources can be created until one is
 	// linked.
 	//
 	// GET /account/v1/projects/{projectId}/billing-account
-	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectBillingInfo, error)
+	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
 	// GetSubscription invokes get-subscription operation.
 	//
 	// Get subscription.
@@ -300,12 +300,6 @@ type Invoker interface {
 	//
 	// GET /account/v1/allowances
 	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
-	// ListBillingAccountProjects invokes list-billing-account-projects operation.
-	//
-	// List projects linked to billing accounts.
-	//
-	// GET /account/v1/projects
-	ListBillingAccountProjects(ctx context.Context, params ListBillingAccountProjectsParams) (*ProjectBillingInfoList, error)
 	// ListBillingAccounts invokes list-billing-accounts operation.
 	//
 	// List billing accounts.
@@ -384,6 +378,12 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountId}/payment-options
 	ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error)
+	// ListProjectAssignments invokes list-project-assignments operation.
+	//
+	// List project assignments.
+	//
+	// GET /account/v1/projects
+	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
 	// ListRefunds invokes list-refunds operation.
 	//
 	// Newest first.
@@ -518,7 +518,7 @@ type Invoker interface {
 	//
 	// PUT /account/v1/payment-methods/{paymentMethodId}/default
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
-	// SetProjectBillingAccount invokes set-project-billing-account operation.
+	// SetProjectAssignment invokes set-project-assignment operation.
 	//
 	// Charges already incurred remain with the billing account that was linked when they occurred, and are
 	// still invoiced to it. Metered resources are settled up to the moment of the change. Amounts owed by
@@ -532,7 +532,7 @@ type Invoker interface {
 	// new billing account.
 	//
 	// PUT /account/v1/projects/{projectId}/billing-account
-	SetProjectBillingAccount(ctx context.Context, request *ProjectBillingInfoSet, params SetProjectBillingAccountParams) (*ProjectBillingInfo, error)
+	SetProjectAssignment(ctx context.Context, request *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
 	// UnlinkProjectBillingAccount invokes unlink-project-billing-account operation.
 	//
 	// Permitted only when nothing in the project is still running or in progress: no metered resources, no
@@ -2773,20 +2773,20 @@ func (c *Client) sendGetOrder(ctx context.Context, params GetOrderParams) (res *
 	return result, nil
 }
 
-// GetProjectBillingAccount invokes get-project-billing-account operation.
+// GetProjectAssignment invokes get-project-assignment operation.
 //
 // Returns 404 when the project has no billing account. No resources can be created until one is
 // linked.
 //
 // GET /account/v1/projects/{projectId}/billing-account
-func (c *Client) GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectBillingInfo, error) {
-	res, err := c.sendGetProjectBillingAccount(ctx, params)
+func (c *Client) GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error) {
+	res, err := c.sendGetProjectAssignment(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (res *ProjectBillingInfo, err error) {
+func (c *Client) sendGetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (res *ProjectAssignment, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-project-billing-account"),
+		otelogen.OperationID("get-project-assignment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/billing-account"),
 	}
@@ -2804,7 +2804,7 @@ func (c *Client) sendGetProjectBillingAccount(ctx context.Context, params GetPro
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectBillingAccountOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectAssignmentOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2855,7 +2855,7 @@ func (c *Client) sendGetProjectBillingAccount(ctx context.Context, params GetPro
 		var satisfied bitset
 		{
 			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, GetProjectBillingAccountOperation, r); {
+			switch err := c.securityAccessTokenAuth(ctx, GetProjectAssignmentOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -2898,7 +2898,7 @@ func (c *Client) sendGetProjectBillingAccount(ctx context.Context, params GetPro
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetProjectBillingAccountResponse(resp)
+	result, err := decodeGetProjectAssignmentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3563,174 +3563,6 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 
 	stage = "DecodeResponse"
 	result, err := decodeListAllowancesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListBillingAccountProjects invokes list-billing-account-projects operation.
-//
-// List projects linked to billing accounts.
-//
-// GET /account/v1/projects
-func (c *Client) ListBillingAccountProjects(ctx context.Context, params ListBillingAccountProjectsParams) (*ProjectBillingInfoList, error) {
-	res, err := c.sendListBillingAccountProjects(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListBillingAccountProjects(ctx context.Context, params ListBillingAccountProjectsParams) (res *ProjectBillingInfoList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-billing-account-projects"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/projects"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListBillingAccountProjectsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/account/v1/projects"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int32ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int32ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "billing_account_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "billing_account_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.BillingAccountID.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ListBillingAccountProjectsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListBillingAccountProjectsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5750,6 +5582,174 @@ func (c *Client) sendListPaymentOptions(ctx context.Context, params ListPaymentO
 
 	stage = "DecodeResponse"
 	result, err := decodeListPaymentOptionsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectAssignments invokes list-project-assignments operation.
+//
+// List project assignments.
+//
+// GET /account/v1/projects
+func (c *Client) ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error) {
+	res, err := c.sendListProjectAssignments(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (res *ProjectAssignmentList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-assignments"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/projects"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectAssignmentsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/projects"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListProjectAssignmentsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListProjectAssignmentsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7969,7 +7969,7 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 	return result, nil
 }
 
-// SetProjectBillingAccount invokes set-project-billing-account operation.
+// SetProjectAssignment invokes set-project-assignment operation.
 //
 // Charges already incurred remain with the billing account that was linked when they occurred, and are
 // still invoiced to it. Metered resources are settled up to the moment of the change. Amounts owed by
@@ -7983,14 +7983,14 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 // new billing account.
 //
 // PUT /account/v1/projects/{projectId}/billing-account
-func (c *Client) SetProjectBillingAccount(ctx context.Context, request *ProjectBillingInfoSet, params SetProjectBillingAccountParams) (*ProjectBillingInfo, error) {
-	res, err := c.sendSetProjectBillingAccount(ctx, request, params)
+func (c *Client) SetProjectAssignment(ctx context.Context, request *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error) {
+	res, err := c.sendSetProjectAssignment(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendSetProjectBillingAccount(ctx context.Context, request *ProjectBillingInfoSet, params SetProjectBillingAccountParams) (res *ProjectBillingInfo, err error) {
+func (c *Client) sendSetProjectAssignment(ctx context.Context, request *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (res *ProjectAssignment, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-project-billing-account"),
+		otelogen.OperationID("set-project-assignment"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
 		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/billing-account"),
 	}
@@ -8008,7 +8008,7 @@ func (c *Client) sendSetProjectBillingAccount(ctx context.Context, request *Proj
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SetProjectBillingAccountOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, SetProjectAssignmentOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -8053,7 +8053,7 @@ func (c *Client) sendSetProjectBillingAccount(ctx context.Context, request *Proj
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeSetProjectBillingAccountRequest(request, r); err != nil {
+	if err := encodeSetProjectAssignmentRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -8062,7 +8062,7 @@ func (c *Client) sendSetProjectBillingAccount(ctx context.Context, request *Proj
 		var satisfied bitset
 		{
 			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, SetProjectBillingAccountOperation, r); {
+			switch err := c.securityAccessTokenAuth(ctx, SetProjectAssignmentOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -8105,7 +8105,7 @@ func (c *Client) sendSetProjectBillingAccount(ctx context.Context, request *Proj
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeSetProjectBillingAccountResponse(resp)
+	result, err := decodeSetProjectAssignmentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -289,13 +289,13 @@ func (UnimplementedHandler) GetOrder(ctx context.Context, params GetOrderParams)
 	return r, ht.ErrNotImplemented
 }
 
-// GetProjectBillingAccount implements get-project-billing-account operation.
+// GetProjectAssignment implements get-project-assignment operation.
 //
 // Returns 404 when the project has no billing account. No resources can be created until one is
 // linked.
 //
 // GET /account/v1/projects/{projectId}/billing-account
-func (UnimplementedHandler) GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (r *ProjectBillingInfo, _ error) {
+func (UnimplementedHandler) GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (r *ProjectAssignment, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -344,15 +344,6 @@ func (UnimplementedHandler) ListAccountDiscounts(ctx context.Context, params Lis
 //
 // GET /account/v1/allowances
 func (UnimplementedHandler) ListAllowances(ctx context.Context, params ListAllowancesParams) (r *AllowanceList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListBillingAccountProjects implements list-billing-account-projects operation.
-//
-// List projects linked to billing accounts.
-//
-// GET /account/v1/projects
-func (UnimplementedHandler) ListBillingAccountProjects(ctx context.Context, params ListBillingAccountProjectsParams) (r *ProjectBillingInfoList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -464,6 +455,15 @@ func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListP
 //
 // GET /account/v1/billing-accounts/{accountId}/payment-options
 func (UnimplementedHandler) ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (r *PaymentOptionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListProjectAssignments implements list-project-assignments operation.
+//
+// List project assignments.
+//
+// GET /account/v1/projects
+func (UnimplementedHandler) ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (r *ProjectAssignmentList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -640,7 +640,7 @@ func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params 
 	return r, ht.ErrNotImplemented
 }
 
-// SetProjectBillingAccount implements set-project-billing-account operation.
+// SetProjectAssignment implements set-project-assignment operation.
 //
 // Charges already incurred remain with the billing account that was linked when they occurred, and are
 // still invoiced to it. Metered resources are settled up to the moment of the change. Amounts owed by
@@ -654,7 +654,7 @@ func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params 
 // new billing account.
 //
 // PUT /account/v1/projects/{projectId}/billing-account
-func (UnimplementedHandler) SetProjectBillingAccount(ctx context.Context, req *ProjectBillingInfoSet, params SetProjectBillingAccountParams) (r *ProjectBillingInfo, _ error) {
+func (UnimplementedHandler) SetProjectAssignment(ctx context.Context, req *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (r *ProjectAssignment, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

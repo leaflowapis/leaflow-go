@@ -13576,9 +13576,9 @@ func (s *Server) handleListBackupsRequest(args [0]string, argsEscaped bool, w ht
 
 // handleListDiskTypesRequest handles list-disk-types operation.
 //
-// Only disk types currently on sale are listed, both system disk types and data disk types;
-// `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no
-// longer be bought, while the disks already on it keep working and can still be resized.
+// Only disk types currently on sale are listed, both system disk types and data disk types; `purpose`
+// narrows the list to one of the two. A withdrawn one disappears from here and can no longer be
+// bought, while the disks already on it keep working and can still be resized.
 //
 // GET /api/v1/disk-types
 func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13726,9 +13726,9 @@ func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w 
 					In:   "query",
 				}: params.RegionID,
 				{
-					Name: "for_system",
+					Name: "purpose",
 					In:   "query",
-				}: params.ForSystem,
+				}: params.Purpose,
 				{
 					Name: "page",
 					In:   "query",

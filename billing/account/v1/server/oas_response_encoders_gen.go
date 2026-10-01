@@ -303,7 +303,7 @@ func encodeGetOrderResponse(response *Order, w http.ResponseWriter, span trace.S
 	return nil
 }
 
-func encodeGetProjectBillingAccountResponse(response *ProjectBillingInfo, w http.ResponseWriter, span trace.Span) error {
+func encodeGetProjectAssignmentResponse(response *ProjectAssignment, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -356,19 +356,6 @@ func encodeListAccountDiscountsResponse(response *DiscountList, w http.ResponseW
 }
 
 func encodeListAllowancesResponse(response *AllowanceList, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListBillingAccountProjectsResponse(response *ProjectBillingInfoList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -512,6 +499,19 @@ func encodeListPaymentMethodsResponse(response *PaymentMethodList, w http.Respon
 }
 
 func encodeListPaymentOptionsResponse(response *PaymentOptionList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectAssignmentsResponse(response *ProjectAssignmentList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -711,7 +711,7 @@ func encodeSetDefaultPaymentMethodResponse(response *PaymentMethod, w http.Respo
 	return nil
 }
 
-func encodeSetProjectBillingAccountResponse(response *ProjectBillingInfo, w http.ResponseWriter, span trace.Span) error {
+func encodeSetProjectAssignmentResponse(response *ProjectAssignment, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

@@ -965,8 +965,8 @@ func (s *Server) decodeSetAutoRenewRequest(r *http.Request) (
 	}
 }
 
-func (s *Server) decodeSetProjectBillingAccountRequest(r *http.Request) (
-	req *ProjectBillingInfoSet,
+func (s *Server) decodeSetProjectAssignmentRequest(r *http.Request) (
+	req *SetProjectAssignmentRequest,
 	rawBody []byte,
 	close func() error,
 	rerr error,
@@ -1013,7 +1013,7 @@ func (s *Server) decodeSetProjectBillingAccountRequest(r *http.Request) (
 		rawBody = append(rawBody, buf...)
 		d := jx.DecodeBytes(buf)
 
-		var request ProjectBillingInfoSet
+		var request SetProjectAssignmentRequest
 		if err := func() error {
 			if err := request.Decode(d); err != nil {
 				return err

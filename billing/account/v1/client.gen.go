@@ -1758,8 +1758,10 @@ type CancellationRequestStatus string
 // CheckoutOrderRequest defines model for CheckoutOrderRequest.
 type CheckoutOrderRequest struct {
 	// ExpectedAmount Quote.total in the order's currency, after discounts and tax but before applying credit
-	// grants or balance. A different total fails with BILLING_AMOUNT_CHANGED.
-	ExpectedAmount externalRef0.Money `json:"expected_amount"`
+	// grants or balance. Omit to skip the amount comparison; an explicit zero is compared.
+	// A different total fails with BILLING_AMOUNT_CHANGED. Must be a non-negative decimal
+	// string; empty strings, null, JSON numbers, signs and exponent notation are rejected.
+	ExpectedAmount *externalRef0.Money `json:"expected_amount,omitempty"`
 
 	// PromotionCode The code to apply, evaluated again at confirmation. Omit to select an applicable account
 	// discount. On an already confirmed checkout, omission retains the recorded discount.
@@ -2743,8 +2745,8 @@ type Product struct {
 // ProductID Immutable platform service identifier, such as compute, canopy or assistant.
 type ProductID = string
 
-// ProjectBillingInfo defines model for ProjectBillingInfo.
-type ProjectBillingInfo struct {
+// ProjectAssignment A project's assignment to a billing account for the interval from effective_from to effective_to. An open-ended assignment has no end time.
+type ProjectAssignment struct {
 	AccountName      *string    `json:"account_name,omitempty"`
 	BillingAccountId int64      `json:"billing_account_id"`
 	Currency         string     `json:"currency"`
@@ -2757,17 +2759,12 @@ type ProjectBillingInfo struct {
 	ProjectId openapi_types.UUID          `json:"project_id"`
 }
 
-// ProjectBillingInfoList defines model for ProjectBillingInfoList.
-type ProjectBillingInfoList struct {
-	Items []ProjectBillingInfo `json:"items"`
+// ProjectAssignmentList defines model for ProjectAssignmentList.
+type ProjectAssignmentList struct {
+	Items []ProjectAssignment `json:"items"`
 
 	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
-}
-
-// ProjectBillingInfoSet defines model for ProjectBillingInfoSet.
-type ProjectBillingInfoSet struct {
-	BillingAccountId int64 `json:"billing_account_id"`
 }
 
 // PurchaseOperation Which purchase this applies to. `upgrade` and `downgrade` are told apart by money: a change
@@ -3197,6 +3194,11 @@ type RenewalPriceList struct {
 
 	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
 	Pagination externalRef0.OffsetPagination `json:"pagination"`
+}
+
+// SetProjectAssignmentRequest defines model for SetProjectAssignmentRequest.
+type SetProjectAssignmentRequest struct {
+	BillingAccountId int64 `json:"billing_account_id"`
 }
 
 // Subscription An independently billed purchase relationship, separate from the owning service's resource.
@@ -3822,8 +3824,8 @@ type ListPaymentMethodsParams struct {
 	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
 }
 
-// ListBillingAccountProjectsParams defines parameters for ListBillingAccountProjects.
-type ListBillingAccountProjectsParams struct {
+// ListProjectAssignmentsParams defines parameters for ListProjectAssignments.
+type ListProjectAssignmentsParams struct {
 	// Page 1-based page number; the first page when omitted.
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
@@ -3950,8 +3952,8 @@ type PayTogetherJSONRequestBody = PayTogetherRequest
 // PreviewPayTogetherJSONRequestBody defines body for PreviewPayTogether for application/json ContentType.
 type PreviewPayTogetherJSONRequestBody = PayTogetherRequest
 
-// SetProjectBillingAccountJSONRequestBody defines body for SetProjectBillingAccount for application/json ContentType.
-type SetProjectBillingAccountJSONRequestBody = ProjectBillingInfoSet
+// SetProjectAssignmentJSONRequestBody defines body for SetProjectAssignment for application/json ContentType.
+type SetProjectAssignmentJSONRequestBody = SetProjectAssignmentRequest
 
 // CreateQuoteJSONRequestBody defines body for CreateQuote for application/json ContentType.
 type CreateQuoteJSONRequestBody = QuoteRequest
@@ -4583,10 +4585,10 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
 	PreviewPayTogether(ctx context.Context, body PreviewPayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListBillingAccountProjects List projects linked to billing accounts
+	// ListProjectAssignments List project assignments
 	//
-	// Corresponds with GET /account/v1/projects (the `ListBillingAccountProjects` operationId).
-	ListBillingAccountProjects(ctx context.Context, params *ListBillingAccountProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /account/v1/projects (the `ListProjectAssignments` operationId).
+	ListProjectAssignments(ctx context.Context, params *ListProjectAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UnlinkProjectBillingAccount Unlink project billing account
 	//
@@ -4603,14 +4605,14 @@ type ClientInterface interface {
 	// Corresponds with DELETE /account/v1/projects/{projectId}/billing-account (the `UnlinkProjectBillingAccount` operationId).
 	UnlinkProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetProjectBillingAccount Get project billing account
+	// GetProjectAssignment Get project assignment
 	//
 	// Returns 404 when the project has no billing account. No resources can be created until one is linked.
 	//
-	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
-	GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `GetProjectAssignment` operationId).
+	GetProjectAssignment(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetProjectBillingAccountWithBody Set project billing account
+	// SetProjectAssignmentWithBody Set project assignment
 	//
 	// Charges already incurred remain with the billing account that was linked when they
 	// occurred, and are still invoiced to it. Metered resources are settled up to the moment of
@@ -4626,10 +4628,10 @@ type ClientInterface interface {
 	//
 	// Takes any type of body and a specified content type.
 	//
-	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectBillingAccount` operationId).
-	SetProjectBillingAccountWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectAssignment` operationId).
+	SetProjectAssignmentWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetProjectBillingAccount Set project billing account
+	// SetProjectAssignment Set project assignment
 	//
 	// Charges already incurred remain with the billing account that was linked when they
 	// occurred, and are still invoiced to it. Metered resources are settled up to the moment of
@@ -4645,8 +4647,8 @@ type ClientInterface interface {
 	//
 	// Takes a body of the `application/json` content type.
 	//
-	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectBillingAccount` operationId).
-	SetProjectBillingAccount(ctx context.Context, projectId ProjectId, body SetProjectBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectAssignment` operationId).
+	SetProjectAssignment(ctx context.Context, projectId ProjectId, body SetProjectAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateQuoteWithBody Quote order checkout, renewals or a cancellation
 	//
@@ -5861,11 +5863,11 @@ func (c *Client) PreviewPayTogether(ctx context.Context, body PreviewPayTogether
 	return c.Client.Do(req)
 }
 
-// ListBillingAccountProjects List projects linked to billing accounts
+// ListProjectAssignments List project assignments
 //
-// Corresponds with GET /account/v1/projects (the `ListBillingAccountProjects` operationId).
-func (c *Client) ListBillingAccountProjects(ctx context.Context, params *ListBillingAccountProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListBillingAccountProjectsRequest(c.Server, params)
+// Corresponds with GET /account/v1/projects (the `ListProjectAssignments` operationId).
+func (c *Client) ListProjectAssignments(ctx context.Context, params *ListProjectAssignmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProjectAssignmentsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5901,13 +5903,13 @@ func (c *Client) UnlinkProjectBillingAccount(ctx context.Context, projectId Proj
 	return c.Client.Do(req)
 }
 
-// GetProjectBillingAccount Get project billing account
+// GetProjectAssignment Get project assignment
 //
 // Returns 404 when the project has no billing account. No resources can be created until one is linked.
 //
-// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
-func (c *Client) GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetProjectBillingAccountRequest(c.Server, projectId)
+// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `GetProjectAssignment` operationId).
+func (c *Client) GetProjectAssignment(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectAssignmentRequest(c.Server, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -5918,7 +5920,7 @@ func (c *Client) GetProjectBillingAccount(ctx context.Context, projectId Project
 	return c.Client.Do(req)
 }
 
-// SetProjectBillingAccountWithBody Set project billing account
+// SetProjectAssignmentWithBody Set project assignment
 //
 // Charges already incurred remain with the billing account that was linked when they
 // occurred, and are still invoiced to it. Metered resources are settled up to the moment of
@@ -5934,9 +5936,9 @@ func (c *Client) GetProjectBillingAccount(ctx context.Context, projectId Project
 //
 // Takes any type of body and a specified content type.
 //
-// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectBillingAccount` operationId).
-func (c *Client) SetProjectBillingAccountWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetProjectBillingAccountRequestWithBody(c.Server, projectId, contentType, body)
+// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectAssignment` operationId).
+func (c *Client) SetProjectAssignmentWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetProjectAssignmentRequestWithBody(c.Server, projectId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5947,7 +5949,7 @@ func (c *Client) SetProjectBillingAccountWithBody(ctx context.Context, projectId
 	return c.Client.Do(req)
 }
 
-// SetProjectBillingAccount Set project billing account
+// SetProjectAssignment Set project assignment
 //
 // Charges already incurred remain with the billing account that was linked when they
 // occurred, and are still invoiced to it. Metered resources are settled up to the moment of
@@ -5963,9 +5965,9 @@ func (c *Client) SetProjectBillingAccountWithBody(ctx context.Context, projectId
 //
 // Takes a body of the `application/json` content type.
 //
-// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectBillingAccount` operationId).
-func (c *Client) SetProjectBillingAccount(ctx context.Context, projectId ProjectId, body SetProjectBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetProjectBillingAccountRequest(c.Server, projectId, body)
+// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectAssignment` operationId).
+func (c *Client) SetProjectAssignment(ctx context.Context, projectId ProjectId, body SetProjectAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetProjectAssignmentRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8334,8 +8336,8 @@ func NewPreviewPayTogetherRequestWithBody(server string, contentType string, bod
 	return req, nil
 }
 
-// NewListBillingAccountProjectsRequest constructs an http.Request for the ListBillingAccountProjects method
-func NewListBillingAccountProjectsRequest(server string, params *ListBillingAccountProjectsParams) (*http.Request, error) {
+// NewListProjectAssignmentsRequest constructs an http.Request for the ListProjectAssignments method
+func NewListProjectAssignmentsRequest(server string, params *ListProjectAssignmentsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -8446,8 +8448,8 @@ func NewUnlinkProjectBillingAccountRequest(server string, projectId ProjectId) (
 	return req, nil
 }
 
-// NewGetProjectBillingAccountRequest constructs an http.Request for the GetProjectBillingAccount method
-func NewGetProjectBillingAccountRequest(server string, projectId ProjectId) (*http.Request, error) {
+// NewGetProjectAssignmentRequest constructs an http.Request for the GetProjectAssignment method
+func NewGetProjectAssignmentRequest(server string, projectId ProjectId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -8480,19 +8482,19 @@ func NewGetProjectBillingAccountRequest(server string, projectId ProjectId) (*ht
 	return req, nil
 }
 
-// NewSetProjectBillingAccountRequest calls the generic SetProjectBillingAccount builder with application/json body
-func NewSetProjectBillingAccountRequest(server string, projectId ProjectId, body SetProjectBillingAccountJSONRequestBody) (*http.Request, error) {
+// NewSetProjectAssignmentRequest calls the generic SetProjectAssignment builder with application/json body
+func NewSetProjectAssignmentRequest(server string, projectId ProjectId, body SetProjectAssignmentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSetProjectBillingAccountRequestWithBody(server, projectId, "application/json", bodyReader)
+	return NewSetProjectAssignmentRequestWithBody(server, projectId, "application/json", bodyReader)
 }
 
-// NewSetProjectBillingAccountRequestWithBody constructs an http.Request for the SetProjectBillingAccount method, with any body, and a specified content type
-func NewSetProjectBillingAccountRequestWithBody(server string, projectId ProjectId, contentType string, body io.Reader) (*http.Request, error) {
+// NewSetProjectAssignmentRequestWithBody constructs an http.Request for the SetProjectAssignment method, with any body, and a specified content type
+func NewSetProjectAssignmentRequestWithBody(server string, projectId ProjectId, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10090,12 +10092,12 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/payments/preview (the `PreviewPayTogether` operationId).
 	PreviewPayTogetherWithResponse(ctx context.Context, body PreviewPayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewPayTogetherResponse, error)
 
-	// ListBillingAccountProjectsWithResponse List projects linked to billing accounts
+	// ListProjectAssignmentsWithResponse List project assignments
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /account/v1/projects (the `ListBillingAccountProjects` operationId).
-	ListBillingAccountProjectsWithResponse(ctx context.Context, params *ListBillingAccountProjectsParams, reqEditors ...RequestEditorFn) (*ListBillingAccountProjectsResponse, error)
+	// Corresponds with GET /account/v1/projects (the `ListProjectAssignments` operationId).
+	ListProjectAssignmentsWithResponse(ctx context.Context, params *ListProjectAssignmentsParams, reqEditors ...RequestEditorFn) (*ListProjectAssignmentsResponse, error)
 
 	// UnlinkProjectBillingAccountWithResponse Unlink project billing account
 	//
@@ -10114,16 +10116,16 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with DELETE /account/v1/projects/{projectId}/billing-account (the `UnlinkProjectBillingAccount` operationId).
 	UnlinkProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*UnlinkProjectBillingAccountResponse, error)
 
-	// GetProjectBillingAccountWithResponse Get project billing account
+	// GetProjectAssignmentWithResponse Get project assignment
 	//
 	// Returns 404 when the project has no billing account. No resources can be created until one is linked.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
-	GetProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectBillingAccountResponse, error)
+	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `GetProjectAssignment` operationId).
+	GetProjectAssignmentWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectAssignmentResponse, error)
 
-	// SetProjectBillingAccountWithBodyWithResponse Set project billing account
+	// SetProjectAssignmentWithBodyWithResponse Set project assignment
 	//
 	// Charges already incurred remain with the billing account that was linked when they
 	// occurred, and are still invoiced to it. Metered resources are settled up to the moment of
@@ -10139,10 +10141,10 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectBillingAccount` operationId).
-	SetProjectBillingAccountWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectBillingAccountResponse, error)
+	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectAssignment` operationId).
+	SetProjectAssignmentWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectAssignmentResponse, error)
 
-	// SetProjectBillingAccountWithResponse Set project billing account
+	// SetProjectAssignmentWithResponse Set project assignment
 	//
 	// Charges already incurred remain with the billing account that was linked when they
 	// occurred, and are still invoiced to it. Metered resources are settled up to the moment of
@@ -10158,8 +10160,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectBillingAccount` operationId).
-	SetProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, body SetProjectBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectBillingAccountResponse, error)
+	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectAssignment` operationId).
+	SetProjectAssignmentWithResponse(ctx context.Context, projectId ProjectId, body SetProjectAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectAssignmentResponse, error)
 
 	// CreateQuoteWithBodyWithResponse Quote order checkout, renewals or a cancellation
 	//
@@ -12001,32 +12003,32 @@ func (r PreviewPayTogetherResponse) ContentType() string {
 	return ""
 }
 
-type ListBillingAccountProjectsResponse struct {
+type ListProjectAssignmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectBillingInfoList
+	JSON200 *ProjectAssignmentList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListBillingAccountProjectsResponse) GetJSON200() *ProjectBillingInfoList {
+func (r ListProjectAssignmentsResponse) GetJSON200() *ProjectAssignmentList {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListBillingAccountProjectsResponse) GetJSONDefault() *Error {
+func (r ListProjectAssignmentsResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ListBillingAccountProjectsResponse) GetBody() []byte {
+func (r ListProjectAssignmentsResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ListBillingAccountProjectsResponse) Status() string {
+func (r ListProjectAssignmentsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -12034,7 +12036,7 @@ func (r ListBillingAccountProjectsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListBillingAccountProjectsResponse) StatusCode() int {
+func (r ListProjectAssignmentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -12042,7 +12044,7 @@ func (r ListBillingAccountProjectsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListBillingAccountProjectsResponse) ContentType() string {
+func (r ListProjectAssignmentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12090,32 +12092,32 @@ func (r UnlinkProjectBillingAccountResponse) ContentType() string {
 	return ""
 }
 
-type GetProjectBillingAccountResponse struct {
+type GetProjectAssignmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectBillingInfo
+	JSON200 *ProjectAssignment
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetProjectBillingAccountResponse) GetJSON200() *ProjectBillingInfo {
+func (r GetProjectAssignmentResponse) GetJSON200() *ProjectAssignment {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetProjectBillingAccountResponse) GetJSONDefault() *Error {
+func (r GetProjectAssignmentResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r GetProjectBillingAccountResponse) GetBody() []byte {
+func (r GetProjectAssignmentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r GetProjectBillingAccountResponse) Status() string {
+func (r GetProjectAssignmentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -12123,7 +12125,7 @@ func (r GetProjectBillingAccountResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetProjectBillingAccountResponse) StatusCode() int {
+func (r GetProjectAssignmentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -12131,39 +12133,39 @@ func (r GetProjectBillingAccountResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetProjectBillingAccountResponse) ContentType() string {
+func (r GetProjectAssignmentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type SetProjectBillingAccountResponse struct {
+type SetProjectAssignmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectBillingInfo
+	JSON200 *ProjectAssignment
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SetProjectBillingAccountResponse) GetJSON200() *ProjectBillingInfo {
+func (r SetProjectAssignmentResponse) GetJSON200() *ProjectAssignment {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r SetProjectBillingAccountResponse) GetJSONDefault() *Error {
+func (r SetProjectAssignmentResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r SetProjectBillingAccountResponse) GetBody() []byte {
+func (r SetProjectAssignmentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r SetProjectBillingAccountResponse) Status() string {
+func (r SetProjectAssignmentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -12171,7 +12173,7 @@ func (r SetProjectBillingAccountResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r SetProjectBillingAccountResponse) StatusCode() int {
+func (r SetProjectAssignmentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -12179,7 +12181,7 @@ func (r SetProjectBillingAccountResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r SetProjectBillingAccountResponse) ContentType() string {
+func (r SetProjectAssignmentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -13708,17 +13710,17 @@ func (c *ClientWithResponses) PreviewPayTogetherWithResponse(ctx context.Context
 	return ParsePreviewPayTogetherResponse(rsp)
 }
 
-// ListBillingAccountProjectsWithResponse List projects linked to billing accounts
+// ListProjectAssignmentsWithResponse List project assignments
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /account/v1/projects (the `ListBillingAccountProjects` operationId).
-func (c *ClientWithResponses) ListBillingAccountProjectsWithResponse(ctx context.Context, params *ListBillingAccountProjectsParams, reqEditors ...RequestEditorFn) (*ListBillingAccountProjectsResponse, error) {
-	rsp, err := c.ListBillingAccountProjects(ctx, params, reqEditors...)
+// Corresponds with GET /account/v1/projects (the `ListProjectAssignments` operationId).
+func (c *ClientWithResponses) ListProjectAssignmentsWithResponse(ctx context.Context, params *ListProjectAssignmentsParams, reqEditors ...RequestEditorFn) (*ListProjectAssignmentsResponse, error) {
+	rsp, err := c.ListProjectAssignments(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListBillingAccountProjectsResponse(rsp)
+	return ParseListProjectAssignmentsResponse(rsp)
 }
 
 // UnlinkProjectBillingAccountWithResponse Unlink project billing account
@@ -13744,22 +13746,22 @@ func (c *ClientWithResponses) UnlinkProjectBillingAccountWithResponse(ctx contex
 	return ParseUnlinkProjectBillingAccountResponse(rsp)
 }
 
-// GetProjectBillingAccountWithResponse Get project billing account
+// GetProjectAssignmentWithResponse Get project assignment
 //
 // Returns 404 when the project has no billing account. No resources can be created until one is linked.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
-func (c *ClientWithResponses) GetProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectBillingAccountResponse, error) {
-	rsp, err := c.GetProjectBillingAccount(ctx, projectId, reqEditors...)
+// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `GetProjectAssignment` operationId).
+func (c *ClientWithResponses) GetProjectAssignmentWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectAssignmentResponse, error) {
+	rsp, err := c.GetProjectAssignment(ctx, projectId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetProjectBillingAccountResponse(rsp)
+	return ParseGetProjectAssignmentResponse(rsp)
 }
 
-// SetProjectBillingAccountWithBodyWithResponse Set project billing account
+// SetProjectAssignmentWithBodyWithResponse Set project assignment
 //
 // Charges already incurred remain with the billing account that was linked when they
 // occurred, and are still invoiced to it. Metered resources are settled up to the moment of
@@ -13775,16 +13777,16 @@ func (c *ClientWithResponses) GetProjectBillingAccountWithResponse(ctx context.C
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectBillingAccount` operationId).
-func (c *ClientWithResponses) SetProjectBillingAccountWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectBillingAccountResponse, error) {
-	rsp, err := c.SetProjectBillingAccountWithBody(ctx, projectId, contentType, body, reqEditors...)
+// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectAssignment` operationId).
+func (c *ClientWithResponses) SetProjectAssignmentWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectAssignmentResponse, error) {
+	rsp, err := c.SetProjectAssignmentWithBody(ctx, projectId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSetProjectBillingAccountResponse(rsp)
+	return ParseSetProjectAssignmentResponse(rsp)
 }
 
-// SetProjectBillingAccountWithResponse Set project billing account
+// SetProjectAssignmentWithResponse Set project assignment
 //
 // Charges already incurred remain with the billing account that was linked when they
 // occurred, and are still invoiced to it. Metered resources are settled up to the moment of
@@ -13800,13 +13802,13 @@ func (c *ClientWithResponses) SetProjectBillingAccountWithBodyWithResponse(ctx c
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectBillingAccount` operationId).
-func (c *ClientWithResponses) SetProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, body SetProjectBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectBillingAccountResponse, error) {
-	rsp, err := c.SetProjectBillingAccount(ctx, projectId, body, reqEditors...)
+// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectAssignment` operationId).
+func (c *ClientWithResponses) SetProjectAssignmentWithResponse(ctx context.Context, projectId ProjectId, body SetProjectAssignmentJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectAssignmentResponse, error) {
+	rsp, err := c.SetProjectAssignment(ctx, projectId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseSetProjectBillingAccountResponse(rsp)
+	return ParseSetProjectAssignmentResponse(rsp)
 }
 
 // CreateQuoteWithBodyWithResponse Quote order checkout, renewals or a cancellation
@@ -15285,22 +15287,22 @@ func ParsePreviewPayTogetherResponse(rsp *http.Response) (*PreviewPayTogetherRes
 	return response, nil
 }
 
-// ParseListBillingAccountProjectsResponse parses an HTTP response from a ListBillingAccountProjectsWithResponse call
-func ParseListBillingAccountProjectsResponse(rsp *http.Response) (*ListBillingAccountProjectsResponse, error) {
+// ParseListProjectAssignmentsResponse parses an HTTP response from a ListProjectAssignmentsWithResponse call
+func ParseListProjectAssignmentsResponse(rsp *http.Response) (*ListProjectAssignmentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListBillingAccountProjectsResponse{
+	response := &ListProjectAssignmentsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectBillingInfoList
+		var dest ProjectAssignmentList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -15347,22 +15349,22 @@ func ParseUnlinkProjectBillingAccountResponse(rsp *http.Response) (*UnlinkProjec
 	return response, nil
 }
 
-// ParseGetProjectBillingAccountResponse parses an HTTP response from a GetProjectBillingAccountWithResponse call
-func ParseGetProjectBillingAccountResponse(rsp *http.Response) (*GetProjectBillingAccountResponse, error) {
+// ParseGetProjectAssignmentResponse parses an HTTP response from a GetProjectAssignmentWithResponse call
+func ParseGetProjectAssignmentResponse(rsp *http.Response) (*GetProjectAssignmentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetProjectBillingAccountResponse{
+	response := &GetProjectAssignmentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectBillingInfo
+		var dest ProjectAssignment
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -15380,22 +15382,22 @@ func ParseGetProjectBillingAccountResponse(rsp *http.Response) (*GetProjectBilli
 	return response, nil
 }
 
-// ParseSetProjectBillingAccountResponse parses an HTTP response from a SetProjectBillingAccountWithResponse call
-func ParseSetProjectBillingAccountResponse(rsp *http.Response) (*SetProjectBillingAccountResponse, error) {
+// ParseSetProjectAssignmentResponse parses an HTTP response from a SetProjectAssignmentWithResponse call
+func ParseSetProjectAssignmentResponse(rsp *http.Response) (*SetProjectAssignmentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &SetProjectBillingAccountResponse{
+	response := &SetProjectAssignmentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectBillingInfo
+		var dest ProjectAssignment
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

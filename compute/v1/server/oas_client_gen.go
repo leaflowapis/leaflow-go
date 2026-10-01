@@ -685,9 +685,9 @@ type Invoker interface {
 	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
 	// ListDiskTypes invokes list-disk-types operation.
 	//
-	// Only disk types currently on sale are listed, both system disk types and data disk types;
-	// `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no
-	// longer be bought, while the disks already on it keep working and can still be resized.
+	// Only disk types currently on sale are listed, both system disk types and data disk types; `purpose`
+	// narrows the list to one of the two. A withdrawn one disappears from here and can no longer be
+	// bought, while the disks already on it keep working and can still be resized.
 	//
 	// GET /api/v1/disk-types
 	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
@@ -10049,9 +10049,9 @@ func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) 
 
 // ListDiskTypes invokes list-disk-types operation.
 //
-// Only disk types currently on sale are listed, both system disk types and data disk types;
-// `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no
-// longer be bought, while the disks already on it keep working and can still be resized.
+// Only disk types currently on sale are listed, both system disk types and data disk types; `purpose`
+// narrows the list to one of the two. A withdrawn one disappears from here and can no longer be
+// bought, while the disks already on it keep working and can still be resized.
 //
 // GET /api/v1/disk-types
 func (c *Client) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error) {
@@ -10120,16 +10120,16 @@ func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesPara
 		}
 	}
 	{
-		// Encode "for_system" parameter.
+		// Encode "purpose" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "for_system",
+			Name:    "purpose",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ForSystem.Get(); ok {
-				return e.EncodeValue(conv.BoolToString(val))
+			if val, ok := params.Purpose.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
 			}
 			return nil
 		}); err != nil {

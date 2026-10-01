@@ -1335,20 +1335,27 @@ func (s *CheckoutOrderRequest) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := (validate.String{
-			MinLength:     0,
-			MinLengthSet:  false,
-			MaxLength:     0,
-			MaxLengthSet:  false,
-			Email:         false,
-			Hostname:      false,
-			Regex:         regexMap["^\\d+(\\.\\d{1,10})?$"],
-			MinNumeric:    0,
-			MinNumericSet: false,
-			MaxNumeric:    0,
-			MaxNumericSet: false,
-		}).Validate(string(s.ExpectedAmount)); err != nil {
-			return errors.Wrap(err, "string")
+		if value, ok := s.ExpectedAmount.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     0,
+					MaxLengthSet:  false,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^\\d+(\\.\\d{1,10})?$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
@@ -3439,7 +3446,7 @@ func (s ProductID) Validate() error {
 	return nil
 }
 
-func (s *ProjectBillingInfo) Validate() error {
+func (s *ProjectAssignment) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -3469,7 +3476,7 @@ func (s *ProjectBillingInfo) Validate() error {
 	return nil
 }
 
-func (s *ProjectBillingInfoList) Validate() error {
+func (s *ProjectAssignmentList) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}

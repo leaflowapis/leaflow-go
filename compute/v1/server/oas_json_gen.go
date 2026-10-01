@@ -7133,6 +7133,46 @@ func (s *DiskTypeListResponseBody) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes DiskTypePurpose as json.
+func (s DiskTypePurpose) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes DiskTypePurpose from json.
+func (s *DiskTypePurpose) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode DiskTypePurpose to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch DiskTypePurpose(v) {
+	case DiskTypePurposeSystem:
+		*s = DiskTypePurposeSystem
+	case DiskTypePurposeData:
+		*s = DiskTypePurposeData
+	default:
+		*s = DiskTypePurpose(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s DiskTypePurpose) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *DiskTypePurpose) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *DiskTypeResource) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -7151,8 +7191,8 @@ func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.ID)
 	}
 	{
-		e.FieldStart("for_system")
-		e.Bool(s.ForSystem)
+		e.FieldStart("purpose")
+		s.Purpose.Encode(e)
 	}
 	{
 		e.FieldStart("iops_at_min_size")
@@ -7203,7 +7243,7 @@ func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfDiskTypeResource = [14]string{
 	0:  "availability_zone_id",
 	1:  "id",
-	2:  "for_system",
+	2:  "purpose",
 	3:  "iops_at_min_size",
 	4:  "iops_at_max_size",
 	5:  "max_size_gb",
@@ -7250,17 +7290,15 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "for_system":
+		case "purpose":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				v, err := d.Bool()
-				s.ForSystem = bool(v)
-				if err != nil {
+				if err := s.Purpose.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"for_system\"")
+				return errors.Wrap(err, "decode field \"purpose\"")
 			}
 		case "iops_at_min_size":
 			requiredBitSet[0] |= 1 << 3
