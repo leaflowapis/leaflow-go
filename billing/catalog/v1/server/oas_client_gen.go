@@ -159,6 +159,15 @@ func (c *Client) CreateEstimate(ctx context.Context, request *EstimateRequest) (
 }
 
 func (c *Client) sendCreateEstimate(ctx context.Context, request *EstimateRequest) (res *Quote, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-estimate"),
 		semconv.HTTPRequestMethodKey.String("POST"),

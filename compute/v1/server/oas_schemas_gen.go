@@ -9,6 +9,7 @@ import (
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
+	typev1 "github.com/leaflowapis/leaflow-go/type/v1"
 )
 
 func (s *ErrorStatusCode) Error() string {
@@ -1319,81 +1320,7 @@ func NewExistingBootDiskBootDisk(v ExistingBootDisk) BootDisk {
 	return s
 }
 
-// Shared checkout choices for a product purchase. Omitting this object or mode selects automatic
-// checkout. Each purchase creates its own order. Promotion codes are supplied only to Billing quote
-// and checkout operations. A service may retain a failed creation record when Billing refuses a
-// purchase; no infrastructure is created for that refusal.
-// Ref: #/components/schemas/CheckoutOptions
-type CheckoutOptions struct {
-	Mode OptCheckoutOptionsMode `json:"mode"`
-	// Expected invoice total after discounts and tax, before applying credit grants or balance. A
-	// different total fails with BILLING_AMOUNT_CHANGED without charging or reserving a discount. Accepted
-	// only in automatic mode; with deferred it is refused with HTTP 400. For deferred checkout, confirm
-	// the amount through Billing.
-	ExpectedAmount OptString `json:"expected_amount"`
-}
-
-// GetMode returns the value of Mode.
-func (s *CheckoutOptions) GetMode() OptCheckoutOptionsMode {
-	return s.Mode
-}
-
-// GetExpectedAmount returns the value of ExpectedAmount.
-func (s *CheckoutOptions) GetExpectedAmount() OptString {
-	return s.ExpectedAmount
-}
-
-// SetMode sets the value of Mode.
-func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
-	s.Mode = val
-}
-
-// SetExpectedAmount sets the value of ExpectedAmount.
-func (s *CheckoutOptions) SetExpectedAmount(val OptString) {
-	s.ExpectedAmount = val
-}
-
-// Merged schema.
-type CheckoutOptionsMode string
-
-const (
-	CheckoutOptionsModeAutomatic CheckoutOptionsMode = "automatic"
-	CheckoutOptionsModeDeferred  CheckoutOptionsMode = "deferred"
-)
-
-// AllValues returns all CheckoutOptionsMode values.
-func (CheckoutOptionsMode) AllValues() []CheckoutOptionsMode {
-	return []CheckoutOptionsMode{
-		CheckoutOptionsModeAutomatic,
-		CheckoutOptionsModeDeferred,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CheckoutOptionsMode) MarshalText() ([]byte, error) {
-	switch s {
-	case CheckoutOptionsModeAutomatic:
-		return []byte(s), nil
-	case CheckoutOptionsModeDeferred:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CheckoutOptionsMode) UnmarshalText(data []byte) error {
-	switch CheckoutOptionsMode(data) {
-	case CheckoutOptionsModeAutomatic:
-		*s = CheckoutOptionsModeAutomatic
-		return nil
-	case CheckoutOptionsModeDeferred:
-		*s = CheckoutOptionsModeDeferred
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
+type CheckoutOptions typev1.CheckoutOptions
 
 // Ref: #/components/schemas/CommandResultResponseBody
 type CommandResultResponseBody struct {
@@ -3497,55 +3424,7 @@ func (s *DiskTypeResourceMedia) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/Error
-type Error struct {
-	Code    OptString `json:"code"`
-	Message string    `json:"message"`
-	// What a given `code` carries alongside the message. The keys depend on the code, and a client that
-	// does not recognise one ignores it.
-	Meta   OptErrorMeta `json:"meta"`
-	Status int64        `json:"status"`
-}
-
-// GetCode returns the value of Code.
-func (s *Error) GetCode() OptString {
-	return s.Code
-}
-
-// GetMessage returns the value of Message.
-func (s *Error) GetMessage() string {
-	return s.Message
-}
-
-// GetMeta returns the value of Meta.
-func (s *Error) GetMeta() OptErrorMeta {
-	return s.Meta
-}
-
-// GetStatus returns the value of Status.
-func (s *Error) GetStatus() int64 {
-	return s.Status
-}
-
-// SetCode sets the value of Code.
-func (s *Error) SetCode(val OptString) {
-	s.Code = val
-}
-
-// SetMessage sets the value of Message.
-func (s *Error) SetMessage(val string) {
-	s.Message = val
-}
-
-// SetMeta sets the value of Meta.
-func (s *Error) SetMeta(val OptErrorMeta) {
-	s.Meta = val
-}
-
-// SetStatus sets the value of Status.
-func (s *Error) SetStatus(val int64) {
-	s.Status = val
-}
+type Error typev1.Error
 
 func (*Error) acceptPeeringRes()                  {}
 func (*Error) allocateFloatingIPRes()             {}
@@ -3596,19 +3475,6 @@ func (*Error) setSnapshotQuotaRes()               {}
 func (*Error) startInstanceRes()                  {}
 func (*Error) stopInstanceRes()                   {}
 func (*Error) unbindFloatingIPRes()               {}
-
-// What a given `code` carries alongside the message. The keys depend on the code, and a client that
-// does not recognise one ignores it.
-type ErrorMeta map[string]jx.Raw
-
-func (s *ErrorMeta) init() ErrorMeta {
-	m := *s
-	if m == nil {
-		m = map[string]jx.Raw{}
-		*s = m
-	}
-	return m
-}
 
 // ErrorStatusCode wraps Error with StatusCode.
 type ErrorStatusCode struct {
@@ -6706,8 +6572,6 @@ func (s *LaunchInstanceResponseBody) SetPassword(val NilString) {
 
 func (*LaunchInstanceResponseBody) launchInstanceRes() {}
 
-type Money string
-
 // A system disk created from an image and purchased in the instance order. Its commercial terms are
 // explicit and its release policy does not override them.
 // Ref: #/components/schemas/NewBootDisk
@@ -7799,51 +7663,6 @@ func (o NilInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewNilMoney returns new NilMoney with value set to v.
-func NewNilMoney(v Money) NilMoney {
-	return NilMoney{
-		Value: v,
-	}
-}
-
-// NilMoney is nullable Money.
-type NilMoney struct {
-	Value Money
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilMoney) SetTo(v Money) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilMoney) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilMoney) SetToNull() {
-	o.Null = true
-	var v Money
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilMoney) Get() (v Money, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilMoney) Or(d Money) Money {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilPeeringOperation returns new NilPeeringOperation with value set to v.
 func NewNilPeeringOperation(v PeeringOperation) NilPeeringOperation {
 	return NilPeeringOperation{
@@ -8294,44 +8113,7 @@ func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// Pagination metadata for stable numbered pages. total_count is returned only when the operation can
-// determine it without an unbounded scan.
-// Ref: #/components/schemas/OffsetPagination
-type OffsetPagination struct {
-	Page       int64    `json:"page"`
-	PageSize   int64    `json:"page_size"`
-	TotalCount OptInt64 `json:"total_count"`
-}
-
-// GetPage returns the value of Page.
-func (s *OffsetPagination) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *OffsetPagination) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *OffsetPagination) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetPage sets the value of Page.
-func (s *OffsetPagination) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *OffsetPagination) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *OffsetPagination) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
+type OffsetPagination typev1.OffsetPagination
 
 // Ref: #/components/schemas/OperationLogListResponseBody
 type OperationLogListResponseBody struct {
@@ -8657,52 +8439,6 @@ func (o OptCheckoutOptions) Or(d CheckoutOptions) CheckoutOptions {
 	return d
 }
 
-// NewOptCheckoutOptionsMode returns new OptCheckoutOptionsMode with value set to v.
-func NewOptCheckoutOptionsMode(v CheckoutOptionsMode) OptCheckoutOptionsMode {
-	return OptCheckoutOptionsMode{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCheckoutOptionsMode is optional CheckoutOptionsMode.
-type OptCheckoutOptionsMode struct {
-	Value CheckoutOptionsMode
-	Set   bool
-}
-
-// IsSet returns true if OptCheckoutOptionsMode was set.
-func (o OptCheckoutOptionsMode) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCheckoutOptionsMode) Reset() {
-	var v CheckoutOptionsMode
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCheckoutOptionsMode) SetTo(v CheckoutOptionsMode) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCheckoutOptionsMode) Get() (v CheckoutOptionsMode, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCheckoutOptionsMode) Or(d CheckoutOptionsMode) CheckoutOptionsMode {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptDateTime returns new OptDateTime with value set to v.
 func NewOptDateTime(v time.Time) OptDateTime {
 	return OptDateTime{
@@ -8789,52 +8525,6 @@ func (o OptDiskTypePurpose) Get() (v DiskTypePurpose, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptDiskTypePurpose) Or(d DiskTypePurpose) DiskTypePurpose {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptErrorMeta returns new OptErrorMeta with value set to v.
-func NewOptErrorMeta(v ErrorMeta) OptErrorMeta {
-	return OptErrorMeta{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptErrorMeta is optional ErrorMeta.
-type OptErrorMeta struct {
-	Value ErrorMeta
-	Set   bool
-}
-
-// IsSet returns true if OptErrorMeta was set.
-func (o OptErrorMeta) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptErrorMeta) Reset() {
-	var v ErrorMeta
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptErrorMeta) SetTo(v ErrorMeta) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9684,37 +9374,7 @@ func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Identifies the purchase. Read the order for purchase progress and its invoice for amounts and
-// payment status.
-// Ref: #/components/schemas/PlacedOrder
-type PlacedOrder struct {
-	// The invoice for this purchase, which may still be a draft awaiting checkout. Null when no invoice
-	// has been created. Its presence or absence does not establish whether delivery may begin.
-	InvoiceID NilUUID `json:"invoice_id"`
-	// The order, including for purchases without an immediate charge. Payment alone does not imply that
-	// the service has completed delivery.
-	OrderID uuid.UUID `json:"order_id"`
-}
-
-// GetInvoiceID returns the value of InvoiceID.
-func (s *PlacedOrder) GetInvoiceID() NilUUID {
-	return s.InvoiceID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *PlacedOrder) GetOrderID() uuid.UUID {
-	return s.OrderID
-}
-
-// SetInvoiceID sets the value of InvoiceID.
-func (s *PlacedOrder) SetInvoiceID(val NilUUID) {
-	s.InvoiceID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
-	s.OrderID = val
-}
+type PlacedOrder typev1.PlacedOrder
 
 // Ref: #/components/schemas/PortAddress
 type PortAddress struct {
@@ -11002,126 +10662,7 @@ func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
-// charged or reserved, and no discount redemption is consumed. Account discounts and tax are evaluated
-// as for automatic checkout. Promotion codes are evaluated through Billing quote operations. All
-// amounts use currency. This preview does not lock prices or guarantee discount availability.
-// Ref: #/components/schemas/Quote
-type Quote struct {
-	// One line for each item the purchase would order, in the order it would order them.
-	Lines []QuotedLine `json:"lines"`
-	// Sum of line amounts before discounts, less tax already included in the discounted line amounts, as
-	// on an invoice. Null when any line cannot be priced.
-	Subtotal NilMoney `json:"subtotal"`
-	// Sum of line discounts. Null when any line cannot be priced.
-	DiscountAmount NilMoney `json:"discount_amount"`
-	// Sum of tax on the discounted line amounts. Null when any line cannot be priced.
-	TaxAmount NilMoney `json:"tax_amount"`
-	// Subtotal minus discount_amount plus tax_amount: what checkout collects, before applying credit
-	// grants or balance. Equals the sum of line totals and excludes estimated_usage_amount. Null when any
-	// line cannot be priced.
-	Total NilMoney `json:"total"`
-	// Sum of the lines' estimated_usage_amount. A projection, not part of total and not collected at
-	// checkout. Null when no line is billed for usage or when any usage cannot be priced.
-	EstimatedUsageAmount NilMoney `json:"estimated_usage_amount"`
-	Currency             string   `json:"currency"`
-	// Changes only; null otherwise. The instant the change is priced from. Pass it with the change so the
-	// order is priced from the same instant.
-	ProrationDate NilDateTime `json:"proration_date"`
-	// Changes that lower the price only; null otherwise. What the change would return to the original
-	// payment sources, including the tax paid on it. total is zero for such a change.
-	RefundableAmount NilMoney `json:"refundable_amount"`
-}
-
-// GetLines returns the value of Lines.
-func (s *Quote) GetLines() []QuotedLine {
-	return s.Lines
-}
-
-// GetSubtotal returns the value of Subtotal.
-func (s *Quote) GetSubtotal() NilMoney {
-	return s.Subtotal
-}
-
-// GetDiscountAmount returns the value of DiscountAmount.
-func (s *Quote) GetDiscountAmount() NilMoney {
-	return s.DiscountAmount
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *Quote) GetTaxAmount() NilMoney {
-	return s.TaxAmount
-}
-
-// GetTotal returns the value of Total.
-func (s *Quote) GetTotal() NilMoney {
-	return s.Total
-}
-
-// GetEstimatedUsageAmount returns the value of EstimatedUsageAmount.
-func (s *Quote) GetEstimatedUsageAmount() NilMoney {
-	return s.EstimatedUsageAmount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *Quote) GetCurrency() string {
-	return s.Currency
-}
-
-// GetProrationDate returns the value of ProrationDate.
-func (s *Quote) GetProrationDate() NilDateTime {
-	return s.ProrationDate
-}
-
-// GetRefundableAmount returns the value of RefundableAmount.
-func (s *Quote) GetRefundableAmount() NilMoney {
-	return s.RefundableAmount
-}
-
-// SetLines sets the value of Lines.
-func (s *Quote) SetLines(val []QuotedLine) {
-	s.Lines = val
-}
-
-// SetSubtotal sets the value of Subtotal.
-func (s *Quote) SetSubtotal(val NilMoney) {
-	s.Subtotal = val
-}
-
-// SetDiscountAmount sets the value of DiscountAmount.
-func (s *Quote) SetDiscountAmount(val NilMoney) {
-	s.DiscountAmount = val
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *Quote) SetTaxAmount(val NilMoney) {
-	s.TaxAmount = val
-}
-
-// SetTotal sets the value of Total.
-func (s *Quote) SetTotal(val NilMoney) {
-	s.Total = val
-}
-
-// SetEstimatedUsageAmount sets the value of EstimatedUsageAmount.
-func (s *Quote) SetEstimatedUsageAmount(val NilMoney) {
-	s.EstimatedUsageAmount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *Quote) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetProrationDate sets the value of ProrationDate.
-func (s *Quote) SetProrationDate(val NilDateTime) {
-	s.ProrationDate = val
-}
-
-// SetRefundableAmount sets the value of RefundableAmount.
-func (s *Quote) SetRefundableAmount(val NilMoney) {
-	s.RefundableAmount = val
-}
+type Quote typev1.Quote
 
 func (*Quote) createBackupCapacityPackQuoteRes()  {}
 func (*Quote) createBackupRestoreQuoteRes()       {}
@@ -11134,200 +10675,6 @@ func (*Quote) createImageQuoteRes()               {}
 func (*Quote) createInstanceQuoteRes()            {}
 func (*Quote) createInstanceResizeQuoteRes()      {}
 func (*Quote) createSnapshotQuotaQuoteRes()       {}
-
-// One calculated purchase line. Fixed purchase amounts are rounded as checkout rounds them. When
-// priced is false, every monetary field is null. A priced line without an immediate charge has zero
-// amounts; an unavailable unit price remains null.
-// Ref: #/components/schemas/QuotedLine
-type QuotedLine struct {
-	// Whether the line can be priced. When false, unpriced_reason states what is missing.
-	Priced bool `json:"priced"`
-	// Why no price was found; `none` while `priced` is true.
-	UnpricedReason QuotedLineUnpricedReason `json:"unpriced_reason"`
-	PlanName       string                   `json:"plan_name"`
-	// Unit price before discounts, with tax included only where the price includes it.
-	UnitAmount NilMoney `json:"unit_amount"`
-	// The quantity priced.
-	Quantity string `json:"quantity"`
-	// Before discounts, including any setup charges. Contains tax only where the price includes it. Zero
-	// for a priced order item with no immediate charge.
-	Amount NilMoney `json:"amount"`
-	// Total reduction on this line, including any committed recurring discount.
-	DiscountAmount NilMoney `json:"discount_amount"`
-	// Tax on the discounted amount, including any tax already contained in that amount.
-	TaxAmount NilMoney `json:"tax_amount"`
-	// The part of tax_amount already contained in amount minus discount_amount.
-	TaxIncludedAmount NilMoney `json:"tax_included_amount"`
-	// Amount minus discount_amount plus tax_amount minus tax_included_amount.
-	Total NilMoney `json:"total"`
-	// Projected charge for this line's future usage over the period stated by the quoting operation, at
-	// current rates, before discounts and tax and not rounded. Not part of amount or total and not
-	// collected at checkout. Null when the line is not billed for usage or its usage cannot be priced.
-	EstimatedUsageAmount NilMoney `json:"estimated_usage_amount"`
-	Currency             string   `json:"currency"`
-}
-
-// GetPriced returns the value of Priced.
-func (s *QuotedLine) GetPriced() bool {
-	return s.Priced
-}
-
-// GetUnpricedReason returns the value of UnpricedReason.
-func (s *QuotedLine) GetUnpricedReason() QuotedLineUnpricedReason {
-	return s.UnpricedReason
-}
-
-// GetPlanName returns the value of PlanName.
-func (s *QuotedLine) GetPlanName() string {
-	return s.PlanName
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *QuotedLine) GetUnitAmount() NilMoney {
-	return s.UnitAmount
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *QuotedLine) GetQuantity() string {
-	return s.Quantity
-}
-
-// GetAmount returns the value of Amount.
-func (s *QuotedLine) GetAmount() NilMoney {
-	return s.Amount
-}
-
-// GetDiscountAmount returns the value of DiscountAmount.
-func (s *QuotedLine) GetDiscountAmount() NilMoney {
-	return s.DiscountAmount
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *QuotedLine) GetTaxAmount() NilMoney {
-	return s.TaxAmount
-}
-
-// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
-func (s *QuotedLine) GetTaxIncludedAmount() NilMoney {
-	return s.TaxIncludedAmount
-}
-
-// GetTotal returns the value of Total.
-func (s *QuotedLine) GetTotal() NilMoney {
-	return s.Total
-}
-
-// GetEstimatedUsageAmount returns the value of EstimatedUsageAmount.
-func (s *QuotedLine) GetEstimatedUsageAmount() NilMoney {
-	return s.EstimatedUsageAmount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *QuotedLine) GetCurrency() string {
-	return s.Currency
-}
-
-// SetPriced sets the value of Priced.
-func (s *QuotedLine) SetPriced(val bool) {
-	s.Priced = val
-}
-
-// SetUnpricedReason sets the value of UnpricedReason.
-func (s *QuotedLine) SetUnpricedReason(val QuotedLineUnpricedReason) {
-	s.UnpricedReason = val
-}
-
-// SetPlanName sets the value of PlanName.
-func (s *QuotedLine) SetPlanName(val string) {
-	s.PlanName = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *QuotedLine) SetUnitAmount(val NilMoney) {
-	s.UnitAmount = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *QuotedLine) SetQuantity(val string) {
-	s.Quantity = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *QuotedLine) SetAmount(val NilMoney) {
-	s.Amount = val
-}
-
-// SetDiscountAmount sets the value of DiscountAmount.
-func (s *QuotedLine) SetDiscountAmount(val NilMoney) {
-	s.DiscountAmount = val
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *QuotedLine) SetTaxAmount(val NilMoney) {
-	s.TaxAmount = val
-}
-
-// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
-func (s *QuotedLine) SetTaxIncludedAmount(val NilMoney) {
-	s.TaxIncludedAmount = val
-}
-
-// SetTotal sets the value of Total.
-func (s *QuotedLine) SetTotal(val NilMoney) {
-	s.Total = val
-}
-
-// SetEstimatedUsageAmount sets the value of EstimatedUsageAmount.
-func (s *QuotedLine) SetEstimatedUsageAmount(val NilMoney) {
-	s.EstimatedUsageAmount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *QuotedLine) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// Why no price was found; `none` while `priced` is true.
-type QuotedLineUnpricedReason string
-
-const (
-	QuotedLineUnpricedReasonNone    QuotedLineUnpricedReason = "none"
-	QuotedLineUnpricedReasonNoPrice QuotedLineUnpricedReason = "no_price"
-)
-
-// AllValues returns all QuotedLineUnpricedReason values.
-func (QuotedLineUnpricedReason) AllValues() []QuotedLineUnpricedReason {
-	return []QuotedLineUnpricedReason{
-		QuotedLineUnpricedReasonNone,
-		QuotedLineUnpricedReasonNoPrice,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s QuotedLineUnpricedReason) MarshalText() ([]byte, error) {
-	switch s {
-	case QuotedLineUnpricedReasonNone:
-		return []byte(s), nil
-	case QuotedLineUnpricedReasonNoPrice:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *QuotedLineUnpricedReason) UnmarshalText(data []byte) error {
-	switch QuotedLineUnpricedReason(data) {
-	case QuotedLineUnpricedReasonNone:
-		*s = QuotedLineUnpricedReasonNone
-		return nil
-	case QuotedLineUnpricedReasonNoPrice:
-		*s = QuotedLineUnpricedReasonNoPrice
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // Ref: #/components/schemas/RebootInstanceRequestBody
 type RebootInstanceRequestBody struct {

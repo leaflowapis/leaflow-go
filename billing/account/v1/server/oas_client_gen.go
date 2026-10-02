@@ -931,6 +931,15 @@ func (c *Client) CheckoutOrder(ctx context.Context, request *CheckoutOrderReques
 }
 
 func (c *Client) sendCheckoutOrder(ctx context.Context, request *CheckoutOrderRequest, params CheckoutOrderParams) (res CheckoutOrderRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("checkout-order"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1069,6 +1078,15 @@ func (c *Client) CreateBillingAccount(ctx context.Context, request *BillingAccou
 }
 
 func (c *Client) sendCreateBillingAccount(ctx context.Context, request *BillingAccountCreate) (res *BillingAccount, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-billing-account"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1222,6 +1240,15 @@ func (c *Client) CreateCancellation(ctx context.Context, request *CancellationCr
 }
 
 func (c *Client) sendCreateCancellation(ctx context.Context, request *CancellationCreate) (res CreateCancellationRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-cancellation"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1341,6 +1368,15 @@ func (c *Client) CreatePaymentMethodSetup(ctx context.Context, request *PaymentM
 }
 
 func (c *Client) sendCreatePaymentMethodSetup(ctx context.Context, request *PaymentMethodSetup) (res *PaymentMethodSetupResult, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-payment-method-setup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1484,6 +1520,15 @@ func (c *Client) CreateQuote(ctx context.Context, request *QuoteRequest) (*Quote
 }
 
 func (c *Client) sendCreateQuote(ctx context.Context, request *QuoteRequest) (res *Quote, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1609,6 +1654,15 @@ func (c *Client) CreateRenewalOrder(ctx context.Context, request *RenewalOrderRe
 }
 
 func (c *Client) sendCreateRenewalOrder(ctx context.Context, request *RenewalOrderRequest, params CreateRenewalOrderParams) (res CreateRenewalOrderRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-renewal-order"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1746,6 +1800,15 @@ func (c *Client) CreateTopUp(ctx context.Context, request *TopUpCreate) (*TopUp,
 }
 
 func (c *Client) sendCreateTopUp(ctx context.Context, request *TopUpCreate) (res *TopUp, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-top-up"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -7004,6 +7067,22 @@ func (c *Client) PayInvoice(ctx context.Context, request OptPayInvoiceRequest, p
 }
 
 func (c *Client) sendPayInvoice(ctx context.Context, request OptPayInvoiceRequest, params PayInvoiceParams) (res *PaymentResult, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if value, ok := request.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("pay-invoice"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -7149,6 +7228,15 @@ func (c *Client) PayTogether(ctx context.Context, request *PayTogetherRequest) (
 }
 
 func (c *Client) sendPayTogether(ctx context.Context, request *PayTogetherRequest) (res *PaymentResult, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("pay-together"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -7447,6 +7535,15 @@ func (c *Client) PreviewPayTogether(ctx context.Context, request *PayTogetherReq
 }
 
 func (c *Client) sendPreviewPayTogether(ctx context.Context, request *PayTogetherRequest) (res *PaymentPreview, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-pay-together"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -7573,6 +7670,15 @@ func (c *Client) RenewSubscription(ctx context.Context, request *RenewRequest, p
 }
 
 func (c *Client) sendRenewSubscription(ctx context.Context, request *RenewRequest, params RenewSubscriptionParams) (res RenewSubscriptionRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("renew-subscription"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -8267,6 +8373,15 @@ func (c *Client) UpdateBillingAccount(ctx context.Context, request *BillingAccou
 }
 
 func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *BillingAccountUpdate, params UpdateBillingAccountParams) (res *BillingAccount, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-billing-account"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),

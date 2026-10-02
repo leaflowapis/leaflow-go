@@ -1097,6 +1097,15 @@ func (c *Client) CreateChannel(ctx context.Context, request *CreateChannelReques
 }
 
 func (c *Client) sendCreateChannel(ctx context.Context, request *CreateChannelRequestBody) (res *ChannelWithSecretResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-channel"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1218,6 +1227,15 @@ func (c *Client) CreateFolder(ctx context.Context, request *CreateFolderRequestB
 }
 
 func (c *Client) sendCreateFolder(ctx context.Context, request *CreateFolderRequestBody) (res *FolderResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-folder"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1341,6 +1359,15 @@ func (c *Client) CreateThread(ctx context.Context, request *CreateThreadRequestB
 }
 
 func (c *Client) sendCreateThread(ctx context.Context, request *CreateThreadRequestBody) (res *ThreadSummaryResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -5106,6 +5133,15 @@ func (c *Client) PutSkill(ctx context.Context, request *SkillRequestBody) (*Skil
 }
 
 func (c *Client) sendPutSkill(ctx context.Context, request *SkillRequestBody) (res *SkillResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-skill"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -5501,6 +5537,15 @@ func (c *Client) SendMessage(ctx context.Context, request *SendMessageRequestBod
 }
 
 func (c *Client) sendSendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (res *TurnIDResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("send-message"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -5777,6 +5822,15 @@ func (c *Client) SubmitDynamicCallResult(ctx context.Context, request *DynamicCa
 }
 
 func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *DynamicCallResultRequestBody, params SubmitDynamicCallResultParams) (res *SubmitDynamicCallResultNoContent, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("submit-dynamic-call-result"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -5913,6 +5967,15 @@ func (c *Client) SubmitWeixinVerifyCode(ctx context.Context, request *VerifyCode
 }
 
 func (c *Client) sendSubmitWeixinVerifyCode(ctx context.Context, request *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (res *LoginResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("submit-weixin-verify-code"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -6050,6 +6113,15 @@ func (c *Client) UpdateChannel(ctx context.Context, request *UpdateChannelReques
 }
 
 func (c *Client) sendUpdateChannel(ctx context.Context, request *UpdateChannelRequestBody, params UpdateChannelParams) (res *ChannelResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-channel"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -6185,6 +6257,15 @@ func (c *Client) UpdateFolder(ctx context.Context, request *UpdateFolderRequestB
 }
 
 func (c *Client) sendUpdateFolder(ctx context.Context, request *UpdateFolderRequestBody, params UpdateFolderParams) (res *FolderResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-folder"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -6343,6 +6424,15 @@ func (c *Client) UpdateThread(ctx context.Context, request *UpdateThreadRequestB
 }
 
 func (c *Client) sendUpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (res *ThreadSummaryResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-thread"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),

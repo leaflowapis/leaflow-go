@@ -253,6 +253,15 @@ func (c *Client) CreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestB
 }
 
 func (c *Client) sendCreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (res *IssuedAPIKeyResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2866,6 +2875,15 @@ func (c *Client) UpdateAPIKey(ctx context.Context, request *UpdateAPIKeyRequestB
 }
 
 func (c *Client) sendUpdateAPIKey(ctx context.Context, request *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (res *APIKeyResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-api-key"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),

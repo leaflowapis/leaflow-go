@@ -239,6 +239,15 @@ func (c *Client) AcceptAgreements(ctx context.Context, request *AcceptConsentsRe
 }
 
 func (c *Client) sendAcceptAgreements(ctx context.Context, request *AcceptConsentsRequestBody) (res *AccountResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("accept-agreements"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -487,6 +496,15 @@ func (c *Client) AcceptInvitationByToken(ctx context.Context, request *AcceptInv
 }
 
 func (c *Client) sendAcceptInvitationByToken(ctx context.Context, request *AcceptInvitationByTokenRequestBody) (res *AcceptedInvitationResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("accept-invitation-by-token"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -604,6 +622,15 @@ func (c *Client) CreateProject(ctx context.Context, request *CreateProjectReques
 }
 
 func (c *Client) sendCreateProject(ctx context.Context, request *CreateProjectRequestBody) (res *ProjectAccessResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-project"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1908,6 +1935,15 @@ func (c *Client) Register(ctx context.Context, request *RegisterRequestBody) (*A
 }
 
 func (c *Client) sendRegister(ctx context.Context, request *RegisterRequestBody) (res *AccountResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("register"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2025,6 +2061,15 @@ func (c *Client) SubmitIdentityVerification(ctx context.Context, request *Submit
 }
 
 func (c *Client) sendSubmitIdentityVerification(ctx context.Context, request *SubmitIdentityVerificationRequestBody) (res *IdentityVerificationResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("submit-identity-verification"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2142,6 +2187,15 @@ func (c *Client) UpdateAccount(ctx context.Context, request *UpdateAccountReques
 }
 
 func (c *Client) sendUpdateAccount(ctx context.Context, request *UpdateAccountRequestBody) (res *AccountResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-account"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),

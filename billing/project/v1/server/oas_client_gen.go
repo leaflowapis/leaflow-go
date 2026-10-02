@@ -307,6 +307,15 @@ func (c *Client) CreateProjectCancellation(ctx context.Context, request *Cancell
 }
 
 func (c *Client) sendCreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (res CreateProjectCancellationRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-project-cancellation"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -472,6 +481,15 @@ func (c *Client) CreateProjectQuote(ctx context.Context, request *QuoteRequest, 
 }
 
 func (c *Client) sendCreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (res *Quote, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-project-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),

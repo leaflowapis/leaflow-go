@@ -603,6 +603,15 @@ func (c *Client) AcknowledgeIncident(ctx context.Context, request *AcknowledgeIn
 }
 
 func (c *Client) sendAcknowledgeIncident(ctx context.Context, request *AcknowledgeIncidentRequestBody, params AcknowledgeIncidentParams) (res *IncidentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("acknowledge-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -738,6 +747,15 @@ func (c *Client) AddIncidentComment(ctx context.Context, request *AddCommentRequ
 }
 
 func (c *Client) sendAddIncidentComment(ctx context.Context, request *AddCommentRequestBody, params AddIncidentCommentParams) (res *IncidentActivityResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("add-incident-comment"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -876,6 +894,15 @@ func (c *Client) AssignIncident(ctx context.Context, request *AssignIncidentRequ
 }
 
 func (c *Client) sendAssignIncident(ctx context.Context, request *AssignIncidentRequestBody, params AssignIncidentParams) (res *IncidentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("assign-incident"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -1146,6 +1173,15 @@ func (c *Client) CloseIncident(ctx context.Context, request *CloseIncidentReques
 }
 
 func (c *Client) sendCloseIncident(ctx context.Context, request *CloseIncidentRequestBody, params CloseIncidentParams) (res *IncidentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("close-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1418,6 +1454,15 @@ func (c *Client) CreateStatusPageComponent(ctx context.Context, request *PutStat
 }
 
 func (c *Client) sendCreateStatusPageComponent(ctx context.Context, request *PutStatusPageComponentRequestBody) (res *StatusPageComponentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-status-page-component"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1535,6 +1580,15 @@ func (c *Client) CreateStatusPageGroup(ctx context.Context, request *PutStatusPa
 }
 
 func (c *Client) sendCreateStatusPageGroup(ctx context.Context, request *PutStatusPageGroupRequestBody) (res *StatusPageGroupResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-status-page-group"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2950,6 +3004,15 @@ func (c *Client) EnableServerMonitoring(ctx context.Context, request *EnableMoni
 }
 
 func (c *Client) sendEnableServerMonitoring(ctx context.Context, request *EnableMonitoringRequestBody, params EnableServerMonitoringParams) (res *ServerEnrollmentResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("enable-server-monitoring"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -7398,6 +7461,15 @@ func (c *Client) PostStatusPageIncidentUpdate(ctx context.Context, request *Post
 }
 
 func (c *Client) sendPostStatusPageIncidentUpdate(ctx context.Context, request *PostStatusPageIncidentUpdateRequestBody, params PostStatusPageIncidentUpdateParams) (res *StatusPageIncidentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("post-status-page-incident-update"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -7541,6 +7613,15 @@ func (c *Client) PublishStatusPageIncident(ctx context.Context, request *Publish
 }
 
 func (c *Client) sendPublishStatusPageIncident(ctx context.Context, request *PublishStatusPageIncidentRequestBody) (res *StatusPageIncidentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("publish-status-page-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -7662,6 +7743,15 @@ func (c *Client) PutMaintenanceWindow(ctx context.Context, request *PutMaintenan
 }
 
 func (c *Client) sendPutMaintenanceWindow(ctx context.Context, request *PutMaintenanceWindowRequestBody, params PutMaintenanceWindowParams) (res *MaintenanceWindowResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-maintenance-window"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -7802,6 +7892,15 @@ func (c *Client) PutProjectWebCheck(ctx context.Context, request *PutWebCheckReq
 }
 
 func (c *Client) sendPutProjectWebCheck(ctx context.Context, request *PutWebCheckRequestBody, params PutProjectWebCheckParams) (res *WebCheckResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-project-web-check"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -7939,6 +8038,15 @@ func (c *Client) PutSlo(ctx context.Context, request *PutSLORequestBody) (*SLORe
 }
 
 func (c *Client) sendPutSlo(ctx context.Context, request *PutSLORequestBody) (res *SLOResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-slo"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -8062,6 +8170,15 @@ func (c *Client) PutStatusPage(ctx context.Context, request *PutStatusPageReques
 }
 
 func (c *Client) sendPutStatusPage(ctx context.Context, request *PutStatusPageRequestBody) (res *StatusPageResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-status-page"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -8327,6 +8444,15 @@ func (c *Client) PutStatusPageDomain(ctx context.Context, request *PutStatusPage
 }
 
 func (c *Client) sendPutStatusPageDomain(ctx context.Context, request *PutStatusPageDomainRequestBody) (res *StatusPageDomainResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-status-page-domain"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -8443,6 +8569,15 @@ func (c *Client) PutStatusPageGroupOrder(ctx context.Context, request *PutStatus
 }
 
 func (c *Client) sendPutStatusPageGroupOrder(ctx context.Context, request *PutStatusPageGroupOrderRequestBody, params PutStatusPageGroupOrderParams) (res *PutStatusPageGroupOrderNoContent, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-status-page-group-order"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -8585,6 +8720,15 @@ func (c *Client) PutStatusPageOrder(ctx context.Context, request *PutStatusPageO
 }
 
 func (c *Client) sendPutStatusPageOrder(ctx context.Context, request *PutStatusPageOrderRequestBody) (res *PutStatusPageOrderNoContent, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-status-page-order"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -8702,6 +8846,15 @@ func (c *Client) PutWebCheck(ctx context.Context, request *PutWebCheckRequestBod
 }
 
 func (c *Client) sendPutWebCheck(ctx context.Context, request *PutWebCheckRequestBody, params PutWebCheckParams) (res *WebCheckResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("put-web-check"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -9127,6 +9280,15 @@ func (c *Client) ScheduleStatusPageMaintenance(ctx context.Context, request *Sch
 }
 
 func (c *Client) sendScheduleStatusPageMaintenance(ctx context.Context, request *ScheduleStatusPageMaintenanceRequestBody) (res *StatusPageMaintenanceResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("schedule-status-page-maintenance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -9380,6 +9542,15 @@ func (c *Client) UpdateServer(ctx context.Context, request *UpdateServerRequestB
 }
 
 func (c *Client) sendUpdateServer(ctx context.Context, request *UpdateServerRequestBody, params UpdateServerParams) (res *ServerResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-server"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -9515,6 +9686,15 @@ func (c *Client) UpdateStatusPageComponent(ctx context.Context, request *PutStat
 }
 
 func (c *Client) sendUpdateStatusPageComponent(ctx context.Context, request *PutStatusPageComponentRequestBody, params UpdateStatusPageComponentParams) (res *StatusPageComponentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-status-page-component"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -9649,6 +9829,15 @@ func (c *Client) UpdateStatusPageGroup(ctx context.Context, request *PutStatusPa
 }
 
 func (c *Client) sendUpdateStatusPageGroup(ctx context.Context, request *PutStatusPageGroupRequestBody, params UpdateStatusPageGroupParams) (res *StatusPageGroupResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-status-page-group"),
 		semconv.HTTPRequestMethodKey.String("PUT"),

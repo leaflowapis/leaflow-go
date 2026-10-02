@@ -353,6 +353,15 @@ func (c *Client) CreateTicket(ctx context.Context, request *CreateTicketRequestB
 }
 
 func (c *Client) sendCreateTicket(ctx context.Context, request *CreateTicketRequestBody) (res *TicketResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-ticket"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -473,6 +482,15 @@ func (c *Client) CreateTicketMessage(ctx context.Context, request *CreateTicketM
 }
 
 func (c *Client) sendCreateTicketMessage(ctx context.Context, request *CreateTicketMessageRequestBody, params CreateTicketMessageParams) (res *TicketMessageResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-ticket-message"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -611,6 +629,15 @@ func (c *Client) CreateTicketSatisfaction(ctx context.Context, request *CreateTi
 }
 
 func (c *Client) sendCreateTicketSatisfaction(ctx context.Context, request *CreateTicketSatisfactionRequestBody, params CreateTicketSatisfactionParams) (res *TicketSatisfactionResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-ticket-satisfaction"),
 		semconv.HTTPRequestMethodKey.String("POST"),

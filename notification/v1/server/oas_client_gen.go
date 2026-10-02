@@ -539,6 +539,15 @@ func (c *Client) AuthorizeRealtimeChannel(ctx context.Context, request *Authoriz
 }
 
 func (c *Client) sendAuthorizeRealtimeChannel(ctx context.Context, request *AuthorizeRealtimeChannelRequestBody) (res *RealtimeAuthResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("authorize-realtime-channel"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -777,6 +786,15 @@ func (c *Client) ConfirmEmailOverride(ctx context.Context, request *ConfirmEmail
 }
 
 func (c *Client) sendConfirmEmailOverride(ctx context.Context, request *ConfirmEmailOverrideRequestBody) (res *PreferencesResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("confirm-email-override"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1039,6 +1057,15 @@ func (c *Client) CreateUserChannel(ctx context.Context, request *CreateChannelRe
 }
 
 func (c *Client) sendCreateUserChannel(ctx context.Context, request *CreateChannelRequestBody) (res *ChannelResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-user-channel"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2954,6 +2981,15 @@ func (c *Client) MarkNotificationsRead(ctx context.Context, request *MarkNotific
 }
 
 func (c *Client) sendMarkNotificationsRead(ctx context.Context, request *MarkNotificationsReadRequestBody) (res *UnreadCountResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-notifications-read"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3730,6 +3766,15 @@ func (c *Client) UpdateNotificationPreferences(ctx context.Context, request *Upd
 }
 
 func (c *Client) sendUpdateNotificationPreferences(ctx context.Context, request *UpdatePreferencesRequestBody) (res *PreferencesResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-notification-preferences"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -3856,6 +3901,15 @@ func (c *Client) UpdateTypePreference(ctx context.Context, request *UpdateTypePr
 }
 
 func (c *Client) sendUpdateTypePreference(ctx context.Context, request *UpdateTypePreferenceRequestBody, params UpdateTypePreferenceParams) (res *TypePreferenceResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-type-preference"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -4017,6 +4071,15 @@ func (c *Client) UpdateUserChannel(ctx context.Context, request *UpdateChannelRe
 }
 
 func (c *Client) sendUpdateUserChannel(ctx context.Context, request *UpdateChannelRequestBody, params UpdateUserChannelParams) (res *ChannelResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-user-channel"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),

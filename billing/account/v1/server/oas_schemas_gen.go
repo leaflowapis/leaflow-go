@@ -10,6 +10,7 @@ import (
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
+	typev1 "github.com/leaflowapis/leaflow-go/type/v1"
 )
 
 func (s *ErrorStatusCode) Error() string {
@@ -3180,74 +3181,13 @@ func (s *EntitlementList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Ref: #/components/schemas/Error
-type Error struct {
-	Code    OptString `json:"code"`
-	Message string    `json:"message"`
-	// What a given `code` carries alongside the message. The keys depend on the code, and a client that
-	// does not recognise one ignores it.
-	Meta   OptErrorMeta `json:"meta"`
-	Status int64        `json:"status"`
-}
-
-// GetCode returns the value of Code.
-func (s *Error) GetCode() OptString {
-	return s.Code
-}
-
-// GetMessage returns the value of Message.
-func (s *Error) GetMessage() string {
-	return s.Message
-}
-
-// GetMeta returns the value of Meta.
-func (s *Error) GetMeta() OptErrorMeta {
-	return s.Meta
-}
-
-// GetStatus returns the value of Status.
-func (s *Error) GetStatus() int64 {
-	return s.Status
-}
-
-// SetCode sets the value of Code.
-func (s *Error) SetCode(val OptString) {
-	s.Code = val
-}
-
-// SetMessage sets the value of Message.
-func (s *Error) SetMessage(val string) {
-	s.Message = val
-}
-
-// SetMeta sets the value of Meta.
-func (s *Error) SetMeta(val OptErrorMeta) {
-	s.Meta = val
-}
-
-// SetStatus sets the value of Status.
-func (s *Error) SetStatus(val int64) {
-	s.Status = val
-}
+type Error typev1.Error
 
 func (*Error) cancelOrderRes()        {}
 func (*Error) cancelTopUpRes()        {}
 func (*Error) checkoutOrderRes()      {}
 func (*Error) createRenewalOrderRes() {}
 func (*Error) renewSubscriptionRes()  {}
-
-// What a given `code` carries alongside the message. The keys depend on the code, and a client that
-// does not recognise one ignores it.
-type ErrorMeta map[string]jx.Raw
-
-func (s *ErrorMeta) init() ErrorMeta {
-	m := *s
-	if m == nil {
-		m = map[string]jx.Raw{}
-		*s = m
-	}
-	return m
-}
 
 // ErrorStatusCode wraps Error with StatusCode.
 type ErrorStatusCode struct {
@@ -4525,41 +4465,9 @@ func (s *MeteredUsage) SetAverageDailyAmount(val Money) {
 	s.AverageDailyAmount = val
 }
 
-type Money string
+type Money typev1.Money
 
-// Which object this is, together with what a person currently calls it.
-//
-// The name is for display. It is chosen by whoever owns the object, it changes, it is not unique
-// between objects, and it may be empty when nobody has named it yet — so it must not be used to
-// address, match or deduplicate anything. Addressing is by id.
-//
-// This differs from an identity carrying a lookup key: a lookup key is written once by an operator, is
-// unique, and can be used to fetch the object. A name cannot.
-// Ref: #/components/schemas/NamedIdentity
-type NamedIdentity struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
-}
-
-// GetID returns the value of ID.
-func (s *NamedIdentity) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *NamedIdentity) GetName() string {
-	return s.Name
-}
-
-// SetID sets the value of ID.
-func (s *NamedIdentity) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *NamedIdentity) SetName(val string) {
-	s.Name = val
-}
+type NamedIdentity typev1.NamedIdentity
 
 // NewNilMoney returns new NilMoney with value set to v.
 func NewNilMoney(v Money) NilMoney {
@@ -4734,44 +4642,7 @@ func (s *ObjectIdentity) SetName(val string) {
 	s.Name = val
 }
 
-// Pagination metadata for stable numbered pages. total_count is returned only when the operation can
-// determine it without an unbounded scan.
-// Ref: #/components/schemas/OffsetPagination
-type OffsetPagination struct {
-	Page       int64    `json:"page"`
-	PageSize   int64    `json:"page_size"`
-	TotalCount OptInt64 `json:"total_count"`
-}
-
-// GetPage returns the value of Page.
-func (s *OffsetPagination) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *OffsetPagination) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *OffsetPagination) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetPage sets the value of Page.
-func (s *OffsetPagination) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *OffsetPagination) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *OffsetPagination) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
+type OffsetPagination typev1.OffsetPagination
 
 // NewOptAccountIdentity returns new OptAccountIdentity with value set to v.
 func NewOptAccountIdentity(v AccountIdentity) OptAccountIdentity {
@@ -4997,52 +4868,6 @@ func (o OptDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptDateTime) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptErrorMeta returns new OptErrorMeta with value set to v.
-func NewOptErrorMeta(v ErrorMeta) OptErrorMeta {
-	return OptErrorMeta{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptErrorMeta is optional ErrorMeta.
-type OptErrorMeta struct {
-	Value ErrorMeta
-	Set   bool
-}
-
-// IsSet returns true if OptErrorMeta was set.
-func (o OptErrorMeta) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptErrorMeta) Reset() {
-	var v ErrorMeta
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptErrorMeta) SetTo(v ErrorMeta) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
 	if v, ok := o.Get(); ok {
 		return v
 	}

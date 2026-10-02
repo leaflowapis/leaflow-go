@@ -1315,6 +1315,15 @@ func (c *Client) AllocateFloatingIP(ctx context.Context, request *AllocateFloati
 }
 
 func (c *Client) sendAllocateFloatingIP(ctx context.Context, request *AllocateFloatingIPRequestBody) (res AllocateFloatingIPRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("allocate-floating-ip"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1987,6 +1996,15 @@ func (c *Client) CreateBackup(ctx context.Context, request *CreateBackupRequestB
 }
 
 func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequestBody) (res CreateBackupRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-backup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2112,6 +2130,15 @@ func (c *Client) CreateBackupCapacityPack(ctx context.Context, request *CreateBa
 }
 
 func (c *Client) sendCreateBackupCapacityPack(ctx context.Context, request *CreateBackupCapacityPackRequestBody, params CreateBackupCapacityPackParams) (res CreateBackupCapacityPackRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-backup-capacity-pack"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2253,6 +2280,15 @@ func (c *Client) CreateBackupCapacityPackQuote(ctx context.Context, request *Cre
 }
 
 func (c *Client) sendCreateBackupCapacityPackQuote(ctx context.Context, request *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (res CreateBackupCapacityPackQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-backup-capacity-pack-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2394,6 +2430,15 @@ func (c *Client) CreateBackupRestoreQuote(ctx context.Context, request *RestoreB
 }
 
 func (c *Client) sendCreateBackupRestoreQuote(ctx context.Context, request *RestoreBackupQuoteRequestBody, params CreateBackupRestoreQuoteParams) (res CreateBackupRestoreQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-backup-restore-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2812,6 +2857,15 @@ func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequestBody)
 }
 
 func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestBody) (res CreateDiskRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2934,6 +2988,15 @@ func (c *Client) CreateDiskQuote(ctx context.Context, request *CreateDiskQuoteRe
 }
 
 func (c *Client) sendCreateDiskQuote(ctx context.Context, request *CreateDiskQuoteRequestBody) (res CreateDiskQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-disk-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3055,6 +3118,15 @@ func (c *Client) CreateDiskResizeQuote(ctx context.Context, request *ResizeDiskQ
 }
 
 func (c *Client) sendCreateDiskResizeQuote(ctx context.Context, request *ResizeDiskQuoteRequestBody, params CreateDiskResizeQuoteParams) (res CreateDiskResizeQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-disk-resize-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3195,6 +3267,15 @@ func (c *Client) CreateFloatingIPBandwidthQuote(ctx context.Context, request *Se
 }
 
 func (c *Client) sendCreateFloatingIPBandwidthQuote(ctx context.Context, request *SetFloatingIPBandwidthQuoteRequestBody, params CreateFloatingIPBandwidthQuoteParams) (res CreateFloatingIPBandwidthQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-floating-ip-bandwidth-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3336,6 +3417,15 @@ func (c *Client) CreateFloatingIPQuote(ctx context.Context, request *AllocateFlo
 }
 
 func (c *Client) sendCreateFloatingIPQuote(ctx context.Context, request *AllocateFloatingIPQuoteRequestBody) (res CreateFloatingIPQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-floating-ip-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3475,6 +3565,15 @@ func (c *Client) CreateImage(ctx context.Context, request *CreateImageRequestBod
 }
 
 func (c *Client) sendCreateImage(ctx context.Context, request *CreateImageRequestBody) (res CreateImageRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-image"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3596,6 +3695,15 @@ func (c *Client) CreateImageQuote(ctx context.Context, request *CreateImageQuote
 }
 
 func (c *Client) sendCreateImageQuote(ctx context.Context, request *CreateImageQuoteRequestBody) (res CreateImageQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-image-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3718,6 +3826,15 @@ func (c *Client) CreateInstanceQuote(ctx context.Context, request *LaunchInstanc
 }
 
 func (c *Client) sendCreateInstanceQuote(ctx context.Context, request *LaunchInstanceQuoteRequestBody) (res CreateInstanceQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-instance-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3975,6 +4092,15 @@ func (c *Client) CreatePeering(ctx context.Context, request *CreatePeeringReques
 }
 
 func (c *Client) sendCreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (res *PeeringResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-peering"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4092,6 +4218,15 @@ func (c *Client) CreatePort(ctx context.Context, request *CreatePortRequestBody)
 }
 
 func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestBody) (res *PortResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-port"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4209,6 +4344,15 @@ func (c *Client) CreatePrivateNetwork(ctx context.Context, request *CreatePrivat
 }
 
 func (c *Client) sendCreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody) (res *PrivateNetworkResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-private-network"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4328,6 +4472,15 @@ func (c *Client) CreateRoute(ctx context.Context, request *CreateRouteRequestBod
 }
 
 func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteRequestBody, params CreateRouteParams) (res *RouteResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-route"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4465,6 +4618,15 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, request *CreateSecurit
 }
 
 func (c *Client) sendCreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (res *SecurityGroupResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-security-group"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4582,6 +4744,15 @@ func (c *Client) CreateSecurityGroupRule(ctx context.Context, request *CreateSec
 }
 
 func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (res *SecurityRuleResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-security-group-rule"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4733,6 +4904,15 @@ func (c *Client) CreateSnapshot(ctx context.Context, request *CreateSnapshotRequ
 }
 
 func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (res *SnapshotResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-snapshot"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4856,6 +5036,15 @@ func (c *Client) CreateSnapshotQuotaQuote(ctx context.Context, request *SetSnaps
 }
 
 func (c *Client) sendCreateSnapshotQuotaQuote(ctx context.Context, request *SetSnapshotQuotaQuoteRequestBody, params CreateSnapshotQuotaQuoteParams) (res CreateSnapshotQuotaQuoteRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-snapshot-quota-quote"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4991,6 +5180,15 @@ func (c *Client) CreateSubnet(ctx context.Context, request *CreateSubnetRequestB
 }
 
 func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequestBody, params CreateSubnetParams) (res *SubnetResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-subnet"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -9433,6 +9631,15 @@ func (c *Client) LaunchInstance(ctx context.Context, request *LaunchInstanceRequ
 }
 
 func (c *Client) sendLaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (res LaunchInstanceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("launch-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -13571,6 +13778,15 @@ func (c *Client) RebuildInstance(ctx context.Context, request *RebuildInstanceRe
 }
 
 func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstanceRequestBody, params RebuildInstanceParams) (res RebuildInstanceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rebuild-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -13975,6 +14191,15 @@ func (c *Client) RenameBackup(ctx context.Context, request *RenameBackupRequestB
 }
 
 func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequestBody, params RenameBackupParams) (res *BackupResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-backup"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -14110,6 +14335,15 @@ func (c *Client) RenameDisk(ctx context.Context, request *RenameDiskRequestBody,
 }
 
 func (c *Client) sendRenameDisk(ctx context.Context, request *RenameDiskRequestBody, params RenameDiskParams) (res *DiskResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-disk"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -14244,6 +14478,15 @@ func (c *Client) RenameImage(ctx context.Context, request *RenameImageRequestBod
 }
 
 func (c *Client) sendRenameImage(ctx context.Context, request *RenameImageRequestBody, params RenameImageParams) (res *ImageResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-image"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -14379,6 +14622,15 @@ func (c *Client) RenameInstance(ctx context.Context, request *RenameInstanceRequ
 }
 
 func (c *Client) sendRenameInstance(ctx context.Context, request *RenameInstanceRequestBody, params RenameInstanceParams) (res *InstanceResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-instance"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -14513,6 +14765,15 @@ func (c *Client) RenamePrivateNetwork(ctx context.Context, request *RenamePrivat
 }
 
 func (c *Client) sendRenamePrivateNetwork(ctx context.Context, request *RenamePrivateNetworkRequestBody, params RenamePrivateNetworkParams) (res *PrivateNetworkResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-private-network"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -14647,6 +14908,15 @@ func (c *Client) RenameSecurityGroup(ctx context.Context, request *RenameSecurit
 }
 
 func (c *Client) sendRenameSecurityGroup(ctx context.Context, request *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (res *SecurityGroupResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-security-group"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -14781,6 +15051,15 @@ func (c *Client) RenameSnapshot(ctx context.Context, request *RenameSnapshotRequ
 }
 
 func (c *Client) sendRenameSnapshot(ctx context.Context, request *RenameSnapshotRequestBody, params RenameSnapshotParams) (res *SnapshotResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-snapshot"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -14921,6 +15200,15 @@ func (c *Client) ResetInstancePassword(ctx context.Context, request *ResetPasswo
 }
 
 func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPasswordRequestBody, params ResetInstancePasswordParams) (res ResetInstancePasswordRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reset-instance-password"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -15075,6 +15363,15 @@ func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody,
 }
 
 func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (res ResizeDiskRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -15361,6 +15658,15 @@ func (c *Client) RestoreBackup(ctx context.Context, request *RestoreBackupReques
 }
 
 func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (res RestoreBackupRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("restore-backup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -15665,6 +15971,15 @@ func (c *Client) RunInstanceCommand(ctx context.Context, request *RunCommandRequ
 }
 
 func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunCommandRequestBody, params RunInstanceCommandParams) (res *CommandResultResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("run-instance-command"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -15810,6 +16125,15 @@ func (c *Client) SetFloatingIPBandwidth(ctx context.Context, request *SetFloatin
 }
 
 func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetFloatingIPBandwidthRequestBody, params SetFloatingIPBandwidthParams) (res SetFloatingIPBandwidthRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-floating-ip-bandwidth"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -15949,6 +16273,15 @@ func (c *Client) SetInstanceLabels(ctx context.Context, request *SetInstanceLabe
 }
 
 func (c *Client) sendSetInstanceLabels(ctx context.Context, request *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (res *InstanceResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-instance-labels"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -16089,6 +16422,15 @@ func (c *Client) SetInstanceNotes(ctx context.Context, request *SetInstanceNotes
 }
 
 func (c *Client) sendSetInstanceNotes(ctx context.Context, request *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (res *InstanceResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-instance-notes"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -16238,6 +16580,15 @@ func (c *Client) SetSnapshotQuota(ctx context.Context, request *SetSnapshotQuota
 }
 
 func (c *Client) sendSetSnapshotQuota(ctx context.Context, request *SetSnapshotQuotaRequestBody, params SetSnapshotQuotaParams) (res SetSnapshotQuotaRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-snapshot-quota"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -16374,6 +16725,15 @@ func (c *Client) StartInstance(ctx context.Context, request *PowerRequest, param
 }
 
 func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (res StartInstanceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("start-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -16510,6 +16870,15 @@ func (c *Client) StopInstance(ctx context.Context, request *PowerRequest, params
 }
 
 func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (res StopInstanceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("stop-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
