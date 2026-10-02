@@ -641,41 +641,6 @@ func (s *OffsetPagination) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes bool as json.
-func (o OptBool) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	e.Bool(bool(o.Value))
-}
-
-// Decode decodes bool from json.
-func (o *OptBool) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptBool to nil")
-	}
-	o.Set = true
-	v, err := d.Bool()
-	if err != nil {
-		return err
-	}
-	o.Value = bool(v)
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptBool) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptBool) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes ErrorMeta as json.
 func (o OptErrorMeta) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -1163,18 +1128,18 @@ func (s *OptQuoteLinePriceType) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes QuoteLineResultUnpricedReason as json.
-func (o OptQuoteLineResultUnpricedReason) Encode(e *jx.Encoder) {
+// Encode encodes QuotedLineUnpricedReason as json.
+func (o OptQuotedLineUnpricedReason) Encode(e *jx.Encoder) {
 	if !o.Set {
 		return
 	}
 	e.Str(string(o.Value))
 }
 
-// Decode decodes QuoteLineResultUnpricedReason from json.
-func (o *OptQuoteLineResultUnpricedReason) Decode(d *jx.Decoder) error {
+// Decode decodes QuotedLineUnpricedReason from json.
+func (o *OptQuotedLineUnpricedReason) Decode(d *jx.Decoder) error {
 	if o == nil {
-		return errors.New("invalid: unable to decode OptQuoteLineResultUnpricedReason to nil")
+		return errors.New("invalid: unable to decode OptQuotedLineUnpricedReason to nil")
 	}
 	o.Set = true
 	if err := o.Value.Decode(d); err != nil {
@@ -1184,14 +1149,14 @@ func (o *OptQuoteLineResultUnpricedReason) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s OptQuoteLineResultUnpricedReason) MarshalJSON() ([]byte, error) {
+func (s OptQuotedLineUnpricedReason) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptQuoteLineResultUnpricedReason) UnmarshalJSON(data []byte) error {
+func (s *OptQuotedLineUnpricedReason) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -1342,8 +1307,8 @@ func (s *Plan) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Plan) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("enabled")
-		e.Bool(s.Enabled)
+		e.FieldStart("active")
+		e.Bool(s.Active)
 	}
 	{
 		if s.LookupKey.Set {
@@ -1384,7 +1349,7 @@ func (s *Plan) encodeFields(e *jx.Encoder) {
 }
 
 var jsonFieldsNameOfPlan = [8]string{
-	0: "enabled",
+	0: "active",
 	1: "lookup_key",
 	2: "product",
 	3: "features",
@@ -1403,17 +1368,17 @@ func (s *Plan) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "enabled":
+		case "active":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				v, err := d.Bool()
-				s.Enabled = bool(v)
+				s.Active = bool(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"enabled\"")
+				return errors.Wrap(err, "decode field \"active\"")
 			}
 		case "lookup_key":
 			if err := func() error {
@@ -1831,10 +1796,8 @@ func (s *Price) encodeFields(e *jx.Encoder) {
 		e.Str(s.UnitQuantity)
 	}
 	{
-		if s.Enabled.Set {
-			e.FieldStart("enabled")
-			s.Enabled.Encode(e)
-		}
+		e.FieldStart("active")
+		e.Bool(s.Active)
 	}
 	{
 		if s.TerminationPolicy.Set {
@@ -1946,7 +1909,7 @@ var jsonFieldsNameOfPrice = [26]string{
 	4:  "meter_id",
 	5:  "meter",
 	6:  "unit_quantity",
-	7:  "enabled",
+	7:  "active",
 	8:  "termination_policy",
 	9:  "refund_policy",
 	10: "product_id",
@@ -2048,15 +2011,17 @@ func (s *Price) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"unit_quantity\"")
 			}
-		case "enabled":
+		case "active":
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
-				s.Enabled.Reset()
-				if err := s.Enabled.Decode(d); err != nil {
+				v, err := d.Bool()
+				s.Active = bool(v)
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"enabled\"")
+				return errors.Wrap(err, "decode field \"active\"")
 			}
 		case "termination_policy":
 			if err := func() error {
@@ -2261,7 +2226,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [4]uint8{
-		0b01001100,
+		0b11001100,
 		0b11111000,
 		0b00000000,
 		0b00000001,
@@ -2938,9 +2903,9 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 		switch string(k) {
 		case "lines":
 			if err := func() error {
-				s.Lines = make([]QuoteLineResult, 0)
+				s.Lines = make([]QuotedLine, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem QuoteLineResult
+					var elem QuotedLine
 					if err := elem.Decode(d); err != nil {
 						return err
 					}
@@ -3475,14 +3440,14 @@ func (s *QuoteLinePriceType) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *QuoteLineResult) Encode(e *jx.Encoder) {
+func (s *QuotedLine) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *QuoteLineResult) encodeFields(e *jx.Encoder) {
+func (s *QuotedLine) encodeFields(e *jx.Encoder) {
 	{
 		if s.TaxAmount.Set {
 			e.FieldStart("tax_amount")
@@ -3545,7 +3510,7 @@ func (s *QuoteLineResult) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfQuoteLineResult = [11]string{
+var jsonFieldsNameOfQuotedLine = [11]string{
 	0:  "tax_amount",
 	1:  "tax_included_amount",
 	2:  "index",
@@ -3559,10 +3524,10 @@ var jsonFieldsNameOfQuoteLineResult = [11]string{
 	10: "currency",
 }
 
-// Decode decodes QuoteLineResult from json.
-func (s *QuoteLineResult) Decode(d *jx.Decoder) error {
+// Decode decodes QuotedLine from json.
+func (s *QuotedLine) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode QuoteLineResult to nil")
+		return errors.New("invalid: unable to decode QuotedLine to nil")
 	}
 	var requiredBitSet [2]uint8
 
@@ -3689,7 +3654,7 @@ func (s *QuoteLineResult) Decode(d *jx.Decoder) error {
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode QuoteLineResult")
+		return errors.Wrap(err, "decode QuotedLine")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
@@ -3707,8 +3672,8 @@ func (s *QuoteLineResult) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfQuoteLineResult) {
-					name = jsonFieldsNameOfQuoteLineResult[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfQuotedLine) {
+					name = jsonFieldsNameOfQuotedLine[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -3729,62 +3694,62 @@ func (s *QuoteLineResult) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *QuoteLineResult) MarshalJSON() ([]byte, error) {
+func (s *QuotedLine) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *QuoteLineResult) UnmarshalJSON(data []byte) error {
+func (s *QuotedLine) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
 
-// Encode encodes QuoteLineResultUnpricedReason as json.
-func (s QuoteLineResultUnpricedReason) Encode(e *jx.Encoder) {
+// Encode encodes QuotedLineUnpricedReason as json.
+func (s QuotedLineUnpricedReason) Encode(e *jx.Encoder) {
 	e.Str(string(s))
 }
 
-// Decode decodes QuoteLineResultUnpricedReason from json.
-func (s *QuoteLineResultUnpricedReason) Decode(d *jx.Decoder) error {
+// Decode decodes QuotedLineUnpricedReason from json.
+func (s *QuotedLineUnpricedReason) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode QuoteLineResultUnpricedReason to nil")
+		return errors.New("invalid: unable to decode QuotedLineUnpricedReason to nil")
 	}
 	v, err := d.StrBytes()
 	if err != nil {
 		return err
 	}
 	// Try to use constant string.
-	switch QuoteLineResultUnpricedReason(v) {
-	case QuoteLineResultUnpricedReasonNone:
-		*s = QuoteLineResultUnpricedReasonNone
-	case QuoteLineResultUnpricedReasonNoPrice:
-		*s = QuoteLineResultUnpricedReasonNoPrice
-	case QuoteLineResultUnpricedReasonNoRateCard:
-		*s = QuoteLineResultUnpricedReasonNoRateCard
-	case QuoteLineResultUnpricedReasonNoMeter:
-		*s = QuoteLineResultUnpricedReasonNoMeter
-	case QuoteLineResultUnpricedReasonNoDimensions:
-		*s = QuoteLineResultUnpricedReasonNoDimensions
-	case QuoteLineResultUnpricedReasonNoEffectiveRule:
-		*s = QuoteLineResultUnpricedReasonNoEffectiveRule
+	switch QuotedLineUnpricedReason(v) {
+	case QuotedLineUnpricedReasonNone:
+		*s = QuotedLineUnpricedReasonNone
+	case QuotedLineUnpricedReasonNoPrice:
+		*s = QuotedLineUnpricedReasonNoPrice
+	case QuotedLineUnpricedReasonNoRateCard:
+		*s = QuotedLineUnpricedReasonNoRateCard
+	case QuotedLineUnpricedReasonNoMeter:
+		*s = QuotedLineUnpricedReasonNoMeter
+	case QuotedLineUnpricedReasonNoDimensions:
+		*s = QuotedLineUnpricedReasonNoDimensions
+	case QuotedLineUnpricedReasonNoEffectiveRule:
+		*s = QuotedLineUnpricedReasonNoEffectiveRule
 	default:
-		*s = QuoteLineResultUnpricedReason(v)
+		*s = QuotedLineUnpricedReason(v)
 	}
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s QuoteLineResultUnpricedReason) MarshalJSON() ([]byte, error) {
+func (s QuotedLineUnpricedReason) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *QuoteLineResultUnpricedReason) UnmarshalJSON(data []byte) error {
+func (s *QuotedLineUnpricedReason) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

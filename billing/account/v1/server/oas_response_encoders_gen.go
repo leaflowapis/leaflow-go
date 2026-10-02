@@ -74,6 +74,37 @@ func encodeCancelTopUpResponse(response CancelTopUpRes, w http.ResponseWriter, s
 	}
 }
 
+func encodeCheckoutOrderResponse(response CheckoutOrderRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *Order:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *Error:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(409)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeCreateBillingAccountResponse(response *BillingAccount, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -272,7 +303,7 @@ func encodeGetOrderResponse(response *Order, w http.ResponseWriter, span trace.S
 	return nil
 }
 
-func encodeGetProjectBillingAccountResponse(response *ProjectBillingInfo, w http.ResponseWriter, span trace.Span) error {
+func encodeGetProjectAssignmentResponse(response *ProjectAssignment, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -325,19 +356,6 @@ func encodeListAccountDiscountsResponse(response *DiscountList, w http.ResponseW
 }
 
 func encodeListAllowancesResponse(response *AllowanceList, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListBillingAccountProjectsResponse(response *ProjectBillingInfoList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -493,6 +511,19 @@ func encodeListPaymentOptionsResponse(response *PaymentOptionList, w http.Respon
 	return nil
 }
 
+func encodeListProjectAssignmentsResponse(response *ProjectAssignmentList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListRefundsResponse(response *RefundList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -623,19 +654,6 @@ func encodePreviewPayTogetherResponse(response *PaymentPreview, w http.ResponseW
 	return nil
 }
 
-func encodePreviewPromotionCodeResponse(response *PromotionCodePreview, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeRenewSubscriptionResponse(response RenewSubscriptionRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *PaymentResult:
@@ -693,7 +711,7 @@ func encodeSetDefaultPaymentMethodResponse(response *PaymentMethod, w http.Respo
 	return nil
 }
 
-func encodeSetProjectBillingAccountResponse(response *ProjectBillingInfo, w http.ResponseWriter, span trace.Span) error {
+func encodeSetProjectAssignmentResponse(response *ProjectAssignment, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

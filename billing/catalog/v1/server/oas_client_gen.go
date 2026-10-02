@@ -50,7 +50,7 @@ type Invoker interface {
 	GetPlan(ctx context.Context, params GetPlanParams) (GetPlanRes, error)
 	// GetPrice invokes get-price operation.
 	//
-	// Returns the catalog price, including retired prices. Fixed purchase history and renewal agreements
+	// Returns the catalog price, including archived prices. Fixed purchase history and renewal agreements
 	// are shown on orders and subscriptions rather than reconstructed from today's catalog.
 	//
 	// GET /catalog/v1/prices/{priceId}
@@ -75,8 +75,8 @@ type Invoker interface {
 	// `currency` is required: a plan has a price in each currency it is sold in, so "what does this cost"
 	// has no answer without one.
 	//
-	// Retired prices are left out. Existing subscriptions still reference them, so this is not the place
-	// to look up what an existing purchase is paying.
+	// Archived prices are left out. Existing subscriptions keep the terms they were bought at, so this is
+	// not the place to look up what an existing purchase is paying.
 	//
 	// GET /catalog/v1/prices
 	ListPrices(ctx context.Context, params ListPricesParams) (ListPricesRes, error)
@@ -159,6 +159,15 @@ func (c *Client) CreateEstimate(ctx context.Context, request *EstimateRequest) (
 }
 
 func (c *Client) sendCreateEstimate(ctx context.Context, request *EstimateRequest) (res *Quote, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-estimate"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -349,7 +358,7 @@ func (c *Client) sendGetPlan(ctx context.Context, params GetPlanParams) (res Get
 
 // GetPrice invokes get-price operation.
 //
-// Returns the catalog price, including retired prices. Fixed purchase history and renewal agreements
+// Returns the catalog price, including archived prices. Fixed purchase history and renewal agreements
 // are shown on orders and subscriptions rather than reconstructed from today's catalog.
 //
 // GET /catalog/v1/prices/{priceId}
@@ -741,8 +750,8 @@ func (c *Client) sendListPlans(ctx context.Context, params ListPlansParams) (res
 // `currency` is required: a plan has a price in each currency it is sold in, so "what does this cost"
 // has no answer without one.
 //
-// Retired prices are left out. Existing subscriptions still reference them, so this is not the place
-// to look up what an existing purchase is paying.
+// Archived prices are left out. Existing subscriptions keep the terms they were bought at, so this is
+// not the place to look up what an existing purchase is paying.
 //
 // GET /catalog/v1/prices
 func (c *Client) ListPrices(ctx context.Context, params ListPricesParams) (ListPricesRes, error) {

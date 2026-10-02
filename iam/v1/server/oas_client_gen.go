@@ -295,6 +295,15 @@ func (c *Client) AttachPolicy(ctx context.Context, request *AttachPolicyRequestB
 }
 
 func (c *Client) sendAttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (res *PolicyResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("attach-policy"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -420,6 +429,15 @@ func (c *Client) BatchGetMembers(ctx context.Context, request *BatchGetMembersRe
 }
 
 func (c *Client) sendBatchGetMembers(ctx context.Context, request *BatchGetMembersRequestBody) (res *BatchGetMembersResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("batch-get-members"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -536,6 +554,15 @@ func (c *Client) CreateRole(ctx context.Context, request *CreateRoleRequestBody)
 }
 
 func (c *Client) sendCreateRole(ctx context.Context, request *CreateRoleRequestBody) (res *RoleResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-role"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -654,6 +681,15 @@ func (c *Client) CreateSSHKey(ctx context.Context, request *CreateSSHKeyRequestB
 }
 
 func (c *Client) sendCreateSSHKey(ctx context.Context, request *CreateSSHKeyRequestBody) (res *SSHKeyResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-ssh-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1769,6 +1805,15 @@ func (c *Client) IssueInvitation(ctx context.Context, request *IssueInvitationRe
 }
 
 func (c *Client) sendIssueInvitation(ctx context.Context, request *IssueInvitationRequestBody) (res *IssuedInvitationResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("issue-invitation"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2855,6 +2900,15 @@ func (c *Client) RenameSSHKey(ctx context.Context, request *RenameSSHKeyRequestB
 }
 
 func (c *Client) sendRenameSSHKey(ctx context.Context, request *RenameSSHKeyRequestBody, params RenameSSHKeyParams) (res *SSHKeyResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-ssh-key"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -3525,6 +3579,15 @@ func (c *Client) TransferProjectOwnership(ctx context.Context, request *Transfer
 }
 
 func (c *Client) sendTransferProjectOwnership(ctx context.Context, request *TransferOwnershipRequestBody) (res *OwnershipTransferResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("transfer-project-ownership"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -3644,6 +3707,15 @@ func (c *Client) UpdatePolicy(ctx context.Context, request *UpdatePolicyRequestB
 }
 
 func (c *Client) sendUpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (res *PolicyResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-policy"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
@@ -3778,6 +3850,15 @@ func (c *Client) UpdateProject(ctx context.Context, request *UpdateProjectReques
 }
 
 func (c *Client) sendUpdateProject(ctx context.Context, request *UpdateProjectRequestBody) (res *ProjectAccessResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-project"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -3895,6 +3976,15 @@ func (c *Client) UpdateRole(ctx context.Context, request *UpdateRoleRequestBody,
 }
 
 func (c *Client) sendUpdateRole(ctx context.Context, request *UpdateRoleRequestBody, params UpdateRoleParams) (res *RoleResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-role"),
 		semconv.HTTPRequestMethodKey.String("PUT"),

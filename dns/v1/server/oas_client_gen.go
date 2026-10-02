@@ -244,6 +244,15 @@ func (c *Client) CreateCredential(ctx context.Context, request *CreateCredential
 }
 
 func (c *Client) sendCreateCredential(ctx context.Context, request *CreateCredentialRequestBody) (res *CredentialResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-credential"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1570,6 +1579,15 @@ func (c *Client) ModifyRecordSet(ctx context.Context, request *ModifyRecordSetRe
 }
 
 func (c *Client) sendModifyRecordSet(ctx context.Context, request *ModifyRecordSetRequestBody, params ModifyRecordSetParams) (res *RecordSetResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("modify-record-set"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -1764,6 +1782,15 @@ func (c *Client) RenameCredential(ctx context.Context, request *RenameCredential
 }
 
 func (c *Client) sendRenameCredential(ctx context.Context, request *RenameCredentialRequestBody, params RenameCredentialParams) (res *CredentialResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-credential"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -1909,6 +1936,15 @@ func (c *Client) SetRecordSet(ctx context.Context, request *SetRecordSetRequestB
 }
 
 func (c *Client) sendSetRecordSet(ctx context.Context, request *SetRecordSetRequestBody, params SetRecordSetParams) (res *RecordSetResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-record-set"),
 		semconv.HTTPRequestMethodKey.String("PUT"),

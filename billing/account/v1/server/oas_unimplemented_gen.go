@@ -52,6 +52,42 @@ func (UnimplementedHandler) CancelTopUp(ctx context.Context, params CancelTopUpP
 	return r, ht.ErrNotImplemented
 }
 
+// CheckoutOrder implements checkout-order operation.
+//
+// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
+// preview, or omit it to select an applicable account discount. At most one new coupon is applied to
+// an order; existing subscription discount commitments are not stacked with a new coupon on the same
+// line. Promotion codes are evaluated against the order, not client-supplied line amounts.
+//
+// Rechecks eligibility and redemption availability. A different total fails with
+// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price. A
+// failed confirmation leaves the invoice draft and reserves no discount redemption.
+//
+// A successful confirmation records the discount, including any recurring discount terms, reserves its
+// redemption, moves pending_checkout to pending and finalizes the invoice when one is required. The
+// reservation counts toward the code's limits and is consumed when the invoice is paid, or at
+// confirmation when nothing is due. Use pay-invoice to collect its outstanding amount from account
+// funds or a payment gateway. No payment attempt or checkout session is created by this operation. An
+// order whose total is zero completes checkout at placement in either mode and does not need this
+// operation; an order with an amount due, even when credits would cover it, still does. Checkout alone
+// does not confirm resource delivery.
+//
+// Retrying with the same code and expected amount returns the existing order without another
+// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing that
+// code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed terms.
+// Cancellation, expiry or complete fulfillment failure releases the reservation or returns the
+// consumed redemption; a refund alone does not.
+//
+// The order must belong to one of your billing accounts. A canceled, failed or expired order cannot be
+// checked out. A period-end change cannot be checked out before its renewal invoice is available.
+// Orders retain their billing account and currency after a project is linked elsewhere; discounts from
+// another account cannot be used for them.
+//
+// POST /account/v1/orders/{orderId}/checkout
+func (UnimplementedHandler) CheckoutOrder(ctx context.Context, req *CheckoutOrderRequest, params CheckoutOrderParams) (r CheckoutOrderRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateBillingAccount implements create-billing-account operation.
 //
 // The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
@@ -94,7 +130,7 @@ func (UnimplementedHandler) CreateBillingAccount(ctx context.Context, req *Billi
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.job_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -124,24 +160,34 @@ func (UnimplementedHandler) CreatePaymentMethodSetup(ctx context.Context, req *P
 
 // CreateQuote implements create-quote operation.
 //
-// Priced in the currency of the billing account that pays for the subscriptions, and at any rate
-// negotiated for that account. Nothing is reserved and nothing is recorded, so this may be called as
-// often as required. Prices may change between quoting and renewing, so a quote should be refreshed
-// before a final confirmation is shown.
+// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
+// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
+// does not guarantee a price or reserve a promotion code.
+//
+// With order_id, uses that order's recorded purchase terms and billing account. An optional
+// promotion_code previews one code; without it, Billing selects an applicable account discount. An
+// invalid or inapplicable explicit code is refused rather than silently replaced. Give total as
+// expected_amount when confirming checkout; eligibility and availability are checked again. An order
+// already checked out returns its confirmed amounts, without reapplying its discount; a different code
+// is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
 //
 // A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-// with the discounts the account holds, and with tax.
+// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
+// because its entries create separate orders. To use a new code on a renewal, first create a renewal
+// order and quote its checkout by order_id. Prices and discount eligibility may change between preview
+// and confirmation.
 //
 // A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-// terms agreed when each subscription was bought. It is quoted on its own: combined with renewals the
-// request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field` `cancellation`. It is
-// refused with the same errors as creating the cancellation, except that the amount is not checked.
-// Give the returned `cancellation.proration_date` and `cancellation.refundable_amount` when creating
-// it.
+// terms agreed when each subscription was bought. It is quoted on its own: combined with another
+// target the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
+// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
+// amount is not checked. Give the returned `cancellation.proration_date` and
+// `cancellation.refundable_amount` when creating it.
 //
-// Every subscription must be paid for by the same one of your billing accounts; otherwise the request
-// is refused with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does not exist,
-// and 403 `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
+// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
+// quote must be paid for by the same one of your billing accounts; otherwise the request is refused
+// with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does not exist, and 403
+// `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
 //
 // POST /account/v1/quotes
 func (UnimplementedHandler) CreateQuote(ctx context.Context, req *QuoteRequest) (r *Quote, _ error) {
@@ -150,11 +196,13 @@ func (UnimplementedHandler) CreateQuote(ctx context.Context, req *QuoteRequest) 
 
 // CreateRenewalOrder implements create-renewal-order operation.
 //
-// Places a renewal order and issues its invoice without charging anything; pay the invoice to renew.
-// The periods and price are chosen as for renewing. The order can be paid until the current paid
-// period ends, and never after the end of the first period it renews; unpaid by then, it is canceled.
-// While auto-renew is on, the renewal due at the end of the period pays this order instead of placing
-// another.
+// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
+// Quote and confirm its checkout before collecting payment to renew. Existing subscription discount
+// commitments are retained. The periods and price are chosen as for renewing. The order can be paid
+// until the current paid period ends, and never after the end of the first period it renews; unpaid by
+// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays this
+// order instead of placing another, confirming checkout with an applicable account discount first if
+// it has not already been confirmed.
 //
 // Save `order_id` before submitting and read the order after an unknown outcome; creating it a second
 // time conflicts.
@@ -241,13 +289,13 @@ func (UnimplementedHandler) GetOrder(ctx context.Context, params GetOrderParams)
 	return r, ht.ErrNotImplemented
 }
 
-// GetProjectBillingAccount implements get-project-billing-account operation.
+// GetProjectAssignment implements get-project-assignment operation.
 //
 // Returns 404 when the project has no billing account. No resources can be created until one is
 // linked.
 //
 // GET /account/v1/projects/{projectId}/billing-account
-func (UnimplementedHandler) GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (r *ProjectBillingInfo, _ error) {
+func (UnimplementedHandler) GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (r *ProjectAssignment, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -296,15 +344,6 @@ func (UnimplementedHandler) ListAccountDiscounts(ctx context.Context, params Lis
 //
 // GET /account/v1/allowances
 func (UnimplementedHandler) ListAllowances(ctx context.Context, params ListAllowancesParams) (r *AllowanceList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListBillingAccountProjects implements list-billing-account-projects operation.
-//
-// List projects linked to billing accounts.
-//
-// GET /account/v1/projects
-func (UnimplementedHandler) ListBillingAccountProjects(ctx context.Context, params ListBillingAccountProjectsParams) (r *ProjectBillingInfoList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -389,8 +428,9 @@ func (UnimplementedHandler) ListOrderItems(ctx context.Context, params ListOrder
 
 // ListOrders implements list-orders operation.
 //
-// Lists acceptance status and associated invoice amounts. Pending may be unpaid or paid; active means
-// accepted, not delivered. Only pending orders expire at expires_at.
+// Lists acceptance status and associated invoice amounts. pending_checkout awaits confirmation;
+// pending has confirmed checkout and may be unpaid or paid. active means accepted, not delivered.
+// pending_checkout and pending orders can expire at expires_at.
 //
 // GET /account/v1/orders
 func (UnimplementedHandler) ListOrders(ctx context.Context, params ListOrdersParams) (r *OrderList, _ error) {
@@ -415,6 +455,15 @@ func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListP
 //
 // GET /account/v1/billing-accounts/{accountId}/payment-options
 func (UnimplementedHandler) ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (r *PaymentOptionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListProjectAssignments implements list-project-assignments operation.
+//
+// List project assignments.
+//
+// GET /account/v1/projects
+func (UnimplementedHandler) ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (r *ProjectAssignmentList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -480,19 +529,23 @@ func (UnimplementedHandler) ListUsageCharges(ctx context.Context, params ListUsa
 
 // PayInvoice implements pay-invoice operation.
 //
-// Applies the account balance first, then charges the remainder to a payment method. Give
-// `payment_method_id` to choose one, or omit it to use the default.
+// Applies eligible credit grants and available balance as requested, then collects the remainder
+// through the selected payment gateway and method. With no gateway selection, insufficient account
+// funds fail without starting an online payment. Card and non-card methods use this same operation.
+// Promotion codes are confirmed by checkout, before collecting payment.
 //
-// Returns a checkout address when the gateway requires the cardholder to confirm the payment; the
-// invoice is marked paid once the gateway confirms it.
+// Returns a payment action when customer interaction is required. requires_action and processing do
+// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
+// is reused, and retries do not apply credit grants or balance twice.
 //
-// Calling this on an invoice that is already paid returns the invoice unchanged. A void invoice is
+// Calling this on an invoice that is already paid returns the existing payment result without another
+// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
 // refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
 // with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
 // has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // POST /account/v1/invoices/{invoiceId}/pay
-func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayRequest, params PayInvoiceParams) (r *PaymentResult, _ error) {
+func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (r *PaymentResult, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -505,9 +558,10 @@ func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayRequest, p
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover them all,
 // the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. Invoices that are
 // already paid are not charged again. An invoice with an online payment still in progress is refused
-// with `BILLING_PAYMENT_PENDING`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, an order that has
-// failed or was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose
-// payment deadline has passed with `BILLING_ORDER_EXPIRED`.
+// with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
+// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with `BILLING_ORDER_FAILED`
+// or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has passed with
+// `BILLING_ORDER_EXPIRED`.
 //
 // POST /account/v1/payments
 func (UnimplementedHandler) PayTogether(ctx context.Context, req *PayTogetherRequest) (r *PaymentResult, _ error) {
@@ -541,16 +595,6 @@ func (UnimplementedHandler) PreviewInvoicePayment(ctx context.Context, params Pr
 //
 // POST /account/v1/payments/preview
 func (UnimplementedHandler) PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (r *PaymentPreview, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// PreviewPromotionCode implements preview-promotion-code operation.
-//
-// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
-// commit.
-//
-// POST /account/v1/promotion-codes/preview
-func (UnimplementedHandler) PreviewPromotionCode(ctx context.Context, req *PromotionCodePreviewRequest) (r *PromotionCodePreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -596,7 +640,7 @@ func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params 
 	return r, ht.ErrNotImplemented
 }
 
-// SetProjectBillingAccount implements set-project-billing-account operation.
+// SetProjectAssignment implements set-project-assignment operation.
 //
 // Charges already incurred remain with the billing account that was linked when they occurred, and are
 // still invoiced to it. Metered resources are settled up to the moment of the change. Amounts owed by
@@ -610,7 +654,7 @@ func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params 
 // new billing account.
 //
 // PUT /account/v1/projects/{projectId}/billing-account
-func (UnimplementedHandler) SetProjectBillingAccount(ctx context.Context, req *ProjectBillingInfoSet, params SetProjectBillingAccountParams) (r *ProjectBillingInfo, _ error) {
+func (UnimplementedHandler) SetProjectAssignment(ctx context.Context, req *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (r *ProjectAssignment, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

@@ -5,7 +5,6 @@ go 1.26.0
 require (
 	github.com/go-faster/errors v0.8.0
 	github.com/go-faster/jx v1.2.0
-	github.com/oapi-codegen/runtime v1.7.0
 	github.com/ogen-go/ogen v1.24.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/metric v1.45.0
@@ -35,8 +34,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-require (
-	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
-	github.com/google/uuid v1.6.0
-	github.com/leaflowapis/leaflow-go/type v0.21.0
-)
+require github.com/google/uuid v1.6.0

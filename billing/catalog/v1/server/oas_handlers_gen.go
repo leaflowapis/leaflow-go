@@ -355,7 +355,7 @@ func (s *Server) handleGetPlanRequest(args [1]string, argsEscaped bool, w http.R
 
 // handleGetPriceRequest handles get-price operation.
 //
-// Returns the catalog price, including retired prices. Fixed purchase history and renewal agreements
+// Returns the catalog price, including archived prices. Fixed purchase history and renewal agreements
 // are shown on orders and subscriptions rather than reconstructed from today's catalog.
 //
 // GET /catalog/v1/prices/{priceId}
@@ -844,8 +844,8 @@ func (s *Server) handleListPlansRequest(args [0]string, argsEscaped bool, w http
 // `currency` is required: a plan has a price in each currency it is sold in, so "what does this cost"
 // has no answer without one.
 //
-// Retired prices are left out. Existing subscriptions still reference them, so this is not the place
-// to look up what an existing purchase is paying.
+// Archived prices are left out. Existing subscriptions keep the terms they were bought at, so this is
+// not the place to look up what an existing purchase is paying.
 //
 // GET /catalog/v1/prices
 func (s *Server) handleListPricesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

@@ -298,52 +298,6 @@ func (s *OffsetPagination) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// NewOptBool returns new OptBool with value set to v.
-func NewOptBool(v bool) OptBool {
-	return OptBool{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptBool is optional bool.
-type OptBool struct {
-	Value bool
-	Set   bool
-}
-
-// IsSet returns true if OptBool was set.
-func (o OptBool) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptBool) Reset() {
-	var v bool
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptBool) SetTo(v bool) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptBool) Get() (v bool, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptBool) Or(d bool) bool {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptDateTime returns new OptDateTime with value set to v.
 func NewOptDateTime(v time.Time) OptDateTime {
 	return OptDateTime{
@@ -1146,38 +1100,38 @@ func (o OptQuoteLinePriceType) Or(d QuoteLinePriceType) QuoteLinePriceType {
 	return d
 }
 
-// NewOptQuoteLineResultUnpricedReason returns new OptQuoteLineResultUnpricedReason with value set to v.
-func NewOptQuoteLineResultUnpricedReason(v QuoteLineResultUnpricedReason) OptQuoteLineResultUnpricedReason {
-	return OptQuoteLineResultUnpricedReason{
+// NewOptQuotedLineUnpricedReason returns new OptQuotedLineUnpricedReason with value set to v.
+func NewOptQuotedLineUnpricedReason(v QuotedLineUnpricedReason) OptQuotedLineUnpricedReason {
+	return OptQuotedLineUnpricedReason{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptQuoteLineResultUnpricedReason is optional QuoteLineResultUnpricedReason.
-type OptQuoteLineResultUnpricedReason struct {
-	Value QuoteLineResultUnpricedReason
+// OptQuotedLineUnpricedReason is optional QuotedLineUnpricedReason.
+type OptQuotedLineUnpricedReason struct {
+	Value QuotedLineUnpricedReason
 	Set   bool
 }
 
-// IsSet returns true if OptQuoteLineResultUnpricedReason was set.
-func (o OptQuoteLineResultUnpricedReason) IsSet() bool { return o.Set }
+// IsSet returns true if OptQuotedLineUnpricedReason was set.
+func (o OptQuotedLineUnpricedReason) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptQuoteLineResultUnpricedReason) Reset() {
-	var v QuoteLineResultUnpricedReason
+func (o *OptQuotedLineUnpricedReason) Reset() {
+	var v QuotedLineUnpricedReason
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptQuoteLineResultUnpricedReason) SetTo(v QuoteLineResultUnpricedReason) {
+func (o *OptQuotedLineUnpricedReason) SetTo(v QuotedLineUnpricedReason) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptQuoteLineResultUnpricedReason) Get() (v QuoteLineResultUnpricedReason, ok bool) {
+func (o OptQuotedLineUnpricedReason) Get() (v QuotedLineUnpricedReason, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -1185,7 +1139,7 @@ func (o OptQuoteLineResultUnpricedReason) Get() (v QuoteLineResultUnpricedReason
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptQuoteLineResultUnpricedReason) Or(d QuoteLineResultUnpricedReason) QuoteLineResultUnpricedReason {
+func (o OptQuotedLineUnpricedReason) Or(d QuotedLineUnpricedReason) QuotedLineUnpricedReason {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1378,7 +1332,8 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 
 // Ref: #/components/schemas/Plan
 type Plan struct {
-	Enabled     bool          `json:"enabled"`
+	// False once archived. An archived plan cannot be bought until it is active again.
+	Active      bool          `json:"active"`
 	LookupKey   OptString     `json:"lookup_key"`
 	Product     Product       `json:"product"`
 	Features    []PlanFeature `json:"features"`
@@ -1388,9 +1343,9 @@ type Plan struct {
 	Description OptString     `json:"description"`
 }
 
-// GetEnabled returns the value of Enabled.
-func (s *Plan) GetEnabled() bool {
-	return s.Enabled
+// GetActive returns the value of Active.
+func (s *Plan) GetActive() bool {
+	return s.Active
 }
 
 // GetLookupKey returns the value of LookupKey.
@@ -1428,9 +1383,9 @@ func (s *Plan) GetDescription() OptString {
 	return s.Description
 }
 
-// SetEnabled sets the value of Enabled.
-func (s *Plan) SetEnabled(val bool) {
-	s.Enabled = val
+// SetActive sets the value of Active.
+func (s *Plan) SetActive(val bool) {
+	s.Active = val
 }
 
 // SetLookupKey sets the value of LookupKey.
@@ -1578,14 +1533,15 @@ func (*PlanListHeaders) listPlansRes() {}
 
 // Ref: #/components/schemas/Price
 type Price struct {
-	RateCard          OptObjectIdentity    `json:"rate_card"`
-	LookupKey         OptString            `json:"lookup_key"`
-	Product           Product              `json:"product"`
-	Plan              ObjectIdentity       `json:"plan"`
-	MeterID           OptUUID              `json:"meter_id"`
-	Meter             OptObjectIdentity    `json:"meter"`
-	UnitQuantity      string               `json:"unit_quantity"`
-	Enabled           OptBool              `json:"enabled"`
+	RateCard     OptObjectIdentity `json:"rate_card"`
+	LookupKey    OptString         `json:"lookup_key"`
+	Product      Product           `json:"product"`
+	Plan         ObjectIdentity    `json:"plan"`
+	MeterID      OptUUID           `json:"meter_id"`
+	Meter        OptObjectIdentity `json:"meter"`
+	UnitQuantity string            `json:"unit_quantity"`
+	// False once archived. An archived price cannot be bought until it is active again.
+	Active            bool                 `json:"active"`
 	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
 	ProductID         OptProductID         `json:"product_id"`
@@ -1656,9 +1612,9 @@ func (s *Price) GetUnitQuantity() string {
 	return s.UnitQuantity
 }
 
-// GetEnabled returns the value of Enabled.
-func (s *Price) GetEnabled() OptBool {
-	return s.Enabled
+// GetActive returns the value of Active.
+func (s *Price) GetActive() bool {
+	return s.Active
 }
 
 // GetTerminationPolicy returns the value of TerminationPolicy.
@@ -1786,9 +1742,9 @@ func (s *Price) SetUnitQuantity(val string) {
 	s.UnitQuantity = val
 }
 
-// SetEnabled sets the value of Enabled.
-func (s *Price) SetEnabled(val OptBool) {
-	s.Enabled = val
+// SetActive sets the value of Active.
+func (s *Price) SetActive(val bool) {
+	s.Active = val
 }
 
 // SetTerminationPolicy sets the value of TerminationPolicy.
@@ -2291,10 +2247,12 @@ func (s *ProductListHeaders) SetResponse(val ProductList) {
 
 func (*ProductListHeaders) listProductsRes() {}
 
+// A public catalog estimate. No account discounts or tax are evaluated. Its total is a list-price
+// estimate, not an expected checkout amount. Nothing is saved, charged or reserved.
 // Ref: #/components/schemas/Quote
 type Quote struct {
-	Lines []QuoteLineResult `json:"lines"`
-	// What would be owed in total. Amounts to be returned are not netted off it.
+	Lines []QuotedLine `json:"lines"`
+	// Sum of the public list-price line amounts, without evaluating account discounts or tax.
 	//
 	// Null when any line could not be priced. What would be owed is not knowable then, and a total that
 	// silently left the unpriced lines out would read as a smaller bill rather than an incomplete one —
@@ -2304,7 +2262,7 @@ type Quote struct {
 }
 
 // GetLines returns the value of Lines.
-func (s *Quote) GetLines() []QuoteLineResult {
+func (s *Quote) GetLines() []QuotedLine {
 	return s.Lines
 }
 
@@ -2319,7 +2277,7 @@ func (s *Quote) GetCurrency() string {
 }
 
 // SetLines sets the value of Lines.
-func (s *Quote) SetLines(val []QuoteLineResult) {
+func (s *Quote) SetLines(val []QuotedLine) {
 	s.Lines = val
 }
 
@@ -2623,11 +2581,13 @@ func (s *QuoteLinePriceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/QuoteLineResult
-type QuoteLineResult struct {
+// One public catalog estimate. Prices are used as listed, before account discounts; tax is not
+// evaluated. Monetary fields are absent when the line cannot be priced.
+// Ref: #/components/schemas/QuotedLine
+type QuotedLine struct {
 	// Tax included in the account quote. Absent in public catalogue estimates.
 	TaxAmount OptMoney `json:"tax_amount"`
-	// Tax already included in the displayed price.
+	// Tax already included in the displayed price. Absent in public catalogue estimates.
 	TaxIncludedAmount OptMoney `json:"tax_included_amount"`
 	// Which line of the request this answers.
 	Index int `json:"index"`
@@ -2645,7 +2605,7 @@ type QuoteLineResult struct {
 	// The last four are told apart because their remedies differ: the price points at no price list, the
 	// list holds no rate for that meter, that exact combination of attributes is not configured, or it is
 	// configured but nothing is in effect at the moment asked about.
-	UnpricedReason OptQuoteLineResultUnpricedReason `json:"unpriced_reason"`
+	UnpricedReason OptQuotedLineUnpricedReason `json:"unpriced_reason"`
 	// The price selected. Returned whenever `priced` is true, including when the request identified the
 	// item indirectly, so that the choice can be confirmed.
 	PriceID    OptUUID   `json:"price_id"`
@@ -2654,118 +2614,119 @@ type QuoteLineResult struct {
 	// The quantity actually priced. When `duration_seconds` is given, it is the requested `quantity`
 	// multiplied by that duration.
 	Quantity OptString `json:"quantity"`
-	// Not rounded. Round only for display.
+	// Public list-price amount including any setup charges, before account discounts. Not rounded; round
+	// only for display.
 	Amount   OptMoney `json:"amount"`
 	Currency string   `json:"currency"`
 }
 
 // GetTaxAmount returns the value of TaxAmount.
-func (s *QuoteLineResult) GetTaxAmount() OptMoney {
+func (s *QuotedLine) GetTaxAmount() OptMoney {
 	return s.TaxAmount
 }
 
 // GetTaxIncludedAmount returns the value of TaxIncludedAmount.
-func (s *QuoteLineResult) GetTaxIncludedAmount() OptMoney {
+func (s *QuotedLine) GetTaxIncludedAmount() OptMoney {
 	return s.TaxIncludedAmount
 }
 
 // GetIndex returns the value of Index.
-func (s *QuoteLineResult) GetIndex() int {
+func (s *QuotedLine) GetIndex() int {
 	return s.Index
 }
 
 // GetPriced returns the value of Priced.
-func (s *QuoteLineResult) GetPriced() bool {
+func (s *QuotedLine) GetPriced() bool {
 	return s.Priced
 }
 
 // GetUnpricedReason returns the value of UnpricedReason.
-func (s *QuoteLineResult) GetUnpricedReason() OptQuoteLineResultUnpricedReason {
+func (s *QuotedLine) GetUnpricedReason() OptQuotedLineUnpricedReason {
 	return s.UnpricedReason
 }
 
 // GetPriceID returns the value of PriceID.
-func (s *QuoteLineResult) GetPriceID() OptUUID {
+func (s *QuotedLine) GetPriceID() OptUUID {
 	return s.PriceID
 }
 
 // GetPlanName returns the value of PlanName.
-func (s *QuoteLineResult) GetPlanName() OptString {
+func (s *QuotedLine) GetPlanName() OptString {
 	return s.PlanName
 }
 
 // GetUnitAmount returns the value of UnitAmount.
-func (s *QuoteLineResult) GetUnitAmount() OptMoney {
+func (s *QuotedLine) GetUnitAmount() OptMoney {
 	return s.UnitAmount
 }
 
 // GetQuantity returns the value of Quantity.
-func (s *QuoteLineResult) GetQuantity() OptString {
+func (s *QuotedLine) GetQuantity() OptString {
 	return s.Quantity
 }
 
 // GetAmount returns the value of Amount.
-func (s *QuoteLineResult) GetAmount() OptMoney {
+func (s *QuotedLine) GetAmount() OptMoney {
 	return s.Amount
 }
 
 // GetCurrency returns the value of Currency.
-func (s *QuoteLineResult) GetCurrency() string {
+func (s *QuotedLine) GetCurrency() string {
 	return s.Currency
 }
 
 // SetTaxAmount sets the value of TaxAmount.
-func (s *QuoteLineResult) SetTaxAmount(val OptMoney) {
+func (s *QuotedLine) SetTaxAmount(val OptMoney) {
 	s.TaxAmount = val
 }
 
 // SetTaxIncludedAmount sets the value of TaxIncludedAmount.
-func (s *QuoteLineResult) SetTaxIncludedAmount(val OptMoney) {
+func (s *QuotedLine) SetTaxIncludedAmount(val OptMoney) {
 	s.TaxIncludedAmount = val
 }
 
 // SetIndex sets the value of Index.
-func (s *QuoteLineResult) SetIndex(val int) {
+func (s *QuotedLine) SetIndex(val int) {
 	s.Index = val
 }
 
 // SetPriced sets the value of Priced.
-func (s *QuoteLineResult) SetPriced(val bool) {
+func (s *QuotedLine) SetPriced(val bool) {
 	s.Priced = val
 }
 
 // SetUnpricedReason sets the value of UnpricedReason.
-func (s *QuoteLineResult) SetUnpricedReason(val OptQuoteLineResultUnpricedReason) {
+func (s *QuotedLine) SetUnpricedReason(val OptQuotedLineUnpricedReason) {
 	s.UnpricedReason = val
 }
 
 // SetPriceID sets the value of PriceID.
-func (s *QuoteLineResult) SetPriceID(val OptUUID) {
+func (s *QuotedLine) SetPriceID(val OptUUID) {
 	s.PriceID = val
 }
 
 // SetPlanName sets the value of PlanName.
-func (s *QuoteLineResult) SetPlanName(val OptString) {
+func (s *QuotedLine) SetPlanName(val OptString) {
 	s.PlanName = val
 }
 
 // SetUnitAmount sets the value of UnitAmount.
-func (s *QuoteLineResult) SetUnitAmount(val OptMoney) {
+func (s *QuotedLine) SetUnitAmount(val OptMoney) {
 	s.UnitAmount = val
 }
 
 // SetQuantity sets the value of Quantity.
-func (s *QuoteLineResult) SetQuantity(val OptString) {
+func (s *QuotedLine) SetQuantity(val OptString) {
 	s.Quantity = val
 }
 
 // SetAmount sets the value of Amount.
-func (s *QuoteLineResult) SetAmount(val OptMoney) {
+func (s *QuotedLine) SetAmount(val OptMoney) {
 	s.Amount = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *QuoteLineResult) SetCurrency(val string) {
+func (s *QuotedLine) SetCurrency(val string) {
 	s.Currency = val
 }
 
@@ -2774,43 +2735,43 @@ func (s *QuoteLineResult) SetCurrency(val string) {
 // The last four are told apart because their remedies differ: the price points at no price list, the
 // list holds no rate for that meter, that exact combination of attributes is not configured, or it is
 // configured but nothing is in effect at the moment asked about.
-type QuoteLineResultUnpricedReason string
+type QuotedLineUnpricedReason string
 
 const (
-	QuoteLineResultUnpricedReasonNone            QuoteLineResultUnpricedReason = "none"
-	QuoteLineResultUnpricedReasonNoPrice         QuoteLineResultUnpricedReason = "no_price"
-	QuoteLineResultUnpricedReasonNoRateCard      QuoteLineResultUnpricedReason = "no_rate_card"
-	QuoteLineResultUnpricedReasonNoMeter         QuoteLineResultUnpricedReason = "no_meter"
-	QuoteLineResultUnpricedReasonNoDimensions    QuoteLineResultUnpricedReason = "no_dimensions"
-	QuoteLineResultUnpricedReasonNoEffectiveRule QuoteLineResultUnpricedReason = "no_effective_rule"
+	QuotedLineUnpricedReasonNone            QuotedLineUnpricedReason = "none"
+	QuotedLineUnpricedReasonNoPrice         QuotedLineUnpricedReason = "no_price"
+	QuotedLineUnpricedReasonNoRateCard      QuotedLineUnpricedReason = "no_rate_card"
+	QuotedLineUnpricedReasonNoMeter         QuotedLineUnpricedReason = "no_meter"
+	QuotedLineUnpricedReasonNoDimensions    QuotedLineUnpricedReason = "no_dimensions"
+	QuotedLineUnpricedReasonNoEffectiveRule QuotedLineUnpricedReason = "no_effective_rule"
 )
 
-// AllValues returns all QuoteLineResultUnpricedReason values.
-func (QuoteLineResultUnpricedReason) AllValues() []QuoteLineResultUnpricedReason {
-	return []QuoteLineResultUnpricedReason{
-		QuoteLineResultUnpricedReasonNone,
-		QuoteLineResultUnpricedReasonNoPrice,
-		QuoteLineResultUnpricedReasonNoRateCard,
-		QuoteLineResultUnpricedReasonNoMeter,
-		QuoteLineResultUnpricedReasonNoDimensions,
-		QuoteLineResultUnpricedReasonNoEffectiveRule,
+// AllValues returns all QuotedLineUnpricedReason values.
+func (QuotedLineUnpricedReason) AllValues() []QuotedLineUnpricedReason {
+	return []QuotedLineUnpricedReason{
+		QuotedLineUnpricedReasonNone,
+		QuotedLineUnpricedReasonNoPrice,
+		QuotedLineUnpricedReasonNoRateCard,
+		QuotedLineUnpricedReasonNoMeter,
+		QuotedLineUnpricedReasonNoDimensions,
+		QuotedLineUnpricedReasonNoEffectiveRule,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s QuoteLineResultUnpricedReason) MarshalText() ([]byte, error) {
+func (s QuotedLineUnpricedReason) MarshalText() ([]byte, error) {
 	switch s {
-	case QuoteLineResultUnpricedReasonNone:
+	case QuotedLineUnpricedReasonNone:
 		return []byte(s), nil
-	case QuoteLineResultUnpricedReasonNoPrice:
+	case QuotedLineUnpricedReasonNoPrice:
 		return []byte(s), nil
-	case QuoteLineResultUnpricedReasonNoRateCard:
+	case QuotedLineUnpricedReasonNoRateCard:
 		return []byte(s), nil
-	case QuoteLineResultUnpricedReasonNoMeter:
+	case QuotedLineUnpricedReasonNoMeter:
 		return []byte(s), nil
-	case QuoteLineResultUnpricedReasonNoDimensions:
+	case QuotedLineUnpricedReasonNoDimensions:
 		return []byte(s), nil
-	case QuoteLineResultUnpricedReasonNoEffectiveRule:
+	case QuotedLineUnpricedReasonNoEffectiveRule:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -2818,25 +2779,25 @@ func (s QuoteLineResultUnpricedReason) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *QuoteLineResultUnpricedReason) UnmarshalText(data []byte) error {
-	switch QuoteLineResultUnpricedReason(data) {
-	case QuoteLineResultUnpricedReasonNone:
-		*s = QuoteLineResultUnpricedReasonNone
+func (s *QuotedLineUnpricedReason) UnmarshalText(data []byte) error {
+	switch QuotedLineUnpricedReason(data) {
+	case QuotedLineUnpricedReasonNone:
+		*s = QuotedLineUnpricedReasonNone
 		return nil
-	case QuoteLineResultUnpricedReasonNoPrice:
-		*s = QuoteLineResultUnpricedReasonNoPrice
+	case QuotedLineUnpricedReasonNoPrice:
+		*s = QuotedLineUnpricedReasonNoPrice
 		return nil
-	case QuoteLineResultUnpricedReasonNoRateCard:
-		*s = QuoteLineResultUnpricedReasonNoRateCard
+	case QuotedLineUnpricedReasonNoRateCard:
+		*s = QuotedLineUnpricedReasonNoRateCard
 		return nil
-	case QuoteLineResultUnpricedReasonNoMeter:
-		*s = QuoteLineResultUnpricedReasonNoMeter
+	case QuotedLineUnpricedReasonNoMeter:
+		*s = QuotedLineUnpricedReasonNoMeter
 		return nil
-	case QuoteLineResultUnpricedReasonNoDimensions:
-		*s = QuoteLineResultUnpricedReasonNoDimensions
+	case QuotedLineUnpricedReasonNoDimensions:
+		*s = QuotedLineUnpricedReasonNoDimensions
 		return nil
-	case QuoteLineResultUnpricedReasonNoEffectiveRule:
-		*s = QuoteLineResultUnpricedReasonNoEffectiveRule
+	case QuotedLineUnpricedReasonNoEffectiveRule:
+		*s = QuotedLineUnpricedReasonNoEffectiveRule
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3076,8 +3037,16 @@ func (s *RatePricingModel) UnmarshalText(data []byte) error {
 	}
 }
 
-// Prorated returns the unused value of paid service periods using integer-second duration ratios.
-// Setup fees are excluded. Tax and funds follow the original invoice and payment sources.
+// None refunds nothing. prorated refunds the amount paid for the current period minus the value of the
+// time used, never below zero and never more than what remains unrefunded. The time used runs from the
+// period start to the effective cancellation time and is valued at the plan's shorter-period prices in
+// the same currency, frozen at purchase as the order item's refund_monthly_amount and
+// refund_hourly_amount: each full calendar month at the one-month prepaid price, the remainder at the
+// postpaid hourly price or, without one, at the one-month price by the second. When the plan has no
+// prepaid period shorter than the one bought, the time used is valued at the price paid, pro rata by
+// the second. Discounts are not refunded, as they were never paid, and setup fees are excluded. The
+// refunded part returns to the payment sources it came from. Tax paid is refunded in the same
+// proportion as the amount it was paid on.
 // Ref: #/components/schemas/RefundPolicy
 type RefundPolicy string
 

@@ -168,7 +168,7 @@ func (s *Server) handleAcceptPeeringRequest(args [1]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *PeeringResource
+	var response AcceptPeeringRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -189,7 +189,7 @@ func (s *Server) handleAcceptPeeringRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = struct{}
 			Params   = AcceptPeeringParams
-			Response = *PeeringResource
+			Response = AcceptPeeringRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -237,6 +237,11 @@ func (s *Server) handleAcceptPeeringRequest(args [1]string, argsEscaped bool, w 
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of
 // this call.
+//
+// Returns the floating IP as `pending` with its order; `address` is null until the address is
+// allocated after the order is accepted. A requested `address` is not held while pending; if it is no
+// longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is
+// refunded.
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
 // network; enable IPv6 on that network instead.
@@ -380,7 +385,7 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 		}
 	}()
 
-	var response *PurchaseResult
+	var response AllocateFloatingIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -396,7 +401,7 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 		type (
 			Request  = *AllocateFloatingIPRequestBody
 			Params   = struct{}
-			Response = *PurchaseResult
+			Response = AllocateFloatingIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -442,8 +447,9 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 
 // handleAttachDiskRequest handles attach-disk operation.
 //
-// The disk must be in the same region and availability zone as the instance. Partition it and mount
-// the file system inside the instance once it is attached.
+// The disk must be in the same region and availability zone as the instance. Returns the disk; the
+// instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment
+// is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
 //
 // POST /api/v1/instances/{instanceId}/disks
 func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -591,7 +597,7 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Task
+	var response AttachDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -612,7 +618,7 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *AttachDiskRequestBody
 			Params   = AttachDiskParams
-			Response = *Task
+			Response = AttachDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -658,8 +664,8 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleAttachInstanceFloatingIPRequest handles attach-instance-floating-ip operation.
 //
-// Changes the public IP binding on the instance's primary network interface. The returned task tracks
-// confirmation of the binding change.
+// Changes the public IP binding on the instance's primary network interface. The instance shows the
+// `bind_floating_ip` operation until the binding is confirmed.
 //
 // POST /api/v1/instances/{instanceId}/floating-ips
 func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -807,7 +813,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 		}
 	}()
 
-	var response *FloatingIPResource
+	var response AttachInstanceFloatingIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -828,7 +834,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 		type (
 			Request  = *AttachFloatingIPRequestBody
 			Params   = AttachInstanceFloatingIPParams
-			Response = *FloatingIPResource
+			Response = AttachInstanceFloatingIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -874,7 +880,8 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 
 // handleAttachPortRequest handles attach-port operation.
 //
-// Attach a network interface.
+// Returns the network interface; the instance shows the `attach_port` operation and the interface the
+// `attach` operation until the attachment is confirmed.
 //
 // POST /api/v1/instances/{instanceId}/ports
 func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1022,7 +1029,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Task
+	var response AttachPortRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1043,7 +1050,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *AttachPortRequestBody
 			Params   = AttachPortParams
-			Response = *Task
+			Response = AttachPortRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1089,7 +1096,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 
 // handleBindFloatingIPRequest handles bind-floating-ip operation.
 //
-// Bind a floating IP to a network interface.
+// The floating IP shows the `bind` operation until the binding is confirmed.
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/binding
 func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1237,7 +1244,7 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *FloatingIPResource
+	var response BindFloatingIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1258,7 +1265,7 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *BindFloatingIPRequestBody
 			Params   = BindFloatingIPParams
-			Response = *FloatingIPResource
+			Response = BindFloatingIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1311,11 +1318,12 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 //
 // Disks attached to a running instance, including system disks, can be backed up.
 //
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-// track the returned task.
+// No order is placed. The backup is metered on the backup service of the disk's region by its
+// `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused
+// with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
 //
-// The backup is billed for its size, at the backup price of its region. Obtain a price with
-// `create-backup-quote` first.
+// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup
+// until it is `available` or `failed`.
 //
 // POST /api/v1/backups
 func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1453,7 +1461,7 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response *PurchaseResult
+	var response CreateBackupRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1469,7 +1477,7 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 		type (
 			Request  = *CreateBackupRequestBody
 			Params   = struct{}
-			Response = *PurchaseResult
+			Response = CreateBackupRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1513,32 +1521,33 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleCreateBackupQuoteRequest handles create-backup-quote operation.
+// handleCreateBackupCapacityPackRequest handles create-backup-capacity-pack operation.
 //
-// Prices the backup `create-backup` would order for the same disk, without ordering anything. Nothing
-// is reserved and nothing is recorded, so this may be called as often as required.
+// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or
+// year: `billing` must be prepaid with a period, as offered in the backup service's
+// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
+// total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
+// excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
+// takes its order and payment and handles its renewal and cancellation through the pack's
+// subscription.
 //
-// The quantity priced is the size of the disk. When `price_id` is omitted, a price of the region's
-// backup offering is selected; the returned line names it, and that `price_id` is the one to order
-// with.
+// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with
+// 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
 //
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it
-// is placed, so a quote should be refreshed before a final confirmation is shown.
-//
-// POST /api/v1/backups/quote
-func (s *Server) handleCreateBackupQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/regions/{regionId}/backup-capacity-packs
+func (s *Server) handleCreateBackupCapacityPackRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-quote"),
+		otelogen.OperationID("create-backup-capacity-pack"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/backups/quote"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-capacity-packs"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupQuoteOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupCapacityPackOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1593,15 +1602,15 @@ func (s *Server) handleCreateBackupQuoteRequest(args [0]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: CreateBackupQuoteOperation,
-			ID:   "create-backup-quote",
+			Name: CreateBackupCapacityPackOperation,
+			ID:   "create-backup-capacity-pack",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupQuoteOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupCapacityPackOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -1643,9 +1652,19 @@ func (s *Server) handleCreateBackupQuoteRequest(args [0]string, argsEscaped bool
 			return
 		}
 	}
+	params, err := decodeCreateBackupCapacityPackParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateBackupQuoteRequest(r)
+	request, rawBody, close, err := s.decodeCreateBackupCapacityPackRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -1661,23 +1680,28 @@ func (s *Server) handleCreateBackupQuoteRequest(args [0]string, argsEscaped bool
 		}
 	}()
 
-	var response *PurchaseQuote
+	var response CreateBackupCapacityPackRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CreateBackupQuoteOperation,
-			OperationSummary: "Quote a backup",
-			OperationID:      "create-backup-quote",
+			OperationName:    CreateBackupCapacityPackOperation,
+			OperationSummary: "Buy a backup capacity pack",
+			OperationID:      "create-backup-capacity-pack",
 			Body:             request,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
+			},
+			Raw: r,
 		}
 
 		type (
-			Request  = *CreateBackupQuoteRequestBody
-			Params   = struct{}
-			Response = *PurchaseQuote
+			Request  = *CreateBackupCapacityPackRequestBody
+			Params   = CreateBackupCapacityPackParams
+			Response = CreateBackupCapacityPackRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1686,14 +1710,14 @@ func (s *Server) handleCreateBackupQuoteRequest(args [0]string, argsEscaped bool
 		](
 			m,
 			mreq,
-			nil,
+			unpackCreateBackupCapacityPackParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateBackupQuote(ctx, request)
+				response, err = s.h.CreateBackupCapacityPack(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateBackupQuote(ctx, request)
+		response, err = s.h.CreateBackupCapacityPack(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1712,7 +1736,875 @@ func (s *Server) handleCreateBackupQuoteRequest(args [0]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeCreateBackupQuoteResponse(response, w, span); err != nil {
+	if err := encodeCreateBackupCapacityPackResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateBackupCapacityPackQuoteRequest handles create-backup-capacity-pack-quote operation.
+//
+// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or
+// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
+// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
+// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
+// different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and
+// is not collected at checkout. A request the purchase would refuse is refused the same way. Prices
+// may change, so quote again before final confirmation.
+//
+// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
+func (s *Server) handleCreateBackupCapacityPackQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-backup-capacity-pack-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-capacity-packs/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupCapacityPackQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateBackupCapacityPackQuoteOperation,
+			ID:   "create-backup-capacity-pack-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupCapacityPackQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateBackupCapacityPackQuoteParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateBackupCapacityPackQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateBackupCapacityPackQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateBackupCapacityPackQuoteOperation,
+			OperationSummary: "Quote buying a backup capacity pack",
+			OperationID:      "create-backup-capacity-pack-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CreateBackupCapacityPackQuoteRequestBody
+			Params   = CreateBackupCapacityPackQuoteParams
+			Response = CreateBackupCapacityPackQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateBackupCapacityPackQuoteParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateBackupCapacityPackQuote(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateBackupCapacityPackQuote(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateBackupCapacityPackQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateBackupRestoreQuoteRequest handles create-backup-restore-quote operation.
+//
+// Prices what `restore-backup` would order for the same request, without ordering or creating
+// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
+// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
+// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+// again before final confirmation.
+//
+// POST /api/v1/backups/{backupId}/restore/quote
+func (s *Server) handleCreateBackupRestoreQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-backup-restore-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/backups/{backupId}/restore/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupRestoreQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateBackupRestoreQuoteOperation,
+			ID:   "create-backup-restore-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupRestoreQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateBackupRestoreQuoteParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateBackupRestoreQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateBackupRestoreQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateBackupRestoreQuoteOperation,
+			OperationSummary: "Quote restoring from a backup",
+			OperationID:      "create-backup-restore-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "backupId",
+					In:   "path",
+				}: params.BackupId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RestoreBackupQuoteRequestBody
+			Params   = CreateBackupRestoreQuoteParams
+			Response = CreateBackupRestoreQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateBackupRestoreQuoteParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateBackupRestoreQuote(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateBackupRestoreQuote(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateBackupRestoreQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateBackupServiceRequest handles create-backup-service operation.
+//
+// Purchases the backup service for this project and region. The service itself has no charge; backups
+// are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service
+// as `pending` with its order; it becomes `active` once the order is accepted.
+//
+// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or
+// suspended.
+//
+// POST /api/v1/regions/{regionId}/backup-service
+func (s *Server) handleCreateBackupServiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-backup-service"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-service"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupServiceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateBackupServiceOperation,
+			ID:   "create-backup-service",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupServiceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateBackupServiceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateBackupServiceRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateBackupServiceRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateBackupServiceOperation,
+			OperationSummary: "Activate the backup service in a region",
+			OperationID:      "create-backup-service",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CreateBackupServiceRequestBody
+			Params   = CreateBackupServiceParams
+			Response = CreateBackupServiceRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateBackupServiceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateBackupService(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateBackupService(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateBackupServiceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateBackupServiceQuoteRequest handles create-backup-service-quote operation.
+//
+// Prices what `create-backup-service` would order for the same request, without ordering or creating
+// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
+// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
+// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+// again before final confirmation.
+//
+// POST /api/v1/regions/{regionId}/backup-service/quote
+func (s *Server) handleCreateBackupServiceQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-backup-service-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-service/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupServiceQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateBackupServiceQuoteOperation,
+			ID:   "create-backup-service-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupServiceQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateBackupServiceQuoteParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response CreateBackupServiceQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateBackupServiceQuoteOperation,
+			OperationSummary: "Quote activating the backup service",
+			OperationID:      "create-backup-service-quote",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = CreateBackupServiceQuoteParams
+			Response = CreateBackupServiceQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateBackupServiceQuoteParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateBackupServiceQuote(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateBackupServiceQuote(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateBackupServiceQuoteResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1866,7 +2758,7 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *PurchaseResult
+	var response CreateDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1882,7 +2774,7 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		type (
 			Request  = *CreateDiskRequestBody
 			Params   = struct{}
-			Response = *PurchaseResult
+			Response = CreateDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1926,6 +2818,858 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 	}
 }
 
+// handleCreateDiskQuoteRequest handles create-disk-quote operation.
+//
+// Prices what `create-disk` would order for the same request, without ordering or creating anything;
+// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
+// automatic checkout. `total` is what automatic checkout would collect before credit grants and
+// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+// again before final confirmation.
+//
+// POST /api/v1/disks/quote
+func (s *Server) handleCreateDiskQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-disk-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/disks/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateDiskQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateDiskQuoteOperation,
+			ID:   "create-disk-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateDiskQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateDiskQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateDiskQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateDiskQuoteOperation,
+			OperationSummary: "Quote creating a disk",
+			OperationID:      "create-disk-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *CreateDiskQuoteRequestBody
+			Params   = struct{}
+			Response = CreateDiskQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateDiskQuote(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateDiskQuote(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateDiskQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateDiskResizeQuoteRequest handles create-disk-resize-quote operation.
+//
+// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A
+// change that raises the price has the charge for the rest of the paid period as `total`; one that
+// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
+// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
+// A request the change would refuse is refused the same way. Prices may change, so quote again before
+// final confirmation.
+//
+// POST /api/v1/disks/{diskId}/resize/quote
+func (s *Server) handleCreateDiskResizeQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-disk-resize-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/disks/{diskId}/resize/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateDiskResizeQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateDiskResizeQuoteOperation,
+			ID:   "create-disk-resize-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateDiskResizeQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateDiskResizeQuoteParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateDiskResizeQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateDiskResizeQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateDiskResizeQuoteOperation,
+			OperationSummary: "Quote resizing a disk",
+			OperationID:      "create-disk-resize-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "diskId",
+					In:   "path",
+				}: params.DiskId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ResizeDiskQuoteRequestBody
+			Params   = CreateDiskResizeQuoteParams
+			Response = CreateDiskResizeQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateDiskResizeQuoteParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateDiskResizeQuote(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateDiskResizeQuote(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateDiskResizeQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateFloatingIPBandwidthQuoteRequest handles create-floating-ip-bandwidth-quote operation.
+//
+// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing
+// anything. A change that raises the price has the charge for the rest of the paid period as `total`;
+// one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
+// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
+// A request the change would refuse is refused the same way. Prices may change, so quote again before
+// final confirmation.
+//
+// POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote
+func (s *Server) handleCreateFloatingIPBandwidthQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-floating-ip-bandwidth-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}/bandwidth/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateFloatingIPBandwidthQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateFloatingIPBandwidthQuoteOperation,
+			ID:   "create-floating-ip-bandwidth-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateFloatingIPBandwidthQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateFloatingIPBandwidthQuoteParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateFloatingIPBandwidthQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateFloatingIPBandwidthQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateFloatingIPBandwidthQuoteOperation,
+			OperationSummary: "Quote changing the bandwidth limit",
+			OperationID:      "create-floating-ip-bandwidth-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "floatingIpId",
+					In:   "path",
+				}: params.FloatingIpId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *SetFloatingIPBandwidthQuoteRequestBody
+			Params   = CreateFloatingIPBandwidthQuoteParams
+			Response = CreateFloatingIPBandwidthQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateFloatingIPBandwidthQuoteParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateFloatingIPBandwidthQuote(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateFloatingIPBandwidthQuote(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateFloatingIPBandwidthQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateFloatingIPQuoteRequest handles create-floating-ip-quote operation.
+//
+// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating
+// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
+// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
+// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+// again before final confirmation.
+//
+// POST /api/v1/floating-ips/quote
+func (s *Server) handleCreateFloatingIPQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-floating-ip-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/floating-ips/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateFloatingIPQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateFloatingIPQuoteOperation,
+			ID:   "create-floating-ip-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateFloatingIPQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateFloatingIPQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateFloatingIPQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateFloatingIPQuoteOperation,
+			OperationSummary: "Quote allocating a floating IP",
+			OperationID:      "create-floating-ip-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *AllocateFloatingIPQuoteRequestBody
+			Params   = struct{}
+			Response = CreateFloatingIPQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateFloatingIPQuote(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateFloatingIPQuote(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateFloatingIPQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleCreateImageRequest handles create-image operation.
 //
 // Creates a private image of this project from the system disk of the instance; data disks are not
@@ -1933,8 +3677,10 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 // source instance is released.
 //
 // The image reflects the moment the capture started. Later changes to the instance are not included.
+// The image is returned as `pending` with its order, and the capture starts only once the order is
+// accepted.
 //
-// The capture has two phases, reported by the status of the image:
+// The capture then has two phases, reported by the status of the image:
 //
 //   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
 //     remains usable during this phase, although stopping it first is recommended for consistency.
@@ -1948,8 +3694,8 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// The image is billed for the storage it occupies, at the private image price of its region. Obtain a
-// price with `create-image-quote` first.
+// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows.
+// Obtain a quote with `create-image-quote` first.
 //
 // POST /api/v1/images
 func (s *Server) handleCreateImageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2087,7 +3833,7 @@ func (s *Server) handleCreateImageRequest(args [0]string, argsEscaped bool, w ht
 		}
 	}()
 
-	var response *PurchaseResult
+	var response CreateImageRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -2103,7 +3849,7 @@ func (s *Server) handleCreateImageRequest(args [0]string, argsEscaped bool, w ht
 		type (
 			Request  = *CreateImageRequestBody
 			Params   = struct{}
-			Response = *PurchaseResult
+			Response = CreateImageRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2149,15 +3895,12 @@ func (s *Server) handleCreateImageRequest(args [0]string, argsEscaped bool, w ht
 
 // handleCreateImageQuoteRequest handles create-image-quote operation.
 //
-// Prices the capture `create-image` would order for the same instance, without ordering anything.
-// Nothing is reserved and nothing is recorded, so this may be called as often as required.
-//
-// The quantity priced is the size of the system disk, which is the most the image can occupy. When
-// `price_id` is omitted, a price of the region's private image offering is selected; the returned line
-// names it, and that `price_id` is the one to order with.
-//
-// Prices may change between quoting and ordering. An order is charged at the price in effect when it
-// is placed, so a quote should be refreshed before a final confirmation is shown.
+// Prices the capture `create-image` would order for the same instance, without ordering anything;
+// nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the
+// most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account
+// discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before
+// credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
+// different amount. Prices may change, so quote again before final confirmation.
 //
 // POST /api/v1/images/quote
 func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2295,7 +4038,7 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 		}
 	}()
 
-	var response *PurchaseQuote
+	var response CreateImageQuoteRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -2311,7 +4054,7 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 		type (
 			Request  = *CreateImageQuoteRequestBody
 			Params   = struct{}
-			Response = *PurchaseQuote
+			Response = CreateImageQuoteRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2347,6 +4090,432 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 	}
 
 	if err := encodeCreateImageQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateInstanceQuoteRequest handles create-instance-quote operation.
+//
+// Prices what `launch-instance` would order for the same request, without ordering or creating
+// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
+// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
+// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
+// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+// again before final confirmation.
+//
+// POST /api/v1/instances/quote
+func (s *Server) handleCreateInstanceQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-instance-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/instances/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateInstanceQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateInstanceQuoteOperation,
+			ID:   "create-instance-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateInstanceQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateInstanceQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateInstanceQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateInstanceQuoteOperation,
+			OperationSummary: "Quote creating instances",
+			OperationID:      "create-instance-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *LaunchInstanceQuoteRequestBody
+			Params   = struct{}
+			Response = CreateInstanceQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateInstanceQuote(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateInstanceQuote(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateInstanceQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateInstanceResizeQuoteRequest handles create-instance-resize-quote operation.
+//
+// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A
+// change that raises the price has the charge for the rest of the paid period as `total`; one that
+// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
+// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
+// A request the change would refuse is refused the same way. Prices may change, so quote again before
+// final confirmation.
+//
+// POST /api/v1/instances/{instanceId}/resize/quote
+func (s *Server) handleCreateInstanceResizeQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-instance-resize-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/resize/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateInstanceResizeQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateInstanceResizeQuoteOperation,
+			ID:   "create-instance-resize-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateInstanceResizeQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateInstanceResizeQuoteParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateInstanceResizeQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateInstanceResizeQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateInstanceResizeQuoteOperation,
+			OperationSummary: "Quote resizing an instance",
+			OperationID:      "create-instance-resize-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ResizeInstanceQuoteRequestBody
+			Params   = CreateInstanceResizeQuoteParams
+			Response = CreateInstanceResizeQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateInstanceResizeQuoteParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateInstanceResizeQuote(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateInstanceResizeQuote(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateInstanceResizeQuoteResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -3605,6 +5774,15 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 // preserve and restore an entire system, use a private image; for a copy that crosses availability
 // zones and survives deletion of the disk, use a backup.
 //
+// Snapshot slots are purchased separately for this project and the source disk's region. This
+// operation reserves one available slot and returns the snapshot as `pending`; it places no order and
+// charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot
+// exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
+//
+// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and
+// meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot
+// data has been confirmed absent or removed.
+//
 // POST /api/v1/snapshots
 func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -3741,7 +5919,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *PurchaseResult
+	var response *SnapshotResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -3757,7 +5935,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = *CreateSnapshotRequestBody
 			Params   = struct{}
-			Response = *PurchaseResult
+			Response = *SnapshotResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3793,6 +5971,228 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 	}
 
 	if err := encodeCreateSnapshotResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateSnapshotQuotaQuoteRequest handles create-snapshot-quota-quote operation.
+//
+// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now,
+// for the same request, without ordering or creating anything; nothing is reserved or recorded.
+// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
+// automatic checkout would collect before credit grants and balance; give it as
+// `checkout.expected_amount` to be refused rather than charged a different amount.
+// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
+// again before final confirmation.
+//
+// POST /api/v1/regions/{regionId}/snapshot-quota/quote
+func (s *Server) handleCreateSnapshotQuotaQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-snapshot-quota-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/snapshot-quota/quote"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateSnapshotQuotaQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateSnapshotQuotaQuoteOperation,
+			ID:   "create-snapshot-quota-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateSnapshotQuotaQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateSnapshotQuotaQuoteParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateSnapshotQuotaQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateSnapshotQuotaQuoteRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateSnapshotQuotaQuoteOperation,
+			OperationSummary: "Quote setting the regional snapshot quota",
+			OperationID:      "create-snapshot-quota-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *SetSnapshotQuotaQuoteRequestBody
+			Params   = CreateSnapshotQuotaQuoteParams
+			Response = CreateSnapshotQuotaQuoteRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateSnapshotQuotaQuoteParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateSnapshotQuotaQuote(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateSnapshotQuotaQuote(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateSnapshotQuotaQuoteResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4018,12 +6418,8 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 
 // handleDeleteBackupRequest handles delete-backup operation.
 //
-// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the backup, including a
-// pay-as-you-go subscription. `meta.resource_id` names the backup. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
+// the backup ends once it is deleted.
 //
 // DELETE /api/v1/backups/{backupId}
 func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4433,7 +6829,8 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 // Deletion is rejected while instances created from the image still exist, as they need it in order to
 // be rebuilt.
 //
-// An image whose capture has not finished can be deleted; the capture is aborted.
+// An image whose capture has not finished can be deleted; the capture is aborted. This is the one
+// operation accepted while the `create` operation is in progress.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
 // pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
@@ -4981,7 +7378,7 @@ func (s *Server) handleDeletePeeringRequest(args [1]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *PeeringResource
+	var response DeletePeeringRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -5002,7 +7399,7 @@ func (s *Server) handleDeletePeeringRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = struct{}
 			Params   = DeletePeeringParams
-			Response = *PeeringResource
+			Response = DeletePeeringRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5182,7 +7579,7 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *DeletePortNoContent
+	var response DeletePortRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -5203,7 +7600,7 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DeletePortParams
-			Response = *DeletePortNoContent
+			Response = DeletePortRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5214,12 +7611,12 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 			mreq,
 			unpackDeletePortParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DeletePort(ctx, params)
+				response, err = s.h.DeletePort(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.DeletePort(ctx, params)
+		response, err = s.h.DeletePort(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5383,7 +7780,7 @@ func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped b
 
 	var rawBody []byte
 
-	var response *DeletePrivateNetworkNoContent
+	var response DeletePrivateNetworkRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -5404,7 +7801,7 @@ func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped b
 		type (
 			Request  = struct{}
 			Params   = DeletePrivateNetworkParams
-			Response = *DeletePrivateNetworkNoContent
+			Response = DeletePrivateNetworkRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5415,12 +7812,12 @@ func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped b
 			mreq,
 			unpackDeletePrivateNetworkParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DeletePrivateNetwork(ctx, params)
+				response, err = s.h.DeletePrivateNetwork(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.DeletePrivateNetwork(ctx, params)
+		response, err = s.h.DeletePrivateNetwork(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -6059,10 +8456,8 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 
 // handleDeleteSnapshotRequest handles delete-snapshot operation.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the snapshot, including a
-// pay-as-you-go subscription. `meta.resource_id` names the snapshot. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// Deletes this snapshot without canceling the project's snapshot quota purchase. A snapshot has no
+// individual Billing subscription. Its slot stays occupied until the deletion is confirmed.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6471,8 +8866,11 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 // system that is being written to corrupts data.
 //
 // The disk the instance boots from cannot be detached, whether it is the system disk bought with the
-// instance or a disk the instance was created from with `boot_disk_id`. Such a request is refused with
-// `INSTANCE_BOOT_DISK_LOCKED` and creates no task; releasing the instance is what frees that disk.
+// instance or a disk supplied as the existing boot_disk at launch. Such a request is refused with
+// `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+//
+// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation
+// until the disk is detached.
 //
 // DELETE /api/v1/instances/{instanceId}/disks/{diskId}
 func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6605,7 +9003,7 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *Task
+	var response DetachDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -6630,7 +9028,7 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DetachDiskParams
-			Response = *Task
+			Response = DetachDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6676,8 +9074,8 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 
 // handleDetachInstanceFloatingIPRequest handles detach-instance-floating-ip operation.
 //
-// Changes the public IP binding on the instance's primary network interface. The returned task tracks
-// confirmation of the binding change.
+// Changes the public IP binding on the instance's primary network interface. The instance shows the
+// `unbind_floating_ip` operation until the change is confirmed.
 //
 // DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
 func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6810,7 +9208,7 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 
 	var rawBody []byte
 
-	var response *FloatingIPResource
+	var response DetachInstanceFloatingIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -6835,7 +9233,7 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 		type (
 			Request  = struct{}
 			Params   = DetachInstanceFloatingIPParams
-			Response = *FloatingIPResource
+			Response = DetachInstanceFloatingIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6882,6 +9280,9 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 // handleDetachPortRequest handles detach-port operation.
 //
 // The primary network interface cannot be detached; the instance would lose its network address.
+//
+// Returns the network interface; the instance shows the `detach_port` operation and the interface the
+// `detach` operation until it is detached.
 //
 // DELETE /api/v1/instances/{instanceId}/ports/{portId}
 func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7014,7 +9415,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *Task
+	var response DetachPortRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -7039,7 +9440,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DetachPortParams
-			Response = *Task
+			Response = DetachPortRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7218,7 +9619,7 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 
 	var rawBody []byte
 
-	var response *DisablePrivateNetworkIpv6NoContent
+	var response DisablePrivateNetworkIpv6Res
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -7239,7 +9640,7 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 		type (
 			Request  = struct{}
 			Params   = DisablePrivateNetworkIpv6Params
-			Response = *DisablePrivateNetworkIpv6NoContent
+			Response = DisablePrivateNetworkIpv6Res
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7250,12 +9651,12 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 			mreq,
 			unpackDisablePrivateNetworkIpv6Params,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DisablePrivateNetworkIpv6(ctx, params)
+				response, err = s.h.DisablePrivateNetworkIpv6(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.DisablePrivateNetworkIpv6(ctx, params)
+		response, err = s.h.DisablePrivateNetworkIpv6(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7422,7 +9823,7 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 
 	var rawBody []byte
 
-	var response *IPv6ResponseBody
+	var response EnablePrivateNetworkIpv6Res
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -7443,7 +9844,7 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 		type (
 			Request  = struct{}
 			Params   = EnablePrivateNetworkIpv6Params
-			Response = *IPv6ResponseBody
+			Response = EnablePrivateNetworkIpv6Res
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7489,8 +9890,8 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 
 // handleGetBackupRequest handles get-backup operation.
 //
-// Queries the current state of the backup, which makes it slower but more accurate than the list
-// endpoint. Use it to poll creation progress.
+// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+// progress.
 //
 // GET /api/v1/backups/{backupId}
 func (s *Server) handleGetBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7688,10 +10089,217 @@ func (s *Server) handleGetBackupRequest(args [1]string, argsEscaped bool, w http
 	}
 }
 
+// handleGetBackupServiceRequest handles get-backup-service operation.
+//
+// The backup service of the authenticated project in this region. Backups can be created only while it
+// is `active`. Each hour, Compute covers retained backup capacity up to the total `capacity_gib` of
+// the capacity packs active in the region and meters only the excess on this service's subscription,
+// per GiB-hour.
+//
+// Canceling the service's subscription through Billing is refused while any backup is retained in the
+// region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity
+// packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment
+// deletes its backups.
+//
+// GET /api/v1/regions/{regionId}/backup-service
+func (s *Server) handleGetBackupServiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-backup-service"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-service"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetBackupServiceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetBackupServiceOperation,
+			ID:   "get-backup-service",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetBackupServiceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetBackupServiceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *BackupService
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetBackupServiceOperation,
+			OperationSummary: "Get the backup service of a region",
+			OperationID:      "get-backup-service",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetBackupServiceParams
+			Response = *BackupService
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetBackupServiceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetBackupService(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetBackupService(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetBackupServiceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleGetDiskRequest handles get-disk operation.
 //
-// Queries the current state of the disk, which makes it slower but more accurate than the list
-// endpoint.
+// Returns the stored state of the disk; it does not query the cloud.
 //
 // GET /api/v1/disks/{diskId}
 func (s *Server) handleGetDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8293,8 +10901,8 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 // handleGetImageRequest handles get-image operation.
 //
 // Returns a public image, or a private image of this project; any other image is reported as not
-// found. Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the
-// reason.
+// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure_reason`
+// states why.
 //
 // GET /api/v1/images/{imageId}
 func (s *Server) handleGetImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8494,8 +11102,8 @@ func (s *Server) handleGetImageRequest(args [1]string, argsEscaped bool, w http.
 
 // handleGetInstanceRequest handles get-instance operation.
 //
-// Queries the current state of the instance, which makes it slower but more accurate than the list
-// endpoint. Use it to poll creation progress.
+// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
+// progress.
 //
 // GET /api/v1/instances/{instanceId}
 func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9901,24 +12509,35 @@ func (s *Server) handleGetSnapshotRequest(args [1]string, argsEscaped bool, w ht
 	}
 }
 
-// handleGetTaskRequest handles get-task operation.
+// handleGetSnapshotQuotaRequest handles get-snapshot-quota operation.
 //
-// Get a requested action.
+// The snapshot count quota for the authenticated project in this region. Counts simultaneous snapshot
+// holdings, not lifetime create calls or storage bytes. Without an active purchase, limit and
+// available are zero; existing holdings, if any, still appear in used.
 //
-// GET /api/v1/tasks/{taskId}
-func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// pending and provisioning creations reserve a slot. Snapshots being deleted or whose cleanup is
+// uncertain retain their slots until absence or deletion is confirmed. available is max(limit - used,
+// 0) while active, and zero when creation is not permitted; additional creation is refused while the
+// quota is inactive, suspended or exhausted.
+//
+// Canceling the quota's subscription through Billing is refused while any snapshot exists in the
+// region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment
+// deletes its snapshots, as for other reclaimed resources.
+//
+// GET /api/v1/regions/{regionId}/snapshot-quota
+func (s *Server) handleGetSnapshotQuotaRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-task"),
+		otelogen.OperationID("get-snapshot-quota"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/tasks/{taskId}"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/snapshot-quota"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetTaskOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetSnapshotQuotaOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -9973,15 +12592,15 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetTaskOperation,
-			ID:   "get-task",
+			Name: GetSnapshotQuotaOperation,
+			ID:   "get-snapshot-quota",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetTaskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetSnapshotQuotaOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -10023,7 +12642,7 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 			return
 		}
 	}
-	params, err := decodeGetTaskParams(args, argsEscaped, r)
+	params, err := decodeGetSnapshotQuotaParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -10036,28 +12655,28 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 
 	var rawBody []byte
 
-	var response *Task
+	var response *SnapshotQuota
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetTaskOperation,
-			OperationSummary: "Get a requested action",
-			OperationID:      "get-task",
+			OperationName:    GetSnapshotQuotaOperation,
+			OperationSummary: "Get regional snapshot quota",
+			OperationID:      "get-snapshot-quota",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "taskId",
+					Name: "regionId",
 					In:   "path",
-				}: params.TaskId,
+				}: params.RegionId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetTaskParams
-			Response = *Task
+			Params   = GetSnapshotQuotaParams
+			Response = *SnapshotQuota
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -10066,14 +12685,14 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 		](
 			m,
 			mreq,
-			unpackGetTaskParams,
+			unpackGetSnapshotQuotaParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetTask(ctx, params)
+				response, err = s.h.GetSnapshotQuota(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetTask(ctx, params)
+		response, err = s.h.GetSnapshotQuota(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -10092,7 +12711,7 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 		return
 	}
 
-	if err := encodeGetTaskResponse(response, w, span); err != nil {
+	if err := encodeGetSnapshotQuotaResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -10103,20 +12722,29 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 
 // handleLaunchInstanceRequest handles launch-instance operation.
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. The instances are created after
-// the order's invoice is paid, or without waiting when the order has no immediate invoice. Do not
-// submit a new purchase after paying. After an uncertain response, look the order up before submitting
-// again.
+// Creates a Billing order, including for metered pricing, and returns one `pending` instance per
+// requested instance with the order. `billing` applies to the instance, its system disk and its
+// floating IP alike. A pending instance has no virtual machine, system disk or address, and is not
+// metered.
 //
-// Exactly one of image_id or boot_disk_id is required, and exactly one of port_id or subnet_id.
-// Existing ports, boot disks or floating IPs require count=1. Image boots require boot_disk; existing
-// disks retain their own subscription. Instances, disks and public IPs keep their own subscription
-// items on the same order.
+// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`.
+// With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred
+// checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid
+// through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or
+// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
+// look the order up before submitting again.
 //
-// A request for several instances is all or nothing: if any instance cannot be created, every instance
-// of that request is released, the order fails, and any payment for it is refunded. Each instance is
-// named after this request with a number appended, and each has its own task.
+// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id.
+// Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is
+// pending; if one is no longer usable when the order is accepted, the instance ends `failed` with
+// `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription.
+// Instances, disks and public IPs keep their own subscription items on the same order.
+//
+// Instances of one request succeed or fail individually. Each instance, with its system disk, network
+// interface and floating IP, is created or fails as a whole. Instances that were created are kept;
+// each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded,
+// and the order then ends `partially_completed`. Each instance is named after this request with a
+// number appended.
 //
 // The network is checked before the order is created, and a request it refuses orders and charges
 // nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not
@@ -10261,7 +12889,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *LaunchInstanceResponseBody
+	var response LaunchInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -10277,7 +12905,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = *LaunchInstanceRequestBody
 			Params   = struct{}
-			Response = *LaunchInstanceResponseBody
+			Response = LaunchInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -10530,6 +13158,214 @@ func (s *Server) handleListAvailabilityZonesRequest(args [1]string, argsEscaped 
 	}
 }
 
+// handleListBackupCapacityPacksRequest handles list-backup-capacity-packs operation.
+//
+// The capacity packs of the authenticated project in this region, newest first, including ended ones.
+//
+// GET /api/v1/regions/{regionId}/backup-capacity-packs
+func (s *Server) handleListBackupCapacityPacksRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-backup-capacity-packs"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-capacity-packs"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListBackupCapacityPacksOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListBackupCapacityPacksOperation,
+			ID:   "list-backup-capacity-packs",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListBackupCapacityPacksOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListBackupCapacityPacksParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *BackupCapacityPackListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListBackupCapacityPacksOperation,
+			OperationSummary: "List backup capacity packs",
+			OperationID:      "list-backup-capacity-packs",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListBackupCapacityPacksParams
+			Response = *BackupCapacityPackListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListBackupCapacityPacksParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListBackupCapacityPacks(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListBackupCapacityPacks(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListBackupCapacityPacksResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleListBackupsRequest handles list-backups operation.
 //
 // List backups.
@@ -10740,9 +13576,9 @@ func (s *Server) handleListBackupsRequest(args [0]string, argsEscaped bool, w ht
 
 // handleListDiskTypesRequest handles list-disk-types operation.
 //
-// Only disk types currently on sale are listed, both system disk types and data disk types;
-// `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no
-// longer be bought, while the disks already on it keep working and can still be resized.
+// Only disk types currently on sale are listed, both system disk types and data disk types; `purpose`
+// narrows the list to one of the two. A withdrawn one disappears from here and can no longer be
+// bought, while the disks already on it keep working and can still be resized.
 //
 // GET /api/v1/disk-types
 func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -10890,9 +13726,9 @@ func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w 
 					In:   "query",
 				}: params.RegionID,
 				{
-					Name: "for_system",
+					Name: "purpose",
 					In:   "query",
-				}: params.ForSystem,
+				}: params.Purpose,
 				{
 					Name: "page",
 					In:   "query",
@@ -12219,8 +15055,7 @@ func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool
 
 // handleListInstancesRequest handles list-instances operation.
 //
-// Every instance in the project, newest first. This endpoint does not query backend state; for the
-// accurate state of one instance, use the retrieve endpoint.
+// Every instance in the project, newest first, in their stored state.
 //
 // GET /api/v1/instances
 func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14925,14 +17760,13 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 // A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
 // forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
 //
-// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a
-// soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient
-// state, and a second soft reboot is refused as well.
+// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
+// reboot the instance never carried out. Any other request for an operation, including a second soft
+// reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 //
 // An instance suspended by the platform must be unsuspended first.
 //
-// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
-// instance until it settles at `running`.
+// The instance shows the `reboot` operation until the reboot has finished.
 //
 // POST /api/v1/instances/{instanceId}/reboot
 func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15080,7 +17914,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *Task
+	var response RebootInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -15101,7 +17935,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *RebootInstanceRequestBody
 			Params   = RebootInstanceParams
-			Response = *Task
+			Response = RebootInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -15152,6 +17986,8 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 // The image this instance already runs is accepted even after the platform has withdrawn it, since
 // rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
 // is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
+//
+// The instance shows the `rebuild` operation until the rebuild has finished.
 //
 // POST /api/v1/instances/{instanceId}/rebuild
 func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15299,7 +18135,7 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 		}
 	}()
 
-	var response *RebuildInstanceResponseBody
+	var response RebuildInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -15320,7 +18156,7 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 		type (
 			Request  = *RebuildInstanceRequestBody
 			Params   = RebuildInstanceParams
-			Response = *RebuildInstanceResponseBody
+			Response = RebuildInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -15566,12 +18402,13 @@ func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w 
 
 // handleReleaseFloatingIPRequest handles release-floating-ip operation.
 //
-// Releases the floating IP after unbinding it. Completion is reported by the returned task.
+// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
+// is released.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address or for its
-// bandwidth, including a pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is
-// released by canceling the subscriptions listed in `meta.subscription_ids` through Billing, the same
-// set as its `release_subscription_ids`.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
+// pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling
+// the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -17432,7 +20269,7 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 		}
 	}()
 
-	var response *ResetPasswordResponseBody
+	var response ResetInstancePasswordRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -17453,7 +20290,7 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 		type (
 			Request  = *ResetPasswordRequestBody
 			Params   = ResetInstancePasswordParams
-			Response = *ResetPasswordResponseBody
+			Response = ResetInstancePasswordRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17499,8 +20336,13 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 
 // handleResizeDiskRequest handles resize-disk operation.
 //
-// Capacity can only be increased; shrinking is not supported. The resize is not complete when this
-// endpoint returns; track the returned task, then extend the file system inside the instance.
+// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the
+// resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until
+// the resize is applied or its order is canceled, including while the order awaits checkout, so other
+// operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps
+// its current size until the resize is applied; once `size_gb` shows the new size, extend the file
+// system inside the instance. If the order is not accepted or the resize fails, the disk keeps its
+// size and the order shows the outcome.
 //
 // An attached data disk whose performance scales with its size must be detached before it is resized.
 // The performance of an attached disk does not change until the disk is detached and attached again,
@@ -17661,7 +20503,7 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *PurchaseResult
+	var response ResizeDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -17682,7 +20524,7 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *ResizeDiskRequestBody
 			Params   = ResizeDiskParams
-			Response = *PurchaseResult
+			Response = ResizeDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17728,13 +20570,17 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleResizeInstanceRequest handles resize-instance operation.
 //
-// Creates a Billing change order, including for metered pricing. The price must belong to the Billing
-// Plan of the target instance type; applicable contract pricing is resolved by Billing. The resize is
-// applied after the order's invoice is paid, or without waiting when the order has no immediate
-// invoice. Do not submit a new purchase after paying. After an uncertain response, look the order up
-// before submitting again.
+// Creates a Billing change order, including for metered pricing, and returns the instance with the
+// order. The instance keeps its billing mode and period, priced with the target type's matching
+// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not
+// submit a new purchase after paying. After an uncertain response, look the order up before submitting
+// again.
 //
-// The new instance type takes effect, and is billed from then on, when the returned task succeeds. A
+// The instance shows the `resize` operation until the resize is applied or its order is canceled,
+// including while the order awaits checkout, so other operations and a second resize are refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
+// type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not
+// accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A
 // completed resize is final and cannot be reverted; to return to the previous type, submit another
 // resize.
 //
@@ -17884,7 +20730,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *PurchaseResult
+	var response ResizeInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -17905,7 +20751,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *ResizeInstanceRequestBody
 			Params   = ResizeInstanceParams
-			Response = *PurchaseResult
+			Response = ResizeInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17954,8 +20800,8 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 // Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 //
 // The target disk type may belong to another availability zone of the same region, and its capacity
-// must not be smaller than the backup. The disk cannot be attached until the restore completes; track
-// the returned task.
+// must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be
+// attached until it is `available`.
 //
 // POST /api/v1/backups/{backupId}/restore
 func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -18103,7 +20949,7 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 		}
 	}()
 
-	var response *PurchaseResult
+	var response RestoreBackupRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -18124,7 +20970,7 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = *RestoreBackupRequestBody
 			Params   = RestoreBackupParams
-			Response = *PurchaseResult
+			Response = RestoreBackupRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -18178,7 +21024,7 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 // reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
 // from the snapshot instead.
 //
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
+// The disk shows the `revert` operation until the revert is complete.
 //
 // POST /api/v1/disks/{diskId}/revert
 func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -18326,7 +21172,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Task
+	var response RevertDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -18347,7 +21193,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = *RevertDiskRequestBody
 			Params   = RevertDiskParams
-			Response = *Task
+			Response = RevertDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -18408,7 +21254,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 //
 // Three conditions must hold; the instance is unreachable otherwise:
 //
-//   - it is `running`
+//   - it is `active`
 //   - a floating IP is bound to it, since this endpoint connects over the public internet
 //   - its security group permits inbound TCP 22
 //
@@ -18634,8 +21480,13 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 
 // handleSetFloatingIPBandwidthRequest handles set-floating-ip-bandwidth operation.
 //
-// The limit applies to inbound and outbound traffic alike. The new limit is not in effect when this
-// endpoint returns; track the returned task.
+// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period;
+// no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike.
+// The floating IP shows the `set_bandwidth` operation until the change is applied or its order is
+// canceled, including while the order awaits checkout, so other operations and a second change are
+// refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change
+// is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
+// the order shows the outcome.
 //
 // While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
 // that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
@@ -18787,7 +21638,7 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		}
 	}()
 
-	var response *PurchaseResult
+	var response SetFloatingIPBandwidthRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -18806,9 +21657,9 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		}
 
 		type (
-			Request  = *SetBandwidthRequestBody
+			Request  = *SetFloatingIPBandwidthRequestBody
 			Params   = SetFloatingIPBandwidthParams
-			Response = *PurchaseResult
+			Response = SetFloatingIPBandwidthRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -19291,12 +22142,239 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 	}
 }
 
+// handleSetSnapshotQuotaRequest handles set-snapshot-quota operation.
+//
+// Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
+// the target total, not an additional number of slots or a consumable create allowance. billing
+// chooses one of the quota's pricing options; a change of an existing purchase keeps its billing mode
+// and period, and billing must name that option. The purchased quantity is this count.
+//
+// Returns the quota with the order. pending_limit records the target while the current limit stays in
+// force; the new limit applies once the order is accepted and the quota is activated. Snapshots create
+// no further orders or subscriptions, and deleting one frees a slot without refunding the quota
+// purchase.
+//
+// Repeating the same target and billing choice while its purchase is pending returns the same order. A
+// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
+// identical target and billing choice returns its existing purchase without charging again; renewing
+// its term is a separate Billing renewal operation. A requested limit below used is refused with 409
+// SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+//
+// PUT /api/v1/regions/{regionId}/snapshot-quota
+func (s *Server) handleSetSnapshotQuotaRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-snapshot-quota"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/snapshot-quota"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SetSnapshotQuotaOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: SetSnapshotQuotaOperation,
+			ID:   "set-snapshot-quota",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetSnapshotQuotaOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeSetSnapshotQuotaParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeSetSnapshotQuotaRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response SetSnapshotQuotaRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    SetSnapshotQuotaOperation,
+			OperationSummary: "Set regional snapshot quota",
+			OperationID:      "set-snapshot-quota",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *SetSnapshotQuotaRequestBody
+			Params   = SetSnapshotQuotaParams
+			Response = SetSnapshotQuotaRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackSetSnapshotQuotaParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.SetSnapshotQuota(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.SetSnapshotQuota(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeSetSnapshotQuotaResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleStartInstanceRequest handles start-instance operation.
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
-// start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network
-// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
-// determine completion.
+// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
+// running or the start has failed.
 //
 // POST /api/v1/instances/{instanceId}/start
 func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -19444,7 +22522,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		}
 	}()
 
-	var response *Task
+	var response StartInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -19465,7 +22543,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		type (
 			Request  = *PowerRequest
 			Params   = StartInstanceParams
-			Response = *Task
+			Response = StartInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -19511,10 +22589,8 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 
 // handleStopInstanceRequest handles stop-instance operation.
 //
-// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
-// start. Outstanding restrictions can prevent starting. A stopped instance keeps its disks, network
-// attachments and sellable quota. Inspect operation, task_state, power_state and observed_at to
-// determine completion.
+// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
+// `stop` operation until it is stopped or the stop has failed.
 //
 // POST /api/v1/instances/{instanceId}/stop
 func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -19662,7 +22738,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response *Task
+	var response StopInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -19683,7 +22759,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		type (
 			Request  = *PowerRequest
 			Params   = StopInstanceParams
-			Response = *Task
+			Response = StopInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -19934,7 +23010,8 @@ func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool
 
 // handleUnbindFloatingIPRequest handles unbind-floating-ip operation.
 //
-// The address remains held by the project and simply no longer points at any network interface.
+// The address remains held by the project and simply no longer points at any network interface. The
+// floating IP shows the `unbind` operation until the change is confirmed.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}/binding
 func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -20067,7 +23144,7 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response *FloatingIPResource
+	var response UnbindFloatingIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -20088,7 +23165,7 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 		type (
 			Request  = struct{}
 			Params   = UnbindFloatingIPParams
-			Response = *FloatingIPResource
+			Response = UnbindFloatingIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,

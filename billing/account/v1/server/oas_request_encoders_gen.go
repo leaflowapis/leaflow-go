@@ -10,6 +10,20 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
+func encodeCheckoutOrderRequest(
+	req *CheckoutOrderRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateBillingAccountRequest(
 	req *BillingAccountCreate,
 	r *http.Request,
@@ -95,7 +109,7 @@ func encodeCreateTopUpRequest(
 }
 
 func encodePayInvoiceRequest(
-	req OptPayRequest,
+	req OptPayInvoiceRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -142,20 +156,6 @@ func encodePreviewPayTogetherRequest(
 	return nil
 }
 
-func encodePreviewPromotionCodeRequest(
-	req *PromotionCodePreviewRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeRenewSubscriptionRequest(
 	req *RenewRequest,
 	r *http.Request,
@@ -184,8 +184,8 @@ func encodeSetAutoRenewRequest(
 	return nil
 }
 
-func encodeSetProjectBillingAccountRequest(
-	req *ProjectBillingInfoSet,
+func encodeSetProjectAssignmentRequest(
+	req *SetProjectAssignmentRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

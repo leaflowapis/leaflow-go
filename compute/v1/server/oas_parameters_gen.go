@@ -340,6 +340,526 @@ func decodeBindFloatingIPParams(args [1]string, argsEscaped bool, r *http.Reques
 	return params, nil
 }
 
+// CreateBackupCapacityPackParams is parameters of create-backup-capacity-pack operation.
+type CreateBackupCapacityPackParams struct {
+	RegionId uuid.UUID
+}
+
+func unpackCreateBackupCapacityPackParams(packed middleware.Parameters) (params CreateBackupCapacityPackParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateBackupCapacityPackParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateBackupCapacityPackParams, _ error) {
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RegionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateBackupCapacityPackQuoteParams is parameters of create-backup-capacity-pack-quote operation.
+type CreateBackupCapacityPackQuoteParams struct {
+	RegionId uuid.UUID
+}
+
+func unpackCreateBackupCapacityPackQuoteParams(packed middleware.Parameters) (params CreateBackupCapacityPackQuoteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateBackupCapacityPackQuoteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateBackupCapacityPackQuoteParams, _ error) {
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RegionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateBackupRestoreQuoteParams is parameters of create-backup-restore-quote operation.
+type CreateBackupRestoreQuoteParams struct {
+	BackupId uuid.UUID
+}
+
+func unpackCreateBackupRestoreQuoteParams(packed middleware.Parameters) (params CreateBackupRestoreQuoteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "backupId",
+			In:   "path",
+		}
+		params.BackupId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateBackupRestoreQuoteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateBackupRestoreQuoteParams, _ error) {
+	// Decode path: backupId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "backupId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.BackupId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "backupId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateBackupServiceParams is parameters of create-backup-service operation.
+type CreateBackupServiceParams struct {
+	RegionId uuid.UUID
+}
+
+func unpackCreateBackupServiceParams(packed middleware.Parameters) (params CreateBackupServiceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateBackupServiceParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateBackupServiceParams, _ error) {
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RegionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateBackupServiceQuoteParams is parameters of create-backup-service-quote operation.
+type CreateBackupServiceQuoteParams struct {
+	RegionId uuid.UUID
+}
+
+func unpackCreateBackupServiceQuoteParams(packed middleware.Parameters) (params CreateBackupServiceQuoteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateBackupServiceQuoteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateBackupServiceQuoteParams, _ error) {
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RegionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateDiskResizeQuoteParams is parameters of create-disk-resize-quote operation.
+type CreateDiskResizeQuoteParams struct {
+	DiskId uuid.UUID
+}
+
+func unpackCreateDiskResizeQuoteParams(packed middleware.Parameters) (params CreateDiskResizeQuoteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "diskId",
+			In:   "path",
+		}
+		params.DiskId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateDiskResizeQuoteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateDiskResizeQuoteParams, _ error) {
+	// Decode path: diskId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "diskId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.DiskId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "diskId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateFloatingIPBandwidthQuoteParams is parameters of create-floating-ip-bandwidth-quote operation.
+type CreateFloatingIPBandwidthQuoteParams struct {
+	FloatingIpId uuid.UUID
+}
+
+func unpackCreateFloatingIPBandwidthQuoteParams(packed middleware.Parameters) (params CreateFloatingIPBandwidthQuoteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "floatingIpId",
+			In:   "path",
+		}
+		params.FloatingIpId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateFloatingIPBandwidthQuoteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateFloatingIPBandwidthQuoteParams, _ error) {
+	// Decode path: floatingIpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "floatingIpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.FloatingIpId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "floatingIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateInstanceResizeQuoteParams is parameters of create-instance-resize-quote operation.
+type CreateInstanceResizeQuoteParams struct {
+	InstanceId uuid.UUID
+}
+
+func unpackCreateInstanceResizeQuoteParams(packed middleware.Parameters) (params CreateInstanceResizeQuoteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "instanceId",
+			In:   "path",
+		}
+		params.InstanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateInstanceResizeQuoteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateInstanceResizeQuoteParams, _ error) {
+	// Decode path: instanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "instanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.InstanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "instanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CreateRouteParams is parameters of create-route operation.
 type CreateRouteParams struct {
 	PrivateNetworkId uuid.UUID
@@ -463,6 +983,71 @@ func decodeCreateSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "securityGroupId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateSnapshotQuotaQuoteParams is parameters of create-snapshot-quota-quote operation.
+type CreateSnapshotQuotaQuoteParams struct {
+	RegionId uuid.UUID
+}
+
+func unpackCreateSnapshotQuotaQuoteParams(packed middleware.Parameters) (params CreateSnapshotQuotaQuoteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateSnapshotQuotaQuoteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateSnapshotQuotaQuoteParams, _ error) {
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RegionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
 			In:   "path",
 			Err:  err,
 		}
@@ -2023,6 +2608,71 @@ func decodeGetBackupParams(args [1]string, argsEscaped bool, r *http.Request) (p
 	return params, nil
 }
 
+// GetBackupServiceParams is parameters of get-backup-service operation.
+type GetBackupServiceParams struct {
+	RegionId uuid.UUID
+}
+
+func unpackGetBackupServiceParams(packed middleware.Parameters) (params GetBackupServiceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetBackupServiceParams(args [1]string, argsEscaped bool, r *http.Request) (params GetBackupServiceParams, _ error) {
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RegionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetDiskParams is parameters of get-disk operation.
 type GetDiskParams struct {
 	DiskId uuid.UUID
@@ -2821,24 +3471,24 @@ func decodeGetSnapshotParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
-// GetTaskParams is parameters of get-task operation.
-type GetTaskParams struct {
-	TaskId uuid.UUID
+// GetSnapshotQuotaParams is parameters of get-snapshot-quota operation.
+type GetSnapshotQuotaParams struct {
+	RegionId uuid.UUID
 }
 
-func unpackGetTaskParams(packed middleware.Parameters) (params GetTaskParams) {
+func unpackGetSnapshotQuotaParams(packed middleware.Parameters) (params GetSnapshotQuotaParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "taskId",
+			Name: "regionId",
 			In:   "path",
 		}
-		params.TaskId = packed[key].(uuid.UUID)
+		params.RegionId = packed[key].(uuid.UUID)
 	}
 	return params
 }
 
-func decodeGetTaskParams(args [1]string, argsEscaped bool, r *http.Request) (params GetTaskParams, _ error) {
-	// Decode path: taskId.
+func decodeGetSnapshotQuotaParams(args [1]string, argsEscaped bool, r *http.Request) (params GetSnapshotQuotaParams, _ error) {
+	// Decode path: regionId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -2850,7 +3500,7 @@ func decodeGetTaskParams(args [1]string, argsEscaped bool, r *http.Request) (par
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "taskId",
+				Param:   "regionId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -2867,7 +3517,7 @@ func decodeGetTaskParams(args [1]string, argsEscaped bool, r *http.Request) (par
 					return err
 				}
 
-				params.TaskId = c
+				params.RegionId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -2878,7 +3528,7 @@ func decodeGetTaskParams(args [1]string, argsEscaped bool, r *http.Request) (par
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "taskId",
+			Name: "regionId",
 			In:   "path",
 			Err:  err,
 		}
@@ -3108,6 +3758,234 @@ func decodeListAvailabilityZonesParams(args [1]string, argsEscaped bool, r *http
 		return params, &ogenerrors.DecodeParamError{
 			Name: "page_size",
 			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListBackupCapacityPacksParams is parameters of list-backup-capacity-packs operation.
+type ListBackupCapacityPacksParams struct {
+	Page     OptInt64 `json:",omitempty,omitzero"`
+	PageSize OptInt64 `json:",omitempty,omitzero"`
+	RegionId uuid.UUID
+}
+
+func unpackListBackupCapacityPacksParams(packed middleware.Parameters) (params ListBackupCapacityPacksParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "page",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Page = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page_size",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeListBackupCapacityPacksParams(args [1]string, argsEscaped bool, r *http.Request) (params ListBackupCapacityPacksParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Set default value for query: page.
+	{
+		val := int64(1)
+		params.Page.SetTo(val)
+	}
+	// Decode query: page.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Page.SetTo(paramsDotPageVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Page.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        false,
+							Max:           0,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: page_size.
+	{
+		val := int64(50)
+		params.PageSize.SetTo(val)
+	}
+	// Decode query: page_size.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PageSize.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RegionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
+			In:   "path",
 			Err:  err,
 		}
 	}
@@ -3344,10 +4222,10 @@ func decodeListBackupsParams(args [0]string, argsEscaped bool, r *http.Request) 
 // ListDiskTypesParams is parameters of list-disk-types operation.
 type ListDiskTypesParams struct {
 	RegionID OptUUID `json:",omitempty,omitzero"`
-	// `true` lists only system disk types and `false` only data disk types. Both are listed when omitted.
-	ForSystem OptBool  `json:",omitempty,omitzero"`
-	Page      OptInt64 `json:",omitempty,omitzero"`
-	PageSize  OptInt64 `json:",omitempty,omitzero"`
+	// Filter by intended purchase use. Omit to include both system and data disk types.
+	Purpose  OptDiskTypePurpose `json:",omitempty,omitzero"`
+	Page     OptInt64           `json:",omitempty,omitzero"`
+	PageSize OptInt64           `json:",omitempty,omitzero"`
 }
 
 func unpackListDiskTypesParams(packed middleware.Parameters) (params ListDiskTypesParams) {
@@ -3362,11 +4240,11 @@ func unpackListDiskTypesParams(packed middleware.Parameters) (params ListDiskTyp
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "for_system",
+			Name: "purpose",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ForSystem = v.(OptBool)
+			params.Purpose = v.(OptDiskTypePurpose)
 		}
 	}
 	{
@@ -3433,43 +4311,58 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 			Err:  err,
 		}
 	}
-	// Decode query: for_system.
+	// Decode query: purpose.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "for_system",
+			Name:    "purpose",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotForSystemVal bool
+				var paramsDotPurposeVal DiskTypePurpose
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
 						return err
 					}
 
-					c, err := conv.ToBool(val)
+					c, err := conv.ToString(val)
 					if err != nil {
 						return err
 					}
 
-					paramsDotForSystemVal = c
+					paramsDotPurposeVal = DiskTypePurpose(c)
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.ForSystem.SetTo(paramsDotForSystemVal)
+				params.Purpose.SetTo(paramsDotPurposeVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Purpose.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "for_system",
+			Name: "purpose",
 			In:   "query",
 			Err:  err,
 		}
@@ -9082,6 +9975,71 @@ func decodeSetInstanceNotesParams(args [1]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "instanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SetSnapshotQuotaParams is parameters of set-snapshot-quota operation.
+type SetSnapshotQuotaParams struct {
+	RegionId uuid.UUID
+}
+
+func unpackSetSnapshotQuotaParams(packed middleware.Parameters) (params SetSnapshotQuotaParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeSetSnapshotQuotaParams(args [1]string, argsEscaped bool, r *http.Request) (params SetSnapshotQuotaParams, _ error) {
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RegionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
 			In:   "path",
 			Err:  err,
 		}

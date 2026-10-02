@@ -1,0 +1,189 @@
+[
+  {
+    "name": "amount-omitted",
+    "input": {
+      "quantity": "1"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "quantity-valid:1",
+    "input": {
+      "quantity": "1"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "quantity-valid:007",
+    "input": {
+      "quantity": "007"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "quantity-valid:0.0000000001",
+    "input": {
+      "quantity": "0.0000000001"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "quantity-valid:1111111111111111111111111111",
+    "input": {
+      "quantity": "1111111111111111111111111111"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "quantity-valid:0000000000000000000000000001",
+    "input": {
+      "quantity": "0000000000000000000000000001"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "quantity-invalid:0",
+    "input": {
+      "quantity": "0"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "quantity-invalid:0.000",
+    "input": {
+      "quantity": "0.000"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "quantity-invalid:-0.1",
+    "input": {
+      "quantity": "-0.1"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "quantity-invalid:0000000000000000000000000000",
+    "input": {
+      "quantity": "0000000000000000000000000000"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "quantity-invalid:11111111111111111111111111111",
+    "input": {
+      "quantity": "11111111111111111111111111111"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "quantity-invalid:00000000000000000000000000007",
+    "input": {
+      "quantity": "00000000000000000000000000007"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "quantity-invalid:1e3",
+    "input": {
+      "quantity": "1e3"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "quantity-invalid:0.00000000001",
+    "input": {
+      "quantity": "0.00000000001"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "quantity-missing",
+    "input": {},
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-quantity:LF",
+    "input": {
+      "quantity": "7\n"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-quantity:CRLF",
+    "input": {
+      "quantity": "7\r\n"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-quantity:LS",
+    "input": {
+      "quantity": "7 "
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-quantity:PS",
+    "input": {
+      "quantity": "7 "
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-quantity:TAB",
+    "input": {
+      "quantity": "7\t"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-quantity:NBSP",
+    "input": {
+      "quantity": "7 "
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  }
+]

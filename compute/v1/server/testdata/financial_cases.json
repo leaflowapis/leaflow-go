@@ -1,0 +1,232 @@
+[
+  {
+    "name": "amount-valid:0",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "0"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "amount-valid:007",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "007"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "amount-valid:999999999999999",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "999999999999999"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "amount-valid:0.1234567890",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "0.1234567890"
+    },
+    "expected": true,
+    "accepted": true,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"9999999999999999\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "9999999999999999"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"0000000000000007\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "0000000000000007"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"0.12345678901\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "0.12345678901"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"1e3\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "1e3"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"+7\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "+7"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"-7\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "-7"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": ""
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\" 7\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": " 7"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"7 \"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7 "
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"7\\n\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7\n"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:\"7\\r\\n\"",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7\r\n"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:0",
+    "input": {
+      "quantity": "1",
+      "expected_amount": 0
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "amount-invalid:null",
+    "input": {
+      "quantity": "1",
+      "expected_amount": null
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-amount:LF",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7\n"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-amount:CRLF",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7\r\n"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-amount:LS",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7 "
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-amount:PS",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7 "
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-amount:TAB",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7\t"
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  },
+  {
+    "name": "tail-amount:NBSP",
+    "input": {
+      "quantity": "1",
+      "expected_amount": "7 "
+    },
+    "expected": false,
+    "accepted": false,
+    "passed": true
+  }
+]

@@ -329,6 +329,82 @@ func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
+// Shared checkout choices for a product purchase. Omitting this object or mode selects automatic
+// checkout. Each purchase creates its own order. Promotion codes are supplied only to Billing quote
+// and checkout operations. A service may retain a failed creation record when Billing refuses a
+// purchase; no infrastructure is created for that refusal.
+// Ref: #/components/schemas/CheckoutOptions
+type CheckoutOptions struct {
+	Mode OptCheckoutOptionsMode `json:"mode"`
+	// Expected invoice total after discounts and tax, before applying credit grants or balance. A
+	// different total fails with BILLING_AMOUNT_CHANGED without charging or reserving a discount. Accepted
+	// only in automatic mode; with deferred it is refused with HTTP 400. For deferred checkout, confirm
+	// the amount through Billing.
+	ExpectedAmount OptString `json:"expected_amount"`
+}
+
+// GetMode returns the value of Mode.
+func (s *CheckoutOptions) GetMode() OptCheckoutOptionsMode {
+	return s.Mode
+}
+
+// GetExpectedAmount returns the value of ExpectedAmount.
+func (s *CheckoutOptions) GetExpectedAmount() OptString {
+	return s.ExpectedAmount
+}
+
+// SetMode sets the value of Mode.
+func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
+	s.Mode = val
+}
+
+// SetExpectedAmount sets the value of ExpectedAmount.
+func (s *CheckoutOptions) SetExpectedAmount(val OptString) {
+	s.ExpectedAmount = val
+}
+
+// Merged schema.
+type CheckoutOptionsMode string
+
+const (
+	CheckoutOptionsModeAutomatic CheckoutOptionsMode = "automatic"
+	CheckoutOptionsModeDeferred  CheckoutOptionsMode = "deferred"
+)
+
+// AllValues returns all CheckoutOptionsMode values.
+func (CheckoutOptionsMode) AllValues() []CheckoutOptionsMode {
+	return []CheckoutOptionsMode{
+		CheckoutOptionsModeAutomatic,
+		CheckoutOptionsModeDeferred,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CheckoutOptionsMode) MarshalText() ([]byte, error) {
+	switch s {
+	case CheckoutOptionsModeAutomatic:
+		return []byte(s), nil
+	case CheckoutOptionsModeDeferred:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CheckoutOptionsMode) UnmarshalText(data []byte) error {
+	switch CheckoutOptionsMode(data) {
+	case CheckoutOptionsModeAutomatic:
+		*s = CheckoutOptionsModeAutomatic
+		return nil
+	case CheckoutOptionsModeDeferred:
+		*s = CheckoutOptionsModeDeferred
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/CreateAPIKeyRequestBody
 type CreateAPIKeyRequestBody struct {
 	// Ignored while `restrict_models` is false.
@@ -380,6 +456,50 @@ func (s *CreateAPIKeyRequestBody) SetName(val string) {
 func (s *CreateAPIKeyRequestBody) SetRestrictModels(val OptBool) {
 	s.RestrictModels = val
 }
+
+// Ref: #/components/schemas/CreateServiceRequestBody
+type CreateServiceRequestBody struct {
+	Checkout OptCheckoutOptions `json:"checkout"`
+}
+
+// GetCheckout returns the value of Checkout.
+func (s *CreateServiceRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *CreateServiceRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// The service, `pending` until its order is accepted, and the order.
+// Ref: #/components/schemas/CreateServiceResponseBody
+type CreateServiceResponseBody struct {
+	Service ServiceResource `json:"service"`
+	Order   PlacedOrder     `json:"order"`
+}
+
+// GetService returns the value of Service.
+func (s *CreateServiceResponseBody) GetService() ServiceResource {
+	return s.Service
+}
+
+// GetOrder returns the value of Order.
+func (s *CreateServiceResponseBody) GetOrder() PlacedOrder {
+	return s.Order
+}
+
+// SetService sets the value of Service.
+func (s *CreateServiceResponseBody) SetService(val ServiceResource) {
+	s.Service = val
+}
+
+// SetOrder sets the value of Order.
+func (s *CreateServiceResponseBody) SetOrder(val PlacedOrder) {
+	s.Order = val
+}
+
+func (*CreateServiceResponseBody) createServiceRes() {}
 
 // Ref: #/components/schemas/CursorPageRequestResource
 type CursorPageRequestResource struct {
@@ -458,6 +578,9 @@ func (s *Error) SetMeta(val OptErrorMeta) {
 func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
+
+func (*Error) createServiceQuoteRes() {}
+func (*Error) createServiceRes()      {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
@@ -1134,6 +1257,41 @@ func (s *ModelListResponseBody) SetItems(val []ModelResource) {
 	s.Items = val
 }
 
+// What requests to a model cost, as Billing prices them in the currency of the project's current
+// billing account. These are list amounts before promotion codes, not a checkout guarantee; usage is
+// billed afterwards under the service's subscription.
+//
+// Each token kind is priced on its own. `input` excludes cached input, which is `cache_read`, and
+// `output` excludes reasoning the provider reports separately, which is `reasoning`; a request is
+// billed for each kind it used.
+// Ref: #/components/schemas/ModelPricing
+type ModelPricing struct {
+	Currency string `json:"currency"`
+	// One entry for each of the five token kinds, in the order input, output, cache_read, cache_write,
+	// reasoning.
+	TokenKinds []TokenPrice `json:"token_kinds"`
+}
+
+// GetCurrency returns the value of Currency.
+func (s *ModelPricing) GetCurrency() string {
+	return s.Currency
+}
+
+// GetTokenKinds returns the value of TokenKinds.
+func (s *ModelPricing) GetTokenKinds() []TokenPrice {
+	return s.TokenKinds
+}
+
+// SetCurrency sets the value of Currency.
+func (s *ModelPricing) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetTokenKinds sets the value of TokenKinds.
+func (s *ModelPricing) SetTokenKinds(val []TokenPrice) {
+	s.TokenKinds = val
+}
+
 // Ref: #/components/schemas/ModelResource
 type ModelResource struct {
 	// The context window. Advisory only; the server does not truncate on its basis.
@@ -1145,6 +1303,8 @@ type ModelResource struct {
 	ID string `json:"id"`
 	// The maximum output length. Advisory only.
 	MaxOutputTokens int64 `json:"max_output_tokens"`
+	// What requests to this model cost. Null when the project has no billing account.
+	Pricing NilModelPricing `json:"pricing"`
 	// The values accepted for `reasoning_effort`. Empty means it is not supported.
 	ReasoningTiers    []string            `json:"reasoning_tiers"`
 	Status            ModelResourceStatus `json:"status"`
@@ -1176,6 +1336,11 @@ func (s *ModelResource) GetID() string {
 // GetMaxOutputTokens returns the value of MaxOutputTokens.
 func (s *ModelResource) GetMaxOutputTokens() int64 {
 	return s.MaxOutputTokens
+}
+
+// GetPricing returns the value of Pricing.
+func (s *ModelResource) GetPricing() NilModelPricing {
+	return s.Pricing
 }
 
 // GetReasoningTiers returns the value of ReasoningTiers.
@@ -1226,6 +1391,11 @@ func (s *ModelResource) SetID(val string) {
 // SetMaxOutputTokens sets the value of MaxOutputTokens.
 func (s *ModelResource) SetMaxOutputTokens(val int64) {
 	s.MaxOutputTokens = val
+}
+
+// SetPricing sets the value of Pricing.
+func (s *ModelResource) SetPricing(val NilModelPricing) {
+	s.Pricing = val
 }
 
 // SetReasoningTiers sets the value of ReasoningTiers.
@@ -1397,6 +1567,8 @@ func (s *ModelUsageResource) SetRequests(val int64) {
 	s.Requests = val
 }
 
+type Money string
+
 // NewNilDateTime returns new NilDateTime with value set to v.
 func NewNilDateTime(v time.Time) NilDateTime {
 	return NilDateTime{
@@ -1436,6 +1608,231 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilModelPricing returns new NilModelPricing with value set to v.
+func NewNilModelPricing(v ModelPricing) NilModelPricing {
+	return NilModelPricing{
+		Value: v,
+	}
+}
+
+// NilModelPricing is nullable ModelPricing.
+type NilModelPricing struct {
+	Value ModelPricing
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilModelPricing) SetTo(v ModelPricing) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilModelPricing) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilModelPricing) SetToNull() {
+	o.Null = true
+	var v ModelPricing
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilModelPricing) Get() (v ModelPricing, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilModelPricing) Or(d ModelPricing) ModelPricing {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilMoney returns new NilMoney with value set to v.
+func NewNilMoney(v Money) NilMoney {
+	return NilMoney{
+		Value: v,
+	}
+}
+
+// NilMoney is nullable Money.
+type NilMoney struct {
+	Value Money
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilMoney) SetTo(v Money) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilMoney) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilMoney) SetToNull() {
+	o.Null = true
+	var v Money
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilMoney) Get() (v Money, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilMoney) Or(d Money) Money {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilServiceResourceFailureReason returns new NilServiceResourceFailureReason with value set to v.
+func NewNilServiceResourceFailureReason(v ServiceResourceFailureReason) NilServiceResourceFailureReason {
+	return NilServiceResourceFailureReason{
+		Value: v,
+	}
+}
+
+// NilServiceResourceFailureReason is nullable ServiceResourceFailureReason.
+type NilServiceResourceFailureReason struct {
+	Value ServiceResourceFailureReason
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilServiceResourceFailureReason) SetTo(v ServiceResourceFailureReason) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilServiceResourceFailureReason) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilServiceResourceFailureReason) SetToNull() {
+	o.Null = true
+	var v ServiceResourceFailureReason
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilServiceResourceFailureReason) Get() (v ServiceResourceFailureReason, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilServiceResourceFailureReason) Or(d ServiceResourceFailureReason) ServiceResourceFailureReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilString returns new NilString with value set to v.
+func NewNilString(v string) NilString {
+	return NilString{
+		Value: v,
+	}
+}
+
+// NilString is nullable string.
+type NilString struct {
+	Value string
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilString) SetTo(v string) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilString) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilString) SetToNull() {
+	o.Null = true
+	var v string
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilString) Get() (v string, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilUUID returns new NilUUID with value set to v.
+func NewNilUUID(v uuid.UUID) NilUUID {
+	return NilUUID{
+		Value: v,
+	}
+}
+
+// NilUUID is nullable uuid.UUID.
+type NilUUID struct {
+	Value uuid.UUID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilUUID) SetTo(v uuid.UUID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilUUID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilUUID) SetToNull() {
+	o.Null = true
+	var v uuid.UUID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilUUID) Get() (v uuid.UUID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1482,6 +1879,98 @@ func (o OptBool) Get() (v bool, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBool) Or(d bool) bool {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCheckoutOptions returns new OptCheckoutOptions with value set to v.
+func NewOptCheckoutOptions(v CheckoutOptions) OptCheckoutOptions {
+	return OptCheckoutOptions{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCheckoutOptions is optional CheckoutOptions.
+type OptCheckoutOptions struct {
+	Value CheckoutOptions
+	Set   bool
+}
+
+// IsSet returns true if OptCheckoutOptions was set.
+func (o OptCheckoutOptions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCheckoutOptions) Reset() {
+	var v CheckoutOptions
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCheckoutOptions) SetTo(v CheckoutOptions) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCheckoutOptions) Get() (v CheckoutOptions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCheckoutOptions) Or(d CheckoutOptions) CheckoutOptions {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCheckoutOptionsMode returns new OptCheckoutOptionsMode with value set to v.
+func NewOptCheckoutOptionsMode(v CheckoutOptionsMode) OptCheckoutOptionsMode {
+	return OptCheckoutOptionsMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCheckoutOptionsMode is optional CheckoutOptionsMode.
+type OptCheckoutOptionsMode struct {
+	Value CheckoutOptionsMode
+	Set   bool
+}
+
+// IsSet returns true if OptCheckoutOptionsMode was set.
+func (o OptCheckoutOptionsMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCheckoutOptionsMode) Reset() {
+	var v CheckoutOptionsMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCheckoutOptionsMode) SetTo(v CheckoutOptionsMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCheckoutOptionsMode) Get() (v CheckoutOptionsMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCheckoutOptionsMode) Or(d CheckoutOptionsMode) CheckoutOptionsMode {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2174,6 +2663,355 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
+// Identifies the purchase. Read the order for purchase progress and its invoice for amounts and
+// payment status.
+// Ref: #/components/schemas/PlacedOrder
+type PlacedOrder struct {
+	// The invoice for this purchase, which may still be a draft awaiting checkout. Null when no invoice
+	// has been created. Its presence or absence does not establish whether delivery may begin.
+	InvoiceID NilUUID `json:"invoice_id"`
+	// The order, including for purchases without an immediate charge. Payment alone does not imply that
+	// the service has completed delivery.
+	OrderID uuid.UUID `json:"order_id"`
+}
+
+// GetInvoiceID returns the value of InvoiceID.
+func (s *PlacedOrder) GetInvoiceID() NilUUID {
+	return s.InvoiceID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *PlacedOrder) GetOrderID() uuid.UUID {
+	return s.OrderID
+}
+
+// SetInvoiceID sets the value of InvoiceID.
+func (s *PlacedOrder) SetInvoiceID(val NilUUID) {
+	s.InvoiceID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
+	s.OrderID = val
+}
+
+// A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
+// charged or reserved, and no discount redemption is consumed. Account discounts and tax are evaluated
+// as for automatic checkout. Promotion codes are evaluated through Billing quote operations. All
+// amounts use currency. This preview does not lock prices or guarantee discount availability.
+// Ref: #/components/schemas/Quote
+type Quote struct {
+	// One line for each item the purchase would order, in the order it would order them.
+	Lines []QuotedLine `json:"lines"`
+	// Sum of line amounts before discounts, less tax already included in the discounted line amounts, as
+	// on an invoice. Null when any line cannot be priced.
+	Subtotal NilMoney `json:"subtotal"`
+	// Sum of line discounts. Null when any line cannot be priced.
+	DiscountAmount NilMoney `json:"discount_amount"`
+	// Sum of tax on the discounted line amounts. Null when any line cannot be priced.
+	TaxAmount NilMoney `json:"tax_amount"`
+	// Subtotal minus discount_amount plus tax_amount: what checkout collects, before applying credit
+	// grants or balance. Equals the sum of line totals and excludes estimated_usage_amount. Null when any
+	// line cannot be priced.
+	Total NilMoney `json:"total"`
+	// Sum of the lines' estimated_usage_amount. A projection, not part of total and not collected at
+	// checkout. Null when no line is billed for usage or when any usage cannot be priced.
+	EstimatedUsageAmount NilMoney `json:"estimated_usage_amount"`
+	Currency             string   `json:"currency"`
+	// Changes only; null otherwise. The instant the change is priced from. Pass it with the change so the
+	// order is priced from the same instant.
+	ProrationDate NilDateTime `json:"proration_date"`
+	// Changes that lower the price only; null otherwise. What the change would return to the original
+	// payment sources, including the tax paid on it. total is zero for such a change.
+	RefundableAmount NilMoney `json:"refundable_amount"`
+}
+
+// GetLines returns the value of Lines.
+func (s *Quote) GetLines() []QuotedLine {
+	return s.Lines
+}
+
+// GetSubtotal returns the value of Subtotal.
+func (s *Quote) GetSubtotal() NilMoney {
+	return s.Subtotal
+}
+
+// GetDiscountAmount returns the value of DiscountAmount.
+func (s *Quote) GetDiscountAmount() NilMoney {
+	return s.DiscountAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *Quote) GetTaxAmount() NilMoney {
+	return s.TaxAmount
+}
+
+// GetTotal returns the value of Total.
+func (s *Quote) GetTotal() NilMoney {
+	return s.Total
+}
+
+// GetEstimatedUsageAmount returns the value of EstimatedUsageAmount.
+func (s *Quote) GetEstimatedUsageAmount() NilMoney {
+	return s.EstimatedUsageAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Quote) GetCurrency() string {
+	return s.Currency
+}
+
+// GetProrationDate returns the value of ProrationDate.
+func (s *Quote) GetProrationDate() NilDateTime {
+	return s.ProrationDate
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *Quote) GetRefundableAmount() NilMoney {
+	return s.RefundableAmount
+}
+
+// SetLines sets the value of Lines.
+func (s *Quote) SetLines(val []QuotedLine) {
+	s.Lines = val
+}
+
+// SetSubtotal sets the value of Subtotal.
+func (s *Quote) SetSubtotal(val NilMoney) {
+	s.Subtotal = val
+}
+
+// SetDiscountAmount sets the value of DiscountAmount.
+func (s *Quote) SetDiscountAmount(val NilMoney) {
+	s.DiscountAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *Quote) SetTaxAmount(val NilMoney) {
+	s.TaxAmount = val
+}
+
+// SetTotal sets the value of Total.
+func (s *Quote) SetTotal(val NilMoney) {
+	s.Total = val
+}
+
+// SetEstimatedUsageAmount sets the value of EstimatedUsageAmount.
+func (s *Quote) SetEstimatedUsageAmount(val NilMoney) {
+	s.EstimatedUsageAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Quote) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetProrationDate sets the value of ProrationDate.
+func (s *Quote) SetProrationDate(val NilDateTime) {
+	s.ProrationDate = val
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *Quote) SetRefundableAmount(val NilMoney) {
+	s.RefundableAmount = val
+}
+
+func (*Quote) createServiceQuoteRes() {}
+
+// One calculated purchase line. Fixed purchase amounts are rounded as checkout rounds them. When
+// priced is false, every monetary field is null. A priced line without an immediate charge has zero
+// amounts; an unavailable unit price remains null.
+// Ref: #/components/schemas/QuotedLine
+type QuotedLine struct {
+	// Whether the line can be priced. When false, unpriced_reason states what is missing.
+	Priced bool `json:"priced"`
+	// Why no price was found; `none` while `priced` is true.
+	UnpricedReason QuotedLineUnpricedReason `json:"unpriced_reason"`
+	PlanName       string                   `json:"plan_name"`
+	// Unit price before discounts, with tax included only where the price includes it.
+	UnitAmount NilMoney `json:"unit_amount"`
+	// The quantity priced.
+	Quantity string `json:"quantity"`
+	// Before discounts, including any setup charges. Contains tax only where the price includes it. Zero
+	// for a priced order item with no immediate charge.
+	Amount NilMoney `json:"amount"`
+	// Total reduction on this line, including any committed recurring discount.
+	DiscountAmount NilMoney `json:"discount_amount"`
+	// Tax on the discounted amount, including any tax already contained in that amount.
+	TaxAmount NilMoney `json:"tax_amount"`
+	// The part of tax_amount already contained in amount minus discount_amount.
+	TaxIncludedAmount NilMoney `json:"tax_included_amount"`
+	// Amount minus discount_amount plus tax_amount minus tax_included_amount.
+	Total NilMoney `json:"total"`
+	// Projected charge for this line's future usage over the period stated by the quoting operation, at
+	// current rates, before discounts and tax and not rounded. Not part of amount or total and not
+	// collected at checkout. Null when the line is not billed for usage or its usage cannot be priced.
+	EstimatedUsageAmount NilMoney `json:"estimated_usage_amount"`
+	Currency             string   `json:"currency"`
+}
+
+// GetPriced returns the value of Priced.
+func (s *QuotedLine) GetPriced() bool {
+	return s.Priced
+}
+
+// GetUnpricedReason returns the value of UnpricedReason.
+func (s *QuotedLine) GetUnpricedReason() QuotedLineUnpricedReason {
+	return s.UnpricedReason
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *QuotedLine) GetPlanName() string {
+	return s.PlanName
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *QuotedLine) GetUnitAmount() NilMoney {
+	return s.UnitAmount
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *QuotedLine) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetAmount returns the value of Amount.
+func (s *QuotedLine) GetAmount() NilMoney {
+	return s.Amount
+}
+
+// GetDiscountAmount returns the value of DiscountAmount.
+func (s *QuotedLine) GetDiscountAmount() NilMoney {
+	return s.DiscountAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *QuotedLine) GetTaxAmount() NilMoney {
+	return s.TaxAmount
+}
+
+// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
+func (s *QuotedLine) GetTaxIncludedAmount() NilMoney {
+	return s.TaxIncludedAmount
+}
+
+// GetTotal returns the value of Total.
+func (s *QuotedLine) GetTotal() NilMoney {
+	return s.Total
+}
+
+// GetEstimatedUsageAmount returns the value of EstimatedUsageAmount.
+func (s *QuotedLine) GetEstimatedUsageAmount() NilMoney {
+	return s.EstimatedUsageAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *QuotedLine) GetCurrency() string {
+	return s.Currency
+}
+
+// SetPriced sets the value of Priced.
+func (s *QuotedLine) SetPriced(val bool) {
+	s.Priced = val
+}
+
+// SetUnpricedReason sets the value of UnpricedReason.
+func (s *QuotedLine) SetUnpricedReason(val QuotedLineUnpricedReason) {
+	s.UnpricedReason = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *QuotedLine) SetPlanName(val string) {
+	s.PlanName = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *QuotedLine) SetUnitAmount(val NilMoney) {
+	s.UnitAmount = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *QuotedLine) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *QuotedLine) SetAmount(val NilMoney) {
+	s.Amount = val
+}
+
+// SetDiscountAmount sets the value of DiscountAmount.
+func (s *QuotedLine) SetDiscountAmount(val NilMoney) {
+	s.DiscountAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *QuotedLine) SetTaxAmount(val NilMoney) {
+	s.TaxAmount = val
+}
+
+// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
+func (s *QuotedLine) SetTaxIncludedAmount(val NilMoney) {
+	s.TaxIncludedAmount = val
+}
+
+// SetTotal sets the value of Total.
+func (s *QuotedLine) SetTotal(val NilMoney) {
+	s.Total = val
+}
+
+// SetEstimatedUsageAmount sets the value of EstimatedUsageAmount.
+func (s *QuotedLine) SetEstimatedUsageAmount(val NilMoney) {
+	s.EstimatedUsageAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *QuotedLine) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// Why no price was found; `none` while `priced` is true.
+type QuotedLineUnpricedReason string
+
+const (
+	QuotedLineUnpricedReasonNone    QuotedLineUnpricedReason = "none"
+	QuotedLineUnpricedReasonNoPrice QuotedLineUnpricedReason = "no_price"
+)
+
+// AllValues returns all QuotedLineUnpricedReason values.
+func (QuotedLineUnpricedReason) AllValues() []QuotedLineUnpricedReason {
+	return []QuotedLineUnpricedReason{
+		QuotedLineUnpricedReasonNone,
+		QuotedLineUnpricedReasonNoPrice,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuotedLineUnpricedReason) MarshalText() ([]byte, error) {
+	switch s {
+	case QuotedLineUnpricedReasonNone:
+		return []byte(s), nil
+	case QuotedLineUnpricedReasonNoPrice:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuotedLineUnpricedReason) UnmarshalText(data []byte) error {
+	switch QuotedLineUnpricedReason(data) {
+	case QuotedLineUnpricedReasonNone:
+		*s = QuotedLineUnpricedReasonNone
+		return nil
+	case QuotedLineUnpricedReasonNoPrice:
+		*s = QuotedLineUnpricedReasonNoPrice
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/RequestResource
 type RequestResource struct {
 	APIKeyID uuid.UUID `json:"api_key_id"`
@@ -2490,6 +3328,299 @@ func (s *RequestResourceUsageSource) UnmarshalText(data []byte) error {
 		return nil
 	case RequestResourceUsageSourceEstimated:
 		*s = RequestResourceUsageSourceEstimated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The model platform service of a project.
+// Ref: #/components/schemas/ServiceResource
+type ServiceResource struct {
+	// `inactive` has never been enabled or its subscription has ended; `pending` awaits acceptance of its
+	// order; `active` accepts requests on the forwarding endpoints; `failed` means the enablement failed,
+	// as `failure_reason` states. An `inactive` or `failed` service can be enabled again.
+	Status ServiceResourceStatus `json:"status"`
+	// Why the enablement failed; null unless `status` is `failed`. `order_declined` means Billing did not
+	// accept the order, for example because the billing account is suspended; `order_canceled` means the
+	// order was withdrawn; `order_expired` means its checkout was not confirmed in time.
+	FailureReason NilServiceResourceFailureReason `json:"failure_reason"`
+	// The order that enabled the service, or that the latest enablement placed; null before any
+	// enablement.
+	OrderID NilUUID `json:"order_id"`
+	// The Billing subscription that requests are billed under; null before any enablement.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// When the service became active and billing began; null until then.
+	ActivatedAt NilDateTime `json:"activated_at"`
+	// When the subscription ended; null unless it has.
+	EndedAt NilDateTime `json:"ended_at"`
+}
+
+// GetStatus returns the value of Status.
+func (s *ServiceResource) GetStatus() ServiceResourceStatus {
+	return s.Status
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *ServiceResource) GetFailureReason() NilServiceResourceFailureReason {
+	return s.FailureReason
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *ServiceResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *ServiceResource) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetActivatedAt returns the value of ActivatedAt.
+func (s *ServiceResource) GetActivatedAt() NilDateTime {
+	return s.ActivatedAt
+}
+
+// GetEndedAt returns the value of EndedAt.
+func (s *ServiceResource) GetEndedAt() NilDateTime {
+	return s.EndedAt
+}
+
+// SetStatus sets the value of Status.
+func (s *ServiceResource) SetStatus(val ServiceResourceStatus) {
+	s.Status = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *ServiceResource) SetFailureReason(val NilServiceResourceFailureReason) {
+	s.FailureReason = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *ServiceResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *ServiceResource) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetActivatedAt sets the value of ActivatedAt.
+func (s *ServiceResource) SetActivatedAt(val NilDateTime) {
+	s.ActivatedAt = val
+}
+
+// SetEndedAt sets the value of EndedAt.
+func (s *ServiceResource) SetEndedAt(val NilDateTime) {
+	s.EndedAt = val
+}
+
+// Why the enablement failed; null unless `status` is `failed`. `order_declined` means Billing did not
+// accept the order, for example because the billing account is suspended; `order_canceled` means the
+// order was withdrawn; `order_expired` means its checkout was not confirmed in time.
+type ServiceResourceFailureReason string
+
+const (
+	ServiceResourceFailureReasonOrderDeclined ServiceResourceFailureReason = "order_declined"
+	ServiceResourceFailureReasonOrderCanceled ServiceResourceFailureReason = "order_canceled"
+	ServiceResourceFailureReasonOrderExpired  ServiceResourceFailureReason = "order_expired"
+)
+
+// AllValues returns all ServiceResourceFailureReason values.
+func (ServiceResourceFailureReason) AllValues() []ServiceResourceFailureReason {
+	return []ServiceResourceFailureReason{
+		ServiceResourceFailureReasonOrderDeclined,
+		ServiceResourceFailureReasonOrderCanceled,
+		ServiceResourceFailureReasonOrderExpired,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ServiceResourceFailureReason) MarshalText() ([]byte, error) {
+	switch s {
+	case ServiceResourceFailureReasonOrderDeclined:
+		return []byte(s), nil
+	case ServiceResourceFailureReasonOrderCanceled:
+		return []byte(s), nil
+	case ServiceResourceFailureReasonOrderExpired:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ServiceResourceFailureReason) UnmarshalText(data []byte) error {
+	switch ServiceResourceFailureReason(data) {
+	case ServiceResourceFailureReasonOrderDeclined:
+		*s = ServiceResourceFailureReasonOrderDeclined
+		return nil
+	case ServiceResourceFailureReasonOrderCanceled:
+		*s = ServiceResourceFailureReasonOrderCanceled
+		return nil
+	case ServiceResourceFailureReasonOrderExpired:
+		*s = ServiceResourceFailureReasonOrderExpired
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `inactive` has never been enabled or its subscription has ended; `pending` awaits acceptance of its
+// order; `active` accepts requests on the forwarding endpoints; `failed` means the enablement failed,
+// as `failure_reason` states. An `inactive` or `failed` service can be enabled again.
+type ServiceResourceStatus string
+
+const (
+	ServiceResourceStatusInactive ServiceResourceStatus = "inactive"
+	ServiceResourceStatusPending  ServiceResourceStatus = "pending"
+	ServiceResourceStatusActive   ServiceResourceStatus = "active"
+	ServiceResourceStatusFailed   ServiceResourceStatus = "failed"
+)
+
+// AllValues returns all ServiceResourceStatus values.
+func (ServiceResourceStatus) AllValues() []ServiceResourceStatus {
+	return []ServiceResourceStatus{
+		ServiceResourceStatusInactive,
+		ServiceResourceStatusPending,
+		ServiceResourceStatusActive,
+		ServiceResourceStatusFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ServiceResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ServiceResourceStatusInactive:
+		return []byte(s), nil
+	case ServiceResourceStatusPending:
+		return []byte(s), nil
+	case ServiceResourceStatusActive:
+		return []byte(s), nil
+	case ServiceResourceStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ServiceResourceStatus) UnmarshalText(data []byte) error {
+	switch ServiceResourceStatus(data) {
+	case ServiceResourceStatusInactive:
+		*s = ServiceResourceStatusInactive
+		return nil
+	case ServiceResourceStatusPending:
+		*s = ServiceResourceStatusPending
+		return nil
+	case ServiceResourceStatusActive:
+		*s = ServiceResourceStatusActive
+		return nil
+	case ServiceResourceStatusFailed:
+		*s = ServiceResourceStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/TokenPrice
+type TokenPrice struct {
+	TokenKind TokenPriceTokenKind `json:"token_kind"`
+	// The charge for `unit_quantity` tokens of this kind. Null when the kind has no rate in the currency,
+	// in which case the model cannot be billed for it.
+	UnitAmount NilMoney `json:"unit_amount"`
+	// How many tokens `unit_amount` is for, such as `1000000`. Null when `unit_amount` is null.
+	UnitQuantity NilString `json:"unit_quantity"`
+}
+
+// GetTokenKind returns the value of TokenKind.
+func (s *TokenPrice) GetTokenKind() TokenPriceTokenKind {
+	return s.TokenKind
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *TokenPrice) GetUnitAmount() NilMoney {
+	return s.UnitAmount
+}
+
+// GetUnitQuantity returns the value of UnitQuantity.
+func (s *TokenPrice) GetUnitQuantity() NilString {
+	return s.UnitQuantity
+}
+
+// SetTokenKind sets the value of TokenKind.
+func (s *TokenPrice) SetTokenKind(val TokenPriceTokenKind) {
+	s.TokenKind = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *TokenPrice) SetUnitAmount(val NilMoney) {
+	s.UnitAmount = val
+}
+
+// SetUnitQuantity sets the value of UnitQuantity.
+func (s *TokenPrice) SetUnitQuantity(val NilString) {
+	s.UnitQuantity = val
+}
+
+type TokenPriceTokenKind string
+
+const (
+	TokenPriceTokenKindInput      TokenPriceTokenKind = "input"
+	TokenPriceTokenKindOutput     TokenPriceTokenKind = "output"
+	TokenPriceTokenKindCacheRead  TokenPriceTokenKind = "cache_read"
+	TokenPriceTokenKindCacheWrite TokenPriceTokenKind = "cache_write"
+	TokenPriceTokenKindReasoning  TokenPriceTokenKind = "reasoning"
+)
+
+// AllValues returns all TokenPriceTokenKind values.
+func (TokenPriceTokenKind) AllValues() []TokenPriceTokenKind {
+	return []TokenPriceTokenKind{
+		TokenPriceTokenKindInput,
+		TokenPriceTokenKindOutput,
+		TokenPriceTokenKindCacheRead,
+		TokenPriceTokenKindCacheWrite,
+		TokenPriceTokenKindReasoning,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TokenPriceTokenKind) MarshalText() ([]byte, error) {
+	switch s {
+	case TokenPriceTokenKindInput:
+		return []byte(s), nil
+	case TokenPriceTokenKindOutput:
+		return []byte(s), nil
+	case TokenPriceTokenKindCacheRead:
+		return []byte(s), nil
+	case TokenPriceTokenKindCacheWrite:
+		return []byte(s), nil
+	case TokenPriceTokenKindReasoning:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TokenPriceTokenKind) UnmarshalText(data []byte) error {
+	switch TokenPriceTokenKind(data) {
+	case TokenPriceTokenKindInput:
+		*s = TokenPriceTokenKindInput
+		return nil
+	case TokenPriceTokenKindOutput:
+		*s = TokenPriceTokenKindOutput
+		return nil
+	case TokenPriceTokenKindCacheRead:
+		*s = TokenPriceTokenKindCacheRead
+		return nil
+	case TokenPriceTokenKindCacheWrite:
+		*s = TokenPriceTokenKindCacheWrite
+		return nil
+	case TokenPriceTokenKindReasoning:
+		*s = TokenPriceTokenKindReasoning
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
