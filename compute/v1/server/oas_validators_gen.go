@@ -859,7 +859,7 @@ func (s *CheckoutOptions) Validate() error {
 					MaxLengthSet:  false,
 					Email:         false,
 					Hostname:      false,
-					Regex:         regexMap["^\\d+(\\.\\d{1,10})?$"],
+					Regex:         regexMap["^[0-9]{1,15}([.][0-9]{1,10})?$"],
 					MinNumeric:    0,
 					MinNumericSet: false,
 					MaxNumeric:    0,

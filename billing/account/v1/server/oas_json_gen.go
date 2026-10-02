@@ -20065,7 +20065,7 @@ func (s *TopUpCreate) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("amount")
-		s.Amount.Encode(e)
+		e.Str(s.Amount)
 	}
 	{
 		if s.PaymentMethodID.Set {
@@ -20151,7 +20151,9 @@ func (s *TopUpCreate) Decode(d *jx.Decoder) error {
 		case "amount":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				if err := s.Amount.Decode(d); err != nil {
+				v, err := d.Str()
+				s.Amount = string(v)
+				if err != nil {
 					return err
 				}
 				return nil

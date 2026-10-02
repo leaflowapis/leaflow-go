@@ -12455,7 +12455,7 @@ type TopUpCreate struct {
 	// There is a minimum, which differs by currency. Below it the gateway's fee exceeds the top-up itself,
 	// so such a payment costs more to accept than it brings. The minimum in force is returned with the
 	// rejection.
-	Amount Money `json:"amount"`
+	Amount string `json:"amount"`
 	// Charge a saved method instead of opening a checkout page.
 	PaymentMethodID OptUUID `json:"payment_method_id"`
 	// Where to send the customer after checkout.
@@ -12483,7 +12483,7 @@ func (s *TopUpCreate) GetBillingAccountID() int64 {
 }
 
 // GetAmount returns the value of Amount.
-func (s *TopUpCreate) GetAmount() Money {
+func (s *TopUpCreate) GetAmount() string {
 	return s.Amount
 }
 
@@ -12518,7 +12518,7 @@ func (s *TopUpCreate) SetBillingAccountID(val int64) {
 }
 
 // SetAmount sets the value of Amount.
-func (s *TopUpCreate) SetAmount(val Money) {
+func (s *TopUpCreate) SetAmount(val string) {
 	s.Amount = val
 }
 
