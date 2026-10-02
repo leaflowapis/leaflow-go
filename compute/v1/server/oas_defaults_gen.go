@@ -3,6 +3,14 @@
 package computev1server
 
 // setDefaults set default value of fields.
+func (s *CheckoutOptions) setDefaults() {
+	{
+		val := CheckoutOptionsMode("automatic")
+		s.Mode.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *LaunchInstanceQuoteRequestBody) setDefaults() {
 	{
 		val := int64(1)

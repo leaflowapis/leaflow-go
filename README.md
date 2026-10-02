@@ -1,22 +1,10 @@
 # leaflow-go
 
-Leaflow 平台的 Go SDK,由 [leaflowapis](https://github.com/leaflowapis/leaflowapis) 生成。
+Leaflow 平台的 Go SDK，由正式 [leaflowapis](https://github.com/leaflowapis/leaflowapis) 契约生成。
+每个服务一个模块，包括 billing/account、billing/catalog、billing/project；tag 使用各模块路径前缀。
 
-```
-go get github.com/leaflowapis/leaflow-go/compute
-```
-
-每个服务一个模块,tag 带服务名前缀(`compute/v0.2.0`)。按职能分出子包的服务,每个子包是一个模块,
-tag 带两段前缀:
-
-```
-go get github.com/leaflowapis/leaflow-go/billing/catalog    # billing/catalog/v0.1.0
-go get github.com/leaflowapis/leaflow-go/billing/account    # billing/account/v0.1.0
-go get github.com/leaflowapis/leaflow-go/billing/project    # billing/project/v0.1.0
-```
-
-包名由路径各段连成，并加 `server` 后缀，如 `billingcatalogv1server`。
-原生 ogen 客户端和服务端共同生成到 `<服务>/v1/server`，类型和方法以生成接口为准。
+原生 ogen v1.24.0 在 `<服务>/v1/server` 生成 Client、Handler、SecuritySource、引用模型与 Validate。
+客户端与服务端使用同一份契约。使用方直接调用官方 NewClient，显式传入服务地址与准确生成的凭据源：
 
 ```go
 import (
@@ -31,14 +19,11 @@ func (s tokenSource) ScopedTokenAuth(context.Context, computev1.OperationName) (
     return computev1.ScopedTokenAuth{Token: s.token}, nil
 }
 
-// New 使用契约 servers[0]；也可直接调用原生 NewClient 指定服务地址。
-client, err := computev1.New(tokenSource{token: token})
+client, err := computev1.NewClient("https://compute.leaflow.cloud", tokenSource{token: token})
 ```
 
-本版本按批准的升级移除旧 `v1` oapi 客户端。使用方改为原生 `Client`、`Invoker`、
-`SecuritySource`、`ClientOption` 和每个操作的类型化结果；不存在 `ClientWithResponses` 转发层。
-共同类型位于 `github.com/leaflowapis/leaflow-go/type/v1`，包含原生 Encode/Decode、可选值和可空值。
-调用 `encoding/json` 编码这些模型时传入模型指针，以调用原生 MarshalJSON 并保留省略字段。
+本次 breaking 升级移除旧 `v1` oapi 客户端、New/defaults 转发模板和 ClientWithResponses。
+输入可选/可空状态使用原生 Opt/Nil；操作结果使用生成的类型化返回值，调用签名以生成接口为准。
 
 ## 重新生成
 
@@ -46,21 +31,25 @@ client, err := computev1.New(tokenSource{token: token})
 python3 scripts/generate.py
 ```
 
-默认从正式远程仓库读取 `CONTRACTS_REF` 指定的契约。`CONTRACTS_DIR` 仅用于本地候选演练，
-其 HEAD 必须精确匹配 `CONTRACTS_REF`。本地候选来源不表示已发布。
+脚本仅编排官方 ogen 与模块路径，启用官方 client/request/validation，直接读取固定源，不改 schema、
+不注入 x-ogen-type、不生成 fake operation 或额外锚模型、不手写客户端类型/校验适配器。
+各 API 原生生成其实际引用的 schema/Validate，保留既有约束。模型 nominal 类型变化由消费者编译迁移。
 
-固定官方 ogen v1.24.0。OpenAPI 外部类型加载使用官方 Go 1.26.5；脚本默认通过 Go 标准工具链选择器
-解析该版本，离线时可用 `OGEN_GO` 指定已经安装的官方 go 二进制。`OGEN_BIN` 可指定已安装的
-ogen v1.24.0；脚本校验其版本。服务模块编译保留各自 go.mod 的工具链要求。
+默认从正式 remote 读取 CONTRACTS_REF。CONTRACTS_DIR 可用于候选演练，HEAD 必须精确匹配该 ref，且本地契约 checkout 必须干净。
+OGEN_BIN 可指定已安装的官方 ogen v1.24.0；脚本核对模块版本。生成与编译使用外层 Go 工具链，
+取消外部类型后不需要前一候选的 Go 1.26 loader 或本地共享模块代理。
 
-公开 type 模块先生成，其余 13 个服务加载同一公开共同 package。跨 SDK 使用方必须 pin 新原生
-共享 type 的版本；旧 oapi type 没有原生 Encode/Decode。生成不会写入 replace 或 go.work。
-正式发布需先发布共享 type，再更新并验证 13 个 public 模块和 private SDK 的共同版本 pin。
-当前依赖 pin 指向未发布候选提交；本地模块产物验证不能替代正式远程重生成和依赖验证。
+## 移除 public Go type 模块
 
-## 候选验收边界
+本候选移除 Go type 目录及各服务的共包依赖，不构造 GenerationRoot 或其他生成锚。
+源共享 type 契约继续存在，各 API 通过原始引用生成自己的模型/Validate，TS 生成边界不在此处修改。
 
-ogen v1.24 的外部 `x-ogen-type` 解码会委托共同类型 Decode，但不会调用其 Validate。
-当前候选映射下，外部 CheckoutOptions 的科学计数法、空串、超精度和 mode enum 约束没有在生成
-请求链执行；直接对共同类型调用 Validate 通过的测试不能代表请求链拒绝。独立真实服务器红回归
-已证明该问题，尚未修复。正式采用前必须解决外部嵌套校验；本候选不能作为生产验收通过。
+本 workspace 没有直接业务 Go import 或 Proto/RPC consumer 引用 public Go type module；Billing
+仅有旧 SDK 带入的 indirect go.mod 项，此轮未修改业务服务依赖。该结论限于已核对的本地 workspace。
+
+这是本次 breaking SDK 升级的公开类型边界变更。外部旧消费者若引用 public type package，升级到
+新候选时应改用准确 API 包的生成类型；不提供兼容 alias/wrapper。旧发布 type tags 和 Git 历史不动，
+固定旧版本的消费者不因此被改写。尚未核对仓库外的真实使用者，正式版本由父代理确定。
+
+当前 CONTRACTS_REF 是本地候选 source commit，不表示已发布。正式采用前仍需从已发布 remote 来源
+重生成并验证依赖，后续 Money 源约束修订由契约所有者推进；本轮不改契约或业务 wire。

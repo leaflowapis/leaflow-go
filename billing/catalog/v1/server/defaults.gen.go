@@ -1,7 +1,0 @@
-// Code generated from the contract's servers[0]. DO NOT EDIT.
-package billingcatalogv1server
-
-// New 使用契约地址和原生 SecuritySource；不保留旧 ClientWithResponses 形状。
-func New(options ...ClientOption) (*Client, error) {
-	return NewClient("https://billing.leaflow.cloud", options...)
-}

@@ -386,6 +386,15 @@ func (c *Client) CreateService(ctx context.Context, request *CreateServiceReques
 }
 
 func (c *Client) sendCreateService(ctx context.Context, request *CreateServiceRequestBody) (res CreateServiceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-service"),
 		semconv.HTTPRequestMethodKey.String("POST"),

@@ -34,7 +34,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-require (
-	github.com/google/uuid v1.6.0
-	github.com/leaflowapis/leaflow-go/type v0.23.1-0.20261002021420-367195d74fae
-)
+require github.com/google/uuid v1.6.0

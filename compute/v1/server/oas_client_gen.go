@@ -2579,6 +2579,15 @@ func (c *Client) CreateBackupService(ctx context.Context, request *CreateBackupS
 }
 
 func (c *Client) sendCreateBackupService(ctx context.Context, request *CreateBackupServiceRequestBody, params CreateBackupServiceParams) (res CreateBackupServiceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-backup-service"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -15519,6 +15528,15 @@ func (c *Client) ResizeInstance(ctx context.Context, request *ResizeInstanceRequ
 }
 
 func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (res ResizeInstanceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),

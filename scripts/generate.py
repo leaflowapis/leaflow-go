@@ -3,7 +3,6 @@
 import os
 import pathlib
 import subprocess
-import tempfile
 import contracts
 import ogen
 
@@ -14,25 +13,23 @@ def require_source(source, ref):
     head = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
     if head != ref:
         raise ValueError("source HEAD differs from CONTRACTS_REF")
+    # 拒绝同 HEAD 下的未提交契约漂移，避免把他人的 WIP 当成固定 source 生成。
+    dirty = subprocess.check_output(["git", "-C", str(source), "status", "--porcelain", "--untracked-files=all"], text=True)
+    if dirty:
+        raise ValueError("CONTRACTS_DIR must be a clean checkout of CONTRACTS_REF")
     return head
 
 
-def generate_services(source, public, generation_cwd):
-    with tempfile.TemporaryDirectory(prefix="native-contracts-") as raw:
-        scratch = pathlib.Path(raw) / "contracts"
-        ogen.prepare_contracts(source, scratch)
-        specs = sorted((scratch / "leaflow").glob("**/openapi.yaml"))
-        for spec in specs:
-            relative = spec.parent.relative_to(scratch / "leaflow")
-            parts = relative.parts
-            service = "/".join(parts[:-1])
-            package = "".join(parts[:-1]) + parts[-1]
-            ogen.generate_api(spec, ROOT / relative, package, generation_cwd, defaults=public)
-            print(str(relative), "native client + server", flush=True)
-            if public:
-                module = ROOT / service / "go.mod"
-                if not module.exists():
-                    module.write_text("module github.com/leaflowapis/leaflow-go/" + service + "\n\ngo 1.26.0\n\nrequire github.com/ogen-go/ogen v1.24.0\n")
+def generate_services(source):
+    # 直接读取固定契约，不改 scratch/schema，不注入外部类型或生成额外业务操作。
+    for spec in sorted((source / "leaflow").glob("**/openapi.yaml")):
+        relative = spec.parent.relative_to(source / "leaflow")
+        package = "".join(relative.parts[:-1]) + relative.parts[-1]
+        ogen.generate_api(spec, ROOT / relative, package, ROOT)
+        print(str(relative), "native client + server + referenced models", flush=True)
+        module = ROOT / relative.parent / "go.mod"
+        if not module.exists():
+            module.write_text("module github.com/leaflowapis/leaflow-go/" + str(relative.parent) + "\n\ngo 1.26.0\n\nrequire github.com/ogen-go/ogen v1.24.0\n")
 
 
 def main():
@@ -44,16 +41,7 @@ def main():
     else:
         source = ROOT / 'leaflowapis'
         contracts.fetch('https://github.com/leaflowapis/leaflowapis.git', source)
-    public = True
-    if public:
-        ogen.generate_shared(source, ROOT / "type/v1")
-    with ogen.load_shared(ROOT, ROOT / "type" if public else None) as cwd:
-        generate_services(source, public, cwd)
-    if not public:
-        if os.environ.get("SKIP_PROTO"):
-            print("proto preserved (explicit generation-stage skip)", flush=True)
-        else:
-            subprocess.run(["buf", "generate", str(source)], check=True, cwd=ROOT)
+    generate_services(source)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,6 @@ require (
 	github.com/go-faster/errors v0.8.0
 	github.com/go-faster/jx v1.2.0
 	github.com/google/uuid v1.6.0
-	github.com/leaflowapis/leaflow-go/type v0.23.1-0.20261002021420-367195d74fae
 	github.com/ogen-go/ogen v1.24.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/metric v1.45.0
