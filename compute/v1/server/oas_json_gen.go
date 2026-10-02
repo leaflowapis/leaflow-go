@@ -14691,50 +14691,6 @@ func (s *NilPricingOptionUnit) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes PrivateNetworkOperation as json.
-func (o NilPrivateNetworkOperation) Encode(e *jx.Encoder) {
-	if o.Null {
-		e.Null()
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes PrivateNetworkOperation from json.
-func (o *NilPrivateNetworkOperation) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode NilPrivateNetworkOperation to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v PrivateNetworkOperation
-		o.Value = v
-		o.Null = true
-		return nil
-	}
-	o.Null = false
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s NilPrivateNetworkOperation) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *NilPrivateNetworkOperation) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes SnapshotOperation as json.
 func (o NilSnapshotOperation) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -18764,161 +18720,6 @@ func (s *PrivateNetworkListResponseBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *PrivateNetworkOperation) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *PrivateNetworkOperation) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("type")
-		s.Type.Encode(e)
-	}
-	{
-		e.FieldStart("started_at")
-		json.EncodeDateTime(e, s.StartedAt)
-	}
-}
-
-var jsonFieldsNameOfPrivateNetworkOperation = [2]string{
-	0: "type",
-	1: "started_at",
-}
-
-// Decode decodes PrivateNetworkOperation from json.
-func (s *PrivateNetworkOperation) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode PrivateNetworkOperation to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "type":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				if err := s.Type.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"type\"")
-			}
-		case "started_at":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				v, err := json.DecodeDateTime(d)
-				s.StartedAt = v
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"started_at\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode PrivateNetworkOperation")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000011,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfPrivateNetworkOperation) {
-					name = jsonFieldsNameOfPrivateNetworkOperation[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *PrivateNetworkOperation) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *PrivateNetworkOperation) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes PrivateNetworkOperationType as json.
-func (s PrivateNetworkOperationType) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes PrivateNetworkOperationType from json.
-func (s *PrivateNetworkOperationType) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode PrivateNetworkOperationType to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch PrivateNetworkOperationType(v) {
-	case PrivateNetworkOperationTypeCreate:
-		*s = PrivateNetworkOperationTypeCreate
-	case PrivateNetworkOperationTypeEnableIpv6:
-		*s = PrivateNetworkOperationTypeEnableIpv6
-	case PrivateNetworkOperationTypeDisableIpv6:
-		*s = PrivateNetworkOperationTypeDisableIpv6
-	case PrivateNetworkOperationTypeDelete:
-		*s = PrivateNetworkOperationTypeDelete
-	default:
-		*s = PrivateNetworkOperationType(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s PrivateNetworkOperationType) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *PrivateNetworkOperationType) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
 func (s *PrivateNetworkResource) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -18936,10 +18737,6 @@ func (s *PrivateNetworkResource) encodeFields(e *jx.Encoder) {
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
 	{
-		e.FieldStart("has_internet_gateway")
-		e.Bool(s.HasInternetGateway)
-	}
-	{
 		e.FieldStart("id")
 		json.EncodeUUID(e, s.ID)
 	}
@@ -18952,29 +18749,18 @@ func (s *PrivateNetworkResource) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.RegionID)
 	}
 	{
-		e.FieldStart("status")
-		s.Status.Encode(e)
-	}
-	{
 		e.FieldStart("updated_at")
 		json.EncodeDateTime(e, s.UpdatedAt)
 	}
-	{
-		e.FieldStart("operation")
-		s.Operation.Encode(e)
-	}
 }
 
-var jsonFieldsNameOfPrivateNetworkResource = [9]string{
+var jsonFieldsNameOfPrivateNetworkResource = [6]string{
 	0: "cidr",
 	1: "created_at",
-	2: "has_internet_gateway",
-	3: "id",
-	4: "name",
-	5: "region_id",
-	6: "status",
-	7: "updated_at",
-	8: "operation",
+	2: "id",
+	3: "name",
+	4: "region_id",
+	5: "updated_at",
 }
 
 // Decode decodes PrivateNetworkResource from json.
@@ -18982,7 +18768,7 @@ func (s *PrivateNetworkResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode PrivateNetworkResource to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [1]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -19010,20 +18796,8 @@ func (s *PrivateNetworkResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
-		case "has_internet_gateway":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				v, err := d.Bool()
-				s.HasInternetGateway = bool(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"has_internet_gateway\"")
-			}
 		case "id":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -19035,7 +18809,7 @@ func (s *PrivateNetworkResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -19047,7 +18821,7 @@ func (s *PrivateNetworkResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "region_id":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.RegionID = v
@@ -19058,18 +18832,8 @@ func (s *PrivateNetworkResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"region_id\"")
 			}
-		case "status":
-			requiredBitSet[0] |= 1 << 6
-			if err := func() error {
-				if err := s.Status.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"status\"")
-			}
 		case "updated_at":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -19080,16 +18844,6 @@ func (s *PrivateNetworkResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"updated_at\"")
 			}
-		case "operation":
-			requiredBitSet[1] |= 1 << 0
-			if err := func() error {
-				if err := s.Operation.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"operation\"")
-			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -19099,9 +18853,8 @@ func (s *PrivateNetworkResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
-		0b11111111,
-		0b00000001,
+	for i, mask := range [1]uint8{
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -19143,52 +18896,6 @@ func (s *PrivateNetworkResource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PrivateNetworkResource) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes PrivateNetworkResourceStatus as json.
-func (s PrivateNetworkResourceStatus) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes PrivateNetworkResourceStatus from json.
-func (s *PrivateNetworkResourceStatus) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode PrivateNetworkResourceStatus to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch PrivateNetworkResourceStatus(v) {
-	case PrivateNetworkResourceStatusPending:
-		*s = PrivateNetworkResourceStatusPending
-	case PrivateNetworkResourceStatusAvailable:
-		*s = PrivateNetworkResourceStatusAvailable
-	case PrivateNetworkResourceStatusError:
-		*s = PrivateNetworkResourceStatusError
-	case PrivateNetworkResourceStatusUnknown:
-		*s = PrivateNetworkResourceStatusUnknown
-	case PrivateNetworkResourceStatusMissing:
-		*s = PrivateNetworkResourceStatusMissing
-	default:
-		*s = PrivateNetworkResourceStatus(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s PrivateNetworkResourceStatus) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *PrivateNetworkResourceStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

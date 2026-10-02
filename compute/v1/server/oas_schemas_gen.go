@@ -8069,51 +8069,6 @@ func (o NilPricingOptionUnit) Or(d PricingOptionUnit) PricingOptionUnit {
 	return d
 }
 
-// NewNilPrivateNetworkOperation returns new NilPrivateNetworkOperation with value set to v.
-func NewNilPrivateNetworkOperation(v PrivateNetworkOperation) NilPrivateNetworkOperation {
-	return NilPrivateNetworkOperation{
-		Value: v,
-	}
-}
-
-// NilPrivateNetworkOperation is nullable PrivateNetworkOperation.
-type NilPrivateNetworkOperation struct {
-	Value PrivateNetworkOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilPrivateNetworkOperation) SetTo(v PrivateNetworkOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilPrivateNetworkOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilPrivateNetworkOperation) SetToNull() {
-	o.Null = true
-	var v PrivateNetworkOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilPrivateNetworkOperation) Get() (v PrivateNetworkOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilPrivateNetworkOperation) Or(d PrivateNetworkOperation) PrivateNetworkOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilSnapshotOperation returns new NilSnapshotOperation with value set to v.
 func NewNilSnapshotOperation(v SnapshotOperation) NilSnapshotOperation {
 	return NilSnapshotOperation{
@@ -10747,103 +10702,14 @@ func (s *PrivateNetworkListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An operation still running on this private network. It is not a separate resource; once it finishes,
-// the private network's `operation` is null again and the private network shows the result.
-// Ref: #/components/schemas/PrivateNetworkOperation
-type PrivateNetworkOperation struct {
-	Type      PrivateNetworkOperationType `json:"type"`
-	StartedAt time.Time                   `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *PrivateNetworkOperation) GetType() PrivateNetworkOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *PrivateNetworkOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *PrivateNetworkOperation) SetType(val PrivateNetworkOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *PrivateNetworkOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-type PrivateNetworkOperationType string
-
-const (
-	PrivateNetworkOperationTypeCreate      PrivateNetworkOperationType = "create"
-	PrivateNetworkOperationTypeEnableIpv6  PrivateNetworkOperationType = "enable_ipv6"
-	PrivateNetworkOperationTypeDisableIpv6 PrivateNetworkOperationType = "disable_ipv6"
-	PrivateNetworkOperationTypeDelete      PrivateNetworkOperationType = "delete"
-)
-
-// AllValues returns all PrivateNetworkOperationType values.
-func (PrivateNetworkOperationType) AllValues() []PrivateNetworkOperationType {
-	return []PrivateNetworkOperationType{
-		PrivateNetworkOperationTypeCreate,
-		PrivateNetworkOperationTypeEnableIpv6,
-		PrivateNetworkOperationTypeDisableIpv6,
-		PrivateNetworkOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrivateNetworkOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case PrivateNetworkOperationTypeCreate:
-		return []byte(s), nil
-	case PrivateNetworkOperationTypeEnableIpv6:
-		return []byte(s), nil
-	case PrivateNetworkOperationTypeDisableIpv6:
-		return []byte(s), nil
-	case PrivateNetworkOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrivateNetworkOperationType) UnmarshalText(data []byte) error {
-	switch PrivateNetworkOperationType(data) {
-	case PrivateNetworkOperationTypeCreate:
-		*s = PrivateNetworkOperationTypeCreate
-		return nil
-	case PrivateNetworkOperationTypeEnableIpv6:
-		*s = PrivateNetworkOperationTypeEnableIpv6
-		return nil
-	case PrivateNetworkOperationTypeDisableIpv6:
-		*s = PrivateNetworkOperationTypeDisableIpv6
-		return nil
-	case PrivateNetworkOperationTypeDelete:
-		*s = PrivateNetworkOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/PrivateNetworkResource
 type PrivateNetworkResource struct {
-	Cidr               string    `json:"cidr"`
-	CreatedAt          time.Time `json:"created_at"`
-	HasInternetGateway bool      `json:"has_internet_gateway"`
-	ID                 uuid.UUID `json:"id"`
-	Name               string    `json:"name"`
-	RegionID           uuid.UUID `json:"region_id"`
-	// Only `available` accepts new instances, interfaces and floating IPs. `missing` means the network no
-	// longer exists in the cloud.
-	Status    PrivateNetworkResourceStatus `json:"status"`
-	UpdatedAt time.Time                    `json:"updated_at"`
-	// The operation in progress on this private network, or null when none is.
-	Operation NilPrivateNetworkOperation `json:"operation"`
+	Cidr      string    `json:"cidr"`
+	CreatedAt time.Time `json:"created_at"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	RegionID  uuid.UUID `json:"region_id"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GetCidr returns the value of Cidr.
@@ -10854,11 +10720,6 @@ func (s *PrivateNetworkResource) GetCidr() string {
 // GetCreatedAt returns the value of CreatedAt.
 func (s *PrivateNetworkResource) GetCreatedAt() time.Time {
 	return s.CreatedAt
-}
-
-// GetHasInternetGateway returns the value of HasInternetGateway.
-func (s *PrivateNetworkResource) GetHasInternetGateway() bool {
-	return s.HasInternetGateway
 }
 
 // GetID returns the value of ID.
@@ -10876,19 +10737,9 @@ func (s *PrivateNetworkResource) GetRegionID() uuid.UUID {
 	return s.RegionID
 }
 
-// GetStatus returns the value of Status.
-func (s *PrivateNetworkResource) GetStatus() PrivateNetworkResourceStatus {
-	return s.Status
-}
-
 // GetUpdatedAt returns the value of UpdatedAt.
 func (s *PrivateNetworkResource) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
-}
-
-// GetOperation returns the value of Operation.
-func (s *PrivateNetworkResource) GetOperation() NilPrivateNetworkOperation {
-	return s.Operation
 }
 
 // SetCidr sets the value of Cidr.
@@ -10899,11 +10750,6 @@ func (s *PrivateNetworkResource) SetCidr(val string) {
 // SetCreatedAt sets the value of CreatedAt.
 func (s *PrivateNetworkResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
-}
-
-// SetHasInternetGateway sets the value of HasInternetGateway.
-func (s *PrivateNetworkResource) SetHasInternetGateway(val bool) {
-	s.HasInternetGateway = val
 }
 
 // SetID sets the value of ID.
@@ -10921,86 +10767,12 @@ func (s *PrivateNetworkResource) SetRegionID(val uuid.UUID) {
 	s.RegionID = val
 }
 
-// SetStatus sets the value of Status.
-func (s *PrivateNetworkResource) SetStatus(val PrivateNetworkResourceStatus) {
-	s.Status = val
-}
-
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *PrivateNetworkResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
-// SetOperation sets the value of Operation.
-func (s *PrivateNetworkResource) SetOperation(val NilPrivateNetworkOperation) {
-	s.Operation = val
-}
-
 func (*PrivateNetworkResource) deletePrivateNetworkRes() {}
-
-// Only `available` accepts new instances, interfaces and floating IPs. `missing` means the network no
-// longer exists in the cloud.
-type PrivateNetworkResourceStatus string
-
-const (
-	PrivateNetworkResourceStatusPending   PrivateNetworkResourceStatus = "pending"
-	PrivateNetworkResourceStatusAvailable PrivateNetworkResourceStatus = "available"
-	PrivateNetworkResourceStatusError     PrivateNetworkResourceStatus = "error"
-	PrivateNetworkResourceStatusUnknown   PrivateNetworkResourceStatus = "unknown"
-	PrivateNetworkResourceStatusMissing   PrivateNetworkResourceStatus = "missing"
-)
-
-// AllValues returns all PrivateNetworkResourceStatus values.
-func (PrivateNetworkResourceStatus) AllValues() []PrivateNetworkResourceStatus {
-	return []PrivateNetworkResourceStatus{
-		PrivateNetworkResourceStatusPending,
-		PrivateNetworkResourceStatusAvailable,
-		PrivateNetworkResourceStatusError,
-		PrivateNetworkResourceStatusUnknown,
-		PrivateNetworkResourceStatusMissing,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrivateNetworkResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case PrivateNetworkResourceStatusPending:
-		return []byte(s), nil
-	case PrivateNetworkResourceStatusAvailable:
-		return []byte(s), nil
-	case PrivateNetworkResourceStatusError:
-		return []byte(s), nil
-	case PrivateNetworkResourceStatusUnknown:
-		return []byte(s), nil
-	case PrivateNetworkResourceStatusMissing:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
-	switch PrivateNetworkResourceStatus(data) {
-	case PrivateNetworkResourceStatusPending:
-		*s = PrivateNetworkResourceStatusPending
-		return nil
-	case PrivateNetworkResourceStatusAvailable:
-		*s = PrivateNetworkResourceStatusAvailable
-		return nil
-	case PrivateNetworkResourceStatusError:
-		*s = PrivateNetworkResourceStatusError
-		return nil
-	case PrivateNetworkResourceStatusUnknown:
-		*s = PrivateNetworkResourceStatusUnknown
-		return nil
-	case PrivateNetworkResourceStatusMissing:
-		*s = PrivateNetworkResourceStatusMissing
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
 // charged or reserved, and no discount redemption is consumed. Account discounts and tax are evaluated
