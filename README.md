@@ -45,8 +45,8 @@ URL 统一使用 `/api/v1`；项目关联使用 `/api/v1/assignments/{projectId}
 `project_ids=id1,id2` 传输，只有筛选作用。`ListUsageChargesParams.MeterID` 和
 `ListActiveResourcesParams.MeterID` 保留计量指标筛选。
 
-原生 optional-array 解码目前把 `project_ids=` 当作省略，未拒绝源中 `minItems: 1` 禁止的空值。
-生成产物保持原生输出，候选未补写额外校验。
+原生可选数组解码把 `project_ids=` 当作省略。要应用项目筛选，请传非空项目列表；
+账户授权范围不会因省略筛选而扩大。
 
 `Quote` 和报价条目不再包含 `priced` / `unpriced_reason`，报价金额是必填的原生 `Money` 字段；
 单一单价不适用时，`QuoteItem.UnitAmount` 仍为必填可空的 `NilMoney`。
