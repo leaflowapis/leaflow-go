@@ -29,9 +29,9 @@ client, err := computev1.NewClient("https://compute.leaflow.cloud", tokenSource{
 
 ## Billing 迁移
 
-账户与公开目录接口现在由同一个 `billingv1server.Client` / `Handler` 提供，共 60 个操作。
+账户与公开目录接口现在由同一个 `billingv1server.Client` / `Handler` 提供，共 63 个操作。
 URL 统一使用 `/api/v1`；项目关联使用 `/api/v1/assignments/{projectId}`。
-`SecuritySource` / `SecurityHandler` 仅包含 `AccessTokenAuth`：52 个金融操作使用 AccessToken
+`SecuritySource` / `SecurityHandler` 仅包含 `AccessTokenAuth`：55 个金融操作使用 AccessToken
 与账户权限，8 个公开目录读取不调用凭据源。16 个重复项目接口及 `CreateEstimate` 已移除。
 
 报价只有 `CreateQuote(ctx, *QuoteRequest) (*Quote, error)`。`QuoteRequest.BillingAccountID` 为必填
@@ -44,6 +44,16 @@ URL 统一使用 `/api/v1`；项目关联使用 `/api/v1/assignments/{projectId}
 其他金融列表的账户筛选可省略。`ProjectIds` 使用 `[]uuid.UUID`，最多 100 个唯一值，以
 `project_ids=id1,id2` 传输，只有筛选作用。`ListUsageChargesParams.MeterID` 和
 `ListActiveResourcesParams.MeterID` 保留计量指标筛选。
+
+Credit Note 读取使用 `ListCreditNotes`、`GetCreditNote` 和 `ListCreditNoteItems`，均使用 AccessToken。
+`Invoice` 与 `InvoiceSummary` 新增必填 `Money` 字段 `UnpaidCreditNotesAmount` 和
+`PaidCreditNotesAmount`；后者记录退回义务，不代表退款已完成。
+`CreditNote.VoidedAt` / `RefundID` 为必填可空的 `NilDateTime` / `NilUUID`。
+
+`CancelOrder(ctx, OptOrderCancel, CancelOrderParams)` 的 JSON body 可省略；
+`OptOrderCancel{}` 表示不发送 body，`NewOptOrderCancel(OrderCancel{})` 表示发送 `{}`。
+`OrderCancel.OrderItemIds` 为可省略的 `[]uuid.UUID`，显式选择需 1–100 个唯一 ID。
+`Order` 响应已移除 `CancelReason`。
 
 原生可选数组解码把 `project_ids=` 当作省略。要应用项目筛选，请传非空项目列表；
 账户授权范围不会因省略筛选而扩大。
@@ -84,6 +94,6 @@ OGEN_BIN 可指定已安装的官方 ogen v1.24.0；脚本核对模块版本。�
 固定旧版本的消费者不因此被改写。尚未核对仓库外的真实使用者，正式版本由父代理确定。
 
 当前 `CONTRACTS_REF` 固定为已推送的公开源
-[`0ad9132f6034123cd846e55e69eafb8e6cb4731b`](https://github.com/leaflowapis/leaflowapis/commit/0ad9132f6034123cd846e55e69eafb8e6cb4731b)。
+[`9dc43285d1e9043e779158f7098870f2623705a2`](https://github.com/leaflowapis/leaflowapis/commit/9dc43285d1e9043e779158f7098870f2623705a2)。
 产物使用正式脚本、原生 ogen v1.24.0，从该远端提交的干净 checkout 生成。
 这份 SDK 提交仍是发布候选；各改变模块的新 tag 由发布方决定。

@@ -31,20 +31,27 @@ func trimTrailingSlashes(u *url.URL) {
 type Invoker interface {
 	// CancelOrder invokes cancel-order operation.
 	//
-	// Withdraws an unaccepted order without recording a delivery failure. Payment may be absent, partial
-	// or complete; the order becomes canceled and any collected amount is automatically returned to its
-	// original payment sources. External payment-method refunds can finish asynchronously. Canceling an
-	// already canceled order returns it unchanged. A previously failed order keeps its failure outcome.
-	// The order and financial history are retained.
+	// Cancels the selected, still-undelivered items of an unaccepted order without recording a delivery
+	// failure. Omit order_item_ids to select every still-pending item, or name one or more items.
+	// Successful items remain delivered and are not refunded. Whole-order and partial cancellation both
+	// require confirmed non-delivery and necessary cleanup. The order keeps its existing pending phase
+	// while any item is still pending; its final outcome follows all item outcomes. Previously failed
+	// items keep their failure outcome.
 	//
-	// Refused once the order is accepted: its owning service must coordinate cancellation during
-	// provisioning and confirm non-delivery and necessary cleanup before recording cancellation. Delivered
-	// items are ended through subscription cancellation. An unknown or in-flight payment outcome must
-	// first be reconciled; it is not assumed to be unpaid. Scheduled changes continue to be canceled
-	// through the service that owns them. Refund quotations use CreateQuote.refund.
+	// Payment may be absent, partial or complete. Confirmed checkout keeps the selected items' agreed
+	// amounts and discounts; credit notes reduce issued invoices, and collected amounts are returned to
+	// their original payment sources. When checkout has not been confirmed, the remaining items are quoted
+	// again. External payment-method refunds can finish asynchronously. The order and financial history
+	// are retained; the same cancellation does not refund twice.
+	//
+	// Once the order is accepted, its owning service coordinates cancellation and confirms non-delivery
+	// and cleanup through the cancellation RPC. Delivered items are ended through subscription
+	// cancellation. Unknown delivery or payment outcomes are not refund evidence; in-flight or unknown
+	// payments must be reconciled first. Scheduled changes continue to be canceled through the owning
+	// service. Refund quotations use CreateQuote.refund.
 	//
 	// POST /api/v1/orders/{orderId}/cancel
-	CancelOrder(ctx context.Context, params CancelOrderParams) (CancelOrderRes, error)
+	CancelOrder(ctx context.Context, request OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error)
 	// CancelTopUp invokes cancel-top-up operation.
 	//
 	// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
@@ -227,6 +234,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/cancellations/{cancellationId}
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
+	// GetCreditNote invokes get-credit-note operation.
+	//
+	// Requires authorization for the invoice's billing account.
+	//
+	// GET /api/v1/credit-notes/{creditNoteId}
+	GetCreditNote(ctx context.Context, params GetCreditNoteParams) (*CreditNote, error)
 	// GetInvoice invokes get-invoice operation.
 	//
 	// Get invoice.
@@ -331,6 +344,20 @@ type Invoker interface {
 	//
 	// GET /api/v1/credit-grants
 	ListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (*CreditGrantList, error)
+	// ListCreditNoteItems invokes list-credit-note-items operation.
+	//
+	// The original invoice lines reduced by this note. Requires authorization for their invoice's billing
+	// account.
+	//
+	// GET /api/v1/credit-notes/{creditNoteId}/items
+	ListCreditNoteItems(ctx context.Context, params ListCreditNoteItemsParams) (*CreditNoteItemList, error)
+	// ListCreditNotes invokes list-credit-notes operation.
+	//
+	// Newest issued_at first, then ID. Requires authorization for the invoice's billing account. Filters
+	// narrow authorized results and apply before counting and paging.
+	//
+	// GET /api/v1/credit-notes
+	ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error)
 	// ListCurrencies invokes list-currencies operation.
 	//
 	// The currencies a new billing account can be opened in. A retired currency is not listed, although
@@ -673,25 +700,48 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 
 // CancelOrder invokes cancel-order operation.
 //
-// Withdraws an unaccepted order without recording a delivery failure. Payment may be absent, partial
-// or complete; the order becomes canceled and any collected amount is automatically returned to its
-// original payment sources. External payment-method refunds can finish asynchronously. Canceling an
-// already canceled order returns it unchanged. A previously failed order keeps its failure outcome.
-// The order and financial history are retained.
+// Cancels the selected, still-undelivered items of an unaccepted order without recording a delivery
+// failure. Omit order_item_ids to select every still-pending item, or name one or more items.
+// Successful items remain delivered and are not refunded. Whole-order and partial cancellation both
+// require confirmed non-delivery and necessary cleanup. The order keeps its existing pending phase
+// while any item is still pending; its final outcome follows all item outcomes. Previously failed
+// items keep their failure outcome.
 //
-// Refused once the order is accepted: its owning service must coordinate cancellation during
-// provisioning and confirm non-delivery and necessary cleanup before recording cancellation. Delivered
-// items are ended through subscription cancellation. An unknown or in-flight payment outcome must
-// first be reconciled; it is not assumed to be unpaid. Scheduled changes continue to be canceled
-// through the service that owns them. Refund quotations use CreateQuote.refund.
+// Payment may be absent, partial or complete. Confirmed checkout keeps the selected items' agreed
+// amounts and discounts; credit notes reduce issued invoices, and collected amounts are returned to
+// their original payment sources. When checkout has not been confirmed, the remaining items are quoted
+// again. External payment-method refunds can finish asynchronously. The order and financial history
+// are retained; the same cancellation does not refund twice.
+//
+// Once the order is accepted, its owning service coordinates cancellation and confirms non-delivery
+// and cleanup through the cancellation RPC. Delivered items are ended through subscription
+// cancellation. Unknown delivery or payment outcomes are not refund evidence; in-flight or unknown
+// payments must be reconciled first. Scheduled changes continue to be canceled through the owning
+// service. Refund quotations use CreateQuote.refund.
 //
 // POST /api/v1/orders/{orderId}/cancel
-func (c *Client) CancelOrder(ctx context.Context, params CancelOrderParams) (CancelOrderRes, error) {
-	res, err := c.sendCancelOrder(ctx, params)
+func (c *Client) CancelOrder(ctx context.Context, request OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error) {
+	res, err := c.sendCancelOrder(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendCancelOrder(ctx context.Context, params CancelOrderParams) (res CancelOrderRes, err error) {
+func (c *Client) sendCancelOrder(ctx context.Context, request OptOrderCancel, params CancelOrderParams) (res CancelOrderRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if value, ok := request.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-order"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -755,6 +805,9 @@ func (c *Client) sendCancelOrder(ctx context.Context, params CancelOrderParams) 
 	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCancelOrderRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -2612,6 +2665,137 @@ func (c *Client) sendGetCancellation(ctx context.Context, params GetCancellation
 
 	stage = "DecodeResponse"
 	result, err := decodeGetCancellationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetCreditNote invokes get-credit-note operation.
+//
+// Requires authorization for the invoice's billing account.
+//
+// GET /api/v1/credit-notes/{creditNoteId}
+func (c *Client) GetCreditNote(ctx context.Context, params GetCreditNoteParams) (*CreditNote, error) {
+	res, err := c.sendGetCreditNote(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetCreditNote(ctx context.Context, params GetCreditNoteParams) (res *CreditNote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-credit-note"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/credit-notes/{creditNoteId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetCreditNoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/credit-notes/"
+	{
+		// Encode "creditNoteId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "creditNoteId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CreditNoteId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, GetCreditNoteOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetCreditNoteResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4880,6 +5064,363 @@ func (c *Client) sendListCreditGrants(ctx context.Context, params ListCreditGran
 
 	stage = "DecodeResponse"
 	result, err := decodeListCreditGrantsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListCreditNoteItems invokes list-credit-note-items operation.
+//
+// The original invoice lines reduced by this note. Requires authorization for their invoice's billing
+// account.
+//
+// GET /api/v1/credit-notes/{creditNoteId}/items
+func (c *Client) ListCreditNoteItems(ctx context.Context, params ListCreditNoteItemsParams) (*CreditNoteItemList, error) {
+	res, err := c.sendListCreditNoteItems(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListCreditNoteItems(ctx context.Context, params ListCreditNoteItemsParams) (res *CreditNoteItemList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-credit-note-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/credit-notes/{creditNoteId}/items"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCreditNoteItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/credit-notes/"
+	{
+		// Encode "creditNoteId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "creditNoteId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CreditNoteId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/items"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListCreditNoteItemsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCreditNoteItemsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListCreditNotes invokes list-credit-notes operation.
+//
+// Newest issued_at first, then ID. Requires authorization for the invoice's billing account. Filters
+// narrow authorized results and apply before counting and paging.
+//
+// GET /api/v1/credit-notes
+func (c *Client) ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error) {
+	res, err := c.sendListCreditNotes(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListCreditNotes(ctx context.Context, params ListCreditNotesParams) (res *CreditNoteList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-credit-notes"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/credit-notes"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCreditNotesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/credit-notes"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "invoice_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "invoice_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.InvoiceID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListCreditNotesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCreditNotesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

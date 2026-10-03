@@ -10,20 +10,27 @@ import (
 type Handler interface {
 	// CancelOrder implements cancel-order operation.
 	//
-	// Withdraws an unaccepted order without recording a delivery failure. Payment may be absent, partial
-	// or complete; the order becomes canceled and any collected amount is automatically returned to its
-	// original payment sources. External payment-method refunds can finish asynchronously. Canceling an
-	// already canceled order returns it unchanged. A previously failed order keeps its failure outcome.
-	// The order and financial history are retained.
+	// Cancels the selected, still-undelivered items of an unaccepted order without recording a delivery
+	// failure. Omit order_item_ids to select every still-pending item, or name one or more items.
+	// Successful items remain delivered and are not refunded. Whole-order and partial cancellation both
+	// require confirmed non-delivery and necessary cleanup. The order keeps its existing pending phase
+	// while any item is still pending; its final outcome follows all item outcomes. Previously failed
+	// items keep their failure outcome.
 	//
-	// Refused once the order is accepted: its owning service must coordinate cancellation during
-	// provisioning and confirm non-delivery and necessary cleanup before recording cancellation. Delivered
-	// items are ended through subscription cancellation. An unknown or in-flight payment outcome must
-	// first be reconciled; it is not assumed to be unpaid. Scheduled changes continue to be canceled
-	// through the service that owns them. Refund quotations use CreateQuote.refund.
+	// Payment may be absent, partial or complete. Confirmed checkout keeps the selected items' agreed
+	// amounts and discounts; credit notes reduce issued invoices, and collected amounts are returned to
+	// their original payment sources. When checkout has not been confirmed, the remaining items are quoted
+	// again. External payment-method refunds can finish asynchronously. The order and financial history
+	// are retained; the same cancellation does not refund twice.
+	//
+	// Once the order is accepted, its owning service coordinates cancellation and confirms non-delivery
+	// and cleanup through the cancellation RPC. Delivered items are ended through subscription
+	// cancellation. Unknown delivery or payment outcomes are not refund evidence; in-flight or unknown
+	// payments must be reconciled first. Scheduled changes continue to be canceled through the owning
+	// service. Refund quotations use CreateQuote.refund.
 	//
 	// POST /api/v1/orders/{orderId}/cancel
-	CancelOrder(ctx context.Context, params CancelOrderParams) (CancelOrderRes, error)
+	CancelOrder(ctx context.Context, req OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error)
 	// CancelTopUp implements cancel-top-up operation.
 	//
 	// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
@@ -206,6 +213,12 @@ type Handler interface {
 	//
 	// GET /api/v1/cancellations/{cancellationId}
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
+	// GetCreditNote implements get-credit-note operation.
+	//
+	// Requires authorization for the invoice's billing account.
+	//
+	// GET /api/v1/credit-notes/{creditNoteId}
+	GetCreditNote(ctx context.Context, params GetCreditNoteParams) (*CreditNote, error)
 	// GetInvoice implements get-invoice operation.
 	//
 	// Get invoice.
@@ -310,6 +323,20 @@ type Handler interface {
 	//
 	// GET /api/v1/credit-grants
 	ListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (*CreditGrantList, error)
+	// ListCreditNoteItems implements list-credit-note-items operation.
+	//
+	// The original invoice lines reduced by this note. Requires authorization for their invoice's billing
+	// account.
+	//
+	// GET /api/v1/credit-notes/{creditNoteId}/items
+	ListCreditNoteItems(ctx context.Context, params ListCreditNoteItemsParams) (*CreditNoteItemList, error)
+	// ListCreditNotes implements list-credit-notes operation.
+	//
+	// Newest issued_at first, then ID. Requires authorization for the invoice's billing account. Filters
+	// narrow authorized results and apply before counting and paging.
+	//
+	// GET /api/v1/credit-notes
+	ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error)
 	// ListCurrencies implements list-currencies operation.
 	//
 	// The currencies a new billing account can be opened in. A retired currency is not listed, although

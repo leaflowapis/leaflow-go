@@ -2948,6 +2948,268 @@ func (s *CreditGroup) SetAmount(val Money) {
 	s.Amount = val
 }
 
+// An issued invoice reduction. Its credited amount is unpaid_amount plus paid_amount. A paid credit
+// records a return obligation; refund_id identifies its refund, whose outcome may still be pending.
+// Original invoice amounts remain unchanged.
+// Ref: #/components/schemas/CreditNote
+type CreditNote struct {
+	ID        uuid.UUID        `json:"id"`
+	InvoiceID uuid.UUID        `json:"invoice_id"`
+	Currency  string           `json:"currency"`
+	IssuedAt  time.Time        `json:"issued_at"`
+	Status    CreditNoteStatus `json:"status"`
+	// When this note was voided; null while issued.
+	VoidedAt NilDateTime `json:"voided_at"`
+	// The reduction of unpaid receivables. A void note no longer reduces what is due.
+	UnpaidAmount Money `json:"unpaid_amount"`
+	// The credited part of payments already received. This is not proof that its refund has completed.
+	PaidAmount Money `json:"paid_amount"`
+	// The refund to the original payment sources, or null when no paid amount was credited.
+	RefundID NilUUID `json:"refund_id"`
+}
+
+// GetID returns the value of ID.
+func (s *CreditNote) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetInvoiceID returns the value of InvoiceID.
+func (s *CreditNote) GetInvoiceID() uuid.UUID {
+	return s.InvoiceID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *CreditNote) GetCurrency() string {
+	return s.Currency
+}
+
+// GetIssuedAt returns the value of IssuedAt.
+func (s *CreditNote) GetIssuedAt() time.Time {
+	return s.IssuedAt
+}
+
+// GetStatus returns the value of Status.
+func (s *CreditNote) GetStatus() CreditNoteStatus {
+	return s.Status
+}
+
+// GetVoidedAt returns the value of VoidedAt.
+func (s *CreditNote) GetVoidedAt() NilDateTime {
+	return s.VoidedAt
+}
+
+// GetUnpaidAmount returns the value of UnpaidAmount.
+func (s *CreditNote) GetUnpaidAmount() Money {
+	return s.UnpaidAmount
+}
+
+// GetPaidAmount returns the value of PaidAmount.
+func (s *CreditNote) GetPaidAmount() Money {
+	return s.PaidAmount
+}
+
+// GetRefundID returns the value of RefundID.
+func (s *CreditNote) GetRefundID() NilUUID {
+	return s.RefundID
+}
+
+// SetID sets the value of ID.
+func (s *CreditNote) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetInvoiceID sets the value of InvoiceID.
+func (s *CreditNote) SetInvoiceID(val uuid.UUID) {
+	s.InvoiceID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *CreditNote) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetIssuedAt sets the value of IssuedAt.
+func (s *CreditNote) SetIssuedAt(val time.Time) {
+	s.IssuedAt = val
+}
+
+// SetStatus sets the value of Status.
+func (s *CreditNote) SetStatus(val CreditNoteStatus) {
+	s.Status = val
+}
+
+// SetVoidedAt sets the value of VoidedAt.
+func (s *CreditNote) SetVoidedAt(val NilDateTime) {
+	s.VoidedAt = val
+}
+
+// SetUnpaidAmount sets the value of UnpaidAmount.
+func (s *CreditNote) SetUnpaidAmount(val Money) {
+	s.UnpaidAmount = val
+}
+
+// SetPaidAmount sets the value of PaidAmount.
+func (s *CreditNote) SetPaidAmount(val Money) {
+	s.PaidAmount = val
+}
+
+// SetRefundID sets the value of RefundID.
+func (s *CreditNote) SetRefundID(val NilUUID) {
+	s.RefundID = val
+}
+
+// Ref: #/components/schemas/CreditNoteItem
+type CreditNoteItem struct {
+	ID            uuid.UUID `json:"id"`
+	CreditNoteID  uuid.UUID `json:"credit_note_id"`
+	InvoiceItemID uuid.UUID `json:"invoice_item_id"`
+	UnpaidAmount  Money     `json:"unpaid_amount"`
+	PaidAmount    Money     `json:"paid_amount"`
+}
+
+// GetID returns the value of ID.
+func (s *CreditNoteItem) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetCreditNoteID returns the value of CreditNoteID.
+func (s *CreditNoteItem) GetCreditNoteID() uuid.UUID {
+	return s.CreditNoteID
+}
+
+// GetInvoiceItemID returns the value of InvoiceItemID.
+func (s *CreditNoteItem) GetInvoiceItemID() uuid.UUID {
+	return s.InvoiceItemID
+}
+
+// GetUnpaidAmount returns the value of UnpaidAmount.
+func (s *CreditNoteItem) GetUnpaidAmount() Money {
+	return s.UnpaidAmount
+}
+
+// GetPaidAmount returns the value of PaidAmount.
+func (s *CreditNoteItem) GetPaidAmount() Money {
+	return s.PaidAmount
+}
+
+// SetID sets the value of ID.
+func (s *CreditNoteItem) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetCreditNoteID sets the value of CreditNoteID.
+func (s *CreditNoteItem) SetCreditNoteID(val uuid.UUID) {
+	s.CreditNoteID = val
+}
+
+// SetInvoiceItemID sets the value of InvoiceItemID.
+func (s *CreditNoteItem) SetInvoiceItemID(val uuid.UUID) {
+	s.InvoiceItemID = val
+}
+
+// SetUnpaidAmount sets the value of UnpaidAmount.
+func (s *CreditNoteItem) SetUnpaidAmount(val Money) {
+	s.UnpaidAmount = val
+}
+
+// SetPaidAmount sets the value of PaidAmount.
+func (s *CreditNoteItem) SetPaidAmount(val Money) {
+	s.PaidAmount = val
+}
+
+// Ref: #/components/schemas/CreditNoteItemList
+type CreditNoteItemList struct {
+	Items      []CreditNoteItem `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *CreditNoteItemList) GetItems() []CreditNoteItem {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *CreditNoteItemList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *CreditNoteItemList) SetItems(val []CreditNoteItem) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *CreditNoteItemList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// Ref: #/components/schemas/CreditNoteList
+type CreditNoteList struct {
+	Items      []CreditNote     `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *CreditNoteList) GetItems() []CreditNote {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *CreditNoteList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *CreditNoteList) SetItems(val []CreditNote) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *CreditNoteList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type CreditNoteStatus string
+
+const (
+	CreditNoteStatusIssued CreditNoteStatus = "issued"
+	CreditNoteStatusVoid   CreditNoteStatus = "void"
+)
+
+// AllValues returns all CreditNoteStatus values.
+func (CreditNoteStatus) AllValues() []CreditNoteStatus {
+	return []CreditNoteStatus{
+		CreditNoteStatusIssued,
+		CreditNoteStatusVoid,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreditNoteStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case CreditNoteStatusIssued:
+		return []byte(s), nil
+	case CreditNoteStatusVoid:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreditNoteStatus) UnmarshalText(data []byte) error {
+	switch CreditNoteStatus(data) {
+	case CreditNoteStatusIssued:
+		*s = CreditNoteStatusIssued
+		return nil
+	case CreditNoteStatusVoid:
+		*s = CreditNoteStatusVoid
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // A currency a billing account can be opened in.
 // Ref: #/components/schemas/Currency
 type Currency struct {
@@ -3596,8 +3858,15 @@ type Invoice struct {
 	// the receivable.
 	Total      Money    `json:"total"`
 	AmountPaid OptMoney `json:"amount_paid"`
-	// What is still collectible after applied credits and successful payments; never below zero. A draft
-	// order invoice is not collectible until checkout confirms it, and a paid or void invoice has none.
+	// Issued, non-void credit notes that reduced unpaid receivables. Does not rewrite the original invoice
+	// total.
+	UnpaidCreditNotesAmount Money `json:"unpaid_credit_notes_amount"`
+	// Issued credit notes against payments already received. This is a return obligation, not evidence of
+	// completed refunds.
+	PaidCreditNotesAmount Money `json:"paid_credit_notes_amount"`
+	// What is still collectible after unpaid credit notes and successful payments; never below zero. A
+	// draft order invoice is not collectible until checkout confirms it, and a paid or void invoice has
+	// none.
 	AmountDue   Money          `json:"amount_due"`
 	PeriodStart OptNilDateTime `json:"period_start"`
 	// Exclusive.
@@ -3694,6 +3963,16 @@ func (s *Invoice) GetTotal() Money {
 // GetAmountPaid returns the value of AmountPaid.
 func (s *Invoice) GetAmountPaid() OptMoney {
 	return s.AmountPaid
+}
+
+// GetUnpaidCreditNotesAmount returns the value of UnpaidCreditNotesAmount.
+func (s *Invoice) GetUnpaidCreditNotesAmount() Money {
+	return s.UnpaidCreditNotesAmount
+}
+
+// GetPaidCreditNotesAmount returns the value of PaidCreditNotesAmount.
+func (s *Invoice) GetPaidCreditNotesAmount() Money {
+	return s.PaidCreditNotesAmount
 }
 
 // GetAmountDue returns the value of AmountDue.
@@ -3839,6 +4118,16 @@ func (s *Invoice) SetTotal(val Money) {
 // SetAmountPaid sets the value of AmountPaid.
 func (s *Invoice) SetAmountPaid(val OptMoney) {
 	s.AmountPaid = val
+}
+
+// SetUnpaidCreditNotesAmount sets the value of UnpaidCreditNotesAmount.
+func (s *Invoice) SetUnpaidCreditNotesAmount(val Money) {
+	s.UnpaidCreditNotesAmount = val
+}
+
+// SetPaidCreditNotesAmount sets the value of PaidCreditNotesAmount.
+func (s *Invoice) SetPaidCreditNotesAmount(val Money) {
+	s.PaidCreditNotesAmount = val
 }
 
 // SetAmountDue sets the value of AmountDue.
@@ -4356,7 +4645,13 @@ type InvoiceSummary struct {
 	TaxAmount      string `json:"tax_amount"`
 	Total          string `json:"total"`
 	AmountPaid     string `json:"amount_paid"`
-	// What is still collectible after applied credits and successful payments; never below zero.
+	// Issued, non-void credit notes that reduced unpaid receivables. Does not rewrite the original invoice
+	// total.
+	UnpaidCreditNotesAmount Money `json:"unpaid_credit_notes_amount"`
+	// Issued credit notes against payments already received. This is a return obligation, not evidence of
+	// completed refunds.
+	PaidCreditNotesAmount Money `json:"paid_credit_notes_amount"`
+	// What is still collectible after unpaid credit notes and successful payments; never below zero.
 	AmountDue      string      `json:"amount_due"`
 	AmountRefunded string      `json:"amount_refunded"`
 	DueAt          OptDateTime `json:"due_at"`
@@ -4405,6 +4700,16 @@ func (s *InvoiceSummary) GetTotal() string {
 // GetAmountPaid returns the value of AmountPaid.
 func (s *InvoiceSummary) GetAmountPaid() string {
 	return s.AmountPaid
+}
+
+// GetUnpaidCreditNotesAmount returns the value of UnpaidCreditNotesAmount.
+func (s *InvoiceSummary) GetUnpaidCreditNotesAmount() Money {
+	return s.UnpaidCreditNotesAmount
+}
+
+// GetPaidCreditNotesAmount returns the value of PaidCreditNotesAmount.
+func (s *InvoiceSummary) GetPaidCreditNotesAmount() Money {
+	return s.PaidCreditNotesAmount
 }
 
 // GetAmountDue returns the value of AmountDue.
@@ -4465,6 +4770,16 @@ func (s *InvoiceSummary) SetTotal(val string) {
 // SetAmountPaid sets the value of AmountPaid.
 func (s *InvoiceSummary) SetAmountPaid(val string) {
 	s.AmountPaid = val
+}
+
+// SetUnpaidCreditNotesAmount sets the value of UnpaidCreditNotesAmount.
+func (s *InvoiceSummary) SetUnpaidCreditNotesAmount(val Money) {
+	s.UnpaidCreditNotesAmount = val
+}
+
+// SetPaidCreditNotesAmount sets the value of PaidCreditNotesAmount.
+func (s *InvoiceSummary) SetPaidCreditNotesAmount(val Money) {
+	s.PaidCreditNotesAmount = val
 }
 
 // SetAmountDue sets the value of AmountDue.
@@ -5009,6 +5324,51 @@ func (s *NamedIdentity) SetName(val string) {
 	s.Name = val
 }
 
+// NewNilDateTime returns new NilDateTime with value set to v.
+func NewNilDateTime(v time.Time) NilDateTime {
+	return NilDateTime{
+		Value: v,
+	}
+}
+
+// NilDateTime is nullable time.Time.
+type NilDateTime struct {
+	Value time.Time
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilDateTime) SetTo(v time.Time) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilDateTime) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilDateTime) SetToNull() {
+	o.Null = true
+	var v time.Time
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilDateTime) Get() (v time.Time, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilMoney returns new NilMoney with value set to v.
 func NewNilMoney(v Money) NilMoney {
 	return NilMoney{
@@ -5138,6 +5498,51 @@ func (o NilString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilUUID returns new NilUUID with value set to v.
+func NewNilUUID(v uuid.UUID) NilUUID {
+	return NilUUID{
+		Value: v,
+	}
+}
+
+// NilUUID is nullable uuid.UUID.
+type NilUUID struct {
+	Value uuid.UUID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilUUID) SetTo(v uuid.UUID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilUUID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilUUID) SetToNull() {
+	o.Null = true
+	var v uuid.UUID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilUUID) Get() (v uuid.UUID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6547,6 +6952,52 @@ func (o OptObjectIdentity) Or(d ObjectIdentity) ObjectIdentity {
 	return d
 }
 
+// NewOptOrderCancel returns new OptOrderCancel with value set to v.
+func NewOptOrderCancel(v OrderCancel) OptOrderCancel {
+	return OptOrderCancel{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptOrderCancel is optional OrderCancel.
+type OptOrderCancel struct {
+	Value OrderCancel
+	Set   bool
+}
+
+// IsSet returns true if OptOrderCancel was set.
+func (o OptOrderCancel) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptOrderCancel) Reset() {
+	var v OrderCancel
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptOrderCancel) SetTo(v OrderCancel) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptOrderCancel) Get() (v OrderCancel, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptOrderCancel) Or(d OrderCancel) OrderCancel {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptOrderChangeEffective returns new OptOrderChangeEffective with value set to v.
 func NewOptOrderChangeEffective(v OrderChangeEffective) OptOrderChangeEffective {
 	return OptOrderChangeEffective{
@@ -7850,7 +8301,6 @@ type Order struct {
 	// How the order was paid. Absent until it is paid.
 	PaidWith          OptPaidWith        `json:"paid_with"`
 	Account           OptAccountIdentity `json:"account"`
-	CancelReason      OptString          `json:"cancel_reason"`
 	ChangeEffectiveAt OptDateTime        `json:"change_effective_at"`
 	ID                uuid.UUID          `json:"id"`
 	// Which project it was bought for. Absent for a purchase made at account level, such as a membership.
@@ -7917,11 +8367,6 @@ func (s *Order) GetPaidWith() OptPaidWith {
 // GetAccount returns the value of Account.
 func (s *Order) GetAccount() OptAccountIdentity {
 	return s.Account
-}
-
-// GetCancelReason returns the value of CancelReason.
-func (s *Order) GetCancelReason() OptString {
-	return s.CancelReason
 }
 
 // GetChangeEffectiveAt returns the value of ChangeEffectiveAt.
@@ -8019,11 +8464,6 @@ func (s *Order) SetAccount(val OptAccountIdentity) {
 	s.Account = val
 }
 
-// SetCancelReason sets the value of CancelReason.
-func (s *Order) SetCancelReason(val OptString) {
-	s.CancelReason = val
-}
-
 // SetChangeEffectiveAt sets the value of ChangeEffectiveAt.
 func (s *Order) SetChangeEffectiveAt(val OptDateTime) {
 	s.ChangeEffectiveAt = val
@@ -8087,6 +8527,23 @@ func (s *Order) SetItems(val []OrderItem) {
 func (*Order) cancelOrderRes()        {}
 func (*Order) checkoutOrderRes()      {}
 func (*Order) createRenewalOrderRes() {}
+
+// Ref: #/components/schemas/OrderCancel
+type OrderCancel struct {
+	// Omit to select all still-pending items. Explicit selections name one or more items of this order;
+	// successful items cannot be reversed here.
+	OrderItemIds []uuid.UUID `json:"order_item_ids"`
+}
+
+// GetOrderItemIds returns the value of OrderItemIds.
+func (s *OrderCancel) GetOrderItemIds() []uuid.UUID {
+	return s.OrderItemIds
+}
+
+// SetOrderItemIds sets the value of OrderItemIds.
+func (s *OrderCancel) SetOrderItemIds(val []uuid.UUID) {
+	s.OrderItemIds = val
+}
 
 // When a plan change takes effect. `none` on anything that is not a change.
 //
