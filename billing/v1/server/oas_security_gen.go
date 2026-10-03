@@ -18,18 +18,6 @@ type SecurityHandler interface {
 	//
 	// Use it to list the projects the caller belongs to and to obtain a scoped token.
 	HandleAccessTokenAuth(ctx context.Context, operationName OperationName, t AccessTokenAuth) (context.Context, error)
-	// HandleScopedTokenAuth handles scopedTokenAuth security.
-	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
-	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
-	//
-	// A scoped token states both the current user and the current project. Neither the path nor the
-	// headers carry a `project_id`.
-	//
-	// `TOKEN_MISSING` means no token was sent. `TOKEN_EXPIRED` means the scoped token has expired;
-	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
-	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
-	// and `USER_BANNED` mean the account itself is barred from operating.
-	HandleScopedTokenAuth(ctx context.Context, operationName OperationName, t ScopedTokenAuth) (context.Context, error)
 }
 
 func findAuthorization(h http.Header, prefix string) (string, bool) {
@@ -69,6 +57,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	GetSubscriptionOperation:             []string{},
 	GetTopUpOperation:                    []string{},
 	ListAccountDiscountsOperation:        []string{},
+	ListActiveResourcesOperation:         []string{},
 	ListAllowancesOperation:              []string{},
 	ListBillingAccountsOperation:         []string{},
 	ListCancellationsOperation:           []string{},
@@ -84,6 +73,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	ListProjectAssignmentsOperation:      []string{},
 	ListRefundsOperation:                 []string{},
 	ListRenewalPricesOperation:           []string{},
+	ListSpendOperation:                   []string{},
 	ListSubscriptionsOperation:           []string{},
 	ListTopUpsOperation:                  []string{},
 	ListTransactionsOperation:            []string{},
@@ -122,47 +112,6 @@ func GetRolesForAccessTokenAuth(operation string) []string {
 	return result
 }
 
-// operationRolesScopedTokenAuth is a private map storing roles per operation.
-var operationRolesScopedTokenAuth = map[string][]string{
-	CreateProjectCancellationOperation:   []string{},
-	CreateProjectQuoteOperation:          []string{},
-	GetProjectBillingAccountOperation:    []string{},
-	GetProjectCancellationOperation:      []string{},
-	GetProjectOrderOperation:             []string{},
-	ListProjectActiveResourcesOperation:  []string{},
-	ListProjectAllowancesOperation:       []string{},
-	ListProjectCancellationsOperation:    []string{},
-	ListProjectEntitlementsOperation:     []string{},
-	ListProjectOrderItemsOperation:       []string{},
-	ListProjectOrdersOperation:           []string{},
-	ListProjectSpendOperation:            []string{},
-	ListProjectSubscriptionsOperation:    []string{},
-	ListProjectUsageChargesOperation:     []string{},
-	SetProjectAutoRenewOperation:         []string{},
-	WithdrawProjectCancellationOperation: []string{},
-}
-
-// GetRolesForScopedTokenAuth returns the required roles for the given operation.
-//
-// This is useful for authorization scenarios where you need to know which roles
-// are required for an operation.
-//
-// Example:
-//
-//	requiredRoles := GetRolesForScopedTokenAuth(AddPetOperation)
-//
-// Returns nil if the operation has no role requirements or if the operation is unknown.
-func GetRolesForScopedTokenAuth(operation string) []string {
-	roles, ok := operationRolesScopedTokenAuth[operation]
-	if !ok {
-		return nil
-	}
-	// Return a copy to prevent external modification
-	result := make([]string, len(roles))
-	copy(result, roles)
-	return result
-}
-
 func (s *Server) securityAccessTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
 	var t AccessTokenAuth
 	token, ok := findAuthorization(req.Header, "Bearer")
@@ -180,23 +129,6 @@ func (s *Server) securityAccessTokenAuth(ctx context.Context, operationName Oper
 	return rctx, true, err
 }
 
-func (s *Server) securityScopedTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
-	var t ScopedTokenAuth
-	token, ok := findAuthorization(req.Header, "Bearer")
-	if !ok {
-		return ctx, false, nil
-	}
-	t.Token = token
-	t.Roles = operationRolesScopedTokenAuth[operationName]
-	rctx, err := s.sec.HandleScopedTokenAuth(ctx, operationName, t)
-	if errors.Is(err, ogenerrors.ErrSkipServerSecurity) {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, err
-	}
-	return rctx, true, err
-}
-
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
 	// AccessTokenAuth provides accessTokenAuth security value.
@@ -204,32 +136,12 @@ type SecuritySource interface {
 	//
 	// Use it to list the projects the caller belongs to and to obtain a scoped token.
 	AccessTokenAuth(ctx context.Context, operationName OperationName) (AccessTokenAuth, error)
-	// ScopedTokenAuth provides scopedTokenAuth security value.
-	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
-	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
-	//
-	// A scoped token states both the current user and the current project. Neither the path nor the
-	// headers carry a `project_id`.
-	//
-	// `TOKEN_MISSING` means no token was sent. `TOKEN_EXPIRED` means the scoped token has expired;
-	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
-	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
-	// and `USER_BANNED` mean the account itself is barred from operating.
-	ScopedTokenAuth(ctx context.Context, operationName OperationName) (ScopedTokenAuth, error)
 }
 
 func (s *Client) securityAccessTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
 	t, err := s.sec.AccessTokenAuth(ctx, operationName)
 	if err != nil {
 		return errors.Wrap(err, "security source \"AccessTokenAuth\"")
-	}
-	req.Header.Set("Authorization", "Bearer "+t.Token)
-	return nil
-}
-func (s *Client) securityScopedTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
-	t, err := s.sec.ScopedTokenAuth(ctx, operationName)
-	if err != nil {
-		return errors.Wrap(err, "security source \"ScopedTokenAuth\"")
 	}
 	req.Header.Set("Authorization", "Bearer "+t.Token)
 	return nil

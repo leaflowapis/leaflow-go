@@ -146,22 +146,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/cancellations
 	CreateCancellation(ctx context.Context, request *CancellationCreate) (CreateCancellationRes, error)
-	// CreateEstimate invokes create-estimate operation.
-	//
-	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be called as often
-	// as required.
-	//
-	// `POST` is used because the set of items to price does not fit in a query string. There is no
-	// corresponding `GET`, and no estimate is stored to retrieve.
-	//
-	// An account holding a negotiated agreement may be charged less than this. Tax and discounts are not
-	// included.
-	//
-	// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-	// preview is returned.
-	//
-	// POST /api/v1/estimates
-	CreateEstimate(ctx context.Context, request *EstimateRequest) (*Estimate, error)
 	// CreatePaymentMethodSetup invokes create-payment-method-setup operation.
 	//
 	// Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
@@ -171,134 +155,22 @@ type Invoker interface {
 	//
 	// POST /api/v1/payment-methods/setup
 	CreatePaymentMethodSetup(ctx context.Context, request *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
-	// CreateProjectCancellation invokes create-project-cancellation operation.
-	//
-	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
-	// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
-	// a server with the disks deleted along with it, or an address with its bandwidth.
-	//
-	// The service that provides the resources releases them: at once for `immediate`, or at
-	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
-	// value is returned the way it was paid, under the refund terms agreed when each subscription was
-	// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
-	// is the amount returned: prepaid service used while the resources are being released is not deducted
-	// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
-	//
-	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
-	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
-	// unless its termination terms allow only the end of the paid term and that term has not ended yet.
-	// For `period_end` the paid terms of all the subscriptions must end at the same time.
-	//
-	// Refused with:
-	//
-	//  - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
-	//    (`meta.field`), or the subscriptions do not all belong to one service, project, account and
-	//    currency;
-	//  - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
-	//  - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
-	//    `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
-	//    carry `meta.subscription_id`;
-	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
-	//    different times;
-	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//    (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
-	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
-	//    progress;
-	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//    `expected_refundable_amount`; quote again.
-	//
-	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
-	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
-	// payment are canceled along with it, and automatic renewal is turned off for every subscription in
-	// the set, for `period_end` as well as `immediate`.
-	//
-	// POST /api/v1/projects/{projectId}/cancellations
-	CreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (CreateProjectCancellationRes, error)
-	// CreateProjectQuote invokes create-project-quote operation.
-	//
-	// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
-	// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
-	// does not guarantee a price or reserve a promotion code.
-	//
-	// New purchases use the project's current billing account and currency. With order_id, the order must
-	// belong to this project; its recorded purchase terms, billing account and currency are used. An
-	// optional promotion_code previews one code for the purchase or order. Without it, Billing selects an
-	// applicable account discount. An invalid or inapplicable explicit code is refused rather than
-	// silently replaced. Give total as expected_amount when confirming checkout through Billing;
-	// eligibility and availability are checked again. An order already checked out returns its confirmed
-	// amounts without reapplying its discount; a different code is refused with
-	// BILLING_ORDER_CHECKOUT_CONFLICT.
-	//
-	// Prices may change before an order is created; confirmed purchase terms are not repriced from today's
-	// catalog. Usage estimates describe future usage and are not checkout amounts. They do not accept a
-	// promotion code, including when mixed with fixed purchase lines.
-	//
-	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-	// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
-	// because its entries create separate orders. To use a new code on a renewal, first create a renewal
-	// order and quote its checkout by order_id.
-	//
-	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
-	// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
-	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
-	// amount is not checked. Give the returned `cancellation.proration_date` and
-	// `cancellation.refundable_amount` when creating it.
-	//
-	// Returns 404 when the project has no billing account for a new purchase quote, or when the order or a
-	// subscription to be renewed or canceled does not belong to this project.
-	//
-	// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-	// preview is returned.
-	//
-	// With refund, estimates the refundable value of the specified order or items, without canceling the
-	// order, stopping service or creating a refund. A refund target is quoted alone. The response has zero
-	// checkout totals and reports the estimate in refund. Delivery whose outcome is unknown must be
-	// observed before refund eligibility can be established.
-	//
-	// POST /api/v1/projects/{projectId}/quotes
-	CreateProjectQuote(ctx context.Context, request *ProjectQuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
 	// CreateQuote invokes create-quote operation.
 	//
-	// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
-	// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
-	// does not guarantee a price or reserve a promotion code.
+	// Calculates exactly one target for a billing account you own: proposed items, existing order
+	// checkout, renewals, cancellation or order refund. Returns all requested calculations or a structured
+	// error. No quote is saved and no resource, payment, reservation or redemption is created.
 	//
-	// With order_id, uses that order's recorded purchase terms and billing account. An optional
-	// promotion_code previews one code; without it, Billing selects an applicable account discount. An
-	// invalid or inapplicable explicit code is refused rather than silently replaced. Give total as
-	// expected_amount when confirming checkout; eligibility and availability are checked again. An order
-	// already checked out returns its confirmed amounts, without reapplying its discount; a different code
-	// is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
+	// Existing orders use their recorded purchase account and terms. Renewals and cancellations use the
+	// account currently paying for each subscription. Every target must belong to the requested account. A
+	// project association or project token does not authorize a quote.
 	//
-	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-	// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
-	// because its entries create separate orders. To use a new code on a renewal, first create a renewal
-	// order and quote its checkout by order_id. Prices and discount eligibility may change between preview
-	// and confirmation.
-	//
-	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-	// terms agreed when each subscription was bought. It is quoted on its own: combined with another
-	// target the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
-	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
-	// amount is not checked. Give the returned `cancellation.proration_date` and
-	// `cancellation.refundable_amount` when creating it.
-	//
-	// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
-	// quote must be paid for by the same one of your billing accounts; otherwise the request is refused
-	// with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does not exist, and 403
-	// `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
-	//
-	// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-	// preview is returned.
-	//
-	// With refund, estimates the refundable value of the specified order or items, without canceling the
-	// order, stopping service or creating a refund. A refund target is quoted alone. The response has zero
-	// checkout totals and reports the estimate in refund. Delivery whose outcome is unknown must be
-	// observed before refund eligibility can be established.
+	// Use an existing order quote's total as expected_amount at checkout. A confirmed order returns its
+	// recorded amounts; a different promotion code is refused. Requested future usage estimates are not
+	// collectible checkout amounts. An unknown delivery outcome is not proof of refund eligibility.
 	//
 	// POST /api/v1/quotes
-	CreateQuote(ctx context.Context, request *AccountQuoteRequest) (*Quote, error)
+	CreateQuote(ctx context.Context, request *QuoteRequest) (*Quote, error)
 	// CreateRenewalOrder invokes create-renewal-order operation.
 	//
 	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
@@ -395,28 +267,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/assignments/{projectId}
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
-	// GetProjectBillingAccount invokes get-project-billing-account operation.
-	//
-	// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
-	// invoices and transaction history are not included; they belong to the account owner and are
-	// available only through account-authenticated operations.
-	//
-	// Returns 404 when the project has no billing account. Resources cannot be created in that state.
-	//
-	// GET /api/v1/projects/{projectId}/billing-account
-	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectBillingAccount, error)
-	// GetProjectCancellation invokes get-project-cancellation operation.
-	//
-	// Get a cancellation.
-	//
-	// GET /api/v1/projects/{projectId}/cancellations/{cancellationId}
-	GetProjectCancellation(ctx context.Context, params GetProjectCancellationParams) (*Cancellation, error)
-	// GetProjectOrder invokes get-project-order operation.
-	//
-	// Get project order.
-	//
-	// GET /api/v1/projects/{projectId}/orders/{orderId}
-	GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error)
 	// GetSubscription invokes get-subscription operation.
 	//
 	// Get subscription.
@@ -441,6 +291,14 @@ type Invoker interface {
 	//
 	// GET /api/v1/discounts
 	ListAccountDiscounts(ctx context.Context, params ListAccountDiscountsParams) (*DiscountList, error)
+	// ListActiveResources invokes list-active-resources operation.
+	//
+	// Lists continuous metering registrations paid for by your billing accounts. Their state does not
+	// describe machine runtime or health. Project filters narrow the authorized accounts; they do not
+	// grant project-based access.
+	//
+	// GET /api/v1/active-resources
+	ListActiveResources(ctx context.Context, params ListActiveResourcesParams) (*ActiveResourceList, error)
 	// ListAllowances invokes list-allowances operation.
 	//
 	// Lists remaining usage quantities, such as bytes, seconds or tokens. Applicable allowances are
@@ -562,78 +420,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/products
 	ListProducts(ctx context.Context, params ListProductsParams) (ListProductsRes, error)
-	// ListProjectActiveResources invokes list-project-active-resources operation.
-	//
-	// A resource that is running but does not appear here is not being charged for.
-	//
-	// GET /api/v1/projects/{projectId}/active-resources
-	ListProjectActiveResources(ctx context.Context, params ListProjectActiveResourcesParams) (*ActiveResourceList, error)
-	// ListProjectAllowances invokes list-project-allowances operation.
-	//
-	// These belong to the project's billing account and are shared with every other project linked to it,
-	// so what is left here may be consumed elsewhere.
-	//
-	// GET /api/v1/projects/{projectId}/allowances
-	ListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (*AllowanceList, error)
 	// ListProjectAssignments invokes list-project-assignments operation.
 	//
 	// List project assignments.
 	//
 	// GET /api/v1/assignments
 	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
-	// ListProjectCancellations invokes list-project-cancellations operation.
-	//
-	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
-	// for a subscription.
-	//
-	// GET /api/v1/projects/{projectId}/cancellations
-	ListProjectCancellations(ctx context.Context, params ListProjectCancellationsParams) (*CancellationList, error)
-	// ListProjectEntitlements invokes list-project-entitlements operation.
-	//
-	// Includes capabilities bought for this project and those the project's billing account holds at
-	// account level.
-	//
-	// Where a capability counts uses, `remaining_quantity` states how much is left. Whether exceeding it
-	// refuses the request or simply continues to be charged for is decided by the service that owns the
-	// capability.
-	//
-	// GET /api/v1/projects/{projectId}/entitlements
-	ListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (*EntitlementList, error)
-	// ListProjectOrderItems invokes list-project-order-items operation.
-	//
-	// List project order items.
-	//
-	// GET /api/v1/projects/{projectId}/orders/{orderId}/items
-	ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error)
-	// ListProjectOrders invokes list-project-orders operation.
-	//
-	// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what is
-	// outstanding. Checkout and payment are performed in the billing centre by the account owner.
-	//
-	// GET /api/v1/projects/{projectId}/orders
-	ListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (*OrderList, error)
-	// ListProjectSpend invokes list-project-spend operation.
-	//
-	// Covers a closed time range. Both bounds are required: a total without a stated period cannot be
-	// reconciled against an invoice.
-	//
-	// Includes usage that has not been invoiced yet.
-	//
-	// GET /api/v1/projects/{projectId}/spend
-	ListProjectSpend(ctx context.Context, params ListProjectSpendParams) (*SpendRowList, error)
-	// ListProjectSubscriptions invokes list-project-subscriptions operation.
-	//
-	// List project subscriptions.
-	//
-	// GET /api/v1/projects/{projectId}/subscriptions
-	ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (*SubscriptionList, error)
-	// ListProjectUsageCharges invokes list-project-usage-charges operation.
-	//
-	// The individual charges behind the figures in `/spend`. Amounts here sum to the totals reported there
-	// over the same period.
-	//
-	// GET /api/v1/projects/{projectId}/usage-charges
-	ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*ProjectUsageChargeList, error)
 	// ListRates invokes list-rates operation.
 	//
 	// Only public price lists are readable here. A list written for a single agreement is not, and its
@@ -655,6 +447,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/subscriptions/{subscriptionId}/renewal-prices
 	ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (*RenewalPriceList, error)
+	// ListSpend invokes list-spend operation.
+	//
+	// Aggregates rated and invoiced usage charges in the specified time range for one billing account.
+	// Includes usage not yet invoiced. Project filters use the account recorded on each charge, including
+	// charges for projects later assigned to another account. The total covers all matching groups, not
+	// just the returned page.
+	//
+	// GET /api/v1/spend
+	ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error)
 	// ListSubscriptions invokes list-subscriptions operation.
 	//
 	// List subscriptions.
@@ -680,6 +481,9 @@ type Invoker interface {
 	// Each charge is added to the month's usage invoice as it is priced, summed into one line per
 	// subscription, project, resource, meter and rate. Filter by `invoice_item_id` to see the charges
 	// behind a line. Charges still waiting to be priced are included too.
+	//
+	// Only charges recorded against your billing accounts are included, before filtering, counting and
+	// pagination. Reassigning a project does not move previously recorded charges to its new account.
 	//
 	// GET /api/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
@@ -790,17 +594,6 @@ type Invoker interface {
 	//
 	// PUT /api/v1/assignments/{projectId}
 	SetProjectAssignment(ctx context.Context, request *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
-	// SetProjectAutoRenew invokes set-project-auto-renew operation.
-	//
-	// Automatic renewal draws on the project billing account's balance, which a project member may commit.
-	// Paying by card requires the account owner and is done from the billing centre.
-	//
-	// While the subscription has an open cancellation, turning it on or off is refused with 409
-	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
-	// turned it off, and withdrawing the cancellation does not turn it back on.
-	//
-	// PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew
-	SetProjectAutoRenew(ctx context.Context, request *AutoRenewSet, params SetProjectAutoRenewParams) (*Subscription, error)
 	// UnlinkProjectBillingAccount invokes unlink-project-billing-account operation.
 	//
 	// Ends the project's current assignment without deleting its assignment history.
@@ -835,15 +628,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/cancellations/{cancellationId}/withdraw
 	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)
-	// WithdrawProjectCancellation invokes withdraw-project-cancellation operation.
-	//
-	// Withdraws the whole cancellation while none of its resources has begun to be released; the
-	// subscriptions continue as before, except that automatic renewal, turned off when the cancellation
-	// was created, stays off until it is turned on again. After that it is refused with 409
-	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
-	//
-	// POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw
-	WithdrawProjectCancellation(ctx context.Context, params WithdrawProjectCancellationParams) (*Cancellation, error)
 }
 
 // Client implements OAS client.
@@ -1632,108 +1416,6 @@ func (c *Client) sendCreateCancellation(ctx context.Context, request *Cancellati
 	return result, nil
 }
 
-// CreateEstimate invokes create-estimate operation.
-//
-// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be called as often
-// as required.
-//
-// `POST` is used because the set of items to price does not fit in a query string. There is no
-// corresponding `GET`, and no estimate is stored to retrieve.
-//
-// An account holding a negotiated agreement may be charged less than this. Tax and discounts are not
-// included.
-//
-// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-// preview is returned.
-//
-// POST /api/v1/estimates
-func (c *Client) CreateEstimate(ctx context.Context, request *EstimateRequest) (*Estimate, error) {
-	res, err := c.sendCreateEstimate(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateEstimate(ctx context.Context, request *EstimateRequest) (res *Estimate, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-estimate"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/estimates"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateEstimateOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/estimates"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateEstimateRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateEstimateResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreatePaymentMethodSetup invokes create-payment-method-setup operation.
 //
 // Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
@@ -1862,415 +1544,27 @@ func (c *Client) sendCreatePaymentMethodSetup(ctx context.Context, request *Paym
 	return result, nil
 }
 
-// CreateProjectCancellation invokes create-project-cancellation operation.
-//
-// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
-// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
-// a server with the disks deleted along with it, or an address with its bandwidth.
-//
-// The service that provides the resources releases them: at once for `immediate`, or at
-// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
-// value is returned the way it was paid, under the refund terms agreed when each subscription was
-// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
-// is the amount returned: prepaid service used while the resources are being released is not deducted
-// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
-//
-// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
-// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
-// unless its termination terms allow only the end of the paid term and that term has not ended yet.
-// For `period_end` the paid terms of all the subscriptions must end at the same time.
-//
-// Refused with:
-//
-//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
-//     (`meta.field`), or the subscriptions do not all belong to one service, project, account and
-//     currency;
-//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
-//   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
-//     `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
-//     carry `meta.subscription_id`;
-//   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
-//     different times;
-//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
-//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
-//     progress;
-//   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-//     `expected_refundable_amount`; quote again.
-//
-// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
-// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
-// payment are canceled along with it, and automatic renewal is turned off for every subscription in
-// the set, for `period_end` as well as `immediate`.
-//
-// POST /api/v1/projects/{projectId}/cancellations
-func (c *Client) CreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (CreateProjectCancellationRes, error) {
-	res, err := c.sendCreateProjectCancellation(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateProjectCancellation(ctx context.Context, request *CancellationCreate, params CreateProjectCancellationParams) (res CreateProjectCancellationRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-project-cancellation"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateProjectCancellationOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/cancellations"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateProjectCancellationRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateProjectCancellationOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateProjectCancellationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateProjectQuote invokes create-project-quote operation.
-//
-// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
-// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
-// does not guarantee a price or reserve a promotion code.
-//
-// New purchases use the project's current billing account and currency. With order_id, the order must
-// belong to this project; its recorded purchase terms, billing account and currency are used. An
-// optional promotion_code previews one code for the purchase or order. Without it, Billing selects an
-// applicable account discount. An invalid or inapplicable explicit code is refused rather than
-// silently replaced. Give total as expected_amount when confirming checkout through Billing;
-// eligibility and availability are checked again. An order already checked out returns its confirmed
-// amounts without reapplying its discount; a different code is refused with
-// BILLING_ORDER_CHECKOUT_CONFLICT.
-//
-// Prices may change before an order is created; confirmed purchase terms are not repriced from today's
-// catalog. Usage estimates describe future usage and are not checkout amounts. They do not accept a
-// promotion code, including when mixed with fixed purchase lines.
-//
-// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
-// because its entries create separate orders. To use a new code on a renewal, first create a renewal
-// order and quote its checkout by order_id.
-//
-// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
-// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
-// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
-// amount is not checked. Give the returned `cancellation.proration_date` and
-// `cancellation.refundable_amount` when creating it.
-//
-// Returns 404 when the project has no billing account for a new purchase quote, or when the order or a
-// subscription to be renewed or canceled does not belong to this project.
-//
-// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-// preview is returned.
-//
-// With refund, estimates the refundable value of the specified order or items, without canceling the
-// order, stopping service or creating a refund. A refund target is quoted alone. The response has zero
-// checkout totals and reports the estimate in refund. Delivery whose outcome is unknown must be
-// observed before refund eligibility can be established.
-//
-// POST /api/v1/projects/{projectId}/quotes
-func (c *Client) CreateProjectQuote(ctx context.Context, request *ProjectQuoteRequest, params CreateProjectQuoteParams) (*Quote, error) {
-	res, err := c.sendCreateProjectQuote(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateProjectQuote(ctx context.Context, request *ProjectQuoteRequest, params CreateProjectQuoteParams) (res *Quote, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-project-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/quotes"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateProjectQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/quotes"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateProjectQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateProjectQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateProjectQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreateQuote invokes create-quote operation.
 //
-// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
-// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
-// does not guarantee a price or reserve a promotion code.
+// Calculates exactly one target for a billing account you own: proposed items, existing order
+// checkout, renewals, cancellation or order refund. Returns all requested calculations or a structured
+// error. No quote is saved and no resource, payment, reservation or redemption is created.
 //
-// With order_id, uses that order's recorded purchase terms and billing account. An optional
-// promotion_code previews one code; without it, Billing selects an applicable account discount. An
-// invalid or inapplicable explicit code is refused rather than silently replaced. Give total as
-// expected_amount when confirming checkout; eligibility and availability are checked again. An order
-// already checked out returns its confirmed amounts, without reapplying its discount; a different code
-// is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
+// Existing orders use their recorded purchase account and terms. Renewals and cancellations use the
+// account currently paying for each subscription. Every target must belong to the requested account. A
+// project association or project token does not authorize a quote.
 //
-// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
-// because its entries create separate orders. To use a new code on a renewal, first create a renewal
-// order and quote its checkout by order_id. Prices and discount eligibility may change between preview
-// and confirmation.
-//
-// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-// terms agreed when each subscription was bought. It is quoted on its own: combined with another
-// target the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
-// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
-// amount is not checked. Give the returned `cancellation.proration_date` and
-// `cancellation.refundable_amount` when creating it.
-//
-// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
-// quote must be paid for by the same one of your billing accounts; otherwise the request is refused
-// with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does not exist, and 403
-// `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
-//
-// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-// preview is returned.
-//
-// With refund, estimates the refundable value of the specified order or items, without canceling the
-// order, stopping service or creating a refund. A refund target is quoted alone. The response has zero
-// checkout totals and reports the estimate in refund. Delivery whose outcome is unknown must be
-// observed before refund eligibility can be established.
+// Use an existing order quote's total as expected_amount at checkout. A confirmed order returns its
+// recorded amounts; a different promotion code is refused. Requested future usage estimates are not
+// collectible checkout amounts. An unknown delivery outcome is not proof of refund eligibility.
 //
 // POST /api/v1/quotes
-func (c *Client) CreateQuote(ctx context.Context, request *AccountQuoteRequest) (*Quote, error) {
+func (c *Client) CreateQuote(ctx context.Context, request *QuoteRequest) (*Quote, error) {
 	res, err := c.sendCreateQuote(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateQuote(ctx context.Context, request *AccountQuoteRequest) (res *Quote, err error) {
+func (c *Client) sendCreateQuote(ctx context.Context, request *QuoteRequest) (res *Quote, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -4070,442 +3364,6 @@ func (c *Client) sendGetProjectAssignment(ctx context.Context, params GetProject
 	return result, nil
 }
 
-// GetProjectBillingAccount invokes get-project-billing-account operation.
-//
-// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
-// invoices and transaction history are not included; they belong to the account owner and are
-// available only through account-authenticated operations.
-//
-// Returns 404 when the project has no billing account. Resources cannot be created in that state.
-//
-// GET /api/v1/projects/{projectId}/billing-account
-func (c *Client) GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectBillingAccount, error) {
-	res, err := c.sendGetProjectBillingAccount(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (res *ProjectBillingAccount, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-project-billing-account"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/billing-account"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectBillingAccountOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/billing-account"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetProjectBillingAccountOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetProjectBillingAccountResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetProjectCancellation invokes get-project-cancellation operation.
-//
-// Get a cancellation.
-//
-// GET /api/v1/projects/{projectId}/cancellations/{cancellationId}
-func (c *Client) GetProjectCancellation(ctx context.Context, params GetProjectCancellationParams) (*Cancellation, error) {
-	res, err := c.sendGetProjectCancellation(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetProjectCancellation(ctx context.Context, params GetProjectCancellationParams) (res *Cancellation, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-project-cancellation"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations/{cancellationId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectCancellationOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/cancellations/"
-	{
-		// Encode "cancellationId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "cancellationId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.CancellationId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetProjectCancellationOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetProjectCancellationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetProjectOrder invokes get-project-order operation.
-//
-// Get project order.
-//
-// GET /api/v1/projects/{projectId}/orders/{orderId}
-func (c *Client) GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error) {
-	res, err := c.sendGetProjectOrder(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetProjectOrder(ctx context.Context, params GetProjectOrderParams) (res *Order, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-project-order"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/orders/{orderId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectOrderOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/orders/"
-	{
-		// Encode "orderId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "orderId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.OrderId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetProjectOrderOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetProjectOrderResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetSubscription invokes get-subscription operation.
 //
 // Get subscription.
@@ -4942,6 +3800,273 @@ func (c *Client) sendListAccountDiscounts(ctx context.Context, params ListAccoun
 	return result, nil
 }
 
+// ListActiveResources invokes list-active-resources operation.
+//
+// Lists continuous metering registrations paid for by your billing accounts. Their state does not
+// describe machine runtime or health. Project filters narrow the authorized accounts; they do not
+// grant project-based access.
+//
+// GET /api/v1/active-resources
+func (c *Client) ListActiveResources(ctx context.Context, params ListActiveResourcesParams) (*ActiveResourceList, error) {
+	res, err := c.sendListActiveResources(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListActiveResources(ctx context.Context, params ListActiveResourcesParams) (res *ActiveResourceList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-active-resources"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/active-resources"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListActiveResourcesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/active-resources"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "resource_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "resource_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ResourceID.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_ids" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "meter_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "meter_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.MeterID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "product_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProductID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListActiveResourcesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListActiveResourcesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListAllowances invokes list-allowances operation.
 //
 // Lists remaining usage quantities, such as bytes, seconds or tokens. Applicable allowances are
@@ -5100,6 +4225,32 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 					return e.EncodeValue(conv.StringToString(unwrapped))
 				}
 				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_ids" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
 			}
 			return nil
 		}); err != nil {
@@ -5454,6 +4605,32 @@ func (c *Client) sendListCancellations(ctx context.Context, params ListCancellat
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Status.Get(); ok {
 				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_ids" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
 			}
 			return nil
 		}); err != nil {
@@ -5971,16 +5148,45 @@ func (c *Client) sendListEntitlements(ctx context.Context, params ListEntitlemen
 		}
 	}
 	{
-		// Encode "project_id" parameter.
+		// Encode "project_ids" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "project_id",
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "product_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product_id",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProjectID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
+			if val, ok := params.ProductID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
 			}
 			return nil
 		}); err != nil {
@@ -6717,23 +5923,6 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 		}
 	}
 	{
-		// Encode "project_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "project_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProjectID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
 		// Encode "status" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "status",
@@ -6778,6 +5967,32 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.To.Get(); ok {
 				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_ids" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
 			}
 			return nil
 		}); err != nil {
@@ -7840,401 +7055,6 @@ func (c *Client) sendListProducts(ctx context.Context, params ListProductsParams
 	return result, nil
 }
 
-// ListProjectActiveResources invokes list-project-active-resources operation.
-//
-// A resource that is running but does not appear here is not being charged for.
-//
-// GET /api/v1/projects/{projectId}/active-resources
-func (c *Client) ListProjectActiveResources(ctx context.Context, params ListProjectActiveResourcesParams) (*ActiveResourceList, error) {
-	res, err := c.sendListProjectActiveResources(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectActiveResources(ctx context.Context, params ListProjectActiveResourcesParams) (res *ActiveResourceList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-active-resources"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/active-resources"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectActiveResourcesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/active-resources"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "resource_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "resource_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ResourceID.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectActiveResourcesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectActiveResourcesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectAllowances invokes list-project-allowances operation.
-//
-// These belong to the project's billing account and are shared with every other project linked to it,
-// so what is left here may be consumed elsewhere.
-//
-// GET /api/v1/projects/{projectId}/allowances
-func (c *Client) ListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (*AllowanceList, error) {
-	res, err := c.sendListProjectAllowances(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (res *AllowanceList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-allowances"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/allowances"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectAllowancesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/allowances"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "meter_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MeterID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "product_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProductID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectAllowancesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectAllowancesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListProjectAssignments invokes list-project-assignments operation.
 //
 // List project assignments.
@@ -8339,6 +7159,32 @@ func (c *Client) sendListProjectAssignments(ctx context.Context, params ListProj
 			return res, errors.Wrap(err, "encode query")
 		}
 	}
+	{
+		// Encode "project_ids" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
@@ -8396,1501 +7242,6 @@ func (c *Client) sendListProjectAssignments(ctx context.Context, params ListProj
 
 	stage = "DecodeResponse"
 	result, err := decodeListProjectAssignmentsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectCancellations invokes list-project-cancellations operation.
-//
-// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
-// for a subscription.
-//
-// GET /api/v1/projects/{projectId}/cancellations
-func (c *Client) ListProjectCancellations(ctx context.Context, params ListProjectCancellationsParams) (*CancellationList, error) {
-	res, err := c.sendListProjectCancellations(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectCancellations(ctx context.Context, params ListProjectCancellationsParams) (res *CancellationList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-cancellations"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectCancellationsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/cancellations"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "subscription_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "subscription_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.SubscriptionID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "status" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "status",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Status.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectCancellationsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectCancellationsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectEntitlements invokes list-project-entitlements operation.
-//
-// Includes capabilities bought for this project and those the project's billing account holds at
-// account level.
-//
-// Where a capability counts uses, `remaining_quantity` states how much is left. Whether exceeding it
-// refuses the request or simply continues to be charged for is decided by the service that owns the
-// capability.
-//
-// GET /api/v1/projects/{projectId}/entitlements
-func (c *Client) ListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (*EntitlementList, error) {
-	res, err := c.sendListProjectEntitlements(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (res *EntitlementList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-entitlements"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/entitlements"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectEntitlementsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/entitlements"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "product_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProductID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectEntitlementsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectEntitlementsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectOrderItems invokes list-project-order-items operation.
-//
-// List project order items.
-//
-// GET /api/v1/projects/{projectId}/orders/{orderId}/items
-func (c *Client) ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error) {
-	res, err := c.sendListProjectOrderItems(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (res *OrderItemList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-order-items"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/orders/{orderId}/items"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectOrderItemsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/orders/"
-	{
-		// Encode "orderId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "orderId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.OrderId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/items"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectOrderItemsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectOrderItemsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectOrders invokes list-project-orders operation.
-//
-// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what is
-// outstanding. Checkout and payment are performed in the billing centre by the account owner.
-//
-// GET /api/v1/projects/{projectId}/orders
-func (c *Client) ListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (*OrderList, error) {
-	res, err := c.sendListProjectOrders(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (res *OrderList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-orders"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/orders"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectOrdersOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/orders"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "status" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "status",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Status.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "from" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "from",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.From.Get(); ok {
-				return e.EncodeValue(conv.DateTimeToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "to" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "to",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.To.Get(); ok {
-				return e.EncodeValue(conv.DateTimeToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectOrdersOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectOrdersResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectSpend invokes list-project-spend operation.
-//
-// Covers a closed time range. Both bounds are required: a total without a stated period cannot be
-// reconciled against an invoice.
-//
-// Includes usage that has not been invoiced yet.
-//
-// GET /api/v1/projects/{projectId}/spend
-func (c *Client) ListProjectSpend(ctx context.Context, params ListProjectSpendParams) (*SpendRowList, error) {
-	res, err := c.sendListProjectSpend(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectSpend(ctx context.Context, params ListProjectSpendParams) (res *SpendRowList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-spend"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/spend"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectSpendOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/spend"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "from" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "from",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.DateTimeToString(params.From))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "to" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "to",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.DateTimeToString(params.To))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "group_by" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "group_by",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.GroupBy.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "product_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProductID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectSpendOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectSpendResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectSubscriptions invokes list-project-subscriptions operation.
-//
-// List project subscriptions.
-//
-// GET /api/v1/projects/{projectId}/subscriptions
-func (c *Client) ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (*SubscriptionList, error) {
-	res, err := c.sendListProjectSubscriptions(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (res *SubscriptionList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-subscriptions"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/subscriptions"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectSubscriptionsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subscriptions"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "expiring_before" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "expiring_before",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ExpiringBefore.Get(); ok {
-				return e.EncodeValue(conv.DateTimeToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectSubscriptionsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectSubscriptionsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectUsageCharges invokes list-project-usage-charges operation.
-//
-// The individual charges behind the figures in `/spend`. Amounts here sum to the totals reported there
-// over the same period.
-//
-// GET /api/v1/projects/{projectId}/usage-charges
-func (c *Client) ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*ProjectUsageChargeList, error) {
-	res, err := c.sendListProjectUsageCharges(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (res *ProjectUsageChargeList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-usage-charges"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/usage-charges"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectUsageChargesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/usage-charges"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "resource_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "resource_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ResourceID.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "product_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProductID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "meter_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MeterID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "from" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "from",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.From.Get(); ok {
-				return e.EncodeValue(conv.DateTimeToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "to" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "to",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.To.Get(); ok {
-				return e.EncodeValue(conv.DateTimeToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListProjectUsageChargesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectUsageChargesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -10461,6 +7812,265 @@ func (c *Client) sendListRenewalPrices(ctx context.Context, params ListRenewalPr
 	return result, nil
 }
 
+// ListSpend invokes list-spend operation.
+//
+// Aggregates rated and invoiced usage charges in the specified time range for one billing account.
+// Includes usage not yet invoiced. Project filters use the account recorded on each charge, including
+// charges for projects later assigned to another account. The total covers all matching groups, not
+// just the returned page.
+//
+// GET /api/v1/spend
+func (c *Client) ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error) {
+	res, err := c.sendListSpend(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListSpend(ctx context.Context, params ListSpendParams) (res *SpendRowList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-spend"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/spend"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListSpendOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/spend"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "from" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.DateTimeToString(params.From))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "to" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.DateTimeToString(params.To))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "group_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "group_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.GroupBy.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "product_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProductID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.Int64ToString(params.BillingAccountID))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_ids" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListSpendOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListSpendResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListSubscriptions invokes list-subscriptions operation.
 //
 // List subscriptions.
@@ -10583,16 +8193,25 @@ func (c *Client) sendListSubscriptions(ctx context.Context, params ListSubscript
 		}
 	}
 	{
-		// Encode "project_id" parameter.
+		// Encode "project_ids" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "project_id",
+			Name:    "project_ids",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProjectID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
 			}
 			return nil
 		}); err != nil {
@@ -11041,6 +8660,9 @@ func (c *Client) sendListTransactions(ctx context.Context, params ListTransactio
 // subscription, project, resource, meter and rate. Filter by `invoice_item_id` to see the charges
 // behind a line. Charges still waiting to be priced are included too.
 //
+// Only charges recorded against your billing accounts are included, before filtering, counting and
+// pagination. Reassigning a project does not move previously recorded charges to its new account.
+//
 // GET /api/v1/usage-charges
 func (c *Client) ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error) {
 	res, err := c.sendListUsageCharges(ctx, params)
@@ -11142,23 +8764,6 @@ func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageCharg
 		}
 	}
 	{
-		// Encode "project_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "project_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProjectID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
 		// Encode "product_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "product_id",
@@ -11240,6 +8845,49 @@ func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageCharg
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.To.Get(); ok {
 				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_ids" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.ProjectIds != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.ProjectIds {
+						if err := func() error {
+							return e.EncodeValue(conv.UUIDToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "meter_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "meter_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.MeterID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -12485,165 +10133,6 @@ func (c *Client) sendSetProjectAssignment(ctx context.Context, request *SetProje
 	return result, nil
 }
 
-// SetProjectAutoRenew invokes set-project-auto-renew operation.
-//
-// Automatic renewal draws on the project billing account's balance, which a project member may commit.
-// Paying by card requires the account owner and is done from the billing centre.
-//
-// While the subscription has an open cancellation, turning it on or off is refused with 409
-// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
-// turned it off, and withdrawing the cancellation does not turn it back on.
-//
-// PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew
-func (c *Client) SetProjectAutoRenew(ctx context.Context, request *AutoRenewSet, params SetProjectAutoRenewParams) (*Subscription, error) {
-	res, err := c.sendSetProjectAutoRenew(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendSetProjectAutoRenew(ctx context.Context, request *AutoRenewSet, params SetProjectAutoRenewParams) (res *Subscription, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-project-auto-renew"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SetProjectAutoRenewOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subscriptions/"
-	{
-		// Encode "subscriptionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "subscriptionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.SubscriptionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/auto-renew"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSetProjectAutoRenewRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, SetProjectAutoRenewOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSetProjectAutoRenewResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // UnlinkProjectBillingAccount invokes unlink-project-billing-account operation.
 //
 // Ends the project's current assignment without deleting its assignment history.
@@ -13059,160 +10548,6 @@ func (c *Client) sendWithdrawCancellation(ctx context.Context, params WithdrawCa
 
 	stage = "DecodeResponse"
 	result, err := decodeWithdrawCancellationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// WithdrawProjectCancellation invokes withdraw-project-cancellation operation.
-//
-// Withdraws the whole cancellation while none of its resources has begun to be released; the
-// subscriptions continue as before, except that automatic renewal, turned off when the cancellation
-// was created, stays off until it is turned on again. After that it is refused with 409
-// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
-//
-// POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw
-func (c *Client) WithdrawProjectCancellation(ctx context.Context, params WithdrawProjectCancellationParams) (*Cancellation, error) {
-	res, err := c.sendWithdrawProjectCancellation(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendWithdrawProjectCancellation(ctx context.Context, params WithdrawProjectCancellationParams) (res *Cancellation, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("withdraw-project-cancellation"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, WithdrawProjectCancellationOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/api/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/cancellations/"
-	{
-		// Encode "cancellationId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "cancellationId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.CancellationId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/withdraw"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, WithdrawProjectCancellationOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeWithdrawProjectCancellationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

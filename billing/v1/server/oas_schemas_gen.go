@@ -189,78 +189,6 @@ func (s *AccountIdentity) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// Quote exactly one target: an existing `order_id`, `renewals` or a `cancellation`. Giving none or
-// more than one, or a `promotion_code` with `renewals` or a `cancellation`, fails with HTTP 400
-// `BILLING_PURCHASE_INVALID` and `meta.field` naming the offending field. Without a code, an
-// applicable account discount is selected. An explicit code is evaluated without reserving or
-// consuming a redemption and must be supplied again when confirming checkout through Billing.
-//
-// A refund target is quoted on its own and cannot be combined with items, order_id, renewals,
-// cancellation, at or promotion_code. The order must belong to the caller's account or project. The
-// result estimates a refund without granting eligibility or creating one.
-// Ref: #/components/schemas/AccountQuoteRequest
-type AccountQuoteRequest struct {
-	// Preview checkout of this existing order. Its recorded purchase terms supply every line, and a
-	// confirmed order returns its recorded amounts. A preview does not change the order.
-	OrderID OptUUID `json:"order_id"`
-	// Preview renewing these subscriptions, each at most once. Each entry represents a separate renewal
-	// order. To preview a new promotion code, create a renewal order and quote it by order_id.
-	Renewals      []QuoteRenewal           `json:"renewals"`
-	Cancellation  OptQuoteCancellation     `json:"cancellation"`
-	PromotionCode OptString                `json:"promotion_code"`
-	Refund        OptOrderRefundQuoteInput `json:"refund"`
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *AccountQuoteRequest) GetOrderID() OptUUID {
-	return s.OrderID
-}
-
-// GetRenewals returns the value of Renewals.
-func (s *AccountQuoteRequest) GetRenewals() []QuoteRenewal {
-	return s.Renewals
-}
-
-// GetCancellation returns the value of Cancellation.
-func (s *AccountQuoteRequest) GetCancellation() OptQuoteCancellation {
-	return s.Cancellation
-}
-
-// GetPromotionCode returns the value of PromotionCode.
-func (s *AccountQuoteRequest) GetPromotionCode() OptString {
-	return s.PromotionCode
-}
-
-// GetRefund returns the value of Refund.
-func (s *AccountQuoteRequest) GetRefund() OptOrderRefundQuoteInput {
-	return s.Refund
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *AccountQuoteRequest) SetOrderID(val OptUUID) {
-	s.OrderID = val
-}
-
-// SetRenewals sets the value of Renewals.
-func (s *AccountQuoteRequest) SetRenewals(val []QuoteRenewal) {
-	s.Renewals = val
-}
-
-// SetCancellation sets the value of Cancellation.
-func (s *AccountQuoteRequest) SetCancellation(val OptQuoteCancellation) {
-	s.Cancellation = val
-}
-
-// SetPromotionCode sets the value of PromotionCode.
-func (s *AccountQuoteRequest) SetPromotionCode(val OptString) {
-	s.PromotionCode = val
-}
-
-// SetRefund sets the value of Refund.
-func (s *AccountQuoteRequest) SetRefund(val OptOrderRefundQuoteInput) {
-	s.Refund = val
-}
-
 // A resource currently accruing charges by the second.
 // Ref: #/components/schemas/ActiveResource
 type ActiveResource struct {
@@ -283,6 +211,7 @@ type ActiveResource struct {
 	StartedAt  time.Time                   `json:"started_at"`
 	// Usage has been generated up to this boundary; it does not imply invoicing or payment.
 	MeteredUntil time.Time `json:"metered_until"`
+	ProjectID    OptUUID   `json:"project_id"`
 }
 
 // GetID returns the value of ID.
@@ -360,6 +289,11 @@ func (s *ActiveResource) GetMeteredUntil() time.Time {
 	return s.MeteredUntil
 }
 
+// GetProjectID returns the value of ProjectID.
+func (s *ActiveResource) GetProjectID() OptUUID {
+	return s.ProjectID
+}
+
 // SetID sets the value of ID.
 func (s *ActiveResource) SetID(val uuid.UUID) {
 	s.ID = val
@@ -433,6 +367,11 @@ func (s *ActiveResource) SetStartedAt(val time.Time) {
 // SetMeteredUntil sets the value of MeteredUntil.
 func (s *ActiveResource) SetMeteredUntil(val time.Time) {
 	s.MeteredUntil = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *ActiveResource) SetProjectID(val OptUUID) {
+	s.ProjectID = val
 }
 
 type ActiveResourceDimensions map[string]string
@@ -2751,14 +2690,6 @@ type CreateCancellationOK Cancellation
 
 func (*CreateCancellationOK) createCancellationRes() {}
 
-type CreateProjectCancellationCreated Cancellation
-
-func (*CreateProjectCancellationCreated) createProjectCancellationRes() {}
-
-type CreateProjectCancellationOK Cancellation
-
-func (*CreateProjectCancellationOK) createProjectCancellationRes() {}
-
 // Ref: #/components/schemas/CreditGrant
 type CreditGrant struct {
 	MinAmount        OptString `json:"min_amount"`
@@ -3619,478 +3550,6 @@ func (s *ErrorStatusCode) SetStatusCode(val int) {
 // SetResponse sets the value of Response.
 func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
-}
-
-// A complete public list-price estimate, before account discounts and tax. Nothing is saved, charged
-// or reserved. The request fails if any item cannot be priced.
-// Ref: #/components/schemas/Estimate
-type Estimate struct {
-	Items []EstimateItem `json:"items"`
-	// Sum of public list-price amounts, before account discounts and tax. This is an estimate, not an
-	// expected checkout amount.
-	Total    Money  `json:"total"`
-	Currency string `json:"currency"`
-}
-
-// GetItems returns the value of Items.
-func (s *Estimate) GetItems() []EstimateItem {
-	return s.Items
-}
-
-// GetTotal returns the value of Total.
-func (s *Estimate) GetTotal() Money {
-	return s.Total
-}
-
-// GetCurrency returns the value of Currency.
-func (s *Estimate) GetCurrency() string {
-	return s.Currency
-}
-
-// SetItems sets the value of Items.
-func (s *Estimate) SetItems(val []EstimateItem) {
-	s.Items = val
-}
-
-// SetTotal sets the value of Total.
-func (s *Estimate) SetTotal(val Money) {
-	s.Total = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *Estimate) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// One calculated public list-price estimate item. Account discounts and tax are not evaluated.
-// Ref: #/components/schemas/EstimateItem
-type EstimateItem struct {
-	// Tax included in the account quote. Absent in public catalogue estimates.
-	TaxAmount OptMoney `json:"tax_amount"`
-	// Tax already included in the displayed price. Absent in public catalogue estimates.
-	TaxIncludedAmount OptMoney `json:"tax_included_amount"`
-	// Which line of the request this answers.
-	Index int `json:"index"`
-	// The selected price, including when the request identified it indirectly.
-	PriceID  uuid.UUID `json:"price_id"`
-	PlanName string    `json:"plan_name"`
-	// Unit price before discounts. Null when no single unit price applies, such as tiered or multiple-rate
-	// pricing.
-	UnitAmount NilMoney `json:"unit_amount"`
-	// The quantity actually priced. When `duration_seconds` is given, it is the requested `quantity`
-	// multiplied by that duration.
-	Quantity string `json:"quantity"`
-	// Public list-price amount including any setup charges, before account discounts. Not rounded; round
-	// only for display.
-	Amount   Money  `json:"amount"`
-	Currency string `json:"currency"`
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *EstimateItem) GetTaxAmount() OptMoney {
-	return s.TaxAmount
-}
-
-// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
-func (s *EstimateItem) GetTaxIncludedAmount() OptMoney {
-	return s.TaxIncludedAmount
-}
-
-// GetIndex returns the value of Index.
-func (s *EstimateItem) GetIndex() int {
-	return s.Index
-}
-
-// GetPriceID returns the value of PriceID.
-func (s *EstimateItem) GetPriceID() uuid.UUID {
-	return s.PriceID
-}
-
-// GetPlanName returns the value of PlanName.
-func (s *EstimateItem) GetPlanName() string {
-	return s.PlanName
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *EstimateItem) GetUnitAmount() NilMoney {
-	return s.UnitAmount
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *EstimateItem) GetQuantity() string {
-	return s.Quantity
-}
-
-// GetAmount returns the value of Amount.
-func (s *EstimateItem) GetAmount() Money {
-	return s.Amount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *EstimateItem) GetCurrency() string {
-	return s.Currency
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *EstimateItem) SetTaxAmount(val OptMoney) {
-	s.TaxAmount = val
-}
-
-// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
-func (s *EstimateItem) SetTaxIncludedAmount(val OptMoney) {
-	s.TaxIncludedAmount = val
-}
-
-// SetIndex sets the value of Index.
-func (s *EstimateItem) SetIndex(val int) {
-	s.Index = val
-}
-
-// SetPriceID sets the value of PriceID.
-func (s *EstimateItem) SetPriceID(val uuid.UUID) {
-	s.PriceID = val
-}
-
-// SetPlanName sets the value of PlanName.
-func (s *EstimateItem) SetPlanName(val string) {
-	s.PlanName = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *EstimateItem) SetUnitAmount(val NilMoney) {
-	s.UnitAmount = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *EstimateItem) SetQuantity(val string) {
-	s.Quantity = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *EstimateItem) SetAmount(val Money) {
-	s.Amount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *EstimateItem) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// Identify a price directly, or select a price for a plan. For each resource give its ID or lookup
-// key, never both. Lookup keys require product_id.
-//
-// A line that gives a meter, `dimensions` or `duration_seconds` estimates usage and is priced only at
-// a postpaid price. Such a line is refused with HTTP 400 `BILLING_PURCHASE_INVALID` when `price_type`
-// is `prepaid` or `one_time`, or when the price it names is not postpaid; `meta.field` is
-// `price_type`, `price_id` or `price_lookup_key` accordingly. When the plan has no applicable postpaid
-// price, the estimate fails with a structured error.
-// Ref: #/components/schemas/EstimateItemInput
-type EstimateItemInput struct {
-	PriceLookupKey OptString    `json:"price_lookup_key"`
-	PlanLookupKey  OptString    `json:"plan_lookup_key"`
-	MeterLookupKey OptString    `json:"meter_lookup_key"`
-	PriceID        OptUUID      `json:"price_id"`
-	ProductID      OptProductID `json:"product_id"`
-	PlanID         OptUUID      `json:"plan_id"`
-	MeterID        OptUUID      `json:"meter_id"`
-	// The attributes the price depends on — region, instance type, token class.
-	//
-	// Required when the price draws its rates from a price list, which is how anything sold by region or
-	// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
-	// to give and takes none.
-	//
-	// Every attribute the meter declares must be present. A combination with no rate covering it is
-	// refused rather than priced at zero.
-	Dimensions OptEstimateItemInputDimensions `json:"dimensions"`
-	// Narrows the selection when a plan offers more than one billing type.
-	PriceType     OptEstimateItemInputPriceType `json:"price_type"`
-	Interval      OptEstimateItemInputInterval  `json:"interval"`
-	IntervalCount OptInt                        `json:"interval_count"`
-	Quantity      string                        `json:"quantity"`
-	// For metered items, how long to price for. This allows an estimate such as "about this much per
-	// month" to be shown before anything exists. The priced quantity is `quantity` multiplied by this
-	// duration.
-	DurationSeconds OptInt64 `json:"duration_seconds"`
-}
-
-// GetPriceLookupKey returns the value of PriceLookupKey.
-func (s *EstimateItemInput) GetPriceLookupKey() OptString {
-	return s.PriceLookupKey
-}
-
-// GetPlanLookupKey returns the value of PlanLookupKey.
-func (s *EstimateItemInput) GetPlanLookupKey() OptString {
-	return s.PlanLookupKey
-}
-
-// GetMeterLookupKey returns the value of MeterLookupKey.
-func (s *EstimateItemInput) GetMeterLookupKey() OptString {
-	return s.MeterLookupKey
-}
-
-// GetPriceID returns the value of PriceID.
-func (s *EstimateItemInput) GetPriceID() OptUUID {
-	return s.PriceID
-}
-
-// GetProductID returns the value of ProductID.
-func (s *EstimateItemInput) GetProductID() OptProductID {
-	return s.ProductID
-}
-
-// GetPlanID returns the value of PlanID.
-func (s *EstimateItemInput) GetPlanID() OptUUID {
-	return s.PlanID
-}
-
-// GetMeterID returns the value of MeterID.
-func (s *EstimateItemInput) GetMeterID() OptUUID {
-	return s.MeterID
-}
-
-// GetDimensions returns the value of Dimensions.
-func (s *EstimateItemInput) GetDimensions() OptEstimateItemInputDimensions {
-	return s.Dimensions
-}
-
-// GetPriceType returns the value of PriceType.
-func (s *EstimateItemInput) GetPriceType() OptEstimateItemInputPriceType {
-	return s.PriceType
-}
-
-// GetInterval returns the value of Interval.
-func (s *EstimateItemInput) GetInterval() OptEstimateItemInputInterval {
-	return s.Interval
-}
-
-// GetIntervalCount returns the value of IntervalCount.
-func (s *EstimateItemInput) GetIntervalCount() OptInt {
-	return s.IntervalCount
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *EstimateItemInput) GetQuantity() string {
-	return s.Quantity
-}
-
-// GetDurationSeconds returns the value of DurationSeconds.
-func (s *EstimateItemInput) GetDurationSeconds() OptInt64 {
-	return s.DurationSeconds
-}
-
-// SetPriceLookupKey sets the value of PriceLookupKey.
-func (s *EstimateItemInput) SetPriceLookupKey(val OptString) {
-	s.PriceLookupKey = val
-}
-
-// SetPlanLookupKey sets the value of PlanLookupKey.
-func (s *EstimateItemInput) SetPlanLookupKey(val OptString) {
-	s.PlanLookupKey = val
-}
-
-// SetMeterLookupKey sets the value of MeterLookupKey.
-func (s *EstimateItemInput) SetMeterLookupKey(val OptString) {
-	s.MeterLookupKey = val
-}
-
-// SetPriceID sets the value of PriceID.
-func (s *EstimateItemInput) SetPriceID(val OptUUID) {
-	s.PriceID = val
-}
-
-// SetProductID sets the value of ProductID.
-func (s *EstimateItemInput) SetProductID(val OptProductID) {
-	s.ProductID = val
-}
-
-// SetPlanID sets the value of PlanID.
-func (s *EstimateItemInput) SetPlanID(val OptUUID) {
-	s.PlanID = val
-}
-
-// SetMeterID sets the value of MeterID.
-func (s *EstimateItemInput) SetMeterID(val OptUUID) {
-	s.MeterID = val
-}
-
-// SetDimensions sets the value of Dimensions.
-func (s *EstimateItemInput) SetDimensions(val OptEstimateItemInputDimensions) {
-	s.Dimensions = val
-}
-
-// SetPriceType sets the value of PriceType.
-func (s *EstimateItemInput) SetPriceType(val OptEstimateItemInputPriceType) {
-	s.PriceType = val
-}
-
-// SetInterval sets the value of Interval.
-func (s *EstimateItemInput) SetInterval(val OptEstimateItemInputInterval) {
-	s.Interval = val
-}
-
-// SetIntervalCount sets the value of IntervalCount.
-func (s *EstimateItemInput) SetIntervalCount(val OptInt) {
-	s.IntervalCount = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *EstimateItemInput) SetQuantity(val string) {
-	s.Quantity = val
-}
-
-// SetDurationSeconds sets the value of DurationSeconds.
-func (s *EstimateItemInput) SetDurationSeconds(val OptInt64) {
-	s.DurationSeconds = val
-}
-
-// The attributes the price depends on — region, instance type, token class.
-//
-// Required when the price draws its rates from a price list, which is how anything sold by region or
-// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
-// to give and takes none.
-//
-// Every attribute the meter declares must be present. A combination with no rate covering it is
-// refused rather than priced at zero.
-type EstimateItemInputDimensions map[string]string
-
-func (s *EstimateItemInputDimensions) init() EstimateItemInputDimensions {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
-type EstimateItemInputInterval string
-
-const (
-	EstimateItemInputIntervalNone  EstimateItemInputInterval = "none"
-	EstimateItemInputIntervalDay   EstimateItemInputInterval = "day"
-	EstimateItemInputIntervalMonth EstimateItemInputInterval = "month"
-	EstimateItemInputIntervalYear  EstimateItemInputInterval = "year"
-)
-
-// AllValues returns all EstimateItemInputInterval values.
-func (EstimateItemInputInterval) AllValues() []EstimateItemInputInterval {
-	return []EstimateItemInputInterval{
-		EstimateItemInputIntervalNone,
-		EstimateItemInputIntervalDay,
-		EstimateItemInputIntervalMonth,
-		EstimateItemInputIntervalYear,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s EstimateItemInputInterval) MarshalText() ([]byte, error) {
-	switch s {
-	case EstimateItemInputIntervalNone:
-		return []byte(s), nil
-	case EstimateItemInputIntervalDay:
-		return []byte(s), nil
-	case EstimateItemInputIntervalMonth:
-		return []byte(s), nil
-	case EstimateItemInputIntervalYear:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *EstimateItemInputInterval) UnmarshalText(data []byte) error {
-	switch EstimateItemInputInterval(data) {
-	case EstimateItemInputIntervalNone:
-		*s = EstimateItemInputIntervalNone
-		return nil
-	case EstimateItemInputIntervalDay:
-		*s = EstimateItemInputIntervalDay
-		return nil
-	case EstimateItemInputIntervalMonth:
-		*s = EstimateItemInputIntervalMonth
-		return nil
-	case EstimateItemInputIntervalYear:
-		*s = EstimateItemInputIntervalYear
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Narrows the selection when a plan offers more than one billing type.
-type EstimateItemInputPriceType string
-
-const (
-	EstimateItemInputPriceTypePostpaid EstimateItemInputPriceType = "postpaid"
-	EstimateItemInputPriceTypePrepaid  EstimateItemInputPriceType = "prepaid"
-	EstimateItemInputPriceTypeOneTime  EstimateItemInputPriceType = "one_time"
-)
-
-// AllValues returns all EstimateItemInputPriceType values.
-func (EstimateItemInputPriceType) AllValues() []EstimateItemInputPriceType {
-	return []EstimateItemInputPriceType{
-		EstimateItemInputPriceTypePostpaid,
-		EstimateItemInputPriceTypePrepaid,
-		EstimateItemInputPriceTypeOneTime,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s EstimateItemInputPriceType) MarshalText() ([]byte, error) {
-	switch s {
-	case EstimateItemInputPriceTypePostpaid:
-		return []byte(s), nil
-	case EstimateItemInputPriceTypePrepaid:
-		return []byte(s), nil
-	case EstimateItemInputPriceTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *EstimateItemInputPriceType) UnmarshalText(data []byte) error {
-	switch EstimateItemInputPriceType(data) {
-	case EstimateItemInputPriceTypePostpaid:
-		*s = EstimateItemInputPriceTypePostpaid
-		return nil
-	case EstimateItemInputPriceTypePrepaid:
-		*s = EstimateItemInputPriceTypePrepaid
-		return nil
-	case EstimateItemInputPriceTypeOneTime:
-		*s = EstimateItemInputPriceTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/EstimateRequest
-type EstimateRequest struct {
-	// Must be one the catalogue publishes.
-	Currency string              `json:"currency"`
-	Items    []EstimateItemInput `json:"items"`
-}
-
-// GetCurrency returns the value of Currency.
-func (s *EstimateRequest) GetCurrency() string {
-	return s.Currency
-}
-
-// GetItems returns the value of Items.
-func (s *EstimateRequest) GetItems() []EstimateItemInput {
-	return s.Items
-}
-
-// SetCurrency sets the value of Currency.
-func (s *EstimateRequest) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetItems sets the value of Items.
-func (s *EstimateRequest) SetItems(val []EstimateItemInput) {
-	s.Items = val
 }
 
 // GetPlanNotModified is response for GetPlan operation.
@@ -5072,6 +4531,61 @@ func (s *InvoiceType) UnmarshalText(data []byte) error {
 	}
 }
 
+type ListActiveResourcesStatus string
+
+const (
+	ListActiveResourcesStatusActive    ListActiveResourcesStatus = "active"
+	ListActiveResourcesStatusSuspended ListActiveResourcesStatus = "suspended"
+	ListActiveResourcesStatusClosing   ListActiveResourcesStatus = "closing"
+	ListActiveResourcesStatusCompleted ListActiveResourcesStatus = "completed"
+)
+
+// AllValues returns all ListActiveResourcesStatus values.
+func (ListActiveResourcesStatus) AllValues() []ListActiveResourcesStatus {
+	return []ListActiveResourcesStatus{
+		ListActiveResourcesStatusActive,
+		ListActiveResourcesStatusSuspended,
+		ListActiveResourcesStatusClosing,
+		ListActiveResourcesStatusCompleted,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ListActiveResourcesStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ListActiveResourcesStatusActive:
+		return []byte(s), nil
+	case ListActiveResourcesStatusSuspended:
+		return []byte(s), nil
+	case ListActiveResourcesStatusClosing:
+		return []byte(s), nil
+	case ListActiveResourcesStatusCompleted:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListActiveResourcesStatus) UnmarshalText(data []byte) error {
+	switch ListActiveResourcesStatus(data) {
+	case ListActiveResourcesStatusActive:
+		*s = ListActiveResourcesStatusActive
+		return nil
+	case ListActiveResourcesStatusSuspended:
+		*s = ListActiveResourcesStatusSuspended
+		return nil
+	case ListActiveResourcesStatusClosing:
+		*s = ListActiveResourcesStatusClosing
+		return nil
+	case ListActiveResourcesStatusCompleted:
+		*s = ListActiveResourcesStatusCompleted
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type ListAllowancesStatus string
 
 const (
@@ -5311,47 +4825,31 @@ func (s *ListPricesType) UnmarshalText(data []byte) error {
 	}
 }
 
-type ListProjectCancellationsStatus string
+type ListSpendGroupBy string
 
 const (
-	ListProjectCancellationsStatusOpen      ListProjectCancellationsStatus = "open"
-	ListProjectCancellationsStatusRequested ListProjectCancellationsStatus = "requested"
-	ListProjectCancellationsStatusScheduled ListProjectCancellationsStatus = "scheduled"
-	ListProjectCancellationsStatusReleasing ListProjectCancellationsStatus = "releasing"
-	ListProjectCancellationsStatusCompleted ListProjectCancellationsStatus = "completed"
-	ListProjectCancellationsStatusCanceled  ListProjectCancellationsStatus = "canceled"
-	ListProjectCancellationsStatusFailed    ListProjectCancellationsStatus = "failed"
+	ListSpendGroupByProduct  ListSpendGroupBy = "product"
+	ListSpendGroupByPlan     ListSpendGroupBy = "plan"
+	ListSpendGroupByResource ListSpendGroupBy = "resource"
 )
 
-// AllValues returns all ListProjectCancellationsStatus values.
-func (ListProjectCancellationsStatus) AllValues() []ListProjectCancellationsStatus {
-	return []ListProjectCancellationsStatus{
-		ListProjectCancellationsStatusOpen,
-		ListProjectCancellationsStatusRequested,
-		ListProjectCancellationsStatusScheduled,
-		ListProjectCancellationsStatusReleasing,
-		ListProjectCancellationsStatusCompleted,
-		ListProjectCancellationsStatusCanceled,
-		ListProjectCancellationsStatusFailed,
+// AllValues returns all ListSpendGroupBy values.
+func (ListSpendGroupBy) AllValues() []ListSpendGroupBy {
+	return []ListSpendGroupBy{
+		ListSpendGroupByProduct,
+		ListSpendGroupByPlan,
+		ListSpendGroupByResource,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ListProjectCancellationsStatus) MarshalText() ([]byte, error) {
+func (s ListSpendGroupBy) MarshalText() ([]byte, error) {
 	switch s {
-	case ListProjectCancellationsStatusOpen:
+	case ListSpendGroupByProduct:
 		return []byte(s), nil
-	case ListProjectCancellationsStatusRequested:
+	case ListSpendGroupByPlan:
 		return []byte(s), nil
-	case ListProjectCancellationsStatusScheduled:
-		return []byte(s), nil
-	case ListProjectCancellationsStatusReleasing:
-		return []byte(s), nil
-	case ListProjectCancellationsStatusCompleted:
-		return []byte(s), nil
-	case ListProjectCancellationsStatusCanceled:
-		return []byte(s), nil
-	case ListProjectCancellationsStatusFailed:
+	case ListSpendGroupByResource:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5359,76 +4857,16 @@ func (s ListProjectCancellationsStatus) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListProjectCancellationsStatus) UnmarshalText(data []byte) error {
-	switch ListProjectCancellationsStatus(data) {
-	case ListProjectCancellationsStatusOpen:
-		*s = ListProjectCancellationsStatusOpen
+func (s *ListSpendGroupBy) UnmarshalText(data []byte) error {
+	switch ListSpendGroupBy(data) {
+	case ListSpendGroupByProduct:
+		*s = ListSpendGroupByProduct
 		return nil
-	case ListProjectCancellationsStatusRequested:
-		*s = ListProjectCancellationsStatusRequested
+	case ListSpendGroupByPlan:
+		*s = ListSpendGroupByPlan
 		return nil
-	case ListProjectCancellationsStatusScheduled:
-		*s = ListProjectCancellationsStatusScheduled
-		return nil
-	case ListProjectCancellationsStatusReleasing:
-		*s = ListProjectCancellationsStatusReleasing
-		return nil
-	case ListProjectCancellationsStatusCompleted:
-		*s = ListProjectCancellationsStatusCompleted
-		return nil
-	case ListProjectCancellationsStatusCanceled:
-		*s = ListProjectCancellationsStatusCanceled
-		return nil
-	case ListProjectCancellationsStatusFailed:
-		*s = ListProjectCancellationsStatusFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type ListProjectSpendGroupBy string
-
-const (
-	ListProjectSpendGroupByProduct  ListProjectSpendGroupBy = "product"
-	ListProjectSpendGroupByPlan     ListProjectSpendGroupBy = "plan"
-	ListProjectSpendGroupByResource ListProjectSpendGroupBy = "resource"
-)
-
-// AllValues returns all ListProjectSpendGroupBy values.
-func (ListProjectSpendGroupBy) AllValues() []ListProjectSpendGroupBy {
-	return []ListProjectSpendGroupBy{
-		ListProjectSpendGroupByProduct,
-		ListProjectSpendGroupByPlan,
-		ListProjectSpendGroupByResource,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ListProjectSpendGroupBy) MarshalText() ([]byte, error) {
-	switch s {
-	case ListProjectSpendGroupByProduct:
-		return []byte(s), nil
-	case ListProjectSpendGroupByPlan:
-		return []byte(s), nil
-	case ListProjectSpendGroupByResource:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListProjectSpendGroupBy) UnmarshalText(data []byte) error {
-	switch ListProjectSpendGroupBy(data) {
-	case ListProjectSpendGroupByProduct:
-		*s = ListProjectSpendGroupByProduct
-		return nil
-	case ListProjectSpendGroupByPlan:
-		*s = ListProjectSpendGroupByPlan
-		return nil
-	case ListProjectSpendGroupByResource:
-		*s = ListProjectSpendGroupByResource
+	case ListSpendGroupByResource:
+		*s = ListSpendGroupByResource
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -6125,144 +5563,6 @@ func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
 	return d
 }
 
-// NewOptEstimateItemInputDimensions returns new OptEstimateItemInputDimensions with value set to v.
-func NewOptEstimateItemInputDimensions(v EstimateItemInputDimensions) OptEstimateItemInputDimensions {
-	return OptEstimateItemInputDimensions{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptEstimateItemInputDimensions is optional EstimateItemInputDimensions.
-type OptEstimateItemInputDimensions struct {
-	Value EstimateItemInputDimensions
-	Set   bool
-}
-
-// IsSet returns true if OptEstimateItemInputDimensions was set.
-func (o OptEstimateItemInputDimensions) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptEstimateItemInputDimensions) Reset() {
-	var v EstimateItemInputDimensions
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptEstimateItemInputDimensions) SetTo(v EstimateItemInputDimensions) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptEstimateItemInputDimensions) Get() (v EstimateItemInputDimensions, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptEstimateItemInputDimensions) Or(d EstimateItemInputDimensions) EstimateItemInputDimensions {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptEstimateItemInputInterval returns new OptEstimateItemInputInterval with value set to v.
-func NewOptEstimateItemInputInterval(v EstimateItemInputInterval) OptEstimateItemInputInterval {
-	return OptEstimateItemInputInterval{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptEstimateItemInputInterval is optional EstimateItemInputInterval.
-type OptEstimateItemInputInterval struct {
-	Value EstimateItemInputInterval
-	Set   bool
-}
-
-// IsSet returns true if OptEstimateItemInputInterval was set.
-func (o OptEstimateItemInputInterval) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptEstimateItemInputInterval) Reset() {
-	var v EstimateItemInputInterval
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptEstimateItemInputInterval) SetTo(v EstimateItemInputInterval) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptEstimateItemInputInterval) Get() (v EstimateItemInputInterval, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptEstimateItemInputInterval) Or(d EstimateItemInputInterval) EstimateItemInputInterval {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptEstimateItemInputPriceType returns new OptEstimateItemInputPriceType with value set to v.
-func NewOptEstimateItemInputPriceType(v EstimateItemInputPriceType) OptEstimateItemInputPriceType {
-	return OptEstimateItemInputPriceType{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptEstimateItemInputPriceType is optional EstimateItemInputPriceType.
-type OptEstimateItemInputPriceType struct {
-	Value EstimateItemInputPriceType
-	Set   bool
-}
-
-// IsSet returns true if OptEstimateItemInputPriceType was set.
-func (o OptEstimateItemInputPriceType) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptEstimateItemInputPriceType) Reset() {
-	var v EstimateItemInputPriceType
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptEstimateItemInputPriceType) SetTo(v EstimateItemInputPriceType) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptEstimateItemInputPriceType) Get() (v EstimateItemInputPriceType, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptEstimateItemInputPriceType) Or(d EstimateItemInputPriceType) EstimateItemInputPriceType {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptInt returns new OptInt with value set to v.
 func NewOptInt(v int) OptInt {
 	return OptInt{
@@ -6539,6 +5839,52 @@ func (o OptInvoiceType) Or(d InvoiceType) InvoiceType {
 	return d
 }
 
+// NewOptListActiveResourcesStatus returns new OptListActiveResourcesStatus with value set to v.
+func NewOptListActiveResourcesStatus(v ListActiveResourcesStatus) OptListActiveResourcesStatus {
+	return OptListActiveResourcesStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListActiveResourcesStatus is optional ListActiveResourcesStatus.
+type OptListActiveResourcesStatus struct {
+	Value ListActiveResourcesStatus
+	Set   bool
+}
+
+// IsSet returns true if OptListActiveResourcesStatus was set.
+func (o OptListActiveResourcesStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListActiveResourcesStatus) Reset() {
+	var v ListActiveResourcesStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListActiveResourcesStatus) SetTo(v ListActiveResourcesStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListActiveResourcesStatus) Get() (v ListActiveResourcesStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListActiveResourcesStatus) Or(d ListActiveResourcesStatus) ListActiveResourcesStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptListAllowancesStatus returns new OptListAllowancesStatus with value set to v.
 func NewOptListAllowancesStatus(v ListAllowancesStatus) OptListAllowancesStatus {
 	return OptListAllowancesStatus{
@@ -6723,38 +6069,38 @@ func (o OptListPricesType) Or(d ListPricesType) ListPricesType {
 	return d
 }
 
-// NewOptListProjectCancellationsStatus returns new OptListProjectCancellationsStatus with value set to v.
-func NewOptListProjectCancellationsStatus(v ListProjectCancellationsStatus) OptListProjectCancellationsStatus {
-	return OptListProjectCancellationsStatus{
+// NewOptListSpendGroupBy returns new OptListSpendGroupBy with value set to v.
+func NewOptListSpendGroupBy(v ListSpendGroupBy) OptListSpendGroupBy {
+	return OptListSpendGroupBy{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptListProjectCancellationsStatus is optional ListProjectCancellationsStatus.
-type OptListProjectCancellationsStatus struct {
-	Value ListProjectCancellationsStatus
+// OptListSpendGroupBy is optional ListSpendGroupBy.
+type OptListSpendGroupBy struct {
+	Value ListSpendGroupBy
 	Set   bool
 }
 
-// IsSet returns true if OptListProjectCancellationsStatus was set.
-func (o OptListProjectCancellationsStatus) IsSet() bool { return o.Set }
+// IsSet returns true if OptListSpendGroupBy was set.
+func (o OptListSpendGroupBy) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptListProjectCancellationsStatus) Reset() {
-	var v ListProjectCancellationsStatus
+func (o *OptListSpendGroupBy) Reset() {
+	var v ListSpendGroupBy
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptListProjectCancellationsStatus) SetTo(v ListProjectCancellationsStatus) {
+func (o *OptListSpendGroupBy) SetTo(v ListSpendGroupBy) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptListProjectCancellationsStatus) Get() (v ListProjectCancellationsStatus, ok bool) {
+func (o OptListSpendGroupBy) Get() (v ListSpendGroupBy, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -6762,53 +6108,7 @@ func (o OptListProjectCancellationsStatus) Get() (v ListProjectCancellationsStat
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptListProjectCancellationsStatus) Or(d ListProjectCancellationsStatus) ListProjectCancellationsStatus {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptListProjectSpendGroupBy returns new OptListProjectSpendGroupBy with value set to v.
-func NewOptListProjectSpendGroupBy(v ListProjectSpendGroupBy) OptListProjectSpendGroupBy {
-	return OptListProjectSpendGroupBy{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptListProjectSpendGroupBy is optional ListProjectSpendGroupBy.
-type OptListProjectSpendGroupBy struct {
-	Value ListProjectSpendGroupBy
-	Set   bool
-}
-
-// IsSet returns true if OptListProjectSpendGroupBy was set.
-func (o OptListProjectSpendGroupBy) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptListProjectSpendGroupBy) Reset() {
-	var v ListProjectSpendGroupBy
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptListProjectSpendGroupBy) SetTo(v ListProjectSpendGroupBy) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptListProjectSpendGroupBy) Get() (v ListProjectSpendGroupBy, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptListProjectSpendGroupBy) Or(d ListProjectSpendGroupBy) ListProjectSpendGroupBy {
+func (o OptListSpendGroupBy) Or(d ListSpendGroupBy) ListSpendGroupBy {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7799,52 +7099,6 @@ func (o OptProductID) Or(d ProductID) ProductID {
 	return d
 }
 
-// NewOptProjectUsageChargeDimensions returns new OptProjectUsageChargeDimensions with value set to v.
-func NewOptProjectUsageChargeDimensions(v ProjectUsageChargeDimensions) OptProjectUsageChargeDimensions {
-	return OptProjectUsageChargeDimensions{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptProjectUsageChargeDimensions is optional ProjectUsageChargeDimensions.
-type OptProjectUsageChargeDimensions struct {
-	Value ProjectUsageChargeDimensions
-	Set   bool
-}
-
-// IsSet returns true if OptProjectUsageChargeDimensions was set.
-func (o OptProjectUsageChargeDimensions) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptProjectUsageChargeDimensions) Reset() {
-	var v ProjectUsageChargeDimensions
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptProjectUsageChargeDimensions) SetTo(v ProjectUsageChargeDimensions) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptProjectUsageChargeDimensions) Get() (v ProjectUsageChargeDimensions, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptProjectUsageChargeDimensions) Or(d ProjectUsageChargeDimensions) ProjectUsageChargeDimensions {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptQuoteCancellation returns new OptQuoteCancellation with value set to v.
 func NewOptQuoteCancellation(v QuoteCancellation) OptQuoteCancellation {
 	return OptQuoteCancellation{
@@ -7885,6 +7139,52 @@ func (o OptQuoteCancellation) Get() (v QuoteCancellation, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptQuoteCancellation) Or(d QuoteCancellation) QuoteCancellation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptQuoteItemInputDimensions returns new OptQuoteItemInputDimensions with value set to v.
+func NewOptQuoteItemInputDimensions(v QuoteItemInputDimensions) OptQuoteItemInputDimensions {
+	return OptQuoteItemInputDimensions{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteItemInputDimensions is optional QuoteItemInputDimensions.
+type OptQuoteItemInputDimensions struct {
+	Value QuoteItemInputDimensions
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteItemInputDimensions was set.
+func (o OptQuoteItemInputDimensions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteItemInputDimensions) Reset() {
+	var v QuoteItemInputDimensions
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteItemInputDimensions) SetTo(v QuoteItemInputDimensions) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteItemInputDimensions) Get() (v QuoteItemInputDimensions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteItemInputDimensions) Or(d QuoteItemInputDimensions) QuoteItemInputDimensions {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12092,472 +11392,6 @@ func (s *ProjectAssignmentList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// A narrow view of the project's billing account, restricted to what a project member needs in order
-// to know whether the project's resources will keep running.
-// Ref: #/components/schemas/ProjectBillingAccount
-type ProjectBillingAccount struct {
-	// Identifies the billing account. Use it to link into the billing centre.
-	BillingAccountID int64  `json:"billing_account_id"`
-	Name             string `json:"name"`
-	// Everything this project is charged is in this currency, and it cannot change while the account
-	// exists.
-	Currency string `json:"currency"`
-	// What remains to be spent. It already accounts for this month's uninvoiced usage, so it is what will
-	// be available at checkout rather than the balance shown in the billing centre. It goes negative when
-	// usage has exceeded the balance.
-	SpendableAmount Money `json:"spendable_amount"`
-	// `active` — nothing is owed. `past_due` — the account owes money and resources are still running.
-	// `suspended` — resources have been stopped for non-payment.
-	Status ProjectBillingAccountStatus `json:"status"`
-	// When this project's resources will be stopped unless the account is topped up. Absent while `status`
-	// is `active`.
-	SuspendsAt OptNilDateTime `json:"suspends_at"`
-}
-
-// GetBillingAccountID returns the value of BillingAccountID.
-func (s *ProjectBillingAccount) GetBillingAccountID() int64 {
-	return s.BillingAccountID
-}
-
-// GetName returns the value of Name.
-func (s *ProjectBillingAccount) GetName() string {
-	return s.Name
-}
-
-// GetCurrency returns the value of Currency.
-func (s *ProjectBillingAccount) GetCurrency() string {
-	return s.Currency
-}
-
-// GetSpendableAmount returns the value of SpendableAmount.
-func (s *ProjectBillingAccount) GetSpendableAmount() Money {
-	return s.SpendableAmount
-}
-
-// GetStatus returns the value of Status.
-func (s *ProjectBillingAccount) GetStatus() ProjectBillingAccountStatus {
-	return s.Status
-}
-
-// GetSuspendsAt returns the value of SuspendsAt.
-func (s *ProjectBillingAccount) GetSuspendsAt() OptNilDateTime {
-	return s.SuspendsAt
-}
-
-// SetBillingAccountID sets the value of BillingAccountID.
-func (s *ProjectBillingAccount) SetBillingAccountID(val int64) {
-	s.BillingAccountID = val
-}
-
-// SetName sets the value of Name.
-func (s *ProjectBillingAccount) SetName(val string) {
-	s.Name = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *ProjectBillingAccount) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetSpendableAmount sets the value of SpendableAmount.
-func (s *ProjectBillingAccount) SetSpendableAmount(val Money) {
-	s.SpendableAmount = val
-}
-
-// SetStatus sets the value of Status.
-func (s *ProjectBillingAccount) SetStatus(val ProjectBillingAccountStatus) {
-	s.Status = val
-}
-
-// SetSuspendsAt sets the value of SuspendsAt.
-func (s *ProjectBillingAccount) SetSuspendsAt(val OptNilDateTime) {
-	s.SuspendsAt = val
-}
-
-// `active` — nothing is owed. `past_due` — the account owes money and resources are still running.
-// `suspended` — resources have been stopped for non-payment.
-type ProjectBillingAccountStatus string
-
-const (
-	ProjectBillingAccountStatusActive    ProjectBillingAccountStatus = "active"
-	ProjectBillingAccountStatusPastDue   ProjectBillingAccountStatus = "past_due"
-	ProjectBillingAccountStatusSuspended ProjectBillingAccountStatus = "suspended"
-)
-
-// AllValues returns all ProjectBillingAccountStatus values.
-func (ProjectBillingAccountStatus) AllValues() []ProjectBillingAccountStatus {
-	return []ProjectBillingAccountStatus{
-		ProjectBillingAccountStatusActive,
-		ProjectBillingAccountStatusPastDue,
-		ProjectBillingAccountStatusSuspended,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ProjectBillingAccountStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case ProjectBillingAccountStatusActive:
-		return []byte(s), nil
-	case ProjectBillingAccountStatusPastDue:
-		return []byte(s), nil
-	case ProjectBillingAccountStatusSuspended:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ProjectBillingAccountStatus) UnmarshalText(data []byte) error {
-	switch ProjectBillingAccountStatus(data) {
-	case ProjectBillingAccountStatusActive:
-		*s = ProjectBillingAccountStatusActive
-		return nil
-	case ProjectBillingAccountStatusPastDue:
-		*s = ProjectBillingAccountStatusPastDue
-		return nil
-	case ProjectBillingAccountStatusSuspended:
-		*s = ProjectBillingAccountStatusSuspended
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Quote exactly one target: purchase `lines`, an existing `order_id`, `renewals` or a `cancellation`.
-// Giving none or more than one, or a `promotion_code` with `renewals` or a `cancellation`, fails with
-// HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field` naming the offending field. Without a code, an
-// applicable account discount is selected. An explicit code is evaluated without reserving or
-// consuming a redemption and must be supplied again when confirming checkout through Billing.
-//
-// A refund target is quoted on its own and cannot be combined with items, order_id, renewals,
-// cancellation, at or promotion_code. The order must belong to the caller's account or project. The
-// result estimates a refund without granting eligibility or creating one.
-// Ref: #/components/schemas/ProjectQuoteRequest
-type ProjectQuoteRequest struct {
-	// A proposed purchase, priced with the project's current billing account. Future usage estimates
-	// cannot be combined with a promotion code or used as a checkout amount.
-	Items []QuoteItemInput `json:"items"`
-	// Preview checkout of this existing order. Its recorded purchase terms supply every line, and a
-	// confirmed order returns its recorded amounts. A preview does not change the order.
-	OrderID OptUUID `json:"order_id"`
-	// Preview renewing these subscriptions, each at most once. Each entry represents a separate renewal
-	// order. To preview a new promotion code, create a renewal order and quote it by order_id.
-	Renewals      []QuoteRenewal           `json:"renewals"`
-	Cancellation  OptQuoteCancellation     `json:"cancellation"`
-	PromotionCode OptString                `json:"promotion_code"`
-	Refund        OptOrderRefundQuoteInput `json:"refund"`
-}
-
-// GetItems returns the value of Items.
-func (s *ProjectQuoteRequest) GetItems() []QuoteItemInput {
-	return s.Items
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *ProjectQuoteRequest) GetOrderID() OptUUID {
-	return s.OrderID
-}
-
-// GetRenewals returns the value of Renewals.
-func (s *ProjectQuoteRequest) GetRenewals() []QuoteRenewal {
-	return s.Renewals
-}
-
-// GetCancellation returns the value of Cancellation.
-func (s *ProjectQuoteRequest) GetCancellation() OptQuoteCancellation {
-	return s.Cancellation
-}
-
-// GetPromotionCode returns the value of PromotionCode.
-func (s *ProjectQuoteRequest) GetPromotionCode() OptString {
-	return s.PromotionCode
-}
-
-// GetRefund returns the value of Refund.
-func (s *ProjectQuoteRequest) GetRefund() OptOrderRefundQuoteInput {
-	return s.Refund
-}
-
-// SetItems sets the value of Items.
-func (s *ProjectQuoteRequest) SetItems(val []QuoteItemInput) {
-	s.Items = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *ProjectQuoteRequest) SetOrderID(val OptUUID) {
-	s.OrderID = val
-}
-
-// SetRenewals sets the value of Renewals.
-func (s *ProjectQuoteRequest) SetRenewals(val []QuoteRenewal) {
-	s.Renewals = val
-}
-
-// SetCancellation sets the value of Cancellation.
-func (s *ProjectQuoteRequest) SetCancellation(val OptQuoteCancellation) {
-	s.Cancellation = val
-}
-
-// SetPromotionCode sets the value of PromotionCode.
-func (s *ProjectQuoteRequest) SetPromotionCode(val OptString) {
-	s.PromotionCode = val
-}
-
-// SetRefund sets the value of Refund.
-func (s *ProjectQuoteRequest) SetRefund(val OptOrderRefundQuoteInput) {
-	s.Refund = val
-}
-
-// Ref: #/components/schemas/ProjectUsageCharge
-type ProjectUsageCharge struct {
-	SubscriptionID OptUUID   `json:"subscription_id"`
-	ID             uuid.UUID `json:"id"`
-	ProjectID      OptUUID   `json:"project_id"`
-	// The project and its current name, for display. Absent when the project no longer exists or its
-	// details cannot be read at the moment; `project_id` still identifies it.
-	Project OptNilNamedIdentity `json:"project"`
-	Product Product             `json:"product"`
-	// Which resource this was charged for. Empty for charges not tied to one.
-	ResourceID OptString      `json:"resource_id"`
-	Meter      ObjectIdentity `json:"meter"`
-	Unit       OptString      `json:"unit"`
-	// The attributes the rate was chosen by, such as region and machine type.
-	Dimensions  OptProjectUsageChargeDimensions `json:"dimensions"`
-	WindowStart time.Time                       `json:"window_start"`
-	// Exclusive.
-	WindowEnd time.Time `json:"window_end"`
-	// How much was used, before any included allowance.
-	GrossQuantity OptString `json:"gross_quantity"`
-	// How much of that was covered by an allowance.
-	DeductedQuantity OptString `json:"deducted_quantity"`
-	// What was charged for — the gross quantity less the part covered.
-	Quantity   string   `json:"quantity"`
-	UnitAmount OptMoney `json:"unit_amount"`
-	Amount     OptMoney `json:"amount"`
-	Currency   string   `json:"currency"`
-	// Absent until the period is invoiced.
-	InvoiceID OptNilUUID `json:"invoice_id"`
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *ProjectUsageCharge) GetSubscriptionID() OptUUID {
-	return s.SubscriptionID
-}
-
-// GetID returns the value of ID.
-func (s *ProjectUsageCharge) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetProjectID returns the value of ProjectID.
-func (s *ProjectUsageCharge) GetProjectID() OptUUID {
-	return s.ProjectID
-}
-
-// GetProject returns the value of Project.
-func (s *ProjectUsageCharge) GetProject() OptNilNamedIdentity {
-	return s.Project
-}
-
-// GetProduct returns the value of Product.
-func (s *ProjectUsageCharge) GetProduct() Product {
-	return s.Product
-}
-
-// GetResourceID returns the value of ResourceID.
-func (s *ProjectUsageCharge) GetResourceID() OptString {
-	return s.ResourceID
-}
-
-// GetMeter returns the value of Meter.
-func (s *ProjectUsageCharge) GetMeter() ObjectIdentity {
-	return s.Meter
-}
-
-// GetUnit returns the value of Unit.
-func (s *ProjectUsageCharge) GetUnit() OptString {
-	return s.Unit
-}
-
-// GetDimensions returns the value of Dimensions.
-func (s *ProjectUsageCharge) GetDimensions() OptProjectUsageChargeDimensions {
-	return s.Dimensions
-}
-
-// GetWindowStart returns the value of WindowStart.
-func (s *ProjectUsageCharge) GetWindowStart() time.Time {
-	return s.WindowStart
-}
-
-// GetWindowEnd returns the value of WindowEnd.
-func (s *ProjectUsageCharge) GetWindowEnd() time.Time {
-	return s.WindowEnd
-}
-
-// GetGrossQuantity returns the value of GrossQuantity.
-func (s *ProjectUsageCharge) GetGrossQuantity() OptString {
-	return s.GrossQuantity
-}
-
-// GetDeductedQuantity returns the value of DeductedQuantity.
-func (s *ProjectUsageCharge) GetDeductedQuantity() OptString {
-	return s.DeductedQuantity
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *ProjectUsageCharge) GetQuantity() string {
-	return s.Quantity
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *ProjectUsageCharge) GetUnitAmount() OptMoney {
-	return s.UnitAmount
-}
-
-// GetAmount returns the value of Amount.
-func (s *ProjectUsageCharge) GetAmount() OptMoney {
-	return s.Amount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *ProjectUsageCharge) GetCurrency() string {
-	return s.Currency
-}
-
-// GetInvoiceID returns the value of InvoiceID.
-func (s *ProjectUsageCharge) GetInvoiceID() OptNilUUID {
-	return s.InvoiceID
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *ProjectUsageCharge) SetSubscriptionID(val OptUUID) {
-	s.SubscriptionID = val
-}
-
-// SetID sets the value of ID.
-func (s *ProjectUsageCharge) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetProjectID sets the value of ProjectID.
-func (s *ProjectUsageCharge) SetProjectID(val OptUUID) {
-	s.ProjectID = val
-}
-
-// SetProject sets the value of Project.
-func (s *ProjectUsageCharge) SetProject(val OptNilNamedIdentity) {
-	s.Project = val
-}
-
-// SetProduct sets the value of Product.
-func (s *ProjectUsageCharge) SetProduct(val Product) {
-	s.Product = val
-}
-
-// SetResourceID sets the value of ResourceID.
-func (s *ProjectUsageCharge) SetResourceID(val OptString) {
-	s.ResourceID = val
-}
-
-// SetMeter sets the value of Meter.
-func (s *ProjectUsageCharge) SetMeter(val ObjectIdentity) {
-	s.Meter = val
-}
-
-// SetUnit sets the value of Unit.
-func (s *ProjectUsageCharge) SetUnit(val OptString) {
-	s.Unit = val
-}
-
-// SetDimensions sets the value of Dimensions.
-func (s *ProjectUsageCharge) SetDimensions(val OptProjectUsageChargeDimensions) {
-	s.Dimensions = val
-}
-
-// SetWindowStart sets the value of WindowStart.
-func (s *ProjectUsageCharge) SetWindowStart(val time.Time) {
-	s.WindowStart = val
-}
-
-// SetWindowEnd sets the value of WindowEnd.
-func (s *ProjectUsageCharge) SetWindowEnd(val time.Time) {
-	s.WindowEnd = val
-}
-
-// SetGrossQuantity sets the value of GrossQuantity.
-func (s *ProjectUsageCharge) SetGrossQuantity(val OptString) {
-	s.GrossQuantity = val
-}
-
-// SetDeductedQuantity sets the value of DeductedQuantity.
-func (s *ProjectUsageCharge) SetDeductedQuantity(val OptString) {
-	s.DeductedQuantity = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *ProjectUsageCharge) SetQuantity(val string) {
-	s.Quantity = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *ProjectUsageCharge) SetUnitAmount(val OptMoney) {
-	s.UnitAmount = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *ProjectUsageCharge) SetAmount(val OptMoney) {
-	s.Amount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *ProjectUsageCharge) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetInvoiceID sets the value of InvoiceID.
-func (s *ProjectUsageCharge) SetInvoiceID(val OptNilUUID) {
-	s.InvoiceID = val
-}
-
-// The attributes the rate was chosen by, such as region and machine type.
-type ProjectUsageChargeDimensions map[string]string
-
-func (s *ProjectUsageChargeDimensions) init() ProjectUsageChargeDimensions {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
-// Ref: #/components/schemas/ProjectUsageChargeList
-type ProjectUsageChargeList struct {
-	Items      []ProjectUsageCharge `json:"items"`
-	Pagination OffsetPagination     `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *ProjectUsageChargeList) GetItems() []ProjectUsageCharge {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *ProjectUsageChargeList) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *ProjectUsageChargeList) SetItems(val []ProjectUsageCharge) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *ProjectUsageChargeList) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
 // Which purchase this applies to. `upgrade` and `downgrade` are told apart by money: a change that
 // costs more for the remainder of the period is an upgrade, one that returns money is a downgrade. A
 // change that costs neither more nor less is neither.
@@ -12620,9 +11454,10 @@ func (s *PurchaseOperation) UnmarshalText(data []byte) error {
 	}
 }
 
-// A complete price preview, without saving a quote or reserving funds or discount redemptions. Amounts
-// use currency and exclude payment from credit grants or balance. The request fails if any item cannot
-// be priced.
+// A complete calculation in one billing-account currency, without saving a quote or reserving funds or
+// redemptions. The request fails if any item cannot be priced. Requested future usage estimates are
+// included in totals for reporting and are not collectible at checkout. Only an existing-order quote
+// provides that order's checkout amount.
 // Ref: #/components/schemas/Quote
 type Quote struct {
 	// Sum before discounts, excluding tax already included in the item amounts. Zero for a
@@ -12639,10 +11474,10 @@ type Quote struct {
 	Renewals []QuoteRenewalResult `json:"renewals"`
 	// What the cancellation requested would return. Present only when one was requested.
 	Cancellation OptCancellationRefundPreview `json:"cancellation"`
-	// Subtotal minus discount_amount plus tax_amount, before applying credit grants or balance. For an
-	// order quote, pass this as expected_amount when confirming checkout. A renewal list sums separate
-	// orders; use each renewal's total when confirming that order. Refunds are not netted off: a
-	// cancellation-only quote has zero totals and its refund is in cancellation.
+	// Subtotal minus discount_amount plus tax_amount, before credit grants or balance. For an existing
+	// order, pass this as expected_amount at checkout. Renewal entries are separate orders; use each
+	// entry's total. Future usage estimates are not checkout amounts. Cancellation and refund targets have
+	// zero totals and report returned value separately.
 	Total    Money  `json:"total"`
 	Currency string `json:"currency"`
 	// Present only when an order refund was requested. Nothing is collectible for this target.
@@ -12779,8 +11614,8 @@ func (s *QuoteCancellation) SetMode(val TerminationPolicy) {
 	s.Mode = val
 }
 
-// One calculated purchase item or recorded order item. Amounts use the account currency and are
-// rounded as checkout rounds them. An item with no immediate charge has zero checkout amounts.
+// One fully calculated purchase, estimated postpaid usage or recorded order item. Amounts use the
+// billing-account currency. An item with no immediate charge has zero checkout amounts.
 // Ref: #/components/schemas/QuoteItem
 type QuoteItem struct {
 	// Tax on the discounted amount, including any tax already contained in that amount.
@@ -12797,10 +11632,11 @@ type QuoteItem struct {
 	// Unit price before discounts. Null when no single unit price applies, such as tiered or multiple-rate
 	// pricing.
 	UnitAmount NilMoney `json:"unit_amount"`
-	// The quantity priced.
+	// The quantity priced. When duration_seconds is supplied for metered usage, this is quantity
+	// multiplied by that duration.
 	Quantity string `json:"quantity"`
-	// Amount before discounts, including setup charges and any included tax. Zero when there is no
-	// immediate charge.
+	// Amount before discounts and including any setup charge. For requested future usage this is an
+	// estimate, not a collectible checkout amount.
 	Amount Money `json:"amount"`
 	// Total reduction on this line, including any committed recurring discount.
 	DiscountAmount Money `json:"discount_amount"`
@@ -12930,10 +11766,9 @@ func (s *QuoteItem) SetCurrency(val string) {
 }
 
 // Identify a price directly, or select a price for a plan. For each resource give its ID or lookup
-// key, never both. Lookup keys require product_id.
-//
-// Charges for future usage are not estimated here; the service that sells the product quotes them with
-// its purchase.
+// key, never both. Lookup keys require product_id. Meter, dimensions or duration_seconds request a
+// postpaid usage estimate. Such an estimate cannot be combined with a promotion code or treated as a
+// checkout amount. Without a usage estimate, a postpaid item includes only any setup charge.
 // Ref: #/components/schemas/QuoteItemInput
 type QuoteItemInput struct {
 	PriceLookupKey OptString    `json:"price_lookup_key"`
@@ -12945,7 +11780,25 @@ type QuoteItemInput struct {
 	PriceType     OptQuoteItemInputPriceType `json:"price_type"`
 	Interval      OptQuoteItemInputInterval  `json:"interval"`
 	IntervalCount OptInt                     `json:"interval_count"`
-	Quantity      string                     `json:"quantity"`
+	// Selects among prepaid prices with otherwise identical billing terms. Ambiguous terms are refused
+	// instead of choosing a price arbitrarily.
+	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
+	Quantity          string               `json:"quantity"`
+	MeterID           OptUUID              `json:"meter_id"`
+	MeterLookupKey    OptString            `json:"meter_lookup_key"`
+	// The attributes the price depends on — region, instance type, token class.
+	//
+	// Required when the price draws its rates from a price list, which is how anything sold by region or
+	// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
+	// to give and takes none.
+	//
+	// Every attribute the meter declares must be present. A combination with no rate covering it is
+	// refused rather than priced at zero.
+	Dimensions OptQuoteItemInputDimensions `json:"dimensions"`
+	// For metered items, how long to price for. This allows an estimate such as "about this much per
+	// month" to be shown before anything exists. The priced quantity is `quantity` multiplied by this
+	// duration.
+	DurationSeconds OptInt64 `json:"duration_seconds"`
 }
 
 // GetPriceLookupKey returns the value of PriceLookupKey.
@@ -12988,9 +11841,34 @@ func (s *QuoteItemInput) GetIntervalCount() OptInt {
 	return s.IntervalCount
 }
 
+// GetTerminationPolicy returns the value of TerminationPolicy.
+func (s *QuoteItemInput) GetTerminationPolicy() OptTerminationPolicy {
+	return s.TerminationPolicy
+}
+
 // GetQuantity returns the value of Quantity.
 func (s *QuoteItemInput) GetQuantity() string {
 	return s.Quantity
+}
+
+// GetMeterID returns the value of MeterID.
+func (s *QuoteItemInput) GetMeterID() OptUUID {
+	return s.MeterID
+}
+
+// GetMeterLookupKey returns the value of MeterLookupKey.
+func (s *QuoteItemInput) GetMeterLookupKey() OptString {
+	return s.MeterLookupKey
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *QuoteItemInput) GetDimensions() OptQuoteItemInputDimensions {
+	return s.Dimensions
+}
+
+// GetDurationSeconds returns the value of DurationSeconds.
+func (s *QuoteItemInput) GetDurationSeconds() OptInt64 {
+	return s.DurationSeconds
 }
 
 // SetPriceLookupKey sets the value of PriceLookupKey.
@@ -13033,9 +11911,53 @@ func (s *QuoteItemInput) SetIntervalCount(val OptInt) {
 	s.IntervalCount = val
 }
 
+// SetTerminationPolicy sets the value of TerminationPolicy.
+func (s *QuoteItemInput) SetTerminationPolicy(val OptTerminationPolicy) {
+	s.TerminationPolicy = val
+}
+
 // SetQuantity sets the value of Quantity.
 func (s *QuoteItemInput) SetQuantity(val string) {
 	s.Quantity = val
+}
+
+// SetMeterID sets the value of MeterID.
+func (s *QuoteItemInput) SetMeterID(val OptUUID) {
+	s.MeterID = val
+}
+
+// SetMeterLookupKey sets the value of MeterLookupKey.
+func (s *QuoteItemInput) SetMeterLookupKey(val OptString) {
+	s.MeterLookupKey = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *QuoteItemInput) SetDimensions(val OptQuoteItemInputDimensions) {
+	s.Dimensions = val
+}
+
+// SetDurationSeconds sets the value of DurationSeconds.
+func (s *QuoteItemInput) SetDurationSeconds(val OptInt64) {
+	s.DurationSeconds = val
+}
+
+// The attributes the price depends on — region, instance type, token class.
+//
+// Required when the price draws its rates from a price list, which is how anything sold by region or
+// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
+// to give and takes none.
+//
+// Every attribute the meter declares must be present. A combination with no rate covering it is
+// refused rather than priced at zero.
+type QuoteItemInputDimensions map[string]string
+
+func (s *QuoteItemInputDimensions) init() QuoteItemInputDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 type QuoteItemInputInterval string
@@ -13450,6 +12372,99 @@ func (s *QuoteRenewalResultInterval) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// "Quote exactly one target: proposed items, an existing order, renewals, a cancellation or an order
+// refund. All targets use the specified billing account. Nothing is saved, charged, reserved or
+// canceled. Promotion codes apply only to a purchase basket or an existing order. An invalid
+// combination returns BILLING_PURCHASE_INVALID with the offending field.".
+// Ref: #/components/schemas/QuoteRequest
+type QuoteRequest struct {
+	// The billing account to price for. It must belong to you. Existing orders must have been purchased
+	// with this account; renewals and cancellations must currently be paid for by it.
+	BillingAccountID int64 `json:"billing_account_id"`
+	// A proposed purchase priced in the account currency. Metered items may estimate specified usage
+	// quantities; those estimates are not amounts collectible at checkout.
+	Items []QuoteItemInput `json:"items"`
+	// Preview checkout of this existing order. Its recorded purchase terms supply every line, and a
+	// confirmed order returns its recorded amounts. A preview does not change the order.
+	OrderID OptUUID `json:"order_id"`
+	// Preview renewing these subscriptions, each at most once. Each entry represents a separate renewal
+	// order. To preview a new promotion code, create a renewal order and quote it by order_id.
+	Renewals      []QuoteRenewal           `json:"renewals"`
+	Cancellation  OptQuoteCancellation     `json:"cancellation"`
+	PromotionCode OptString                `json:"promotion_code"`
+	Refund        OptOrderRefundQuoteInput `json:"refund"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *QuoteRequest) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetItems returns the value of Items.
+func (s *QuoteRequest) GetItems() []QuoteItemInput {
+	return s.Items
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *QuoteRequest) GetOrderID() OptUUID {
+	return s.OrderID
+}
+
+// GetRenewals returns the value of Renewals.
+func (s *QuoteRequest) GetRenewals() []QuoteRenewal {
+	return s.Renewals
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *QuoteRequest) GetCancellation() OptQuoteCancellation {
+	return s.Cancellation
+}
+
+// GetPromotionCode returns the value of PromotionCode.
+func (s *QuoteRequest) GetPromotionCode() OptString {
+	return s.PromotionCode
+}
+
+// GetRefund returns the value of Refund.
+func (s *QuoteRequest) GetRefund() OptOrderRefundQuoteInput {
+	return s.Refund
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *QuoteRequest) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetItems sets the value of Items.
+func (s *QuoteRequest) SetItems(val []QuoteItemInput) {
+	s.Items = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *QuoteRequest) SetOrderID(val OptUUID) {
+	s.OrderID = val
+}
+
+// SetRenewals sets the value of Renewals.
+func (s *QuoteRequest) SetRenewals(val []QuoteRenewal) {
+	s.Renewals = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *QuoteRequest) SetCancellation(val OptQuoteCancellation) {
+	s.Cancellation = val
+}
+
+// SetPromotionCode sets the value of PromotionCode.
+func (s *QuoteRequest) SetPromotionCode(val OptString) {
+	s.PromotionCode = val
+}
+
+// SetRefund sets the value of Refund.
+func (s *QuoteRequest) SetRefund(val OptOrderRefundQuoteInput) {
+	s.Refund = val
 }
 
 // The discount selected for this calculation. Its presence in a quote does not apply it or reserve a
@@ -14748,31 +13763,6 @@ func (s *RenewalPriceList) SetItems(val []RenewalPrice) {
 // SetPagination sets the value of Pagination.
 func (s *RenewalPriceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-type ScopedTokenAuth struct {
-	Token string
-	Roles []string
-}
-
-// GetToken returns the value of Token.
-func (s *ScopedTokenAuth) GetToken() string {
-	return s.Token
-}
-
-// GetRoles returns the value of Roles.
-func (s *ScopedTokenAuth) GetRoles() []string {
-	return s.Roles
-}
-
-// SetToken sets the value of Token.
-func (s *ScopedTokenAuth) SetToken(val string) {
-	s.Token = val
-}
-
-// SetRoles sets the value of Roles.
-func (s *ScopedTokenAuth) SetRoles(val []string) {
-	s.Roles = val
 }
 
 // Ref: #/components/schemas/SetProjectAssignmentRequest

@@ -17,10 +17,6 @@ type CreateCancellationRes interface {
 	createCancellationRes()
 }
 
-type CreateProjectCancellationRes interface {
-	createProjectCancellationRes()
-}
-
 type CreateRenewalOrderRes interface {
 	createRenewalOrderRes()
 }

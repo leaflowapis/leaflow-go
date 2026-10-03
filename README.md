@@ -29,14 +29,28 @@ client, err := computev1.NewClient("https://compute.leaflow.cloud", tokenSource{
 
 ## Billing 迁移
 
-账户、公开目录和项目接口现在由同一个 `billingv1server.Client` / `Handler` 提供，保留 75 个
-operationId。URL 统一使用 `/api/v1`；项目关联使用 `/api/v1/assignments/{projectId}`。
-`SecuritySource` / `SecurityHandler` 同时包含 `AccessTokenAuth` 和 `ScopedTokenAuth`：默认使用
-AccessToken，16 个项目操作覆盖为 ScopedToken，9 个公开操作不调用凭据源。
+账户与公开目录接口现在由同一个 `billingv1server.Client` / `Handler` 提供，共 60 个操作。
+URL 统一使用 `/api/v1`；项目关联使用 `/api/v1/assignments/{projectId}`。
+`SecuritySource` / `SecurityHandler` 仅包含 `AccessTokenAuth`：52 个金融操作使用 AccessToken
+与账户权限，8 个公开目录读取不调用凭据源。16 个重复项目接口及 `CreateEstimate` 已移除。
+
+报价只有 `CreateQuote(ctx, *QuoteRequest) (*Quote, error)`。`QuoteRequest.BillingAccountID` 为必填
+`int64`，用于统一报价 items、renewals、order_id、cancellation 或 refund；目标的组合及账户归属
+由服务判断。`QuoteItemInput.TerminationPolicy` 为 `OptTerminationPolicy`；
+`DurationSeconds` 为 `OptInt64`，计量报价按 quantity 乘以秒数计算。
+
+支出和持续计量记录使用 `ListSpend`、`ListActiveResources`，路径分别为 `/api/v1/spend`、
+`/api/v1/active-resources`。`ListSpendParams.BillingAccountID` 必填，汇总使用同一账户币种；
+其他金融列表的账户筛选可省略。`ProjectIds` 使用 `[]uuid.UUID`，最多 100 个唯一值，以
+`project_ids=id1,id2` 传输，只有筛选作用。`ListUsageChargesParams.MeterID` 和
+`ListActiveResourcesParams.MeterID` 保留计量指标筛选。
+
+原生 optional-array 解码目前把 `project_ids=` 当作省略，未拒绝源中 `minItems: 1` 禁止的空值。
+生成产物保持原生输出，候选未补写额外校验。
 
 `Quote` 和报价条目不再包含 `priced` / `unpriced_reason`，报价金额是必填的原生 `Money` 字段；
 单一单价不适用时，`QuoteItem.UnitAmount` 仍为必填可空的 `NilMoney`。
-`AccountQuoteRequest.Refund` 和 `Quote.Refund` 分别使用 `OptOrderRefundQuoteInput` 和
+`QuoteRequest.Refund` 和 `Quote.Refund` 分别使用 `OptOrderRefundQuoteInput` 和
 `OptOrderRefundQuote`。列表直接使用源中的公共分页参数引用，默认每页 50、最多 200。
 使用方需迁移到新包及生成签名；不提供旧模块别名或兼容转发。
 
@@ -70,6 +84,6 @@ OGEN_BIN 可指定已安装的官方 ogen v1.24.0；脚本核对模块版本。�
 固定旧版本的消费者不因此被改写。尚未核对仓库外的真实使用者，正式版本由父代理确定。
 
 当前 `CONTRACTS_REF` 固定为已推送的公开源
-[`5d76ff9262f9cb73306b7e116686a699bbb72a59`](https://github.com/leaflowapis/leaflowapis/commit/5d76ff9262f9cb73306b7e116686a699bbb72a59)。
+[`0ad9132f6034123cd846e55e69eafb8e6cb4731b`](https://github.com/leaflowapis/leaflowapis/commit/0ad9132f6034123cd846e55e69eafb8e6cb4731b)。
 产物使用正式脚本、原生 ogen v1.24.0，从该远端提交的干净 checkout 生成。
 这份 SDK 提交仍是发布候选；各改变模块的新 tag 由发布方决定。

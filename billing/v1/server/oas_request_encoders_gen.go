@@ -52,20 +52,6 @@ func encodeCreateCancellationRequest(
 	return nil
 }
 
-func encodeCreateEstimateRequest(
-	req *EstimateRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeCreatePaymentMethodSetupRequest(
 	req *PaymentMethodSetup,
 	r *http.Request,
@@ -80,36 +66,8 @@ func encodeCreatePaymentMethodSetupRequest(
 	return nil
 }
 
-func encodeCreateProjectCancellationRequest(
-	req *CancellationCreate,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeCreateProjectQuoteRequest(
-	req *ProjectQuoteRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeCreateQuoteRequest(
-	req *AccountQuoteRequest,
+	req *QuoteRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -228,20 +186,6 @@ func encodeSetAutoRenewRequest(
 
 func encodeSetProjectAssignmentRequest(
 	req *SetProjectAssignmentRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeSetProjectAutoRenewRequest(
-	req *AutoRenewSet,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

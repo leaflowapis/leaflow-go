@@ -125,22 +125,6 @@ type Handler interface {
 	//
 	// POST /api/v1/cancellations
 	CreateCancellation(ctx context.Context, req *CancellationCreate) (CreateCancellationRes, error)
-	// CreateEstimate implements create-estimate operation.
-	//
-	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be called as often
-	// as required.
-	//
-	// `POST` is used because the set of items to price does not fit in a query string. There is no
-	// corresponding `GET`, and no estimate is stored to retrieve.
-	//
-	// An account holding a negotiated agreement may be charged less than this. Tax and discounts are not
-	// included.
-	//
-	// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-	// preview is returned.
-	//
-	// POST /api/v1/estimates
-	CreateEstimate(ctx context.Context, req *EstimateRequest) (*Estimate, error)
 	// CreatePaymentMethodSetup implements create-payment-method-setup operation.
 	//
 	// Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
@@ -150,134 +134,22 @@ type Handler interface {
 	//
 	// POST /api/v1/payment-methods/setup
 	CreatePaymentMethodSetup(ctx context.Context, req *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
-	// CreateProjectCancellation implements create-project-cancellation operation.
-	//
-	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
-	// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
-	// a server with the disks deleted along with it, or an address with its bandwidth.
-	//
-	// The service that provides the resources releases them: at once for `immediate`, or at
-	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
-	// value is returned the way it was paid, under the refund terms agreed when each subscription was
-	// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
-	// is the amount returned: prepaid service used while the resources are being released is not deducted
-	// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
-	//
-	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
-	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
-	// unless its termination terms allow only the end of the paid term and that term has not ended yet.
-	// For `period_end` the paid terms of all the subscriptions must end at the same time.
-	//
-	// Refused with:
-	//
-	//  - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
-	//    (`meta.field`), or the subscriptions do not all belong to one service, project, account and
-	//    currency;
-	//  - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
-	//  - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
-	//    `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
-	//    carry `meta.subscription_id`;
-	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
-	//    different times;
-	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-	//    (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
-	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
-	//    progress;
-	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//    `expected_refundable_amount`; quote again.
-	//
-	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
-	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
-	// payment are canceled along with it, and automatic renewal is turned off for every subscription in
-	// the set, for `period_end` as well as `immediate`.
-	//
-	// POST /api/v1/projects/{projectId}/cancellations
-	CreateProjectCancellation(ctx context.Context, req *CancellationCreate, params CreateProjectCancellationParams) (CreateProjectCancellationRes, error)
-	// CreateProjectQuote implements create-project-quote operation.
-	//
-	// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
-	// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
-	// does not guarantee a price or reserve a promotion code.
-	//
-	// New purchases use the project's current billing account and currency. With order_id, the order must
-	// belong to this project; its recorded purchase terms, billing account and currency are used. An
-	// optional promotion_code previews one code for the purchase or order. Without it, Billing selects an
-	// applicable account discount. An invalid or inapplicable explicit code is refused rather than
-	// silently replaced. Give total as expected_amount when confirming checkout through Billing;
-	// eligibility and availability are checked again. An order already checked out returns its confirmed
-	// amounts without reapplying its discount; a different code is refused with
-	// BILLING_ORDER_CHECKOUT_CONFLICT.
-	//
-	// Prices may change before an order is created; confirmed purchase terms are not repriced from today's
-	// catalog. Usage estimates describe future usage and are not checkout amounts. They do not accept a
-	// promotion code, including when mixed with fixed purchase lines.
-	//
-	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-	// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
-	// because its entries create separate orders. To use a new code on a renewal, first create a renewal
-	// order and quote its checkout by order_id.
-	//
-	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-	// terms agreed when each subscription was bought. It is quoted on its own: combined with lines or
-	// renewals the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
-	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
-	// amount is not checked. Give the returned `cancellation.proration_date` and
-	// `cancellation.refundable_amount` when creating it.
-	//
-	// Returns 404 when the project has no billing account for a new purchase quote, or when the order or a
-	// subscription to be renewed or canceled does not belong to this project.
-	//
-	// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-	// preview is returned.
-	//
-	// With refund, estimates the refundable value of the specified order or items, without canceling the
-	// order, stopping service or creating a refund. A refund target is quoted alone. The response has zero
-	// checkout totals and reports the estimate in refund. Delivery whose outcome is unknown must be
-	// observed before refund eligibility can be established.
-	//
-	// POST /api/v1/projects/{projectId}/quotes
-	CreateProjectQuote(ctx context.Context, req *ProjectQuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
 	// CreateQuote implements create-quote operation.
 	//
-	// Computes a price preview without creating a resource or saving a quote. Nothing is charged, reserved
-	// or applied to an order, and no discount redemption is consumed. The response has no quote ID and
-	// does not guarantee a price or reserve a promotion code.
+	// Calculates exactly one target for a billing account you own: proposed items, existing order
+	// checkout, renewals, cancellation or order refund. Returns all requested calculations or a structured
+	// error. No quote is saved and no resource, payment, reservation or redemption is created.
 	//
-	// With order_id, uses that order's recorded purchase terms and billing account. An optional
-	// promotion_code previews one code; without it, Billing selects an applicable account discount. An
-	// invalid or inapplicable explicit code is refused rather than silently replaced. Give total as
-	// expected_amount when confirming checkout; eligibility and availability are checked again. An order
-	// already checked out returns its confirmed amounts, without reapplying its discount; a different code
-	// is refused with BILLING_ORDER_CHECKOUT_CONFLICT.
+	// Existing orders use their recorded purchase account and terms. Renewals and cancellations use the
+	// account currently paying for each subscription. Every target must belong to the requested account. A
+	// project association or project token does not authorize a quote.
 	//
-	// A renewal is priced exactly as renewing would charge it: at the agreed amount or the price named,
-	// with the discounts the account holds, and with tax. A renewal list does not accept a promotion code
-	// because its entries create separate orders. To use a new code on a renewal, first create a renewal
-	// order and quote its checkout by order_id. Prices and discount eligibility may change between preview
-	// and confirmation.
-	//
-	// A cancellation is quoted as creating it would compute the refund, as of now and under the refund
-	// terms agreed when each subscription was bought. It is quoted on its own: combined with another
-	// target the request is refused with HTTP 400 `BILLING_PURCHASE_INVALID` and `meta.field`
-	// `cancellation`. It is refused with the same errors as creating the cancellation, except that the
-	// amount is not checked. Give the returned `cancellation.proration_date` and
-	// `cancellation.refundable_amount` when creating it.
-	//
-	// Orders must belong to one of your billing accounts. Every subscription in a renewal or cancellation
-	// quote must be paid for by the same one of your billing accounts; otherwise the request is refused
-	// with HTTP 400 `BILLING_PURCHASE_INVALID`. Returns 404 when a subscription does not exist, and 403
-	// `BILLING_ACCOUNT_FORBIDDEN` when it is paid for by an account you do not own.
-	//
-	// Returns a complete preview or a structured error. If any requested item cannot be priced, no partial
-	// preview is returned.
-	//
-	// With refund, estimates the refundable value of the specified order or items, without canceling the
-	// order, stopping service or creating a refund. A refund target is quoted alone. The response has zero
-	// checkout totals and reports the estimate in refund. Delivery whose outcome is unknown must be
-	// observed before refund eligibility can be established.
+	// Use an existing order quote's total as expected_amount at checkout. A confirmed order returns its
+	// recorded amounts; a different promotion code is refused. Requested future usage estimates are not
+	// collectible checkout amounts. An unknown delivery outcome is not proof of refund eligibility.
 	//
 	// POST /api/v1/quotes
-	CreateQuote(ctx context.Context, req *AccountQuoteRequest) (*Quote, error)
+	CreateQuote(ctx context.Context, req *QuoteRequest) (*Quote, error)
 	// CreateRenewalOrder implements create-renewal-order operation.
 	//
 	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
@@ -374,28 +246,6 @@ type Handler interface {
 	//
 	// GET /api/v1/assignments/{projectId}
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
-	// GetProjectBillingAccount implements get-project-billing-account operation.
-	//
-	// Returns the billing account's identity, its currency, and how much can still be spent. Cards,
-	// invoices and transaction history are not included; they belong to the account owner and are
-	// available only through account-authenticated operations.
-	//
-	// Returns 404 when the project has no billing account. Resources cannot be created in that state.
-	//
-	// GET /api/v1/projects/{projectId}/billing-account
-	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectBillingAccount, error)
-	// GetProjectCancellation implements get-project-cancellation operation.
-	//
-	// Get a cancellation.
-	//
-	// GET /api/v1/projects/{projectId}/cancellations/{cancellationId}
-	GetProjectCancellation(ctx context.Context, params GetProjectCancellationParams) (*Cancellation, error)
-	// GetProjectOrder implements get-project-order operation.
-	//
-	// Get project order.
-	//
-	// GET /api/v1/projects/{projectId}/orders/{orderId}
-	GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error)
 	// GetSubscription implements get-subscription operation.
 	//
 	// Get subscription.
@@ -420,6 +270,14 @@ type Handler interface {
 	//
 	// GET /api/v1/discounts
 	ListAccountDiscounts(ctx context.Context, params ListAccountDiscountsParams) (*DiscountList, error)
+	// ListActiveResources implements list-active-resources operation.
+	//
+	// Lists continuous metering registrations paid for by your billing accounts. Their state does not
+	// describe machine runtime or health. Project filters narrow the authorized accounts; they do not
+	// grant project-based access.
+	//
+	// GET /api/v1/active-resources
+	ListActiveResources(ctx context.Context, params ListActiveResourcesParams) (*ActiveResourceList, error)
 	// ListAllowances implements list-allowances operation.
 	//
 	// Lists remaining usage quantities, such as bytes, seconds or tokens. Applicable allowances are
@@ -541,78 +399,12 @@ type Handler interface {
 	//
 	// GET /api/v1/products
 	ListProducts(ctx context.Context, params ListProductsParams) (ListProductsRes, error)
-	// ListProjectActiveResources implements list-project-active-resources operation.
-	//
-	// A resource that is running but does not appear here is not being charged for.
-	//
-	// GET /api/v1/projects/{projectId}/active-resources
-	ListProjectActiveResources(ctx context.Context, params ListProjectActiveResourcesParams) (*ActiveResourceList, error)
-	// ListProjectAllowances implements list-project-allowances operation.
-	//
-	// These belong to the project's billing account and are shared with every other project linked to it,
-	// so what is left here may be consumed elsewhere.
-	//
-	// GET /api/v1/projects/{projectId}/allowances
-	ListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (*AllowanceList, error)
 	// ListProjectAssignments implements list-project-assignments operation.
 	//
 	// List project assignments.
 	//
 	// GET /api/v1/assignments
 	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
-	// ListProjectCancellations implements list-project-cancellations operation.
-	//
-	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
-	// for a subscription.
-	//
-	// GET /api/v1/projects/{projectId}/cancellations
-	ListProjectCancellations(ctx context.Context, params ListProjectCancellationsParams) (*CancellationList, error)
-	// ListProjectEntitlements implements list-project-entitlements operation.
-	//
-	// Includes capabilities bought for this project and those the project's billing account holds at
-	// account level.
-	//
-	// Where a capability counts uses, `remaining_quantity` states how much is left. Whether exceeding it
-	// refuses the request or simply continues to be charged for is decided by the service that owns the
-	// capability.
-	//
-	// GET /api/v1/projects/{projectId}/entitlements
-	ListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (*EntitlementList, error)
-	// ListProjectOrderItems implements list-project-order-items operation.
-	//
-	// List project order items.
-	//
-	// GET /api/v1/projects/{projectId}/orders/{orderId}/items
-	ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error)
-	// ListProjectOrders implements list-project-orders operation.
-	//
-	// A draft order invoice shows base amounts awaiting checkout. A confirmed invoice shows what is
-	// outstanding. Checkout and payment are performed in the billing centre by the account owner.
-	//
-	// GET /api/v1/projects/{projectId}/orders
-	ListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (*OrderList, error)
-	// ListProjectSpend implements list-project-spend operation.
-	//
-	// Covers a closed time range. Both bounds are required: a total without a stated period cannot be
-	// reconciled against an invoice.
-	//
-	// Includes usage that has not been invoiced yet.
-	//
-	// GET /api/v1/projects/{projectId}/spend
-	ListProjectSpend(ctx context.Context, params ListProjectSpendParams) (*SpendRowList, error)
-	// ListProjectSubscriptions implements list-project-subscriptions operation.
-	//
-	// List project subscriptions.
-	//
-	// GET /api/v1/projects/{projectId}/subscriptions
-	ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (*SubscriptionList, error)
-	// ListProjectUsageCharges implements list-project-usage-charges operation.
-	//
-	// The individual charges behind the figures in `/spend`. Amounts here sum to the totals reported there
-	// over the same period.
-	//
-	// GET /api/v1/projects/{projectId}/usage-charges
-	ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*ProjectUsageChargeList, error)
 	// ListRates implements list-rates operation.
 	//
 	// Only public price lists are readable here. A list written for a single agreement is not, and its
@@ -634,6 +426,15 @@ type Handler interface {
 	//
 	// GET /api/v1/subscriptions/{subscriptionId}/renewal-prices
 	ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (*RenewalPriceList, error)
+	// ListSpend implements list-spend operation.
+	//
+	// Aggregates rated and invoiced usage charges in the specified time range for one billing account.
+	// Includes usage not yet invoiced. Project filters use the account recorded on each charge, including
+	// charges for projects later assigned to another account. The total covers all matching groups, not
+	// just the returned page.
+	//
+	// GET /api/v1/spend
+	ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error)
 	// ListSubscriptions implements list-subscriptions operation.
 	//
 	// List subscriptions.
@@ -659,6 +460,9 @@ type Handler interface {
 	// Each charge is added to the month's usage invoice as it is priced, summed into one line per
 	// subscription, project, resource, meter and rate. Filter by `invoice_item_id` to see the charges
 	// behind a line. Charges still waiting to be priced are included too.
+	//
+	// Only charges recorded against your billing accounts are included, before filtering, counting and
+	// pagination. Reassigning a project does not move previously recorded charges to its new account.
 	//
 	// GET /api/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
@@ -769,17 +573,6 @@ type Handler interface {
 	//
 	// PUT /api/v1/assignments/{projectId}
 	SetProjectAssignment(ctx context.Context, req *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
-	// SetProjectAutoRenew implements set-project-auto-renew operation.
-	//
-	// Automatic renewal draws on the project billing account's balance, which a project member may commit.
-	// Paying by card requires the account owner and is done from the billing centre.
-	//
-	// While the subscription has an open cancellation, turning it on or off is refused with 409
-	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
-	// turned it off, and withdrawing the cancellation does not turn it back on.
-	//
-	// PUT /api/v1/projects/{projectId}/subscriptions/{subscriptionId}/auto-renew
-	SetProjectAutoRenew(ctx context.Context, req *AutoRenewSet, params SetProjectAutoRenewParams) (*Subscription, error)
 	// UnlinkProjectBillingAccount implements unlink-project-billing-account operation.
 	//
 	// Ends the project's current assignment without deleting its assignment history.
@@ -814,15 +607,6 @@ type Handler interface {
 	//
 	// POST /api/v1/cancellations/{cancellationId}/withdraw
 	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)
-	// WithdrawProjectCancellation implements withdraw-project-cancellation operation.
-	//
-	// Withdraws the whole cancellation while none of its resources has begun to be released; the
-	// subscriptions continue as before, except that automatic renewal, turned off when the cancellation
-	// was created, stays off until it is turned on again. After that it is refused with 409
-	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
-	//
-	// POST /api/v1/projects/{projectId}/cancellations/{cancellationId}/withdraw
-	WithdrawProjectCancellation(ctx context.Context, params WithdrawProjectCancellationParams) (*Cancellation, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.
