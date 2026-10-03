@@ -3591,9 +3591,9 @@ func (s *Quote) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Quote) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("lines")
+		e.FieldStart("items")
 		e.ArrStart()
-		for _, elem := range s.Lines {
+		for _, elem := range s.Items {
 			elem.Encode(e)
 		}
 		e.ArrEnd()
@@ -3633,7 +3633,7 @@ func (s *Quote) encodeFields(e *jx.Encoder) {
 }
 
 var jsonFieldsNameOfQuote = [9]string{
-	0: "lines",
+	0: "items",
 	1: "subtotal",
 	2: "discount_amount",
 	3: "tax_amount",
@@ -3653,23 +3653,23 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "lines":
+		case "items":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				s.Lines = make([]QuotedLine, 0)
+				s.Items = make([]QuoteItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem QuotedLine
+					var elem QuoteItem
 					if err := elem.Decode(d); err != nil {
 						return err
 					}
-					s.Lines = append(s.Lines, elem)
+					s.Items = append(s.Items, elem)
 					return nil
 				}); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lines\"")
+				return errors.Wrap(err, "decode field \"items\"")
 			}
 		case "subtotal":
 			requiredBitSet[0] |= 1 << 1
@@ -3811,22 +3811,14 @@ func (s *Quote) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *QuotedLine) Encode(e *jx.Encoder) {
+func (s *QuoteItem) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *QuotedLine) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("priced")
-		e.Bool(s.Priced)
-	}
-	{
-		e.FieldStart("unpriced_reason")
-		s.UnpricedReason.Encode(e)
-	}
+func (s *QuoteItem) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("plan_name")
 		e.Str(s.PlanName)
@@ -3869,54 +3861,30 @@ func (s *QuotedLine) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfQuotedLine = [12]string{
-	0:  "priced",
-	1:  "unpriced_reason",
-	2:  "plan_name",
-	3:  "unit_amount",
-	4:  "quantity",
-	5:  "amount",
-	6:  "discount_amount",
-	7:  "tax_amount",
-	8:  "tax_included_amount",
-	9:  "total",
-	10: "estimated_usage_amount",
-	11: "currency",
+var jsonFieldsNameOfQuoteItem = [10]string{
+	0: "plan_name",
+	1: "unit_amount",
+	2: "quantity",
+	3: "amount",
+	4: "discount_amount",
+	5: "tax_amount",
+	6: "tax_included_amount",
+	7: "total",
+	8: "estimated_usage_amount",
+	9: "currency",
 }
 
-// Decode decodes QuotedLine from json.
-func (s *QuotedLine) Decode(d *jx.Decoder) error {
+// Decode decodes QuoteItem from json.
+func (s *QuoteItem) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode QuotedLine to nil")
+		return errors.New("invalid: unable to decode QuoteItem to nil")
 	}
 	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "priced":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Bool()
-				s.Priced = bool(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"priced\"")
-			}
-		case "unpriced_reason":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				if err := s.UnpricedReason.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"unpriced_reason\"")
-			}
 		case "plan_name":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.PlanName = string(v)
@@ -3928,7 +3896,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_name\"")
 			}
 		case "unit_amount":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				if err := s.UnitAmount.Decode(d); err != nil {
 					return err
@@ -3938,7 +3906,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"unit_amount\"")
 			}
 		case "quantity":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Quantity = string(v)
@@ -3950,7 +3918,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"quantity\"")
 			}
 		case "amount":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.Amount.Decode(d); err != nil {
 					return err
@@ -3960,7 +3928,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"amount\"")
 			}
 		case "discount_amount":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.DiscountAmount.Decode(d); err != nil {
 					return err
@@ -3970,7 +3938,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"discount_amount\"")
 			}
 		case "tax_amount":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.TaxAmount.Decode(d); err != nil {
 					return err
@@ -3980,7 +3948,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_amount\"")
 			}
 		case "tax_included_amount":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.TaxIncludedAmount.Decode(d); err != nil {
 					return err
@@ -3990,7 +3958,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_included_amount\"")
 			}
 		case "total":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Total.Decode(d); err != nil {
 					return err
@@ -4000,7 +3968,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"total\"")
 			}
 		case "estimated_usage_amount":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.EstimatedUsageAmount.Decode(d); err != nil {
 					return err
@@ -4010,7 +3978,7 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"estimated_usage_amount\"")
 			}
 		case "currency":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -4026,13 +3994,13 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode QuotedLine")
+		return errors.Wrap(err, "decode QuoteItem")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00001111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4044,8 +4012,8 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfQuotedLine) {
-					name = jsonFieldsNameOfQuotedLine[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfQuoteItem) {
+					name = jsonFieldsNameOfQuoteItem[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -4066,54 +4034,14 @@ func (s *QuotedLine) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *QuotedLine) MarshalJSON() ([]byte, error) {
+func (s *QuoteItem) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *QuotedLine) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes QuotedLineUnpricedReason as json.
-func (s QuotedLineUnpricedReason) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes QuotedLineUnpricedReason from json.
-func (s *QuotedLineUnpricedReason) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode QuotedLineUnpricedReason to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch QuotedLineUnpricedReason(v) {
-	case QuotedLineUnpricedReasonNone:
-		*s = QuotedLineUnpricedReasonNone
-	case QuotedLineUnpricedReasonNoPrice:
-		*s = QuotedLineUnpricedReasonNoPrice
-	default:
-		*s = QuotedLineUnpricedReason(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s QuotedLineUnpricedReason) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *QuotedLineUnpricedReason) UnmarshalJSON(data []byte) error {
+func (s *QuoteItem) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

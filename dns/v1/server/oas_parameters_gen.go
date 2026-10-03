@@ -643,9 +643,9 @@ func decodeGetRecordSetParams(args [3]string, argsEscaped bool, r *http.Request)
 
 // ListCredentialsParams is parameters of list-credentials operation.
 type ListCredentialsParams struct {
-	// Maximum number of items to return in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Return only credentials for this provider; omit for all providers.
 	Provider OptProvider `json:",omitempty,omitzero"`
@@ -694,7 +694,7 @@ func decodeListCredentialsParams(args [0]string, argsEscaped bool, r *http.Reque
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -755,12 +755,17 @@ func decodeListCredentialsParams(args [0]string, argsEscaped bool, r *http.Reque
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -891,9 +896,9 @@ type ListRecordsParams struct {
 	Name OptString `json:",omitempty,omitzero"`
 	// Return only record sets of this type.
 	Type OptRecordType `json:",omitempty,omitzero"`
-	// Maximum number of items to return in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -1187,7 +1192,7 @@ func decodeListRecordsParams(args [1]string, argsEscaped bool, r *http.Request) 
 	}
 	// Set default value for query: limit.
 	{
-		val := int64(100)
+		val := int64(50)
 		params.Limit.SetTo(val)
 	}
 	// Decode query: limit.
@@ -1195,7 +1200,7 @@ func decodeListRecordsParams(args [1]string, argsEscaped bool, r *http.Request) 
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1229,7 +1234,7 @@ func decodeListRecordsParams(args [1]string, argsEscaped bool, r *http.Request) 
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           500,
+							Max:           200,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -1256,12 +1261,17 @@ func decodeListRecordsParams(args [1]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {

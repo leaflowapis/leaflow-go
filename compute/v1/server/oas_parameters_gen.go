@@ -3539,7 +3539,9 @@ func decodeGetSnapshotQuotaParams(args [1]string, argsEscaped bool, r *http.Requ
 // ListAvailabilityZonesParams is parameters of list-availability-zones operation.
 type ListAvailabilityZonesParams struct {
 	RegionId uuid.UUID
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -3662,8 +3664,8 @@ func decodeListAvailabilityZonesParams(args [1]string, argsEscaped bool, r *http
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -3766,7 +3768,9 @@ func decodeListAvailabilityZonesParams(args [1]string, argsEscaped bool, r *http
 
 // ListBackupCapacityPacksParams is parameters of list-backup-capacity-packs operation.
 type ListBackupCapacityPacksParams struct {
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	RegionId uuid.UUID
 }
@@ -3845,8 +3849,8 @@ func decodeListBackupCapacityPacksParams(args [1]string, argsEscaped bool, r *ht
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -3995,8 +3999,10 @@ func decodeListBackupCapacityPacksParams(args [1]string, argsEscaped bool, r *ht
 // ListBackupsParams is parameters of list-backups operation.
 type ListBackupsParams struct {
 	// Return only the backups of this disk.
-	DiskID   OptUUID  `json:",omitempty,omitzero"`
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	DiskID OptUUID `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -4117,8 +4123,8 @@ func decodeListBackupsParams(args [0]string, argsEscaped bool, r *http.Request) 
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -4223,9 +4229,11 @@ func decodeListBackupsParams(args [0]string, argsEscaped bool, r *http.Request) 
 type ListDiskTypesParams struct {
 	RegionID OptUUID `json:",omitempty,omitzero"`
 	// Filter by intended purchase use. Omit to include both system and data disk types.
-	Purpose  OptDiskTypePurpose `json:",omitempty,omitzero"`
-	Page     OptInt64           `json:",omitempty,omitzero"`
-	PageSize OptInt64           `json:",omitempty,omitzero"`
+	Purpose OptDiskTypePurpose `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListDiskTypesParams(packed middleware.Parameters) (params ListDiskTypesParams) {
@@ -4410,8 +4418,8 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -4516,9 +4524,11 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 type ListDisksParams struct {
 	RegionID OptUUID `json:",omitempty,omitzero"`
 	// Supplied together with `region_code` to filter attachable disks.
-	AvailabilityZoneID OptUUID  `json:",omitempty,omitzero"`
-	Page               OptInt64 `json:",omitempty,omitzero"`
-	PageSize           OptInt64 `json:",omitempty,omitzero"`
+	AvailabilityZoneID OptUUID `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListDisksParams(packed middleware.Parameters) (params ListDisksParams) {
@@ -4688,8 +4698,8 @@ func decodeListDisksParams(args [0]string, argsEscaped bool, r *http.Request) (p
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -4792,7 +4802,9 @@ func decodeListDisksParams(args [0]string, argsEscaped bool, r *http.Request) (p
 
 // ListFloatingIpsParams is parameters of list-floating-ips operation.
 type ListFloatingIpsParams struct {
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -4863,8 +4875,8 @@ func decodeListFloatingIpsParams(args [0]string, argsEscaped bool, r *http.Reque
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -4971,8 +4983,10 @@ type ListImagesParams struct {
 	RegionID OptUUID `json:",omitempty,omitzero"`
 	// Return only public or only private images. Both are returned when omitted.
 	Visibility OptImageVisibility `json:",omitempty,omitzero"`
-	Page       OptInt64           `json:",omitempty,omitzero"`
-	PageSize   OptInt64           `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListImagesParams(packed middleware.Parameters) (params ListImagesParams) {
@@ -5157,8 +5171,8 @@ func decodeListImagesParams(args [0]string, argsEscaped bool, r *http.Request) (
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -5262,8 +5276,10 @@ func decodeListImagesParams(args [0]string, argsEscaped bool, r *http.Request) (
 // ListInstanceDisksParams is parameters of list-instance-disks operation.
 type ListInstanceDisksParams struct {
 	InstanceId uuid.UUID
-	Page       OptInt64 `json:",omitempty,omitzero"`
-	PageSize   OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListInstanceDisksParams(packed middleware.Parameters) (params ListInstanceDisksParams) {
@@ -5385,8 +5401,8 @@ func decodeListInstanceDisksParams(args [1]string, argsEscaped bool, r *http.Req
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -5490,8 +5506,10 @@ func decodeListInstanceDisksParams(args [1]string, argsEscaped bool, r *http.Req
 // ListInstancePortsParams is parameters of list-instance-ports operation.
 type ListInstancePortsParams struct {
 	InstanceId uuid.UUID
-	Page       OptInt64 `json:",omitempty,omitzero"`
-	PageSize   OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListInstancePortsParams(packed middleware.Parameters) (params ListInstancePortsParams) {
@@ -5613,8 +5631,8 @@ func decodeListInstancePortsParams(args [1]string, argsEscaped bool, r *http.Req
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -5717,8 +5735,10 @@ func decodeListInstancePortsParams(args [1]string, argsEscaped bool, r *http.Req
 
 // ListInstanceTypesParams is parameters of list-instance-types operation.
 type ListInstanceTypesParams struct {
-	RegionID OptUUID  `json:",omitempty,omitzero"`
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	RegionID OptUUID `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -5839,8 +5859,8 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -5945,9 +5965,11 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 type ListInstancesParams struct {
 	// Only instances carrying this label, written as `key:value` — for example `env:prod`. Both halves
 	// are matched exactly.
-	Label    OptString `json:",omitempty,omitzero"`
-	Page     OptInt64  `json:",omitempty,omitzero"`
-	PageSize OptInt64  `json:",omitempty,omitzero"`
+	Label OptString `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListInstancesParams(packed middleware.Parameters) (params ListInstancesParams) {
@@ -6094,8 +6116,8 @@ func decodeListInstancesParams(args [0]string, argsEscaped bool, r *http.Request
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -6198,8 +6220,10 @@ func decodeListInstancesParams(args [0]string, argsEscaped bool, r *http.Request
 
 // ListIpv4PoolsParams is parameters of list-ipv4-pools operation.
 type ListIpv4PoolsParams struct {
-	RegionID OptUUID  `json:",omitempty,omitzero"`
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	RegionID OptUUID `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -6320,8 +6344,8 @@ func decodeListIpv4PoolsParams(args [0]string, argsEscaped bool, r *http.Request
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -6425,9 +6449,11 @@ func decodeListIpv4PoolsParams(args [0]string, argsEscaped bool, r *http.Request
 // ListOperationLogsParams is parameters of list-operation-logs operation.
 type ListOperationLogsParams struct {
 	// Return a single kind of operation; the value matches the operation id of the endpoint.
-	Action   OptString `json:",omitempty,omitzero"`
-	Page     OptInt64  `json:",omitempty,omitzero"`
-	PageSize OptInt64  `json:",omitempty,omitzero"`
+	Action OptString `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListOperationLogsParams(packed middleware.Parameters) (params ListOperationLogsParams) {
@@ -6574,8 +6600,8 @@ func decodeListOperationLogsParams(args [0]string, argsEscaped bool, r *http.Req
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -6678,7 +6704,9 @@ func decodeListOperationLogsParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListPeeringsParams is parameters of list-peerings operation.
 type ListPeeringsParams struct {
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -6749,8 +6777,8 @@ func decodeListPeeringsParams(args [0]string, argsEscaped bool, r *http.Request)
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -6853,7 +6881,9 @@ func decodeListPeeringsParams(args [0]string, argsEscaped bool, r *http.Request)
 
 // ListPortsParams is parameters of list-ports operation.
 type ListPortsParams struct {
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -6924,8 +6954,8 @@ func decodeListPortsParams(args [0]string, argsEscaped bool, r *http.Request) (p
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -7029,8 +7059,10 @@ func decodeListPortsParams(args [0]string, argsEscaped bool, r *http.Request) (p
 // ListPrivateNetworksParams is parameters of list-private-networks operation.
 type ListPrivateNetworksParams struct {
 	// Returns every region when omitted.
-	RegionID OptUUID  `json:",omitempty,omitzero"`
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	RegionID OptUUID `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -7151,8 +7183,8 @@ func decodeListPrivateNetworksParams(args [0]string, argsEscaped bool, r *http.R
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -7255,7 +7287,9 @@ func decodeListPrivateNetworksParams(args [0]string, argsEscaped bool, r *http.R
 
 // ListRegionsParams is parameters of list-regions operation.
 type ListRegionsParams struct {
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -7326,8 +7360,8 @@ func decodeListRegionsParams(args [0]string, argsEscaped bool, r *http.Request) 
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -7431,8 +7465,10 @@ func decodeListRegionsParams(args [0]string, argsEscaped bool, r *http.Request) 
 // ListRoutesParams is parameters of list-routes operation.
 type ListRoutesParams struct {
 	PrivateNetworkId uuid.UUID
-	Page             OptInt64 `json:",omitempty,omitzero"`
-	PageSize         OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListRoutesParams(packed middleware.Parameters) (params ListRoutesParams) {
@@ -7554,8 +7590,8 @@ func decodeListRoutesParams(args [1]string, argsEscaped bool, r *http.Request) (
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -7659,8 +7695,10 @@ func decodeListRoutesParams(args [1]string, argsEscaped bool, r *http.Request) (
 // ListSecurityGroupRulesParams is parameters of list-security-group-rules operation.
 type ListSecurityGroupRulesParams struct {
 	SecurityGroupId uuid.UUID
-	Page            OptInt64 `json:",omitempty,omitzero"`
-	PageSize        OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListSecurityGroupRulesParams(packed middleware.Parameters) (params ListSecurityGroupRulesParams) {
@@ -7782,8 +7820,8 @@ func decodeListSecurityGroupRulesParams(args [1]string, argsEscaped bool, r *htt
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -7889,8 +7927,10 @@ type ListSecurityGroupsParams struct {
 	RegionID OptUUID `json:",omitempty,omitzero"`
 	// Return only the security groups of this private network.
 	PrivateNetworkID OptString `json:",omitempty,omitzero"`
-	Page             OptInt64  `json:",omitempty,omitzero"`
-	PageSize         OptInt64  `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListSecurityGroupsParams(packed middleware.Parameters) (params ListSecurityGroupsParams) {
@@ -8060,8 +8100,8 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -8165,8 +8205,10 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 // ListSnapshotsParams is parameters of list-snapshots operation.
 type ListSnapshotsParams struct {
 	// Return only the snapshots of this disk.
-	DiskID   OptUUID  `json:",omitempty,omitzero"`
-	Page     OptInt64 `json:",omitempty,omitzero"`
+	DiskID OptUUID `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -8287,8 +8329,8 @@ func decodeListSnapshotsParams(args [0]string, argsEscaped bool, r *http.Request
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -8392,8 +8434,10 @@ func decodeListSnapshotsParams(args [0]string, argsEscaped bool, r *http.Request
 // ListSubnetsParams is parameters of list-subnets operation.
 type ListSubnetsParams struct {
 	PrivateNetworkId uuid.UUID
-	Page             OptInt64 `json:",omitempty,omitzero"`
-	PageSize         OptInt64 `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListSubnetsParams(packed middleware.Parameters) (params ListSubnetsParams) {
@@ -8515,8 +8559,8 @@ func decodeListSubnetsParams(args [1]string, argsEscaped bool, r *http.Request) 
 						if err := (validate.Int{
 							MinSet:        true,
 							Min:           1,
-							MaxSet:        false,
-							Max:           0,
+							MaxSet:        true,
+							Max:           2147483647,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,

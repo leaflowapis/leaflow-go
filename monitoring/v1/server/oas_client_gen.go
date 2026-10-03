@@ -290,6 +290,9 @@ type Invoker interface {
 	// Cursor paging rather than offset paging: the timeline is append-only, and offset paging would skip
 	// or repeat entries whenever a new one is written.
 	//
+	// Omit cursor on the first page. An empty next_cursor means there is no following page; do not send an
+	// empty cursor.
+	//
 	// GET /api/v1/incidents/{incidentId}/timeline
 	ListIncidentTimeline(ctx context.Context, params ListIncidentTimelineParams) (*CursorPageIncidentActivityResource, error)
 	// ListIncidents invokes list-incidents operation.
@@ -5340,6 +5343,9 @@ func (c *Client) sendGetWebCheck(ctx context.Context, params GetWebCheckParams) 
 // Cursor paging rather than offset paging: the timeline is append-only, and offset paging would skip
 // or repeat entries whenever a new one is written.
 //
+// Omit cursor on the first page. An empty next_cursor means there is no following page; do not send an
+// empty cursor.
+//
 // GET /api/v1/incidents/{incidentId}/timeline
 func (c *Client) ListIncidentTimeline(ctx context.Context, params ListIncidentTimelineParams) (*CursorPageIncidentActivityResource, error) {
 	res, err := c.sendListIncidentTimeline(ctx, params)
@@ -5413,7 +5419,7 @@ func (c *Client) sendListIncidentTimeline(ctx context.Context, params ListIncide
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -5430,7 +5436,7 @@ func (c *Client) sendListIncidentTimeline(ctx context.Context, params ListIncide
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "cursor",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -5565,7 +5571,7 @@ func (c *Client) sendListIncidents(ctx context.Context, params ListIncidentsPara
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -5582,7 +5588,7 @@ func (c *Client) sendListIncidents(ctx context.Context, params ListIncidentsPara
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -6404,7 +6410,7 @@ func (c *Client) sendListServers(ctx context.Context, params ListServersParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -6421,7 +6427,7 @@ func (c *Client) sendListServers(ctx context.Context, params ListServersParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -6949,7 +6955,7 @@ func (c *Client) sendListStatusPageIncidents(ctx context.Context, params ListSta
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -6966,7 +6972,7 @@ func (c *Client) sendListStatusPageIncidents(ctx context.Context, params ListSta
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -7100,7 +7106,7 @@ func (c *Client) sendListStatusPageMaintenances(ctx context.Context, params List
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -7117,7 +7123,7 @@ func (c *Client) sendListStatusPageMaintenances(ctx context.Context, params List
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {

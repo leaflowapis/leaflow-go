@@ -6338,6 +6338,10 @@ func (s *Server) handleListSkillsRequest(args [0]string, argsEscaped bool, w htt
 // project. `archived` selects between two sets rather than widening one: archived conversations are
 // absent from the default list, and turning the flag on shows those instead.
 //
+// Pass the returned nextCursor as cursor; omit cursor on the first page. Continue with the same q,
+// archived and folder filters. The cursor marks a position in the activity order, so changing filters
+// between pages does not continue the same list.
+//
 // GET /api/v1/threads
 func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}

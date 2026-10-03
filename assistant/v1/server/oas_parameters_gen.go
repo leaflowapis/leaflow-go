@@ -1458,9 +1458,9 @@ func decodeInterruptThreadParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // ListBindingsParams is parameters of list-bindings operation.
 type ListBindingsParams struct {
-	// How many entries this page returns at most.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// How many to skip. To page deeper, use the cursor-paged operation instead.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset    OptInt64  `json:",omitempty,omitzero"`
 	Platform  OptString `json:",omitempty,omitzero"`
 	ChannelId OptUUID   `json:",omitempty,omitzero"`
@@ -1529,7 +1529,7 @@ func decodeListBindingsParams(args [0]string, argsEscaped bool, r *http.Request)
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1590,12 +1590,17 @@ func decodeListBindingsParams(args [0]string, argsEscaped bool, r *http.Request)
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1931,9 +1936,9 @@ func decodeListChannelRejectionsParams(args [1]string, argsEscaped bool, r *http
 
 // ListChannelsParams is parameters of list-channels operation.
 type ListChannelsParams struct {
-	// How many entries this page returns at most.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// How many to skip. To page deeper, use the cursor-paged operation instead.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset   OptInt64  `json:",omitempty,omitzero"`
 	Platform OptString `json:",omitempty,omitzero"`
 	// Return only channels that are enabled.
@@ -1992,7 +1997,7 @@ func decodeListChannelsParams(args [0]string, argsEscaped bool, r *http.Request)
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -2053,12 +2058,17 @@ func decodeListChannelsParams(args [0]string, argsEscaped bool, r *http.Request)
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -2344,17 +2354,10 @@ type ListThreadsParams struct {
 	// at all. Empty is not the same as omitted, and a sidebar needs both: "chats" is exactly the ungrouped
 	// set, and asking for everything would let filed conversations crowd it out of the limit.
 	Folder OptString `json:",omitempty,omitzero"`
-	// Where the previous page ended, from its `nextCursor`. Omit it for the first page.
-	//
-	// It is a position, not an offset, and that matters here: this list is ordered by recent activity, and
-	// the activity happens while it is being read. An offset would hand back a conversation twice when one
-	// moves up in between, and skip one when it moves down — silently, because a conversation that was
-	// skipped simply is not there.
-	//
-	// Pass the same `q`, `archived` and `folder` along with it. A cursor carries a position, not the
-	// question that produced it, so changing the filters mid-scroll walks a range nobody asked for.
+	// The next_cursor returned by the previous page. Omit it for the first page.
 	Cursor OptString `json:",omitempty,omitzero"`
-	Limit  OptInt64  `json:",omitempty,omitzero"`
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListThreadsParams(packed middleware.Parameters) (params ListThreadsParams) {
@@ -2590,7 +2593,7 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "cursor",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -2621,9 +2624,9 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 				if value, ok := params.Cursor.Get(); ok {
 					if err := func() error {
 						if err := (validate.String{
-							MinLength:     0,
-							MinLengthSet:  false,
-							MaxLength:     128,
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     1024,
 							MaxLengthSet:  true,
 							Email:         false,
 							Hostname:      false,
@@ -2653,12 +2656,17 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Set default value for query: limit.
+	{
+		val := int64(50)
+		params.Limit.SetTo(val)
+	}
 	// Decode query: limit.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -2690,7 +2698,7 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 					if err := func() error {
 						if err := (validate.Int{
 							MinSet:        true,
-							Min:           0,
+							Min:           1,
 							MaxSet:        true,
 							Max:           200,
 							MinExclusive:  false,

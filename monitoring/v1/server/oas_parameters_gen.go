@@ -2282,8 +2282,9 @@ func decodeGetWebCheckParams(args [2]string, argsEscaped bool, r *http.Request) 
 // ListIncidentTimelineParams is parameters of list-incident-timeline operation.
 type ListIncidentTimelineParams struct {
 	IncidentId uuid.UUID
-	Limit      OptInt64 `json:",omitempty,omitzero"`
-	// The `next_cursor` returned by the previous page. Empty starts from the beginning.
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// The next_cursor returned by the previous page. Omit it for the first page.
 	Cursor OptString `json:",omitempty,omitzero"`
 }
 
@@ -2373,7 +2374,7 @@ func decodeListIncidentTimelineParams(args [1]string, argsEscaped bool, r *http.
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -2405,9 +2406,9 @@ func decodeListIncidentTimelineParams(args [1]string, argsEscaped bool, r *http.
 					if err := func() error {
 						if err := (validate.Int{
 							MinSet:        true,
-							Min:           0,
+							Min:           1,
 							MaxSet:        true,
-							Max:           500,
+							Max:           200,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -2439,7 +2440,7 @@ func decodeListIncidentTimelineParams(args [1]string, argsEscaped bool, r *http.
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "cursor",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -2466,6 +2467,33 @@ func decodeListIncidentTimelineParams(args [1]string, argsEscaped bool, r *http.
 			}); err != nil {
 				return err
 			}
+			if err := func() error {
+				if value, ok := params.Cursor.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     1024,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
@@ -2480,9 +2508,9 @@ func decodeListIncidentTimelineParams(args [1]string, argsEscaped bool, r *http.
 
 // ListIncidentsParams is parameters of list-incidents operation.
 type ListIncidentsParams struct {
-	// Maximum number of records in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of records to skip. For deeper paging, use the cursor-paged endpoint instead.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Restrict to a single machine.
 	ServerID OptString `json:",omitempty,omitzero"`
@@ -2667,7 +2695,7 @@ func decodeListIncidentsParams(args [0]string, argsEscaped bool, r *http.Request
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -2728,12 +2756,17 @@ func decodeListIncidentsParams(args [0]string, argsEscaped bool, r *http.Request
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -3865,9 +3898,9 @@ func decodeListServerItemsParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // ListServersParams is parameters of list-servers operation.
 type ListServersParams struct {
-	// Maximum number of records in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of records to skip. For deeper paging, use the cursor-paged endpoint instead.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Fuzzy match on name or address.
 	Keyword          OptString                      `json:",omitempty,omitzero"`
@@ -3926,7 +3959,7 @@ func decodeListServersParams(args [0]string, argsEscaped bool, r *http.Request) 
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -3987,12 +4020,17 @@ func decodeListServersParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -4247,8 +4285,9 @@ func decodeListStatusPageComponentSourcesParams(args [1]string, argsEscaped bool
 
 // ListStatusPageIncidentsParams is parameters of list-status-page-incidents operation.
 type ListStatusPageIncidentsParams struct {
-	// Maximum number of records in this page.
-	Limit  OptInt64 `json:",omitempty,omitzero"`
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -4286,7 +4325,7 @@ func decodeListStatusPageIncidentsParams(args [0]string, argsEscaped bool, r *ht
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -4347,12 +4386,17 @@ func decodeListStatusPageIncidentsParams(args [0]string, argsEscaped bool, r *ht
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -4418,8 +4462,9 @@ func decodeListStatusPageIncidentsParams(args [0]string, argsEscaped bool, r *ht
 
 // ListStatusPageMaintenancesParams is parameters of list-status-page-maintenances operation.
 type ListStatusPageMaintenancesParams struct {
-	// Maximum number of records in this page.
-	Limit  OptInt64 `json:",omitempty,omitzero"`
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -4457,7 +4502,7 @@ func decodeListStatusPageMaintenancesParams(args [0]string, argsEscaped bool, r 
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -4518,12 +4563,17 @@ func decodeListStatusPageMaintenancesParams(args [0]string, argsEscaped bool, r 
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {

@@ -2698,24 +2698,26 @@ func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
 // A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
 // charged or reserved, and no discount redemption is consumed. Account discounts and tax are evaluated
 // as for automatic checkout. Promotion codes are evaluated through Billing quote operations. All
-// amounts use currency. This preview does not lock prices or guarantee discount availability.
+// amounts use currency. This preview does not lock prices or guarantee discount availability. Success
+// includes complete checkout amounts and every requested usage estimate. If any item or requested
+// usage estimate cannot be calculated, the operation returns its existing structured error response;
+// it never returns a partial quote with HTTP 200.
 // Ref: #/components/schemas/Quote
 type Quote struct {
 	// One line for each item the purchase would order, in the order it would order them.
-	Lines []QuotedLine `json:"lines"`
+	Items []QuoteItem `json:"items"`
 	// Sum of line amounts before discounts, less tax already included in the discounted line amounts, as
-	// on an invoice. Null when any line cannot be priced.
-	Subtotal NilMoney `json:"subtotal"`
-	// Sum of line discounts. Null when any line cannot be priced.
-	DiscountAmount NilMoney `json:"discount_amount"`
-	// Sum of tax on the discounted line amounts. Null when any line cannot be priced.
-	TaxAmount NilMoney `json:"tax_amount"`
+	// on an invoice.
+	Subtotal Money `json:"subtotal"`
+	// Sum of line discounts.
+	DiscountAmount Money `json:"discount_amount"`
+	// Sum of tax on the discounted line amounts.
+	TaxAmount Money `json:"tax_amount"`
 	// Subtotal minus discount_amount plus tax_amount: what checkout collects, before applying credit
-	// grants or balance. Equals the sum of line totals and excludes estimated_usage_amount. Null when any
-	// line cannot be priced.
-	Total NilMoney `json:"total"`
+	// grants or balance. Equals the sum of line totals and excludes estimated_usage_amount.
+	Total Money `json:"total"`
 	// Sum of the lines' estimated_usage_amount. A projection, not part of total and not collected at
-	// checkout. Null when no line is billed for usage or when any usage cannot be priced.
+	// checkout. Null when no usage estimate is requested.
 	EstimatedUsageAmount NilMoney `json:"estimated_usage_amount"`
 	Currency             string   `json:"currency"`
 	// Changes only; null otherwise. The instant the change is priced from. Pass it with the change so the
@@ -2726,28 +2728,28 @@ type Quote struct {
 	RefundableAmount NilMoney `json:"refundable_amount"`
 }
 
-// GetLines returns the value of Lines.
-func (s *Quote) GetLines() []QuotedLine {
-	return s.Lines
+// GetItems returns the value of Items.
+func (s *Quote) GetItems() []QuoteItem {
+	return s.Items
 }
 
 // GetSubtotal returns the value of Subtotal.
-func (s *Quote) GetSubtotal() NilMoney {
+func (s *Quote) GetSubtotal() Money {
 	return s.Subtotal
 }
 
 // GetDiscountAmount returns the value of DiscountAmount.
-func (s *Quote) GetDiscountAmount() NilMoney {
+func (s *Quote) GetDiscountAmount() Money {
 	return s.DiscountAmount
 }
 
 // GetTaxAmount returns the value of TaxAmount.
-func (s *Quote) GetTaxAmount() NilMoney {
+func (s *Quote) GetTaxAmount() Money {
 	return s.TaxAmount
 }
 
 // GetTotal returns the value of Total.
-func (s *Quote) GetTotal() NilMoney {
+func (s *Quote) GetTotal() Money {
 	return s.Total
 }
 
@@ -2771,28 +2773,28 @@ func (s *Quote) GetRefundableAmount() NilMoney {
 	return s.RefundableAmount
 }
 
-// SetLines sets the value of Lines.
-func (s *Quote) SetLines(val []QuotedLine) {
-	s.Lines = val
+// SetItems sets the value of Items.
+func (s *Quote) SetItems(val []QuoteItem) {
+	s.Items = val
 }
 
 // SetSubtotal sets the value of Subtotal.
-func (s *Quote) SetSubtotal(val NilMoney) {
+func (s *Quote) SetSubtotal(val Money) {
 	s.Subtotal = val
 }
 
 // SetDiscountAmount sets the value of DiscountAmount.
-func (s *Quote) SetDiscountAmount(val NilMoney) {
+func (s *Quote) SetDiscountAmount(val Money) {
 	s.DiscountAmount = val
 }
 
 // SetTaxAmount sets the value of TaxAmount.
-func (s *Quote) SetTaxAmount(val NilMoney) {
+func (s *Quote) SetTaxAmount(val Money) {
 	s.TaxAmount = val
 }
 
 // SetTotal sets the value of Total.
-func (s *Quote) SetTotal(val NilMoney) {
+func (s *Quote) SetTotal(val Money) {
 	s.Total = val
 }
 
@@ -2818,198 +2820,133 @@ func (s *Quote) SetRefundableAmount(val NilMoney) {
 
 func (*Quote) createServiceQuoteRes() {}
 
-// One calculated purchase line. Fixed purchase amounts are rounded as checkout rounds them. When
-// priced is false, every monetary field is null. A priced line without an immediate charge has zero
-// amounts; an unavailable unit price remains null.
-// Ref: #/components/schemas/QuotedLine
-type QuotedLine struct {
-	// Whether the line can be priced. When false, unpriced_reason states what is missing.
-	Priced bool `json:"priced"`
-	// Why no price was found; `none` while `priced` is true.
-	UnpricedReason QuotedLineUnpricedReason `json:"unpriced_reason"`
-	PlanName       string                   `json:"plan_name"`
-	// Unit price before discounts, with tax included only where the price includes it.
+// One calculated purchase line. Fixed purchase amounts are rounded as checkout rounds them. A line
+// without an immediate charge has zero checkout amounts. unit_amount remains null when no single unit
+// price applies; an unrequested usage estimate remains null.
+// Ref: #/components/schemas/QuoteItem
+type QuoteItem struct {
+	PlanName string `json:"plan_name"`
+	// Unit price before discounts, with tax included only where the price includes it. Null when no single
+	// unit price applies, such as tiered or multiple-rate pricing or an immediate change.
 	UnitAmount NilMoney `json:"unit_amount"`
 	// The quantity priced.
 	Quantity string `json:"quantity"`
 	// Before discounts, including any setup charges. Contains tax only where the price includes it. Zero
-	// for a priced order item with no immediate charge.
-	Amount NilMoney `json:"amount"`
+	// for an item with no immediate charge.
+	Amount Money `json:"amount"`
 	// Total reduction on this line, including any committed recurring discount.
-	DiscountAmount NilMoney `json:"discount_amount"`
+	DiscountAmount Money `json:"discount_amount"`
 	// Tax on the discounted amount, including any tax already contained in that amount.
-	TaxAmount NilMoney `json:"tax_amount"`
+	TaxAmount Money `json:"tax_amount"`
 	// The part of tax_amount already contained in amount minus discount_amount.
-	TaxIncludedAmount NilMoney `json:"tax_included_amount"`
+	TaxIncludedAmount Money `json:"tax_included_amount"`
 	// Amount minus discount_amount plus tax_amount minus tax_included_amount.
-	Total NilMoney `json:"total"`
+	Total Money `json:"total"`
 	// Projected charge for this line's future usage over the period stated by the quoting operation, at
 	// current rates, before discounts and tax and not rounded. Not part of amount or total and not
-	// collected at checkout. Null when the line is not billed for usage or its usage cannot be priced.
+	// collected at checkout. Null when no usage estimate is requested for this line.
 	EstimatedUsageAmount NilMoney `json:"estimated_usage_amount"`
 	Currency             string   `json:"currency"`
 }
 
-// GetPriced returns the value of Priced.
-func (s *QuotedLine) GetPriced() bool {
-	return s.Priced
-}
-
-// GetUnpricedReason returns the value of UnpricedReason.
-func (s *QuotedLine) GetUnpricedReason() QuotedLineUnpricedReason {
-	return s.UnpricedReason
-}
-
 // GetPlanName returns the value of PlanName.
-func (s *QuotedLine) GetPlanName() string {
+func (s *QuoteItem) GetPlanName() string {
 	return s.PlanName
 }
 
 // GetUnitAmount returns the value of UnitAmount.
-func (s *QuotedLine) GetUnitAmount() NilMoney {
+func (s *QuoteItem) GetUnitAmount() NilMoney {
 	return s.UnitAmount
 }
 
 // GetQuantity returns the value of Quantity.
-func (s *QuotedLine) GetQuantity() string {
+func (s *QuoteItem) GetQuantity() string {
 	return s.Quantity
 }
 
 // GetAmount returns the value of Amount.
-func (s *QuotedLine) GetAmount() NilMoney {
+func (s *QuoteItem) GetAmount() Money {
 	return s.Amount
 }
 
 // GetDiscountAmount returns the value of DiscountAmount.
-func (s *QuotedLine) GetDiscountAmount() NilMoney {
+func (s *QuoteItem) GetDiscountAmount() Money {
 	return s.DiscountAmount
 }
 
 // GetTaxAmount returns the value of TaxAmount.
-func (s *QuotedLine) GetTaxAmount() NilMoney {
+func (s *QuoteItem) GetTaxAmount() Money {
 	return s.TaxAmount
 }
 
 // GetTaxIncludedAmount returns the value of TaxIncludedAmount.
-func (s *QuotedLine) GetTaxIncludedAmount() NilMoney {
+func (s *QuoteItem) GetTaxIncludedAmount() Money {
 	return s.TaxIncludedAmount
 }
 
 // GetTotal returns the value of Total.
-func (s *QuotedLine) GetTotal() NilMoney {
+func (s *QuoteItem) GetTotal() Money {
 	return s.Total
 }
 
 // GetEstimatedUsageAmount returns the value of EstimatedUsageAmount.
-func (s *QuotedLine) GetEstimatedUsageAmount() NilMoney {
+func (s *QuoteItem) GetEstimatedUsageAmount() NilMoney {
 	return s.EstimatedUsageAmount
 }
 
 // GetCurrency returns the value of Currency.
-func (s *QuotedLine) GetCurrency() string {
+func (s *QuoteItem) GetCurrency() string {
 	return s.Currency
 }
 
-// SetPriced sets the value of Priced.
-func (s *QuotedLine) SetPriced(val bool) {
-	s.Priced = val
-}
-
-// SetUnpricedReason sets the value of UnpricedReason.
-func (s *QuotedLine) SetUnpricedReason(val QuotedLineUnpricedReason) {
-	s.UnpricedReason = val
-}
-
 // SetPlanName sets the value of PlanName.
-func (s *QuotedLine) SetPlanName(val string) {
+func (s *QuoteItem) SetPlanName(val string) {
 	s.PlanName = val
 }
 
 // SetUnitAmount sets the value of UnitAmount.
-func (s *QuotedLine) SetUnitAmount(val NilMoney) {
+func (s *QuoteItem) SetUnitAmount(val NilMoney) {
 	s.UnitAmount = val
 }
 
 // SetQuantity sets the value of Quantity.
-func (s *QuotedLine) SetQuantity(val string) {
+func (s *QuoteItem) SetQuantity(val string) {
 	s.Quantity = val
 }
 
 // SetAmount sets the value of Amount.
-func (s *QuotedLine) SetAmount(val NilMoney) {
+func (s *QuoteItem) SetAmount(val Money) {
 	s.Amount = val
 }
 
 // SetDiscountAmount sets the value of DiscountAmount.
-func (s *QuotedLine) SetDiscountAmount(val NilMoney) {
+func (s *QuoteItem) SetDiscountAmount(val Money) {
 	s.DiscountAmount = val
 }
 
 // SetTaxAmount sets the value of TaxAmount.
-func (s *QuotedLine) SetTaxAmount(val NilMoney) {
+func (s *QuoteItem) SetTaxAmount(val Money) {
 	s.TaxAmount = val
 }
 
 // SetTaxIncludedAmount sets the value of TaxIncludedAmount.
-func (s *QuotedLine) SetTaxIncludedAmount(val NilMoney) {
+func (s *QuoteItem) SetTaxIncludedAmount(val Money) {
 	s.TaxIncludedAmount = val
 }
 
 // SetTotal sets the value of Total.
-func (s *QuotedLine) SetTotal(val NilMoney) {
+func (s *QuoteItem) SetTotal(val Money) {
 	s.Total = val
 }
 
 // SetEstimatedUsageAmount sets the value of EstimatedUsageAmount.
-func (s *QuotedLine) SetEstimatedUsageAmount(val NilMoney) {
+func (s *QuoteItem) SetEstimatedUsageAmount(val NilMoney) {
 	s.EstimatedUsageAmount = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *QuotedLine) SetCurrency(val string) {
+func (s *QuoteItem) SetCurrency(val string) {
 	s.Currency = val
-}
-
-// Why no price was found; `none` while `priced` is true.
-type QuotedLineUnpricedReason string
-
-const (
-	QuotedLineUnpricedReasonNone    QuotedLineUnpricedReason = "none"
-	QuotedLineUnpricedReasonNoPrice QuotedLineUnpricedReason = "no_price"
-)
-
-// AllValues returns all QuotedLineUnpricedReason values.
-func (QuotedLineUnpricedReason) AllValues() []QuotedLineUnpricedReason {
-	return []QuotedLineUnpricedReason{
-		QuotedLineUnpricedReasonNone,
-		QuotedLineUnpricedReasonNoPrice,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s QuotedLineUnpricedReason) MarshalText() ([]byte, error) {
-	switch s {
-	case QuotedLineUnpricedReasonNone:
-		return []byte(s), nil
-	case QuotedLineUnpricedReasonNoPrice:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *QuotedLineUnpricedReason) UnmarshalText(data []byte) error {
-	switch QuotedLineUnpricedReason(data) {
-	case QuotedLineUnpricedReasonNone:
-		*s = QuotedLineUnpricedReasonNone
-		return nil
-	case QuotedLineUnpricedReasonNoPrice:
-		*s = QuotedLineUnpricedReasonNoPrice
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/RequestResource

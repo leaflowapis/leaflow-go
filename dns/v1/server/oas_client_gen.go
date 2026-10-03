@@ -1045,7 +1045,7 @@ func (c *Client) sendListCredentials(ctx context.Context, params ListCredentials
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1062,7 +1062,7 @@ func (c *Client) sendListCredentials(ctx context.Context, params ListCredentials
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1287,7 +1287,7 @@ func (c *Client) sendListRecords(ctx context.Context, params ListRecordsParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1304,7 +1304,7 @@ func (c *Client) sendListRecords(ctx context.Context, params ListRecordsParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {

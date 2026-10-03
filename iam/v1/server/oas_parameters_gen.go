@@ -382,9 +382,9 @@ func decodeGetSSHKeyParams(args [1]string, argsEscaped bool, r *http.Request) (p
 
 // ListMembersParams is parameters of list-members operation.
 type ListMembersParams struct {
-	// Maximum number of items in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Matches against user id, email address or name.
 	Keyword OptString `json:",omitempty,omitzero"`
@@ -433,7 +433,7 @@ func decodeListMembersParams(args [0]string, argsEscaped bool, r *http.Request) 
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -467,7 +467,7 @@ func decodeListMembersParams(args [0]string, argsEscaped bool, r *http.Request) 
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           100,
+							Max:           200,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -494,12 +494,17 @@ func decodeListMembersParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -725,9 +730,9 @@ func decodeListPoliciesParams(args [0]string, argsEscaped bool, r *http.Request)
 
 // ListProjectInvitationsParams is parameters of list-project-invitations operation.
 type ListProjectInvitationsParams struct {
-	// Maximum number of items in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -765,7 +770,7 @@ func decodeListProjectInvitationsParams(args [0]string, argsEscaped bool, r *htt
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -799,7 +804,7 @@ func decodeListProjectInvitationsParams(args [0]string, argsEscaped bool, r *htt
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           100,
+							Max:           200,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -826,12 +831,17 @@ func decodeListProjectInvitationsParams(args [0]string, argsEscaped bool, r *htt
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -897,9 +907,9 @@ func decodeListProjectInvitationsParams(args [0]string, argsEscaped bool, r *htt
 
 // ListSSHKeysParams is parameters of list-ssh-keys operation.
 type ListSSHKeysParams struct {
-	// Maximum number of items in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Both kinds are returned while this is absent.
 	Status OptListSSHKeysStatus `json:",omitempty,omitzero"`
@@ -959,7 +969,7 @@ func decodeListSSHKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -993,7 +1003,7 @@ func decodeListSSHKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           100,
+							Max:           200,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -1020,12 +1030,17 @@ func decodeListSSHKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {

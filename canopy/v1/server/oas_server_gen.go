@@ -138,6 +138,8 @@ type Handler interface {
 	// A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that
 	// request, and that the figures are derived from the character classes of the payload.
 	//
+	// Omit cursor on the first page. Stop when next_cursor is empty; do not send an empty cursor.
+	//
 	// GET /api/v1/requests
 	ListRequests(ctx context.Context, params ListRequestsParams) (*CursorPageRequestResource, error)
 	// ListUsageByAPIKey implements list-usage-by-api-key operation.

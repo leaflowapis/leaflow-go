@@ -1977,7 +1977,7 @@ func (c *Client) sendListMembers(ctx context.Context, params ListMembersParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1994,7 +1994,7 @@ func (c *Client) sendListMembers(ctx context.Context, params ListMembersParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2364,7 +2364,7 @@ func (c *Client) sendListProjectInvitations(ctx context.Context, params ListProj
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2381,7 +2381,7 @@ func (c *Client) sendListProjectInvitations(ctx context.Context, params ListProj
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2629,7 +2629,7 @@ func (c *Client) sendListSSHKeys(ctx context.Context, params ListSSHKeysParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2646,7 +2646,7 @@ func (c *Client) sendListSSHKeys(ctx context.Context, params ListSSHKeysParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {

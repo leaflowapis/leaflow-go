@@ -1050,9 +1050,9 @@ func decodeGetUsageTimelineParams(args [0]string, argsEscaped bool, r *http.Requ
 
 // ListAPIKeysParams is parameters of list-api-keys operation.
 type ListAPIKeysParams struct {
-	// Maximum number of items in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Restricts the result to the specified status. Every status is returned while this is absent.
 	Status OptListAPIKeysStatus `json:",omitempty,omitzero"`
@@ -1101,7 +1101,7 @@ func decodeListAPIKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1162,12 +1162,17 @@ func decodeListAPIKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1299,9 +1304,9 @@ type ListRequestsParams struct {
 	APIKeyID OptString `json:",omitempty,omitzero"`
 	// Restricts the result to the specified status.
 	Status OptListRequestsStatus `json:",omitempty,omitzero"`
-	// Maximum number of items in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// The `next_cursor` returned by the previous page. Omitted on the first page.
+	// The next_cursor returned by the previous page. Omit it for the first page.
 	Cursor OptString `json:",omitempty,omitzero"`
 }
 
@@ -1617,7 +1622,7 @@ func decodeListRequestsParams(args [0]string, argsEscaped bool, r *http.Request)
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1683,7 +1688,7 @@ func decodeListRequestsParams(args [0]string, argsEscaped bool, r *http.Request)
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "cursor",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1714,9 +1719,9 @@ func decodeListRequestsParams(args [0]string, argsEscaped bool, r *http.Request)
 				if value, ok := params.Cursor.Get(); ok {
 					if err := func() error {
 						if err := (validate.String{
-							MinLength:     0,
-							MinLengthSet:  false,
-							MaxLength:     512,
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     1024,
 							MaxLengthSet:  true,
 							Email:         false,
 							Hostname:      false,

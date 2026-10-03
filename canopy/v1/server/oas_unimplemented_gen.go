@@ -182,6 +182,8 @@ func (UnimplementedHandler) ListModels(ctx context.Context) (r *ModelListRespons
 // A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that
 // request, and that the figures are derived from the character classes of the payload.
 //
+// Omit cursor on the first page. Stop when next_cursor is empty; do not send an empty cursor.
+//
 // GET /api/v1/requests
 func (UnimplementedHandler) ListRequests(ctx context.Context, params ListRequestsParams) (r *CursorPageRequestResource, _ error) {
 	return r, ht.ErrNotImplemented

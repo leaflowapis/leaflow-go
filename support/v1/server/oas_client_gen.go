@@ -1392,7 +1392,7 @@ func (c *Client) sendListMaintenanceTimeline(ctx context.Context, params ListMai
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1409,7 +1409,7 @@ func (c *Client) sendListMaintenanceTimeline(ctx context.Context, params ListMai
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1546,7 +1546,7 @@ func (c *Client) sendListMaintenances(ctx context.Context, params ListMaintenanc
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1563,7 +1563,7 @@ func (c *Client) sendListMaintenances(ctx context.Context, params ListMaintenanc
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1819,7 +1819,7 @@ func (c *Client) sendListTicketCategories(ctx context.Context, params ListTicket
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1836,7 +1836,7 @@ func (c *Client) sendListTicketCategories(ctx context.Context, params ListTicket
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1989,7 +1989,7 @@ func (c *Client) sendListTicketMessages(ctx context.Context, params ListTicketMe
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2006,7 +2006,7 @@ func (c *Client) sendListTicketMessages(ctx context.Context, params ListTicketMe
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2140,7 +2140,7 @@ func (c *Client) sendListTickets(ctx context.Context, params ListTicketsParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2157,7 +2157,7 @@ func (c *Client) sendListTickets(ctx context.Context, params ListTicketsParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {

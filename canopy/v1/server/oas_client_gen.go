@@ -159,6 +159,8 @@ type Invoker interface {
 	// A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that
 	// request, and that the figures are derived from the character classes of the payload.
 	//
+	// Omit cursor on the first page. Stop when next_cursor is empty; do not send an empty cursor.
+	//
 	// GET /api/v1/requests
 	ListRequests(ctx context.Context, params ListRequestsParams) (*CursorPageRequestResource, error)
 	// ListUsageByAPIKey invokes list-usage-by-api-key operation.
@@ -1874,7 +1876,7 @@ func (c *Client) sendListAPIKeys(ctx context.Context, params ListAPIKeysParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -1891,7 +1893,7 @@ func (c *Client) sendListAPIKeys(ctx context.Context, params ListAPIKeysParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2113,6 +2115,8 @@ func (c *Client) sendListModels(ctx context.Context) (res *ModelListResponseBody
 // A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that
 // request, and that the figures are derived from the character classes of the payload.
 //
+// Omit cursor on the first page. Stop when next_cursor is empty; do not send an empty cursor.
+//
 // GET /api/v1/requests
 func (c *Client) ListRequests(ctx context.Context, params ListRequestsParams) (*CursorPageRequestResource, error) {
 	res, err := c.sendListRequests(ctx, params)
@@ -2246,7 +2250,7 @@ func (c *Client) sendListRequests(ctx context.Context, params ListRequestsParams
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2263,7 +2267,7 @@ func (c *Client) sendListRequests(ctx context.Context, params ListRequestsParams
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "cursor",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {

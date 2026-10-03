@@ -313,6 +313,10 @@ type Invoker interface {
 	// project. `archived` selects between two sets rather than widening one: archived conversations are
 	// absent from the default list, and turning the flag on shows those instead.
 	//
+	// Pass the returned nextCursor as cursor; omit cursor on the first page. Continue with the same q,
+	// archived and folder filters. The cursor marks a position in the activity order, so changing filters
+	// between pages does not continue the same list.
+	//
 	// GET /api/v1/threads
 	ListThreads(ctx context.Context, params ListThreadsParams) (*ThreadListResponseBody, error)
 	// MarkThreadRead invokes mark-thread-read operation.
@@ -3553,7 +3557,7 @@ func (c *Client) sendListBindings(ctx context.Context, params ListBindingsParams
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -3570,7 +3574,7 @@ func (c *Client) sendListBindings(ctx context.Context, params ListBindingsParams
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -3910,7 +3914,7 @@ func (c *Client) sendListChannels(ctx context.Context, params ListChannelsParams
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -3927,7 +3931,7 @@ func (c *Client) sendListChannels(ctx context.Context, params ListChannelsParams
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -4788,6 +4792,10 @@ func (c *Client) sendListSkills(ctx context.Context) (res *SkillListResponseBody
 // project. `archived` selects between two sets rather than widening one: archived conversations are
 // absent from the default list, and turning the flag on shows those instead.
 //
+// Pass the returned nextCursor as cursor; omit cursor on the first page. Continue with the same q,
+// archived and folder filters. The cursor marks a position in the activity order, so changing filters
+// between pages does not continue the same list.
+//
 // GET /api/v1/threads
 func (c *Client) ListThreads(ctx context.Context, params ListThreadsParams) (*ThreadListResponseBody, error) {
 	res, err := c.sendListThreads(ctx, params)
@@ -4893,7 +4901,7 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "cursor",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -4910,7 +4918,7 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {

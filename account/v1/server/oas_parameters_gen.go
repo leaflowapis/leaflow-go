@@ -147,9 +147,9 @@ func decodeCreateScopedTokenParams(args [1]string, argsEscaped bool, r *http.Req
 
 // ListMyInvitationsParams is parameters of list-my-invitations operation.
 type ListMyInvitationsParams struct {
-	// Maximum number of items in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -187,7 +187,7 @@ func decodeListMyInvitationsParams(args [0]string, argsEscaped bool, r *http.Req
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -221,7 +221,7 @@ func decodeListMyInvitationsParams(args [0]string, argsEscaped bool, r *http.Req
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           100,
+							Max:           200,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -248,12 +248,17 @@ func decodeListMyInvitationsParams(args [0]string, argsEscaped bool, r *http.Req
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -319,9 +324,9 @@ func decodeListMyInvitationsParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListProjectsParams is parameters of list-projects operation.
 type ListProjectsParams struct {
-	// Maximum number of items in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Matches against name or description.
 	Keyword        OptString `json:",omitempty,omitzero"`
@@ -380,7 +385,7 @@ func decodeListProjectsParams(args [0]string, argsEscaped bool, r *http.Request)
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -414,7 +419,7 @@ func decodeListProjectsParams(args [0]string, argsEscaped bool, r *http.Request)
 							MinSet:        true,
 							Min:           1,
 							MaxSet:        true,
-							Max:           100,
+							Max:           200,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -441,12 +446,17 @@ func decodeListProjectsParams(args [0]string, argsEscaped bool, r *http.Request)
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {

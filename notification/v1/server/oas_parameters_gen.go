@@ -500,9 +500,9 @@ func decodeGetNotificationParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // ListNotificationsParams is parameters of list-notifications operation.
 type ListNotificationsParams struct {
-	// Maximum number of items to return in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Which projects to include; defaults to every project.
 	Scope OptNotificationScope `json:",omitempty,omitzero"`
@@ -595,7 +595,7 @@ func decodeListNotificationsParams(args [0]string, argsEscaped bool, r *http.Req
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -656,12 +656,17 @@ func decodeListNotificationsParams(args [0]string, argsEscaped bool, r *http.Req
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {

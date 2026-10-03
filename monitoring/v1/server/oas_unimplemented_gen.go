@@ -379,6 +379,9 @@ func (UnimplementedHandler) GetWebCheck(ctx context.Context, params GetWebCheckP
 // Cursor paging rather than offset paging: the timeline is append-only, and offset paging would skip
 // or repeat entries whenever a new one is written.
 //
+// Omit cursor on the first page. An empty next_cursor means there is no following page; do not send an
+// empty cursor.
+//
 // GET /api/v1/incidents/{incidentId}/timeline
 func (UnimplementedHandler) ListIncidentTimeline(ctx context.Context, params ListIncidentTimelineParams) (r *CursorPageIncidentActivityResource, _ error) {
 	return r, ht.ErrNotImplemented

@@ -526,9 +526,9 @@ func decodeGetTicketSatisfactionParams(args [1]string, argsEscaped bool, r *http
 // ListMaintenanceTimelineParams is parameters of list-maintenance-timeline operation.
 type ListMaintenanceTimelineParams struct {
 	MaintenanceId uuid.UUID
-	// Maximum number of items to return in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -618,7 +618,7 @@ func decodeListMaintenanceTimelineParams(args [1]string, argsEscaped bool, r *ht
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -679,12 +679,17 @@ func decodeListMaintenanceTimelineParams(args [1]string, argsEscaped bool, r *ht
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -750,9 +755,9 @@ func decodeListMaintenanceTimelineParams(args [1]string, argsEscaped bool, r *ht
 
 // ListMaintenancesParams is parameters of list-maintenances operation.
 type ListMaintenancesParams struct {
-	// Maximum number of items to return in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Return only maintenance in this state; omit for all states.
 	Status OptMaintenanceStatus `json:",omitempty,omitzero"`
@@ -804,7 +809,7 @@ func decodeListMaintenancesParams(args [0]string, argsEscaped bool, r *http.Requ
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Set default value for query: limit.
 	{
-		val := int64(20)
+		val := int64(50)
 		params.Limit.SetTo(val)
 	}
 	// Decode query: limit.
@@ -812,7 +817,7 @@ func decodeListMaintenancesParams(args [0]string, argsEscaped bool, r *http.Requ
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -873,12 +878,17 @@ func decodeListMaintenancesParams(args [0]string, argsEscaped bool, r *http.Requ
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1068,9 +1078,9 @@ func decodeListMaintenancesParams(args [0]string, argsEscaped bool, r *http.Requ
 
 // ListTicketCategoriesParams is parameters of list-ticket-categories operation.
 type ListTicketCategoriesParams struct {
-	// Maximum number of items to return in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -1100,7 +1110,7 @@ func decodeListTicketCategoriesParams(args [0]string, argsEscaped bool, r *http.
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Set default value for query: limit.
 	{
-		val := int64(100)
+		val := int64(50)
 		params.Limit.SetTo(val)
 	}
 	// Decode query: limit.
@@ -1108,7 +1118,7 @@ func decodeListTicketCategoriesParams(args [0]string, argsEscaped bool, r *http.
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1169,12 +1179,17 @@ func decodeListTicketCategoriesParams(args [0]string, argsEscaped bool, r *http.
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1241,9 +1256,9 @@ func decodeListTicketCategoriesParams(args [0]string, argsEscaped bool, r *http.
 // ListTicketMessagesParams is parameters of list-ticket-messages operation.
 type ListTicketMessagesParams struct {
 	TicketId uuid.UUID
-	// Maximum number of items to return in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -1333,7 +1348,7 @@ func decodeListTicketMessagesParams(args [1]string, argsEscaped bool, r *http.Re
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1394,12 +1409,17 @@ func decodeListTicketMessagesParams(args [1]string, argsEscaped bool, r *http.Re
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1465,9 +1485,9 @@ func decodeListTicketMessagesParams(args [1]string, argsEscaped bool, r *http.Re
 
 // ListTicketsParams is parameters of list-tickets operation.
 type ListTicketsParams struct {
-	// Maximum number of items to return in this page.
+	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// Number of items to skip.
+	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Return only tickets in this state; omit for all states.
 	Status OptTicketStatus `json:",omitempty,omitzero"`
@@ -1549,7 +1569,7 @@ func decodeListTicketsParams(args [0]string, argsEscaped bool, r *http.Request) 
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -1610,12 +1630,17 @@ func decodeListTicketsParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
 	// Decode query: offset.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "offset",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
