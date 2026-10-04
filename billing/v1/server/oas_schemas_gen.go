@@ -1404,6 +1404,56 @@ func (s *BillingAccountUpdate) SetTaxID(val OptString) {
 	s.TaxID = val
 }
 
+// Ref: #/components/schemas/CancelSubscriptionRequest
+type CancelSubscriptionRequest struct {
+	Mode TerminationPolicy `json:"mode"`
+	// For immediate cancellation, the quoted whole-second refund basis. Now when omitted.
+	ProrationDate OptDateTime `json:"proration_date"`
+	// The cancellation quote's refundable amount, including an explicit zero.
+	ExpectedRefundableAmount string    `json:"expected_refundable_amount"`
+	Reason                   OptString `json:"reason"`
+}
+
+// GetMode returns the value of Mode.
+func (s *CancelSubscriptionRequest) GetMode() TerminationPolicy {
+	return s.Mode
+}
+
+// GetProrationDate returns the value of ProrationDate.
+func (s *CancelSubscriptionRequest) GetProrationDate() OptDateTime {
+	return s.ProrationDate
+}
+
+// GetExpectedRefundableAmount returns the value of ExpectedRefundableAmount.
+func (s *CancelSubscriptionRequest) GetExpectedRefundableAmount() string {
+	return s.ExpectedRefundableAmount
+}
+
+// GetReason returns the value of Reason.
+func (s *CancelSubscriptionRequest) GetReason() OptString {
+	return s.Reason
+}
+
+// SetMode sets the value of Mode.
+func (s *CancelSubscriptionRequest) SetMode(val TerminationPolicy) {
+	s.Mode = val
+}
+
+// SetProrationDate sets the value of ProrationDate.
+func (s *CancelSubscriptionRequest) SetProrationDate(val OptDateTime) {
+	s.ProrationDate = val
+}
+
+// SetExpectedRefundableAmount sets the value of ExpectedRefundableAmount.
+func (s *CancelSubscriptionRequest) SetExpectedRefundableAmount(val string) {
+	s.ExpectedRefundableAmount = val
+}
+
+// SetReason sets the value of Reason.
+func (s *CancelSubscriptionRequest) SetReason(val OptString) {
+	s.Reason = val
+}
+
 // One cancellation of a set of subscriptions of one service, released together at one time.
 //
 //   - `requested`: `immediate`, release has not begun.
@@ -3290,6 +3340,9 @@ func (s *CurrencyList) SetPagination(val OffsetPagination) {
 
 // DeletePaymentMethodNoContent is response for DeletePaymentMethod operation.
 type DeletePaymentMethodNoContent struct{}
+
+// DeleteSubscriptionNoContent is response for DeleteSubscription operation.
+type DeleteSubscriptionNoContent struct{}
 
 // A coupon held on this account. It applies at checkout without a code.
 // Ref: #/components/schemas/Discount
@@ -14908,6 +14961,7 @@ const (
 	SubscriptionStatusSuspended    SubscriptionStatus = "suspended"
 	SubscriptionStatusCanceled     SubscriptionStatus = "canceled"
 	SubscriptionStatusTerminated   SubscriptionStatus = "terminated"
+	SubscriptionStatusDeleted      SubscriptionStatus = "deleted"
 )
 
 // AllValues returns all SubscriptionStatus values.
@@ -14919,6 +14973,7 @@ func (SubscriptionStatus) AllValues() []SubscriptionStatus {
 		SubscriptionStatusSuspended,
 		SubscriptionStatusCanceled,
 		SubscriptionStatusTerminated,
+		SubscriptionStatusDeleted,
 	}
 }
 
@@ -14936,6 +14991,8 @@ func (s SubscriptionStatus) MarshalText() ([]byte, error) {
 	case SubscriptionStatusCanceled:
 		return []byte(s), nil
 	case SubscriptionStatusTerminated:
+		return []byte(s), nil
+	case SubscriptionStatusDeleted:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -14962,6 +15019,9 @@ func (s *SubscriptionStatus) UnmarshalText(data []byte) error {
 		return nil
 	case SubscriptionStatusTerminated:
 		*s = SubscriptionStatusTerminated
+		return nil
+	case SubscriptionStatusDeleted:
+		*s = SubscriptionStatusDeleted
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -15070,6 +15130,21 @@ func (s *TaxItem) SetTaxAmount(val string) {
 // SetCurrency sets the value of Currency.
 func (s *TaxItem) SetCurrency(val string) {
 	s.Currency = val
+}
+
+// Ref: #/components/schemas/TerminateSubscriptionRequest
+type TerminateSubscriptionRequest struct {
+	Reason string `json:"reason"`
+}
+
+// GetReason returns the value of Reason.
+func (s *TerminateSubscriptionRequest) GetReason() string {
+	return s.Reason
+}
+
+// SetReason sets the value of Reason.
+func (s *TerminateSubscriptionRequest) SetReason(val string) {
+	s.Reason = val
 }
 
 // Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a

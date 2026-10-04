@@ -52,6 +52,24 @@ type Invoker interface {
 	//
 	// POST /api/v1/orders/{orderId}/cancel
 	CancelOrder(ctx context.Context, request OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error)
+	// CancelSubscription invokes cancel-subscription operation.
+	//
+	// Requests cancellation on the purchase's agreed terms. Uses the same quotation, eligibility, metering
+	// and original-payment-source refund rules as creating a cancellation. Supply the refund amount from
+	// create-quote with this subscription in cancellation.subscription_ids. Your account access token must
+	// authorize the subscription's current billing account.
+	//
+	// Immediate cancellation asks the owning service to clean up now. Period-end cancellation keeps the
+	// subscription active or suspended until the paid term ends. Neither payment nor acceptance of this
+	// request proves cleanup. The subscription becomes canceled only after the service confirms release
+	// and the end of metering; follow the returned cancellation for progress.
+	//
+	// Related subscriptions released together must be submitted as one group to create-cancellation.
+	// Pending or provisioning purchases are canceled through their order, not this operation. Repeating
+	// the same open cancellation returns it without another refund or command.
+	//
+	// POST /api/v1/subscriptions/{subscriptionId}/cancel
+	CancelSubscription(ctx context.Context, request *CancelSubscriptionRequest, params CancelSubscriptionParams) (*Cancellation, error)
 	// CancelTopUp invokes cancel-top-up operation.
 	//
 	// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
@@ -208,6 +226,17 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/payment-methods/{paymentMethodId}
 	DeletePaymentMethod(ctx context.Context, params DeletePaymentMethodParams) error
+	// DeleteSubscription invokes delete-subscription operation.
+	//
+	// Hides an already terminated subscription from your subscription list and detail. Your account access
+	// token must authorize the subscription's current billing account. Billing and financial history
+	// remain available. This operation cannot force termination, skip cleanup, or delete a pending,
+	// provisioning, active or suspended subscription. Other states, including canceled, are refused with
+	// 409 BILLING_SUBSCRIPTION_NOT_TERMINATED and status in error params. A canceled subscription must
+	// first be converted to terminated. Sends no cleanup command and creates no refund.
+	//
+	// DELETE /api/v1/subscriptions/{subscriptionId}
+	DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error
 	// GetAccountBalance invokes get-account-balance operation.
 	//
 	// Get account balance.
@@ -621,6 +650,22 @@ type Invoker interface {
 	//
 	// PUT /api/v1/assignments/{projectId}
 	SetProjectAssignment(ctx context.Context, request *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
+	// TerminateSubscription invokes terminate-subscription operation.
+	//
+	// Converts an already canceled subscription to terminated so it can subsequently be hidden. Your
+	// account access token must authorize the subscription's current billing account. Preserves the
+	// original billing end and financial history, sends no new cleanup command, and creates no credit note
+	// or refund. A terminated subscription is returned unchanged on repeat; a deleted subscription remains
+	// hidden from tenant reads.
+	//
+	// Account holders cannot force termination of pending, provisioning, active or suspended
+	// subscriptions. These states are refused with 400 BILLING_SUBSCRIPTION_INVALID and status in error
+	// params. Use cancellation under the agreed terms to end service. Immediate commercial termination is
+	// reserved for administrators and the owning service. The audited reason does not grant permission to
+	// terminate. No force, skip-cleanup or refund options are accepted.
+	//
+	// POST /api/v1/subscriptions/{subscriptionId}/terminate
+	TerminateSubscription(ctx context.Context, request *TerminateSubscriptionRequest, params TerminateSubscriptionParams) (*Subscription, error)
 	// UnlinkProjectBillingAccount invokes unlink-project-billing-account operation.
 	//
 	// Ends the project's current assignment without deleting its assignment history.
@@ -859,6 +904,162 @@ func (c *Client) sendCancelOrder(ctx context.Context, request OptOrderCancel, pa
 
 	stage = "DecodeResponse"
 	result, err := decodeCancelOrderResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CancelSubscription invokes cancel-subscription operation.
+//
+// Requests cancellation on the purchase's agreed terms. Uses the same quotation, eligibility, metering
+// and original-payment-source refund rules as creating a cancellation. Supply the refund amount from
+// create-quote with this subscription in cancellation.subscription_ids. Your account access token must
+// authorize the subscription's current billing account.
+//
+// Immediate cancellation asks the owning service to clean up now. Period-end cancellation keeps the
+// subscription active or suspended until the paid term ends. Neither payment nor acceptance of this
+// request proves cleanup. The subscription becomes canceled only after the service confirms release
+// and the end of metering; follow the returned cancellation for progress.
+//
+// Related subscriptions released together must be submitted as one group to create-cancellation.
+// Pending or provisioning purchases are canceled through their order, not this operation. Repeating
+// the same open cancellation returns it without another refund or command.
+//
+// POST /api/v1/subscriptions/{subscriptionId}/cancel
+func (c *Client) CancelSubscription(ctx context.Context, request *CancelSubscriptionRequest, params CancelSubscriptionParams) (*Cancellation, error) {
+	res, err := c.sendCancelSubscription(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCancelSubscription(ctx context.Context, request *CancelSubscriptionRequest, params CancelSubscriptionParams) (res *Cancellation, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("cancel-subscription"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/subscriptions/{subscriptionId}/cancel"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CancelSubscriptionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/subscriptions/"
+	{
+		// Encode "subscriptionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "subscriptionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.SubscriptionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/cancel"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCancelSubscriptionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, CancelSubscriptionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCancelSubscriptionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2137,6 +2338,142 @@ func (c *Client) sendDeletePaymentMethod(ctx context.Context, params DeletePayme
 
 	stage = "DecodeResponse"
 	result, err := decodeDeletePaymentMethodResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteSubscription invokes delete-subscription operation.
+//
+// Hides an already terminated subscription from your subscription list and detail. Your account access
+// token must authorize the subscription's current billing account. Billing and financial history
+// remain available. This operation cannot force termination, skip cleanup, or delete a pending,
+// provisioning, active or suspended subscription. Other states, including canceled, are refused with
+// 409 BILLING_SUBSCRIPTION_NOT_TERMINATED and status in error params. A canceled subscription must
+// first be converted to terminated. Sends no cleanup command and creates no refund.
+//
+// DELETE /api/v1/subscriptions/{subscriptionId}
+func (c *Client) DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error {
+	_, err := c.sendDeleteSubscription(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) (res *DeleteSubscriptionNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-subscription"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/subscriptions/{subscriptionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteSubscriptionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/subscriptions/"
+	{
+		// Encode "subscriptionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "subscriptionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.SubscriptionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, DeleteSubscriptionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteSubscriptionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -10667,6 +11004,160 @@ func (c *Client) sendSetProjectAssignment(ctx context.Context, request *SetProje
 
 	stage = "DecodeResponse"
 	result, err := decodeSetProjectAssignmentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// TerminateSubscription invokes terminate-subscription operation.
+//
+// Converts an already canceled subscription to terminated so it can subsequently be hidden. Your
+// account access token must authorize the subscription's current billing account. Preserves the
+// original billing end and financial history, sends no new cleanup command, and creates no credit note
+// or refund. A terminated subscription is returned unchanged on repeat; a deleted subscription remains
+// hidden from tenant reads.
+//
+// Account holders cannot force termination of pending, provisioning, active or suspended
+// subscriptions. These states are refused with 400 BILLING_SUBSCRIPTION_INVALID and status in error
+// params. Use cancellation under the agreed terms to end service. Immediate commercial termination is
+// reserved for administrators and the owning service. The audited reason does not grant permission to
+// terminate. No force, skip-cleanup or refund options are accepted.
+//
+// POST /api/v1/subscriptions/{subscriptionId}/terminate
+func (c *Client) TerminateSubscription(ctx context.Context, request *TerminateSubscriptionRequest, params TerminateSubscriptionParams) (*Subscription, error) {
+	res, err := c.sendTerminateSubscription(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendTerminateSubscription(ctx context.Context, request *TerminateSubscriptionRequest, params TerminateSubscriptionParams) (res *Subscription, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("terminate-subscription"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/subscriptions/{subscriptionId}/terminate"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, TerminateSubscriptionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/subscriptions/"
+	{
+		// Encode "subscriptionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "subscriptionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.SubscriptionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/terminate"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeTerminateSubscriptionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, TerminateSubscriptionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeTerminateSubscriptionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

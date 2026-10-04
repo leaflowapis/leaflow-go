@@ -81,6 +81,71 @@ func decodeCancelOrderParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// CancelSubscriptionParams is parameters of cancel-subscription operation.
+type CancelSubscriptionParams struct {
+	SubscriptionId uuid.UUID
+}
+
+func unpackCancelSubscriptionParams(packed middleware.Parameters) (params CancelSubscriptionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "subscriptionId",
+			In:   "path",
+		}
+		params.SubscriptionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCancelSubscriptionParams(args [1]string, argsEscaped bool, r *http.Request) (params CancelSubscriptionParams, _ error) {
+	// Decode path: subscriptionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "subscriptionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.SubscriptionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subscriptionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CancelTopUpParams is parameters of cancel-top-up operation.
 type CancelTopUpParams struct {
 	TopUpId uuid.UUID
@@ -334,6 +399,71 @@ func decodeDeletePaymentMethodParams(args [1]string, argsEscaped bool, r *http.R
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "paymentMethodId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteSubscriptionParams is parameters of delete-subscription operation.
+type DeleteSubscriptionParams struct {
+	SubscriptionId uuid.UUID
+}
+
+func unpackDeleteSubscriptionParams(packed middleware.Parameters) (params DeleteSubscriptionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "subscriptionId",
+			In:   "path",
+		}
+		params.SubscriptionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeleteSubscriptionParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteSubscriptionParams, _ error) {
+	// Decode path: subscriptionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "subscriptionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.SubscriptionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subscriptionId",
 			In:   "path",
 			Err:  err,
 		}
@@ -11512,6 +11642,71 @@ func decodeSetProjectAssignmentParams(args [1]string, argsEscaped bool, r *http.
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "projectId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// TerminateSubscriptionParams is parameters of terminate-subscription operation.
+type TerminateSubscriptionParams struct {
+	SubscriptionId uuid.UUID
+}
+
+func unpackTerminateSubscriptionParams(packed middleware.Parameters) (params TerminateSubscriptionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "subscriptionId",
+			In:   "path",
+		}
+		params.SubscriptionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeTerminateSubscriptionParams(args [1]string, argsEscaped bool, r *http.Request) (params TerminateSubscriptionParams, _ error) {
+	// Decode path: subscriptionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "subscriptionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.SubscriptionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subscriptionId",
 			In:   "path",
 			Err:  err,
 		}

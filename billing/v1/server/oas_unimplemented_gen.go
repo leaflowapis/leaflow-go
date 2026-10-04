@@ -39,6 +39,27 @@ func (UnimplementedHandler) CancelOrder(ctx context.Context, req OptOrderCancel,
 	return r, ht.ErrNotImplemented
 }
 
+// CancelSubscription implements cancel-subscription operation.
+//
+// Requests cancellation on the purchase's agreed terms. Uses the same quotation, eligibility, metering
+// and original-payment-source refund rules as creating a cancellation. Supply the refund amount from
+// create-quote with this subscription in cancellation.subscription_ids. Your account access token must
+// authorize the subscription's current billing account.
+//
+// Immediate cancellation asks the owning service to clean up now. Period-end cancellation keeps the
+// subscription active or suspended until the paid term ends. Neither payment nor acceptance of this
+// request proves cleanup. The subscription becomes canceled only after the service confirms release
+// and the end of metering; follow the returned cancellation for progress.
+//
+// Related subscriptions released together must be submitted as one group to create-cancellation.
+// Pending or provisioning purchases are canceled through their order, not this operation. Repeating
+// the same open cancellation returns it without another refund or command.
+//
+// POST /api/v1/subscriptions/{subscriptionId}/cancel
+func (UnimplementedHandler) CancelSubscription(ctx context.Context, req *CancelSubscriptionRequest, params CancelSubscriptionParams) (r *Cancellation, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CancelTopUp implements cancel-top-up operation.
 //
 // Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
@@ -219,6 +240,20 @@ func (UnimplementedHandler) CreateTopUp(ctx context.Context, req *TopUpCreate) (
 //
 // DELETE /api/v1/payment-methods/{paymentMethodId}
 func (UnimplementedHandler) DeletePaymentMethod(ctx context.Context, params DeletePaymentMethodParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteSubscription implements delete-subscription operation.
+//
+// Hides an already terminated subscription from your subscription list and detail. Your account access
+// token must authorize the subscription's current billing account. Billing and financial history
+// remain available. This operation cannot force termination, skip cleanup, or delete a pending,
+// provisioning, active or suspended subscription. Other states, including canceled, are refused with
+// 409 BILLING_SUBSCRIPTION_NOT_TERMINATED and status in error params. A canceled subscription must
+// first be converted to terminated. Sends no cleanup command and creates no refund.
+//
+// DELETE /api/v1/subscriptions/{subscriptionId}
+func (UnimplementedHandler) DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -782,6 +817,25 @@ func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params 
 //
 // PUT /api/v1/assignments/{projectId}
 func (UnimplementedHandler) SetProjectAssignment(ctx context.Context, req *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (r *ProjectAssignment, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// TerminateSubscription implements terminate-subscription operation.
+//
+// Converts an already canceled subscription to terminated so it can subsequently be hidden. Your
+// account access token must authorize the subscription's current billing account. Preserves the
+// original billing end and financial history, sends no new cleanup command, and creates no credit note
+// or refund. A terminated subscription is returned unchanged on repeat; a deleted subscription remains
+// hidden from tenant reads.
+//
+// Account holders cannot force termination of pending, provisioning, active or suspended
+// subscriptions. These states are refused with 400 BILLING_SUBSCRIPTION_INVALID and status in error
+// params. Use cancellation under the agreed terms to end service. Immediate commercial termination is
+// reserved for administrators and the owning service. The audited reason does not grant permission to
+// terminate. No force, skip-cleanup or refund options are accepted.
+//
+// POST /api/v1/subscriptions/{subscriptionId}/terminate
+func (UnimplementedHandler) TerminateSubscription(ctx context.Context, req *TerminateSubscriptionRequest, params TerminateSubscriptionParams) (r *Subscription, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

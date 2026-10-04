@@ -45,6 +45,19 @@ func encodeCancelOrderResponse(response CancelOrderRes, w http.ResponseWriter, s
 	}
 }
 
+func encodeCancelSubscriptionResponse(response *Cancellation, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCancelTopUpResponse(response CancelTopUpRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *TopUp:
@@ -222,6 +235,12 @@ func encodeCreateTopUpResponse(response *TopUp, w http.ResponseWriter, span trac
 }
 
 func encodeDeletePaymentMethodResponse(response *DeletePaymentMethodNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeDeleteSubscriptionResponse(response *DeleteSubscriptionNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -1211,6 +1230,19 @@ func encodeSetDefaultPaymentMethodResponse(response *PaymentMethod, w http.Respo
 }
 
 func encodeSetProjectAssignmentResponse(response *ProjectAssignment, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeTerminateSubscriptionResponse(response *Subscription, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

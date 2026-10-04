@@ -30,6 +30,20 @@ func encodeCancelOrderRequest(
 	return nil
 }
 
+func encodeCancelSubscriptionRequest(
+	req *CancelSubscriptionRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCheckoutOrderRequest(
 	req *CheckoutOrderRequest,
 	r *http.Request,
@@ -206,6 +220,20 @@ func encodeSetAutoRenewRequest(
 
 func encodeSetProjectAssignmentRequest(
 	req *SetProjectAssignmentRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeTerminateSubscriptionRequest(
+	req *TerminateSubscriptionRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

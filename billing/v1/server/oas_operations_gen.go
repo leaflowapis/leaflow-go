@@ -7,6 +7,7 @@ type OperationName = string
 
 const (
 	CancelOrderOperation                 OperationName = "CancelOrder"
+	CancelSubscriptionOperation          OperationName = "CancelSubscription"
 	CancelTopUpOperation                 OperationName = "CancelTopUp"
 	CheckoutOrderOperation               OperationName = "CheckoutOrder"
 	CreateBillingAccountOperation        OperationName = "CreateBillingAccount"
@@ -16,6 +17,7 @@ const (
 	CreateRenewalOrderOperation          OperationName = "CreateRenewalOrder"
 	CreateTopUpOperation                 OperationName = "CreateTopUp"
 	DeletePaymentMethodOperation         OperationName = "DeletePaymentMethod"
+	DeleteSubscriptionOperation          OperationName = "DeleteSubscription"
 	GetAccountBalanceOperation           OperationName = "GetAccountBalance"
 	GetAccountMeteredUsageOperation      OperationName = "GetAccountMeteredUsage"
 	GetBillingAccountOperation           OperationName = "GetBillingAccount"
@@ -66,6 +68,7 @@ const (
 	SetAutoRenewOperation                OperationName = "SetAutoRenew"
 	SetDefaultPaymentMethodOperation     OperationName = "SetDefaultPaymentMethod"
 	SetProjectAssignmentOperation        OperationName = "SetProjectAssignment"
+	TerminateSubscriptionOperation       OperationName = "TerminateSubscription"
 	UnlinkProjectBillingAccountOperation OperationName = "UnlinkProjectBillingAccount"
 	UpdateBillingAccountOperation        OperationName = "UpdateBillingAccount"
 	WithdrawCancellationOperation        OperationName = "WithdrawCancellation"
