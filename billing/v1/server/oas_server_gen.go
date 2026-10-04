@@ -207,12 +207,14 @@ type Handler interface {
 	DeletePaymentMethod(ctx context.Context, params DeletePaymentMethodParams) error
 	// DeleteSubscription implements delete-subscription operation.
 	//
-	// Hides an already terminated subscription from your subscription list and detail. Your account access
-	// token must authorize the subscription's current billing account. Billing and financial history
-	// remain available. This operation cannot force termination, skip cleanup, or delete a pending,
-	// provisioning, active or suspended subscription. Other states, including canceled, are refused with
-	// 409 BILLING_SUBSCRIPTION_NOT_TERMINATED and status in error params. A canceled subscription must
-	// first be converted to terminated. Sends no cleanup command and creates no refund.
+	// Sets deleted_at on a canceled or terminated subscription, hiding it from your subscription list and
+	// detail. Your account access token must authorize the subscription's current billing account.
+	// Preserves commercial status, ended_at and billing and financial history. Completed cancellations and
+	// canceled unfulfilled purchases can be deleted directly, without termination. Pending, provisioning,
+	// active and suspended subscriptions are refused with 409 BILLING_SUBSCRIPTION_NOT_ENDED and status in
+	// error params. A scheduled or releasing cancellation does not make a subscription canceled. There is
+	// no force, skip-cleanup or override option. Repeating deletion preserves the original deleted_at.
+	// Sends no cleanup command and creates no refund; outstanding cleanup continues.
 	//
 	// DELETE /api/v1/subscriptions/{subscriptionId}
 	DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error
@@ -290,7 +292,8 @@ type Handler interface {
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
 	// GetSubscription implements get-subscription operation.
 	//
-	// Get subscription.
+	// Returns a subscription visible to the authorized billing account. Soft-deleted subscriptions are
+	// reported as not found.
 	//
 	// GET /api/v1/subscriptions/{subscriptionId}
 	GetSubscription(ctx context.Context, params GetSubscriptionParams) (*Subscription, error)
@@ -493,7 +496,8 @@ type Handler interface {
 	ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error)
 	// ListSubscriptions implements list-subscriptions operation.
 	//
-	// List subscriptions.
+	// Lists subscriptions visible to the authorized billing account. Soft-deleted subscriptions are
+	// excluded.
 	//
 	// GET /api/v1/subscriptions
 	ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error)
@@ -629,22 +633,6 @@ type Handler interface {
 	//
 	// PUT /api/v1/assignments/{projectId}
 	SetProjectAssignment(ctx context.Context, req *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
-	// TerminateSubscription implements terminate-subscription operation.
-	//
-	// Converts an already canceled subscription to terminated so it can subsequently be hidden. Your
-	// account access token must authorize the subscription's current billing account. Preserves the
-	// original billing end and financial history, sends no new cleanup command, and creates no credit note
-	// or refund. A terminated subscription is returned unchanged on repeat; a deleted subscription remains
-	// hidden from tenant reads.
-	//
-	// Account holders cannot force termination of pending, provisioning, active or suspended
-	// subscriptions. These states are refused with 400 BILLING_SUBSCRIPTION_INVALID and status in error
-	// params. Use cancellation under the agreed terms to end service. Immediate commercial termination is
-	// reserved for administrators and the owning service. The audited reason does not grant permission to
-	// terminate. No force, skip-cleanup or refund options are accepted.
-	//
-	// POST /api/v1/subscriptions/{subscriptionId}/terminate
-	TerminateSubscription(ctx context.Context, req *TerminateSubscriptionRequest, params TerminateSubscriptionParams) (*Subscription, error)
 	// UnlinkProjectBillingAccount implements unlink-project-billing-account operation.
 	//
 	// Ends the project's current assignment without deleting its assignment history.

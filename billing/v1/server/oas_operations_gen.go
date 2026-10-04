@@ -68,7 +68,6 @@ const (
 	SetAutoRenewOperation                OperationName = "SetAutoRenew"
 	SetDefaultPaymentMethodOperation     OperationName = "SetDefaultPaymentMethod"
 	SetProjectAssignmentOperation        OperationName = "SetProjectAssignment"
-	TerminateSubscriptionOperation       OperationName = "TerminateSubscription"
 	UnlinkProjectBillingAccountOperation OperationName = "UnlinkProjectBillingAccount"
 	UpdateBillingAccountOperation        OperationName = "UpdateBillingAccount"
 	WithdrawCancellationOperation        OperationName = "WithdrawCancellation"

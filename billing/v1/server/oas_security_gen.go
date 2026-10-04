@@ -91,7 +91,6 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	SetAutoRenewOperation:                []string{},
 	SetDefaultPaymentMethodOperation:     []string{},
 	SetProjectAssignmentOperation:        []string{},
-	TerminateSubscriptionOperation:       []string{},
 	UnlinkProjectBillingAccountOperation: []string{},
 	UpdateBillingAccountOperation:        []string{},
 	WithdrawCancellationOperation:        []string{},

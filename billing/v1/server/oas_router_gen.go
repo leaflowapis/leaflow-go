@@ -49,7 +49,7 @@ var (
 	rn28AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn89AllowedHeaders = map[string]string{
+	rn88AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn49AllowedHeaders = map[string]string{
@@ -175,9 +175,6 @@ var (
 	}
 	rn72AllowedHeaders = map[string]string{
 		"GET": "Authorization",
-	}
-	rn88AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type",
 	}
 	rn19AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
@@ -637,7 +634,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn89AllowedHeaders,
+										allowedHeaders: rn88AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -1989,33 +1986,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 									}
 
-								}
-
-							case 't': // Prefix: "terminate"
-
-								if l := len("terminate"); len(elem) >= l && elem[0:l] == "terminate" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "POST":
-										s.handleTerminateSubscriptionRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
-											allowedHeaders: rn88AllowedHeaders,
-											acceptPost:     "application/json",
-											acceptPatch:    "",
-										})
-									}
-
-									return
 								}
 
 							}
@@ -3997,31 +3967,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 									}
 
-								}
-
-							case 't': // Prefix: "terminate"
-
-								if l := len("terminate"); len(elem) >= l && elem[0:l] == "terminate" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "POST":
-										r.name = TerminateSubscriptionOperation
-										r.summary = "Terminate subscription"
-										r.operationID = "terminate-subscription"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/subscriptions/{subscriptionId}/terminate"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
 								}
 
 							}

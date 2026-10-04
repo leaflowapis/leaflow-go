@@ -14424,10 +14424,10 @@ func (s *SpendRowList) SetPagination(val OffsetPagination) {
 //
 // One-time delivery may omit a subscription. Renewals reference and extend existing subscriptions
 // rather than creating another; a change keeps the subscription ID and switches its terms when it
-// takes effect. Canceling or failing an unfulfilled purchase closes its pending or provisioning
-// subscriptions without starting a service period. Fixed renewals use the agreed recurring_amount and
-// interval; already paid periods retain their original value. Technical state belongs to the owning
-// service.
+// takes effect. Canceling or failing an unfulfilled purchase sets its pending or provisioning
+// subscriptions to canceled without starting a service period. Fixed renewals use the agreed
+// recurring_amount and interval; already paid periods retain their original value. Technical state
+// belongs to the owning service.
 //
 // A purchased shared capacity limit, such as a regional snapshot count quota, can have its own
 // subscription. Activating that capacity confirms delivery of the quota, not individual snapshots.
@@ -14483,7 +14483,9 @@ type Subscription struct {
 	AutoRenew bool           `json:"auto_renew"`
 	// Pending means the purchase relationship exists but its order has not been accepted. provisioning
 	// means the service accepted the order and is delivering. For a service-owned purchase, only confirmed
-	// delivery moves it to active; paying alone does not.
+	// delivery moves it to active; paying alone does not. canceled means cancellation completed, or an
+	// unfulfilled purchase was canceled or failed without delivery. terminated means an administrator or
+	// the owning service immediately ended the commercial relationship.
 	Status SubscriptionStatus `json:"status"`
 	// Confirmed start of service. Null until a new subscription becomes active, including after payment.
 	StartedAt OptNilDateTime `json:"started_at"`
@@ -14951,7 +14953,9 @@ func (s *SubscriptionList) SetPagination(val OffsetPagination) {
 
 // Pending means the purchase relationship exists but its order has not been accepted. provisioning
 // means the service accepted the order and is delivering. For a service-owned purchase, only confirmed
-// delivery moves it to active; paying alone does not.
+// delivery moves it to active; paying alone does not. canceled means cancellation completed, or an
+// unfulfilled purchase was canceled or failed without delivery. terminated means an administrator or
+// the owning service immediately ended the commercial relationship.
 type SubscriptionStatus string
 
 const (
@@ -14961,7 +14965,6 @@ const (
 	SubscriptionStatusSuspended    SubscriptionStatus = "suspended"
 	SubscriptionStatusCanceled     SubscriptionStatus = "canceled"
 	SubscriptionStatusTerminated   SubscriptionStatus = "terminated"
-	SubscriptionStatusDeleted      SubscriptionStatus = "deleted"
 )
 
 // AllValues returns all SubscriptionStatus values.
@@ -14973,7 +14976,6 @@ func (SubscriptionStatus) AllValues() []SubscriptionStatus {
 		SubscriptionStatusSuspended,
 		SubscriptionStatusCanceled,
 		SubscriptionStatusTerminated,
-		SubscriptionStatusDeleted,
 	}
 }
 
@@ -14991,8 +14993,6 @@ func (s SubscriptionStatus) MarshalText() ([]byte, error) {
 	case SubscriptionStatusCanceled:
 		return []byte(s), nil
 	case SubscriptionStatusTerminated:
-		return []byte(s), nil
-	case SubscriptionStatusDeleted:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -15019,9 +15019,6 @@ func (s *SubscriptionStatus) UnmarshalText(data []byte) error {
 		return nil
 	case SubscriptionStatusTerminated:
 		*s = SubscriptionStatusTerminated
-		return nil
-	case SubscriptionStatusDeleted:
-		*s = SubscriptionStatusDeleted
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -15130,21 +15127,6 @@ func (s *TaxItem) SetTaxAmount(val string) {
 // SetCurrency sets the value of Currency.
 func (s *TaxItem) SetCurrency(val string) {
 	s.Currency = val
-}
-
-// Ref: #/components/schemas/TerminateSubscriptionRequest
-type TerminateSubscriptionRequest struct {
-	Reason string `json:"reason"`
-}
-
-// GetReason returns the value of Reason.
-func (s *TerminateSubscriptionRequest) GetReason() string {
-	return s.Reason
-}
-
-// SetReason sets the value of Reason.
-func (s *TerminateSubscriptionRequest) SetReason(val string) {
-	s.Reason = val
 }
 
 // Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a

@@ -232,20 +232,6 @@ func encodeSetProjectAssignmentRequest(
 	return nil
 }
 
-func encodeTerminateSubscriptionRequest(
-	req *TerminateSubscriptionRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeUpdateBillingAccountRequest(
 	req *BillingAccountUpdate,
 	r *http.Request,
