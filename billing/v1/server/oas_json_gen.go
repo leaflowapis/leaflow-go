@@ -18870,14 +18870,12 @@ func (s *PurchaseOperation) Decode(d *jx.Decoder) error {
 	}
 	// Try to use constant string.
 	switch PurchaseOperation(v) {
-	case PurchaseOperationPurchase:
-		*s = PurchaseOperationPurchase
+	case PurchaseOperationNew:
+		*s = PurchaseOperationNew
 	case PurchaseOperationRenew:
 		*s = PurchaseOperationRenew
-	case PurchaseOperationUpgrade:
-		*s = PurchaseOperationUpgrade
-	case PurchaseOperationDowngrade:
-		*s = PurchaseOperationDowngrade
+	case PurchaseOperationChange:
+		*s = PurchaseOperationChange
 	default:
 		*s = PurchaseOperation(v)
 	}

@@ -11928,42 +11928,37 @@ func (s *ProjectAssignmentList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Which purchase this applies to. `upgrade` and `downgrade` are told apart by money: a change that
-// costs more for the remainder of the period is an upgrade, one that returns money is a downgrade. A
-// change that costs neither more nor less is neither.
-//
-// `purchase` means a new purchase as opposed to a renewal or a change. It does not mean the account's
-// first purchase.
+// Which purchase operation this applies to. `new` covers every new purchase, including zero-charge
+// purchases. It does not mean the account's first purchase; use `first_purchase_only` for that
+// restriction. `renew` covers renewals. `change` covers configuration or billing-term changes,
+// including changes that increase or decrease the amount due and changes with no additional charge or
+// refund.
 // Ref: #/components/schemas/PurchaseOperation
 type PurchaseOperation string
 
 const (
-	PurchaseOperationPurchase  PurchaseOperation = "purchase"
-	PurchaseOperationRenew     PurchaseOperation = "renew"
-	PurchaseOperationUpgrade   PurchaseOperation = "upgrade"
-	PurchaseOperationDowngrade PurchaseOperation = "downgrade"
+	PurchaseOperationNew    PurchaseOperation = "new"
+	PurchaseOperationRenew  PurchaseOperation = "renew"
+	PurchaseOperationChange PurchaseOperation = "change"
 )
 
 // AllValues returns all PurchaseOperation values.
 func (PurchaseOperation) AllValues() []PurchaseOperation {
 	return []PurchaseOperation{
-		PurchaseOperationPurchase,
+		PurchaseOperationNew,
 		PurchaseOperationRenew,
-		PurchaseOperationUpgrade,
-		PurchaseOperationDowngrade,
+		PurchaseOperationChange,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s PurchaseOperation) MarshalText() ([]byte, error) {
 	switch s {
-	case PurchaseOperationPurchase:
+	case PurchaseOperationNew:
 		return []byte(s), nil
 	case PurchaseOperationRenew:
 		return []byte(s), nil
-	case PurchaseOperationUpgrade:
-		return []byte(s), nil
-	case PurchaseOperationDowngrade:
+	case PurchaseOperationChange:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -11973,17 +11968,14 @@ func (s PurchaseOperation) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *PurchaseOperation) UnmarshalText(data []byte) error {
 	switch PurchaseOperation(data) {
-	case PurchaseOperationPurchase:
-		*s = PurchaseOperationPurchase
+	case PurchaseOperationNew:
+		*s = PurchaseOperationNew
 		return nil
 	case PurchaseOperationRenew:
 		*s = PurchaseOperationRenew
 		return nil
-	case PurchaseOperationUpgrade:
-		*s = PurchaseOperationUpgrade
-		return nil
-	case PurchaseOperationDowngrade:
-		*s = PurchaseOperationDowngrade
+	case PurchaseOperationChange:
+		*s = PurchaseOperationChange
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

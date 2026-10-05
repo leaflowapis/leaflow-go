@@ -4474,13 +4474,11 @@ func (s *ProjectAssignmentList) Validate() error {
 
 func (s PurchaseOperation) Validate() error {
 	switch s {
-	case "purchase":
+	case "new":
 		return nil
 	case "renew":
 		return nil
-	case "upgrade":
-		return nil
-	case "downgrade":
+	case "change":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
