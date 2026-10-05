@@ -1004,8 +1004,11 @@ type BillingAccount struct {
 	GraceAmount OptString `json:"grace_amount"`
 	// How long this account has to top up after crossing the suspension threshold. 0 means none. Whichever
 	// runs out first — this or grace_amount — ends the grace.
-	GracePeriodSeconds OptInt64  `json:"grace_period_seconds"`
-	CreatedAt          time.Time `json:"created_at"`
+	GracePeriodSeconds OptInt64 `json:"grace_period_seconds"`
+	// The actual time this account was closed, in UTC (RFC 3339). Null or absent if the account is not
+	// closed or its historical close time is unknown.
+	ClosedAt  OptNilDateTime `json:"closed_at"`
+	CreatedAt time.Time      `json:"created_at"`
 }
 
 // GetID returns the value of ID.
@@ -1081,6 +1084,11 @@ func (s *BillingAccount) GetGraceAmount() OptString {
 // GetGracePeriodSeconds returns the value of GracePeriodSeconds.
 func (s *BillingAccount) GetGracePeriodSeconds() OptInt64 {
 	return s.GracePeriodSeconds
+}
+
+// GetClosedAt returns the value of ClosedAt.
+func (s *BillingAccount) GetClosedAt() OptNilDateTime {
+	return s.ClosedAt
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -1161,6 +1169,11 @@ func (s *BillingAccount) SetGraceAmount(val OptString) {
 // SetGracePeriodSeconds sets the value of GracePeriodSeconds.
 func (s *BillingAccount) SetGracePeriodSeconds(val OptInt64) {
 	s.GracePeriodSeconds = val
+}
+
+// SetClosedAt sets the value of ClosedAt.
+func (s *BillingAccount) SetClosedAt(val OptNilDateTime) {
+	s.ClosedAt = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.

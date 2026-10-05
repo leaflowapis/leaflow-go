@@ -2212,12 +2212,18 @@ func (s *BillingAccount) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ClosedAt.Set {
+			e.FieldStart("closed_at")
+			s.ClosedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
 }
 
-var jsonFieldsNameOfBillingAccount = [16]string{
+var jsonFieldsNameOfBillingAccount = [17]string{
 	0:  "id",
 	1:  "name",
 	2:  "legal_name",
@@ -2233,7 +2239,8 @@ var jsonFieldsNameOfBillingAccount = [16]string{
 	12: "status",
 	13: "grace_amount",
 	14: "grace_period_seconds",
-	15: "created_at",
+	15: "closed_at",
+	16: "created_at",
 }
 
 // Decode decodes BillingAccount from json.
@@ -2241,7 +2248,7 @@ func (s *BillingAccount) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode BillingAccount to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [3]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -2399,8 +2406,18 @@ func (s *BillingAccount) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"grace_period_seconds\"")
 			}
+		case "closed_at":
+			if err := func() error {
+				s.ClosedAt.Reset()
+				if err := s.ClosedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"closed_at\"")
+			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -2420,9 +2437,10 @@ func (s *BillingAccount) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
+	for i, mask := range [3]uint8{
 		0b00000001,
-		0b10011000,
+		0b00011000,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
