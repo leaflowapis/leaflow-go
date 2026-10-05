@@ -3669,6 +3669,12 @@ func (s *CancellationItem) encodeFields(e *jx.Encoder) {
 		s.Status.Encode(e)
 	}
 	{
+		if s.FailureCode.Set {
+			e.FieldStart("failure_code")
+			s.FailureCode.Encode(e)
+		}
+	}
+	{
 		if s.ReleaseStartedAt.Set {
 			e.FieldStart("release_started_at")
 			s.ReleaseStartedAt.Encode(e, json.EncodeDateTime)
@@ -3700,18 +3706,19 @@ func (s *CancellationItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCancellationItem = [11]string{
+var jsonFieldsNameOfCancellationItem = [12]string{
 	0:  "id",
 	1:  "subscription_id",
 	2:  "plan_id",
 	3:  "plan_name",
 	4:  "billing_type",
 	5:  "status",
-	6:  "release_started_at",
-	7:  "effective_at",
-	8:  "balance_amount",
-	9:  "credit_amount",
-	10: "gateway_amount",
+	6:  "failure_code",
+	7:  "release_started_at",
+	8:  "effective_at",
+	9:  "balance_amount",
+	10: "credit_amount",
+	11: "gateway_amount",
 }
 
 // Decode decodes CancellationItem from json.
@@ -3790,6 +3797,16 @@ func (s *CancellationItem) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"status\"")
+			}
+		case "failure_code":
+			if err := func() error {
+				s.FailureCode.Reset()
+				if err := s.FailureCode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"failure_code\"")
 			}
 		case "release_started_at":
 			if err := func() error {

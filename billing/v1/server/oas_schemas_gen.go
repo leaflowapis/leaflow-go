@@ -1703,9 +1703,12 @@ type CancellationItem struct {
 	PlanName       string    `json:"plan_name"`
 	// How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating the
 	// cancellation turned that off, and withdrawing the cancellation leaves it off.
-	BillingType      CancellationItemBillingType `json:"billing_type"`
-	Status           CancellationItemStatus      `json:"status"`
-	ReleaseStartedAt OptDateTime                 `json:"release_started_at"`
+	BillingType CancellationItemBillingType `json:"billing_type"`
+	Status      CancellationItemStatus      `json:"status"`
+	// Execution stopped or its result is unknown. Present while release still requires resolution; it does
+	// not establish refund eligibility.
+	FailureCode      OptString   `json:"failure_code"`
+	ReleaseStartedAt OptDateTime `json:"release_started_at"`
 	// When the service ended, as confirmed by the service that provides it.
 	EffectiveAt OptDateTime `json:"effective_at"`
 	// Present with `completed`. The part of the refund returned to the account balance.
@@ -1744,6 +1747,11 @@ func (s *CancellationItem) GetBillingType() CancellationItemBillingType {
 // GetStatus returns the value of Status.
 func (s *CancellationItem) GetStatus() CancellationItemStatus {
 	return s.Status
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *CancellationItem) GetFailureCode() OptString {
+	return s.FailureCode
 }
 
 // GetReleaseStartedAt returns the value of ReleaseStartedAt.
@@ -1799,6 +1807,11 @@ func (s *CancellationItem) SetBillingType(val CancellationItemBillingType) {
 // SetStatus sets the value of Status.
 func (s *CancellationItem) SetStatus(val CancellationItemStatus) {
 	s.Status = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *CancellationItem) SetFailureCode(val OptString) {
+	s.FailureCode = val
 }
 
 // SetReleaseStartedAt sets the value of ReleaseStartedAt.
