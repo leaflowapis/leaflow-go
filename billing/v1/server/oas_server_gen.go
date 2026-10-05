@@ -150,6 +150,12 @@ type Handler interface {
 	//
 	// POST /api/v1/cancellations
 	CreateCancellation(ctx context.Context, req *CancellationCreate) (CreateCancellationRes, error)
+	// CreateContact implements create-contact operation.
+	//
+	// Create contact.
+	//
+	// POST /api/v1/billing-accounts/{accountId}/contacts
+	CreateContact(ctx context.Context, req *ContactCreate, params CreateContactParams) (*Contact, error)
 	// CreatePaymentMethodSetup implements create-payment-method-setup operation.
 	//
 	// Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
@@ -198,6 +204,13 @@ type Handler interface {
 	//
 	// POST /api/v1/top-ups
 	CreateTopUp(ctx context.Context, req *TopUpCreate) (*TopUp, error)
+	// DeleteContact implements delete-contact operation.
+	//
+	// The selected invoice contact must be cleared or replaced before deletion. Issued invoice snapshots
+	// are retained.
+	//
+	// DELETE /api/v1/contacts/{contactId}
+	DeleteContact(ctx context.Context, params DeleteContactParams) error
 	// DeletePaymentMethod implements delete-payment-method operation.
 	//
 	// Refused when it is the only method on an account that has resources billed by the hour, as there
@@ -224,14 +237,6 @@ type Handler interface {
 	//
 	// GET /api/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
-	// GetAccountMeteredUsage implements get-account-metered-usage operation.
-	//
-	// Whether the account has anything billed by usage, and what that usage has cost over the last seven
-	// days. Usage is paid from the balance, so this tells how much of the balance it is likely to need:
-	// the balance divided by `average_daily_amount` is roughly how many days it lasts.
-	//
-	// GET /api/v1/billing-accounts/{accountId}/metered-usage
-	GetAccountMeteredUsage(ctx context.Context, params GetAccountMeteredUsageParams) (*MeteredUsage, error)
 	// GetBillingAccount implements get-billing-account operation.
 	//
 	// Get billing account.
@@ -244,6 +249,12 @@ type Handler interface {
 	//
 	// GET /api/v1/cancellations/{cancellationId}
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
+	// GetContact implements get-contact operation.
+	//
+	// Get contact.
+	//
+	// GET /api/v1/contacts/{contactId}
+	GetContact(ctx context.Context, params GetContactParams) (*Contact, error)
 	// GetCreditNote implements get-credit-note operation.
 	//
 	// Requires authorization for the invoice's billing account.
@@ -290,6 +301,20 @@ type Handler interface {
 	//
 	// GET /api/v1/assignments/{projectId}
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
+	// GetStatement implements get-statement operation.
+	//
+	// Get statement.
+	//
+	// GET /api/v1/statements/{statementId}
+	GetStatement(ctx context.Context, params GetStatementParams) (*Statement, error)
+	// GetStatementUsage implements get-statement-usage operation.
+	//
+	// Reads the consumption summary that is updated in the same transaction as usage is priced. Group by
+	// project, product or meter and filter within the statement. Quantities are included only for meter
+	// groups so different units are never combined.
+	//
+	// GET /api/v1/statements/{statementId}/usage-summary
+	GetStatementUsage(ctx context.Context, params GetStatementUsageParams) (*StatementSummary, error)
 	// GetSubscription implements get-subscription operation.
 	//
 	// Returns a subscription visible to the authorized billing account. Soft-deleted subscriptions are
@@ -348,6 +373,12 @@ type Handler interface {
 	//
 	// GET /api/v1/cancellations
 	ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error)
+	// ListContacts implements list-contacts operation.
+	//
+	// List contacts.
+	//
+	// GET /api/v1/billing-accounts/{accountId}/contacts
+	ListContacts(ctx context.Context, params ListContactsParams) (*ContactList, error)
 	// ListCreditGrants implements list-credit-grants operation.
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before the balance and
@@ -487,13 +518,20 @@ type Handler interface {
 	ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (*RenewalPriceList, error)
 	// ListSpend implements list-spend operation.
 	//
-	// Aggregates rated and invoiced usage charges in the specified time range for one billing account.
-	// Includes usage not yet invoiced. Project filters use the account recorded on each charge, including
-	// charges for projects later assigned to another account. The total covers all matching groups, not
-	// just the returned page.
+	// Sums priced usage for one billing account by UTC day, including usage not yet invoiced. Amounts are
+	// before tax and before the tier adjustments made when a statement closes; minimum charges added at
+	// closing are included. `from` and `to` must fall on UTC day boundaries and span at most 92 days.
+	// Project filters use the account recorded on each charge, including charges for projects later
+	// assigned to another account. The total covers all matching groups, not just the returned page.
 	//
 	// GET /api/v1/spend
 	ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error)
+	// ListStatements implements list-statements operation.
+	//
+	// List statements.
+	//
+	// GET /api/v1/statements
+	ListStatements(ctx context.Context, params ListStatementsParams) (*StatementList, error)
 	// ListSubscriptions implements list-subscriptions operation.
 	//
 	// Lists subscriptions visible to the authorized billing account. Soft-deleted subscriptions are
@@ -517,9 +555,11 @@ type Handler interface {
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
 	// ListUsageCharges implements list-usage-charges operation.
 	//
-	// Each charge is added to the month's usage invoice as it is priced, summed into one line per
-	// subscription, project, resource, meter and rate. Filter by `invoice_item_id` to see the charges
-	// behind a line. Charges still waiting to be priced are included too.
+	// Lists priced and pending usage charges. Requires `statement_id`, `invoice_item_id`, or both `from`
+	// and `to` spanning at most 31 days; use the statement summary or spend report for longer periods.
+	// Charges are summed into one line per subscription, project, resource, meter and rate when their
+	// statement closes; filter by `invoice_item_id` to see the charges behind a line. Charges still
+	// waiting to be priced are included too.
 	//
 	// Only charges recorded against your billing accounts are included, before filtering, counting and
 	// pagination. Reassigning a project does not move previously recorded charges to its new account.
@@ -658,6 +698,12 @@ type Handler interface {
 	//
 	// PATCH /api/v1/billing-accounts/{accountId}
 	UpdateBillingAccount(ctx context.Context, req *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
+	// UpdateContact implements update-contact operation.
+	//
+	// Update contact.
+	//
+	// PATCH /api/v1/contacts/{contactId}
+	UpdateContact(ctx context.Context, req *ContactUpdate, params UpdateContactParams) (*Contact, error)
 	// WithdrawCancellation implements withdraw-cancellation operation.
 	//
 	// Withdraws the whole cancellation while none of its resources has begun to be released; the

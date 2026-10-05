@@ -173,6 +173,15 @@ func (UnimplementedHandler) CreateCancellation(ctx context.Context, req *Cancell
 	return r, ht.ErrNotImplemented
 }
 
+// CreateContact implements create-contact operation.
+//
+// Create contact.
+//
+// POST /api/v1/billing-accounts/{accountId}/contacts
+func (UnimplementedHandler) CreateContact(ctx context.Context, req *ContactCreate, params CreateContactParams) (r *Contact, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreatePaymentMethodSetup implements create-payment-method-setup operation.
 //
 // Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
@@ -233,6 +242,16 @@ func (UnimplementedHandler) CreateTopUp(ctx context.Context, req *TopUpCreate) (
 	return r, ht.ErrNotImplemented
 }
 
+// DeleteContact implements delete-contact operation.
+//
+// The selected invoice contact must be cleared or replaced before deletion. Issued invoice snapshots
+// are retained.
+//
+// DELETE /api/v1/contacts/{contactId}
+func (UnimplementedHandler) DeleteContact(ctx context.Context, params DeleteContactParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DeletePaymentMethod implements delete-payment-method operation.
 //
 // Refused when it is the only method on an account that has resources billed by the hour, as there
@@ -268,17 +287,6 @@ func (UnimplementedHandler) GetAccountBalance(ctx context.Context, params GetAcc
 	return r, ht.ErrNotImplemented
 }
 
-// GetAccountMeteredUsage implements get-account-metered-usage operation.
-//
-// Whether the account has anything billed by usage, and what that usage has cost over the last seven
-// days. Usage is paid from the balance, so this tells how much of the balance it is likely to need:
-// the balance divided by `average_daily_amount` is roughly how many days it lasts.
-//
-// GET /api/v1/billing-accounts/{accountId}/metered-usage
-func (UnimplementedHandler) GetAccountMeteredUsage(ctx context.Context, params GetAccountMeteredUsageParams) (r *MeteredUsage, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // GetBillingAccount implements get-billing-account operation.
 //
 // Get billing account.
@@ -294,6 +302,15 @@ func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBil
 //
 // GET /api/v1/cancellations/{cancellationId}
 func (UnimplementedHandler) GetCancellation(ctx context.Context, params GetCancellationParams) (r *Cancellation, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetContact implements get-contact operation.
+//
+// Get contact.
+//
+// GET /api/v1/contacts/{contactId}
+func (UnimplementedHandler) GetContact(ctx context.Context, params GetContactParams) (r *Contact, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -361,6 +378,26 @@ func (UnimplementedHandler) GetProduct(ctx context.Context, params GetProductPar
 //
 // GET /api/v1/assignments/{projectId}
 func (UnimplementedHandler) GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (r *ProjectAssignment, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetStatement implements get-statement operation.
+//
+// Get statement.
+//
+// GET /api/v1/statements/{statementId}
+func (UnimplementedHandler) GetStatement(ctx context.Context, params GetStatementParams) (r *Statement, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetStatementUsage implements get-statement-usage operation.
+//
+// Reads the consumption summary that is updated in the same transaction as usage is priced. Group by
+// project, product or meter and filter within the statement. Quantities are included only for meter
+// groups so different units are never combined.
+//
+// GET /api/v1/statements/{statementId}/usage-summary
+func (UnimplementedHandler) GetStatementUsage(ctx context.Context, params GetStatementUsageParams) (r *StatementSummary, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -440,6 +477,15 @@ func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params List
 //
 // GET /api/v1/cancellations
 func (UnimplementedHandler) ListCancellations(ctx context.Context, params ListCancellationsParams) (r *CancellationList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListContacts implements list-contacts operation.
+//
+// List contacts.
+//
+// GET /api/v1/billing-accounts/{accountId}/contacts
+func (UnimplementedHandler) ListContacts(ctx context.Context, params ListContactsParams) (r *ContactList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -639,13 +685,23 @@ func (UnimplementedHandler) ListRenewalPrices(ctx context.Context, params ListRe
 
 // ListSpend implements list-spend operation.
 //
-// Aggregates rated and invoiced usage charges in the specified time range for one billing account.
-// Includes usage not yet invoiced. Project filters use the account recorded on each charge, including
-// charges for projects later assigned to another account. The total covers all matching groups, not
-// just the returned page.
+// Sums priced usage for one billing account by UTC day, including usage not yet invoiced. Amounts are
+// before tax and before the tier adjustments made when a statement closes; minimum charges added at
+// closing are included. `from` and `to` must fall on UTC day boundaries and span at most 92 days.
+// Project filters use the account recorded on each charge, including charges for projects later
+// assigned to another account. The total covers all matching groups, not just the returned page.
 //
 // GET /api/v1/spend
 func (UnimplementedHandler) ListSpend(ctx context.Context, params ListSpendParams) (r *SpendRowList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListStatements implements list-statements operation.
+//
+// List statements.
+//
+// GET /api/v1/statements
+func (UnimplementedHandler) ListStatements(ctx context.Context, params ListStatementsParams) (r *StatementList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -681,9 +737,11 @@ func (UnimplementedHandler) ListTransactions(ctx context.Context, params ListTra
 
 // ListUsageCharges implements list-usage-charges operation.
 //
-// Each charge is added to the month's usage invoice as it is priced, summed into one line per
-// subscription, project, resource, meter and rate. Filter by `invoice_item_id` to see the charges
-// behind a line. Charges still waiting to be priced are included too.
+// Lists priced and pending usage charges. Requires `statement_id`, `invoice_item_id`, or both `from`
+// and `to` spanning at most 31 days; use the statement summary or spend report for longer periods.
+// Charges are summed into one line per subscription, project, resource, meter and rate when their
+// statement closes; filter by `invoice_item_id` to see the charges behind a line. Charges still
+// waiting to be priced are included too.
 //
 // Only charges recorded against your billing accounts are included, before filtering, counting and
 // pagination. Reassigning a project does not move previously recorded charges to its new account.
@@ -852,6 +910,15 @@ func (UnimplementedHandler) UnlinkProjectBillingAccount(ctx context.Context, par
 //
 // PATCH /api/v1/billing-accounts/{accountId}
 func (UnimplementedHandler) UpdateBillingAccount(ctx context.Context, req *BillingAccountUpdate, params UpdateBillingAccountParams) (r *BillingAccount, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateContact implements update-contact operation.
+//
+// Update contact.
+//
+// PATCH /api/v1/contacts/{contactId}
+func (UnimplementedHandler) UpdateContact(ctx context.Context, req *ContactUpdate, params UpdateContactParams) (r *Contact, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
