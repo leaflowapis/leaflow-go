@@ -164,6 +164,19 @@ func encodeCreateCancellationResponse(response CreateCancellationRes, w http.Res
 	}
 }
 
+func encodeCreateContactResponse(response *Contact, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCreatePaymentMethodSetupResponse(response *PaymentMethodSetupResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -234,6 +247,12 @@ func encodeCreateTopUpResponse(response *TopUp, w http.ResponseWriter, span trac
 	return nil
 }
 
+func encodeDeleteContactResponse(response *DeleteContactNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
 func encodeDeletePaymentMethodResponse(response *DeletePaymentMethodNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
@@ -247,19 +266,6 @@ func encodeDeleteSubscriptionResponse(response *DeleteSubscriptionNoContent, w h
 }
 
 func encodeGetAccountBalanceResponse(response *AccountBalance, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetAccountMeteredUsageResponse(response *MeteredUsage, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -286,6 +292,19 @@ func encodeGetBillingAccountResponse(response *BillingAccount, w http.ResponseWr
 }
 
 func encodeGetCancellationResponse(response *Cancellation, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetContactResponse(response *Contact, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -482,6 +501,32 @@ func encodeGetProjectAssignmentResponse(response *ProjectAssignment, w http.Resp
 	return nil
 }
 
+func encodeGetStatementResponse(response *Statement, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetStatementUsageResponse(response *StatementSummary, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeGetSubscriptionResponse(response *Subscription, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -561,6 +606,19 @@ func encodeListBillingAccountsResponse(response *BillingAccountList, w http.Resp
 }
 
 func encodeListCancellationsResponse(response *CancellationList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListContactsResponse(response *ContactList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1068,6 +1126,19 @@ func encodeListSpendResponse(response *SpendRowList, w http.ResponseWriter, span
 	return nil
 }
 
+func encodeListStatementsResponse(response *StatementList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListSubscriptionsResponse(response *SubscriptionList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -1249,6 +1320,19 @@ func encodeUnlinkProjectBillingAccountResponse(response *UnlinkProjectBillingAcc
 }
 
 func encodeUpdateBillingAccountResponse(response *BillingAccount, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUpdateContactResponse(response *Contact, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
