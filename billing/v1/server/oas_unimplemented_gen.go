@@ -737,11 +737,11 @@ func (UnimplementedHandler) ListTransactions(ctx context.Context, params ListTra
 
 // ListUsageCharges implements list-usage-charges operation.
 //
-// Lists priced and pending usage charges. Requires `statement_id`, `invoice_item_id`, or both `from`
+// Lists priced and unrated usage charges. Requires `statement_id`, `invoice_item_id`, or both `from`
 // and `to` spanning at most 31 days; use the statement summary or spend report for longer periods.
 // Charges are summed into one line per subscription, project, resource, meter and rate when their
-// statement closes; filter by `invoice_item_id` to see the charges behind a line. Charges still
-// waiting to be priced are included too.
+// statement closes; filter by `invoice_item_id` to see the charges behind a line. Unrated charges had
+// no applicable price when the usage occurred and are not billed.
 //
 // Only charges recorded against your billing accounts are included, before filtering, counting and
 // pagination. Reassigning a project does not move previously recorded charges to its new account.

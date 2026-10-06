@@ -44,7 +44,7 @@ func (s *AccessTokenAuth) SetRoles(val []string) {
 // Account balance, credits, and unpaid charges are reported separately.
 // Ref: #/components/schemas/AccountBalance
 type AccountBalance struct {
-	// Cash balance minus pending cash returns, unbilled usage estimates and issued unpaid amounts. Credit
+	// Balance minus pending balance returns, unbilled usage estimates and issued unpaid amounts. Credit
 	// grants are excluded; the result may be negative.
 	AvailableCredit Money `json:"available_credit"`
 	// Current estimate of rated usage that has not been invoiced. Final pricing and tax are fixed at
@@ -60,7 +60,7 @@ type AccountBalance struct {
 	// balance does not imply that due is zero.
 	Credits Money `json:"credits"`
 	// Currently valid credit whose use has applicable product, operation or eligibility conditions.
-	// Included in credits, separate from cash balance.
+	// Included in credits, separate from the balance.
 	RestrictedCredits Money `json:"restricted_credits"`
 	// Currently valid, unspent credit grouped by permitted use. Restrictions and validity dates determine
 	// which charges a group can cover, so these groups are not a general spendable balance and may differ
@@ -69,8 +69,8 @@ type AccountBalance struct {
 	// Amount still payable on issued invoices. Unbilled usage is reported separately; arrears depend on
 	// actual eligible funding and grace terms.
 	Due Money `json:"due"`
-	// Cash principal committed to pending top-up refunds or payouts. Already unavailable for spending;
-	// unbilled usage does not freeze cash.
+	// Balance committed to pending top-up refunds or payouts. Already unavailable for spending; unbilled
+	// usage does not freeze the balance.
 	PendingReturnsAmount Money `json:"pending_returns_amount"`
 }
 
@@ -14618,8 +14618,9 @@ type Statement struct {
 	// earlier closing.
 	Sequence int32           `json:"sequence"`
 	Status   StatementStatus `json:"status"`
-	// True while the statement is open. The estimate is the priced usage plus tax for the current invoice
-	// contact; tier adjustments over the whole period and minimum charges are determined at closing.
+	// True while the statement is open. The estimate applies tier pricing to the period's usage so far and
+	// adds tax for the current invoice contact. Minimum charges are added at closing, and a tier reduction
+	// larger than this statement's own charges is credited to earlier invoices of the period at closing.
 	Estimated bool `json:"estimated"`
 	// The current estimate while open, or the invoiced result when closed.
 	Amounts  StatementAmounts `json:"amounts"`
@@ -14830,7 +14831,7 @@ type StatementItem struct {
 	// Net usage quantity. Included only when grouping by meter.
 	Quantity         OptString `json:"quantity"`
 	DeductedQuantity OptString `json:"deducted_quantity"`
-	// Usage not yet priced; not a zero-cost charge.
+	// Usage that had no applicable price when it occurred. It is not charged, either now or later.
 	UnratedQuantity OptString `json:"unrated_quantity"`
 	// Priced amount before tax. Minimum charges added at closing are included; tier adjustments and tax
 	// appear only in the statement amounts.
@@ -16793,9 +16794,11 @@ type UsageCharge struct {
 	UnitAmount OptMoney `json:"unit_amount"`
 	Amount     OptMoney `json:"amount"`
 	Currency   string   `json:"currency"`
-	// The usage invoice this charge was added to. Absent while it waits to be priced.
+	// The usage invoice this charge was added to. Absent until its statement closes and always absent for
+	// unrated charges.
 	InvoiceID OptNilUUID `json:"invoice_id"`
-	// The usage invoice line this charge was summed into. Absent while it waits to be priced.
+	// The usage invoice line this charge was summed into. Absent until its statement closes and always
+	// absent for unrated charges.
 	InvoiceItemID OptNilUUID `json:"invoice_item_id"`
 	// The statement this charge was collected into.
 	StatementID OptUUID `json:"statement_id"`
