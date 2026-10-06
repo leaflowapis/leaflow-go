@@ -175,7 +175,8 @@ func (UnimplementedHandler) CreateCancellation(ctx context.Context, req *Cancell
 
 // CreateContact implements create-contact operation.
 //
-// Create contact.
+// Creates a contact profile for the billing account in the path. Creating a contact does not select it
+// for invoicing; set the account invoice_contact_id separately.
 //
 // POST /api/v1/billing-accounts/{accountId}/contacts
 func (UnimplementedHandler) CreateContact(ctx context.Context, req *ContactCreate, params CreateContactParams) (r *Contact, _ error) {
@@ -244,10 +245,11 @@ func (UnimplementedHandler) CreateTopUp(ctx context.Context, req *TopUpCreate) (
 
 // DeleteContact implements delete-contact operation.
 //
-// The selected invoice contact must be cleared or replaced before deletion. Issued invoice snapshots
-// are retained.
+// Deletes a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account. The selected invoice contact must be cleared or replaced before deletion. Issued
+// invoice snapshots are retained.
 //
-// DELETE /api/v1/contacts/{contactId}
+// DELETE /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 func (UnimplementedHandler) DeleteContact(ctx context.Context, params DeleteContactParams) error {
 	return ht.ErrNotImplemented
 }
@@ -280,7 +282,9 @@ func (UnimplementedHandler) DeleteSubscription(ctx context.Context, params Delet
 
 // GetAccountBalance implements get-account-balance operation.
 //
-// Get account balance.
+// Returns the owned account balance, applicable credit groups, unpaid invoice amounts, unbilled
+// estimates and pending returns separately. Returns 404 for a missing account and 403 for an account
+// owned by another user.
 //
 // GET /api/v1/billing-accounts/{accountId}/balance
 func (UnimplementedHandler) GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (r *AccountBalance, _ error) {
@@ -289,7 +293,8 @@ func (UnimplementedHandler) GetAccountBalance(ctx context.Context, params GetAcc
 
 // GetBillingAccount implements get-billing-account operation.
 //
-// Get billing account.
+// Returns an owned account settlement currency, lifecycle state and selected invoice contact. Returns
+// 404 if the account does not exist and 403 if it belongs to another user.
 //
 // GET /api/v1/billing-accounts/{accountId}
 func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (r *BillingAccount, _ error) {
@@ -298,7 +303,9 @@ func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBil
 
 // GetCancellation implements get-cancellation operation.
 //
-// Get a cancellation.
+// Returns a cancellation request for an authorized billing account with its schedule, expected
+// refundable amount and individual subscription outcomes. Read individual item states for
+// per-subscription outcomes, including partial success.
 //
 // GET /api/v1/cancellations/{cancellationId}
 func (UnimplementedHandler) GetCancellation(ctx context.Context, params GetCancellationParams) (r *Cancellation, _ error) {
@@ -307,9 +314,10 @@ func (UnimplementedHandler) GetCancellation(ctx context.Context, params GetCance
 
 // GetContact implements get-contact operation.
 //
-// Get contact.
+// Returns a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account.
 //
-// GET /api/v1/contacts/{contactId}
+// GET /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 func (UnimplementedHandler) GetContact(ctx context.Context, params GetContactParams) (r *Contact, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -325,7 +333,9 @@ func (UnimplementedHandler) GetCreditNote(ctx context.Context, params GetCreditN
 
 // GetInvoice implements get-invoice operation.
 //
-// Get invoice.
+// Returns an issued invoice for an owned billing account with its amounts, tax lines and payment
+// state. Returns 404 for a missing or unissued invoice and 403 when its account belongs to another
+// user.
 //
 // GET /api/v1/invoices/{invoiceId}
 func (UnimplementedHandler) GetInvoice(ctx context.Context, params GetInvoiceParams) (r *Invoice, _ error) {
@@ -334,7 +344,8 @@ func (UnimplementedHandler) GetInvoice(ctx context.Context, params GetInvoicePar
 
 // GetOrder implements get-order operation.
 //
-// Get order.
+// Returns an order charged to an owned billing account with its commercial state and invoice
+// reference. An unknown order returns 404; an order on another user account is forbidden.
 //
 // GET /api/v1/orders/{orderId}
 func (UnimplementedHandler) GetOrder(ctx context.Context, params GetOrderParams) (r *Order, _ error) {
@@ -383,7 +394,8 @@ func (UnimplementedHandler) GetProjectAssignment(ctx context.Context, params Get
 
 // GetStatement implements get-statement operation.
 //
-// Get statement.
+// Returns an owned-account consumption batch with its period, estimated or closed amounts and invoice
+// reference. Returns 404 for a missing batch and 403 when the billing account belongs to another user.
 //
 // GET /api/v1/statements/{statementId}
 func (UnimplementedHandler) GetStatement(ctx context.Context, params GetStatementParams) (r *Statement, _ error) {
@@ -463,7 +475,8 @@ func (UnimplementedHandler) ListAllowances(ctx context.Context, params ListAllow
 
 // ListBillingAccounts implements list-billing-accounts operation.
 //
-// List billing accounts.
+// Paginated billing accounts owned by the authenticated user. Accounts owned by other users are
+// excluded; the result is empty when the user owns none.
 //
 // GET /api/v1/billing-accounts
 func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (r *BillingAccountList, _ error) {
@@ -482,7 +495,8 @@ func (UnimplementedHandler) ListCancellations(ctx context.Context, params ListCa
 
 // ListContacts implements list-contacts operation.
 //
-// List contacts.
+// Paginated contact profiles belonging to the billing account in the path, including inactive
+// contacts. Returns 404 if the account does not exist.
 //
 // GET /api/v1/billing-accounts/{accountId}/contacts
 func (UnimplementedHandler) ListContacts(ctx context.Context, params ListContactsParams) (r *ContactList, _ error) {
@@ -544,7 +558,9 @@ func (UnimplementedHandler) ListEntitlements(ctx context.Context, params ListEnt
 
 // ListInvoiceItems implements list-invoice-items operation.
 //
-// List invoice items.
+// Paginated lines of an issued invoice belonging to an owned billing account, including their service
+// periods and project references. A missing or unissued invoice returns 404; another user account
+// returns 403.
 //
 // GET /api/v1/invoices/{invoiceId}/items
 func (UnimplementedHandler) ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (r *InvoiceItemList, _ error) {
@@ -553,7 +569,8 @@ func (UnimplementedHandler) ListInvoiceItems(ctx context.Context, params ListInv
 
 // ListInvoices implements list-invoices operation.
 //
-// List invoices.
+// Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
+// status and creation interval. Drafts are excluded; top-ups do not create invoices.
 //
 // GET /api/v1/invoices
 func (UnimplementedHandler) ListInvoices(ctx context.Context, params ListInvoicesParams) (r *InvoiceList, _ error) {
@@ -582,7 +599,9 @@ func (UnimplementedHandler) ListOrders(ctx context.Context, params ListOrdersPar
 
 // ListPaymentMethods implements list-payment-methods operation.
 //
-// List payment methods.
+// Paginated saved payment methods for owned billing accounts, optionally restricted to
+// billing_account_id. Removed methods are excluded; they do not disappear from historical payment
+// records.
 //
 // GET /api/v1/payment-methods
 func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (r *PaymentMethodList, _ error) {
@@ -603,7 +622,8 @@ func (UnimplementedHandler) ListPaymentOptions(ctx context.Context, params ListP
 
 // ListPlans implements list-plans operation.
 //
-// List catalog plans.
+// Paginated active plans for the required product_id, with their feature allocations. An unknown
+// product returns 404; If-None-Match can return 304 for an unchanged page.
 //
 // GET /api/v1/plans
 func (UnimplementedHandler) ListPlans(ctx context.Context, params ListPlansParams) (r ListPlansRes, _ error) {
@@ -637,7 +657,8 @@ func (UnimplementedHandler) ListPricesByPlan(ctx context.Context, params ListPri
 
 // ListProducts implements list-products operation.
 //
-// List catalog products.
+// Paginated registered catalog products with their service identities and descriptions. Supports If-
+// None-Match and returns 304 when the selected page has not changed.
 //
 // GET /api/v1/products
 func (UnimplementedHandler) ListProducts(ctx context.Context, params ListProductsParams) (r ListProductsRes, _ error) {
@@ -646,7 +667,9 @@ func (UnimplementedHandler) ListProducts(ctx context.Context, params ListProduct
 
 // ListProjectAssignments implements list-project-assignments operation.
 //
-// List project assignments.
+// Paginated current project assignments to accounts owned by the authenticated user. Filter by
+// billing_account_id or project_ids; historical financial records keep their original account
+// assignment.
 //
 // GET /api/v1/assignments
 func (UnimplementedHandler) ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (r *ProjectAssignmentList, _ error) {
@@ -698,7 +721,9 @@ func (UnimplementedHandler) ListSpend(ctx context.Context, params ListSpendParam
 
 // ListStatements implements list-statements operation.
 //
-// List statements.
+// Paginated consumption statement batches for owned billing accounts, filtered by billing_account_id,
+// open or closed state and period-start interval. A closed batch is not proof that the whole month has
+// finished.
 //
 // GET /api/v1/statements
 func (UnimplementedHandler) ListStatements(ctx context.Context, params ListStatementsParams) (r *StatementList, _ error) {
@@ -728,7 +753,8 @@ func (UnimplementedHandler) ListTopUps(ctx context.Context, params ListTopUpsPar
 
 // ListTransactions implements list-transactions operation.
 //
-// List transactions.
+// Paginated ledger entries for owned billing accounts, optionally filtered by billing_account_id and
+// creation interval. Each entry retains its amount, currency and any referenced credit grant.
 //
 // GET /api/v1/transactions
 func (UnimplementedHandler) ListTransactions(ctx context.Context, params ListTransactionsParams) (r *TransactionList, _ error) {
@@ -857,7 +883,8 @@ func (UnimplementedHandler) SetAutoRenew(ctx context.Context, req *AutoRenewSet,
 
 // SetDefaultPaymentMethod implements set-default-payment-method operation.
 //
-// Set default payment method.
+// Selects an active saved payment method as the default for its owned billing account and returns it.
+// Expired or removed methods cannot be selected; selecting the current default is idempotent.
 //
 // PUT /api/v1/payment-methods/{paymentMethodId}/default
 func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (r *PaymentMethod, _ error) {
@@ -914,9 +941,10 @@ func (UnimplementedHandler) UpdateBillingAccount(ctx context.Context, req *Billi
 
 // UpdateContact implements update-contact operation.
 //
-// Update contact.
+// Updates a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account.
 //
-// PATCH /api/v1/contacts/{contactId}
+// PATCH /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 func (UnimplementedHandler) UpdateContact(ctx context.Context, req *ContactUpdate, params UpdateContactParams) (r *Contact, _ error) {
 	return r, ht.ErrNotImplemented
 }

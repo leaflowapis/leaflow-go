@@ -408,10 +408,18 @@ func decodeCreateRenewalOrderParams(args [1]string, argsEscaped bool, r *http.Re
 
 // DeleteContactParams is parameters of delete-contact operation.
 type DeleteContactParams struct {
+	AccountId int64
 	ContactId uuid.UUID
 }
 
 func unpackDeleteContactParams(packed middleware.Parameters) (params DeleteContactParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "contactId",
@@ -422,12 +430,57 @@ func unpackDeleteContactParams(packed middleware.Parameters) (params DeleteConta
 	return params
 }
 
-func decodeDeleteContactParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteContactParams, _ error) {
-	// Decode path: contactId.
+func decodeDeleteContactParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteContactParams, _ error) {
+	// Decode path: accountId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: contactId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -798,10 +851,18 @@ func decodeGetCancellationParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // GetContactParams is parameters of get-contact operation.
 type GetContactParams struct {
+	AccountId int64
 	ContactId uuid.UUID
 }
 
 func unpackGetContactParams(packed middleware.Parameters) (params GetContactParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "contactId",
@@ -812,12 +873,57 @@ func unpackGetContactParams(packed middleware.Parameters) (params GetContactPara
 	return params
 }
 
-func decodeGetContactParams(args [1]string, argsEscaped bool, r *http.Request) (params GetContactParams, _ error) {
-	// Decode path: contactId.
+func decodeGetContactParams(args [2]string, argsEscaped bool, r *http.Request) (params GetContactParams, _ error) {
+	// Decode path: accountId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: contactId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -13155,10 +13261,18 @@ func decodeUpdateBillingAccountParams(args [1]string, argsEscaped bool, r *http.
 
 // UpdateContactParams is parameters of update-contact operation.
 type UpdateContactParams struct {
+	AccountId int64
 	ContactId uuid.UUID
 }
 
 func unpackUpdateContactParams(packed middleware.Parameters) (params UpdateContactParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "contactId",
@@ -13169,12 +13283,57 @@ func unpackUpdateContactParams(packed middleware.Parameters) (params UpdateConta
 	return params
 }
 
-func decodeUpdateContactParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateContactParams, _ error) {
-	// Decode path: contactId.
+func decodeUpdateContactParams(args [2]string, argsEscaped bool, r *http.Request) (params UpdateContactParams, _ error) {
+	// Decode path: accountId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: contactId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}

@@ -173,7 +173,8 @@ type Invoker interface {
 	CreateCancellation(ctx context.Context, request *CancellationCreate) (CreateCancellationRes, error)
 	// CreateContact invokes create-contact operation.
 	//
-	// Create contact.
+	// Creates a contact profile for the billing account in the path. Creating a contact does not select it
+	// for invoicing; set the account invoice_contact_id separately.
 	//
 	// POST /api/v1/billing-accounts/{accountId}/contacts
 	CreateContact(ctx context.Context, request *ContactCreate, params CreateContactParams) (*Contact, error)
@@ -227,10 +228,11 @@ type Invoker interface {
 	CreateTopUp(ctx context.Context, request *TopUpCreate) (*TopUp, error)
 	// DeleteContact invokes delete-contact operation.
 	//
-	// The selected invoice contact must be cleared or replaced before deletion. Issued invoice snapshots
-	// are retained.
+	// Deletes a contact belonging to this billing account. Returns 404 if the contact does not exist in
+	// this account. The selected invoice contact must be cleared or replaced before deletion. Issued
+	// invoice snapshots are retained.
 	//
-	// DELETE /api/v1/contacts/{contactId}
+	// DELETE /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 	DeleteContact(ctx context.Context, params DeleteContactParams) error
 	// DeletePaymentMethod invokes delete-payment-method operation.
 	//
@@ -254,27 +256,33 @@ type Invoker interface {
 	DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error
 	// GetAccountBalance invokes get-account-balance operation.
 	//
-	// Get account balance.
+	// Returns the owned account balance, applicable credit groups, unpaid invoice amounts, unbilled
+	// estimates and pending returns separately. Returns 404 for a missing account and 403 for an account
+	// owned by another user.
 	//
 	// GET /api/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
 	// GetBillingAccount invokes get-billing-account operation.
 	//
-	// Get billing account.
+	// Returns an owned account settlement currency, lifecycle state and selected invoice contact. Returns
+	// 404 if the account does not exist and 403 if it belongs to another user.
 	//
 	// GET /api/v1/billing-accounts/{accountId}
 	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
 	// GetCancellation invokes get-cancellation operation.
 	//
-	// Get a cancellation.
+	// Returns a cancellation request for an authorized billing account with its schedule, expected
+	// refundable amount and individual subscription outcomes. Read individual item states for
+	// per-subscription outcomes, including partial success.
 	//
 	// GET /api/v1/cancellations/{cancellationId}
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
 	// GetContact invokes get-contact operation.
 	//
-	// Get contact.
+	// Returns a contact belonging to this billing account. Returns 404 if the contact does not exist in
+	// this account.
 	//
-	// GET /api/v1/contacts/{contactId}
+	// GET /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 	GetContact(ctx context.Context, params GetContactParams) (*Contact, error)
 	// GetCreditNote invokes get-credit-note operation.
 	//
@@ -284,13 +292,16 @@ type Invoker interface {
 	GetCreditNote(ctx context.Context, params GetCreditNoteParams) (*CreditNote, error)
 	// GetInvoice invokes get-invoice operation.
 	//
-	// Get invoice.
+	// Returns an issued invoice for an owned billing account with its amounts, tax lines and payment
+	// state. Returns 404 for a missing or unissued invoice and 403 when its account belongs to another
+	// user.
 	//
 	// GET /api/v1/invoices/{invoiceId}
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
 	// GetOrder invokes get-order operation.
 	//
-	// Get order.
+	// Returns an order charged to an owned billing account with its commercial state and invoice
+	// reference. An unknown order returns 404; an order on another user account is forbidden.
 	//
 	// GET /api/v1/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
@@ -324,7 +335,8 @@ type Invoker interface {
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
 	// GetStatement invokes get-statement operation.
 	//
-	// Get statement.
+	// Returns an owned-account consumption batch with its period, estimated or closed amounts and invoice
+	// reference. Returns 404 for a missing batch and 403 when the billing account belongs to another user.
 	//
 	// GET /api/v1/statements/{statementId}
 	GetStatement(ctx context.Context, params GetStatementParams) (*Statement, error)
@@ -383,7 +395,8 @@ type Invoker interface {
 	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
 	// ListBillingAccounts invokes list-billing-accounts operation.
 	//
-	// List billing accounts.
+	// Paginated billing accounts owned by the authenticated user. Accounts owned by other users are
+	// excluded; the result is empty when the user owns none.
 	//
 	// GET /api/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
@@ -396,7 +409,8 @@ type Invoker interface {
 	ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error)
 	// ListContacts invokes list-contacts operation.
 	//
-	// List contacts.
+	// Paginated contact profiles belonging to the billing account in the path, including inactive
+	// contacts. Returns 404 if the account does not exist.
 	//
 	// GET /api/v1/billing-accounts/{accountId}/contacts
 	ListContacts(ctx context.Context, params ListContactsParams) (*ContactList, error)
@@ -440,13 +454,16 @@ type Invoker interface {
 	ListEntitlements(ctx context.Context, params ListEntitlementsParams) (*EntitlementList, error)
 	// ListInvoiceItems invokes list-invoice-items operation.
 	//
-	// List invoice items.
+	// Paginated lines of an issued invoice belonging to an owned billing account, including their service
+	// periods and project references. A missing or unissued invoice returns 404; another user account
+	// returns 403.
 	//
 	// GET /api/v1/invoices/{invoiceId}/items
 	ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error)
 	// ListInvoices invokes list-invoices operation.
 	//
-	// List invoices.
+	// Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
+	// status and creation interval. Drafts are excluded; top-ups do not create invoices.
 	//
 	// GET /api/v1/invoices
 	ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error)
@@ -466,7 +483,9 @@ type Invoker interface {
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
 	// ListPaymentMethods invokes list-payment-methods operation.
 	//
-	// List payment methods.
+	// Paginated saved payment methods for owned billing accounts, optionally restricted to
+	// billing_account_id. Removed methods are excluded; they do not disappear from historical payment
+	// records.
 	//
 	// GET /api/v1/payment-methods
 	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
@@ -481,7 +500,8 @@ type Invoker interface {
 	ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error)
 	// ListPlans invokes list-plans operation.
 	//
-	// List catalog plans.
+	// Paginated active plans for the required product_id, with their feature allocations. An unknown
+	// product returns 404; If-None-Match can return 304 for an unchanged page.
 	//
 	// GET /api/v1/plans
 	ListPlans(ctx context.Context, params ListPlansParams) (ListPlansRes, error)
@@ -506,13 +526,16 @@ type Invoker interface {
 	ListPricesByPlan(ctx context.Context, params ListPricesByPlanParams) (ListPricesByPlanRes, error)
 	// ListProducts invokes list-products operation.
 	//
-	// List catalog products.
+	// Paginated registered catalog products with their service identities and descriptions. Supports If-
+	// None-Match and returns 304 when the selected page has not changed.
 	//
 	// GET /api/v1/products
 	ListProducts(ctx context.Context, params ListProductsParams) (ListProductsRes, error)
 	// ListProjectAssignments invokes list-project-assignments operation.
 	//
-	// List project assignments.
+	// Paginated current project assignments to accounts owned by the authenticated user. Filter by
+	// billing_account_id or project_ids; historical financial records keep their original account
+	// assignment.
 	//
 	// GET /api/v1/assignments
 	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
@@ -549,7 +572,9 @@ type Invoker interface {
 	ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error)
 	// ListStatements invokes list-statements operation.
 	//
-	// List statements.
+	// Paginated consumption statement batches for owned billing accounts, filtered by billing_account_id,
+	// open or closed state and period-start interval. A closed batch is not proof that the whole month has
+	// finished.
 	//
 	// GET /api/v1/statements
 	ListStatements(ctx context.Context, params ListStatementsParams) (*StatementList, error)
@@ -570,7 +595,8 @@ type Invoker interface {
 	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
 	// ListTransactions invokes list-transactions operation.
 	//
-	// List transactions.
+	// Paginated ledger entries for owned billing accounts, optionally filtered by billing_account_id and
+	// creation interval. Each entry retains its amount, currency and any referenced credit grant.
 	//
 	// GET /api/v1/transactions
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
@@ -675,7 +701,8 @@ type Invoker interface {
 	SetAutoRenew(ctx context.Context, request *AutoRenewSet, params SetAutoRenewParams) (*Subscription, error)
 	// SetDefaultPaymentMethod invokes set-default-payment-method operation.
 	//
-	// Set default payment method.
+	// Selects an active saved payment method as the default for its owned billing account and returns it.
+	// Expired or removed methods cannot be selected; selecting the current default is idempotent.
 	//
 	// PUT /api/v1/payment-methods/{paymentMethodId}/default
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
@@ -720,9 +747,10 @@ type Invoker interface {
 	UpdateBillingAccount(ctx context.Context, request *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
 	// UpdateContact invokes update-contact operation.
 	//
-	// Update contact.
+	// Updates a contact belonging to this billing account. Returns 404 if the contact does not exist in
+	// this account.
 	//
-	// PATCH /api/v1/contacts/{contactId}
+	// PATCH /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 	UpdateContact(ctx context.Context, request *ContactUpdate, params UpdateContactParams) (*Contact, error)
 	// WithdrawCancellation invokes withdraw-cancellation operation.
 	//
@@ -1705,7 +1733,8 @@ func (c *Client) sendCreateCancellation(ctx context.Context, request *Cancellati
 
 // CreateContact invokes create-contact operation.
 //
-// Create contact.
+// Creates a contact profile for the billing account in the path. Creating a contact does not select it
+// for invoicing; set the account invoice_contact_id separately.
 //
 // POST /api/v1/billing-accounts/{accountId}/contacts
 func (c *Client) CreateContact(ctx context.Context, request *ContactCreate, params CreateContactParams) (*Contact, error) {
@@ -2392,10 +2421,11 @@ func (c *Client) sendCreateTopUp(ctx context.Context, request *TopUpCreate) (res
 
 // DeleteContact invokes delete-contact operation.
 //
-// The selected invoice contact must be cleared or replaced before deletion. Issued invoice snapshots
-// are retained.
+// Deletes a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account. The selected invoice contact must be cleared or replaced before deletion. Issued
+// invoice snapshots are retained.
 //
-// DELETE /api/v1/contacts/{contactId}
+// DELETE /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 func (c *Client) DeleteContact(ctx context.Context, params DeleteContactParams) error {
 	_, err := c.sendDeleteContact(ctx, params)
 	return err
@@ -2405,7 +2435,7 @@ func (c *Client) sendDeleteContact(ctx context.Context, params DeleteContactPara
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-contact"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/contacts/{contactId}"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/contacts/{contactId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2438,8 +2468,27 @@ func (c *Client) sendDeleteContact(ctx context.Context, params DeleteContactPara
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/contacts/"
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/contacts/"
 	{
 		// Encode "contactId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -2456,7 +2505,7 @@ func (c *Client) sendDeleteContact(ctx context.Context, params DeleteContactPara
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -2794,7 +2843,9 @@ func (c *Client) sendDeleteSubscription(ctx context.Context, params DeleteSubscr
 
 // GetAccountBalance invokes get-account-balance operation.
 //
-// Get account balance.
+// Returns the owned account balance, applicable credit groups, unpaid invoice amounts, unbilled
+// estimates and pending returns separately. Returns 404 for a missing account and 403 for an account
+// owned by another user.
 //
 // GET /api/v1/billing-accounts/{accountId}/balance
 func (c *Client) GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error) {
@@ -2926,7 +2977,8 @@ func (c *Client) sendGetAccountBalance(ctx context.Context, params GetAccountBal
 
 // GetBillingAccount invokes get-billing-account operation.
 //
-// Get billing account.
+// Returns an owned account settlement currency, lifecycle state and selected invoice contact. Returns
+// 404 if the account does not exist and 403 if it belongs to another user.
 //
 // GET /api/v1/billing-accounts/{accountId}
 func (c *Client) GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error) {
@@ -3057,7 +3109,9 @@ func (c *Client) sendGetBillingAccount(ctx context.Context, params GetBillingAcc
 
 // GetCancellation invokes get-cancellation operation.
 //
-// Get a cancellation.
+// Returns a cancellation request for an authorized billing account with its schedule, expected
+// refundable amount and individual subscription outcomes. Read individual item states for
+// per-subscription outcomes, including partial success.
 //
 // GET /api/v1/cancellations/{cancellationId}
 func (c *Client) GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error) {
@@ -3188,9 +3242,10 @@ func (c *Client) sendGetCancellation(ctx context.Context, params GetCancellation
 
 // GetContact invokes get-contact operation.
 //
-// Get contact.
+// Returns a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account.
 //
-// GET /api/v1/contacts/{contactId}
+// GET /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 func (c *Client) GetContact(ctx context.Context, params GetContactParams) (*Contact, error) {
 	res, err := c.sendGetContact(ctx, params)
 	return res, err
@@ -3200,7 +3255,7 @@ func (c *Client) sendGetContact(ctx context.Context, params GetContactParams) (r
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-contact"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/contacts/{contactId}"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/contacts/{contactId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3233,8 +3288,27 @@ func (c *Client) sendGetContact(ctx context.Context, params GetContactParams) (r
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/contacts/"
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/contacts/"
 	{
 		// Encode "contactId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -3251,7 +3325,7 @@ func (c *Client) sendGetContact(ctx context.Context, params GetContactParams) (r
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -3450,7 +3524,9 @@ func (c *Client) sendGetCreditNote(ctx context.Context, params GetCreditNotePara
 
 // GetInvoice invokes get-invoice operation.
 //
-// Get invoice.
+// Returns an issued invoice for an owned billing account with its amounts, tax lines and payment
+// state. Returns 404 for a missing or unissued invoice and 403 when its account belongs to another
+// user.
 //
 // GET /api/v1/invoices/{invoiceId}
 func (c *Client) GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error) {
@@ -3581,7 +3657,8 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 
 // GetOrder invokes get-order operation.
 //
-// Get order.
+// Returns an order charged to an owned billing account with its commercial state and invoice
+// reference. An unknown order returns 404; an order on another user account is forbidden.
 //
 // GET /api/v1/orders/{orderId}
 func (c *Client) GetOrder(ctx context.Context, params GetOrderParams) (*Order, error) {
@@ -4195,7 +4272,8 @@ func (c *Client) sendGetProjectAssignment(ctx context.Context, params GetProject
 
 // GetStatement invokes get-statement operation.
 //
-// Get statement.
+// Returns an owned-account consumption batch with its period, estimated or closed amounts and invoice
+// reference. Returns 404 for a missing batch and 403 when the billing account belongs to another user.
 //
 // GET /api/v1/statements/{statementId}
 func (c *Client) GetStatement(ctx context.Context, params GetStatementParams) (*Statement, error) {
@@ -5533,7 +5611,8 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 
 // ListBillingAccounts invokes list-billing-accounts operation.
 //
-// List billing accounts.
+// Paginated billing accounts owned by the authenticated user. Accounts owned by other users are
+// excluded; the result is empty when the user owns none.
 //
 // GET /api/v1/billing-accounts
 func (c *Client) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error) {
@@ -5913,7 +5992,8 @@ func (c *Client) sendListCancellations(ctx context.Context, params ListCancellat
 
 // ListContacts invokes list-contacts operation.
 //
-// List contacts.
+// Paginated contact profiles belonging to the billing account in the path, including inactive
+// contacts. Returns 404 if the account does not exist.
 //
 // GET /api/v1/billing-accounts/{accountId}/contacts
 func (c *Client) ListContacts(ctx context.Context, params ListContactsParams) (*ContactList, error) {
@@ -6996,7 +7076,9 @@ func (c *Client) sendListEntitlements(ctx context.Context, params ListEntitlemen
 
 // ListInvoiceItems invokes list-invoice-items operation.
 //
-// List invoice items.
+// Paginated lines of an issued invoice belonging to an owned billing account, including their service
+// periods and project references. A missing or unissued invoice returns 404; another user account
+// returns 403.
 //
 // GET /api/v1/invoices/{invoiceId}/items
 func (c *Client) ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error) {
@@ -7166,7 +7248,8 @@ func (c *Client) sendListInvoiceItems(ctx context.Context, params ListInvoiceIte
 
 // ListInvoices invokes list-invoices operation.
 //
-// List invoices.
+// Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
+// status and creation interval. Drafts are excluded; top-ups do not create invoices.
 //
 // GET /api/v1/invoices
 func (c *Client) ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error) {
@@ -7802,7 +7885,9 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 
 // ListPaymentMethods invokes list-payment-methods operation.
 //
-// List payment methods.
+// Paginated saved payment methods for owned billing accounts, optionally restricted to
+// billing_account_id. Removed methods are excluded; they do not disappear from historical payment
+// records.
 //
 // GET /api/v1/payment-methods
 func (c *Client) ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error) {
@@ -8143,7 +8228,8 @@ func (c *Client) sendListPaymentOptions(ctx context.Context, params ListPaymentO
 
 // ListPlans invokes list-plans operation.
 //
-// List catalog plans.
+// Paginated active plans for the required product_id, with their feature allocations. An unknown
+// product returns 404; If-None-Match can return 304 for an unchanged page.
 //
 // GET /api/v1/plans
 func (c *Client) ListPlans(ctx context.Context, params ListPlansParams) (ListPlansRes, error) {
@@ -8659,7 +8745,8 @@ func (c *Client) sendListPricesByPlan(ctx context.Context, params ListPricesByPl
 
 // ListProducts invokes list-products operation.
 //
-// List catalog products.
+// Paginated registered catalog products with their service identities and descriptions. Supports If-
+// None-Match and returns 304 when the selected page has not changed.
 //
 // GET /api/v1/products
 func (c *Client) ListProducts(ctx context.Context, params ListProductsParams) (ListProductsRes, error) {
@@ -8794,7 +8881,9 @@ func (c *Client) sendListProducts(ctx context.Context, params ListProductsParams
 
 // ListProjectAssignments invokes list-project-assignments operation.
 //
-// List project assignments.
+// Paginated current project assignments to accounts owned by the authenticated user. Filter by
+// billing_account_id or project_ids; historical financial records keep their original account
+// assignment.
 //
 // GET /api/v1/assignments
 func (c *Client) ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error) {
@@ -9811,7 +9900,9 @@ func (c *Client) sendListSpend(ctx context.Context, params ListSpendParams) (res
 
 // ListStatements invokes list-statements operation.
 //
-// List statements.
+// Paginated consumption statement batches for owned billing accounts, filtered by billing_account_id,
+// open or closed state and period-start interval. A closed batch is not proof that the whole month has
+// finished.
 //
 // GET /api/v1/statements
 func (c *Client) ListStatements(ctx context.Context, params ListStatementsParams) (*StatementList, error) {
@@ -10412,7 +10503,8 @@ func (c *Client) sendListTopUps(ctx context.Context, params ListTopUpsParams) (r
 
 // ListTransactions invokes list-transactions operation.
 //
-// List transactions.
+// Paginated ledger entries for owned billing accounts, optionally filtered by billing_account_id and
+// creation interval. Each entry retains its amount, currency and any referenced credit grant.
 //
 // GET /api/v1/transactions
 func (c *Client) ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error) {
@@ -11837,7 +11929,8 @@ func (c *Client) sendSetAutoRenew(ctx context.Context, request *AutoRenewSet, pa
 
 // SetDefaultPaymentMethod invokes set-default-payment-method operation.
 //
-// Set default payment method.
+// Selects an active saved payment method as the default for its owned billing account and returns it.
+// Expired or removed methods cannot be selected; selecting the current default is idempotent.
 //
 // PUT /api/v1/payment-methods/{paymentMethodId}/default
 func (c *Client) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error) {
@@ -12398,9 +12491,10 @@ func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *BillingA
 
 // UpdateContact invokes update-contact operation.
 //
-// Update contact.
+// Updates a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account.
 //
-// PATCH /api/v1/contacts/{contactId}
+// PATCH /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 func (c *Client) UpdateContact(ctx context.Context, request *ContactUpdate, params UpdateContactParams) (*Contact, error) {
 	res, err := c.sendUpdateContact(ctx, request, params)
 	return res, err
@@ -12419,7 +12513,7 @@ func (c *Client) sendUpdateContact(ctx context.Context, request *ContactUpdate, 
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-contact"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/contacts/{contactId}"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/contacts/{contactId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -12452,8 +12546,27 @@ func (c *Client) sendUpdateContact(ctx context.Context, request *ContactUpdate, 
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/contacts/"
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/contacts/"
 	{
 		// Encode "contactId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -12470,7 +12583,7 @@ func (c *Client) sendUpdateContact(ctx context.Context, request *ContactUpdate, 
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 

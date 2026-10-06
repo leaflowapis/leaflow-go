@@ -1386,7 +1386,8 @@ func (s *Server) handleCreateCancellationRequest(args [0]string, argsEscaped boo
 
 // handleCreateContactRequest handles create-contact operation.
 //
-// Create contact.
+// Creates a contact profile for the billing account in the path. Creating a contact does not select it
+// for invoicing; set the account invoice_contact_id separately.
 //
 // POST /api/v1/billing-accounts/{accountId}/contacts
 func (s *Server) handleCreateContactRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2440,17 +2441,18 @@ func (s *Server) handleCreateTopUpRequest(args [0]string, argsEscaped bool, w ht
 
 // handleDeleteContactRequest handles delete-contact operation.
 //
-// The selected invoice contact must be cleared or replaced before deletion. Issued invoice snapshots
-// are retained.
+// Deletes a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account. The selected invoice contact must be cleared or replaced before deletion. Issued
+// invoice snapshots are retained.
 //
-// DELETE /api/v1/contacts/{contactId}
-func (s *Server) handleDeleteContactRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/billing-accounts/{accountId}/contacts/{contactId}
+func (s *Server) handleDeleteContactRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-contact"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/contacts/{contactId}"),
+		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}/contacts/{contactId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -2584,6 +2586,10 @@ func (s *Server) handleDeleteContactRequest(args [1]string, argsEscaped bool, w 
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "accountId",
+					In:   "path",
+				}: params.AccountId,
 				{
 					Name: "contactId",
 					In:   "path",
@@ -3049,7 +3055,9 @@ func (s *Server) handleDeleteSubscriptionRequest(args [1]string, argsEscaped boo
 
 // handleGetAccountBalanceRequest handles get-account-balance operation.
 //
-// Get account balance.
+// Returns the owned account balance, applicable credit groups, unpaid invoice amounts, unbilled
+// estimates and pending returns separately. Returns 404 for a missing account and 403 for an account
+// owned by another user.
 //
 // GET /api/v1/billing-accounts/{accountId}/balance
 func (s *Server) handleGetAccountBalanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3249,7 +3257,8 @@ func (s *Server) handleGetAccountBalanceRequest(args [1]string, argsEscaped bool
 
 // handleGetBillingAccountRequest handles get-billing-account operation.
 //
-// Get billing account.
+// Returns an owned account settlement currency, lifecycle state and selected invoice contact. Returns
+// 404 if the account does not exist and 403 if it belongs to another user.
 //
 // GET /api/v1/billing-accounts/{accountId}
 func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3449,7 +3458,9 @@ func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool
 
 // handleGetCancellationRequest handles get-cancellation operation.
 //
-// Get a cancellation.
+// Returns a cancellation request for an authorized billing account with its schedule, expected
+// refundable amount and individual subscription outcomes. Read individual item states for
+// per-subscription outcomes, including partial success.
 //
 // GET /api/v1/cancellations/{cancellationId}
 func (s *Server) handleGetCancellationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3649,16 +3660,17 @@ func (s *Server) handleGetCancellationRequest(args [1]string, argsEscaped bool, 
 
 // handleGetContactRequest handles get-contact operation.
 //
-// Get contact.
+// Returns a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account.
 //
-// GET /api/v1/contacts/{contactId}
-func (s *Server) handleGetContactRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/billing-accounts/{accountId}/contacts/{contactId}
+func (s *Server) handleGetContactRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-contact"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/contacts/{contactId}"),
+		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}/contacts/{contactId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3792,6 +3804,10 @@ func (s *Server) handleGetContactRequest(args [1]string, argsEscaped bool, w htt
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "accountId",
+					In:   "path",
+				}: params.AccountId,
 				{
 					Name: "contactId",
 					In:   "path",
@@ -4049,7 +4065,9 @@ func (s *Server) handleGetCreditNoteRequest(args [1]string, argsEscaped bool, w 
 
 // handleGetInvoiceRequest handles get-invoice operation.
 //
-// Get invoice.
+// Returns an issued invoice for an owned billing account with its amounts, tax lines and payment
+// state. Returns 404 for a missing or unissued invoice and 403 when its account belongs to another
+// user.
 //
 // GET /api/v1/invoices/{invoiceId}
 func (s *Server) handleGetInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4249,7 +4267,8 @@ func (s *Server) handleGetInvoiceRequest(args [1]string, argsEscaped bool, w htt
 
 // handleGetOrderRequest handles get-order operation.
 //
-// Get order.
+// Returns an order charged to an owned billing account with its commercial state and invoice
+// reference. An unknown order returns 404; an order on another user account is forbidden.
 //
 // GET /api/v1/orders/{orderId}
 func (s *Server) handleGetOrderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5127,7 +5146,8 @@ func (s *Server) handleGetProjectAssignmentRequest(args [1]string, argsEscaped b
 
 // handleGetStatementRequest handles get-statement operation.
 //
-// Get statement.
+// Returns an owned-account consumption batch with its period, estimated or closed amounts and invoice
+// reference. Returns 404 for a missing batch and 403 when the billing account belongs to another user.
 //
 // GET /api/v1/statements/{statementId}
 func (s *Server) handleGetStatementRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6628,7 +6648,8 @@ func (s *Server) handleListAllowancesRequest(args [0]string, argsEscaped bool, w
 
 // handleListBillingAccountsRequest handles list-billing-accounts operation.
 //
-// List billing accounts.
+// Paginated billing accounts owned by the authenticated user. Accounts owned by other users are
+// excluded; the result is empty when the user owns none.
 //
 // GET /api/v1/billing-accounts
 func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7053,7 +7074,8 @@ func (s *Server) handleListCancellationsRequest(args [0]string, argsEscaped bool
 
 // handleListContactsRequest handles list-contacts operation.
 //
-// List contacts.
+// Paginated contact profiles belonging to the billing account in the path, including inactive
+// contacts. Returns 404 if the account does not exist.
 //
 // GET /api/v1/billing-accounts/{accountId}/contacts
 func (s *Server) handleListContactsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8321,7 +8343,9 @@ func (s *Server) handleListEntitlementsRequest(args [0]string, argsEscaped bool,
 
 // handleListInvoiceItemsRequest handles list-invoice-items operation.
 //
-// List invoice items.
+// Paginated lines of an issued invoice belonging to an owned billing account, including their service
+// periods and project references. A missing or unissued invoice returns 404; another user account
+// returns 403.
 //
 // GET /api/v1/invoices/{invoiceId}/items
 func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8529,7 +8553,8 @@ func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool,
 
 // handleListInvoicesRequest handles list-invoices operation.
 //
-// List invoices.
+// Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
+// status and creation interval. Drafts are excluded; top-ups do not create invoices.
 //
 // GET /api/v1/invoices
 func (s *Server) handleListInvoicesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9183,7 +9208,9 @@ func (s *Server) handleListOrdersRequest(args [0]string, argsEscaped bool, w htt
 
 // handleListPaymentMethodsRequest handles list-payment-methods operation.
 //
-// List payment methods.
+// Paginated saved payment methods for owned billing accounts, optionally restricted to
+// billing_account_id. Removed methods are excluded; they do not disappear from historical payment
+// records.
 //
 // GET /api/v1/payment-methods
 func (s *Server) handleListPaymentMethodsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9602,7 +9629,8 @@ func (s *Server) handleListPaymentOptionsRequest(args [1]string, argsEscaped boo
 
 // handleListPlansRequest handles list-plans operation.
 //
-// List catalog plans.
+// Paginated active plans for the required product_id, with their feature allocations. An unknown
+// product returns 404; If-None-Match can return 304 for an unchanged page.
 //
 // GET /api/v1/plans
 func (s *Server) handleListPlansRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -10119,7 +10147,8 @@ func (s *Server) handleListPricesByPlanRequest(args [1]string, argsEscaped bool,
 
 // handleListProductsRequest handles list-products operation.
 //
-// List catalog products.
+// Paginated registered catalog products with their service identities and descriptions. Supports If-
+// None-Match and returns 304 when the selected page has not changed.
 //
 // GET /api/v1/products
 func (s *Server) handleListProductsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -10281,7 +10310,9 @@ func (s *Server) handleListProductsRequest(args [0]string, argsEscaped bool, w h
 
 // handleListProjectAssignmentsRequest handles list-project-assignments operation.
 //
-// List project assignments.
+// Paginated current project assignments to accounts owned by the authenticated user. Filter by
+// billing_account_id or project_ids; historical financial records keep their original account
+// assignment.
 //
 // GET /api/v1/assignments
 func (s *Server) handleListProjectAssignmentsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11326,7 +11357,9 @@ func (s *Server) handleListSpendRequest(args [0]string, argsEscaped bool, w http
 
 // handleListStatementsRequest handles list-statements operation.
 //
-// List statements.
+// Paginated consumption statement batches for owned billing accounts, filtered by billing_account_id,
+// open or closed state and period-start interval. A closed batch is not proof that the whole month has
+// finished.
 //
 // GET /api/v1/statements
 func (s *Server) handleListStatementsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11973,7 +12006,8 @@ func (s *Server) handleListTopUpsRequest(args [0]string, argsEscaped bool, w htt
 
 // handleListTransactionsRequest handles list-transactions operation.
 //
-// List transactions.
+// Paginated ledger entries for owned billing accounts, optionally filtered by billing_account_id and
+// creation interval. Each entry retains its amount, currency and any referenced credit grant.
 //
 // GET /api/v1/transactions
 func (s *Server) handleListTransactionsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13739,7 +13773,8 @@ func (s *Server) handleSetAutoRenewRequest(args [1]string, argsEscaped bool, w h
 
 // handleSetDefaultPaymentMethodRequest handles set-default-payment-method operation.
 //
-// Set default payment method.
+// Selects an active saved payment method as the default for its owned billing account and returns it.
+// Expired or removed methods cannot be selected; selecting the current default is idempotent.
 //
 // PUT /api/v1/payment-methods/{paymentMethodId}/default
 func (s *Server) handleSetDefaultPaymentMethodRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14590,16 +14625,17 @@ func (s *Server) handleUpdateBillingAccountRequest(args [1]string, argsEscaped b
 
 // handleUpdateContactRequest handles update-contact operation.
 //
-// Update contact.
+// Updates a contact belonging to this billing account. Returns 404 if the contact does not exist in
+// this account.
 //
-// PATCH /api/v1/contacts/{contactId}
-func (s *Server) handleUpdateContactRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PATCH /api/v1/billing-accounts/{accountId}/contacts/{contactId}
+func (s *Server) handleUpdateContactRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-contact"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/contacts/{contactId}"),
+		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}/contacts/{contactId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -14748,6 +14784,10 @@ func (s *Server) handleUpdateContactRequest(args [1]string, argsEscaped bool, w 
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "accountId",
+					In:   "path",
+				}: params.AccountId,
 				{
 					Name: "contactId",
 					In:   "path",
