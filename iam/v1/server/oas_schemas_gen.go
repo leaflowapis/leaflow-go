@@ -1917,6 +1917,71 @@ func (s *ProjectTraitResourceEffect) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/QuotaListResponseBody
+type QuotaListResponseBody struct {
+	Items []QuotaResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *QuotaListResponseBody) GetItems() []QuotaResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *QuotaListResponseBody) SetItems(val []QuotaResource) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/QuotaResource
+type QuotaResource struct {
+	// The service enforcing the quota.
+	Service     string `json:"service"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	// The most this project may have.
+	Limit int64 `json:"limit"`
+}
+
+// GetService returns the value of Service.
+func (s *QuotaResource) GetService() string {
+	return s.Service
+}
+
+// GetName returns the value of Name.
+func (s *QuotaResource) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *QuotaResource) GetDescription() string {
+	return s.Description
+}
+
+// GetLimit returns the value of Limit.
+func (s *QuotaResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// SetService sets the value of Service.
+func (s *QuotaResource) SetService(val string) {
+	s.Service = val
+}
+
+// SetName sets the value of Name.
+func (s *QuotaResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *QuotaResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *QuotaResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
 // RemoveMemberNoContent is response for RemoveMember operation.
 type RemoveMemberNoContent struct{}
 

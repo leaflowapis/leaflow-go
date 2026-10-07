@@ -134,6 +134,14 @@ type Handler interface {
 	//
 	// GET /api/v1/invitations
 	ListProjectInvitations(ctx context.Context, params ListProjectInvitationsParams) (*LengthAwarePageInvitationResource, error)
+	// ListQuotas implements list-quotas operation.
+	//
+	// How much of something this project may have in each service, such as instances or VPCs, with the
+	// limit in effect for it. A request that would exceed a limit is refused by the service concerned.
+	// Each service shows what the project currently has.
+	//
+	// GET /api/v1/quotas
+	ListQuotas(ctx context.Context) (*QuotaListResponseBody, error)
 	// ListRoles implements list-roles operation.
 	//
 	// List the roles in this project.

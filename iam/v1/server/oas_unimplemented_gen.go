@@ -190,6 +190,17 @@ func (UnimplementedHandler) ListProjectInvitations(ctx context.Context, params L
 	return r, ht.ErrNotImplemented
 }
 
+// ListQuotas implements list-quotas operation.
+//
+// How much of something this project may have in each service, such as instances or VPCs, with the
+// limit in effect for it. A request that would exceed a limit is refused by the service concerned.
+// Each service shows what the project currently has.
+//
+// GET /api/v1/quotas
+func (UnimplementedHandler) ListQuotas(ctx context.Context) (r *QuotaListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListRoles implements list-roles operation.
 //
 // List the roles in this project.

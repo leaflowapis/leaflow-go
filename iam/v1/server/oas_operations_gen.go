@@ -23,6 +23,7 @@ const (
 	ListPermissionsOperation          OperationName = "ListPermissions"
 	ListPoliciesOperation             OperationName = "ListPolicies"
 	ListProjectInvitationsOperation   OperationName = "ListProjectInvitations"
+	ListQuotasOperation               OperationName = "ListQuotas"
 	ListRolesOperation                OperationName = "ListRoles"
 	ListSSHKeysOperation              OperationName = "ListSSHKeys"
 	RemoveMemberOperation             OperationName = "RemoveMember"

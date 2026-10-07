@@ -60,6 +60,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListMembersOperation:              []string{},
 	ListPoliciesOperation:             []string{},
 	ListProjectInvitationsOperation:   []string{},
+	ListQuotasOperation:               []string{},
 	ListRolesOperation:                []string{},
 	ListSSHKeysOperation:              []string{},
 	RemoveMemberOperation:             []string{},
