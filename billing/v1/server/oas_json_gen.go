@@ -468,14 +468,14 @@ func (s *ActiveResource) encodeFields(e *jx.Encoder) {
 		json.EncodeDateTime(e, s.StartedAt)
 	}
 	{
-		e.FieldStart("metered_until")
-		json.EncodeDateTime(e, s.MeteredUntil)
-	}
-	{
 		if s.ProjectID.Set {
 			e.FieldStart("project_id")
 			s.ProjectID.Encode(e)
 		}
+	}
+	{
+		e.FieldStart("usage_generated_until")
+		json.EncodeDateTime(e, s.UsageGeneratedUntil)
 	}
 }
 
@@ -494,8 +494,8 @@ var jsonFieldsNameOfActiveResource = [16]string{
 	11: "dimensions",
 	12: "status",
 	13: "started_at",
-	14: "metered_until",
-	15: "project_id",
+	14: "project_id",
+	15: "usage_generated_until",
 }
 
 // Decode decodes ActiveResource from json.
@@ -657,18 +657,6 @@ func (s *ActiveResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"started_at\"")
 			}
-		case "metered_until":
-			requiredBitSet[1] |= 1 << 6
-			if err := func() error {
-				v, err := json.DecodeDateTime(d)
-				s.MeteredUntil = v
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"metered_until\"")
-			}
 		case "project_id":
 			if err := func() error {
 				s.ProjectID.Reset()
@@ -678,6 +666,18 @@ func (s *ActiveResource) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"project_id\"")
+			}
+		case "usage_generated_until":
+			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.UsageGeneratedUntil = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"usage_generated_until\"")
 			}
 		default:
 			return d.Skip()
@@ -690,7 +690,7 @@ func (s *ActiveResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b01110001,
-		0b01110101,
+		0b10110101,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -935,8 +935,8 @@ func (s *ActiveResourceStatus) Decode(d *jx.Decoder) error {
 		*s = ActiveResourceStatusSuspended
 	case ActiveResourceStatusClosing:
 		*s = ActiveResourceStatusClosing
-	case ActiveResourceStatusCompleted:
-		*s = ActiveResourceStatusCompleted
+	case ActiveResourceStatusClosed:
+		*s = ActiveResourceStatusClosed
 	default:
 		*s = ActiveResourceStatus(v)
 	}
@@ -14418,8 +14418,8 @@ func (s *OrderStatus) Decode(d *jx.Decoder) error {
 		*s = OrderStatusPendingCheckout
 	case OrderStatusPending:
 		*s = OrderStatusPending
-	case OrderStatusActive:
-		*s = OrderStatusActive
+	case OrderStatusAccepted:
+		*s = OrderStatusAccepted
 	case OrderStatusCompleted:
 		*s = OrderStatusCompleted
 	case OrderStatusPartiallyCompleted:
@@ -24203,26 +24203,19 @@ func (s *StatementItem) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.UnratedQuantity.Set {
-			e.FieldStart("unrated_quantity")
-			s.UnratedQuantity.Encode(e)
-		}
-	}
-	{
 		e.FieldStart("amount")
 		s.Amount.Encode(e)
 	}
 }
 
-var jsonFieldsNameOfStatementItem = [8]string{
+var jsonFieldsNameOfStatementItem = [7]string{
 	0: "project_id",
 	1: "product_id",
 	2: "meter_id",
 	3: "unit",
 	4: "quantity",
 	5: "deducted_quantity",
-	6: "unrated_quantity",
-	7: "amount",
+	6: "amount",
 }
 
 // Decode decodes StatementItem from json.
@@ -24294,18 +24287,8 @@ func (s *StatementItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"deducted_quantity\"")
 			}
-		case "unrated_quantity":
-			if err := func() error {
-				s.UnratedQuantity.Reset()
-				if err := s.UnratedQuantity.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"unrated_quantity\"")
-			}
 		case "amount":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Amount.Decode(d); err != nil {
 					return err
@@ -24324,7 +24307,7 @@ func (s *StatementItem) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b10000000,
+		0b01000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -27452,10 +27435,8 @@ func (s *UsageCharge) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *UsageCharge) encodeFields(e *jx.Encoder) {
 	{
-		if s.SubscriptionID.Set {
-			e.FieldStart("subscription_id")
-			s.SubscriptionID.Encode(e)
-		}
+		e.FieldStart("subscription_id")
+		json.EncodeUUID(e, s.SubscriptionID)
 	}
 	{
 		e.FieldStart("id")
@@ -27530,10 +27511,8 @@ func (s *UsageCharge) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Amount.Set {
-			e.FieldStart("amount")
-			s.Amount.Encode(e)
-		}
+		e.FieldStart("amount")
+		s.Amount.Encode(e)
 	}
 	{
 		e.FieldStart("currency")
@@ -27592,9 +27571,11 @@ func (s *UsageCharge) Decode(d *jx.Decoder) error {
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
 		case "subscription_id":
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				s.SubscriptionID.Reset()
-				if err := s.SubscriptionID.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.SubscriptionID = v
+				if err != nil {
 					return err
 				}
 				return nil
@@ -27750,8 +27731,8 @@ func (s *UsageCharge) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"unit_amount\"")
 			}
 		case "amount":
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
-				s.Amount.Reset()
 				if err := s.Amount.Decode(d); err != nil {
 					return err
 				}
@@ -27811,8 +27792,8 @@ func (s *UsageCharge) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
-		0b01010010,
-		0b00100110,
+		0b01010011,
+		0b10100110,
 		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {

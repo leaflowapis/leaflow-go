@@ -231,9 +231,9 @@ type ActiveResource struct {
 	Dimensions OptActiveResourceDimensions `json:"dimensions"`
 	Status     ActiveResourceStatus        `json:"status"`
 	StartedAt  time.Time                   `json:"started_at"`
+	ProjectID  OptUUID                     `json:"project_id"`
 	// Usage has been generated up to this boundary; it does not imply invoicing or payment.
-	MeteredUntil time.Time `json:"metered_until"`
-	ProjectID    OptUUID   `json:"project_id"`
+	UsageGeneratedUntil time.Time `json:"usage_generated_until"`
 }
 
 // GetID returns the value of ID.
@@ -306,14 +306,14 @@ func (s *ActiveResource) GetStartedAt() time.Time {
 	return s.StartedAt
 }
 
-// GetMeteredUntil returns the value of MeteredUntil.
-func (s *ActiveResource) GetMeteredUntil() time.Time {
-	return s.MeteredUntil
-}
-
 // GetProjectID returns the value of ProjectID.
 func (s *ActiveResource) GetProjectID() OptUUID {
 	return s.ProjectID
+}
+
+// GetUsageGeneratedUntil returns the value of UsageGeneratedUntil.
+func (s *ActiveResource) GetUsageGeneratedUntil() time.Time {
+	return s.UsageGeneratedUntil
 }
 
 // SetID sets the value of ID.
@@ -386,14 +386,14 @@ func (s *ActiveResource) SetStartedAt(val time.Time) {
 	s.StartedAt = val
 }
 
-// SetMeteredUntil sets the value of MeteredUntil.
-func (s *ActiveResource) SetMeteredUntil(val time.Time) {
-	s.MeteredUntil = val
-}
-
 // SetProjectID sets the value of ProjectID.
 func (s *ActiveResource) SetProjectID(val OptUUID) {
 	s.ProjectID = val
+}
+
+// SetUsageGeneratedUntil sets the value of UsageGeneratedUntil.
+func (s *ActiveResource) SetUsageGeneratedUntil(val time.Time) {
+	s.UsageGeneratedUntil = val
 }
 
 type ActiveResourceDimensions map[string]string
@@ -439,7 +439,7 @@ const (
 	ActiveResourceStatusActive    ActiveResourceStatus = "active"
 	ActiveResourceStatusSuspended ActiveResourceStatus = "suspended"
 	ActiveResourceStatusClosing   ActiveResourceStatus = "closing"
-	ActiveResourceStatusCompleted ActiveResourceStatus = "completed"
+	ActiveResourceStatusClosed    ActiveResourceStatus = "closed"
 )
 
 // AllValues returns all ActiveResourceStatus values.
@@ -448,7 +448,7 @@ func (ActiveResourceStatus) AllValues() []ActiveResourceStatus {
 		ActiveResourceStatusActive,
 		ActiveResourceStatusSuspended,
 		ActiveResourceStatusClosing,
-		ActiveResourceStatusCompleted,
+		ActiveResourceStatusClosed,
 	}
 }
 
@@ -461,7 +461,7 @@ func (s ActiveResourceStatus) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case ActiveResourceStatusClosing:
 		return []byte(s), nil
-	case ActiveResourceStatusCompleted:
+	case ActiveResourceStatusClosed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -480,8 +480,8 @@ func (s *ActiveResourceStatus) UnmarshalText(data []byte) error {
 	case ActiveResourceStatusClosing:
 		*s = ActiveResourceStatusClosing
 		return nil
-	case ActiveResourceStatusCompleted:
-		*s = ActiveResourceStatusCompleted
+	case ActiveResourceStatusClosed:
+		*s = ActiveResourceStatusClosed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -5148,7 +5148,7 @@ const (
 	ListActiveResourcesStatusActive    ListActiveResourcesStatus = "active"
 	ListActiveResourcesStatusSuspended ListActiveResourcesStatus = "suspended"
 	ListActiveResourcesStatusClosing   ListActiveResourcesStatus = "closing"
-	ListActiveResourcesStatusCompleted ListActiveResourcesStatus = "completed"
+	ListActiveResourcesStatusClosed    ListActiveResourcesStatus = "closed"
 )
 
 // AllValues returns all ListActiveResourcesStatus values.
@@ -5157,7 +5157,7 @@ func (ListActiveResourcesStatus) AllValues() []ListActiveResourcesStatus {
 		ListActiveResourcesStatusActive,
 		ListActiveResourcesStatusSuspended,
 		ListActiveResourcesStatusClosing,
-		ListActiveResourcesStatusCompleted,
+		ListActiveResourcesStatusClosed,
 	}
 }
 
@@ -5170,7 +5170,7 @@ func (s ListActiveResourcesStatus) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case ListActiveResourcesStatusClosing:
 		return []byte(s), nil
-	case ListActiveResourcesStatusCompleted:
+	case ListActiveResourcesStatusClosed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5189,8 +5189,8 @@ func (s *ListActiveResourcesStatus) UnmarshalText(data []byte) error {
 	case ListActiveResourcesStatusClosing:
 		*s = ListActiveResourcesStatusClosing
 		return nil
-	case ListActiveResourcesStatusCompleted:
-		*s = ListActiveResourcesStatusCompleted
+	case ListActiveResourcesStatusClosed:
+		*s = ListActiveResourcesStatusClosed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -9565,7 +9565,7 @@ func (s *OrderRefundQuoteInput) SetOrderItemIds(val []uuid.UUID) {
 // establishes service delivery.
 //
 // Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid.
-// `active` is accepted with items still being set up. `completed` means every item was set up.
+// `accepted` is accepted with items still being set up. `completed` means every item was set up.
 // `partially_completed` means some items were set up and the others failed or were canceled and were
 // refunded to their original payment sources. `failed` means no item was delivered and at least one
 // failed; collected amounts for the undelivered items are refunded. `canceled` means every item was
@@ -9576,7 +9576,7 @@ type OrderStatus string
 const (
 	OrderStatusPendingCheckout    OrderStatus = "pending_checkout"
 	OrderStatusPending            OrderStatus = "pending"
-	OrderStatusActive             OrderStatus = "active"
+	OrderStatusAccepted           OrderStatus = "accepted"
 	OrderStatusCompleted          OrderStatus = "completed"
 	OrderStatusPartiallyCompleted OrderStatus = "partially_completed"
 	OrderStatusFailed             OrderStatus = "failed"
@@ -9588,7 +9588,7 @@ func (OrderStatus) AllValues() []OrderStatus {
 	return []OrderStatus{
 		OrderStatusPendingCheckout,
 		OrderStatusPending,
-		OrderStatusActive,
+		OrderStatusAccepted,
 		OrderStatusCompleted,
 		OrderStatusPartiallyCompleted,
 		OrderStatusFailed,
@@ -9603,7 +9603,7 @@ func (s OrderStatus) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case OrderStatusPending:
 		return []byte(s), nil
-	case OrderStatusActive:
+	case OrderStatusAccepted:
 		return []byte(s), nil
 	case OrderStatusCompleted:
 		return []byte(s), nil
@@ -9627,8 +9627,8 @@ func (s *OrderStatus) UnmarshalText(data []byte) error {
 	case OrderStatusPending:
 		*s = OrderStatusPending
 		return nil
-	case OrderStatusActive:
-		*s = OrderStatusActive
+	case OrderStatusAccepted:
+		*s = OrderStatusAccepted
 		return nil
 	case OrderStatusCompleted:
 		*s = OrderStatusCompleted
@@ -14831,8 +14831,6 @@ type StatementItem struct {
 	// Net usage quantity. Included only when grouping by meter.
 	Quantity         OptString `json:"quantity"`
 	DeductedQuantity OptString `json:"deducted_quantity"`
-	// Usage that had no applicable price when it occurred. It is not charged, either now or later.
-	UnratedQuantity OptString `json:"unrated_quantity"`
 	// Priced amount before tax. Minimum charges added at closing are included; tier adjustments and tax
 	// appear only in the statement amounts.
 	Amount Money `json:"amount"`
@@ -14868,11 +14866,6 @@ func (s *StatementItem) GetDeductedQuantity() OptString {
 	return s.DeductedQuantity
 }
 
-// GetUnratedQuantity returns the value of UnratedQuantity.
-func (s *StatementItem) GetUnratedQuantity() OptString {
-	return s.UnratedQuantity
-}
-
 // GetAmount returns the value of Amount.
 func (s *StatementItem) GetAmount() Money {
 	return s.Amount
@@ -14906,11 +14899,6 @@ func (s *StatementItem) SetQuantity(val OptString) {
 // SetDeductedQuantity sets the value of DeductedQuantity.
 func (s *StatementItem) SetDeductedQuantity(val OptString) {
 	s.DeductedQuantity = val
-}
-
-// SetUnratedQuantity sets the value of UnratedQuantity.
-func (s *StatementItem) SetUnratedQuantity(val OptString) {
-	s.UnratedQuantity = val
 }
 
 // SetAmount sets the value of Amount.
@@ -16769,7 +16757,7 @@ type UnlinkProjectBillingAccountNoContent struct{}
 
 // Ref: #/components/schemas/UsageCharge
 type UsageCharge struct {
-	SubscriptionID OptUUID   `json:"subscription_id"`
+	SubscriptionID uuid.UUID `json:"subscription_id"`
 	ID             uuid.UUID `json:"id"`
 	ProjectID      OptUUID   `json:"project_id"`
 	// The project and its current name, for display. Absent when the project no longer exists or its
@@ -16792,20 +16780,18 @@ type UsageCharge struct {
 	// What was charged for — the gross quantity less the part covered.
 	Quantity   string   `json:"quantity"`
 	UnitAmount OptMoney `json:"unit_amount"`
-	Amount     OptMoney `json:"amount"`
+	Amount     Money    `json:"amount"`
 	Currency   string   `json:"currency"`
-	// The usage invoice this charge was added to. Absent until its statement closes and always absent for
-	// unrated charges.
+	// Present after the statement is closed and its invoice is issued.
 	InvoiceID OptNilUUID `json:"invoice_id"`
-	// The usage invoice line this charge was summed into. Absent until its statement closes and always
-	// absent for unrated charges.
+	// Present after the statement is closed and its invoice is issued.
 	InvoiceItemID OptNilUUID `json:"invoice_item_id"`
 	// The statement this charge was collected into.
 	StatementID OptUUID `json:"statement_id"`
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
-func (s *UsageCharge) GetSubscriptionID() OptUUID {
+func (s *UsageCharge) GetSubscriptionID() uuid.UUID {
 	return s.SubscriptionID
 }
 
@@ -16880,7 +16866,7 @@ func (s *UsageCharge) GetUnitAmount() OptMoney {
 }
 
 // GetAmount returns the value of Amount.
-func (s *UsageCharge) GetAmount() OptMoney {
+func (s *UsageCharge) GetAmount() Money {
 	return s.Amount
 }
 
@@ -16905,7 +16891,7 @@ func (s *UsageCharge) GetStatementID() OptUUID {
 }
 
 // SetSubscriptionID sets the value of SubscriptionID.
-func (s *UsageCharge) SetSubscriptionID(val OptUUID) {
+func (s *UsageCharge) SetSubscriptionID(val uuid.UUID) {
 	s.SubscriptionID = val
 }
 
@@ -16980,7 +16966,7 @@ func (s *UsageCharge) SetUnitAmount(val OptMoney) {
 }
 
 // SetAmount sets the value of Amount.
-func (s *UsageCharge) SetAmount(val OptMoney) {
+func (s *UsageCharge) SetAmount(val Money) {
 	s.Amount = val
 }
 

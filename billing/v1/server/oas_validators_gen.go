@@ -142,7 +142,7 @@ func (s ActiveResourceStatus) Validate() error {
 		return nil
 	case "closing":
 		return nil
-	case "completed":
+	case "closed":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3111,7 +3111,7 @@ func (s ListActiveResourcesStatus) Validate() error {
 		return nil
 	case "closing":
 		return nil
-	case "completed":
+	case "closed":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3833,7 +3833,7 @@ func (s OrderStatus) Validate() error {
 		return nil
 	case "pending":
 		return nil
-	case "active":
+	case "accepted":
 		return nil
 	case "completed":
 		return nil

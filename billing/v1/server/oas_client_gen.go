@@ -602,14 +602,8 @@ type Invoker interface {
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
 	// ListUsageCharges invokes list-usage-charges operation.
 	//
-	// Lists priced and unrated usage charges. Requires `statement_id`, `invoice_item_id`, or both `from`
-	// and `to` spanning at most 31 days; use the statement summary or spend report for longer periods.
-	// Charges are summed into one line per subscription, project, resource, meter and rate when their
-	// statement closes; filter by `invoice_item_id` to see the charges behind a line. Unrated charges had
-	// no applicable price when the usage occurred and are not billed.
-	//
-	// Only charges recorded against your billing accounts are included, before filtering, counting and
-	// pagination. Reassigning a project does not move previously recorded charges to its new account.
+	// Lists priced usage charges in the requested financial scope. Usage without a price at occurrence
+	// time is never charged retrospectively.
 	//
 	// GET /api/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
@@ -10706,14 +10700,8 @@ func (c *Client) sendListTransactions(ctx context.Context, params ListTransactio
 
 // ListUsageCharges invokes list-usage-charges operation.
 //
-// Lists priced and unrated usage charges. Requires `statement_id`, `invoice_item_id`, or both `from`
-// and `to` spanning at most 31 days; use the statement summary or spend report for longer periods.
-// Charges are summed into one line per subscription, project, resource, meter and rate when their
-// statement closes; filter by `invoice_item_id` to see the charges behind a line. Unrated charges had
-// no applicable price when the usage occurred and are not billed.
-//
-// Only charges recorded against your billing accounts are included, before filtering, counting and
-// pagination. Reassigning a project does not move previously recorded charges to its new account.
+// Lists priced usage charges in the requested financial scope. Usage without a price at occurrence
+// time is never charged retrospectively.
 //
 // GET /api/v1/usage-charges
 func (c *Client) ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error) {
