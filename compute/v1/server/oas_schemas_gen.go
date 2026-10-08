@@ -3845,6 +3845,10 @@ func (s *FloatingIPOperationType) UnmarshalText(data []byte) error {
 // updates this same resource, not another allocation.
 // Ref: #/components/schemas/FloatingIPResource
 type FloatingIPResource struct {
+	// When the current or most recent address holding was allocated; null before an address is claimed.
+	AllocatedAt NilDateTime `json:"allocated_at"`
+	// When that address holding was released; null while held or before allocation.
+	ReleasedAt NilDateTime `json:"released_at"`
 	// The allocated public address. Null until the address is allocated.
 	Address       NilString `json:"address"`
 	BandwidthMbps NilInt64  `json:"bandwidth_mbps"`
@@ -3877,6 +3881,16 @@ type FloatingIPResource struct {
 	Generation int64                  `json:"generation"`
 	ObservedAt NilDateTime            `json:"observed_at"`
 	Binding    NilIPv4Binding         `json:"binding"`
+}
+
+// GetAllocatedAt returns the value of AllocatedAt.
+func (s *FloatingIPResource) GetAllocatedAt() NilDateTime {
+	return s.AllocatedAt
+}
+
+// GetReleasedAt returns the value of ReleasedAt.
+func (s *FloatingIPResource) GetReleasedAt() NilDateTime {
+	return s.ReleasedAt
 }
 
 // GetAddress returns the value of Address.
@@ -3962,6 +3976,16 @@ func (s *FloatingIPResource) GetObservedAt() NilDateTime {
 // GetBinding returns the value of Binding.
 func (s *FloatingIPResource) GetBinding() NilIPv4Binding {
 	return s.Binding
+}
+
+// SetAllocatedAt sets the value of AllocatedAt.
+func (s *FloatingIPResource) SetAllocatedAt(val NilDateTime) {
+	s.AllocatedAt = val
+}
+
+// SetReleasedAt sets the value of ReleasedAt.
+func (s *FloatingIPResource) SetReleasedAt(val NilDateTime) {
+	s.ReleasedAt = val
 }
 
 // SetAddress sets the value of Address.
@@ -4498,8 +4522,6 @@ type IPv6ResponseBody struct {
 	// The allocated /64 prefix; empty while IPv6 is disabled.
 	Cidr    string `json:"cidr"`
 	Enabled bool   `json:"enabled"`
-	// `active` means IPv6 is fully available.
-	Status IPv6ResponseBodyStatus `json:"status"`
 }
 
 // GetCidr returns the value of Cidr.
@@ -4512,11 +4534,6 @@ func (s *IPv6ResponseBody) GetEnabled() bool {
 	return s.Enabled
 }
 
-// GetStatus returns the value of Status.
-func (s *IPv6ResponseBody) GetStatus() IPv6ResponseBodyStatus {
-	return s.Status
-}
-
 // SetCidr sets the value of Cidr.
 func (s *IPv6ResponseBody) SetCidr(val string) {
 	s.Cidr = val
@@ -4527,62 +4544,8 @@ func (s *IPv6ResponseBody) SetEnabled(val bool) {
 	s.Enabled = val
 }
 
-// SetStatus sets the value of Status.
-func (s *IPv6ResponseBody) SetStatus(val IPv6ResponseBodyStatus) {
-	s.Status = val
-}
-
 func (*IPv6ResponseBody) disablePrivateNetworkIpv6Res() {}
 func (*IPv6ResponseBody) enablePrivateNetworkIpv6Res()  {}
-
-// `active` means IPv6 is fully available.
-type IPv6ResponseBodyStatus string
-
-const (
-	IPv6ResponseBodyStatusPending  IPv6ResponseBodyStatus = "pending"
-	IPv6ResponseBodyStatusActive   IPv6ResponseBodyStatus = "active"
-	IPv6ResponseBodyStatusDraining IPv6ResponseBodyStatus = "draining"
-)
-
-// AllValues returns all IPv6ResponseBodyStatus values.
-func (IPv6ResponseBodyStatus) AllValues() []IPv6ResponseBodyStatus {
-	return []IPv6ResponseBodyStatus{
-		IPv6ResponseBodyStatusPending,
-		IPv6ResponseBodyStatusActive,
-		IPv6ResponseBodyStatusDraining,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s IPv6ResponseBodyStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case IPv6ResponseBodyStatusPending:
-		return []byte(s), nil
-	case IPv6ResponseBodyStatusActive:
-		return []byte(s), nil
-	case IPv6ResponseBodyStatusDraining:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *IPv6ResponseBodyStatus) UnmarshalText(data []byte) error {
-	switch IPv6ResponseBodyStatus(data) {
-	case IPv6ResponseBodyStatusPending:
-		*s = IPv6ResponseBodyStatusPending
-		return nil
-	case IPv6ResponseBodyStatusActive:
-		*s = IPv6ResponseBodyStatusActive
-		return nil
-	case IPv6ResponseBodyStatusDraining:
-		*s = IPv6ResponseBodyStatusDraining
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // Ref: #/components/schemas/ImageListResponseBody
 type ImageListResponseBody struct {

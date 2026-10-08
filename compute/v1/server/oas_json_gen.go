@@ -8334,6 +8334,14 @@ func (s *FloatingIPResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *FloatingIPResource) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("allocated_at")
+		s.AllocatedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("released_at")
+		s.ReleasedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
 		e.FieldStart("address")
 		s.Address.Encode(e)
 	}
@@ -8411,24 +8419,26 @@ func (s *FloatingIPResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfFloatingIPResource = [17]string{
-	0:  "address",
-	1:  "bandwidth_mbps",
-	2:  "created_at",
-	3:  "id",
-	4:  "region_id",
-	5:  "status",
-	6:  "order_id",
-	7:  "order_item_id",
-	8:  "subscription_id",
-	9:  "release_subscription_ids",
-	10: "release_set",
-	11: "access_state",
-	12: "failure_reason",
-	13: "operation",
-	14: "generation",
-	15: "observed_at",
-	16: "binding",
+var jsonFieldsNameOfFloatingIPResource = [19]string{
+	0:  "allocated_at",
+	1:  "released_at",
+	2:  "address",
+	3:  "bandwidth_mbps",
+	4:  "created_at",
+	5:  "id",
+	6:  "region_id",
+	7:  "status",
+	8:  "order_id",
+	9:  "order_item_id",
+	10: "subscription_id",
+	11: "release_subscription_ids",
+	12: "release_set",
+	13: "access_state",
+	14: "failure_reason",
+	15: "operation",
+	16: "generation",
+	17: "observed_at",
+	18: "binding",
 }
 
 // Decode decodes FloatingIPResource from json.
@@ -8440,8 +8450,28 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "address":
+		case "allocated_at":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.AllocatedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"allocated_at\"")
+			}
+		case "released_at":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.ReleasedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"released_at\"")
+			}
+		case "address":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.Address.Decode(d); err != nil {
 					return err
@@ -8451,7 +8481,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"address\"")
 			}
 		case "bandwidth_mbps":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.BandwidthMbps.Decode(d); err != nil {
 					return err
@@ -8461,7 +8491,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"bandwidth_mbps\"")
 			}
 		case "created_at":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -8473,7 +8503,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -8485,7 +8515,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "region_id":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.RegionID = v
@@ -8497,7 +8527,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_id\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -8507,7 +8537,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "order_id":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.OrderID.Decode(d); err != nil {
 					return err
@@ -8517,7 +8547,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_id\"")
 			}
 		case "order_item_id":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.OrderItemID.Decode(d); err != nil {
 					return err
@@ -8527,7 +8557,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_item_id\"")
 			}
 		case "subscription_id":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.SubscriptionID.Decode(d); err != nil {
 					return err
@@ -8537,7 +8567,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subscription_id\"")
 			}
 		case "release_subscription_ids":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				s.ReleaseSubscriptionIds = make([]uuid.UUID, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -8557,7 +8587,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"release_subscription_ids\"")
 			}
 		case "release_set":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				s.ReleaseSet = make([]ReleaseSetItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -8575,7 +8605,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"release_set\"")
 			}
 		case "access_state":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.AccessState.Decode(d); err != nil {
 					return err
@@ -8585,7 +8615,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access_state\"")
 			}
 		case "failure_reason":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.FailureReason.Decode(d); err != nil {
 					return err
@@ -8595,7 +8625,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failure_reason\"")
 			}
 		case "operation":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.Operation.Decode(d); err != nil {
 					return err
@@ -8605,7 +8635,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"operation\"")
 			}
 		case "generation":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := d.Int64()
 				s.Generation = int64(v)
@@ -8617,7 +8647,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"generation\"")
 			}
 		case "observed_at":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.ObservedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -8627,7 +8657,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"observed_at\"")
 			}
 		case "binding":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.Binding.Decode(d); err != nil {
 					return err
@@ -8648,7 +8678,7 @@ func (s *FloatingIPResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000001,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -9399,16 +9429,11 @@ func (s *IPv6ResponseBody) encodeFields(e *jx.Encoder) {
 		e.FieldStart("enabled")
 		e.Bool(s.Enabled)
 	}
-	{
-		e.FieldStart("status")
-		s.Status.Encode(e)
-	}
 }
 
-var jsonFieldsNameOfIPv6ResponseBody = [3]string{
+var jsonFieldsNameOfIPv6ResponseBody = [2]string{
 	0: "cidr",
 	1: "enabled",
-	2: "status",
 }
 
 // Decode decodes IPv6ResponseBody from json.
@@ -9444,16 +9469,6 @@ func (s *IPv6ResponseBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"enabled\"")
 			}
-		case "status":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				if err := s.Status.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"status\"")
-			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -9464,7 +9479,7 @@ func (s *IPv6ResponseBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -9506,48 +9521,6 @@ func (s *IPv6ResponseBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *IPv6ResponseBody) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes IPv6ResponseBodyStatus as json.
-func (s IPv6ResponseBodyStatus) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes IPv6ResponseBodyStatus from json.
-func (s *IPv6ResponseBodyStatus) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode IPv6ResponseBodyStatus to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch IPv6ResponseBodyStatus(v) {
-	case IPv6ResponseBodyStatusPending:
-		*s = IPv6ResponseBodyStatusPending
-	case IPv6ResponseBodyStatusActive:
-		*s = IPv6ResponseBodyStatusActive
-	case IPv6ResponseBodyStatusDraining:
-		*s = IPv6ResponseBodyStatusDraining
-	default:
-		*s = IPv6ResponseBodyStatus(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s IPv6ResponseBodyStatus) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *IPv6ResponseBodyStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
