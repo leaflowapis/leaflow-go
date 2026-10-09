@@ -167,13 +167,13 @@ func (s *Allowance) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.SourceType.Validate(); err != nil {
+		if err := s.Category.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "source_type",
+			Name:  "category",
 			Error: err,
 		})
 	}
@@ -192,6 +192,17 @@ func (s *Allowance) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s AllowanceCategory) Validate() error {
+	switch s {
+	case "paid":
+		return nil
+	case "promotional":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s *AllowanceList) Validate() error {
@@ -243,17 +254,6 @@ func (s *AllowanceList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s AllowanceSourceType) Validate() error {
-	switch s {
-	case "included":
-		return nil
-	case "promotional":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s AllowanceStatus) Validate() error {
@@ -2629,7 +2629,25 @@ func (s *Discount) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.RecurringCycles.Get(); ok {
+		if value, ok := s.Frequency.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "frequency",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.FrequencyDuration.Get(); ok {
 			if err := func() error {
 				if err := (validate.Int{
 					MinSet:        true,
@@ -2652,7 +2670,7 @@ func (s *Discount) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "recurring_cycles",
+			Name:  "frequency_duration",
 			Error: err,
 		})
 	}
@@ -2671,6 +2689,19 @@ func (s *Discount) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s DiscountFrequency) Validate() error {
+	switch s {
+	case "once":
+		return nil
+	case "recurring":
+		return nil
+	case "forever":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s *DiscountList) Validate() error {

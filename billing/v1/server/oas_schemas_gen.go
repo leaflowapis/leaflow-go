@@ -499,8 +499,11 @@ type Allowance struct {
 	Meter            ObjectIdentity `json:"meter"`
 	// The unit it is counted in, such as `MiB`.
 	Unit OptString `json:"unit"`
-	// `included` came with a recurring purchase and ends with its subscription, `promotional` was granted.
-	SourceType AllowanceSourceType `json:"source_type"`
+	// Whether the quantity was paid for or granted free of charge. Both are consumed the same way.
+	Category AllowanceCategory `json:"category"`
+	// Exact values for a subset of the meter's dimensions. Only usage with these values is deducted;
+	// omitted dimensions are not restricted.
+	Dimensions AllowanceDimensions `json:"dimensions"`
 	Name       string              `json:"name"`
 	// How much was granted.
 	Quantity string `json:"quantity"`
@@ -551,9 +554,14 @@ func (s *Allowance) GetUnit() OptString {
 	return s.Unit
 }
 
-// GetSourceType returns the value of SourceType.
-func (s *Allowance) GetSourceType() AllowanceSourceType {
-	return s.SourceType
+// GetCategory returns the value of Category.
+func (s *Allowance) GetCategory() AllowanceCategory {
+	return s.Category
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *Allowance) GetDimensions() AllowanceDimensions {
+	return s.Dimensions
 }
 
 // GetName returns the value of Name.
@@ -626,9 +634,14 @@ func (s *Allowance) SetUnit(val OptString) {
 	s.Unit = val
 }
 
-// SetSourceType sets the value of SourceType.
-func (s *Allowance) SetSourceType(val AllowanceSourceType) {
-	s.SourceType = val
+// SetCategory sets the value of Category.
+func (s *Allowance) SetCategory(val AllowanceCategory) {
+	s.Category = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *Allowance) SetDimensions(val AllowanceDimensions) {
+	s.Dimensions = val
 }
 
 // SetName sets the value of Name.
@@ -666,6 +679,61 @@ func (s *Allowance) SetValidUntil(val OptNilDateTime) {
 	s.ValidUntil = val
 }
 
+// Whether the quantity was paid for or granted free of charge. Both are consumed the same way.
+type AllowanceCategory string
+
+const (
+	AllowanceCategoryPaid        AllowanceCategory = "paid"
+	AllowanceCategoryPromotional AllowanceCategory = "promotional"
+)
+
+// AllValues returns all AllowanceCategory values.
+func (AllowanceCategory) AllValues() []AllowanceCategory {
+	return []AllowanceCategory{
+		AllowanceCategoryPaid,
+		AllowanceCategoryPromotional,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AllowanceCategory) MarshalText() ([]byte, error) {
+	switch s {
+	case AllowanceCategoryPaid:
+		return []byte(s), nil
+	case AllowanceCategoryPromotional:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AllowanceCategory) UnmarshalText(data []byte) error {
+	switch AllowanceCategory(data) {
+	case AllowanceCategoryPaid:
+		*s = AllowanceCategoryPaid
+		return nil
+	case AllowanceCategoryPromotional:
+		*s = AllowanceCategoryPromotional
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Exact values for a subset of the meter's dimensions. Only usage with these values is deducted;
+// omitted dimensions are not restricted.
+type AllowanceDimensions map[string]string
+
+func (s *AllowanceDimensions) init() AllowanceDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
 // Ref: #/components/schemas/AllowanceList
 type AllowanceList struct {
 	Items      []Allowance      `json:"items"`
@@ -690,48 +758,6 @@ func (s *AllowanceList) SetItems(val []Allowance) {
 // SetPagination sets the value of Pagination.
 func (s *AllowanceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-// `included` came with a recurring purchase and ends with its subscription, `promotional` was granted.
-type AllowanceSourceType string
-
-const (
-	AllowanceSourceTypeIncluded    AllowanceSourceType = "included"
-	AllowanceSourceTypePromotional AllowanceSourceType = "promotional"
-)
-
-// AllValues returns all AllowanceSourceType values.
-func (AllowanceSourceType) AllValues() []AllowanceSourceType {
-	return []AllowanceSourceType{
-		AllowanceSourceTypeIncluded,
-		AllowanceSourceTypePromotional,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AllowanceSourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case AllowanceSourceTypeIncluded:
-		return []byte(s), nil
-	case AllowanceSourceTypePromotional:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AllowanceSourceType) UnmarshalText(data []byte) error {
-	switch AllowanceSourceType(data) {
-	case AllowanceSourceTypeIncluded:
-		*s = AllowanceSourceTypeIncluded
-		return nil
-	case AllowanceSourceTypePromotional:
-		*s = AllowanceSourceTypePromotional
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 type AllowanceStatus string
@@ -3632,7 +3658,8 @@ type DeletePaymentMethodNoContent struct{}
 // DeleteSubscriptionNoContent is response for DeleteSubscription operation.
 type DeleteSubscriptionNoContent struct{}
 
-// A coupon held on this account. It applies at checkout without a code.
+// A coupon held on this account for a period. Within the period it applies without a code to purchases
+// and to metered usage that the coupon covers.
 // Ref: #/components/schemas/Discount
 type Discount struct {
 	MinAmount        OptString      `json:"min_amount"`
@@ -3642,10 +3669,13 @@ type Discount struct {
 	Status           DiscountStatus `json:"status"`
 	RevokedAt        OptDateTime    `json:"revoked_at"`
 	Type             DiscountType   `json:"type"`
-	Recurring        OptBool        `json:"recurring"`
-	RecurringCycles  OptInt         `json:"recurring_cycles"`
-	ID               uuid.UUID      `json:"id"`
-	Name             OptString      `json:"name"`
+	// Whether the discount continues on renewals of the purchased item. `once` applies only to the
+	// purchase or renewal that uses the coupon, `recurring` continues for `frequency_duration` billing
+	// periods including the first, and `forever` continues on every renewal.
+	Frequency         OptDiscountFrequency `json:"frequency"`
+	FrequencyDuration OptInt               `json:"frequency_duration"`
+	ID                uuid.UUID            `json:"id"`
+	Name              OptString            `json:"name"`
 	// For a percentage discount, out of one hundred.
 	PercentOff OptString `json:"percent_off"`
 	// Fixed discount or per-unit interval price override for this account currency.
@@ -3697,14 +3727,14 @@ func (s *Discount) GetType() DiscountType {
 	return s.Type
 }
 
-// GetRecurring returns the value of Recurring.
-func (s *Discount) GetRecurring() OptBool {
-	return s.Recurring
+// GetFrequency returns the value of Frequency.
+func (s *Discount) GetFrequency() OptDiscountFrequency {
+	return s.Frequency
 }
 
-// GetRecurringCycles returns the value of RecurringCycles.
-func (s *Discount) GetRecurringCycles() OptInt {
-	return s.RecurringCycles
+// GetFrequencyDuration returns the value of FrequencyDuration.
+func (s *Discount) GetFrequencyDuration() OptInt {
+	return s.FrequencyDuration
 }
 
 // GetID returns the value of ID.
@@ -3792,14 +3822,14 @@ func (s *Discount) SetType(val DiscountType) {
 	s.Type = val
 }
 
-// SetRecurring sets the value of Recurring.
-func (s *Discount) SetRecurring(val OptBool) {
-	s.Recurring = val
+// SetFrequency sets the value of Frequency.
+func (s *Discount) SetFrequency(val OptDiscountFrequency) {
+	s.Frequency = val
 }
 
-// SetRecurringCycles sets the value of RecurringCycles.
-func (s *Discount) SetRecurringCycles(val OptInt) {
-	s.RecurringCycles = val
+// SetFrequencyDuration sets the value of FrequencyDuration.
+func (s *Discount) SetFrequencyDuration(val OptInt) {
+	s.FrequencyDuration = val
 }
 
 // SetID sets the value of ID.
@@ -3850,6 +3880,57 @@ func (s *Discount) SetStartedAt(val OptDateTime) {
 // SetEndedAt sets the value of EndedAt.
 func (s *Discount) SetEndedAt(val OptNilDateTime) {
 	s.EndedAt = val
+}
+
+// Whether the discount continues on renewals of the purchased item. `once` applies only to the
+// purchase or renewal that uses the coupon, `recurring` continues for `frequency_duration` billing
+// periods including the first, and `forever` continues on every renewal.
+type DiscountFrequency string
+
+const (
+	DiscountFrequencyOnce      DiscountFrequency = "once"
+	DiscountFrequencyRecurring DiscountFrequency = "recurring"
+	DiscountFrequencyForever   DiscountFrequency = "forever"
+)
+
+// AllValues returns all DiscountFrequency values.
+func (DiscountFrequency) AllValues() []DiscountFrequency {
+	return []DiscountFrequency{
+		DiscountFrequencyOnce,
+		DiscountFrequencyRecurring,
+		DiscountFrequencyForever,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s DiscountFrequency) MarshalText() ([]byte, error) {
+	switch s {
+	case DiscountFrequencyOnce:
+		return []byte(s), nil
+	case DiscountFrequencyRecurring:
+		return []byte(s), nil
+	case DiscountFrequencyForever:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *DiscountFrequency) UnmarshalText(data []byte) error {
+	switch DiscountFrequency(data) {
+	case DiscountFrequencyOnce:
+		*s = DiscountFrequencyOnce
+		return nil
+	case DiscountFrequencyRecurring:
+		*s = DiscountFrequencyRecurring
+		return nil
+	case DiscountFrequencyForever:
+		*s = DiscountFrequencyForever
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/DiscountList
@@ -4577,6 +4658,10 @@ type InvoiceItem struct {
 	Taxable OptBool `json:"taxable"`
 	// Discount applied to this line before tax.
 	DiscountAmount OptString `json:"discount_amount"`
+	// The account discount applied to this line.
+	DiscountID OptNilUUID `json:"discount_id"`
+	// The coupon applied to this line.
+	CouponID OptNilUUID `json:"coupon_id"`
 	// Tax on the discounted line, including tax already included in the price.
 	TaxAmount OptString `json:"tax_amount"`
 	// The part of tax_amount already included in amount.
@@ -4611,6 +4696,16 @@ func (s *InvoiceItem) GetTaxable() OptBool {
 // GetDiscountAmount returns the value of DiscountAmount.
 func (s *InvoiceItem) GetDiscountAmount() OptString {
 	return s.DiscountAmount
+}
+
+// GetDiscountID returns the value of DiscountID.
+func (s *InvoiceItem) GetDiscountID() OptNilUUID {
+	return s.DiscountID
+}
+
+// GetCouponID returns the value of CouponID.
+func (s *InvoiceItem) GetCouponID() OptNilUUID {
+	return s.CouponID
 }
 
 // GetTaxAmount returns the value of TaxAmount.
@@ -4701,6 +4796,16 @@ func (s *InvoiceItem) SetTaxable(val OptBool) {
 // SetDiscountAmount sets the value of DiscountAmount.
 func (s *InvoiceItem) SetDiscountAmount(val OptString) {
 	s.DiscountAmount = val
+}
+
+// SetDiscountID sets the value of DiscountID.
+func (s *InvoiceItem) SetDiscountID(val OptNilUUID) {
+	s.DiscountID = val
+}
+
+// SetCouponID sets the value of CouponID.
+func (s *InvoiceItem) SetCouponID(val OptNilUUID) {
+	s.CouponID = val
 }
 
 // SetTaxAmount sets the value of TaxAmount.
@@ -6112,6 +6217,52 @@ func (o OptDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptDiscountFrequency returns new OptDiscountFrequency with value set to v.
+func NewOptDiscountFrequency(v DiscountFrequency) OptDiscountFrequency {
+	return OptDiscountFrequency{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDiscountFrequency is optional DiscountFrequency.
+type OptDiscountFrequency struct {
+	Value DiscountFrequency
+	Set   bool
+}
+
+// IsSet returns true if OptDiscountFrequency was set.
+func (o OptDiscountFrequency) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDiscountFrequency) Reset() {
+	var v DiscountFrequency
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDiscountFrequency) SetTo(v DiscountFrequency) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDiscountFrequency) Get() (v DiscountFrequency, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDiscountFrequency) Or(d DiscountFrequency) DiscountFrequency {
 	if v, ok := o.Get(); ok {
 		return v
 	}
