@@ -19,6 +19,7 @@ import (
 
 var regexMap = map[string]ogenregex.Regexp{
 	"^[0-9]{1,15}([.][0-9]{1,10})?$": ogenregex.MustCompile("^[0-9]{1,15}([.][0-9]{1,10})?$"),
+	"^\\d+(\\.\\d{1,10})?$":          ogenregex.MustCompile("^\\d+(\\.\\d{1,10})?$"),
 }
 var (
 	// Allocate option closure once.

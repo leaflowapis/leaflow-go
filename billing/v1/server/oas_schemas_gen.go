@@ -69,8 +69,8 @@ type AccountBalance struct {
 	// Amount still payable on issued invoices. Unbilled usage is reported separately; arrears depend on
 	// actual eligible funding and grace terms.
 	Due Money `json:"due"`
-	// Balance committed to pending top-up refunds or payouts. Already unavailable for spending; unbilled
-	// usage does not freeze the balance.
+	// Balance committed to pending top-up refunds. Already unavailable for spending; unbilled usage does
+	// not freeze the balance.
 	PendingReturnsAmount Money `json:"pending_returns_amount"`
 }
 
@@ -816,7 +816,7 @@ func (s *AllowanceStatus) UnmarshalText(data []byte) error {
 }
 
 // Anything not excluded that matches an inclusion, or anything not excluded when no inclusion is
-// given, subject to the billing type, operation and term conditions. Entries always include their
+// given, subject to the charge type, operation and term conditions. Entries always include their
 // display fields; archived plans and prices stay listed with active set to false.
 // Ref: #/components/schemas/Applicability
 type Applicability struct {
@@ -1558,15 +1558,15 @@ func (s *CancellationCreate) SetReason(val OptString) {
 // One subscription of the cancellation.
 // Ref: #/components/schemas/CancellationItem
 type CancellationItem struct {
-	// The cancellation request of this subscription, the same as `Subscription.cancellation_request.id`.
+	// The cancellation item of this subscription, the same as `Subscription.cancellation.id`.
 	ID             uuid.UUID `json:"id"`
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	PlanID         uuid.UUID `json:"plan_id"`
 	PlanName       string    `json:"plan_name"`
-	// How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating the
-	// cancellation turned that off, and withdrawing the cancellation leaves it off.
-	BillingType CancellationItemBillingType `json:"billing_type"`
-	Status      CancellationItemStatus      `json:"status"`
+	// How the subscription is charged. Creating the cancellation turned automatic renewal off; withdrawing
+	// it turns renewal back on for a `postpaid` subscription and leaves it off for a `prepaid` one.
+	ChargeType CancellationItemChargeType `json:"charge_type"`
+	Status     CancellationItemStatus     `json:"status"`
 	// Execution stopped or its result is unknown. Present while release still requires resolution; it does
 	// not establish refund eligibility.
 	FailureCode      OptString   `json:"failure_code"`
@@ -1601,9 +1601,9 @@ func (s *CancellationItem) GetPlanName() string {
 	return s.PlanName
 }
 
-// GetBillingType returns the value of BillingType.
-func (s *CancellationItem) GetBillingType() CancellationItemBillingType {
-	return s.BillingType
+// GetChargeType returns the value of ChargeType.
+func (s *CancellationItem) GetChargeType() CancellationItemChargeType {
+	return s.ChargeType
 }
 
 // GetStatus returns the value of Status.
@@ -1661,9 +1661,9 @@ func (s *CancellationItem) SetPlanName(val string) {
 	s.PlanName = val
 }
 
-// SetBillingType sets the value of BillingType.
-func (s *CancellationItem) SetBillingType(val CancellationItemBillingType) {
-	s.BillingType = val
+// SetChargeType sets the value of ChargeType.
+func (s *CancellationItem) SetChargeType(val CancellationItemChargeType) {
+	s.ChargeType = val
 }
 
 // SetStatus sets the value of Status.
@@ -1701,33 +1701,33 @@ func (s *CancellationItem) SetGatewayAmount(val OptMoney) {
 	s.GatewayAmount = val
 }
 
-// How the subscription is paid for. Only a `prepaid` subscription renews automatically; creating the
-// cancellation turned that off, and withdrawing the cancellation leaves it off.
-type CancellationItemBillingType string
+// How the subscription is charged. Creating the cancellation turned automatic renewal off; withdrawing
+// it turns renewal back on for a `postpaid` subscription and leaves it off for a `prepaid` one.
+type CancellationItemChargeType string
 
 const (
-	CancellationItemBillingTypePostpaid CancellationItemBillingType = "postpaid"
-	CancellationItemBillingTypePrepaid  CancellationItemBillingType = "prepaid"
-	CancellationItemBillingTypeOneTime  CancellationItemBillingType = "one_time"
+	CancellationItemChargeTypePostpaid CancellationItemChargeType = "postpaid"
+	CancellationItemChargeTypePrepaid  CancellationItemChargeType = "prepaid"
+	CancellationItemChargeTypeOneTime  CancellationItemChargeType = "one_time"
 )
 
-// AllValues returns all CancellationItemBillingType values.
-func (CancellationItemBillingType) AllValues() []CancellationItemBillingType {
-	return []CancellationItemBillingType{
-		CancellationItemBillingTypePostpaid,
-		CancellationItemBillingTypePrepaid,
-		CancellationItemBillingTypeOneTime,
+// AllValues returns all CancellationItemChargeType values.
+func (CancellationItemChargeType) AllValues() []CancellationItemChargeType {
+	return []CancellationItemChargeType{
+		CancellationItemChargeTypePostpaid,
+		CancellationItemChargeTypePrepaid,
+		CancellationItemChargeTypeOneTime,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s CancellationItemBillingType) MarshalText() ([]byte, error) {
+func (s CancellationItemChargeType) MarshalText() ([]byte, error) {
 	switch s {
-	case CancellationItemBillingTypePostpaid:
+	case CancellationItemChargeTypePostpaid:
 		return []byte(s), nil
-	case CancellationItemBillingTypePrepaid:
+	case CancellationItemChargeTypePrepaid:
 		return []byte(s), nil
-	case CancellationItemBillingTypeOneTime:
+	case CancellationItemChargeTypeOneTime:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1735,16 +1735,16 @@ func (s CancellationItemBillingType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CancellationItemBillingType) UnmarshalText(data []byte) error {
-	switch CancellationItemBillingType(data) {
-	case CancellationItemBillingTypePostpaid:
-		*s = CancellationItemBillingTypePostpaid
+func (s *CancellationItemChargeType) UnmarshalText(data []byte) error {
+	switch CancellationItemChargeType(data) {
+	case CancellationItemChargeTypePostpaid:
+		*s = CancellationItemChargeTypePostpaid
 		return nil
-	case CancellationItemBillingTypePrepaid:
-		*s = CancellationItemBillingTypePrepaid
+	case CancellationItemChargeTypePrepaid:
+		*s = CancellationItemChargeTypePrepaid
 		return nil
-	case CancellationItemBillingTypeOneTime:
-		*s = CancellationItemBillingTypeOneTime
+	case CancellationItemChargeTypeOneTime:
+		*s = CancellationItemChargeTypeOneTime
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2043,10 +2043,11 @@ type CancellationRefundPreviewItem struct {
 	PlanName       string    `json:"plan_name"`
 	// The project and its current name, for display. Absent for a purchase at account level, and when the
 	// project details cannot be read at the moment.
-	Project     OptNilNamedIdentity                      `json:"project"`
-	BillingType CancellationRefundPreviewItemBillingType `json:"billing_type"`
-	// Whether automatic renewal is on now. Creating the cancellation turns it off, and withdrawing the
-	// cancellation does not turn it back on. Always false for a subscription that is not `prepaid`.
+	Project    OptNilNamedIdentity                     `json:"project"`
+	ChargeType CancellationRefundPreviewItemChargeType `json:"charge_type"`
+	// Whether automatic renewal is on now. Creating the cancellation turns it off. Withdrawing the
+	// cancellation does not turn it back on for a prepaid subscription; a postpaid subscription continues
+	// until it is canceled and turns it back on.
 	AutoRenew        bool  `json:"auto_renew"`
 	UnusedAmount     Money `json:"unused_amount"`
 	RefundableAmount Money `json:"refundable_amount"`
@@ -2076,9 +2077,9 @@ func (s *CancellationRefundPreviewItem) GetProject() OptNilNamedIdentity {
 	return s.Project
 }
 
-// GetBillingType returns the value of BillingType.
-func (s *CancellationRefundPreviewItem) GetBillingType() CancellationRefundPreviewItemBillingType {
-	return s.BillingType
+// GetChargeType returns the value of ChargeType.
+func (s *CancellationRefundPreviewItem) GetChargeType() CancellationRefundPreviewItemChargeType {
+	return s.ChargeType
 }
 
 // GetAutoRenew returns the value of AutoRenew.
@@ -2136,9 +2137,9 @@ func (s *CancellationRefundPreviewItem) SetProject(val OptNilNamedIdentity) {
 	s.Project = val
 }
 
-// SetBillingType sets the value of BillingType.
-func (s *CancellationRefundPreviewItem) SetBillingType(val CancellationRefundPreviewItemBillingType) {
-	s.BillingType = val
+// SetChargeType sets the value of ChargeType.
+func (s *CancellationRefundPreviewItem) SetChargeType(val CancellationRefundPreviewItemChargeType) {
+	s.ChargeType = val
 }
 
 // SetAutoRenew sets the value of AutoRenew.
@@ -2176,31 +2177,31 @@ func (s *CancellationRefundPreviewItem) SetForfeitedAmount(val Money) {
 	s.ForfeitedAmount = val
 }
 
-type CancellationRefundPreviewItemBillingType string
+type CancellationRefundPreviewItemChargeType string
 
 const (
-	CancellationRefundPreviewItemBillingTypePostpaid CancellationRefundPreviewItemBillingType = "postpaid"
-	CancellationRefundPreviewItemBillingTypePrepaid  CancellationRefundPreviewItemBillingType = "prepaid"
-	CancellationRefundPreviewItemBillingTypeOneTime  CancellationRefundPreviewItemBillingType = "one_time"
+	CancellationRefundPreviewItemChargeTypePostpaid CancellationRefundPreviewItemChargeType = "postpaid"
+	CancellationRefundPreviewItemChargeTypePrepaid  CancellationRefundPreviewItemChargeType = "prepaid"
+	CancellationRefundPreviewItemChargeTypeOneTime  CancellationRefundPreviewItemChargeType = "one_time"
 )
 
-// AllValues returns all CancellationRefundPreviewItemBillingType values.
-func (CancellationRefundPreviewItemBillingType) AllValues() []CancellationRefundPreviewItemBillingType {
-	return []CancellationRefundPreviewItemBillingType{
-		CancellationRefundPreviewItemBillingTypePostpaid,
-		CancellationRefundPreviewItemBillingTypePrepaid,
-		CancellationRefundPreviewItemBillingTypeOneTime,
+// AllValues returns all CancellationRefundPreviewItemChargeType values.
+func (CancellationRefundPreviewItemChargeType) AllValues() []CancellationRefundPreviewItemChargeType {
+	return []CancellationRefundPreviewItemChargeType{
+		CancellationRefundPreviewItemChargeTypePostpaid,
+		CancellationRefundPreviewItemChargeTypePrepaid,
+		CancellationRefundPreviewItemChargeTypeOneTime,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s CancellationRefundPreviewItemBillingType) MarshalText() ([]byte, error) {
+func (s CancellationRefundPreviewItemChargeType) MarshalText() ([]byte, error) {
 	switch s {
-	case CancellationRefundPreviewItemBillingTypePostpaid:
+	case CancellationRefundPreviewItemChargeTypePostpaid:
 		return []byte(s), nil
-	case CancellationRefundPreviewItemBillingTypePrepaid:
+	case CancellationRefundPreviewItemChargeTypePrepaid:
 		return []byte(s), nil
-	case CancellationRefundPreviewItemBillingTypeOneTime:
+	case CancellationRefundPreviewItemChargeTypeOneTime:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -2208,298 +2209,16 @@ func (s CancellationRefundPreviewItemBillingType) MarshalText() ([]byte, error) 
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CancellationRefundPreviewItemBillingType) UnmarshalText(data []byte) error {
-	switch CancellationRefundPreviewItemBillingType(data) {
-	case CancellationRefundPreviewItemBillingTypePostpaid:
-		*s = CancellationRefundPreviewItemBillingTypePostpaid
+func (s *CancellationRefundPreviewItemChargeType) UnmarshalText(data []byte) error {
+	switch CancellationRefundPreviewItemChargeType(data) {
+	case CancellationRefundPreviewItemChargeTypePostpaid:
+		*s = CancellationRefundPreviewItemChargeTypePostpaid
 		return nil
-	case CancellationRefundPreviewItemBillingTypePrepaid:
-		*s = CancellationRefundPreviewItemBillingTypePrepaid
+	case CancellationRefundPreviewItemChargeTypePrepaid:
+		*s = CancellationRefundPreviewItemChargeTypePrepaid
 		return nil
-	case CancellationRefundPreviewItemBillingTypeOneTime:
-		*s = CancellationRefundPreviewItemBillingTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A cancellation request for the original purchase. scheduled_at is the intended time; effective_at is
-// the confirmed end of service. The request alone does not stop metering or issue a refund.
-// Ref: #/components/schemas/CancellationRequest
-type CancellationRequest struct {
-	Reason OptString `json:"reason"`
-	// The cancellation this request belongs to, with the other subscriptions released together.
-	CancellationID        OptUUID                   `json:"cancellation_id"`
-	ID                    uuid.UUID                 `json:"id"`
-	SubscriptionID        uuid.UUID                 `json:"subscription_id"`
-	Status                CancellationRequestStatus `json:"status"`
-	Mode                  CancellationRequestMode   `json:"mode"`
-	RequestedAt           time.Time                 `json:"requested_at"`
-	ScheduledAt           OptDateTime               `json:"scheduled_at"`
-	EffectiveAt           OptDateTime               `json:"effective_at"`
-	CompletedAt           OptDateTime               `json:"completed_at"`
-	ReleaseStartedAt      OptDateTime               `json:"release_started_at"`
-	CanceledAt            OptDateTime               `json:"canceled_at"`
-	ForfeitRemainingValue bool                      `json:"forfeit_remaining_value"`
-	FailureCode           OptString                 `json:"failure_code"`
-	FailureReason         OptString                 `json:"failure_reason"`
-}
-
-// GetReason returns the value of Reason.
-func (s *CancellationRequest) GetReason() OptString {
-	return s.Reason
-}
-
-// GetCancellationID returns the value of CancellationID.
-func (s *CancellationRequest) GetCancellationID() OptUUID {
-	return s.CancellationID
-}
-
-// GetID returns the value of ID.
-func (s *CancellationRequest) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *CancellationRequest) GetSubscriptionID() uuid.UUID {
-	return s.SubscriptionID
-}
-
-// GetStatus returns the value of Status.
-func (s *CancellationRequest) GetStatus() CancellationRequestStatus {
-	return s.Status
-}
-
-// GetMode returns the value of Mode.
-func (s *CancellationRequest) GetMode() CancellationRequestMode {
-	return s.Mode
-}
-
-// GetRequestedAt returns the value of RequestedAt.
-func (s *CancellationRequest) GetRequestedAt() time.Time {
-	return s.RequestedAt
-}
-
-// GetScheduledAt returns the value of ScheduledAt.
-func (s *CancellationRequest) GetScheduledAt() OptDateTime {
-	return s.ScheduledAt
-}
-
-// GetEffectiveAt returns the value of EffectiveAt.
-func (s *CancellationRequest) GetEffectiveAt() OptDateTime {
-	return s.EffectiveAt
-}
-
-// GetCompletedAt returns the value of CompletedAt.
-func (s *CancellationRequest) GetCompletedAt() OptDateTime {
-	return s.CompletedAt
-}
-
-// GetReleaseStartedAt returns the value of ReleaseStartedAt.
-func (s *CancellationRequest) GetReleaseStartedAt() OptDateTime {
-	return s.ReleaseStartedAt
-}
-
-// GetCanceledAt returns the value of CanceledAt.
-func (s *CancellationRequest) GetCanceledAt() OptDateTime {
-	return s.CanceledAt
-}
-
-// GetForfeitRemainingValue returns the value of ForfeitRemainingValue.
-func (s *CancellationRequest) GetForfeitRemainingValue() bool {
-	return s.ForfeitRemainingValue
-}
-
-// GetFailureCode returns the value of FailureCode.
-func (s *CancellationRequest) GetFailureCode() OptString {
-	return s.FailureCode
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *CancellationRequest) GetFailureReason() OptString {
-	return s.FailureReason
-}
-
-// SetReason sets the value of Reason.
-func (s *CancellationRequest) SetReason(val OptString) {
-	s.Reason = val
-}
-
-// SetCancellationID sets the value of CancellationID.
-func (s *CancellationRequest) SetCancellationID(val OptUUID) {
-	s.CancellationID = val
-}
-
-// SetID sets the value of ID.
-func (s *CancellationRequest) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *CancellationRequest) SetSubscriptionID(val uuid.UUID) {
-	s.SubscriptionID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *CancellationRequest) SetStatus(val CancellationRequestStatus) {
-	s.Status = val
-}
-
-// SetMode sets the value of Mode.
-func (s *CancellationRequest) SetMode(val CancellationRequestMode) {
-	s.Mode = val
-}
-
-// SetRequestedAt sets the value of RequestedAt.
-func (s *CancellationRequest) SetRequestedAt(val time.Time) {
-	s.RequestedAt = val
-}
-
-// SetScheduledAt sets the value of ScheduledAt.
-func (s *CancellationRequest) SetScheduledAt(val OptDateTime) {
-	s.ScheduledAt = val
-}
-
-// SetEffectiveAt sets the value of EffectiveAt.
-func (s *CancellationRequest) SetEffectiveAt(val OptDateTime) {
-	s.EffectiveAt = val
-}
-
-// SetCompletedAt sets the value of CompletedAt.
-func (s *CancellationRequest) SetCompletedAt(val OptDateTime) {
-	s.CompletedAt = val
-}
-
-// SetReleaseStartedAt sets the value of ReleaseStartedAt.
-func (s *CancellationRequest) SetReleaseStartedAt(val OptDateTime) {
-	s.ReleaseStartedAt = val
-}
-
-// SetCanceledAt sets the value of CanceledAt.
-func (s *CancellationRequest) SetCanceledAt(val OptDateTime) {
-	s.CanceledAt = val
-}
-
-// SetForfeitRemainingValue sets the value of ForfeitRemainingValue.
-func (s *CancellationRequest) SetForfeitRemainingValue(val bool) {
-	s.ForfeitRemainingValue = val
-}
-
-// SetFailureCode sets the value of FailureCode.
-func (s *CancellationRequest) SetFailureCode(val OptString) {
-	s.FailureCode = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *CancellationRequest) SetFailureReason(val OptString) {
-	s.FailureReason = val
-}
-
-type CancellationRequestMode string
-
-const (
-	CancellationRequestModeImmediate CancellationRequestMode = "immediate"
-	CancellationRequestModePeriodEnd CancellationRequestMode = "period_end"
-)
-
-// AllValues returns all CancellationRequestMode values.
-func (CancellationRequestMode) AllValues() []CancellationRequestMode {
-	return []CancellationRequestMode{
-		CancellationRequestModeImmediate,
-		CancellationRequestModePeriodEnd,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CancellationRequestMode) MarshalText() ([]byte, error) {
-	switch s {
-	case CancellationRequestModeImmediate:
-		return []byte(s), nil
-	case CancellationRequestModePeriodEnd:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CancellationRequestMode) UnmarshalText(data []byte) error {
-	switch CancellationRequestMode(data) {
-	case CancellationRequestModeImmediate:
-		*s = CancellationRequestModeImmediate
-		return nil
-	case CancellationRequestModePeriodEnd:
-		*s = CancellationRequestModePeriodEnd
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type CancellationRequestStatus string
-
-const (
-	CancellationRequestStatusRequested CancellationRequestStatus = "requested"
-	CancellationRequestStatusScheduled CancellationRequestStatus = "scheduled"
-	CancellationRequestStatusReleasing CancellationRequestStatus = "releasing"
-	CancellationRequestStatusFailed    CancellationRequestStatus = "failed"
-	CancellationRequestStatusCompleted CancellationRequestStatus = "completed"
-	CancellationRequestStatusCanceled  CancellationRequestStatus = "canceled"
-)
-
-// AllValues returns all CancellationRequestStatus values.
-func (CancellationRequestStatus) AllValues() []CancellationRequestStatus {
-	return []CancellationRequestStatus{
-		CancellationRequestStatusRequested,
-		CancellationRequestStatusScheduled,
-		CancellationRequestStatusReleasing,
-		CancellationRequestStatusFailed,
-		CancellationRequestStatusCompleted,
-		CancellationRequestStatusCanceled,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CancellationRequestStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case CancellationRequestStatusRequested:
-		return []byte(s), nil
-	case CancellationRequestStatusScheduled:
-		return []byte(s), nil
-	case CancellationRequestStatusReleasing:
-		return []byte(s), nil
-	case CancellationRequestStatusFailed:
-		return []byte(s), nil
-	case CancellationRequestStatusCompleted:
-		return []byte(s), nil
-	case CancellationRequestStatusCanceled:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CancellationRequestStatus) UnmarshalText(data []byte) error {
-	switch CancellationRequestStatus(data) {
-	case CancellationRequestStatusRequested:
-		*s = CancellationRequestStatusRequested
-		return nil
-	case CancellationRequestStatusScheduled:
-		*s = CancellationRequestStatusScheduled
-		return nil
-	case CancellationRequestStatusReleasing:
-		*s = CancellationRequestStatusReleasing
-		return nil
-	case CancellationRequestStatusFailed:
-		*s = CancellationRequestStatusFailed
-		return nil
-	case CancellationRequestStatusCompleted:
-		*s = CancellationRequestStatusCompleted
-		return nil
-	case CancellationRequestStatusCanceled:
-		*s = CancellationRequestStatusCanceled
+	case CancellationRefundPreviewItemChargeTypeOneTime:
+		*s = CancellationRefundPreviewItemChargeTypeOneTime
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2575,38 +2294,6 @@ func (s *CancellationStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/CheckoutOrderRequest
-type CheckoutOrderRequest struct {
-	// The code to apply, evaluated again at confirmation. Omit to select an applicable account discount.
-	// On an already confirmed checkout, omission retains the recorded discount.
-	PromotionCode OptString `json:"promotion_code"`
-	// Quote.total in the order's currency, after discounts and tax but before applying credit grants or
-	// balance. Omit to skip the amount comparison; an explicit zero is compared. A different total fails
-	// with BILLING_AMOUNT_CHANGED. Must be a non-negative decimal string; empty strings, null, JSON
-	// numbers, signs and exponent notation are rejected.
-	ExpectedAmount OptString `json:"expected_amount"`
-}
-
-// GetPromotionCode returns the value of PromotionCode.
-func (s *CheckoutOrderRequest) GetPromotionCode() OptString {
-	return s.PromotionCode
-}
-
-// GetExpectedAmount returns the value of ExpectedAmount.
-func (s *CheckoutOrderRequest) GetExpectedAmount() OptString {
-	return s.ExpectedAmount
-}
-
-// SetPromotionCode sets the value of PromotionCode.
-func (s *CheckoutOrderRequest) SetPromotionCode(val OptString) {
-	s.PromotionCode = val
-}
-
-// SetExpectedAmount sets the value of ExpectedAmount.
-func (s *CheckoutOrderRequest) SetExpectedAmount(val OptString) {
-	s.ExpectedAmount = val
-}
-
 // A billing-account contact profile with one address. An account can hold multiple contacts; this is
 // not a login identity.
 // Ref: #/components/schemas/Contact
@@ -2623,9 +2310,12 @@ type Contact struct {
 	AddressState      OptString `json:"address_state"`
 	AddressPostalCode OptString `json:"address_postal_code"`
 	AddressCountry    OptString `json:"address_country"`
-	TaxExempt         bool      `json:"tax_exempt"`
-	Active            bool      `json:"active"`
-	CreatedAt         time.Time `json:"created_at"`
+	// How tax applies to the customer, as in Stripe. `none` taxes normally. `exempt` charges no tax.
+	// `reverse` charges no tax and leaves it to the customer under the reverse-charge mechanism; invoices
+	// state this. Only operators change it.
+	TaxExempt ContactTaxExempt `json:"tax_exempt"`
+	Active    bool             `json:"active"`
+	CreatedAt time.Time        `json:"created_at"`
 }
 
 // GetID returns the value of ID.
@@ -2689,7 +2379,7 @@ func (s *Contact) GetAddressCountry() OptString {
 }
 
 // GetTaxExempt returns the value of TaxExempt.
-func (s *Contact) GetTaxExempt() bool {
+func (s *Contact) GetTaxExempt() ContactTaxExempt {
 	return s.TaxExempt
 }
 
@@ -2764,7 +2454,7 @@ func (s *Contact) SetAddressCountry(val OptString) {
 }
 
 // SetTaxExempt sets the value of TaxExempt.
-func (s *Contact) SetTaxExempt(val bool) {
+func (s *Contact) SetTaxExempt(val ContactTaxExempt) {
 	s.TaxExempt = val
 }
 
@@ -2916,6 +2606,57 @@ func (s *ContactList) SetItems(val []Contact) {
 // SetPagination sets the value of Pagination.
 func (s *ContactList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// How tax applies to the customer, as in Stripe. `none` taxes normally. `exempt` charges no tax.
+// `reverse` charges no tax and leaves it to the customer under the reverse-charge mechanism; invoices
+// state this. Only operators change it.
+type ContactTaxExempt string
+
+const (
+	ContactTaxExemptNone    ContactTaxExempt = "none"
+	ContactTaxExemptExempt  ContactTaxExempt = "exempt"
+	ContactTaxExemptReverse ContactTaxExempt = "reverse"
+)
+
+// AllValues returns all ContactTaxExempt values.
+func (ContactTaxExempt) AllValues() []ContactTaxExempt {
+	return []ContactTaxExempt{
+		ContactTaxExemptNone,
+		ContactTaxExemptExempt,
+		ContactTaxExemptReverse,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ContactTaxExempt) MarshalText() ([]byte, error) {
+	switch s {
+	case ContactTaxExemptNone:
+		return []byte(s), nil
+	case ContactTaxExemptExempt:
+		return []byte(s), nil
+	case ContactTaxExemptReverse:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ContactTaxExempt) UnmarshalText(data []byte) error {
+	switch ContactTaxExempt(data) {
+	case ContactTaxExemptNone:
+		*s = ContactTaxExemptNone
+		return nil
+	case ContactTaxExemptExempt:
+		*s = ContactTaxExemptExempt
+		return nil
+	case ContactTaxExemptReverse:
+		*s = ContactTaxExemptReverse
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/ContactUpdate
@@ -3309,9 +3050,9 @@ func (s *CreditGroup) SetAmount(val Money) {
 	s.Amount = val
 }
 
-// An issued invoice reduction. Its credited amount is unpaid_amount plus paid_amount. A paid credit
-// records a return obligation; refund_id identifies its refund, whose outcome may still be pending.
-// Original invoice amounts remain unchanged.
+// An issued invoice reduction. Its credited amount is pre_payment_amount plus post_payment_amount. A
+// paid credit records a return obligation; refund_id identifies its refund, whose outcome may still be
+// pending. Original invoice amounts remain unchanged.
 // Ref: #/components/schemas/CreditNote
 type CreditNote struct {
 	ID        uuid.UUID        `json:"id"`
@@ -3322,11 +3063,15 @@ type CreditNote struct {
 	// When this note was voided; null while issued.
 	VoidedAt NilDateTime `json:"voided_at"`
 	// The reduction of unpaid receivables. A void note no longer reduces what is due.
-	UnpaidAmount Money `json:"unpaid_amount"`
+	PrePaymentAmount Money `json:"pre_payment_amount"`
 	// The credited part of payments already received. This is not proof that its refund has completed.
-	PaidAmount Money `json:"paid_amount"`
+	PostPaymentAmount Money `json:"post_payment_amount"`
 	// The refund to the original payment sources, or null when no paid amount was credited.
 	RefundID NilUUID `json:"refund_id"`
+	// Why the note was issued. Notes from canceled, expired or failed orders carry the order's reason;
+	// `usage_true_up` returns a tier price reduction settled after the original invoice; `operator` is
+	// issued by Leaflow on request.
+	Reason CreditNoteReason `json:"reason"`
 }
 
 // GetID returns the value of ID.
@@ -3359,19 +3104,24 @@ func (s *CreditNote) GetVoidedAt() NilDateTime {
 	return s.VoidedAt
 }
 
-// GetUnpaidAmount returns the value of UnpaidAmount.
-func (s *CreditNote) GetUnpaidAmount() Money {
-	return s.UnpaidAmount
+// GetPrePaymentAmount returns the value of PrePaymentAmount.
+func (s *CreditNote) GetPrePaymentAmount() Money {
+	return s.PrePaymentAmount
 }
 
-// GetPaidAmount returns the value of PaidAmount.
-func (s *CreditNote) GetPaidAmount() Money {
-	return s.PaidAmount
+// GetPostPaymentAmount returns the value of PostPaymentAmount.
+func (s *CreditNote) GetPostPaymentAmount() Money {
+	return s.PostPaymentAmount
 }
 
 // GetRefundID returns the value of RefundID.
 func (s *CreditNote) GetRefundID() NilUUID {
 	return s.RefundID
+}
+
+// GetReason returns the value of Reason.
+func (s *CreditNote) GetReason() CreditNoteReason {
+	return s.Reason
 }
 
 // SetID sets the value of ID.
@@ -3404,14 +3154,14 @@ func (s *CreditNote) SetVoidedAt(val NilDateTime) {
 	s.VoidedAt = val
 }
 
-// SetUnpaidAmount sets the value of UnpaidAmount.
-func (s *CreditNote) SetUnpaidAmount(val Money) {
-	s.UnpaidAmount = val
+// SetPrePaymentAmount sets the value of PrePaymentAmount.
+func (s *CreditNote) SetPrePaymentAmount(val Money) {
+	s.PrePaymentAmount = val
 }
 
-// SetPaidAmount sets the value of PaidAmount.
-func (s *CreditNote) SetPaidAmount(val Money) {
-	s.PaidAmount = val
+// SetPostPaymentAmount sets the value of PostPaymentAmount.
+func (s *CreditNote) SetPostPaymentAmount(val Money) {
+	s.PostPaymentAmount = val
 }
 
 // SetRefundID sets the value of RefundID.
@@ -3419,13 +3169,18 @@ func (s *CreditNote) SetRefundID(val NilUUID) {
 	s.RefundID = val
 }
 
+// SetReason sets the value of Reason.
+func (s *CreditNote) SetReason(val CreditNoteReason) {
+	s.Reason = val
+}
+
 // Ref: #/components/schemas/CreditNoteItem
 type CreditNoteItem struct {
-	ID            uuid.UUID `json:"id"`
-	CreditNoteID  uuid.UUID `json:"credit_note_id"`
-	InvoiceItemID uuid.UUID `json:"invoice_item_id"`
-	UnpaidAmount  Money     `json:"unpaid_amount"`
-	PaidAmount    Money     `json:"paid_amount"`
+	ID                uuid.UUID `json:"id"`
+	CreditNoteID      uuid.UUID `json:"credit_note_id"`
+	InvoiceItemID     uuid.UUID `json:"invoice_item_id"`
+	PrePaymentAmount  Money     `json:"pre_payment_amount"`
+	PostPaymentAmount Money     `json:"post_payment_amount"`
 }
 
 // GetID returns the value of ID.
@@ -3443,14 +3198,14 @@ func (s *CreditNoteItem) GetInvoiceItemID() uuid.UUID {
 	return s.InvoiceItemID
 }
 
-// GetUnpaidAmount returns the value of UnpaidAmount.
-func (s *CreditNoteItem) GetUnpaidAmount() Money {
-	return s.UnpaidAmount
+// GetPrePaymentAmount returns the value of PrePaymentAmount.
+func (s *CreditNoteItem) GetPrePaymentAmount() Money {
+	return s.PrePaymentAmount
 }
 
-// GetPaidAmount returns the value of PaidAmount.
-func (s *CreditNoteItem) GetPaidAmount() Money {
-	return s.PaidAmount
+// GetPostPaymentAmount returns the value of PostPaymentAmount.
+func (s *CreditNoteItem) GetPostPaymentAmount() Money {
+	return s.PostPaymentAmount
 }
 
 // SetID sets the value of ID.
@@ -3468,14 +3223,14 @@ func (s *CreditNoteItem) SetInvoiceItemID(val uuid.UUID) {
 	s.InvoiceItemID = val
 }
 
-// SetUnpaidAmount sets the value of UnpaidAmount.
-func (s *CreditNoteItem) SetUnpaidAmount(val Money) {
-	s.UnpaidAmount = val
+// SetPrePaymentAmount sets the value of PrePaymentAmount.
+func (s *CreditNoteItem) SetPrePaymentAmount(val Money) {
+	s.PrePaymentAmount = val
 }
 
-// SetPaidAmount sets the value of PaidAmount.
-func (s *CreditNoteItem) SetPaidAmount(val Money) {
-	s.PaidAmount = val
+// SetPostPaymentAmount sets the value of PostPaymentAmount.
+func (s *CreditNoteItem) SetPostPaymentAmount(val Money) {
+	s.PostPaymentAmount = val
 }
 
 // Ref: #/components/schemas/CreditNoteItemList
@@ -3528,6 +3283,92 @@ func (s *CreditNoteList) SetItems(val []CreditNote) {
 // SetPagination sets the value of Pagination.
 func (s *CreditNoteList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// Why the note was issued. Notes from canceled, expired or failed orders carry the order's reason;
+// `usage_true_up` returns a tier price reduction settled after the original invoice; `operator` is
+// issued by Leaflow on request.
+type CreditNoteReason string
+
+const (
+	CreditNoteReasonProvisioningFailed   CreditNoteReason = "provisioning_failed"
+	CreditNoteReasonOrderExpired         CreditNoteReason = "order_expired"
+	CreditNoteReasonOrderCanceled        CreditNoteReason = "order_canceled"
+	CreditNoteReasonChangeCanceled       CreditNoteReason = "change_canceled"
+	CreditNoteReasonChangeExpired        CreditNoteReason = "change_expired"
+	CreditNoteReasonSubscriptionCanceled CreditNoteReason = "subscription_canceled"
+	CreditNoteReasonUsageTrueUp          CreditNoteReason = "usage_true_up"
+	CreditNoteReasonOperator             CreditNoteReason = "operator"
+)
+
+// AllValues returns all CreditNoteReason values.
+func (CreditNoteReason) AllValues() []CreditNoteReason {
+	return []CreditNoteReason{
+		CreditNoteReasonProvisioningFailed,
+		CreditNoteReasonOrderExpired,
+		CreditNoteReasonOrderCanceled,
+		CreditNoteReasonChangeCanceled,
+		CreditNoteReasonChangeExpired,
+		CreditNoteReasonSubscriptionCanceled,
+		CreditNoteReasonUsageTrueUp,
+		CreditNoteReasonOperator,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreditNoteReason) MarshalText() ([]byte, error) {
+	switch s {
+	case CreditNoteReasonProvisioningFailed:
+		return []byte(s), nil
+	case CreditNoteReasonOrderExpired:
+		return []byte(s), nil
+	case CreditNoteReasonOrderCanceled:
+		return []byte(s), nil
+	case CreditNoteReasonChangeCanceled:
+		return []byte(s), nil
+	case CreditNoteReasonChangeExpired:
+		return []byte(s), nil
+	case CreditNoteReasonSubscriptionCanceled:
+		return []byte(s), nil
+	case CreditNoteReasonUsageTrueUp:
+		return []byte(s), nil
+	case CreditNoteReasonOperator:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreditNoteReason) UnmarshalText(data []byte) error {
+	switch CreditNoteReason(data) {
+	case CreditNoteReasonProvisioningFailed:
+		*s = CreditNoteReasonProvisioningFailed
+		return nil
+	case CreditNoteReasonOrderExpired:
+		*s = CreditNoteReasonOrderExpired
+		return nil
+	case CreditNoteReasonOrderCanceled:
+		*s = CreditNoteReasonOrderCanceled
+		return nil
+	case CreditNoteReasonChangeCanceled:
+		*s = CreditNoteReasonChangeCanceled
+		return nil
+	case CreditNoteReasonChangeExpired:
+		*s = CreditNoteReasonChangeExpired
+		return nil
+	case CreditNoteReasonSubscriptionCanceled:
+		*s = CreditNoteReasonSubscriptionCanceled
+		return nil
+	case CreditNoteReasonUsageTrueUp:
+		*s = CreditNoteReasonUsageTrueUp
+		return nil
+	case CreditNoteReasonOperator:
+		*s = CreditNoteReasonOperator
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type CreditNoteStatus string
@@ -3662,13 +3503,15 @@ type DeleteSubscriptionNoContent struct{}
 // and to metered usage that the coupon covers.
 // Ref: #/components/schemas/Discount
 type Discount struct {
-	MinAmount        OptString      `json:"min_amount"`
-	BillingAccountID OptInt64       `json:"billing_account_id"`
-	CouponID         uuid.UUID      `json:"coupon_id"`
-	PromotionCodeID  OptUUID        `json:"promotion_code_id"`
-	Status           DiscountStatus `json:"status"`
-	RevokedAt        OptDateTime    `json:"revoked_at"`
-	Type             DiscountType   `json:"type"`
+	MinAmount        OptString `json:"min_amount"`
+	BillingAccountID OptInt64  `json:"billing_account_id"`
+	CouponID         uuid.UUID `json:"coupon_id"`
+	PromotionCodeID  OptUUID   `json:"promotion_code_id"`
+	// `scheduled` before valid_from, `active` within the validity, `expired` after valid_until, or
+	// `voided` once Leaflow withdrew it.
+	Status   DiscountStatus `json:"status"`
+	VoidedAt OptDateTime    `json:"voided_at"`
+	Type     DiscountType   `json:"type"`
 	// Whether the discount continues on renewals of the purchased item. `once` applies only to the
 	// purchase or renewal that uses the coupon, `recurring` continues for `frequency_duration` billing
 	// periods including the first, and `forever` continues on every renewal.
@@ -3687,9 +3530,10 @@ type Discount struct {
 	// and traffic.
 	AppliesTo Applicability `json:"applies_to"`
 	// Restricted to your first purchase of anything it applies to.
-	FirstPurchaseOnly OptBool        `json:"first_purchase_only"`
-	StartedAt         OptDateTime    `json:"started_at"`
-	EndedAt           OptNilDateTime `json:"ended_at"`
+	FirstPurchaseOnly OptBool     `json:"first_purchase_only"`
+	ValidFrom         OptDateTime `json:"valid_from"`
+	// Absent follows the coupon's own validity.
+	ValidUntil OptNilDateTime `json:"valid_until"`
 }
 
 // GetMinAmount returns the value of MinAmount.
@@ -3717,9 +3561,9 @@ func (s *Discount) GetStatus() DiscountStatus {
 	return s.Status
 }
 
-// GetRevokedAt returns the value of RevokedAt.
-func (s *Discount) GetRevokedAt() OptDateTime {
-	return s.RevokedAt
+// GetVoidedAt returns the value of VoidedAt.
+func (s *Discount) GetVoidedAt() OptDateTime {
+	return s.VoidedAt
 }
 
 // GetType returns the value of Type.
@@ -3777,14 +3621,14 @@ func (s *Discount) GetFirstPurchaseOnly() OptBool {
 	return s.FirstPurchaseOnly
 }
 
-// GetStartedAt returns the value of StartedAt.
-func (s *Discount) GetStartedAt() OptDateTime {
-	return s.StartedAt
+// GetValidFrom returns the value of ValidFrom.
+func (s *Discount) GetValidFrom() OptDateTime {
+	return s.ValidFrom
 }
 
-// GetEndedAt returns the value of EndedAt.
-func (s *Discount) GetEndedAt() OptNilDateTime {
-	return s.EndedAt
+// GetValidUntil returns the value of ValidUntil.
+func (s *Discount) GetValidUntil() OptNilDateTime {
+	return s.ValidUntil
 }
 
 // SetMinAmount sets the value of MinAmount.
@@ -3812,9 +3656,9 @@ func (s *Discount) SetStatus(val DiscountStatus) {
 	s.Status = val
 }
 
-// SetRevokedAt sets the value of RevokedAt.
-func (s *Discount) SetRevokedAt(val OptDateTime) {
-	s.RevokedAt = val
+// SetVoidedAt sets the value of VoidedAt.
+func (s *Discount) SetVoidedAt(val OptDateTime) {
+	s.VoidedAt = val
 }
 
 // SetType sets the value of Type.
@@ -3872,14 +3716,14 @@ func (s *Discount) SetFirstPurchaseOnly(val OptBool) {
 	s.FirstPurchaseOnly = val
 }
 
-// SetStartedAt sets the value of StartedAt.
-func (s *Discount) SetStartedAt(val OptDateTime) {
-	s.StartedAt = val
+// SetValidFrom sets the value of ValidFrom.
+func (s *Discount) SetValidFrom(val OptDateTime) {
+	s.ValidFrom = val
 }
 
-// SetEndedAt sets the value of EndedAt.
-func (s *Discount) SetEndedAt(val OptNilDateTime) {
-	s.EndedAt = val
+// SetValidUntil sets the value of ValidUntil.
+func (s *Discount) SetValidUntil(val OptNilDateTime) {
+	s.ValidUntil = val
 }
 
 // Whether the discount continues on renewals of the purchased item. `once` applies only to the
@@ -3959,27 +3803,37 @@ func (s *DiscountList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// `scheduled` before valid_from, `active` within the validity, `expired` after valid_until, or
+// `voided` once Leaflow withdrew it.
 type DiscountStatus string
 
 const (
-	DiscountStatusActive  DiscountStatus = "active"
-	DiscountStatusRevoked DiscountStatus = "revoked"
+	DiscountStatusScheduled DiscountStatus = "scheduled"
+	DiscountStatusActive    DiscountStatus = "active"
+	DiscountStatusExpired   DiscountStatus = "expired"
+	DiscountStatusVoided    DiscountStatus = "voided"
 )
 
 // AllValues returns all DiscountStatus values.
 func (DiscountStatus) AllValues() []DiscountStatus {
 	return []DiscountStatus{
+		DiscountStatusScheduled,
 		DiscountStatusActive,
-		DiscountStatusRevoked,
+		DiscountStatusExpired,
+		DiscountStatusVoided,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s DiscountStatus) MarshalText() ([]byte, error) {
 	switch s {
+	case DiscountStatusScheduled:
+		return []byte(s), nil
 	case DiscountStatusActive:
 		return []byte(s), nil
-	case DiscountStatusRevoked:
+	case DiscountStatusExpired:
+		return []byte(s), nil
+	case DiscountStatusVoided:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -3989,11 +3843,17 @@ func (s DiscountStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *DiscountStatus) UnmarshalText(data []byte) error {
 	switch DiscountStatus(data) {
+	case DiscountStatusScheduled:
+		*s = DiscountStatusScheduled
+		return nil
 	case DiscountStatusActive:
 		*s = DiscountStatusActive
 		return nil
-	case DiscountStatusRevoked:
-		*s = DiscountStatusRevoked
+	case DiscountStatusExpired:
+		*s = DiscountStatusExpired
+		return nil
+	case DiscountStatusVoided:
+		*s = DiscountStatusVoided
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4193,7 +4053,6 @@ func (s *Error) SetStatus(val int64) {
 
 func (*Error) cancelOrderRes()        {}
 func (*Error) cancelTopUpRes()        {}
-func (*Error) checkoutOrderRes()      {}
 func (*Error) createRenewalOrderRes() {}
 func (*Error) renewSubscriptionRes()  {}
 
@@ -4234,6 +4093,182 @@ func (s *ErrorStatusCode) SetStatusCode(val int) {
 // SetResponse sets the value of Response.
 func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
+}
+
+// Ref: #/components/schemas/FeatureGrant
+type FeatureGrant struct {
+	ID               uuid.UUID      `json:"id"`
+	BillingAccountID int64          `json:"billing_account_id"`
+	Product          Product        `json:"product"`
+	Feature          ObjectIdentity `json:"feature"`
+	Name             string         `json:"name"`
+	ValidFrom        time.Time      `json:"valid_from"`
+	// Null means the grant does not expire.
+	ValidUntil NilDateTime        `json:"valid_until"`
+	Status     FeatureGrantStatus `json:"status"`
+}
+
+// GetID returns the value of ID.
+func (s *FeatureGrant) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *FeatureGrant) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetProduct returns the value of Product.
+func (s *FeatureGrant) GetProduct() Product {
+	return s.Product
+}
+
+// GetFeature returns the value of Feature.
+func (s *FeatureGrant) GetFeature() ObjectIdentity {
+	return s.Feature
+}
+
+// GetName returns the value of Name.
+func (s *FeatureGrant) GetName() string {
+	return s.Name
+}
+
+// GetValidFrom returns the value of ValidFrom.
+func (s *FeatureGrant) GetValidFrom() time.Time {
+	return s.ValidFrom
+}
+
+// GetValidUntil returns the value of ValidUntil.
+func (s *FeatureGrant) GetValidUntil() NilDateTime {
+	return s.ValidUntil
+}
+
+// GetStatus returns the value of Status.
+func (s *FeatureGrant) GetStatus() FeatureGrantStatus {
+	return s.Status
+}
+
+// SetID sets the value of ID.
+func (s *FeatureGrant) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *FeatureGrant) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetProduct sets the value of Product.
+func (s *FeatureGrant) SetProduct(val Product) {
+	s.Product = val
+}
+
+// SetFeature sets the value of Feature.
+func (s *FeatureGrant) SetFeature(val ObjectIdentity) {
+	s.Feature = val
+}
+
+// SetName sets the value of Name.
+func (s *FeatureGrant) SetName(val string) {
+	s.Name = val
+}
+
+// SetValidFrom sets the value of ValidFrom.
+func (s *FeatureGrant) SetValidFrom(val time.Time) {
+	s.ValidFrom = val
+}
+
+// SetValidUntil sets the value of ValidUntil.
+func (s *FeatureGrant) SetValidUntil(val NilDateTime) {
+	s.ValidUntil = val
+}
+
+// SetStatus sets the value of Status.
+func (s *FeatureGrant) SetStatus(val FeatureGrantStatus) {
+	s.Status = val
+}
+
+// Ref: #/components/schemas/FeatureGrantList
+type FeatureGrantList struct {
+	Items      []FeatureGrant   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *FeatureGrantList) GetItems() []FeatureGrant {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *FeatureGrantList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *FeatureGrantList) SetItems(val []FeatureGrant) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *FeatureGrantList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// Derived from the validity period. scheduled means valid_from has not yet arrived.
+// Ref: #/components/schemas/FeatureGrantStatus
+type FeatureGrantStatus string
+
+const (
+	FeatureGrantStatusScheduled FeatureGrantStatus = "scheduled"
+	FeatureGrantStatusActive    FeatureGrantStatus = "active"
+	FeatureGrantStatusExpired   FeatureGrantStatus = "expired"
+	FeatureGrantStatusVoided    FeatureGrantStatus = "voided"
+)
+
+// AllValues returns all FeatureGrantStatus values.
+func (FeatureGrantStatus) AllValues() []FeatureGrantStatus {
+	return []FeatureGrantStatus{
+		FeatureGrantStatusScheduled,
+		FeatureGrantStatusActive,
+		FeatureGrantStatusExpired,
+		FeatureGrantStatusVoided,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s FeatureGrantStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case FeatureGrantStatusScheduled:
+		return []byte(s), nil
+	case FeatureGrantStatusActive:
+		return []byte(s), nil
+	case FeatureGrantStatusExpired:
+		return []byte(s), nil
+	case FeatureGrantStatusVoided:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *FeatureGrantStatus) UnmarshalText(data []byte) error {
+	switch FeatureGrantStatus(data) {
+	case FeatureGrantStatusScheduled:
+		*s = FeatureGrantStatusScheduled
+		return nil
+	case FeatureGrantStatusActive:
+		*s = FeatureGrantStatusActive
+		return nil
+	case FeatureGrantStatusExpired:
+		*s = FeatureGrantStatusExpired
+		return nil
+	case FeatureGrantStatusVoided:
+		*s = FeatureGrantStatusVoided
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // GetPlanNotModified is response for GetPlan operation.
@@ -4328,29 +4363,32 @@ type Invoice struct {
 	AmountPaid OptMoney `json:"amount_paid"`
 	// Issued, non-void credit notes that reduced unpaid receivables. Does not rewrite the original invoice
 	// total.
-	UnpaidCreditNotesAmount Money `json:"unpaid_credit_notes_amount"`
+	PrePaymentCreditNotesAmount Money `json:"pre_payment_credit_notes_amount"`
 	// Issued credit notes against payments already received. This is a return obligation, not evidence of
 	// completed refunds.
-	PaidCreditNotesAmount Money `json:"paid_credit_notes_amount"`
+	PostPaymentCreditNotesAmount Money `json:"post_payment_credit_notes_amount"`
 	// What is still collectible after unpaid credit notes and successful payments; never below zero. A
-	// draft order invoice is not collectible until checkout confirms it, and a paid or void invoice has
-	// none.
+	// draft has none; its total is the base price, and a payment preview shows what paying it would
+	// collect. A paid or void invoice has none either.
 	AmountDue   Money          `json:"amount_due"`
 	PeriodStart OptNilDateTime `json:"period_start"`
 	// Exclusive.
 	PeriodEnd OptNilDateTime `json:"period_end"`
 	// Who this was billed to, as recorded when the invoice was issued. Later changes to the account do not
 	// alter it.
-	CustomerName              OptString      `json:"customer_name"`
-	CustomerEmail             OptString      `json:"customer_email"`
-	CustomerTaxID             OptString      `json:"customer_tax_id"`
-	CustomerAddressLine1      OptString      `json:"customer_address_line1"`
-	CustomerAddressLine2      OptString      `json:"customer_address_line2"`
-	CustomerAddressCity       OptString      `json:"customer_address_city"`
-	CustomerAddressState      OptString      `json:"customer_address_state"`
-	CustomerAddressPostalCode OptString      `json:"customer_address_postal_code"`
-	CustomerAddressCountry    OptString      `json:"customer_address_country"`
-	PaidAt                    OptNilDateTime `json:"paid_at"`
+	CustomerName  OptString `json:"customer_name"`
+	CustomerEmail OptString `json:"customer_email"`
+	CustomerTaxID OptString `json:"customer_tax_id"`
+	// How tax applied to the customer when the invoice was issued. `reverse` means no tax was charged
+	// because the customer accounts for it under the reverse-charge mechanism.
+	CustomerTaxExempt         OptInvoiceCustomerTaxExempt `json:"customer_tax_exempt"`
+	CustomerAddressLine1      OptString                   `json:"customer_address_line1"`
+	CustomerAddressLine2      OptString                   `json:"customer_address_line2"`
+	CustomerAddressCity       OptString                   `json:"customer_address_city"`
+	CustomerAddressState      OptString                   `json:"customer_address_state"`
+	CustomerAddressPostalCode OptString                   `json:"customer_address_postal_code"`
+	CustomerAddressCountry    OptString                   `json:"customer_address_country"`
+	PaidAt                    OptNilDateTime              `json:"paid_at"`
 }
 
 // GetVoidRequestedAt returns the value of VoidRequestedAt.
@@ -4428,14 +4466,14 @@ func (s *Invoice) GetAmountPaid() OptMoney {
 	return s.AmountPaid
 }
 
-// GetUnpaidCreditNotesAmount returns the value of UnpaidCreditNotesAmount.
-func (s *Invoice) GetUnpaidCreditNotesAmount() Money {
-	return s.UnpaidCreditNotesAmount
+// GetPrePaymentCreditNotesAmount returns the value of PrePaymentCreditNotesAmount.
+func (s *Invoice) GetPrePaymentCreditNotesAmount() Money {
+	return s.PrePaymentCreditNotesAmount
 }
 
-// GetPaidCreditNotesAmount returns the value of PaidCreditNotesAmount.
-func (s *Invoice) GetPaidCreditNotesAmount() Money {
-	return s.PaidCreditNotesAmount
+// GetPostPaymentCreditNotesAmount returns the value of PostPaymentCreditNotesAmount.
+func (s *Invoice) GetPostPaymentCreditNotesAmount() Money {
+	return s.PostPaymentCreditNotesAmount
 }
 
 // GetAmountDue returns the value of AmountDue.
@@ -4466,6 +4504,11 @@ func (s *Invoice) GetCustomerEmail() OptString {
 // GetCustomerTaxID returns the value of CustomerTaxID.
 func (s *Invoice) GetCustomerTaxID() OptString {
 	return s.CustomerTaxID
+}
+
+// GetCustomerTaxExempt returns the value of CustomerTaxExempt.
+func (s *Invoice) GetCustomerTaxExempt() OptInvoiceCustomerTaxExempt {
+	return s.CustomerTaxExempt
 }
 
 // GetCustomerAddressLine1 returns the value of CustomerAddressLine1.
@@ -4578,14 +4621,14 @@ func (s *Invoice) SetAmountPaid(val OptMoney) {
 	s.AmountPaid = val
 }
 
-// SetUnpaidCreditNotesAmount sets the value of UnpaidCreditNotesAmount.
-func (s *Invoice) SetUnpaidCreditNotesAmount(val Money) {
-	s.UnpaidCreditNotesAmount = val
+// SetPrePaymentCreditNotesAmount sets the value of PrePaymentCreditNotesAmount.
+func (s *Invoice) SetPrePaymentCreditNotesAmount(val Money) {
+	s.PrePaymentCreditNotesAmount = val
 }
 
-// SetPaidCreditNotesAmount sets the value of PaidCreditNotesAmount.
-func (s *Invoice) SetPaidCreditNotesAmount(val Money) {
-	s.PaidCreditNotesAmount = val
+// SetPostPaymentCreditNotesAmount sets the value of PostPaymentCreditNotesAmount.
+func (s *Invoice) SetPostPaymentCreditNotesAmount(val Money) {
+	s.PostPaymentCreditNotesAmount = val
 }
 
 // SetAmountDue sets the value of AmountDue.
@@ -4616,6 +4659,11 @@ func (s *Invoice) SetCustomerEmail(val OptString) {
 // SetCustomerTaxID sets the value of CustomerTaxID.
 func (s *Invoice) SetCustomerTaxID(val OptString) {
 	s.CustomerTaxID = val
+}
+
+// SetCustomerTaxExempt sets the value of CustomerTaxExempt.
+func (s *Invoice) SetCustomerTaxExempt(val OptInvoiceCustomerTaxExempt) {
+	s.CustomerTaxExempt = val
 }
 
 // SetCustomerAddressLine1 sets the value of CustomerAddressLine1.
@@ -4651,6 +4699,56 @@ func (s *Invoice) SetCustomerAddressCountry(val OptString) {
 // SetPaidAt sets the value of PaidAt.
 func (s *Invoice) SetPaidAt(val OptNilDateTime) {
 	s.PaidAt = val
+}
+
+// How tax applied to the customer when the invoice was issued. `reverse` means no tax was charged
+// because the customer accounts for it under the reverse-charge mechanism.
+type InvoiceCustomerTaxExempt string
+
+const (
+	InvoiceCustomerTaxExemptNone    InvoiceCustomerTaxExempt = "none"
+	InvoiceCustomerTaxExemptExempt  InvoiceCustomerTaxExempt = "exempt"
+	InvoiceCustomerTaxExemptReverse InvoiceCustomerTaxExempt = "reverse"
+)
+
+// AllValues returns all InvoiceCustomerTaxExempt values.
+func (InvoiceCustomerTaxExempt) AllValues() []InvoiceCustomerTaxExempt {
+	return []InvoiceCustomerTaxExempt{
+		InvoiceCustomerTaxExemptNone,
+		InvoiceCustomerTaxExemptExempt,
+		InvoiceCustomerTaxExemptReverse,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InvoiceCustomerTaxExempt) MarshalText() ([]byte, error) {
+	switch s {
+	case InvoiceCustomerTaxExemptNone:
+		return []byte(s), nil
+	case InvoiceCustomerTaxExemptExempt:
+		return []byte(s), nil
+	case InvoiceCustomerTaxExemptReverse:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InvoiceCustomerTaxExempt) UnmarshalText(data []byte) error {
+	switch InvoiceCustomerTaxExempt(data) {
+	case InvoiceCustomerTaxExemptNone:
+		*s = InvoiceCustomerTaxExemptNone
+		return nil
+	case InvoiceCustomerTaxExemptExempt:
+		*s = InvoiceCustomerTaxExemptExempt
+		return nil
+	case InvoiceCustomerTaxExemptReverse:
+		*s = InvoiceCustomerTaxExemptReverse
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/InvoiceItem
@@ -5002,11 +5100,12 @@ func (s *InvoiceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Draft invoices are private to administrators and cannot be read, listed or paid by customers. An
-// issued invoice is open until settled; a zero-total issued invoice is immediately paid. Unbilled
-// usage remains separate from invoices until it is invoiced. refunded means a full refund; a partial
-// refund leaves the invoice paid. void means collection has stopped and any funds received have been
-// returned.
+// A draft is not yet issued. The draft invoice of an order shows base prices until it is paid, when
+// the discount is applied and it is issued; other drafts are private to administrators. An issued
+// invoice is open until settled; a zero-total issued invoice is immediately paid. Unbilled usage
+// remains separate from invoices until it is invoiced. A refund does not change the status: a paid
+// invoice stays paid, with the refunded part in amount_refunded. void means collection has stopped and
+// any funds received have been returned.
 // Ref: #/components/schemas/InvoiceStatus
 type InvoiceStatus string
 
@@ -5014,7 +5113,6 @@ const (
 	InvoiceStatusDraft         InvoiceStatus = "draft"
 	InvoiceStatusOpen          InvoiceStatus = "open"
 	InvoiceStatusPaid          InvoiceStatus = "paid"
-	InvoiceStatusRefunded      InvoiceStatus = "refunded"
 	InvoiceStatusVoid          InvoiceStatus = "void"
 	InvoiceStatusUncollectible InvoiceStatus = "uncollectible"
 )
@@ -5025,7 +5123,6 @@ func (InvoiceStatus) AllValues() []InvoiceStatus {
 		InvoiceStatusDraft,
 		InvoiceStatusOpen,
 		InvoiceStatusPaid,
-		InvoiceStatusRefunded,
 		InvoiceStatusVoid,
 		InvoiceStatusUncollectible,
 	}
@@ -5039,8 +5136,6 @@ func (s InvoiceStatus) MarshalText() ([]byte, error) {
 	case InvoiceStatusOpen:
 		return []byte(s), nil
 	case InvoiceStatusPaid:
-		return []byte(s), nil
-	case InvoiceStatusRefunded:
 		return []byte(s), nil
 	case InvoiceStatusVoid:
 		return []byte(s), nil
@@ -5063,9 +5158,6 @@ func (s *InvoiceStatus) UnmarshalText(data []byte) error {
 	case InvoiceStatusPaid:
 		*s = InvoiceStatusPaid
 		return nil
-	case InvoiceStatusRefunded:
-		*s = InvoiceStatusRefunded
-		return nil
 	case InvoiceStatusVoid:
 		*s = InvoiceStatusVoid
 		return nil
@@ -5077,9 +5169,10 @@ func (s *InvoiceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Purchase-related invoice amounts, without account contact details or payment methods. A draft order
-// invoice shows base amounts awaiting checkout, not a confirmed discount or collectible total. Absent
-// when no invoice has been created; absence does not establish acceptance or delivery.
+// Purchase-related invoice amounts, without account contact details or payment methods. Every order
+// has an invoice from placement. A draft shows base prices until it is paid, when the discount is
+// applied and it is issued; a zero-total invoice is issued and paid at placement whatever the checkout
+// mode. Neither establishes acceptance or delivery.
 // Ref: #/components/schemas/InvoiceSummary
 type InvoiceSummary struct {
 	ID       uuid.UUID     `json:"id"`
@@ -5097,10 +5190,10 @@ type InvoiceSummary struct {
 	AmountPaid     string `json:"amount_paid"`
 	// Issued, non-void credit notes that reduced unpaid receivables. Does not rewrite the original invoice
 	// total.
-	UnpaidCreditNotesAmount Money `json:"unpaid_credit_notes_amount"`
+	PrePaymentCreditNotesAmount Money `json:"pre_payment_credit_notes_amount"`
 	// Issued credit notes against payments already received. This is a return obligation, not evidence of
 	// completed refunds.
-	PaidCreditNotesAmount Money `json:"paid_credit_notes_amount"`
+	PostPaymentCreditNotesAmount Money `json:"post_payment_credit_notes_amount"`
 	// What is still collectible after unpaid credit notes and successful payments; never below zero.
 	AmountDue      string      `json:"amount_due"`
 	AmountRefunded string      `json:"amount_refunded"`
@@ -5152,14 +5245,14 @@ func (s *InvoiceSummary) GetAmountPaid() string {
 	return s.AmountPaid
 }
 
-// GetUnpaidCreditNotesAmount returns the value of UnpaidCreditNotesAmount.
-func (s *InvoiceSummary) GetUnpaidCreditNotesAmount() Money {
-	return s.UnpaidCreditNotesAmount
+// GetPrePaymentCreditNotesAmount returns the value of PrePaymentCreditNotesAmount.
+func (s *InvoiceSummary) GetPrePaymentCreditNotesAmount() Money {
+	return s.PrePaymentCreditNotesAmount
 }
 
-// GetPaidCreditNotesAmount returns the value of PaidCreditNotesAmount.
-func (s *InvoiceSummary) GetPaidCreditNotesAmount() Money {
-	return s.PaidCreditNotesAmount
+// GetPostPaymentCreditNotesAmount returns the value of PostPaymentCreditNotesAmount.
+func (s *InvoiceSummary) GetPostPaymentCreditNotesAmount() Money {
+	return s.PostPaymentCreditNotesAmount
 }
 
 // GetAmountDue returns the value of AmountDue.
@@ -5222,14 +5315,14 @@ func (s *InvoiceSummary) SetAmountPaid(val string) {
 	s.AmountPaid = val
 }
 
-// SetUnpaidCreditNotesAmount sets the value of UnpaidCreditNotesAmount.
-func (s *InvoiceSummary) SetUnpaidCreditNotesAmount(val Money) {
-	s.UnpaidCreditNotesAmount = val
+// SetPrePaymentCreditNotesAmount sets the value of PrePaymentCreditNotesAmount.
+func (s *InvoiceSummary) SetPrePaymentCreditNotesAmount(val Money) {
+	s.PrePaymentCreditNotesAmount = val
 }
 
-// SetPaidCreditNotesAmount sets the value of PaidCreditNotesAmount.
-func (s *InvoiceSummary) SetPaidCreditNotesAmount(val Money) {
-	s.PaidCreditNotesAmount = val
+// SetPostPaymentCreditNotesAmount sets the value of PostPaymentCreditNotesAmount.
+func (s *InvoiceSummary) SetPostPaymentCreditNotesAmount(val Money) {
+	s.PostPaymentCreditNotesAmount = val
 }
 
 // SetAmountDue sets the value of AmountDue.
@@ -6131,52 +6224,6 @@ func (o OptCancellationRefundPreview) Or(d CancellationRefundPreview) Cancellati
 	return d
 }
 
-// NewOptCancellationRequest returns new OptCancellationRequest with value set to v.
-func NewOptCancellationRequest(v CancellationRequest) OptCancellationRequest {
-	return OptCancellationRequest{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCancellationRequest is optional CancellationRequest.
-type OptCancellationRequest struct {
-	Value CancellationRequest
-	Set   bool
-}
-
-// IsSet returns true if OptCancellationRequest was set.
-func (o OptCancellationRequest) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCancellationRequest) Reset() {
-	var v CancellationRequest
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCancellationRequest) SetTo(v CancellationRequest) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCancellationRequest) Get() (v CancellationRequest, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCancellationRequest) Or(d CancellationRequest) CancellationRequest {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptDateTime returns new OptDateTime with value set to v.
 func NewOptDateTime(v time.Time) OptDateTime {
 	return OptDateTime{
@@ -6309,6 +6356,52 @@ func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptFeatureGrantStatus returns new OptFeatureGrantStatus with value set to v.
+func NewOptFeatureGrantStatus(v FeatureGrantStatus) OptFeatureGrantStatus {
+	return OptFeatureGrantStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptFeatureGrantStatus is optional FeatureGrantStatus.
+type OptFeatureGrantStatus struct {
+	Value FeatureGrantStatus
+	Set   bool
+}
+
+// IsSet returns true if OptFeatureGrantStatus was set.
+func (o OptFeatureGrantStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptFeatureGrantStatus) Reset() {
+	var v FeatureGrantStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptFeatureGrantStatus) SetTo(v FeatureGrantStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptFeatureGrantStatus) Get() (v FeatureGrantStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptFeatureGrantStatus) Or(d FeatureGrantStatus) FeatureGrantStatus {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6453,6 +6546,52 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
+// NewOptInvoiceCustomerTaxExempt returns new OptInvoiceCustomerTaxExempt with value set to v.
+func NewOptInvoiceCustomerTaxExempt(v InvoiceCustomerTaxExempt) OptInvoiceCustomerTaxExempt {
+	return OptInvoiceCustomerTaxExempt{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInvoiceCustomerTaxExempt is optional InvoiceCustomerTaxExempt.
+type OptInvoiceCustomerTaxExempt struct {
+	Value InvoiceCustomerTaxExempt
+	Set   bool
+}
+
+// IsSet returns true if OptInvoiceCustomerTaxExempt was set.
+func (o OptInvoiceCustomerTaxExempt) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInvoiceCustomerTaxExempt) Reset() {
+	var v InvoiceCustomerTaxExempt
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInvoiceCustomerTaxExempt) SetTo(v InvoiceCustomerTaxExempt) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInvoiceCustomerTaxExempt) Get() (v InvoiceCustomerTaxExempt, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInvoiceCustomerTaxExempt) Or(d InvoiceCustomerTaxExempt) InvoiceCustomerTaxExempt {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInvoiceItemType returns new OptInvoiceItemType with value set to v.
 func NewOptInvoiceItemType(v InvoiceItemType) OptInvoiceItemType {
 	return OptInvoiceItemType{
@@ -6539,52 +6678,6 @@ func (o OptInvoiceStatus) Get() (v InvoiceStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInvoiceStatus) Or(d InvoiceStatus) InvoiceStatus {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptInvoiceSummary returns new OptInvoiceSummary with value set to v.
-func NewOptInvoiceSummary(v InvoiceSummary) OptInvoiceSummary {
-	return OptInvoiceSummary{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptInvoiceSummary is optional InvoiceSummary.
-type OptInvoiceSummary struct {
-	Value InvoiceSummary
-	Set   bool
-}
-
-// IsSet returns true if OptInvoiceSummary was set.
-func (o OptInvoiceSummary) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptInvoiceSummary) Reset() {
-	var v InvoiceSummary
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptInvoiceSummary) SetTo(v InvoiceSummary) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptInvoiceSummary) Get() (v InvoiceSummary, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptInvoiceSummary) Or(d InvoiceSummary) InvoiceSummary {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8403,6 +8496,52 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
+// NewOptSubscriptionCancellation returns new OptSubscriptionCancellation with value set to v.
+func NewOptSubscriptionCancellation(v SubscriptionCancellation) OptSubscriptionCancellation {
+	return OptSubscriptionCancellation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSubscriptionCancellation is optional SubscriptionCancellation.
+type OptSubscriptionCancellation struct {
+	Value SubscriptionCancellation
+	Set   bool
+}
+
+// IsSet returns true if OptSubscriptionCancellation was set.
+func (o OptSubscriptionCancellation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSubscriptionCancellation) Reset() {
+	var v SubscriptionCancellation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSubscriptionCancellation) SetTo(v SubscriptionCancellation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSubscriptionCancellation) Get() (v SubscriptionCancellation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSubscriptionCancellation) Or(d SubscriptionCancellation) SubscriptionCancellation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptTerminationPolicy returns new OptTerminationPolicy with value set to v.
 func NewOptTerminationPolicy(v TerminationPolicy) OptTerminationPolicy {
 	return OptTerminationPolicy{
@@ -8679,18 +8818,22 @@ func (o OptUsageChargeDimensions) Or(d UsageChargeDimensions) UsageChargeDimensi
 	return d
 }
 
-// A recorded purchase. pending_checkout requires explicit Billing confirmation before collection or
-// acceptance, even without an invoice. Coupon fields describe a discount confirmed at checkout and are
-// absent before confirmation; a quote never populates them. A draft invoice contains base purchase
-// amounts awaiting checkout. Payment and acceptance remain separate from resource delivery.
+// A recorded purchase with its invoice from placement; a zero-total invoice, such as for postpaid
+// admission, is issued and paid at placement whatever the checkout mode. Until checkout_confirmed_at
+// is set, the invoice is a draft at base prices: paying it fixes the discount and amount, issues it
+// and collects it, and the order cannot be accepted before then. Coupon fields describe the discount
+// fixed at that point and are absent before it; a quote never populates them. Payment and acceptance
+// remain separate from resource delivery.
 // Ref: #/components/schemas/Order
 type Order struct {
 	CouponID        OptUUID           `json:"coupon_id"`
 	Coupon          OptObjectIdentity `json:"coupon"`
 	PromotionCodeID OptUUID           `json:"promotion_code_id"`
-	// Code text frozen when checkout applied the coupon. Absent for an account discount.
-	PromotionCode OptString         `json:"promotion_code"`
-	Invoice       OptInvoiceSummary `json:"invoice"`
+	// Code text frozen when the coupon was applied. Absent for an account discount.
+	PromotionCode OptString `json:"promotion_code"`
+	// The order's invoice, the same as invoice.id.
+	InvoiceID uuid.UUID      `json:"invoice_id"`
+	Invoice   InvoiceSummary `json:"invoice"`
 	// How the order was paid. Absent until it is paid.
 	PaidWith          OptPaidWith        `json:"paid_with"`
 	Account           OptAccountIdentity `json:"account"`
@@ -8704,12 +8847,12 @@ type Order struct {
 	Project OptNilNamedIdentity `json:"project"`
 	// The billing account the order was placed with. It does not change when the project is later linked
 	// to another billing account. While this account is suspended or closed the order cannot be accepted,
-	// and a change scheduled for the end of a period is not invoiced and is called off when the current
-	// period ends; such requests fail with BILLING_ACCOUNT_UNAVAILABLE.
+	// and the invoice of a change scheduled for the end of a period is not issued and the change is called
+	// off when the current period ends; such requests fail with BILLING_ACCOUNT_UNAVAILABLE.
 	BillingAccountID OptInt64 `json:"billing_account_id"`
 	Currency         string   `json:"currency"`
-	// `adopt` brings a resource that already existed under billing. It charges nothing at the time and
-	// starts billing from the moment agreed.
+	// `new` buys, `renew` extends a prepaid subscription, `modify` changes a subscription's configuration
+	// or billing terms.
 	Type   OrderType   `json:"type"`
 	Status OrderStatus `json:"status"`
 	// When a plan change takes effect. `none` on anything that is not a change.
@@ -8719,9 +8862,12 @@ type Order struct {
 	// still unpaid by then, the order is canceled and the subscription renews or ends as usual. Renewing
 	// in the meantime moves all of this along with it.
 	ChangeEffective OptOrderChangeEffective `json:"change_effective"`
-	// Acceptance deadline. pending_checkout and pending orders can expire automatically.
+	// Acceptance deadline. Pending orders can expire automatically.
 	ExpiresAt OptNilDateTime `json:"expires_at"`
-	CreatedAt time.Time      `json:"created_at"`
+	// When the discount and amount were fixed: at placement for automatic checkout and for a zero total,
+	// otherwise when the invoice was first paid. Null while a deferred order awaits payment.
+	CheckoutConfirmedAt OptNilDateTime `json:"checkout_confirmed_at"`
+	CreatedAt           time.Time      `json:"created_at"`
 	// What was bought. Present on a single order and on every order in a list, so a list can be rendered
 	// without a further request per row.
 	Items []OrderItem `json:"items"`
@@ -8747,8 +8893,13 @@ func (s *Order) GetPromotionCode() OptString {
 	return s.PromotionCode
 }
 
+// GetInvoiceID returns the value of InvoiceID.
+func (s *Order) GetInvoiceID() uuid.UUID {
+	return s.InvoiceID
+}
+
 // GetInvoice returns the value of Invoice.
-func (s *Order) GetInvoice() OptInvoiceSummary {
+func (s *Order) GetInvoice() InvoiceSummary {
 	return s.Invoice
 }
 
@@ -8812,6 +8963,11 @@ func (s *Order) GetExpiresAt() OptNilDateTime {
 	return s.ExpiresAt
 }
 
+// GetCheckoutConfirmedAt returns the value of CheckoutConfirmedAt.
+func (s *Order) GetCheckoutConfirmedAt() OptNilDateTime {
+	return s.CheckoutConfirmedAt
+}
+
 // GetCreatedAt returns the value of CreatedAt.
 func (s *Order) GetCreatedAt() time.Time {
 	return s.CreatedAt
@@ -8842,8 +8998,13 @@ func (s *Order) SetPromotionCode(val OptString) {
 	s.PromotionCode = val
 }
 
+// SetInvoiceID sets the value of InvoiceID.
+func (s *Order) SetInvoiceID(val uuid.UUID) {
+	s.InvoiceID = val
+}
+
 // SetInvoice sets the value of Invoice.
-func (s *Order) SetInvoice(val OptInvoiceSummary) {
+func (s *Order) SetInvoice(val InvoiceSummary) {
 	s.Invoice = val
 }
 
@@ -8907,6 +9068,11 @@ func (s *Order) SetExpiresAt(val OptNilDateTime) {
 	s.ExpiresAt = val
 }
 
+// SetCheckoutConfirmedAt sets the value of CheckoutConfirmedAt.
+func (s *Order) SetCheckoutConfirmedAt(val OptNilDateTime) {
+	s.CheckoutConfirmedAt = val
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *Order) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -8918,7 +9084,6 @@ func (s *Order) SetItems(val []OrderItem) {
 }
 
 func (*Order) cancelOrderRes()        {}
-func (*Order) checkoutOrderRes()      {}
 func (*Order) createRenewalOrderRes() {}
 
 // Ref: #/components/schemas/OrderCancel
@@ -8992,9 +9157,10 @@ func (s *OrderChangeEffective) UnmarshalText(data []byte) error {
 	}
 }
 
-// Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are absent when
-// there is no immediate invoice. Later catalog changes do not reprice this line. A new service
-// purchase creates its pending subscription when this item is recorded, not when payment succeeds.
+// Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are zero for a
+// line with no immediate charge, such as postpaid admission. Later catalog changes do not reprice this
+// line. A new service purchase creates its pending subscription when this item is recorded, not when
+// payment succeeds.
 // Ref: #/components/schemas/OrderItem
 type OrderItem struct {
 	// Financial lines produced by this purchase item, including setup charges.
@@ -9020,7 +9186,7 @@ type OrderItem struct {
 	RecurringAmount    OptString    `json:"recurring_amount"`
 	SetupAmount        OptString    `json:"setup_amount"`
 	// The payment timing of the selected price.
-	BillingType OrderItemBillingType `json:"billing_type"`
+	ChargeType OrderItemChargeType `json:"charge_type"`
 	// Total tax after discounts, including any tax already included in the price.
 	TaxAmount OptString `json:"tax_amount"`
 	// The part of tax_amount already included in gross_amount; it is not charged again.
@@ -9132,9 +9298,9 @@ func (s *OrderItem) GetSetupAmount() OptString {
 	return s.SetupAmount
 }
 
-// GetBillingType returns the value of BillingType.
-func (s *OrderItem) GetBillingType() OrderItemBillingType {
-	return s.BillingType
+// GetChargeType returns the value of ChargeType.
+func (s *OrderItem) GetChargeType() OrderItemChargeType {
+	return s.ChargeType
 }
 
 // GetTaxAmount returns the value of TaxAmount.
@@ -9292,9 +9458,9 @@ func (s *OrderItem) SetSetupAmount(val OptString) {
 	s.SetupAmount = val
 }
 
-// SetBillingType sets the value of BillingType.
-func (s *OrderItem) SetBillingType(val OrderItemBillingType) {
-	s.BillingType = val
+// SetChargeType sets the value of ChargeType.
+func (s *OrderItem) SetChargeType(val OrderItemChargeType) {
+	s.ChargeType = val
 }
 
 // SetTaxAmount sets the value of TaxAmount.
@@ -9388,31 +9554,31 @@ func (s *OrderItem) SetStatus(val OrderItemStatus) {
 }
 
 // The payment timing of the selected price.
-type OrderItemBillingType string
+type OrderItemChargeType string
 
 const (
-	OrderItemBillingTypePostpaid OrderItemBillingType = "postpaid"
-	OrderItemBillingTypePrepaid  OrderItemBillingType = "prepaid"
-	OrderItemBillingTypeOneTime  OrderItemBillingType = "one_time"
+	OrderItemChargeTypePostpaid OrderItemChargeType = "postpaid"
+	OrderItemChargeTypePrepaid  OrderItemChargeType = "prepaid"
+	OrderItemChargeTypeOneTime  OrderItemChargeType = "one_time"
 )
 
-// AllValues returns all OrderItemBillingType values.
-func (OrderItemBillingType) AllValues() []OrderItemBillingType {
-	return []OrderItemBillingType{
-		OrderItemBillingTypePostpaid,
-		OrderItemBillingTypePrepaid,
-		OrderItemBillingTypeOneTime,
+// AllValues returns all OrderItemChargeType values.
+func (OrderItemChargeType) AllValues() []OrderItemChargeType {
+	return []OrderItemChargeType{
+		OrderItemChargeTypePostpaid,
+		OrderItemChargeTypePrepaid,
+		OrderItemChargeTypeOneTime,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s OrderItemBillingType) MarshalText() ([]byte, error) {
+func (s OrderItemChargeType) MarshalText() ([]byte, error) {
 	switch s {
-	case OrderItemBillingTypePostpaid:
+	case OrderItemChargeTypePostpaid:
 		return []byte(s), nil
-	case OrderItemBillingTypePrepaid:
+	case OrderItemChargeTypePrepaid:
 		return []byte(s), nil
-	case OrderItemBillingTypeOneTime:
+	case OrderItemChargeTypeOneTime:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -9420,16 +9586,16 @@ func (s OrderItemBillingType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *OrderItemBillingType) UnmarshalText(data []byte) error {
-	switch OrderItemBillingType(data) {
-	case OrderItemBillingTypePostpaid:
-		*s = OrderItemBillingTypePostpaid
+func (s *OrderItemChargeType) UnmarshalText(data []byte) error {
+	switch OrderItemChargeType(data) {
+	case OrderItemChargeTypePostpaid:
+		*s = OrderItemChargeTypePostpaid
 		return nil
-	case OrderItemBillingTypePrepaid:
-		*s = OrderItemBillingTypePrepaid
+	case OrderItemChargeTypePrepaid:
+		*s = OrderItemChargeTypePrepaid
 		return nil
-	case OrderItemBillingTypeOneTime:
-		*s = OrderItemBillingTypeOneTime
+	case OrderItemChargeTypeOneTime:
+		*s = OrderItemChargeTypeOneTime
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -9710,22 +9876,18 @@ func (s *OrderRefundQuoteInput) SetOrderItemIds(val []uuid.UUID) {
 	s.OrderItemIds = val
 }
 
-// Pending_checkout has recorded purchase terms but no confirmed checkout; only a deferred order with
-// an amount due reaches it, since a zero-total order completes checkout at placement. Confirmation
-// moves it to pending. Both pending_checkout and pending can expire or be canceled; neither
-// establishes service delivery.
-//
-// Follows the items. `pending` has confirmed checkout, is not yet accepted and may be paid or unpaid.
-// `accepted` is accepted with items still being set up. `completed` means every item was set up.
-// `partially_completed` means some items were set up and the others failed or were canceled and were
-// refunded to their original payment sources. `failed` means no item was delivered and at least one
-// failed; collected amounts for the undelivered items are refunded. `canceled` means every item was
-// withdrawn without delivery; collected amounts are returned to their original payment sources.
+// Follows the items. `pending` is not yet accepted and may be unpaid or paid; its invoice shows
+// whether payment is still needed, and it can expire or be canceled. `accepted` is accepted with items
+// still being set up. `completed` means every item was set up. `partially_completed` means some items
+// were set up and the others failed or were canceled and were refunded to their original payment
+// sources. `failed` means no item was delivered and at least one failed; collected amounts for the
+// undelivered items are refunded. `canceled` means every item was withdrawn without delivery;
+// collected amounts are returned to their original payment sources. No status establishes service
+// delivery by itself.
 // Ref: #/components/schemas/OrderStatus
 type OrderStatus string
 
 const (
-	OrderStatusPendingCheckout    OrderStatus = "pending_checkout"
 	OrderStatusPending            OrderStatus = "pending"
 	OrderStatusAccepted           OrderStatus = "accepted"
 	OrderStatusCompleted          OrderStatus = "completed"
@@ -9737,7 +9899,6 @@ const (
 // AllValues returns all OrderStatus values.
 func (OrderStatus) AllValues() []OrderStatus {
 	return []OrderStatus{
-		OrderStatusPendingCheckout,
 		OrderStatusPending,
 		OrderStatusAccepted,
 		OrderStatusCompleted,
@@ -9750,8 +9911,6 @@ func (OrderStatus) AllValues() []OrderStatus {
 // MarshalText implements encoding.TextMarshaler.
 func (s OrderStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case OrderStatusPendingCheckout:
-		return []byte(s), nil
 	case OrderStatusPending:
 		return []byte(s), nil
 	case OrderStatusAccepted:
@@ -9772,9 +9931,6 @@ func (s OrderStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *OrderStatus) UnmarshalText(data []byte) error {
 	switch OrderStatus(data) {
-	case OrderStatusPendingCheckout:
-		*s = OrderStatusPendingCheckout
-		return nil
 	case OrderStatusPending:
 		*s = OrderStatusPending
 		return nil
@@ -9798,37 +9954,33 @@ func (s *OrderStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// `adopt` brings a resource that already existed under billing. It charges nothing at the time and
-// starts billing from the moment agreed.
+// `new` buys, `renew` extends a prepaid subscription, `modify` changes a subscription's configuration
+// or billing terms.
 type OrderType string
 
 const (
-	OrderTypePurchase OrderType = "purchase"
-	OrderTypeRenew    OrderType = "renew"
-	OrderTypeChange   OrderType = "change"
-	OrderTypeAdopt    OrderType = "adopt"
+	OrderTypeNew    OrderType = "new"
+	OrderTypeRenew  OrderType = "renew"
+	OrderTypeModify OrderType = "modify"
 )
 
 // AllValues returns all OrderType values.
 func (OrderType) AllValues() []OrderType {
 	return []OrderType{
-		OrderTypePurchase,
+		OrderTypeNew,
 		OrderTypeRenew,
-		OrderTypeChange,
-		OrderTypeAdopt,
+		OrderTypeModify,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s OrderType) MarshalText() ([]byte, error) {
 	switch s {
-	case OrderTypePurchase:
+	case OrderTypeNew:
 		return []byte(s), nil
 	case OrderTypeRenew:
 		return []byte(s), nil
-	case OrderTypeChange:
-		return []byte(s), nil
-	case OrderTypeAdopt:
+	case OrderTypeModify:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -9838,25 +9990,22 @@ func (s OrderType) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *OrderType) UnmarshalText(data []byte) error {
 	switch OrderType(data) {
-	case OrderTypePurchase:
-		*s = OrderTypePurchase
+	case OrderTypeNew:
+		*s = OrderTypeNew
 		return nil
 	case OrderTypeRenew:
 		*s = OrderTypeRenew
 		return nil
-	case OrderTypeChange:
-		*s = OrderTypeChange
-		return nil
-	case OrderTypeAdopt:
-		*s = OrderTypeAdopt
+	case OrderTypeModify:
+		*s = OrderTypeModify
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// How it was paid, as recorded at the time. It is kept as it was: removing the card afterwards does
-// not change it, and `payment_method_id` may then name a card that no longer exists.
+// How it was paid. Removing the payment method afterwards does not change it; `payment_method_id` then
+// names a removed payment method.
 // Ref: #/components/schemas/PaidWith
 type PaidWith struct {
 	// `balance` when the account's balance and credits covered it in full. Otherwise the method used with
@@ -9940,6 +10089,13 @@ type PayInvoiceRequest struct {
 	// converts them into balance.
 	UseCredits OptBool   `json:"use_credits"`
 	ReturnURL  OptString `json:"return_url"`
+	// The code to apply while the order's terms are not yet fixed. Omit to apply the best applicable
+	// account discount, or to keep the discount already recorded.
+	PromotionCode OptString `json:"promotion_code"`
+	// The invoice total to expect, after discounts and tax and before credit grants or balance, as the
+	// payment preview or an order quote gave it. A different total fails with BILLING_AMOUNT_CHANGED and
+	// nothing is charged. Omit to skip the comparison; an explicit zero is compared.
+	ExpectedAmount OptString `json:"expected_amount"`
 }
 
 // GetPaymentGateway returns the value of PaymentGateway.
@@ -9972,6 +10128,16 @@ func (s *PayInvoiceRequest) GetReturnURL() OptString {
 	return s.ReturnURL
 }
 
+// GetPromotionCode returns the value of PromotionCode.
+func (s *PayInvoiceRequest) GetPromotionCode() OptString {
+	return s.PromotionCode
+}
+
+// GetExpectedAmount returns the value of ExpectedAmount.
+func (s *PayInvoiceRequest) GetExpectedAmount() OptString {
+	return s.ExpectedAmount
+}
+
 // SetPaymentGateway sets the value of PaymentGateway.
 func (s *PayInvoiceRequest) SetPaymentGateway(val OptString) {
 	s.PaymentGateway = val
@@ -10002,12 +10168,26 @@ func (s *PayInvoiceRequest) SetReturnURL(val OptString) {
 	s.ReturnURL = val
 }
 
+// SetPromotionCode sets the value of PromotionCode.
+func (s *PayInvoiceRequest) SetPromotionCode(val OptString) {
+	s.PromotionCode = val
+}
+
+// SetExpectedAmount sets the value of ExpectedAmount.
+func (s *PayInvoiceRequest) SetExpectedAmount(val OptString) {
+	s.ExpectedAmount = val
+}
+
 // Name at least one invoice or order. They must all belong to the same account and share its currency;
 // anything else is refused rather than partly paid.
 // Ref: #/components/schemas/PayTogetherRequest
 type PayTogetherRequest struct {
 	InvoiceIds []uuid.UUID `json:"invoice_ids"`
 	OrderIds   []uuid.UUID `json:"order_ids"`
+	// The amount due to expect across all of them, before credit grants or balance, as
+	// preview-pay-together gave it. A different amount fails with BILLING_AMOUNT_CHANGED and nothing is
+	// charged. Omit to skip the comparison.
+	ExpectedAmount OptString `json:"expected_amount"`
 }
 
 // GetInvoiceIds returns the value of InvoiceIds.
@@ -10020,6 +10200,11 @@ func (s *PayTogetherRequest) GetOrderIds() []uuid.UUID {
 	return s.OrderIds
 }
 
+// GetExpectedAmount returns the value of ExpectedAmount.
+func (s *PayTogetherRequest) GetExpectedAmount() OptString {
+	return s.ExpectedAmount
+}
+
 // SetInvoiceIds sets the value of InvoiceIds.
 func (s *PayTogetherRequest) SetInvoiceIds(val []uuid.UUID) {
 	s.InvoiceIds = val
@@ -10028,6 +10213,11 @@ func (s *PayTogetherRequest) SetInvoiceIds(val []uuid.UUID) {
 // SetOrderIds sets the value of OrderIds.
 func (s *PayTogetherRequest) SetOrderIds(val []uuid.UUID) {
 	s.OrderIds = val
+}
+
+// SetExpectedAmount sets the value of ExpectedAmount.
+func (s *PayTogetherRequest) SetExpectedAmount(val OptString) {
+	s.ExpectedAmount = val
 }
 
 // The customer's next interaction. The gateway reports the actual payment outcome separately.
@@ -12256,7 +12446,7 @@ func (s *ProjectAssignmentList) SetPagination(val OffsetPagination) {
 
 // Which purchase operation this applies to. `new` covers every new purchase, including zero-charge
 // purchases. It does not mean the account's first purchase; use `first_purchase_only` for that
-// restriction. `renew` covers renewals. `change` covers configuration or billing-term changes,
+// restriction. `renew` covers renewals. `modify` covers configuration or billing-term changes,
 // including changes that increase or decrease the amount due and changes with no additional charge or
 // refund.
 // Ref: #/components/schemas/PurchaseOperation
@@ -12265,7 +12455,7 @@ type PurchaseOperation string
 const (
 	PurchaseOperationNew    PurchaseOperation = "new"
 	PurchaseOperationRenew  PurchaseOperation = "renew"
-	PurchaseOperationChange PurchaseOperation = "change"
+	PurchaseOperationModify PurchaseOperation = "modify"
 )
 
 // AllValues returns all PurchaseOperation values.
@@ -12273,7 +12463,7 @@ func (PurchaseOperation) AllValues() []PurchaseOperation {
 	return []PurchaseOperation{
 		PurchaseOperationNew,
 		PurchaseOperationRenew,
-		PurchaseOperationChange,
+		PurchaseOperationModify,
 	}
 }
 
@@ -12284,7 +12474,7 @@ func (s PurchaseOperation) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case PurchaseOperationRenew:
 		return []byte(s), nil
-	case PurchaseOperationChange:
+	case PurchaseOperationModify:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -12300,8 +12490,8 @@ func (s *PurchaseOperation) UnmarshalText(data []byte) error {
 	case PurchaseOperationRenew:
 		*s = PurchaseOperationRenew
 		return nil
-	case PurchaseOperationChange:
-		*s = PurchaseOperationChange
+	case PurchaseOperationModify:
+		*s = PurchaseOperationModify
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -12329,9 +12519,9 @@ type Quote struct {
 	// What the cancellation requested would return. Present only when one was requested.
 	Cancellation OptCancellationRefundPreview `json:"cancellation"`
 	// Subtotal minus discount_amount plus tax_amount, before credit grants or balance. For an existing
-	// order, pass this as expected_amount at checkout. Renewal entries are separate orders; use each
-	// entry's total. Future usage estimates are not checkout amounts. Cancellation and refund targets have
-	// zero totals and report returned value separately.
+	// order, pass this as expected_amount when paying its invoice. Renewal entries are separate orders;
+	// use each entry's total. Future usage estimates are not checkout amounts. Cancellation and refund
+	// targets have zero totals and report returned value separately.
 	Total    Money  `json:"total"`
 	Currency string `json:"currency"`
 	// Present only when an order refund was requested. Nothing is collectible for this target.
@@ -12630,7 +12820,7 @@ type QuoteItemInput struct {
 	PriceID        OptUUID      `json:"price_id"`
 	ProductID      OptProductID `json:"product_id"`
 	PlanID         OptUUID      `json:"plan_id"`
-	// Narrows the selection when a plan offers more than one billing type.
+	// Narrows the selection when a plan offers more than one charge type.
 	PriceType     OptQuoteItemInputPriceType `json:"price_type"`
 	Interval      OptQuoteItemInputInterval  `json:"interval"`
 	IntervalCount OptInt                     `json:"interval_count"`
@@ -12869,7 +13059,7 @@ func (s *QuoteItemInputInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// Narrows the selection when a plan offers more than one billing type.
+// Narrows the selection when a plan offers more than one charge type.
 type QuoteItemInputPriceType string
 
 const (
@@ -13240,8 +13430,8 @@ type QuoteRequest struct {
 	// A proposed purchase priced in the account currency. Metered items may estimate specified usage
 	// quantities; those estimates are not amounts collectible at checkout.
 	Items []QuoteItemInput `json:"items"`
-	// Preview checkout of this existing order. Its recorded purchase terms supply every line, and a
-	// confirmed order returns its recorded amounts. A preview does not change the order.
+	// Preview paying this existing order. Its recorded purchase terms supply every line, and an order
+	// whose terms are fixed returns its recorded amounts. A preview does not change the order.
 	OrderID OptUUID `json:"order_id"`
 	// Preview renewing these subscriptions, each at most once. Each entry represents a separate renewal
 	// order. To preview a new promotion code, create a renewal order and quote it by order_id.
@@ -13408,11 +13598,15 @@ type Rate struct {
 	// The unit readings arrive in, such as `core-second`.
 	Unit OptString `json:"unit"`
 	// The attributes this rate applies to, such as region and machine type.
-	Dimensions   RateDimensions   `json:"dimensions"`
-	PricingModel RatePricingModel `json:"pricing_model"`
+	Dimensions RateDimensions `json:"dimensions"`
+	// `per_unit` multiplies `unit_amount`; `tiered` walks the tiers as `tiers_mode` says.
+	BillingScheme RateBillingScheme `json:"billing_scheme"`
+	// `graduated` charges each band at its own rate; `volume` charges everything at the rate of the band
+	// the total lands in. `none` for a `per_unit` rate.
+	TiersMode RateTiersMode `json:"tiers_mode"`
 	// Present for `per_unit`. Tiered rates carry their amounts on the tiers.
 	UnitAmount OptMoney `json:"unit_amount"`
-	// Present for `graduated` and `volume`, in ascending order.
+	// Present for a tiered rate, in ascending order.
 	Tiers []Tier `json:"tiers"`
 	// How many measured units one amount covers. An hourly rate on a per-second meter is `"3600"`.
 	UnitQuantity  OptString      `json:"unit_quantity"`
@@ -13436,9 +13630,14 @@ func (s *Rate) GetDimensions() RateDimensions {
 	return s.Dimensions
 }
 
-// GetPricingModel returns the value of PricingModel.
-func (s *Rate) GetPricingModel() RatePricingModel {
-	return s.PricingModel
+// GetBillingScheme returns the value of BillingScheme.
+func (s *Rate) GetBillingScheme() RateBillingScheme {
+	return s.BillingScheme
+}
+
+// GetTiersMode returns the value of TiersMode.
+func (s *Rate) GetTiersMode() RateTiersMode {
+	return s.TiersMode
 }
 
 // GetUnitAmount returns the value of UnitAmount.
@@ -13486,9 +13685,14 @@ func (s *Rate) SetDimensions(val RateDimensions) {
 	s.Dimensions = val
 }
 
-// SetPricingModel sets the value of PricingModel.
-func (s *Rate) SetPricingModel(val RatePricingModel) {
-	s.PricingModel = val
+// SetBillingScheme sets the value of BillingScheme.
+func (s *Rate) SetBillingScheme(val RateBillingScheme) {
+	s.BillingScheme = val
+}
+
+// SetTiersMode sets the value of TiersMode.
+func (s *Rate) SetTiersMode(val RateTiersMode) {
+	s.TiersMode = val
 }
 
 // SetUnitAmount sets the value of UnitAmount.
@@ -13519,6 +13723,48 @@ func (s *Rate) SetEffectiveFrom(val time.Time) {
 // SetEffectiveTo sets the value of EffectiveTo.
 func (s *Rate) SetEffectiveTo(val OptNilDateTime) {
 	s.EffectiveTo = val
+}
+
+// `per_unit` multiplies `unit_amount`; `tiered` walks the tiers as `tiers_mode` says.
+type RateBillingScheme string
+
+const (
+	RateBillingSchemePerUnit RateBillingScheme = "per_unit"
+	RateBillingSchemeTiered  RateBillingScheme = "tiered"
+)
+
+// AllValues returns all RateBillingScheme values.
+func (RateBillingScheme) AllValues() []RateBillingScheme {
+	return []RateBillingScheme{
+		RateBillingSchemePerUnit,
+		RateBillingSchemeTiered,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RateBillingScheme) MarshalText() ([]byte, error) {
+	switch s {
+	case RateBillingSchemePerUnit:
+		return []byte(s), nil
+	case RateBillingSchemeTiered:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RateBillingScheme) UnmarshalText(data []byte) error {
+	switch RateBillingScheme(data) {
+	case RateBillingSchemePerUnit:
+		*s = RateBillingSchemePerUnit
+		return nil
+	case RateBillingSchemeTiered:
+		*s = RateBillingSchemeTiered
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // The attributes this rate applies to, such as region and machine type.
@@ -13587,31 +13833,33 @@ func (s *RateListHeaders) SetResponse(val RateList) {
 
 func (*RateListHeaders) listRatesRes() {}
 
-type RatePricingModel string
+// `graduated` charges each band at its own rate; `volume` charges everything at the rate of the band
+// the total lands in. `none` for a `per_unit` rate.
+type RateTiersMode string
 
 const (
-	RatePricingModelPerUnit   RatePricingModel = "per_unit"
-	RatePricingModelGraduated RatePricingModel = "graduated"
-	RatePricingModelVolume    RatePricingModel = "volume"
+	RateTiersModeNone      RateTiersMode = "none"
+	RateTiersModeGraduated RateTiersMode = "graduated"
+	RateTiersModeVolume    RateTiersMode = "volume"
 )
 
-// AllValues returns all RatePricingModel values.
-func (RatePricingModel) AllValues() []RatePricingModel {
-	return []RatePricingModel{
-		RatePricingModelPerUnit,
-		RatePricingModelGraduated,
-		RatePricingModelVolume,
+// AllValues returns all RateTiersMode values.
+func (RateTiersMode) AllValues() []RateTiersMode {
+	return []RateTiersMode{
+		RateTiersModeNone,
+		RateTiersModeGraduated,
+		RateTiersModeVolume,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s RatePricingModel) MarshalText() ([]byte, error) {
+func (s RateTiersMode) MarshalText() ([]byte, error) {
 	switch s {
-	case RatePricingModelPerUnit:
+	case RateTiersModeNone:
 		return []byte(s), nil
-	case RatePricingModelGraduated:
+	case RateTiersModeGraduated:
 		return []byte(s), nil
-	case RatePricingModelVolume:
+	case RateTiersModeVolume:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -13619,16 +13867,16 @@ func (s RatePricingModel) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *RatePricingModel) UnmarshalText(data []byte) error {
-	switch RatePricingModel(data) {
-	case RatePricingModelPerUnit:
-		*s = RatePricingModelPerUnit
+func (s *RateTiersMode) UnmarshalText(data []byte) error {
+	switch RateTiersMode(data) {
+	case RateTiersModeNone:
+		*s = RateTiersModeNone
 		return nil
-	case RatePricingModelGraduated:
-		*s = RatePricingModelGraduated
+	case RateTiersModeGraduated:
+		*s = RateTiersModeGraduated
 		return nil
-	case RatePricingModelVolume:
-		*s = RatePricingModelVolume
+	case RateTiersModeVolume:
+		*s = RateTiersModeVolume
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -13637,8 +13885,8 @@ func (s *RatePricingModel) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/Refund
 type Refund struct {
-	TransactionID         OptUUID `json:"transaction_id"`
-	CancellationRequestID OptUUID `json:"cancellation_request_id"`
+	TransactionID      OptUUID `json:"transaction_id"`
+	CancellationItemID OptUUID `json:"cancellation_item_id"`
 	// Original funds-return split and each result. Unknown gateway results remain pending.
 	Transactions     []Transaction `json:"transactions"`
 	ID               uuid.UUID     `json:"id"`
@@ -13685,9 +13933,9 @@ func (s *Refund) GetTransactionID() OptUUID {
 	return s.TransactionID
 }
 
-// GetCancellationRequestID returns the value of CancellationRequestID.
-func (s *Refund) GetCancellationRequestID() OptUUID {
-	return s.CancellationRequestID
+// GetCancellationItemID returns the value of CancellationItemID.
+func (s *Refund) GetCancellationItemID() OptUUID {
+	return s.CancellationItemID
 }
 
 // GetTransactions returns the value of Transactions.
@@ -13775,9 +14023,9 @@ func (s *Refund) SetTransactionID(val OptUUID) {
 	s.TransactionID = val
 }
 
-// SetCancellationRequestID sets the value of CancellationRequestID.
-func (s *Refund) SetCancellationRequestID(val OptUUID) {
-	s.CancellationRequestID = val
+// SetCancellationItemID sets the value of CancellationItemID.
+func (s *Refund) SetCancellationItemID(val OptUUID) {
+	s.CancellationItemID = val
 }
 
 // SetTransactions sets the value of Transactions.
@@ -15279,31 +15527,32 @@ func (s *StatementSummaryGroupBy) UnmarshalText(data []byte) error {
 // the owning service enforces current holdings against the purchased count.
 // Ref: #/components/schemas/Subscription
 type Subscription struct {
-	Currency      string                  `json:"currency"`
-	BillingType   SubscriptionBillingType `json:"billing_type"`
-	Interval      SubscriptionInterval    `json:"interval"`
-	IntervalCount OptInt                  `json:"interval_count"`
+	Currency      string                 `json:"currency"`
+	ChargeType    SubscriptionChargeType `json:"charge_type"`
+	Interval      SubscriptionInterval   `json:"interval"`
+	IntervalCount OptInt                 `json:"interval_count"`
 	// Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Pending
-	// subscriptions show base terms until checkout confirms any new continuing discount. Absent for other
-	// billing types.
+	// subscriptions show base terms until paying the order fixes any new continuing discount. Absent for
+	// other charge types.
 	RecurringAmount   OptString            `json:"recurring_amount"`
 	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
 	OrderItemID       OptUUID              `json:"order_item_id"`
 	// Present only on subscriptions created by an earlier change that replaced the subscription. A change
 	// now keeps the subscription ID.
-	ReplacesSubscriptionID      OptUUID                `json:"replaces_subscription_id"`
-	CouponID                    OptUUID                `json:"coupon_id"`
-	Coupon                      OptObjectIdentity      `json:"coupon"`
-	DiscountedRenewalsRemaining OptInt                 `json:"discounted_renewals_remaining"`
-	SuspendReason               OptString              `json:"suspend_reason"`
-	BillingCycleAnchor          OptDateTime            `json:"billing_cycle_anchor"`
-	CancellationRequest         OptCancellationRequest `json:"cancellation_request"`
-	// How the purchase, or the latest renewal paid with a saved card, was paid. Automatic renewal tries
-	// this card after the account's balance and credits, and the account's default card after that.
-	PaidWith  OptPaidWith `json:"paid_with"`
-	CreatedAt OptDateTime `json:"created_at"`
-	ID        uuid.UUID   `json:"id"`
+	ReplacesSubscriptionID      OptUUID                     `json:"replaces_subscription_id"`
+	CouponID                    OptUUID                     `json:"coupon_id"`
+	Coupon                      OptObjectIdentity           `json:"coupon"`
+	DiscountedRenewalsRemaining OptInt                      `json:"discounted_renewals_remaining"`
+	SuspendReason               OptString                   `json:"suspend_reason"`
+	BillingCycleAnchor          OptDateTime                 `json:"billing_cycle_anchor"`
+	Cancellation                OptSubscriptionCancellation `json:"cancellation"`
+	// The saved payment method automatic renewal charges after the account's balance and credits, before
+	// the account's default payment method. Set when the purchase, or a renewal, is paid with a saved
+	// payment method. It is used only while it belongs to the account that pays the renewal.
+	DefaultPaymentMethodID OptNilUUID  `json:"default_payment_method_id"`
+	CreatedAt              OptDateTime `json:"created_at"`
+	ID                     uuid.UUID   `json:"id"`
 	// The billing account that made the purchase. Renewals of a project subscription are charged to the
 	// project's current billing account.
 	BillingAccountID int64           `json:"billing_account_id"`
@@ -15321,10 +15570,18 @@ type Subscription struct {
 	PlanName string              `json:"plan_name"`
 	PriceID  uuid.UUID           `json:"price_id"`
 	Quantity string              `json:"quantity"`
-	// End of the prepaid service already activated. Null until a new subscription becomes active, even
-	// when its purchase has been paid, and for postpaid subscriptions with no prepaid end date.
-	PaidUntil OptNilDateTime `json:"paid_until"`
-	AutoRenew bool           `json:"auto_renew"`
+	// When a prepaid subscription renews or expires, the end of the last service period bought. Renewing
+	// several periods in advance moves it. Null until a new subscription becomes active, even when its
+	// purchase has been paid, and for postpaid subscriptions.
+	CurrentTermEnd OptNilDateTime `json:"current_term_end"`
+	// Start of the service period in effect now. Null when none is, including for postpaid subscriptions.
+	CurrentPeriodStart OptNilDateTime `json:"current_period_start"`
+	// End of the service period in effect now. Renewing in advance moves `current_term_end`, not this.
+	// Null when no period is in effect, including for postpaid subscriptions.
+	CurrentPeriodEnd OptNilDateTime `json:"current_period_end"`
+	// A prepaid subscription renews automatically while this is on. A postpaid subscription always
+	// continues until it is canceled; this is true until a cancellation is requested and cannot be set.
+	AutoRenew bool `json:"auto_renew"`
 	// Pending means the purchase relationship exists but its order has not been accepted. provisioning
 	// means the service accepted the order and is delivering. For a service-owned purchase, only confirmed
 	// delivery moves it to active; paying alone does not. canceled means cancellation completed, or an
@@ -15341,9 +15598,9 @@ func (s *Subscription) GetCurrency() string {
 	return s.Currency
 }
 
-// GetBillingType returns the value of BillingType.
-func (s *Subscription) GetBillingType() SubscriptionBillingType {
-	return s.BillingType
+// GetChargeType returns the value of ChargeType.
+func (s *Subscription) GetChargeType() SubscriptionChargeType {
+	return s.ChargeType
 }
 
 // GetInterval returns the value of Interval.
@@ -15406,14 +15663,14 @@ func (s *Subscription) GetBillingCycleAnchor() OptDateTime {
 	return s.BillingCycleAnchor
 }
 
-// GetCancellationRequest returns the value of CancellationRequest.
-func (s *Subscription) GetCancellationRequest() OptCancellationRequest {
-	return s.CancellationRequest
+// GetCancellation returns the value of Cancellation.
+func (s *Subscription) GetCancellation() OptSubscriptionCancellation {
+	return s.Cancellation
 }
 
-// GetPaidWith returns the value of PaidWith.
-func (s *Subscription) GetPaidWith() OptPaidWith {
-	return s.PaidWith
+// GetDefaultPaymentMethodID returns the value of DefaultPaymentMethodID.
+func (s *Subscription) GetDefaultPaymentMethodID() OptNilUUID {
+	return s.DefaultPaymentMethodID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -15476,9 +15733,19 @@ func (s *Subscription) GetQuantity() string {
 	return s.Quantity
 }
 
-// GetPaidUntil returns the value of PaidUntil.
-func (s *Subscription) GetPaidUntil() OptNilDateTime {
-	return s.PaidUntil
+// GetCurrentTermEnd returns the value of CurrentTermEnd.
+func (s *Subscription) GetCurrentTermEnd() OptNilDateTime {
+	return s.CurrentTermEnd
+}
+
+// GetCurrentPeriodStart returns the value of CurrentPeriodStart.
+func (s *Subscription) GetCurrentPeriodStart() OptNilDateTime {
+	return s.CurrentPeriodStart
+}
+
+// GetCurrentPeriodEnd returns the value of CurrentPeriodEnd.
+func (s *Subscription) GetCurrentPeriodEnd() OptNilDateTime {
+	return s.CurrentPeriodEnd
 }
 
 // GetAutoRenew returns the value of AutoRenew.
@@ -15506,9 +15773,9 @@ func (s *Subscription) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetBillingType sets the value of BillingType.
-func (s *Subscription) SetBillingType(val SubscriptionBillingType) {
-	s.BillingType = val
+// SetChargeType sets the value of ChargeType.
+func (s *Subscription) SetChargeType(val SubscriptionChargeType) {
+	s.ChargeType = val
 }
 
 // SetInterval sets the value of Interval.
@@ -15571,14 +15838,14 @@ func (s *Subscription) SetBillingCycleAnchor(val OptDateTime) {
 	s.BillingCycleAnchor = val
 }
 
-// SetCancellationRequest sets the value of CancellationRequest.
-func (s *Subscription) SetCancellationRequest(val OptCancellationRequest) {
-	s.CancellationRequest = val
+// SetCancellation sets the value of Cancellation.
+func (s *Subscription) SetCancellation(val OptSubscriptionCancellation) {
+	s.Cancellation = val
 }
 
-// SetPaidWith sets the value of PaidWith.
-func (s *Subscription) SetPaidWith(val OptPaidWith) {
-	s.PaidWith = val
+// SetDefaultPaymentMethodID sets the value of DefaultPaymentMethodID.
+func (s *Subscription) SetDefaultPaymentMethodID(val OptNilUUID) {
+	s.DefaultPaymentMethodID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -15641,9 +15908,19 @@ func (s *Subscription) SetQuantity(val string) {
 	s.Quantity = val
 }
 
-// SetPaidUntil sets the value of PaidUntil.
-func (s *Subscription) SetPaidUntil(val OptNilDateTime) {
-	s.PaidUntil = val
+// SetCurrentTermEnd sets the value of CurrentTermEnd.
+func (s *Subscription) SetCurrentTermEnd(val OptNilDateTime) {
+	s.CurrentTermEnd = val
+}
+
+// SetCurrentPeriodStart sets the value of CurrentPeriodStart.
+func (s *Subscription) SetCurrentPeriodStart(val OptNilDateTime) {
+	s.CurrentPeriodStart = val
+}
+
+// SetCurrentPeriodEnd sets the value of CurrentPeriodEnd.
+func (s *Subscription) SetCurrentPeriodEnd(val OptNilDateTime) {
+	s.CurrentPeriodEnd = val
 }
 
 // SetAutoRenew sets the value of AutoRenew.
@@ -15666,31 +15943,200 @@ func (s *Subscription) SetEndedAt(val OptNilDateTime) {
 	s.EndedAt = val
 }
 
-type SubscriptionBillingType string
+// The latest cancellation that includes the subscription, with this subscription's item. `id` is the
+// item; `cancellation_id` is the cancellation. scheduled_at is the intended time; effective_at is the
+// confirmed end of service. A cancellation alone does not stop metering or issue a refund.
+// Ref: #/components/schemas/SubscriptionCancellation
+type SubscriptionCancellation struct {
+	Reason OptString `json:"reason"`
+	// The cancellation this request belongs to, with the other subscriptions released together.
+	CancellationID        OptUUID                        `json:"cancellation_id"`
+	ID                    uuid.UUID                      `json:"id"`
+	SubscriptionID        uuid.UUID                      `json:"subscription_id"`
+	Status                SubscriptionCancellationStatus `json:"status"`
+	Mode                  SubscriptionCancellationMode   `json:"mode"`
+	RequestedAt           time.Time                      `json:"requested_at"`
+	ScheduledAt           OptDateTime                    `json:"scheduled_at"`
+	EffectiveAt           OptDateTime                    `json:"effective_at"`
+	CompletedAt           OptDateTime                    `json:"completed_at"`
+	ReleaseStartedAt      OptDateTime                    `json:"release_started_at"`
+	CanceledAt            OptDateTime                    `json:"canceled_at"`
+	ForfeitRemainingValue bool                           `json:"forfeit_remaining_value"`
+	FailureCode           OptString                      `json:"failure_code"`
+	FailureReason         OptString                      `json:"failure_reason"`
+}
+
+// GetReason returns the value of Reason.
+func (s *SubscriptionCancellation) GetReason() OptString {
+	return s.Reason
+}
+
+// GetCancellationID returns the value of CancellationID.
+func (s *SubscriptionCancellation) GetCancellationID() OptUUID {
+	return s.CancellationID
+}
+
+// GetID returns the value of ID.
+func (s *SubscriptionCancellation) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *SubscriptionCancellation) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetStatus returns the value of Status.
+func (s *SubscriptionCancellation) GetStatus() SubscriptionCancellationStatus {
+	return s.Status
+}
+
+// GetMode returns the value of Mode.
+func (s *SubscriptionCancellation) GetMode() SubscriptionCancellationMode {
+	return s.Mode
+}
+
+// GetRequestedAt returns the value of RequestedAt.
+func (s *SubscriptionCancellation) GetRequestedAt() time.Time {
+	return s.RequestedAt
+}
+
+// GetScheduledAt returns the value of ScheduledAt.
+func (s *SubscriptionCancellation) GetScheduledAt() OptDateTime {
+	return s.ScheduledAt
+}
+
+// GetEffectiveAt returns the value of EffectiveAt.
+func (s *SubscriptionCancellation) GetEffectiveAt() OptDateTime {
+	return s.EffectiveAt
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *SubscriptionCancellation) GetCompletedAt() OptDateTime {
+	return s.CompletedAt
+}
+
+// GetReleaseStartedAt returns the value of ReleaseStartedAt.
+func (s *SubscriptionCancellation) GetReleaseStartedAt() OptDateTime {
+	return s.ReleaseStartedAt
+}
+
+// GetCanceledAt returns the value of CanceledAt.
+func (s *SubscriptionCancellation) GetCanceledAt() OptDateTime {
+	return s.CanceledAt
+}
+
+// GetForfeitRemainingValue returns the value of ForfeitRemainingValue.
+func (s *SubscriptionCancellation) GetForfeitRemainingValue() bool {
+	return s.ForfeitRemainingValue
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *SubscriptionCancellation) GetFailureCode() OptString {
+	return s.FailureCode
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *SubscriptionCancellation) GetFailureReason() OptString {
+	return s.FailureReason
+}
+
+// SetReason sets the value of Reason.
+func (s *SubscriptionCancellation) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// SetCancellationID sets the value of CancellationID.
+func (s *SubscriptionCancellation) SetCancellationID(val OptUUID) {
+	s.CancellationID = val
+}
+
+// SetID sets the value of ID.
+func (s *SubscriptionCancellation) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *SubscriptionCancellation) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *SubscriptionCancellation) SetStatus(val SubscriptionCancellationStatus) {
+	s.Status = val
+}
+
+// SetMode sets the value of Mode.
+func (s *SubscriptionCancellation) SetMode(val SubscriptionCancellationMode) {
+	s.Mode = val
+}
+
+// SetRequestedAt sets the value of RequestedAt.
+func (s *SubscriptionCancellation) SetRequestedAt(val time.Time) {
+	s.RequestedAt = val
+}
+
+// SetScheduledAt sets the value of ScheduledAt.
+func (s *SubscriptionCancellation) SetScheduledAt(val OptDateTime) {
+	s.ScheduledAt = val
+}
+
+// SetEffectiveAt sets the value of EffectiveAt.
+func (s *SubscriptionCancellation) SetEffectiveAt(val OptDateTime) {
+	s.EffectiveAt = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *SubscriptionCancellation) SetCompletedAt(val OptDateTime) {
+	s.CompletedAt = val
+}
+
+// SetReleaseStartedAt sets the value of ReleaseStartedAt.
+func (s *SubscriptionCancellation) SetReleaseStartedAt(val OptDateTime) {
+	s.ReleaseStartedAt = val
+}
+
+// SetCanceledAt sets the value of CanceledAt.
+func (s *SubscriptionCancellation) SetCanceledAt(val OptDateTime) {
+	s.CanceledAt = val
+}
+
+// SetForfeitRemainingValue sets the value of ForfeitRemainingValue.
+func (s *SubscriptionCancellation) SetForfeitRemainingValue(val bool) {
+	s.ForfeitRemainingValue = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *SubscriptionCancellation) SetFailureCode(val OptString) {
+	s.FailureCode = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *SubscriptionCancellation) SetFailureReason(val OptString) {
+	s.FailureReason = val
+}
+
+type SubscriptionCancellationMode string
 
 const (
-	SubscriptionBillingTypePostpaid SubscriptionBillingType = "postpaid"
-	SubscriptionBillingTypePrepaid  SubscriptionBillingType = "prepaid"
-	SubscriptionBillingTypeOneTime  SubscriptionBillingType = "one_time"
+	SubscriptionCancellationModeImmediate SubscriptionCancellationMode = "immediate"
+	SubscriptionCancellationModePeriodEnd SubscriptionCancellationMode = "period_end"
 )
 
-// AllValues returns all SubscriptionBillingType values.
-func (SubscriptionBillingType) AllValues() []SubscriptionBillingType {
-	return []SubscriptionBillingType{
-		SubscriptionBillingTypePostpaid,
-		SubscriptionBillingTypePrepaid,
-		SubscriptionBillingTypeOneTime,
+// AllValues returns all SubscriptionCancellationMode values.
+func (SubscriptionCancellationMode) AllValues() []SubscriptionCancellationMode {
+	return []SubscriptionCancellationMode{
+		SubscriptionCancellationModeImmediate,
+		SubscriptionCancellationModePeriodEnd,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s SubscriptionBillingType) MarshalText() ([]byte, error) {
+func (s SubscriptionCancellationMode) MarshalText() ([]byte, error) {
 	switch s {
-	case SubscriptionBillingTypePostpaid:
+	case SubscriptionCancellationModeImmediate:
 		return []byte(s), nil
-	case SubscriptionBillingTypePrepaid:
-		return []byte(s), nil
-	case SubscriptionBillingTypeOneTime:
+	case SubscriptionCancellationModePeriodEnd:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -15698,16 +16144,130 @@ func (s SubscriptionBillingType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SubscriptionBillingType) UnmarshalText(data []byte) error {
-	switch SubscriptionBillingType(data) {
-	case SubscriptionBillingTypePostpaid:
-		*s = SubscriptionBillingTypePostpaid
+func (s *SubscriptionCancellationMode) UnmarshalText(data []byte) error {
+	switch SubscriptionCancellationMode(data) {
+	case SubscriptionCancellationModeImmediate:
+		*s = SubscriptionCancellationModeImmediate
 		return nil
-	case SubscriptionBillingTypePrepaid:
-		*s = SubscriptionBillingTypePrepaid
+	case SubscriptionCancellationModePeriodEnd:
+		*s = SubscriptionCancellationModePeriodEnd
 		return nil
-	case SubscriptionBillingTypeOneTime:
-		*s = SubscriptionBillingTypeOneTime
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type SubscriptionCancellationStatus string
+
+const (
+	SubscriptionCancellationStatusRequested SubscriptionCancellationStatus = "requested"
+	SubscriptionCancellationStatusScheduled SubscriptionCancellationStatus = "scheduled"
+	SubscriptionCancellationStatusReleasing SubscriptionCancellationStatus = "releasing"
+	SubscriptionCancellationStatusFailed    SubscriptionCancellationStatus = "failed"
+	SubscriptionCancellationStatusCompleted SubscriptionCancellationStatus = "completed"
+	SubscriptionCancellationStatusCanceled  SubscriptionCancellationStatus = "canceled"
+)
+
+// AllValues returns all SubscriptionCancellationStatus values.
+func (SubscriptionCancellationStatus) AllValues() []SubscriptionCancellationStatus {
+	return []SubscriptionCancellationStatus{
+		SubscriptionCancellationStatusRequested,
+		SubscriptionCancellationStatusScheduled,
+		SubscriptionCancellationStatusReleasing,
+		SubscriptionCancellationStatusFailed,
+		SubscriptionCancellationStatusCompleted,
+		SubscriptionCancellationStatusCanceled,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionCancellationStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionCancellationStatusRequested:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusScheduled:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusReleasing:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusFailed:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusCompleted:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusCanceled:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionCancellationStatus) UnmarshalText(data []byte) error {
+	switch SubscriptionCancellationStatus(data) {
+	case SubscriptionCancellationStatusRequested:
+		*s = SubscriptionCancellationStatusRequested
+		return nil
+	case SubscriptionCancellationStatusScheduled:
+		*s = SubscriptionCancellationStatusScheduled
+		return nil
+	case SubscriptionCancellationStatusReleasing:
+		*s = SubscriptionCancellationStatusReleasing
+		return nil
+	case SubscriptionCancellationStatusFailed:
+		*s = SubscriptionCancellationStatusFailed
+		return nil
+	case SubscriptionCancellationStatusCompleted:
+		*s = SubscriptionCancellationStatusCompleted
+		return nil
+	case SubscriptionCancellationStatusCanceled:
+		*s = SubscriptionCancellationStatusCanceled
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type SubscriptionChargeType string
+
+const (
+	SubscriptionChargeTypePostpaid SubscriptionChargeType = "postpaid"
+	SubscriptionChargeTypePrepaid  SubscriptionChargeType = "prepaid"
+	SubscriptionChargeTypeOneTime  SubscriptionChargeType = "one_time"
+)
+
+// AllValues returns all SubscriptionChargeType values.
+func (SubscriptionChargeType) AllValues() []SubscriptionChargeType {
+	return []SubscriptionChargeType{
+		SubscriptionChargeTypePostpaid,
+		SubscriptionChargeTypePrepaid,
+		SubscriptionChargeTypeOneTime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionChargeType) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionChargeTypePostpaid:
+		return []byte(s), nil
+	case SubscriptionChargeTypePrepaid:
+		return []byte(s), nil
+	case SubscriptionChargeTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionChargeType) UnmarshalText(data []byte) error {
+	switch SubscriptionChargeType(data) {
+	case SubscriptionChargeTypePostpaid:
+		*s = SubscriptionChargeTypePostpaid
+		return nil
+	case SubscriptionChargeTypePrepaid:
+		*s = SubscriptionChargeTypePrepaid
+		return nil
+	case SubscriptionChargeTypeOneTime:
+		*s = SubscriptionChargeTypeOneTime
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -16066,8 +16626,8 @@ type TopUp struct {
 	// What is credited to the account, in the account's own currency.
 	Amount   Money  `json:"amount"`
 	Currency string `json:"currency"`
-	// The part of this top-up still held in the balance. Pending refunds and payouts can temporarily
-	// reserve part of it; it is not a promise that the whole amount is immediately withdrawable.
+	// The part of this top-up still held in the balance. Pending refunds can temporarily reserve part of
+	// it; it is not a promise that the whole amount is immediately withdrawable.
 	RemainingAmount OptMoney `json:"remaining_amount"`
 	// `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 	//
@@ -16488,10 +17048,10 @@ type Transaction struct {
 	ID               uuid.UUID       `json:"id"`
 	BillingAccountID OptInt64        `json:"billing_account_id"`
 	Type             TransactionType `json:"type"`
-	// Signed by type: positive for `topup` and `payment`, negative for `refund` and `payout`. An
-	// `adjustment` is positive when it adds to the balance and negative when it takes from it. For the
-	// other types the sign does not tell the effect on the balance: a payment from the balance lowers it,
-	// while a payment by gateway or by credit leaves it unchanged.
+	// Signed by type: positive for `topup` and `payment`, negative for `refund`. An `adjustment` is
+	// positive when it adds to the balance and negative when it takes from it. For the other types the
+	// sign does not tell the effect on the balance: a payment from the balance lowers it, while a payment
+	// by gateway or by credit leaves it unchanged.
 	Amount Money `json:"amount"`
 	// How much of this transaction is still available in the balance. Only top-ups, positive adjustments
 	// and gateway payments later returned to the balance can be non-zero.
@@ -16838,8 +17398,8 @@ func (s *TransactionStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Topup adds to the balance; payment settles an invoice; refund returns original funds; payout
-// withdraws from the balance; adjustment changes the balance with an audit reason.
+// Topup adds to the balance; payment settles an invoice; refund returns original funds; adjustment
+// changes the balance with an audit reason.
 // Ref: #/components/schemas/TransactionType
 type TransactionType string
 
@@ -16847,7 +17407,6 @@ const (
 	TransactionTypeTopup      TransactionType = "topup"
 	TransactionTypePayment    TransactionType = "payment"
 	TransactionTypeRefund     TransactionType = "refund"
-	TransactionTypePayout     TransactionType = "payout"
 	TransactionTypeAdjustment TransactionType = "adjustment"
 )
 
@@ -16857,7 +17416,6 @@ func (TransactionType) AllValues() []TransactionType {
 		TransactionTypeTopup,
 		TransactionTypePayment,
 		TransactionTypeRefund,
-		TransactionTypePayout,
 		TransactionTypeAdjustment,
 	}
 }
@@ -16870,8 +17428,6 @@ func (s TransactionType) MarshalText() ([]byte, error) {
 	case TransactionTypePayment:
 		return []byte(s), nil
 	case TransactionTypeRefund:
-		return []byte(s), nil
-	case TransactionTypePayout:
 		return []byte(s), nil
 	case TransactionTypeAdjustment:
 		return []byte(s), nil
@@ -16891,9 +17447,6 @@ func (s *TransactionType) UnmarshalText(data []byte) error {
 		return nil
 	case TransactionTypeRefund:
 		*s = TransactionTypeRefund
-		return nil
-	case TransactionTypePayout:
-		*s = TransactionTypePayout
 		return nil
 	case TransactionTypeAdjustment:
 		*s = TransactionTypeAdjustment

@@ -42,11 +42,11 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 // while any item is still pending; its final outcome follows all item outcomes. Previously failed
 // items keep their failure outcome.
 //
-// Payment may be absent, partial or complete. Confirmed checkout keeps the selected items' agreed
-// amounts and discounts; credit notes reduce issued invoices, and collected amounts are returned to
-// their original payment sources. When checkout has not been confirmed, the remaining items are quoted
-// again. External payment-method refunds can finish asynchronously. The order and financial history
-// are retained; the same cancellation does not refund twice.
+// Payment may be absent, partial or complete. Once the order's terms are fixed, the selected items
+// keep their agreed amounts and discounts; credit notes reduce issued invoices, and collected amounts
+// are returned to their original payment sources. While the terms of a deferred order are not fixed,
+// the remaining items are priced again. External payment-method refunds can finish asynchronously. The
+// order and financial history are retained; the same cancellation does not refund twice.
 //
 // Once the order is accepted, its owning service coordinates cancellation and confirms non-delivery
 // and cleanup through the cancellation RPC. Delivered items are ended through subscription
@@ -694,248 +694,6 @@ func (s *Server) handleCancelTopUpRequest(args [1]string, argsEscaped bool, w ht
 	}
 
 	if err := encodeCancelTopUpResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCheckoutOrderRequest handles checkout-order operation.
-//
-// Confirms the purchase's final amount and discount. Supply the same promotion_code used for the
-// preview, or omit it to select an applicable account discount. At most one new coupon is applied to
-// an order; existing subscription discount commitments are not stacked with a new coupon on the same
-// line. Promotion codes are evaluated against the order, not client-supplied line amounts.
-//
-// Rechecks eligibility and redemption availability. A different total fails with
-// BILLING_AMOUNT_CHANGED. An invalid or inapplicable code fails rather than collecting full price. A
-// failed confirmation leaves the invoice draft and reserves no discount redemption.
-//
-// A successful confirmation records the discount, including any recurring discount terms, reserves its
-// redemption, moves pending_checkout to pending and finalizes the invoice when one is required. The
-// reservation counts toward the code's limits and is consumed when the invoice is paid, or at
-// confirmation when nothing is due. Use pay-invoice to collect its outstanding amount from account
-// funds or a payment gateway. No payment attempt or checkout session is created by this operation. An
-// order whose total is zero completes checkout at placement in either mode and does not need this
-// operation; an order with an amount due, even when credits would cover it, still does. Checkout alone
-// does not confirm resource delivery.
-//
-// Retrying with the same code and expected amount returns the existing order without another
-// redemption. Omitting the code on a confirmed checkout retains its recorded discount. Changing that
-// code is refused with BILLING_ORDER_CHECKOUT_CONFLICT. Payment retries reuse the confirmed terms.
-// Cancellation, expiry or complete fulfillment failure releases the reservation or returns the
-// consumed redemption; a refund alone does not.
-//
-// The order must belong to one of your billing accounts. A canceled, failed or expired order cannot be
-// checked out. A period-end change cannot be checked out before its renewal invoice is available.
-// Orders retain their billing account and currency after a project is linked elsewhere; discounts from
-// another account cannot be used for them.
-//
-// POST /api/v1/orders/{orderId}/checkout
-func (s *Server) handleCheckoutOrderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("checkout-order"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}/checkout"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CheckoutOrderOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CheckoutOrderOperation,
-			ID:   "checkout-order",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, CheckoutOrderOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCheckoutOrderParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCheckoutOrderRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CheckoutOrderRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CheckoutOrderOperation,
-			OperationSummary: "Confirm order checkout",
-			OperationID:      "checkout-order",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "orderId",
-					In:   "path",
-				}: params.OrderId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *CheckoutOrderRequest
-			Params   = CheckoutOrderParams
-			Response = CheckoutOrderRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCheckoutOrderParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CheckoutOrder(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CheckoutOrder(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCheckoutOrderResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1805,17 +1563,18 @@ func (s *Server) handleCreatePaymentMethodSetupRequest(args [0]string, argsEscap
 
 // handleCreateQuoteRequest handles create-quote operation.
 //
-// Calculates exactly one target for a billing account you own: proposed items, existing order
-// checkout, renewals, cancellation or order refund. Returns all requested calculations or a structured
-// error. No quote is saved and no resource, payment, reservation or redemption is created.
+// Calculates exactly one target for a billing account you own: proposed items, an existing order,
+// renewals, cancellation or order refund. Returns all requested calculations or a structured error. No
+// quote is saved and no resource, payment, reservation or redemption is created.
 //
 // Existing orders use their recorded purchase account and terms. Renewals and cancellations use the
 // account currently paying for each subscription. Every target must belong to the requested account. A
 // project association or project token does not authorize a quote.
 //
-// Use an existing order quote's total as expected_amount at checkout. A confirmed order returns its
-// recorded amounts; a different promotion code is refused. Requested future usage estimates are not
-// collectible checkout amounts. An unknown delivery outcome is not proof of refund eligibility.
+// Use an existing order quote's total as expected_amount when paying the order's invoice. An order
+// whose terms are fixed returns its recorded amounts; a different promotion code is refused. Requested
+// future usage estimates are not collectible checkout amounts. An unknown delivery outcome is not
+// proof of refund eligibility.
 //
 // POST /api/v1/quotes
 func (s *Server) handleCreateQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2016,12 +1775,12 @@ func (s *Server) handleCreateQuoteRequest(args [0]string, argsEscaped bool, w ht
 // handleCreateRenewalOrderRequest handles create-renewal-order operation.
 //
 // Places a renewal order with a draft invoice, without applying a new discount or charging anything.
-// Quote and confirm its checkout before collecting payment to renew. Existing subscription discount
-// commitments are retained. The periods and price are chosen as for renewing. The order can be paid
-// until the current paid period ends, and never after the end of the first period it renews; unpaid by
-// then, it is canceled. While auto-renew is on, the renewal due at the end of the period pays this
-// order instead of placing another, confirming checkout with an applicable account discount first if
-// it has not already been confirmed.
+// Pay its invoice to renew; a promotion code can be applied when paying. Existing subscription
+// discount commitments are retained. The periods and price are chosen as for renewing. The order can
+// be paid until the current paid period ends, and never after the end of the first period it renews;
+// unpaid by then, it is canceled. While auto-renew is on, the renewal due at the end of the period
+// pays this order instead of placing another, applying an applicable account discount first if the
+// order's terms are not fixed yet.
 //
 // Save `order_id` before submitting and read the order after an unknown outcome; creating it a second
 // time conflicts.
@@ -3458,9 +3217,9 @@ func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool
 
 // handleGetCancellationRequest handles get-cancellation operation.
 //
-// Returns a cancellation request for an authorized billing account with its schedule, expected
-// refundable amount and individual subscription outcomes. Read individual item states for
-// per-subscription outcomes, including partial success.
+// Returns a cancellation for an authorized billing account with its schedule, expected refundable
+// amount and individual subscription outcomes. Read individual item states for per-subscription
+// outcomes, including partial success.
 //
 // GET /api/v1/cancellations/{cancellationId}
 func (s *Server) handleGetCancellationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4065,9 +3824,9 @@ func (s *Server) handleGetCreditNoteRequest(args [1]string, argsEscaped bool, w 
 
 // handleGetInvoiceRequest handles get-invoice operation.
 //
-// Returns an issued invoice for an owned billing account with its amounts, tax lines and payment
-// state. Returns 404 for a missing or unissued invoice and 403 when its account belongs to another
-// user.
+// Returns an invoice for an owned billing account with its amounts, tax lines and payment state,
+// whether issued or the draft invoice of an order. Returns 404 for a missing invoice or another draft
+// and 403 when its account belongs to another user.
 //
 // GET /api/v1/invoices/{invoiceId}
 func (s *Server) handleGetInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8126,8 +7885,9 @@ func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w
 // Capabilities that come with what has been bought. A capability that is not held simply does not
 // appear, so that "this does not exist" and "this has not been bought" cannot be confused.
 //
-// Derived from live subscriptions rather than stored, so this always agrees with what is being paid
-// for. It stops being listed as soon as the subscription providing it ends.
+// Derived from live subscriptions and active feature grants rather than stored, so this always agrees
+// with what is being paid for and granted. It stops being listed as soon as the subscription or grant
+// providing it ends.
 //
 // GET /api/v1/entitlements
 func (s *Server) handleListEntitlementsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8341,11 +8101,229 @@ func (s *Server) handleListEntitlementsRequest(args [0]string, argsEscaped bool,
 	}
 }
 
+// handleListFeatureGrantsRequest handles list-feature-grants operation.
+//
+// Access to features held by a billing account for a period, for example through a membership. While a
+// grant is active, every project whose current billing account holds it has the feature, in addition
+// to the features of its own subscriptions.
+//
+// GET /api/v1/feature-grants
+func (s *Server) handleListFeatureGrantsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-feature-grants"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/feature-grants"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListFeatureGrantsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListFeatureGrantsOperation,
+			ID:   "list-feature-grants",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccessTokenAuth(ctx, ListFeatureGrantsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccessTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccessTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListFeatureGrantsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *FeatureGrantList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListFeatureGrantsOperation,
+			OperationSummary: "List feature grants",
+			OperationID:      "list-feature-grants",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "product_id",
+					In:   "query",
+				}: params.ProductID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListFeatureGrantsParams
+			Response = *FeatureGrantList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListFeatureGrantsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListFeatureGrants(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListFeatureGrants(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListFeatureGrantsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleListInvoiceItemsRequest handles list-invoice-items operation.
 //
-// Paginated lines of an issued invoice belonging to an owned billing account, including their service
-// periods and project references. A missing or unissued invoice returns 404; another user account
-// returns 403.
+// Paginated lines of an invoice belonging to an owned billing account, issued or the draft invoice of
+// an order, including their service periods and project references. A missing invoice or another draft
+// returns 404; another user account returns 403.
 //
 // GET /api/v1/invoices/{invoiceId}/items
 func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8554,7 +8532,8 @@ func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool,
 // handleListInvoicesRequest handles list-invoices operation.
 //
 // Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
-// status and creation interval. Drafts are excluded; top-ups do not create invoices.
+// status and creation interval. Drafts are excluded, including the draft invoice of an order awaiting
+// payment, which is reached through its order; top-ups do not create invoices.
 //
 // GET /api/v1/invoices
 func (s *Server) handleListInvoicesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8982,9 +8961,9 @@ func (s *Server) handleListOrderItemsRequest(args [1]string, argsEscaped bool, w
 
 // handleListOrdersRequest handles list-orders operation.
 //
-// Lists acceptance status and associated invoice amounts. pending_checkout awaits confirmation;
-// pending has confirmed checkout and may be unpaid or paid. active means accepted, not delivered.
-// pending_checkout and pending orders can expire at expires_at.
+// Lists acceptance status and associated invoice amounts. A pending order is not yet accepted; its
+// invoice shows whether it still needs payment. accepted means accepted, not delivered. Pending orders
+// can expire at expires_at.
 //
 // GET /api/v1/orders
 func (s *Server) handleListOrdersRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12467,17 +12446,25 @@ func (s *Server) handleListUsageChargesRequest(args [0]string, argsEscaped bool,
 // Applies eligible credit grants and available balance as requested, then collects the remainder
 // through the selected payment gateway and method. With no gateway selection, insufficient account
 // funds fail without starting an online payment. Card and non-card methods use this same operation.
-// Promotion codes are confirmed by checkout, before collecting payment.
+//
+// The draft invoice of a deferred order is priced when it is first paid: Billing applies
+// promotion_code, or the best applicable account discount when it is omitted, compares the total with
+// expected_amount, records the discount on the order and issues the invoice before collecting. An
+// invalid or inapplicable code fails rather than collecting full price, and a different total fails
+// with `BILLING_AMOUNT_CHANGED`; in both cases nothing changes. The terms are fixed before any funds
+// are collected and stay fixed when collection does not complete, for example with insufficient funds
+// or a declined card: later attempts reuse them, and a different promotion_code is then refused with
+// `BILLING_ORDER_CHECKOUT_CONFLICT`. A deferred period-end change can be paid once its first period is
+// due to be invoiced; earlier attempts are refused with `BILLING_CHANGE_NOT_INVOICED`.
 //
 // Returns a payment action when customer interaction is required. requires_action and processing do
 // not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
 // is reused, and retries do not apply credit grants or balance twice.
 //
 // Calling this on an invoice that is already paid returns the existing payment result without another
-// charge. A draft order invoice must first be confirmed through checkout. It and a void invoice are
-// refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that has failed or was canceled,
-// with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an order whose payment deadline
-// has passed, with `BILLING_ORDER_EXPIRED`.
+// charge. A void invoice is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that
+// has failed or was canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an
+// order whose payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
 //
 // POST /api/v1/invoices/{invoiceId}/pay
 func (s *Server) handlePayInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12694,15 +12681,17 @@ func (s *Server) handlePayInvoiceRequest(args [1]string, argsEscaped bool, w htt
 //
 // Pays outstanding invoices, including the invoices of the listed orders, from the account's eligible
 // credit grants and then its balance. No payment gateway is used; an invoice to be paid online is paid
-// on its own.
+// on its own. The draft invoice of a deferred order takes the best applicable account discount and is
+// issued first, and stays issued if the payment fails; pay it on its own to apply a promotion code.
 //
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover them all,
-// the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. Invoices that are
+// the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. A total different from
+// expected_amount fails with `BILLING_AMOUNT_CHANGED` and nothing is charged. Invoices that are
 // already paid are not charged again. An invoice with an online payment still in progress is refused
-// with `BILLING_PAYMENT_PENDING`, a draft order invoice or void invoice with
-// `BILLING_INVOICE_NOT_PAYABLE`, an order that has failed or was canceled with `BILLING_ORDER_FAILED`
-// or `BILLING_ORDER_CANCELED`, and an order whose payment deadline has passed with
-// `BILLING_ORDER_EXPIRED`.
+// with `BILLING_PAYMENT_PENDING`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, a deferred
+// period-end change not yet due to be invoiced with `BILLING_CHANGE_NOT_INVOICED`, an order that has
+// failed or was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose
+// payment deadline has passed with `BILLING_ORDER_EXPIRED`.
 //
 // POST /api/v1/payments
 func (s *Server) handlePayTogetherRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12907,6 +12896,8 @@ func (s *Server) handlePayTogetherRequest(args [0]string, argsEscaped bool, w ht
 // afterwards takes exactly these amounts unless the account's funds change in between. Nothing is
 // charged, reserved or created.
 //
+// A draft order invoice is priced as paying it with the same promotion_code would price it.
+//
 // Refused with the same errors as paying, except that insufficient funds are not an error here: they
 // show as a `gateway_amount` above zero.
 //
@@ -13051,6 +13042,10 @@ func (s *Server) handlePreviewInvoicePaymentRequest(args [1]string, argsEscaped 
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "promotion_code",
+					In:   "query",
+				}: params.PromotionCode,
 				{
 					Name: "use_balance",
 					In:   "query",
@@ -13322,8 +13317,8 @@ func (s *Server) handlePreviewPayTogetherRequest(args [0]string, argsEscaped boo
 
 // handleRenewSubscriptionRequest handles renew-subscription operation.
 //
-// Purchases prepaid periods from paid_until using the agreed recurring amount, and pays for them at
-// once. A changed interval selects a current price and freezes new terms on the order, applied only
+// Purchases prepaid periods from current_term_end using the agreed recurring amount, and pays for them
+// at once. A changed interval selects a current price and freezes new terms on the order, applied only
 // after fulfillment. Existing paid periods keep their value.
 //
 // Without `payment_method_id`, the renewal is paid from credit grants and the balance as `use_credits`
@@ -13547,8 +13542,9 @@ func (s *Server) handleRenewSubscriptionRequest(args [1]string, argsEscaped bool
 
 // handleSetAutoRenewRequest handles set-auto-renew operation.
 //
-// Controls automatic prepaid renewal. Disabling it does not shorten paid_until and still permits
-// manual renewal. Postpaid subscriptions do not renew and keep this false.
+// Controls automatic prepaid renewal. Disabling it does not shorten current_term_end and still permits
+// manual renewal. A postpaid subscription always continues until it is canceled; setting it is refused
+// with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
 //
 // While the subscription has an open cancellation, turning it on or off is refused with 409
 // `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
