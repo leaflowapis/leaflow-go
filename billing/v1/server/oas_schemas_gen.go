@@ -10074,6 +10074,9 @@ func (s *PaidWith) SetLast4(val OptString) {
 // available funds. An unresolved channel payment is reused; retries do not apply the grant or balance
 // portions twice. Without a gateway selection, insufficient account funds fail without starting an
 // online payment.
+//
+// `payment_gateway` and `method_type` are given together, and `payment_method_id` only with both;
+// otherwise the request is refused with `BILLING_PURCHASE_INVALID`.
 // Ref: #/components/schemas/PayInvoiceRequest
 type PayInvoiceRequest struct {
 	// Required to collect an online remainder. An existing attempt keeps its original gateway.
@@ -12630,6 +12633,10 @@ func (s *Quote) SetRefund(val OptOrderRefundQuote) {
 
 // A cancellation to quote: what ending these subscriptions together would return. One mode per
 // request; to compare, quote `immediate` and `period_end` separately.
+//
+// Refused with 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being
+// canceled (`meta.cancellation_id`), is being reclaimed (`meta.reason` `reclaim_requested`) or has a
+// paid change still waiting to switch (`meta.order_id`).
 // Ref: #/components/schemas/QuoteCancellation
 type QuoteCancellation struct {
 	// The subscriptions to end together, all of one service. Every subscription released with a resource
@@ -14606,6 +14613,8 @@ type RenewalOrderRequest struct {
 	IntervalCount OptInt `json:"interval_count"`
 	// As in renewing.
 	Interval OptRenewalOrderRequestInterval `json:"interval"`
+	// As in renewing.
+	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 }
 
 // GetOrderID returns the value of OrderID.
@@ -14628,6 +14637,11 @@ func (s *RenewalOrderRequest) GetInterval() OptRenewalOrderRequestInterval {
 	return s.Interval
 }
 
+// GetTerminationPolicy returns the value of TerminationPolicy.
+func (s *RenewalOrderRequest) GetTerminationPolicy() OptTerminationPolicy {
+	return s.TerminationPolicy
+}
+
 // SetOrderID sets the value of OrderID.
 func (s *RenewalOrderRequest) SetOrderID(val uuid.UUID) {
 	s.OrderID = val
@@ -14646,6 +14660,11 @@ func (s *RenewalOrderRequest) SetIntervalCount(val OptInt) {
 // SetInterval sets the value of Interval.
 func (s *RenewalOrderRequest) SetInterval(val OptRenewalOrderRequestInterval) {
 	s.Interval = val
+}
+
+// SetTerminationPolicy sets the value of TerminationPolicy.
+func (s *RenewalOrderRequest) SetTerminationPolicy(val OptTerminationPolicy) {
+	s.TerminationPolicy = val
 }
 
 // As in renewing.
@@ -15548,8 +15567,9 @@ type Subscription struct {
 	BillingCycleAnchor          OptDateTime                 `json:"billing_cycle_anchor"`
 	Cancellation                OptSubscriptionCancellation `json:"cancellation"`
 	// The saved payment method automatic renewal charges after the account's balance and credits, before
-	// the account's default payment method. Set when the purchase, or a renewal, is paid with a saved
-	// payment method. It is used only while it belongs to the account that pays the renewal.
+	// the account's default payment method. Set when the purchase, a renewal or a change is paid with a
+	// saved payment method; paying any other way leaves it unchanged. It is used only while it belongs to
+	// the account that pays the renewal.
 	DefaultPaymentMethodID OptNilUUID  `json:"default_payment_method_id"`
 	CreatedAt              OptDateTime `json:"created_at"`
 	ID                     uuid.UUID   `json:"id"`

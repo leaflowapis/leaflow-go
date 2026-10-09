@@ -121,7 +121,8 @@ func (UnimplementedHandler) CreateBillingAccount(ctx context.Context, req *Billi
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
 //   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.action_id`);
+//     (`meta.cancellation_id`) or reclaimed (`meta.reason` `reclaim_requested`), or has a paid change
+//     still waiting to switch (`meta.order_id`);
 //   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
 //     progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
@@ -772,7 +773,10 @@ func (UnimplementedHandler) ListUsageCharges(ctx context.Context, params ListUsa
 // Calling this on an invoice that is already paid returns the existing payment result without another
 // charge. A void invoice is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that
 // has failed or was canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an
-// order whose payment deadline has passed, with `BILLING_ORDER_EXPIRED`.
+// order whose payment deadline has passed, with `BILLING_ORDER_EXPIRED`. A renewal invoice is also
+// refused with `BILLING_INVOICE_NOT_PAYABLE` while its subscription is being canceled, is being
+// reclaimed or has ended, with `meta.reason` `subscription_canceling`, `subscription_reclaiming` or
+// `subscription_ended` respectively.
 //
 // POST /api/v1/invoices/{invoiceId}/pay
 func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (r *PaymentResult, _ error) {
@@ -793,7 +797,10 @@ func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayInvoiceReq
 // with `BILLING_PAYMENT_PENDING`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, a deferred
 // period-end change not yet due to be invoiced with `BILLING_CHANGE_NOT_INVOICED`, an order that has
 // failed or was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose
-// payment deadline has passed with `BILLING_ORDER_EXPIRED`.
+// payment deadline has passed with `BILLING_ORDER_EXPIRED`. A renewal invoice is refused with
+// `BILLING_INVOICE_NOT_PAYABLE` while its subscription is being canceled, is being reclaimed or has
+// ended, with `meta.reason` `subscription_canceling`, `subscription_reclaiming` or
+// `subscription_ended` respectively.
 //
 // POST /api/v1/payments
 func (UnimplementedHandler) PayTogether(ctx context.Context, req *PayTogetherRequest) (r *PaymentResult, _ error) {

@@ -23098,13 +23098,20 @@ func (s *RenewalOrderRequest) encodeFields(e *jx.Encoder) {
 			s.Interval.Encode(e)
 		}
 	}
+	{
+		if s.TerminationPolicy.Set {
+			e.FieldStart("termination_policy")
+			s.TerminationPolicy.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfRenewalOrderRequest = [4]string{
+var jsonFieldsNameOfRenewalOrderRequest = [5]string{
 	0: "order_id",
 	1: "periods",
 	2: "interval_count",
 	3: "interval",
+	4: "termination_policy",
 }
 
 // Decode decodes RenewalOrderRequest from json.
@@ -23158,6 +23165,16 @@ func (s *RenewalOrderRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"interval\"")
+			}
+		case "termination_policy":
+			if err := func() error {
+				s.TerminationPolicy.Reset()
+				if err := s.TerminationPolicy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"termination_policy\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
