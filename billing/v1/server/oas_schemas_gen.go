@@ -44,9 +44,14 @@ func (s *AccessTokenAuth) SetRoles(val []string) {
 // Account balance, credits, and unpaid charges are reported separately.
 // Ref: #/components/schemas/AccountBalance
 type AccountBalance struct {
-	// Balance minus pending balance returns, unbilled usage estimates and issued unpaid amounts. Credit
-	// grants are excluded; the result may be negative.
+	// Balance minus pending balance returns and the part of unbilled_amount and due that
+	// estimated_credit_applied does not cover. Negative only when the balance and applicable credit fall
+	// short of what the account owes.
 	AvailableCredit Money `json:"available_credit"`
+	// Credit expected to pay unbilled_amount and due. Each charge is matched to grants whose scope,
+	// validity and conditions it meets, in the order credit is applied at payment. Nothing is reserved or
+	// deducted until an invoice is paid, so credits still includes this amount.
+	EstimatedCreditApplied Money `json:"estimated_credit_applied"`
 	// Current estimate of rated usage that has not been invoiced. Final pricing and tax are fixed at
 	// issuance.
 	UnbilledAmount   Money  `json:"unbilled_amount"`
@@ -77,6 +82,11 @@ type AccountBalance struct {
 // GetAvailableCredit returns the value of AvailableCredit.
 func (s *AccountBalance) GetAvailableCredit() Money {
 	return s.AvailableCredit
+}
+
+// GetEstimatedCreditApplied returns the value of EstimatedCreditApplied.
+func (s *AccountBalance) GetEstimatedCreditApplied() Money {
+	return s.EstimatedCreditApplied
 }
 
 // GetUnbilledAmount returns the value of UnbilledAmount.
@@ -127,6 +137,11 @@ func (s *AccountBalance) GetPendingReturnsAmount() Money {
 // SetAvailableCredit sets the value of AvailableCredit.
 func (s *AccountBalance) SetAvailableCredit(val Money) {
 	s.AvailableCredit = val
+}
+
+// SetEstimatedCreditApplied sets the value of EstimatedCreditApplied.
+func (s *AccountBalance) SetEstimatedCreditApplied(val Money) {
+	s.EstimatedCreditApplied = val
 }
 
 // SetUnbilledAmount sets the value of UnbilledAmount.
