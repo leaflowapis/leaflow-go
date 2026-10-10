@@ -9486,11 +9486,15 @@ type OrderItem struct {
 	// holds, or the account's tax rate is inclusive.
 	DiscountAmount OptMoney `json:"discount_amount"`
 	// `gross_amount` less `discount_amount`.
-	Amount      OptMoney        `json:"amount"`
-	Currency    string          `json:"currency"`
-	PeriodStart OptNilDateTime  `json:"period_start"`
-	PeriodEnd   OptNilDateTime  `json:"period_end"`
-	Status      OrderItemStatus `json:"status"`
+	Amount   OptMoney `json:"amount"`
+	Currency string   `json:"currency"`
+	// The start of the service period this line paid for. Frozen at placement for renewals and period-end
+	// changes; for a prepaid line of a new purchase, fixed from the second its invoice is paid and kept
+	// when delivery is confirmed. Absent for postpaid and one-time lines.
+	PeriodStart OptNilDateTime `json:"period_start"`
+	// The end of that service period, exclusive.
+	PeriodEnd OptNilDateTime  `json:"period_end"`
+	Status    OrderItemStatus `json:"status"`
 }
 
 // GetInvoiceItemIds returns the value of InvoiceItemIds.
