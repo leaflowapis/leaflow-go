@@ -6882,6 +6882,17 @@ func (s *Statement) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -7002,6 +7013,19 @@ func (s StatementSummaryGroupBy) Validate() error {
 	case "product":
 		return nil
 	case "meter":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s StatementType) Validate() error {
+	switch s {
+	case "interim":
+		return nil
+	case "final":
+		return nil
+	case "supplement":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

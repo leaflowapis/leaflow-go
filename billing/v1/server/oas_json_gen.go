@@ -24114,6 +24114,10 @@ func (s *Statement) encodeFields(e *jx.Encoder) {
 		s.Status.Encode(e)
 	}
 	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
 		e.FieldStart("estimated")
 		e.Bool(s.Estimated)
 	}
@@ -24149,7 +24153,7 @@ func (s *Statement) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfStatement = [14]string{
+var jsonFieldsNameOfStatement = [15]string{
 	0:  "id",
 	1:  "billing_account_id",
 	2:  "currency",
@@ -24157,13 +24161,14 @@ var jsonFieldsNameOfStatement = [14]string{
 	4:  "period_end",
 	5:  "sequence",
 	6:  "status",
-	7:  "estimated",
-	8:  "amounts",
-	9:  "closed_at",
-	10: "invoice_id",
-	11: "created_at",
-	12: "calculated_at",
-	13: "credited_amount",
+	7:  "type",
+	8:  "estimated",
+	9:  "amounts",
+	10: "closed_at",
+	11: "invoice_id",
+	12: "created_at",
+	13: "calculated_at",
+	14: "credited_amount",
 }
 
 // Decode decodes Statement from json.
@@ -24257,8 +24262,18 @@ func (s *Statement) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
-		case "estimated":
+		case "type":
 			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "estimated":
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Bool()
 				s.Estimated = bool(v)
@@ -24270,7 +24285,7 @@ func (s *Statement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"estimated\"")
 			}
 		case "amounts":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.Amounts.Decode(d); err != nil {
 					return err
@@ -24300,7 +24315,7 @@ func (s *Statement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"invoice_id\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -24322,7 +24337,7 @@ func (s *Statement) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"calculated_at\"")
 			}
 		case "credited_amount":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.CreditedAmount.Decode(d); err != nil {
 					return err
@@ -24342,7 +24357,7 @@ func (s *Statement) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00101001,
+		0b01010011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -25126,6 +25141,48 @@ func (s StatementSummaryGroupBy) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *StatementSummaryGroupBy) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatementType as json.
+func (s StatementType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatementType from json.
+func (s *StatementType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatementType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatementType(v) {
+	case StatementTypeInterim:
+		*s = StatementTypeInterim
+	case StatementTypeFinal:
+		*s = StatementTypeFinal
+	case StatementTypeSupplement:
+		*s = StatementTypeSupplement
+	default:
+		*s = StatementType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatementType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatementType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

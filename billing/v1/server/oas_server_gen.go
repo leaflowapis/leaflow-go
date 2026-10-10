@@ -591,7 +591,10 @@ type Handler interface {
 	// order whose payment deadline has passed, with `BILLING_ORDER_EXPIRED`. A renewal invoice is also
 	// refused with `BILLING_INVOICE_NOT_PAYABLE` while its subscription is being canceled, is being
 	// reclaimed or has ended, with `meta.reason` `subscription_canceling`, `subscription_reclaiming` or
-	// `subscription_ended` respectively.
+	// `subscription_ended` respectively. A usage invoice is billed to the smallest fraction a balance can
+	// hold, finer than a payment method can charge, so paying one online is refused with
+	// `BILLING_INVOICE_NOT_PAYABLE` and `meta.reason` `usage_invoice`; it is collected from credit grants
+	// and balance automatically, including right after a top-up.
 	//
 	// POST /api/v1/invoices/{invoiceId}/pay
 	PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (*PaymentResult, error)

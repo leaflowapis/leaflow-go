@@ -15025,10 +15025,11 @@ func (s *SpendRowList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An account's consumption for one billing period, collected at one closing. The first statement of a
-// period (sequence 1) closes after the period ends. Usage priced after that closing is collected in a
-// later statement for the same period, which closes and invoices separately; a closed statement is
-// never rewritten. Payments apply to issued invoices.
+// An account's consumption for one billing period, collected at one closing. Usage is billed after
+// every settlement run, about hourly; each closing issues an invoice for the usage priced since the
+// previous closing and collects it from credits and balance at once, and later usage is collected in
+// the next statement of the same period. A closed statement is never rewritten. The period's
+// consumption is the sum of its statements.
 // Ref: #/components/schemas/Statement
 type Statement struct {
 	ID               uuid.UUID `json:"id"`
@@ -15036,13 +15037,14 @@ type Statement struct {
 	Currency         string    `json:"currency"`
 	PeriodStart      time.Time `json:"period_start"`
 	PeriodEnd        time.Time `json:"period_end"`
-	// 1 for the first closing of the period; higher for statements that collect usage priced after an
-	// earlier closing.
+	// Increases with each closing of the period.
 	Sequence int32           `json:"sequence"`
 	Status   StatementStatus `json:"status"`
+	Type     StatementType   `json:"type"`
 	// True while the statement is open. The estimate applies tier pricing to the period's usage so far and
-	// adds tax for the current invoice contact. Minimum charges are added at closing, and a tier reduction
-	// larger than this statement's own charges is credited to earlier invoices of the period at closing.
+	// adds tax for the current invoice contact. Minimum charges are added at the period's final closing,
+	// and a tier reduction larger than this statement's own charges is credited to earlier invoices of the
+	// period at closing.
 	Estimated bool `json:"estimated"`
 	// The current estimate while open, or the invoiced result when closed.
 	Amounts  StatementAmounts `json:"amounts"`
@@ -15089,6 +15091,11 @@ func (s *Statement) GetSequence() int32 {
 // GetStatus returns the value of Status.
 func (s *Statement) GetStatus() StatementStatus {
 	return s.Status
+}
+
+// GetType returns the value of Type.
+func (s *Statement) GetType() StatementType {
+	return s.Type
 }
 
 // GetEstimated returns the value of Estimated.
@@ -15159,6 +15166,11 @@ func (s *Statement) SetSequence(val int32) {
 // SetStatus sets the value of Status.
 func (s *Statement) SetStatus(val StatementStatus) {
 	s.Status = val
+}
+
+// SetType sets the value of Type.
+func (s *Statement) SetType(val StatementType) {
+	s.Type = val
 }
 
 // SetEstimated sets the value of Estimated.
@@ -15519,6 +15531,59 @@ func (s *StatementSummaryGroupBy) UnmarshalText(data []byte) error {
 		return nil
 	case StatementSummaryGroupByMeter:
 		*s = StatementSummaryGroupByMeter
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Interim: a closing before the period's usage is final; minimum charges are not applied. final: the
+// first closing after the period ended and its late usage was settled; minimum charges for the whole
+// period are applied. supplement: a closing after the final one, for usage priced late. An open
+// statement is interim.
+// Ref: #/components/schemas/StatementType
+type StatementType string
+
+const (
+	StatementTypeInterim    StatementType = "interim"
+	StatementTypeFinal      StatementType = "final"
+	StatementTypeSupplement StatementType = "supplement"
+)
+
+// AllValues returns all StatementType values.
+func (StatementType) AllValues() []StatementType {
+	return []StatementType{
+		StatementTypeInterim,
+		StatementTypeFinal,
+		StatementTypeSupplement,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatementType) MarshalText() ([]byte, error) {
+	switch s {
+	case StatementTypeInterim:
+		return []byte(s), nil
+	case StatementTypeFinal:
+		return []byte(s), nil
+	case StatementTypeSupplement:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatementType) UnmarshalText(data []byte) error {
+	switch StatementType(data) {
+	case StatementTypeInterim:
+		*s = StatementTypeInterim
+		return nil
+	case StatementTypeFinal:
+		*s = StatementTypeFinal
+		return nil
+	case StatementTypeSupplement:
+		*s = StatementTypeSupplement
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
