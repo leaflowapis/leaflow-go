@@ -48,6 +48,7 @@ const (
 	ListFeatureGrantsOperation           OperationName = "ListFeatureGrants"
 	ListInvoiceItemsOperation            OperationName = "ListInvoiceItems"
 	ListInvoicesOperation                OperationName = "ListInvoices"
+	ListMonthlyStatementsOperation       OperationName = "ListMonthlyStatements"
 	ListOrderItemsOperation              OperationName = "ListOrderItems"
 	ListOrdersOperation                  OperationName = "ListOrders"
 	ListPaymentMethodsOperation          OperationName = "ListPaymentMethods"

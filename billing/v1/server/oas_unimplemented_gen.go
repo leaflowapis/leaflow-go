@@ -556,6 +556,17 @@ func (UnimplementedHandler) ListInvoices(ctx context.Context, params ListInvoice
 	return r, ht.ErrNotImplemented
 }
 
+// ListMonthlyStatements implements list-monthly-statements operation.
+//
+// Usage billing by UTC calendar month for owned billing accounts, newest first. Each period combines
+// its statements, the invoices they issued and how those invoices were paid; usage is billed about
+// hourly, so a month holds many statements. Filter by billing_account_id and by period start.
+//
+// GET /api/v1/monthly-statements
+func (UnimplementedHandler) ListMonthlyStatements(ctx context.Context, params ListMonthlyStatementsParams) (r *MonthlyStatementList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListOrderItems implements list-order-items operation.
 //
 // One entry per item bought, with the price charged and the period it covers.

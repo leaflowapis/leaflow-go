@@ -5699,6 +5699,205 @@ func (s *ListSpendGroupBy) UnmarshalText(data []byte) error {
 
 type Money string
 
+// One billing account's usage billing for one UTC calendar month, summed over the month's statements.
+// It is a summary, not something to pay; each closing's invoice is collected on its own.
+// Ref: #/components/schemas/MonthlyStatement
+type MonthlyStatement struct {
+	BillingAccountID int64     `json:"billing_account_id"`
+	Currency         string    `json:"currency"`
+	PeriodStart      time.Time `json:"period_start"`
+	PeriodEnd        time.Time `json:"period_end"`
+	// True after the period's final closing, which applies minimum charges for the whole month. Usage
+	// priced later is still billed in supplement statements and added here.
+	Finalized   bool        `json:"finalized"`
+	FinalizedAt OptDateTime `json:"finalized_at"`
+	// Statements of the period, including the open one.
+	StatementCount int32 `json:"statement_count"`
+	// The sum of the closed statements' invoiced amounts.
+	Billed StatementAmounts `json:"billed"`
+	// Credit issued at closings against the period's earlier invoices, including tax. The period's net
+	// charge is the billed total less this amount.
+	CreditedAmount Money `json:"credited_amount"`
+	// The open statement's estimate for usage priced since the last closing. Absent when the period has no
+	// open statement.
+	Unbilled OptStatementAmounts `json:"unbilled"`
+	// Paid from credit grants on the period's invoices.
+	CreditApplied Money `json:"credit_applied"`
+	// Paid on the period's invoices, including credit grants.
+	AmountPaid Money `json:"amount_paid"`
+	// Still owed on the period's invoices. It is collected from balance and credits as soon as they are
+	// available.
+	AmountDue Money `json:"amount_due"`
+	// Returned from the period's invoices after credit was issued against paid amounts.
+	AmountRefunded Money `json:"amount_refunded"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *MonthlyStatement) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *MonthlyStatement) GetCurrency() string {
+	return s.Currency
+}
+
+// GetPeriodStart returns the value of PeriodStart.
+func (s *MonthlyStatement) GetPeriodStart() time.Time {
+	return s.PeriodStart
+}
+
+// GetPeriodEnd returns the value of PeriodEnd.
+func (s *MonthlyStatement) GetPeriodEnd() time.Time {
+	return s.PeriodEnd
+}
+
+// GetFinalized returns the value of Finalized.
+func (s *MonthlyStatement) GetFinalized() bool {
+	return s.Finalized
+}
+
+// GetFinalizedAt returns the value of FinalizedAt.
+func (s *MonthlyStatement) GetFinalizedAt() OptDateTime {
+	return s.FinalizedAt
+}
+
+// GetStatementCount returns the value of StatementCount.
+func (s *MonthlyStatement) GetStatementCount() int32 {
+	return s.StatementCount
+}
+
+// GetBilled returns the value of Billed.
+func (s *MonthlyStatement) GetBilled() StatementAmounts {
+	return s.Billed
+}
+
+// GetCreditedAmount returns the value of CreditedAmount.
+func (s *MonthlyStatement) GetCreditedAmount() Money {
+	return s.CreditedAmount
+}
+
+// GetUnbilled returns the value of Unbilled.
+func (s *MonthlyStatement) GetUnbilled() OptStatementAmounts {
+	return s.Unbilled
+}
+
+// GetCreditApplied returns the value of CreditApplied.
+func (s *MonthlyStatement) GetCreditApplied() Money {
+	return s.CreditApplied
+}
+
+// GetAmountPaid returns the value of AmountPaid.
+func (s *MonthlyStatement) GetAmountPaid() Money {
+	return s.AmountPaid
+}
+
+// GetAmountDue returns the value of AmountDue.
+func (s *MonthlyStatement) GetAmountDue() Money {
+	return s.AmountDue
+}
+
+// GetAmountRefunded returns the value of AmountRefunded.
+func (s *MonthlyStatement) GetAmountRefunded() Money {
+	return s.AmountRefunded
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *MonthlyStatement) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *MonthlyStatement) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetPeriodStart sets the value of PeriodStart.
+func (s *MonthlyStatement) SetPeriodStart(val time.Time) {
+	s.PeriodStart = val
+}
+
+// SetPeriodEnd sets the value of PeriodEnd.
+func (s *MonthlyStatement) SetPeriodEnd(val time.Time) {
+	s.PeriodEnd = val
+}
+
+// SetFinalized sets the value of Finalized.
+func (s *MonthlyStatement) SetFinalized(val bool) {
+	s.Finalized = val
+}
+
+// SetFinalizedAt sets the value of FinalizedAt.
+func (s *MonthlyStatement) SetFinalizedAt(val OptDateTime) {
+	s.FinalizedAt = val
+}
+
+// SetStatementCount sets the value of StatementCount.
+func (s *MonthlyStatement) SetStatementCount(val int32) {
+	s.StatementCount = val
+}
+
+// SetBilled sets the value of Billed.
+func (s *MonthlyStatement) SetBilled(val StatementAmounts) {
+	s.Billed = val
+}
+
+// SetCreditedAmount sets the value of CreditedAmount.
+func (s *MonthlyStatement) SetCreditedAmount(val Money) {
+	s.CreditedAmount = val
+}
+
+// SetUnbilled sets the value of Unbilled.
+func (s *MonthlyStatement) SetUnbilled(val OptStatementAmounts) {
+	s.Unbilled = val
+}
+
+// SetCreditApplied sets the value of CreditApplied.
+func (s *MonthlyStatement) SetCreditApplied(val Money) {
+	s.CreditApplied = val
+}
+
+// SetAmountPaid sets the value of AmountPaid.
+func (s *MonthlyStatement) SetAmountPaid(val Money) {
+	s.AmountPaid = val
+}
+
+// SetAmountDue sets the value of AmountDue.
+func (s *MonthlyStatement) SetAmountDue(val Money) {
+	s.AmountDue = val
+}
+
+// SetAmountRefunded sets the value of AmountRefunded.
+func (s *MonthlyStatement) SetAmountRefunded(val Money) {
+	s.AmountRefunded = val
+}
+
+// Ref: #/components/schemas/MonthlyStatementList
+type MonthlyStatementList struct {
+	Items      []MonthlyStatement `json:"items"`
+	Pagination OffsetPagination   `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *MonthlyStatementList) GetItems() []MonthlyStatement {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *MonthlyStatementList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *MonthlyStatementList) SetItems(val []MonthlyStatement) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *MonthlyStatementList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
 // Which object this is, together with what a person currently calls it.
 //
 // The name is for display. It is chosen by whoever owns the object, it changes, it is not unique
@@ -8413,6 +8612,52 @@ func (o OptRenewalOrderRequestInterval) Get() (v RenewalOrderRequestInterval, ok
 
 // Or returns value if set, or given parameter if does not.
 func (o OptRenewalOrderRequestInterval) Or(d RenewalOrderRequestInterval) RenewalOrderRequestInterval {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptStatementAmounts returns new OptStatementAmounts with value set to v.
+func NewOptStatementAmounts(v StatementAmounts) OptStatementAmounts {
+	return OptStatementAmounts{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptStatementAmounts is optional StatementAmounts.
+type OptStatementAmounts struct {
+	Value StatementAmounts
+	Set   bool
+}
+
+// IsSet returns true if OptStatementAmounts was set.
+func (o OptStatementAmounts) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptStatementAmounts) Reset() {
+	var v StatementAmounts
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptStatementAmounts) SetTo(v StatementAmounts) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptStatementAmounts) Get() (v StatementAmounts, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptStatementAmounts) Or(d StatementAmounts) StatementAmounts {
 	if v, ok := o.Get(); ok {
 		return v
 	}
