@@ -148,7 +148,8 @@ func decodeGetMembershipParams(args [1]string, argsEscaped bool, r *http.Request
 // GetPlanParams is parameters of get-plan operation.
 type GetPlanParams struct {
 	PlanId uuid.UUID
-	// Restricts prices and currency-specific benefits to this currency.
+	// Filters prices and currency-specific benefits. Any configured currency is allowed; omit to return
+	// all currencies.
 	Currency OptCurrency `json:",omitempty,omitzero"`
 }
 
@@ -521,7 +522,7 @@ type ListMembershipsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// A billing account you own.
+	// The account to query.
 	BillingAccountID int64
 }
 
@@ -761,8 +762,8 @@ type ListPlansParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restricts prices and currency-specific benefits to this currency. All currencies are returned while
-	// it is absent.
+	// Filters prices and currency-specific benefits. Any configured currency is allowed; omit to return
+	// all currencies.
 	Currency OptCurrency `json:",omitempty,omitzero"`
 }
 

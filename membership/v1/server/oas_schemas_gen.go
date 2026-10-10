@@ -40,18 +40,16 @@ func (s *AccessTokenAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
-// Usage of a service included in each period. Usage with the listed dimension values draws from it
-// before it is charged.
+// Metered usage included in each period.
 // Ref: #/components/schemas/AllowanceBenefit
 type AllowanceBenefit struct {
 	Product   ProductIdentity `json:"product"`
 	MeterID   uuid.UUID       `json:"meter_id"`
 	MeterName string          `json:"meter_name"`
 	Unit      string          `json:"unit"`
-	// Decimal string in the meter's unit.
+	// Quantity in the meter's unit.
 	Quantity string `json:"quantity"`
-	// Exact dimension values the allowance is limited to, such as a model. Empty means every usage of the
-	// meter.
+	// Meter dimension selectors; empty means unrestricted usage.
 	Dimensions AllowanceBenefitDimensions `json:"dimensions"`
 }
 
@@ -115,8 +113,7 @@ func (s *AllowanceBenefit) SetDimensions(val AllowanceBenefitDimensions) {
 	s.Dimensions = val
 }
 
-// Exact dimension values the allowance is limited to, such as a model. Empty means every usage of the
-// meter.
+// Meter dimension selectors; empty means unrestricted usage.
 type AllowanceBenefitDimensions map[string]string
 
 func (s *AllowanceBenefitDimensions) init() AllowanceBenefitDimensions {
@@ -128,7 +125,7 @@ func (s *AllowanceBenefitDimensions) init() AllowanceBenefitDimensions {
 	return m
 }
 
-// One benefit of a plan. Exactly the object named by type is present.
+// Exactly one benefit object matching type.
 // Ref: #/components/schemas/Benefit
 type Benefit struct {
 	ID        uuid.UUID           `json:"id"`
@@ -330,14 +327,14 @@ func (s *CheckoutOptionsMode) UnmarshalText(data []byte) error {
 	}
 }
 
-// Credit issued for each period in one currency. It never pays for memberships.
+// Credit granted for each period.
 // Ref: #/components/schemas/CreditBenefit
 type CreditBenefit struct {
 	Currency Currency `json:"currency"`
 	Amount   Money    `json:"amount"`
 	// The services and plans the credit can pay for.
 	AppliesTo NamedIdentity `json:"applies_to"`
-	// Days the credit can be used from issue. Null means it does not expire.
+	// Credit validity in days; null means no expiry.
 	ValidDays NilInt `json:"valid_days"`
 }
 
@@ -383,16 +380,14 @@ func (s *CreditBenefit) SetValidDays(val NilInt) {
 
 type Currency string
 
-// A Billing coupon the account holds during each period. Every type applies to purchases within its
-// scope; a percentage coupon also reduces metered usage. Only one coupon applies to a purchase or a
-// usage charge, the one that saves the most.
+// A Billing coupon held during each period.
 // Ref: #/components/schemas/DiscountBenefit
 type DiscountBenefit struct {
 	Name       string                    `json:"name"`
 	CouponType DiscountBenefitCouponType `json:"coupon_type"`
-	// Decimal string for a percentage coupon, such as "10" for ten per cent; null for other types.
+	// Percentage discount; null for other coupon types.
 	PercentOff NilString `json:"percent_off"`
-	// The services and plans the coupon applies to. Null means every service other than memberships.
+	// Coupon applicability; null means unrestricted.
 	AppliesTo NilNamedIdentity `json:"applies_to"`
 }
 
@@ -580,7 +575,7 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
 }
 
-// Access to a feature of a service for every project of the account during each period.
+// Account-level feature access for each period.
 // Ref: #/components/schemas/FeatureBenefit
 type FeatureBenefit struct {
 	Product   ProductIdentity `json:"product"`
@@ -618,14 +613,13 @@ func (s *FeatureBenefit) SetName(val string) {
 	s.Name = val
 }
 
-// A benefit issued for a period, with the terms it was issued on. The Billing resource is listed in
-// Billing.
+// A benefit grant with frozen terms and Billing resource identifiers.
 // Ref: #/components/schemas/Grant
 type Grant struct {
 	ID        uuid.UUID `json:"id"`
 	BenefitID uuid.UUID `json:"benefit_id"`
 	Type      GrantType `json:"type"`
-	// Revoked means it was withdrawn before the period ended; what had been used is kept.
+	// Revocation withdraws unused benefits.
 	Status         GrantStatus         `json:"status"`
 	Credit         OptCreditBenefit    `json:"credit"`
 	Discount       OptDiscountBenefit  `json:"discount"`
@@ -768,7 +762,7 @@ func (s *Grant) SetIssuedAt(val time.Time) {
 	s.IssuedAt = val
 }
 
-// Revoked means it was withdrawn before the period ended; what had been used is kept.
+// Revocation withdraws unused benefits.
 type GrantStatus string
 
 const (
@@ -1110,18 +1104,15 @@ type Membership struct {
 	ID               uuid.UUID   `json:"id"`
 	BillingAccountID int64       `json:"billing_account_id"`
 	Plan             PlanSummary `json:"plan"`
-	// Pending until Billing reports the first order ready; active while paid; ended afterwards.
+	// Pending until delivery is confirmed; active afterwards; ended when terminated.
 	Status MembershipStatus `json:"status"`
-	// Canceled: the subscription was canceled and the paid period ended. reclaimed: Billing reclaimed the
-	// subscription after non-payment. revoked: an operator ended the membership. abandoned: the first
-	// order was canceled or expired before payment.
+	// Cancellation, reclamation, operator revocation, or an unfulfilled first order.
 	EndedReason NilMembershipEndedReason `json:"ended_reason"`
-	// The Billing subscription. Cancel it or change auto-renewal in Billing. Null until Billing reports
-	// the first order ready.
+	// Billing subscription ID; null until activation.
 	SubscriptionID NilUUID `json:"subscription_id"`
-	// The period in effect now. Null when the membership is pending or ended.
+	// Current fulfilled period; null while pending or ended.
 	CurrentPeriod NilPeriod `json:"current_period"`
-	// The plan a scheduled downgrade moves to at the end of the paid period.
+	// The scheduled downgrade target.
 	ScheduledPlan NilPlanSummary `json:"scheduled_plan"`
 	CreatedAt     time.Time      `json:"created_at"`
 	EndedAt       NilDateTime    `json:"ended_at"`
@@ -1231,7 +1222,7 @@ func (s *Membership) SetEndedAt(val NilDateTime) {
 type MembershipCreate struct {
 	BillingAccountID int64     `json:"billing_account_id"`
 	PlanID           uuid.UUID `json:"plan_id"`
-	// One of the plan's prices in the account's currency. It sets the billing interval.
+	// A tier price matching the account currency and chosen billing interval.
 	PriceID  uuid.UUID          `json:"price_id"`
 	Checkout OptCheckoutOptions `json:"checkout"`
 }
@@ -1278,8 +1269,7 @@ func (s *MembershipCreate) SetCheckout(val OptCheckoutOptions) {
 
 // Ref: #/components/schemas/MembershipDowngrade
 type MembershipDowngrade struct {
-	// A plan ranked below the current one, priced for the membership's billing interval in the account's
-	// currency.
+	// A lower-ranked tier supporting the account currency and billing interval.
 	PlanID uuid.UUID `json:"plan_id"`
 }
 
@@ -1293,9 +1283,7 @@ func (s *MembershipDowngrade) SetPlanID(val uuid.UUID) {
 	s.PlanID = val
 }
 
-// Canceled: the subscription was canceled and the paid period ended. reclaimed: Billing reclaimed the
-// subscription after non-payment. revoked: an operator ended the membership. abandoned: the first
-// order was canceled or expired before payment.
+// Cancellation, reclamation, operator revocation, or an unfulfilled first order.
 type MembershipEndedReason string
 
 const (
@@ -1377,7 +1365,7 @@ func (s *MembershipList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// The membership and the Billing order placed for it.
+// The membership and its Billing purchase order.
 // Ref: #/components/schemas/MembershipPurchase
 type MembershipPurchase struct {
 	Membership Membership  `json:"membership"`
@@ -1404,7 +1392,7 @@ func (s *MembershipPurchase) SetOrder(val PlacedOrder) {
 	s.Order = val
 }
 
-// Pending until Billing reports the first order ready; active while paid; ended afterwards.
+// Pending until delivery is confirmed; active afterwards; ended when terminated.
 type MembershipStatus string
 
 const (
@@ -1455,7 +1443,7 @@ func (s *MembershipStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/MembershipUpgrade
 type MembershipUpgrade struct {
-	// A plan ranked above the current one.
+	// A higher-ranked target tier.
 	PlanID   uuid.UUID          `json:"plan_id"`
 	Checkout OptCheckoutOptions `json:"checkout"`
 }
@@ -2421,7 +2409,7 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
-// A paid period of a membership.
+// A fulfilled membership period.
 // Ref: #/components/schemas/Period
 type Period struct {
 	ID   uuid.UUID   `json:"id"`
@@ -2569,7 +2557,7 @@ type Plan struct {
 	LookupKey   string    `json:"lookup_key"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
-	// Higher ranks are higher plans.
+	// Higher values mean higher tiers.
 	Rank     int         `json:"rank"`
 	Prices   []PlanPrice `json:"prices"`
 	Benefits []Benefit   `json:"benefits"`
@@ -2778,7 +2766,7 @@ type PlanSummary struct {
 	ID        uuid.UUID `json:"id"`
 	LookupKey string    `json:"lookup_key"`
 	Name      string    `json:"name"`
-	// Higher ranks are higher plans. Upgrades move up and downgrades move down.
+	// Higher values mean higher tiers. Upgrades move up and downgrades move down.
 	Rank int `json:"rank"`
 }
 
@@ -2822,7 +2810,7 @@ func (s *PlanSummary) SetRank(val int) {
 	s.Rank = val
 }
 
-// A Leaflow service, such as compute or canopy.
+// A Leaflow service.
 // Ref: #/components/schemas/ProductIdentity
 type ProductIdentity struct {
 	ID   string `json:"id"`

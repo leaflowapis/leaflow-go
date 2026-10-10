@@ -35,8 +35,7 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 
 // handleCancelMembershipDowngradeRequest handles cancel-membership-downgrade operation.
 //
-// Keeps the current plan at renewal. Fails with 409 `MEMBERSHIP_CHANGE_PENDING` when no downgrade is
-// scheduled.
+// Cancels the scheduled downgrade. Returns 409 MEMBERSHIP_CHANGE_PENDING if none is scheduled.
 //
 // DELETE /api/v1/memberships/{membershipId}/downgrade
 func (s *Server) handleCancelMembershipDowngradeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -236,14 +235,9 @@ func (s *Server) handleCancelMembershipDowngradeRequest(args [1]string, argsEsca
 
 // handleCreateMembershipRequest handles create-membership operation.
 //
-// Places a Billing order for the plan's price on a billing account you own, and returns the pending
-// membership with the order. The membership becomes active, and its first period's benefits are
-// issued, once Billing reports the order ready.
-//
-// Fails with 409 `MEMBERSHIP_EXISTS` when the account already has a pending or active membership, and
-// with 422 `MEMBERSHIP_PLAN_UNAVAILABLE` when the plan is not on sale or has no price or credit in the
-// account's currency. Billing refusals, such as `BILLING_INSUFFICIENT_FUNDS`, are returned as Billing
-// reports them.
+// Places a purchase order and returns the membership and invoice. Activation follows successful
+// benefit issuance and delivery confirmation. Returns 409 MEMBERSHIP_EXISTS or 422
+// MEMBERSHIP_PLAN_UNAVAILABLE.
 //
 // POST /api/v1/memberships
 func (s *Server) handleCreateMembershipRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -643,7 +637,7 @@ func (s *Server) handleGetMembershipRequest(args [1]string, argsEscaped bool, w 
 
 // handleGetPlanRequest handles get-plan operation.
 //
-// Returns a plan on sale with its prices and benefits. No authentication is required.
+// Returns a tier on sale with its prices and benefits.
 //
 // GET /api/v1/plans/{planId}
 func (s *Server) handleGetPlanRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -801,7 +795,7 @@ func (s *Server) handleGetPlanRequest(args [1]string, argsEscaped bool, w http.R
 
 // handleListMembershipPeriodsRequest handles list-membership-periods operation.
 //
-// Lists the paid periods of a membership, newest first, each with the benefits issued for it.
+// Lists fulfilled periods and their grants, newest first.
 //
 // GET /api/v1/memberships/{membershipId}/periods
 func (s *Server) handleListMembershipPeriodsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1009,7 +1003,7 @@ func (s *Server) handleListMembershipPeriodsRequest(args [1]string, argsEscaped 
 
 // handleListMembershipsRequest handles list-memberships operation.
 //
-// Lists the memberships of a billing account you own, newest first, including ended ones.
+// Lists memberships of the specified account, including ended memberships, newest first.
 //
 // GET /api/v1/memberships
 func (s *Server) handleListMembershipsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1217,8 +1211,7 @@ func (s *Server) handleListMembershipsRequest(args [0]string, argsEscaped bool, 
 
 // handleListPlansRequest handles list-plans operation.
 //
-// Lists the plans on sale, in ascending rank, with their prices and benefits. No authentication is
-// required.
+// Lists tiers on sale with prices and benefits, ordered by rank.
 //
 // GET /api/v1/plans
 func (s *Server) handleListPlansRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1380,14 +1373,8 @@ func (s *Server) handleListPlansRequest(args [0]string, argsEscaped bool, w http
 
 // handleScheduleMembershipDowngradeRequest handles schedule-membership-downgrade operation.
 //
-// Schedules a move to a lower-ranked plan at the end of the paid period. Nothing is charged or
-// refunded and the current period keeps its benefits. The membership's `scheduled_plan` shows the
-// pending move.
-//
-// Fails with 409 `MEMBERSHIP_NOT_ACTIVE` unless the membership is active, 409
-// `MEMBERSHIP_CHANGE_PENDING` while another change is pending, and 422 `MEMBERSHIP_DOWNGRADE_INVALID`
-// when the chosen plan does not rank below the current one or has no price in the account's currency
-// for the membership's billing interval.
+// Schedules a lower tier for the next period. Current benefits remain valid. Returns 409
+// MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_DOWNGRADE_INVALID.
 //
 // POST /api/v1/memberships/{membershipId}/downgrade
 func (s *Server) handleScheduleMembershipDowngradeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1602,15 +1589,9 @@ func (s *Server) handleScheduleMembershipDowngradeRequest(args [1]string, argsEs
 
 // handleUpgradeMembershipRequest handles upgrade-membership operation.
 //
-// Places a Billing order for the full difference between the current and the chosen plan's period
-// prices. Once Billing reports it ready, the membership moves to the chosen plan for the rest of the
-// period: the difference in credit is issued and the new plan's discount and allowances apply.
-// Renewals are charged at the chosen plan's price.
-//
-// Fails with 409 `MEMBERSHIP_NOT_ACTIVE` unless the membership is active, and with 422
-// `MEMBERSHIP_UPGRADE_UNAVAILABLE` when the chosen plan does not rank above the current one or no
-// upgrade is priced in the account's currency. A pending upgrade or a scheduled downgrade must finish
-// or be canceled first (409 `MEMBERSHIP_CHANGE_PENDING`).
+// Places an order for the full-period price difference. The upgrade takes effect after benefit
+// issuance and delivery confirmation; renewal uses the target tier. Returns 409 MEMBERSHIP_NOT_ACTIVE
+// or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_UPGRADE_UNAVAILABLE.
 //
 // POST /api/v1/memberships/{membershipId}/upgrade
 func (s *Server) handleUpgradeMembershipRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
