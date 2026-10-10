@@ -41,8 +41,10 @@ type Invoker interface {
 	// Payment may be absent, partial or complete. Once the order's terms are fixed, the selected items
 	// keep their agreed amounts and discounts; credit notes reduce issued invoices, and collected amounts
 	// are returned to their original payment sources. While the terms of a deferred order are not fixed,
-	// the remaining items are priced again. External payment-method refunds can finish asynchronously. The
-	// order and financial history are retained; the same cancellation does not refund twice.
+	// the remaining items are priced again. External payment-method refunds can finish asynchronously. An
+	// online payment still waiting for the payer is canceled with the order; one the gateway is already
+	// processing is refused with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`. The order and
+	// financial history are retained; the same cancellation does not refund twice.
 	//
 	// Once the order is accepted, its owning service coordinates cancellation and confirms non-delivery
 	// and cleanup through the cancellation RPC. Delivered items are ended through subscription
@@ -611,8 +613,12 @@ type Invoker interface {
 	// due to be invoiced; earlier attempts are refused with `BILLING_CHANGE_NOT_INVOICED`.
 	//
 	// Returns a payment action when customer interaction is required. requires_action and processing do
-	// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
-	// is reused, and retries do not apply credit grants or balance twice.
+	// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved online payment
+	// made with the same gateway, method and saved payment method is reused, and retries do not apply
+	// credit grants or balance twice. Paying any other way cancels that earlier online payment first; if
+	// the gateway had already collected it, the invoice is paid by it and nothing more is charged. One the
+	// gateway is still processing is refused with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`;
+	// wait for its outcome.
 	//
 	// Calling this on an invoice that is already paid returns the existing payment result without another
 	// charge. A void invoice is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that
@@ -637,11 +643,12 @@ type Invoker interface {
 	// Either every invoice is paid or none is. When the credit grants and balance cannot cover them all,
 	// the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. A total different from
 	// expected_amount fails with `BILLING_AMOUNT_CHANGED` and nothing is charged. Invoices that are
-	// already paid are not charged again. An invoice with an online payment still in progress is refused
-	// with `BILLING_PAYMENT_PENDING`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, a deferred
-	// period-end change not yet due to be invoiced with `BILLING_CHANGE_NOT_INVOICED`, an order that has
-	// failed or was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose
-	// payment deadline has passed with `BILLING_ORDER_EXPIRED`. A renewal invoice is refused with
+	// already paid are not charged again. An online payment started earlier for one of the invoices is
+	// canceled first; one the gateway is still processing is refused with `BILLING_PAYMENT_PENDING` and
+	// `meta.transaction_id`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, a deferred period-end
+	// change not yet due to be invoiced with `BILLING_CHANGE_NOT_INVOICED`, an order that has failed or
+	// was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment
+	// deadline has passed with `BILLING_ORDER_EXPIRED`. A renewal invoice is refused with
 	// `BILLING_INVOICE_NOT_PAYABLE` while its subscription is being canceled, is being reclaimed or has
 	// ended, with `meta.reason` `subscription_canceling`, `subscription_reclaiming` or
 	// `subscription_ended` respectively.
@@ -819,8 +826,10 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // Payment may be absent, partial or complete. Once the order's terms are fixed, the selected items
 // keep their agreed amounts and discounts; credit notes reduce issued invoices, and collected amounts
 // are returned to their original payment sources. While the terms of a deferred order are not fixed,
-// the remaining items are priced again. External payment-method refunds can finish asynchronously. The
-// order and financial history are retained; the same cancellation does not refund twice.
+// the remaining items are priced again. External payment-method refunds can finish asynchronously. An
+// online payment still waiting for the payer is canceled with the order; one the gateway is already
+// processing is refused with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`. The order and
+// financial history are retained; the same cancellation does not refund twice.
 //
 // Once the order is accepted, its owning service coordinates cancellation and confirms non-delivery
 // and cleanup through the cancellation RPC. Delivered items are ended through subscription
@@ -11285,8 +11294,12 @@ func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageCharg
 // due to be invoiced; earlier attempts are refused with `BILLING_CHANGE_NOT_INVOICED`.
 //
 // Returns a payment action when customer interaction is required. requires_action and processing do
-// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved payment attempt
-// is reused, and retries do not apply credit grants or balance twice.
+// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved online payment
+// made with the same gateway, method and saved payment method is reused, and retries do not apply
+// credit grants or balance twice. Paying any other way cancels that earlier online payment first; if
+// the gateway had already collected it, the invoice is paid by it and nothing more is charged. One the
+// gateway is still processing is refused with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`;
+// wait for its outcome.
 //
 // Calling this on an invoice that is already paid returns the existing payment result without another
 // charge. A void invoice is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that
@@ -11456,11 +11469,12 @@ func (c *Client) sendPayInvoice(ctx context.Context, request OptPayInvoiceReques
 // Either every invoice is paid or none is. When the credit grants and balance cannot cover them all,
 // the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. A total different from
 // expected_amount fails with `BILLING_AMOUNT_CHANGED` and nothing is charged. Invoices that are
-// already paid are not charged again. An invoice with an online payment still in progress is refused
-// with `BILLING_PAYMENT_PENDING`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, a deferred
-// period-end change not yet due to be invoiced with `BILLING_CHANGE_NOT_INVOICED`, an order that has
-// failed or was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose
-// payment deadline has passed with `BILLING_ORDER_EXPIRED`. A renewal invoice is refused with
+// already paid are not charged again. An online payment started earlier for one of the invoices is
+// canceled first; one the gateway is still processing is refused with `BILLING_PAYMENT_PENDING` and
+// `meta.transaction_id`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, a deferred period-end
+// change not yet due to be invoiced with `BILLING_CHANGE_NOT_INVOICED`, an order that has failed or
+// was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment
+// deadline has passed with `BILLING_ORDER_EXPIRED`. A renewal invoice is refused with
 // `BILLING_INVOICE_NOT_PAYABLE` while its subscription is being canceled, is being reclaimed or has
 // ended, with `meta.reason` `subscription_canceling`, `subscription_reclaiming` or
 // `subscription_ended` respectively.

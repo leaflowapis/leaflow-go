@@ -71,8 +71,9 @@ type AccountBalance struct {
 	// which charges a group can cover, so these groups are not a general spendable balance and may differ
 	// from the recorded credits total.
 	CreditGroups []CreditGroup `json:"credit_groups"`
-	// Amount still payable on issued invoices. Unbilled usage is reported separately; arrears depend on
-	// actual eligible funding and grace terms.
+	// Amount still payable on issued invoices. The invoice of an order not yet accepted is a request to
+	// pay for that order rather than a debt, so it is excluded here and from available_credit. Unbilled
+	// usage is reported separately; arrears depend on actual eligible funding and grace terms.
 	Due Money `json:"due"`
 	// Balance committed to pending top-up refunds. Already unavailable for spending; unbilled usage does
 	// not freeze the balance.
