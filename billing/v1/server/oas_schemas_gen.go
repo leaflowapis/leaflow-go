@@ -9197,7 +9197,6 @@ type OrderItem struct {
 	// Prepaid items only: the plan's postpaid hourly price for this item's quantity before tax, frozen at
 	// purchase, used for time used short of a full month. Null when the plan has no postpaid price.
 	RefundHourlyAmount OptNilString `json:"refund_hourly_amount"`
-	CompletesOnPayment bool         `json:"completes_on_payment"`
 	RecurringAmount    OptString    `json:"recurring_amount"`
 	SetupAmount        OptString    `json:"setup_amount"`
 	// The payment timing of the selected price.
@@ -9296,11 +9295,6 @@ func (s *OrderItem) GetRefundMonthlyAmount() OptNilString {
 // GetRefundHourlyAmount returns the value of RefundHourlyAmount.
 func (s *OrderItem) GetRefundHourlyAmount() OptNilString {
 	return s.RefundHourlyAmount
-}
-
-// GetCompletesOnPayment returns the value of CompletesOnPayment.
-func (s *OrderItem) GetCompletesOnPayment() bool {
-	return s.CompletesOnPayment
 }
 
 // GetRecurringAmount returns the value of RecurringAmount.
@@ -9456,11 +9450,6 @@ func (s *OrderItem) SetRefundMonthlyAmount(val OptNilString) {
 // SetRefundHourlyAmount sets the value of RefundHourlyAmount.
 func (s *OrderItem) SetRefundHourlyAmount(val OptNilString) {
 	s.RefundHourlyAmount = val
-}
-
-// SetCompletesOnPayment sets the value of CompletesOnPayment.
-func (s *OrderItem) SetCompletesOnPayment(val bool) {
-	s.CompletesOnPayment = val
 }
 
 // SetRecurringAmount sets the value of RecurringAmount.
