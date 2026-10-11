@@ -629,7 +629,10 @@ type Grant struct {
 	DiscountID     NilUUID             `json:"discount_id"`
 	AllowanceID    NilUUID             `json:"allowance_id"`
 	FeatureGrantID NilUUID             `json:"feature_grant_id"`
-	IssuedAt       time.Time           `json:"issued_at"`
+	ValidFrom      time.Time           `json:"valid_from"`
+	// Exclusive expiry; null means no expiry.
+	ValidUntil NilDateTime `json:"valid_until"`
+	IssuedAt   time.Time   `json:"issued_at"`
 }
 
 // GetID returns the value of ID.
@@ -690,6 +693,16 @@ func (s *Grant) GetAllowanceID() NilUUID {
 // GetFeatureGrantID returns the value of FeatureGrantID.
 func (s *Grant) GetFeatureGrantID() NilUUID {
 	return s.FeatureGrantID
+}
+
+// GetValidFrom returns the value of ValidFrom.
+func (s *Grant) GetValidFrom() time.Time {
+	return s.ValidFrom
+}
+
+// GetValidUntil returns the value of ValidUntil.
+func (s *Grant) GetValidUntil() NilDateTime {
+	return s.ValidUntil
 }
 
 // GetIssuedAt returns the value of IssuedAt.
@@ -755,6 +768,16 @@ func (s *Grant) SetAllowanceID(val NilUUID) {
 // SetFeatureGrantID sets the value of FeatureGrantID.
 func (s *Grant) SetFeatureGrantID(val NilUUID) {
 	s.FeatureGrantID = val
+}
+
+// SetValidFrom sets the value of ValidFrom.
+func (s *Grant) SetValidFrom(val time.Time) {
+	s.ValidFrom = val
+}
+
+// SetValidUntil sets the value of ValidUntil.
+func (s *Grant) SetValidUntil(val NilDateTime) {
+	s.ValidUntil = val
 }
 
 // SetIssuedAt sets the value of IssuedAt.

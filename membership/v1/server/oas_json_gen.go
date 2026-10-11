@@ -1354,12 +1354,20 @@ func (s *Grant) encodeFields(e *jx.Encoder) {
 		s.FeatureGrantID.Encode(e)
 	}
 	{
+		e.FieldStart("valid_from")
+		json.EncodeDateTime(e, s.ValidFrom)
+	}
+	{
+		e.FieldStart("valid_until")
+		s.ValidUntil.Encode(e, json.EncodeDateTime)
+	}
+	{
 		e.FieldStart("issued_at")
 		json.EncodeDateTime(e, s.IssuedAt)
 	}
 }
 
-var jsonFieldsNameOfGrant = [13]string{
+var jsonFieldsNameOfGrant = [15]string{
 	0:  "id",
 	1:  "benefit_id",
 	2:  "type",
@@ -1372,7 +1380,9 @@ var jsonFieldsNameOfGrant = [13]string{
 	9:  "discount_id",
 	10: "allowance_id",
 	11: "feature_grant_id",
-	12: "issued_at",
+	12: "valid_from",
+	13: "valid_until",
+	14: "issued_at",
 }
 
 // Decode decodes Grant from json.
@@ -1508,8 +1518,30 @@ func (s *Grant) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"feature_grant_id\"")
 			}
-		case "issued_at":
+		case "valid_from":
 			requiredBitSet[1] |= 1 << 4
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.ValidFrom = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"valid_from\"")
+			}
+		case "valid_until":
+			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				if err := s.ValidUntil.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"valid_until\"")
+			}
+		case "issued_at":
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.IssuedAt = v
@@ -1531,7 +1563,7 @@ func (s *Grant) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b00001111,
-		0b00011111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
