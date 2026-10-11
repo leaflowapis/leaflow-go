@@ -18005,6 +18005,7 @@ const (
 	TransactionTypePayment    TransactionType = "payment"
 	TransactionTypeRefund     TransactionType = "refund"
 	TransactionTypeAdjustment TransactionType = "adjustment"
+	TransactionTypeFee        TransactionType = "fee"
 )
 
 // AllValues returns all TransactionType values.
@@ -18014,6 +18015,7 @@ func (TransactionType) AllValues() []TransactionType {
 		TransactionTypePayment,
 		TransactionTypeRefund,
 		TransactionTypeAdjustment,
+		TransactionTypeFee,
 	}
 }
 
@@ -18027,6 +18029,8 @@ func (s TransactionType) MarshalText() ([]byte, error) {
 	case TransactionTypeRefund:
 		return []byte(s), nil
 	case TransactionTypeAdjustment:
+		return []byte(s), nil
+	case TransactionTypeFee:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -18047,6 +18051,9 @@ func (s *TransactionType) UnmarshalText(data []byte) error {
 		return nil
 	case TransactionTypeAdjustment:
 		*s = TransactionTypeAdjustment
+		return nil
+	case TransactionTypeFee:
+		*s = TransactionTypeFee
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -18327,4 +18334,872 @@ func (s *UsageChargeList) SetItems(val []UsageCharge) {
 // SetPagination sets the value of Pagination.
 func (s *UsageChargeList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// An account withdrawal to the original payment methods of its unused top-ups. Accepted amounts are
+// fixed. deducted_amount, settled_amount and charged_fee_amount report completed source items. Failed
+// items release their principal and fee reservations; successful items are retained when another
+// source fails.
+// Ref: #/components/schemas/Withdrawal
+type Withdrawal struct {
+	ID               uuid.UUID        `json:"id"`
+	BillingAccountID int64            `json:"billing_account_id"`
+	Currency         string           `json:"currency"`
+	Amount           string           `json:"amount"`
+	FeeAmount        string           `json:"fee_amount"`
+	RefundAmount     string           `json:"refund_amount"`
+	DeductedAmount   string           `json:"deducted_amount"`
+	SettledAmount    string           `json:"settled_amount"`
+	ChargedFeeAmount string           `json:"charged_fee_amount"`
+	Status           WithdrawalStatus `json:"status"`
+	CreatedAt        time.Time        `json:"created_at"`
+	CompletedAt      OptDateTime      `json:"completed_at"`
+	// Identity that submitted this withdrawal. It can differ from the billing account owner.
+	CreatedBy OptString `json:"created_by"`
+}
+
+// GetID returns the value of ID.
+func (s *Withdrawal) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Withdrawal) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Withdrawal) GetCurrency() string {
+	return s.Currency
+}
+
+// GetAmount returns the value of Amount.
+func (s *Withdrawal) GetAmount() string {
+	return s.Amount
+}
+
+// GetFeeAmount returns the value of FeeAmount.
+func (s *Withdrawal) GetFeeAmount() string {
+	return s.FeeAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *Withdrawal) GetRefundAmount() string {
+	return s.RefundAmount
+}
+
+// GetDeductedAmount returns the value of DeductedAmount.
+func (s *Withdrawal) GetDeductedAmount() string {
+	return s.DeductedAmount
+}
+
+// GetSettledAmount returns the value of SettledAmount.
+func (s *Withdrawal) GetSettledAmount() string {
+	return s.SettledAmount
+}
+
+// GetChargedFeeAmount returns the value of ChargedFeeAmount.
+func (s *Withdrawal) GetChargedFeeAmount() string {
+	return s.ChargedFeeAmount
+}
+
+// GetStatus returns the value of Status.
+func (s *Withdrawal) GetStatus() WithdrawalStatus {
+	return s.Status
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Withdrawal) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *Withdrawal) GetCompletedAt() OptDateTime {
+	return s.CompletedAt
+}
+
+// GetCreatedBy returns the value of CreatedBy.
+func (s *Withdrawal) GetCreatedBy() OptString {
+	return s.CreatedBy
+}
+
+// SetID sets the value of ID.
+func (s *Withdrawal) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Withdrawal) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Withdrawal) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *Withdrawal) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetFeeAmount sets the value of FeeAmount.
+func (s *Withdrawal) SetFeeAmount(val string) {
+	s.FeeAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *Withdrawal) SetRefundAmount(val string) {
+	s.RefundAmount = val
+}
+
+// SetDeductedAmount sets the value of DeductedAmount.
+func (s *Withdrawal) SetDeductedAmount(val string) {
+	s.DeductedAmount = val
+}
+
+// SetSettledAmount sets the value of SettledAmount.
+func (s *Withdrawal) SetSettledAmount(val string) {
+	s.SettledAmount = val
+}
+
+// SetChargedFeeAmount sets the value of ChargedFeeAmount.
+func (s *Withdrawal) SetChargedFeeAmount(val string) {
+	s.ChargedFeeAmount = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Withdrawal) SetStatus(val WithdrawalStatus) {
+	s.Status = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Withdrawal) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *Withdrawal) SetCompletedAt(val OptDateTime) {
+	s.CompletedAt = val
+}
+
+// SetCreatedBy sets the value of CreatedBy.
+func (s *Withdrawal) SetCreatedBy(val OptString) {
+	s.CreatedBy = val
+}
+
+// Ref: #/components/schemas/WithdrawalAllocation
+type WithdrawalAllocation struct {
+	SourceTransactionID uuid.UUID `json:"source_transaction_id"`
+	Amount              string    `json:"amount"`
+	FeeAmount           string    `json:"fee_amount"`
+	RefundAmount        string    `json:"refund_amount"`
+}
+
+// GetSourceTransactionID returns the value of SourceTransactionID.
+func (s *WithdrawalAllocation) GetSourceTransactionID() uuid.UUID {
+	return s.SourceTransactionID
+}
+
+// GetAmount returns the value of Amount.
+func (s *WithdrawalAllocation) GetAmount() string {
+	return s.Amount
+}
+
+// GetFeeAmount returns the value of FeeAmount.
+func (s *WithdrawalAllocation) GetFeeAmount() string {
+	return s.FeeAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *WithdrawalAllocation) GetRefundAmount() string {
+	return s.RefundAmount
+}
+
+// SetSourceTransactionID sets the value of SourceTransactionID.
+func (s *WithdrawalAllocation) SetSourceTransactionID(val uuid.UUID) {
+	s.SourceTransactionID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *WithdrawalAllocation) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetFeeAmount sets the value of FeeAmount.
+func (s *WithdrawalAllocation) SetFeeAmount(val string) {
+	s.FeeAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *WithdrawalAllocation) SetRefundAmount(val string) {
+	s.RefundAmount = val
+}
+
+// Ref: #/components/schemas/WithdrawalCreate
+type WithdrawalCreate struct {
+	ID                   uuid.UUID              `json:"id"`
+	BillingAccountID     int64                  `json:"billing_account_id"`
+	Amount               string                 `json:"amount"`
+	ExpectedRefundAmount string                 `json:"expected_refund_amount"`
+	ExpectedItems        []WithdrawalAllocation `json:"expected_items"`
+}
+
+// GetID returns the value of ID.
+func (s *WithdrawalCreate) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *WithdrawalCreate) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetAmount returns the value of Amount.
+func (s *WithdrawalCreate) GetAmount() string {
+	return s.Amount
+}
+
+// GetExpectedRefundAmount returns the value of ExpectedRefundAmount.
+func (s *WithdrawalCreate) GetExpectedRefundAmount() string {
+	return s.ExpectedRefundAmount
+}
+
+// GetExpectedItems returns the value of ExpectedItems.
+func (s *WithdrawalCreate) GetExpectedItems() []WithdrawalAllocation {
+	return s.ExpectedItems
+}
+
+// SetID sets the value of ID.
+func (s *WithdrawalCreate) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *WithdrawalCreate) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *WithdrawalCreate) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetExpectedRefundAmount sets the value of ExpectedRefundAmount.
+func (s *WithdrawalCreate) SetExpectedRefundAmount(val string) {
+	s.ExpectedRefundAmount = val
+}
+
+// SetExpectedItems sets the value of ExpectedItems.
+func (s *WithdrawalCreate) SetExpectedItems(val []WithdrawalAllocation) {
+	s.ExpectedItems = val
+}
+
+// The fixed principal deduction, withdrawal fee and exact refund obligation for one original top-up.
+// Each item has its own refund; payment_gateway and method_type identify the original route.
+// Ref: #/components/schemas/WithdrawalItem
+type WithdrawalItem struct {
+	SourceTransactionID uuid.UUID            `json:"source_transaction_id"`
+	Amount              string               `json:"amount"`
+	FeeAmount           string               `json:"fee_amount"`
+	RefundAmount        string               `json:"refund_amount"`
+	ID                  uuid.UUID            `json:"id"`
+	WithdrawalID        uuid.UUID            `json:"withdrawal_id"`
+	BillingAccountID    int64                `json:"billing_account_id"`
+	Currency            string               `json:"currency"`
+	RefundID            uuid.UUID            `json:"refund_id"`
+	FeeTransactionID    OptUUID              `json:"fee_transaction_id"`
+	Status              WithdrawalItemStatus `json:"status"`
+	CompletedAt         OptDateTime          `json:"completed_at"`
+	PaymentGateway      string               `json:"payment_gateway"`
+	MethodType          string               `json:"method_type"`
+	Source              WithdrawalSource     `json:"source"`
+	// The original gateway failure code when a refund failed, or refund_reversed when a completed refund
+	// was reversed. Absent while pending or successful.
+	FailureCode OptString `json:"failure_code"`
+}
+
+// GetSourceTransactionID returns the value of SourceTransactionID.
+func (s *WithdrawalItem) GetSourceTransactionID() uuid.UUID {
+	return s.SourceTransactionID
+}
+
+// GetAmount returns the value of Amount.
+func (s *WithdrawalItem) GetAmount() string {
+	return s.Amount
+}
+
+// GetFeeAmount returns the value of FeeAmount.
+func (s *WithdrawalItem) GetFeeAmount() string {
+	return s.FeeAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *WithdrawalItem) GetRefundAmount() string {
+	return s.RefundAmount
+}
+
+// GetID returns the value of ID.
+func (s *WithdrawalItem) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetWithdrawalID returns the value of WithdrawalID.
+func (s *WithdrawalItem) GetWithdrawalID() uuid.UUID {
+	return s.WithdrawalID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *WithdrawalItem) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *WithdrawalItem) GetCurrency() string {
+	return s.Currency
+}
+
+// GetRefundID returns the value of RefundID.
+func (s *WithdrawalItem) GetRefundID() uuid.UUID {
+	return s.RefundID
+}
+
+// GetFeeTransactionID returns the value of FeeTransactionID.
+func (s *WithdrawalItem) GetFeeTransactionID() OptUUID {
+	return s.FeeTransactionID
+}
+
+// GetStatus returns the value of Status.
+func (s *WithdrawalItem) GetStatus() WithdrawalItemStatus {
+	return s.Status
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *WithdrawalItem) GetCompletedAt() OptDateTime {
+	return s.CompletedAt
+}
+
+// GetPaymentGateway returns the value of PaymentGateway.
+func (s *WithdrawalItem) GetPaymentGateway() string {
+	return s.PaymentGateway
+}
+
+// GetMethodType returns the value of MethodType.
+func (s *WithdrawalItem) GetMethodType() string {
+	return s.MethodType
+}
+
+// GetSource returns the value of Source.
+func (s *WithdrawalItem) GetSource() WithdrawalSource {
+	return s.Source
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *WithdrawalItem) GetFailureCode() OptString {
+	return s.FailureCode
+}
+
+// SetSourceTransactionID sets the value of SourceTransactionID.
+func (s *WithdrawalItem) SetSourceTransactionID(val uuid.UUID) {
+	s.SourceTransactionID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *WithdrawalItem) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetFeeAmount sets the value of FeeAmount.
+func (s *WithdrawalItem) SetFeeAmount(val string) {
+	s.FeeAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *WithdrawalItem) SetRefundAmount(val string) {
+	s.RefundAmount = val
+}
+
+// SetID sets the value of ID.
+func (s *WithdrawalItem) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetWithdrawalID sets the value of WithdrawalID.
+func (s *WithdrawalItem) SetWithdrawalID(val uuid.UUID) {
+	s.WithdrawalID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *WithdrawalItem) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *WithdrawalItem) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetRefundID sets the value of RefundID.
+func (s *WithdrawalItem) SetRefundID(val uuid.UUID) {
+	s.RefundID = val
+}
+
+// SetFeeTransactionID sets the value of FeeTransactionID.
+func (s *WithdrawalItem) SetFeeTransactionID(val OptUUID) {
+	s.FeeTransactionID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *WithdrawalItem) SetStatus(val WithdrawalItemStatus) {
+	s.Status = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *WithdrawalItem) SetCompletedAt(val OptDateTime) {
+	s.CompletedAt = val
+}
+
+// SetPaymentGateway sets the value of PaymentGateway.
+func (s *WithdrawalItem) SetPaymentGateway(val string) {
+	s.PaymentGateway = val
+}
+
+// SetMethodType sets the value of MethodType.
+func (s *WithdrawalItem) SetMethodType(val string) {
+	s.MethodType = val
+}
+
+// SetSource sets the value of Source.
+func (s *WithdrawalItem) SetSource(val WithdrawalSource) {
+	s.Source = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *WithdrawalItem) SetFailureCode(val OptString) {
+	s.FailureCode = val
+}
+
+// Ref: #/components/schemas/WithdrawalItemList
+type WithdrawalItemList struct {
+	Items      []WithdrawalItem `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *WithdrawalItemList) GetItems() []WithdrawalItem {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *WithdrawalItemList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *WithdrawalItemList) SetItems(val []WithdrawalItem) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *WithdrawalItemList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type WithdrawalItemStatus string
+
+const (
+	WithdrawalItemStatusPending   WithdrawalItemStatus = "pending"
+	WithdrawalItemStatusSucceeded WithdrawalItemStatus = "succeeded"
+	WithdrawalItemStatusFailed    WithdrawalItemStatus = "failed"
+	WithdrawalItemStatusReversed  WithdrawalItemStatus = "reversed"
+)
+
+// AllValues returns all WithdrawalItemStatus values.
+func (WithdrawalItemStatus) AllValues() []WithdrawalItemStatus {
+	return []WithdrawalItemStatus{
+		WithdrawalItemStatusPending,
+		WithdrawalItemStatusSucceeded,
+		WithdrawalItemStatusFailed,
+		WithdrawalItemStatusReversed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WithdrawalItemStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case WithdrawalItemStatusPending:
+		return []byte(s), nil
+	case WithdrawalItemStatusSucceeded:
+		return []byte(s), nil
+	case WithdrawalItemStatusFailed:
+		return []byte(s), nil
+	case WithdrawalItemStatusReversed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WithdrawalItemStatus) UnmarshalText(data []byte) error {
+	switch WithdrawalItemStatus(data) {
+	case WithdrawalItemStatusPending:
+		*s = WithdrawalItemStatusPending
+		return nil
+	case WithdrawalItemStatusSucceeded:
+		*s = WithdrawalItemStatusSucceeded
+		return nil
+	case WithdrawalItemStatusFailed:
+		*s = WithdrawalItemStatusFailed
+		return nil
+	case WithdrawalItemStatusReversed:
+		*s = WithdrawalItemStatusReversed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/WithdrawalList
+type WithdrawalList struct {
+	Items      []Withdrawal     `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *WithdrawalList) GetItems() []Withdrawal {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *WithdrawalList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *WithdrawalList) SetItems(val []Withdrawal) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *WithdrawalList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// Ref: #/components/schemas/WithdrawalPreview
+type WithdrawalPreview struct {
+	BillingAccountID int64                   `json:"billing_account_id"`
+	Currency         string                  `json:"currency"`
+	AvailableAmount  string                  `json:"available_amount"`
+	Amount           string                  `json:"amount"`
+	FeeAmount        string                  `json:"fee_amount"`
+	RefundAmount     string                  `json:"refund_amount"`
+	Items            []WithdrawalPreviewItem `json:"items"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *WithdrawalPreview) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *WithdrawalPreview) GetCurrency() string {
+	return s.Currency
+}
+
+// GetAvailableAmount returns the value of AvailableAmount.
+func (s *WithdrawalPreview) GetAvailableAmount() string {
+	return s.AvailableAmount
+}
+
+// GetAmount returns the value of Amount.
+func (s *WithdrawalPreview) GetAmount() string {
+	return s.Amount
+}
+
+// GetFeeAmount returns the value of FeeAmount.
+func (s *WithdrawalPreview) GetFeeAmount() string {
+	return s.FeeAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *WithdrawalPreview) GetRefundAmount() string {
+	return s.RefundAmount
+}
+
+// GetItems returns the value of Items.
+func (s *WithdrawalPreview) GetItems() []WithdrawalPreviewItem {
+	return s.Items
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *WithdrawalPreview) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *WithdrawalPreview) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetAvailableAmount sets the value of AvailableAmount.
+func (s *WithdrawalPreview) SetAvailableAmount(val string) {
+	s.AvailableAmount = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *WithdrawalPreview) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetFeeAmount sets the value of FeeAmount.
+func (s *WithdrawalPreview) SetFeeAmount(val string) {
+	s.FeeAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *WithdrawalPreview) SetRefundAmount(val string) {
+	s.RefundAmount = val
+}
+
+// SetItems sets the value of Items.
+func (s *WithdrawalPreview) SetItems(val []WithdrawalPreviewItem) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/WithdrawalPreviewItem
+type WithdrawalPreviewItem struct {
+	SourceTransactionID uuid.UUID        `json:"source_transaction_id"`
+	Amount              string           `json:"amount"`
+	FeeAmount           string           `json:"fee_amount"`
+	RefundAmount        string           `json:"refund_amount"`
+	Source              WithdrawalSource `json:"source"`
+}
+
+// GetSourceTransactionID returns the value of SourceTransactionID.
+func (s *WithdrawalPreviewItem) GetSourceTransactionID() uuid.UUID {
+	return s.SourceTransactionID
+}
+
+// GetAmount returns the value of Amount.
+func (s *WithdrawalPreviewItem) GetAmount() string {
+	return s.Amount
+}
+
+// GetFeeAmount returns the value of FeeAmount.
+func (s *WithdrawalPreviewItem) GetFeeAmount() string {
+	return s.FeeAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *WithdrawalPreviewItem) GetRefundAmount() string {
+	return s.RefundAmount
+}
+
+// GetSource returns the value of Source.
+func (s *WithdrawalPreviewItem) GetSource() WithdrawalSource {
+	return s.Source
+}
+
+// SetSourceTransactionID sets the value of SourceTransactionID.
+func (s *WithdrawalPreviewItem) SetSourceTransactionID(val uuid.UUID) {
+	s.SourceTransactionID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *WithdrawalPreviewItem) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetFeeAmount sets the value of FeeAmount.
+func (s *WithdrawalPreviewItem) SetFeeAmount(val string) {
+	s.FeeAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *WithdrawalPreviewItem) SetRefundAmount(val string) {
+	s.RefundAmount = val
+}
+
+// SetSource sets the value of Source.
+func (s *WithdrawalPreviewItem) SetSource(val WithdrawalSource) {
+	s.Source = val
+}
+
+// Ref: #/components/schemas/WithdrawalPreviewRequest
+type WithdrawalPreviewRequest struct {
+	BillingAccountID int64     `json:"billing_account_id"`
+	Amount           OptString `json:"amount"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *WithdrawalPreviewRequest) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetAmount returns the value of Amount.
+func (s *WithdrawalPreviewRequest) GetAmount() OptString {
+	return s.Amount
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *WithdrawalPreviewRequest) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *WithdrawalPreviewRequest) SetAmount(val OptString) {
+	s.Amount = val
+}
+
+// The original top-up and its refund destination. Card details are included when the original payment
+// method was saved; missing card details do not change the original refund route.
+// Ref: #/components/schemas/WithdrawalSource
+type WithdrawalSource struct {
+	Amount         string    `json:"amount"`
+	Currency       string    `json:"currency"`
+	ReceivedAt     time.Time `json:"received_at"`
+	PaymentGateway string    `json:"payment_gateway"`
+	MethodType     string    `json:"method_type"`
+	CardBrand      OptString `json:"card_brand"`
+	CardLast4      OptString `json:"card_last4"`
+}
+
+// GetAmount returns the value of Amount.
+func (s *WithdrawalSource) GetAmount() string {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *WithdrawalSource) GetCurrency() string {
+	return s.Currency
+}
+
+// GetReceivedAt returns the value of ReceivedAt.
+func (s *WithdrawalSource) GetReceivedAt() time.Time {
+	return s.ReceivedAt
+}
+
+// GetPaymentGateway returns the value of PaymentGateway.
+func (s *WithdrawalSource) GetPaymentGateway() string {
+	return s.PaymentGateway
+}
+
+// GetMethodType returns the value of MethodType.
+func (s *WithdrawalSource) GetMethodType() string {
+	return s.MethodType
+}
+
+// GetCardBrand returns the value of CardBrand.
+func (s *WithdrawalSource) GetCardBrand() OptString {
+	return s.CardBrand
+}
+
+// GetCardLast4 returns the value of CardLast4.
+func (s *WithdrawalSource) GetCardLast4() OptString {
+	return s.CardLast4
+}
+
+// SetAmount sets the value of Amount.
+func (s *WithdrawalSource) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *WithdrawalSource) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetReceivedAt sets the value of ReceivedAt.
+func (s *WithdrawalSource) SetReceivedAt(val time.Time) {
+	s.ReceivedAt = val
+}
+
+// SetPaymentGateway sets the value of PaymentGateway.
+func (s *WithdrawalSource) SetPaymentGateway(val string) {
+	s.PaymentGateway = val
+}
+
+// SetMethodType sets the value of MethodType.
+func (s *WithdrawalSource) SetMethodType(val string) {
+	s.MethodType = val
+}
+
+// SetCardBrand sets the value of CardBrand.
+func (s *WithdrawalSource) SetCardBrand(val OptString) {
+	s.CardBrand = val
+}
+
+// SetCardLast4 sets the value of CardLast4.
+func (s *WithdrawalSource) SetCardLast4(val OptString) {
+	s.CardLast4 = val
+}
+
+type WithdrawalStatus string
+
+const (
+	WithdrawalStatusPending            WithdrawalStatus = "pending"
+	WithdrawalStatusProcessing         WithdrawalStatus = "processing"
+	WithdrawalStatusSucceeded          WithdrawalStatus = "succeeded"
+	WithdrawalStatusPartiallyCompleted WithdrawalStatus = "partially_completed"
+	WithdrawalStatusFailed             WithdrawalStatus = "failed"
+	WithdrawalStatusReversed           WithdrawalStatus = "reversed"
+)
+
+// AllValues returns all WithdrawalStatus values.
+func (WithdrawalStatus) AllValues() []WithdrawalStatus {
+	return []WithdrawalStatus{
+		WithdrawalStatusPending,
+		WithdrawalStatusProcessing,
+		WithdrawalStatusSucceeded,
+		WithdrawalStatusPartiallyCompleted,
+		WithdrawalStatusFailed,
+		WithdrawalStatusReversed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WithdrawalStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case WithdrawalStatusPending:
+		return []byte(s), nil
+	case WithdrawalStatusProcessing:
+		return []byte(s), nil
+	case WithdrawalStatusSucceeded:
+		return []byte(s), nil
+	case WithdrawalStatusPartiallyCompleted:
+		return []byte(s), nil
+	case WithdrawalStatusFailed:
+		return []byte(s), nil
+	case WithdrawalStatusReversed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WithdrawalStatus) UnmarshalText(data []byte) error {
+	switch WithdrawalStatus(data) {
+	case WithdrawalStatusPending:
+		*s = WithdrawalStatusPending
+		return nil
+	case WithdrawalStatusProcessing:
+		*s = WithdrawalStatusProcessing
+		return nil
+	case WithdrawalStatusSucceeded:
+		*s = WithdrawalStatusSucceeded
+		return nil
+	case WithdrawalStatusPartiallyCompleted:
+		*s = WithdrawalStatusPartiallyCompleted
+		return nil
+	case WithdrawalStatusFailed:
+		*s = WithdrawalStatusFailed
+		return nil
+	case WithdrawalStatusReversed:
+		*s = WithdrawalStatusReversed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }

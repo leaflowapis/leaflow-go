@@ -176,6 +176,15 @@ type Handler interface {
 	//
 	// POST /api/v1/top-ups
 	CreateTopUp(ctx context.Context, req *TopUpCreate) (*TopUp, error)
+	// CreateWithdrawal implements create-withdrawal operation.
+	//
+	// Withdraws the requested account balance through the original top-ups in receipt order. Fees are
+	// calculated independently per source. expected_items and expected_refund_amount must match the
+	// accepted preview. Reusing the same ID with different terms fails. Only successful items collect a
+	// fee.
+	//
+	// POST /api/v1/withdrawals
+	CreateWithdrawal(ctx context.Context, req *WithdrawalCreate) (*Withdrawal, error)
 	// DeleteContact implements delete-contact operation.
 	//
 	// Deletes a contact belonging to this billing account. Returns 404 if the contact does not exist in
@@ -316,6 +325,13 @@ type Handler interface {
 	//
 	// GET /api/v1/top-ups/{topUpId}
 	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
+	// GetWithdrawal implements get-withdrawal operation.
+	//
+	// Reads the accepted amounts and aggregate outcome of an authorized withdrawal. List its source items
+	// for each original-method refund result.
+	//
+	// GET /api/v1/withdrawals/{withdrawalId}
+	GetWithdrawal(ctx context.Context, params GetWithdrawalParams) (*Withdrawal, error)
 	// ListAccountDiscounts implements list-account-discounts operation.
 	//
 	// Coupons placed on the account directly, which apply at checkout without a code being entered. A
@@ -575,6 +591,19 @@ type Handler interface {
 	//
 	// GET /api/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
+	// ListWithdrawalItems implements list-withdrawal-items operation.
+	//
+	// Paginated fixed source allocations and their outcomes. A failed source does not undo refunds already
+	// completed through other sources.
+	//
+	// GET /api/v1/withdrawals/{withdrawalId}/items
+	ListWithdrawalItems(ctx context.Context, params ListWithdrawalItemsParams) (*WithdrawalItemList, error)
+	// ListWithdrawals implements list-withdrawals operation.
+	//
+	// Paginated account withdrawal history, newest first. Account authorization applies to every record.
+	//
+	// GET /api/v1/withdrawals
+	ListWithdrawals(ctx context.Context, params ListWithdrawalsParams) (*WithdrawalList, error)
 	// PayInvoice implements pay-invoice operation.
 	//
 	// Applies eligible credit grants and available balance as requested, then collects the remainder
@@ -660,6 +689,14 @@ type Handler interface {
 	//
 	// POST /api/v1/payments/preview
 	PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentPreview, error)
+	// PreviewWithdrawal implements preview-withdrawal operation.
+	//
+	// Previews the available balance deduction, fees and exact refund allocation by original source. Omit
+	// amount to preview all available principal. Creates no withdrawal and reserves no funds. Fails if a
+	// selected source has no configured refund route or its original processing cost is not yet available.
+	//
+	// POST /api/v1/withdrawals/preview
+	PreviewWithdrawal(ctx context.Context, req *WithdrawalPreviewRequest) (*WithdrawalPreview, error)
 	// RenewSubscription implements renew-subscription operation.
 	//
 	// Purchases prepaid periods from current_term_end using the agreed recurring amount, and pays for them

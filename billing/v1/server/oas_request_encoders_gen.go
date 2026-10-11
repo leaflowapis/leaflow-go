@@ -142,6 +142,20 @@ func encodeCreateTopUpRequest(
 	return nil
 }
 
+func encodeCreateWithdrawalRequest(
+	req *WithdrawalCreate,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodePayInvoiceRequest(
 	req OptPayInvoiceRequest,
 	r *http.Request,
@@ -178,6 +192,20 @@ func encodePayTogetherRequest(
 
 func encodePreviewPayTogetherRequest(
 	req *PayTogetherRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePreviewWithdrawalRequest(
+	req *WithdrawalPreviewRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

@@ -211,6 +211,18 @@ func (UnimplementedHandler) CreateTopUp(ctx context.Context, req *TopUpCreate) (
 	return r, ht.ErrNotImplemented
 }
 
+// CreateWithdrawal implements create-withdrawal operation.
+//
+// Withdraws the requested account balance through the original top-ups in receipt order. Fees are
+// calculated independently per source. expected_items and expected_refund_amount must match the
+// accepted preview. Reusing the same ID with different terms fails. Only successful items collect a
+// fee.
+//
+// POST /api/v1/withdrawals
+func (UnimplementedHandler) CreateWithdrawal(ctx context.Context, req *WithdrawalCreate) (r *Withdrawal, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteContact implements delete-contact operation.
 //
 // Deletes a contact belonging to this billing account. Returns 404 if the contact does not exist in
@@ -402,6 +414,16 @@ func (UnimplementedHandler) GetSubscription(ctx context.Context, params GetSubsc
 //
 // GET /api/v1/top-ups/{topUpId}
 func (UnimplementedHandler) GetTopUp(ctx context.Context, params GetTopUpParams) (r *TopUp, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetWithdrawal implements get-withdrawal operation.
+//
+// Reads the accepted amounts and aggregate outcome of an authorized withdrawal. List its source items
+// for each original-method refund result.
+//
+// GET /api/v1/withdrawals/{withdrawalId}
+func (UnimplementedHandler) GetWithdrawal(ctx context.Context, params GetWithdrawalParams) (r *Withdrawal, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -763,6 +785,25 @@ func (UnimplementedHandler) ListUsageCharges(ctx context.Context, params ListUsa
 	return r, ht.ErrNotImplemented
 }
 
+// ListWithdrawalItems implements list-withdrawal-items operation.
+//
+// Paginated fixed source allocations and their outcomes. A failed source does not undo refunds already
+// completed through other sources.
+//
+// GET /api/v1/withdrawals/{withdrawalId}/items
+func (UnimplementedHandler) ListWithdrawalItems(ctx context.Context, params ListWithdrawalItemsParams) (r *WithdrawalItemList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListWithdrawals implements list-withdrawals operation.
+//
+// Paginated account withdrawal history, newest first. Account authorization applies to every record.
+//
+// GET /api/v1/withdrawals
+func (UnimplementedHandler) ListWithdrawals(ctx context.Context, params ListWithdrawalsParams) (r *WithdrawalList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // PayInvoice implements pay-invoice operation.
 //
 // Applies eligible credit grants and available balance as requested, then collects the remainder
@@ -857,6 +898,17 @@ func (UnimplementedHandler) PreviewInvoicePayment(ctx context.Context, params Pr
 //
 // POST /api/v1/payments/preview
 func (UnimplementedHandler) PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (r *PaymentPreview, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PreviewWithdrawal implements preview-withdrawal operation.
+//
+// Previews the available balance deduction, fees and exact refund allocation by original source. Omit
+// amount to preview all available principal. Creates no withdrawal and reserves no funds. Fails if a
+// selected source has no configured refund route or its original processing cost is not yet available.
+//
+// POST /api/v1/withdrawals/preview
+func (UnimplementedHandler) PreviewWithdrawal(ctx context.Context, req *WithdrawalPreviewRequest) (r *WithdrawalPreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
