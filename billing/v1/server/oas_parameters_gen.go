@@ -6295,7 +6295,10 @@ type ListInvoicesParams struct {
 	// Restrict to one of your accounts. All of them when omitted.
 	BillingAccountID OptInt64         `json:",omitempty,omitzero"`
 	Status           OptInvoiceStatus `json:",omitempty,omitzero"`
-	From             OptDateTime      `json:",omitempty,omitzero"`
+	// Only invoices containing a charge from this subscription. The returned invoice amount is the total
+	// for the whole invoice.
+	SubscriptionID OptUUID     `json:",omitempty,omitzero"`
+	From           OptDateTime `json:",omitempty,omitzero"`
 	// Exclusive.
 	To OptDateTime `json:",omitempty,omitzero"`
 }
@@ -6335,6 +6338,15 @@ func unpackListInvoicesParams(packed middleware.Parameters) (params ListInvoices
 		}
 		if v, ok := packed[key]; ok {
 			params.Status = v.(OptInvoiceStatus)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "subscription_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.SubscriptionID = v.(OptUUID)
 		}
 	}
 	{
@@ -6595,6 +6607,47 @@ func decodeListInvoicesParams(args [0]string, argsEscaped bool, r *http.Request)
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: subscription_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "subscription_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSubscriptionIDVal uuid.UUID
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToUUID(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSubscriptionIDVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.SubscriptionID.SetTo(paramsDotSubscriptionIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subscription_id",
 			In:   "query",
 			Err:  err,
 		}

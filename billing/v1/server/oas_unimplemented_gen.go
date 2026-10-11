@@ -550,8 +550,8 @@ func (UnimplementedHandler) ListInvoiceItems(ctx context.Context, params ListInv
 // ListInvoices implements list-invoices operation.
 //
 // Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
-// status and creation interval. Drafts are excluded, including the draft invoice of an order awaiting
-// payment, which is reached through its order; top-ups do not create invoices.
+// subscription_id, status and creation interval. Drafts are excluded, including the draft invoice of
+// an order awaiting payment, which is reached through its order; top-ups do not create invoices.
 //
 // GET /api/v1/invoices
 func (UnimplementedHandler) ListInvoices(ctx context.Context, params ListInvoicesParams) (r *InvoiceList, _ error) {
@@ -881,9 +881,11 @@ func (UnimplementedHandler) RenewSubscription(ctx context.Context, req *RenewReq
 
 // SetAutoRenew implements set-auto-renew operation.
 //
-// Controls automatic prepaid renewal. Disabling it does not shorten current_term_end and still permits
-// manual renewal. A postpaid subscription always continues until it is canceled; setting it is refused
-// with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
+// Controls automatic prepaid renewal for an active or suspended subscription. A pending or
+// provisioning subscription cannot set this preference and returns 409
+// `BILLING_SUBSCRIPTION_AUTO_RENEW_INACTIVE`. Disabling it does not shorten current_term_end and still
+// permits manual renewal. A postpaid subscription always continues until it is canceled; setting it is
+// refused with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
 //
 // While the subscription has an open cancellation, turning it on or off is refused with 409
 // `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation

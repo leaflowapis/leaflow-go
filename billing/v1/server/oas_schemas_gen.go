@@ -7425,6 +7425,74 @@ func (o OptNilNamedIdentity) Or(d NamedIdentity) NamedIdentity {
 	return d
 }
 
+// NewOptNilScheduledChange returns new OptNilScheduledChange with value set to v.
+func NewOptNilScheduledChange(v ScheduledChange) OptNilScheduledChange {
+	return OptNilScheduledChange{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilScheduledChange is optional nullable ScheduledChange.
+type OptNilScheduledChange struct {
+	Value ScheduledChange
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilScheduledChange was set.
+func (o OptNilScheduledChange) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilScheduledChange) Reset() {
+	var v ScheduledChange
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilScheduledChange) SetTo(v ScheduledChange) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilScheduledChange) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilScheduledChange) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v ScheduledChange
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilScheduledChange) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilScheduledChange) Get() (v ScheduledChange, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilScheduledChange) Or(d ScheduledChange) ScheduledChange {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilString returns new OptNilString with value set to v.
 func NewOptNilString(v string) OptNilString {
 	return OptNilString{
@@ -15140,6 +15208,183 @@ func (s *RenewalPriceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// The next accepted period-end change for a subscription. It describes the target terms and does not
+// change the current subscription until effective_at.
+// Ref: #/components/schemas/ScheduledChange
+type ScheduledChange struct {
+	OrderID uuid.UUID   `json:"order_id"`
+	Status  OrderStatus `json:"status"`
+	// When the target terms take effect, normally the end of the current paid period.
+	EffectiveAt time.Time `json:"effective_at"`
+	PlanID      uuid.UUID `json:"plan_id"`
+	PlanName    string    `json:"plan_name"`
+	PriceID     uuid.UUID `json:"price_id"`
+	Quantity    string    `json:"quantity"`
+	// The target prepaid renewal amount before tax.
+	RecurringAmount string                  `json:"recurring_amount"`
+	Currency        string                  `json:"currency"`
+	Interval        ScheduledChangeInterval `json:"interval"`
+	IntervalCount   int                     `json:"interval_count"`
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *ScheduledChange) GetOrderID() uuid.UUID {
+	return s.OrderID
+}
+
+// GetStatus returns the value of Status.
+func (s *ScheduledChange) GetStatus() OrderStatus {
+	return s.Status
+}
+
+// GetEffectiveAt returns the value of EffectiveAt.
+func (s *ScheduledChange) GetEffectiveAt() time.Time {
+	return s.EffectiveAt
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *ScheduledChange) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *ScheduledChange) GetPlanName() string {
+	return s.PlanName
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *ScheduledChange) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *ScheduledChange) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetRecurringAmount returns the value of RecurringAmount.
+func (s *ScheduledChange) GetRecurringAmount() string {
+	return s.RecurringAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *ScheduledChange) GetCurrency() string {
+	return s.Currency
+}
+
+// GetInterval returns the value of Interval.
+func (s *ScheduledChange) GetInterval() ScheduledChangeInterval {
+	return s.Interval
+}
+
+// GetIntervalCount returns the value of IntervalCount.
+func (s *ScheduledChange) GetIntervalCount() int {
+	return s.IntervalCount
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *ScheduledChange) SetOrderID(val uuid.UUID) {
+	s.OrderID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ScheduledChange) SetStatus(val OrderStatus) {
+	s.Status = val
+}
+
+// SetEffectiveAt sets the value of EffectiveAt.
+func (s *ScheduledChange) SetEffectiveAt(val time.Time) {
+	s.EffectiveAt = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *ScheduledChange) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *ScheduledChange) SetPlanName(val string) {
+	s.PlanName = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *ScheduledChange) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *ScheduledChange) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetRecurringAmount sets the value of RecurringAmount.
+func (s *ScheduledChange) SetRecurringAmount(val string) {
+	s.RecurringAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *ScheduledChange) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetInterval sets the value of Interval.
+func (s *ScheduledChange) SetInterval(val ScheduledChangeInterval) {
+	s.Interval = val
+}
+
+// SetIntervalCount sets the value of IntervalCount.
+func (s *ScheduledChange) SetIntervalCount(val int) {
+	s.IntervalCount = val
+}
+
+type ScheduledChangeInterval string
+
+const (
+	ScheduledChangeIntervalDay   ScheduledChangeInterval = "day"
+	ScheduledChangeIntervalMonth ScheduledChangeInterval = "month"
+	ScheduledChangeIntervalYear  ScheduledChangeInterval = "year"
+)
+
+// AllValues returns all ScheduledChangeInterval values.
+func (ScheduledChangeInterval) AllValues() []ScheduledChangeInterval {
+	return []ScheduledChangeInterval{
+		ScheduledChangeIntervalDay,
+		ScheduledChangeIntervalMonth,
+		ScheduledChangeIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ScheduledChangeInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case ScheduledChangeIntervalDay:
+		return []byte(s), nil
+	case ScheduledChangeIntervalMonth:
+		return []byte(s), nil
+	case ScheduledChangeIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ScheduledChangeInterval) UnmarshalText(data []byte) error {
+	switch ScheduledChangeInterval(data) {
+	case ScheduledChangeIntervalDay:
+		*s = ScheduledChangeIntervalDay
+		return nil
+	case ScheduledChangeIntervalMonth:
+		*s = ScheduledChangeIntervalMonth
+		return nil
+	case ScheduledChangeIntervalYear:
+		*s = ScheduledChangeIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/SetProjectAssignmentRequest
 type SetProjectAssignmentRequest struct {
 	BillingAccountID int64 `json:"billing_account_id"`
@@ -15885,6 +16130,9 @@ type Subscription struct {
 	SuspendReason               OptString                   `json:"suspend_reason"`
 	BillingCycleAnchor          OptDateTime                 `json:"billing_cycle_anchor"`
 	Cancellation                OptSubscriptionCancellation `json:"cancellation"`
+	// The accepted period-end change currently scheduled for this subscription. Null when no such change
+	// exists.
+	ScheduledChange OptNilScheduledChange `json:"scheduled_change"`
 	// The saved payment method automatic renewal charges after the account's balance and credits, before
 	// the account's default payment method. Set when the purchase, a renewal or a change is paid with a
 	// saved payment method; paying any other way leaves it unchanged. It is used only while it belongs to
@@ -16005,6 +16253,11 @@ func (s *Subscription) GetBillingCycleAnchor() OptDateTime {
 // GetCancellation returns the value of Cancellation.
 func (s *Subscription) GetCancellation() OptSubscriptionCancellation {
 	return s.Cancellation
+}
+
+// GetScheduledChange returns the value of ScheduledChange.
+func (s *Subscription) GetScheduledChange() OptNilScheduledChange {
+	return s.ScheduledChange
 }
 
 // GetDefaultPaymentMethodID returns the value of DefaultPaymentMethodID.
@@ -16180,6 +16433,11 @@ func (s *Subscription) SetBillingCycleAnchor(val OptDateTime) {
 // SetCancellation sets the value of Cancellation.
 func (s *Subscription) SetCancellation(val OptSubscriptionCancellation) {
 	s.Cancellation = val
+}
+
+// SetScheduledChange sets the value of ScheduledChange.
+func (s *Subscription) SetScheduledChange(val OptNilScheduledChange) {
+	s.ScheduledChange = val
 }
 
 // SetDefaultPaymentMethodID sets the value of DefaultPaymentMethodID.

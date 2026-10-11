@@ -8535,8 +8535,8 @@ func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool,
 // handleListInvoicesRequest handles list-invoices operation.
 //
 // Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
-// status and creation interval. Drafts are excluded, including the draft invoice of an order awaiting
-// payment, which is reached through its order; top-ups do not create invoices.
+// subscription_id, status and creation interval. Drafts are excluded, including the draft invoice of
+// an order awaiting payment, which is reached through its order; top-ups do not create invoices.
 //
 // GET /api/v1/invoices
 func (s *Server) handleListInvoicesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8695,6 +8695,10 @@ func (s *Server) handleListInvoicesRequest(args [0]string, argsEscaped bool, w h
 					Name: "status",
 					In:   "query",
 				}: params.Status,
+				{
+					Name: "subscription_id",
+					In:   "query",
+				}: params.SubscriptionID,
 				{
 					Name: "from",
 					In:   "query",
@@ -13777,9 +13781,11 @@ func (s *Server) handleRenewSubscriptionRequest(args [1]string, argsEscaped bool
 
 // handleSetAutoRenewRequest handles set-auto-renew operation.
 //
-// Controls automatic prepaid renewal. Disabling it does not shorten current_term_end and still permits
-// manual renewal. A postpaid subscription always continues until it is canceled; setting it is refused
-// with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
+// Controls automatic prepaid renewal for an active or suspended subscription. A pending or
+// provisioning subscription cannot set this preference and returns 409
+// `BILLING_SUBSCRIPTION_AUTO_RENEW_INACTIVE`. Disabling it does not shorten current_term_end and still
+// permits manual renewal. A postpaid subscription always continues until it is canceled; setting it is
+// refused with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
 //
 // While the subscription has an open cancellation, turning it on or off is refused with 409
 // `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation

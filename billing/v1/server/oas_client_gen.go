@@ -443,8 +443,8 @@ type Invoker interface {
 	// ListInvoices invokes list-invoices operation.
 	//
 	// Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
-	// status and creation interval. Drafts are excluded, including the draft invoice of an order awaiting
-	// payment, which is reached through its order; top-ups do not create invoices.
+	// subscription_id, status and creation interval. Drafts are excluded, including the draft invoice of
+	// an order awaiting payment, which is reached through its order; top-ups do not create invoices.
 	//
 	// GET /api/v1/invoices
 	ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error)
@@ -699,9 +699,11 @@ type Invoker interface {
 	RenewSubscription(ctx context.Context, request *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error)
 	// SetAutoRenew invokes set-auto-renew operation.
 	//
-	// Controls automatic prepaid renewal. Disabling it does not shorten current_term_end and still permits
-	// manual renewal. A postpaid subscription always continues until it is canceled; setting it is refused
-	// with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
+	// Controls automatic prepaid renewal for an active or suspended subscription. A pending or
+	// provisioning subscription cannot set this preference and returns 409
+	// `BILLING_SUBSCRIPTION_AUTO_RENEW_INACTIVE`. Disabling it does not shorten current_term_end and still
+	// permits manual renewal. A postpaid subscription always continues until it is canceled; setting it is
+	// refused with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
 	//
 	// While the subscription has an open cancellation, turning it on or off is refused with 409
 	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
@@ -7300,8 +7302,8 @@ func (c *Client) sendListInvoiceItems(ctx context.Context, params ListInvoiceIte
 // ListInvoices invokes list-invoices operation.
 //
 // Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
-// status and creation interval. Drafts are excluded, including the draft invoice of an order awaiting
-// payment, which is reached through its order; top-ups do not create invoices.
+// subscription_id, status and creation interval. Drafts are excluded, including the draft invoice of
+// an order awaiting payment, which is reached through its order; top-ups do not create invoices.
 //
 // GET /api/v1/invoices
 func (c *Client) ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error) {
@@ -7414,6 +7416,23 @@ func (c *Client) sendListInvoices(ctx context.Context, params ListInvoicesParams
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Status.Get(); ok {
 				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "subscription_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "subscription_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.SubscriptionID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -12082,9 +12101,11 @@ func (c *Client) sendRenewSubscription(ctx context.Context, request *RenewReques
 
 // SetAutoRenew invokes set-auto-renew operation.
 //
-// Controls automatic prepaid renewal. Disabling it does not shorten current_term_end and still permits
-// manual renewal. A postpaid subscription always continues until it is canceled; setting it is refused
-// with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
+// Controls automatic prepaid renewal for an active or suspended subscription. A pending or
+// provisioning subscription cannot set this preference and returns 409
+// `BILLING_SUBSCRIPTION_AUTO_RENEW_INACTIVE`. Disabling it does not shorten current_term_end and still
+// permits manual renewal. A postpaid subscription always continues until it is canceled; setting it is
+// refused with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
 //
 // While the subscription has an open cancellation, turning it on or off is refused with 409
 // `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
