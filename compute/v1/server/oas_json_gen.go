@@ -19083,10 +19083,6 @@ func (s *Quote) encodeFields(e *jx.Encoder) {
 		s.Funds.Encode(e)
 	}
 	{
-		e.FieldStart("funds_sufficient")
-		e.Bool(s.FundsSufficient)
-	}
-	{
 		e.FieldStart("items")
 		e.ArrStart()
 		for _, elem := range s.Items {
@@ -19128,18 +19124,17 @@ func (s *Quote) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfQuote = [11]string{
-	0:  "funds",
-	1:  "funds_sufficient",
-	2:  "items",
-	3:  "subtotal",
-	4:  "discount_amount",
-	5:  "tax_amount",
-	6:  "total",
-	7:  "estimated_usage_amount",
-	8:  "currency",
-	9:  "proration_date",
-	10: "refundable_amount",
+var jsonFieldsNameOfQuote = [10]string{
+	0: "funds",
+	1: "items",
+	2: "subtotal",
+	3: "discount_amount",
+	4: "tax_amount",
+	5: "total",
+	6: "estimated_usage_amount",
+	7: "currency",
+	8: "proration_date",
+	9: "refundable_amount",
 }
 
 // Decode decodes Quote from json.
@@ -19161,20 +19156,8 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"funds\"")
 			}
-		case "funds_sufficient":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				v, err := d.Bool()
-				s.FundsSufficient = bool(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"funds_sufficient\"")
-			}
 		case "items":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Items = make([]QuoteItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -19192,7 +19175,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"items\"")
 			}
 		case "subtotal":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.Subtotal.Decode(d); err != nil {
 					return err
@@ -19202,7 +19185,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subtotal\"")
 			}
 		case "discount_amount":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.DiscountAmount.Decode(d); err != nil {
 					return err
@@ -19212,7 +19195,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"discount_amount\"")
 			}
 		case "tax_amount":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.TaxAmount.Decode(d); err != nil {
 					return err
@@ -19222,7 +19205,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_amount\"")
 			}
 		case "total":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Total.Decode(d); err != nil {
 					return err
@@ -19232,7 +19215,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"total\"")
 			}
 		case "estimated_usage_amount":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.EstimatedUsageAmount.Decode(d); err != nil {
 					return err
@@ -19242,7 +19225,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"estimated_usage_amount\"")
 			}
 		case "currency":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -19254,7 +19237,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "proration_date":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.ProrationDate.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -19264,7 +19247,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"proration_date\"")
 			}
 		case "refundable_amount":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.RefundableAmount.Decode(d); err != nil {
 					return err
@@ -19284,7 +19267,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

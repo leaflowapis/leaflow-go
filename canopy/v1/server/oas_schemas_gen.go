@@ -3086,13 +3086,6 @@ func (s *PlacedOrder) SetInvoice(val InvoiceSummary) {
 // Ref: #/components/schemas/Quote
 type Quote struct {
 	Funds Funds `json:"funds"`
-	// Whether the account's current balance and eligible credits cover immediate charges and the
-	// currency's minimum top-up for every new postpaid item. False preserves this complete price preview.
-	// Nothing is reserved; checkout rechecks funds. Prepaid purchases may also use an online payment
-	// method.
-	//
-	// Deprecated: schema marks this property as deprecated.
-	FundsSufficient bool `json:"funds_sufficient"`
 	// One line for each item the purchase would order, in the order it would order them.
 	Items []QuoteItem `json:"items"`
 	// Sum of line amounts before discounts, less tax already included in the discounted line amounts, as
@@ -3120,11 +3113,6 @@ type Quote struct {
 // GetFunds returns the value of Funds.
 func (s *Quote) GetFunds() Funds {
 	return s.Funds
-}
-
-// GetFundsSufficient returns the value of FundsSufficient.
-func (s *Quote) GetFundsSufficient() bool {
-	return s.FundsSufficient
 }
 
 // GetItems returns the value of Items.
@@ -3175,11 +3163,6 @@ func (s *Quote) GetRefundableAmount() NilMoney {
 // SetFunds sets the value of Funds.
 func (s *Quote) SetFunds(val Funds) {
 	s.Funds = val
-}
-
-// SetFundsSufficient sets the value of FundsSufficient.
-func (s *Quote) SetFundsSufficient(val bool) {
-	s.FundsSufficient = val
 }
 
 // SetItems sets the value of Items.
