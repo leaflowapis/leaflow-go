@@ -3249,7 +3249,8 @@ func (s *QuoteItem) SetCurrency(val string) {
 
 // Ref: #/components/schemas/RequestResource
 type RequestResource struct {
-	APIKeyID uuid.UUID `json:"api_key_id"`
+	// Null for a request made by an internal service directly for the project.
+	APIKeyID NilUUID `json:"api_key_id"`
 	// The portion served from the upstream prefix cache, which costs an order of magnitude less than
 	// ordinary input.
 	CacheReadTokens  int64 `json:"cache_read_tokens"`
@@ -3278,7 +3279,7 @@ type RequestResource struct {
 }
 
 // GetAPIKeyID returns the value of APIKeyID.
-func (s *RequestResource) GetAPIKeyID() uuid.UUID {
+func (s *RequestResource) GetAPIKeyID() NilUUID {
 	return s.APIKeyID
 }
 
@@ -3368,7 +3369,7 @@ func (s *RequestResource) GetUsageSource() RequestResourceUsageSource {
 }
 
 // SetAPIKeyID sets the value of APIKeyID.
-func (s *RequestResource) SetAPIKeyID(val uuid.UUID) {
+func (s *RequestResource) SetAPIKeyID(val NilUUID) {
 	s.APIKeyID = val
 }
 

@@ -4467,7 +4467,7 @@ func (s *RequestResource) Encode(e *jx.Encoder) {
 func (s *RequestResource) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("api_key_id")
-		json.EncodeUUID(e, s.APIKeyID)
+		s.APIKeyID.Encode(e)
 	}
 	{
 		e.FieldStart("cache_read_tokens")
@@ -4572,9 +4572,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 		case "api_key_id":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.APIKeyID = v
-				if err != nil {
+				if err := s.APIKeyID.Decode(d); err != nil {
 					return err
 				}
 				return nil
