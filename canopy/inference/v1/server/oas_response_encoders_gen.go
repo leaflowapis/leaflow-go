@@ -59,7 +59,7 @@ func encodeCreateEmbeddingsResponse(response EmbeddingResponse, w http.ResponseW
 	return nil
 }
 
-func encodeGetModelResponse(response *Model, w http.ResponseWriter, span trace.Span) error {
+func encodeGetInferenceModelResponse(response *Model, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -72,7 +72,7 @@ func encodeGetModelResponse(response *Model, w http.ResponseWriter, span trace.S
 	return nil
 }
 
-func encodeListModelsResponse(response *ModelList, w http.ResponseWriter, span trace.Span) error {
+func encodeListInferenceModelsResponse(response *ModelList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

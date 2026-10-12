@@ -137,7 +137,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if len(elem) == 0 {
 					switch r.Method {
 					case "GET":
-						s.handleListModelsRequest([0]string{}, elemIsEscaped, w, r)
+						s.handleListInferenceModelsRequest([0]string{}, elemIsEscaped, w, r)
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
@@ -171,7 +171,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						// Leaf node.
 						switch r.Method {
 						case "GET":
-							s.handleGetModelRequest([1]string{
+							s.handleGetInferenceModelRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
 						default:
@@ -349,9 +349,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				if len(elem) == 0 {
 					switch method {
 					case "GET":
-						r.name = ListModelsOperation
+						r.name = ListInferenceModelsOperation
 						r.summary = "List callable models with capabilities and parameter limits"
-						r.operationID = "list-models"
+						r.operationID = "list-inference-models"
 						r.operationGroup = ""
 						r.pathPattern = "/v1/models"
 						r.args = args
@@ -383,9 +383,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						// Leaf node.
 						switch method {
 						case "GET":
-							r.name = GetModelOperation
+							r.name = GetInferenceModelOperation
 							r.summary = "Get a callable model with capabilities and parameter limits"
-							r.operationID = "get-model"
+							r.operationID = "get-inference-model"
 							r.operationGroup = ""
 							r.pathPattern = "/v1/models/{model}"
 							r.args = args

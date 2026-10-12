@@ -8,6 +8,6 @@ type OperationName = string
 const (
 	CreateChatCompletionOperation OperationName = "CreateChatCompletion"
 	CreateEmbeddingsOperation     OperationName = "CreateEmbeddings"
-	GetModelOperation             OperationName = "GetModel"
-	ListModelsOperation           OperationName = "ListModels"
+	GetInferenceModelOperation    OperationName = "GetInferenceModel"
+	ListInferenceModelsOperation  OperationName = "ListInferenceModels"
 )

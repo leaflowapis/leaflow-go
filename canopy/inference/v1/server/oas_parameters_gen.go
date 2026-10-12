@@ -14,12 +14,12 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-// GetModelParams is parameters of get-model operation.
-type GetModelParams struct {
+// GetInferenceModelParams is parameters of get-inference-model operation.
+type GetInferenceModelParams struct {
 	Model string
 }
 
-func unpackGetModelParams(packed middleware.Parameters) (params GetModelParams) {
+func unpackGetInferenceModelParams(packed middleware.Parameters) (params GetInferenceModelParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "model",
@@ -30,7 +30,7 @@ func unpackGetModelParams(packed middleware.Parameters) (params GetModelParams) 
 	return params
 }
 
-func decodeGetModelParams(args [1]string, argsEscaped bool, r *http.Request) (params GetModelParams, _ error) {
+func decodeGetInferenceModelParams(args [1]string, argsEscaped bool, r *http.Request) (params GetInferenceModelParams, _ error) {
 	// Decode path: model.
 	if err := func() error {
 		param := args[0]

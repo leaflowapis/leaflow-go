@@ -33,21 +33,21 @@ func (UnimplementedHandler) CreateEmbeddings(ctx context.Context, req *Embedding
 	return r, ht.ErrNotImplemented
 }
 
-// GetModel implements get-model operation.
+// GetInferenceModel implements get-inference-model operation.
 //
 // Get a callable model with capabilities and parameter limits.
 //
 // GET /v1/models/{model}
-func (UnimplementedHandler) GetModel(ctx context.Context, params GetModelParams) (r *Model, _ error) {
+func (UnimplementedHandler) GetInferenceModel(ctx context.Context, params GetInferenceModelParams) (r *Model, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ListModels implements list-models operation.
+// ListInferenceModels implements list-inference-models operation.
 //
 // List callable models with capabilities and parameter limits.
 //
 // GET /v1/models
-func (UnimplementedHandler) ListModels(ctx context.Context) (r *ModelList, _ error) {
+func (UnimplementedHandler) ListInferenceModels(ctx context.Context) (r *ModelList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

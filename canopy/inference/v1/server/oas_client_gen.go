@@ -43,18 +43,18 @@ type Invoker interface {
 	//
 	// POST /v1/embeddings
 	CreateEmbeddings(ctx context.Context, request *EmbeddingRequest) (EmbeddingResponse, error)
-	// GetModel invokes get-model operation.
+	// GetInferenceModel invokes get-inference-model operation.
 	//
 	// Get a callable model with capabilities and parameter limits.
 	//
 	// GET /v1/models/{model}
-	GetModel(ctx context.Context, params GetModelParams) (*Model, error)
-	// ListModels invokes list-models operation.
+	GetInferenceModel(ctx context.Context, params GetInferenceModelParams) (*Model, error)
+	// ListInferenceModels invokes list-inference-models operation.
 	//
 	// List callable models with capabilities and parameter limits.
 	//
 	// GET /v1/models
-	ListModels(ctx context.Context) (*ModelList, error)
+	ListInferenceModels(ctx context.Context) (*ModelList, error)
 }
 
 // Client implements OAS client.
@@ -350,19 +350,19 @@ func (c *Client) sendCreateEmbeddings(ctx context.Context, request *EmbeddingReq
 	return result, nil
 }
 
-// GetModel invokes get-model operation.
+// GetInferenceModel invokes get-inference-model operation.
 //
 // Get a callable model with capabilities and parameter limits.
 //
 // GET /v1/models/{model}
-func (c *Client) GetModel(ctx context.Context, params GetModelParams) (*Model, error) {
-	res, err := c.sendGetModel(ctx, params)
+func (c *Client) GetInferenceModel(ctx context.Context, params GetInferenceModelParams) (*Model, error) {
+	res, err := c.sendGetInferenceModel(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res *Model, err error) {
+func (c *Client) sendGetInferenceModel(ctx context.Context, params GetInferenceModelParams) (res *Model, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-model"),
+		otelogen.OperationID("get-inference-model"),
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.URLTemplateKey.String("/v1/models/{model}"),
 	}
@@ -380,7 +380,7 @@ func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res *
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetModelOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInferenceModelOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -430,7 +430,7 @@ func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res *
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetModelOperation, r); {
+			switch err := c.securityBearerAuth(ctx, GetInferenceModelOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -473,7 +473,7 @@ func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res *
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetModelResponse(resp)
+	result, err := decodeGetInferenceModelResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -481,19 +481,19 @@ func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res *
 	return result, nil
 }
 
-// ListModels invokes list-models operation.
+// ListInferenceModels invokes list-inference-models operation.
 //
 // List callable models with capabilities and parameter limits.
 //
 // GET /v1/models
-func (c *Client) ListModels(ctx context.Context) (*ModelList, error) {
-	res, err := c.sendListModels(ctx)
+func (c *Client) ListInferenceModels(ctx context.Context) (*ModelList, error) {
+	res, err := c.sendListInferenceModels(ctx)
 	return res, err
 }
 
-func (c *Client) sendListModels(ctx context.Context) (res *ModelList, err error) {
+func (c *Client) sendListInferenceModels(ctx context.Context) (res *ModelList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-models"),
+		otelogen.OperationID("list-inference-models"),
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.URLTemplateKey.String("/v1/models"),
 	}
@@ -511,7 +511,7 @@ func (c *Client) sendListModels(ctx context.Context) (res *ModelList, err error)
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListModelsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInferenceModelsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -543,7 +543,7 @@ func (c *Client) sendListModels(ctx context.Context) (res *ModelList, err error)
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListModelsOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ListInferenceModelsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -586,7 +586,7 @@ func (c *Client) sendListModels(ctx context.Context) (res *ModelList, err error)
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListModelsResponse(resp)
+	result, err := decodeListInferenceModelsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

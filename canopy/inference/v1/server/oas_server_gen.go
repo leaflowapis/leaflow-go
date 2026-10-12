@@ -22,18 +22,18 @@ type Handler interface {
 	//
 	// POST /v1/embeddings
 	CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (EmbeddingResponse, error)
-	// GetModel implements get-model operation.
+	// GetInferenceModel implements get-inference-model operation.
 	//
 	// Get a callable model with capabilities and parameter limits.
 	//
 	// GET /v1/models/{model}
-	GetModel(ctx context.Context, params GetModelParams) (*Model, error)
-	// ListModels implements list-models operation.
+	GetInferenceModel(ctx context.Context, params GetInferenceModelParams) (*Model, error)
+	// ListInferenceModels implements list-inference-models operation.
 	//
 	// List callable models with capabilities and parameter limits.
 	//
 	// GET /v1/models
-	ListModels(ctx context.Context) (*ModelList, error)
+	ListInferenceModels(ctx context.Context) (*ModelList, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

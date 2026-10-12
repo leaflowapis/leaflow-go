@@ -189,7 +189,7 @@ func decodeCreateEmbeddingsResponse(resp *http.Response) (res EmbeddingResponse,
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetModelResponse(resp *http.Response) (res *Model, _ error) {
+func decodeGetInferenceModelResponse(resp *http.Response) (res *Model, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -281,7 +281,7 @@ func decodeGetModelResponse(resp *http.Response) (res *Model, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeListModelsResponse(resp *http.Response) (res *ModelList, _ error) {
+func decodeListInferenceModelsResponse(resp *http.Response) (res *ModelList, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.

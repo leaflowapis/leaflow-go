@@ -435,16 +435,16 @@ func (s *Server) handleCreateEmbeddingsRequest(args [0]string, argsEscaped bool,
 	}
 }
 
-// handleGetModelRequest handles get-model operation.
+// handleGetInferenceModelRequest handles get-inference-model operation.
 //
 // Get a callable model with capabilities and parameter limits.
 //
 // GET /v1/models/{model}
-func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleGetInferenceModelRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-model"),
+		otelogen.OperationID("get-inference-model"),
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/v1/models/{model}"),
 	}
@@ -452,7 +452,7 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetModelOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInferenceModelOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -507,15 +507,15 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetModelOperation,
-			ID:   "get-model",
+			Name: GetInferenceModelOperation,
+			ID:   "get-inference-model",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetModelOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetInferenceModelOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -557,7 +557,7 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 			return
 		}
 	}
-	params, err := decodeGetModelParams(args, argsEscaped, r)
+	params, err := decodeGetInferenceModelParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -574,9 +574,9 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetModelOperation,
+			OperationName:    GetInferenceModelOperation,
 			OperationSummary: "Get a callable model with capabilities and parameter limits",
-			OperationID:      "get-model",
+			OperationID:      "get-inference-model",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -590,7 +590,7 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 
 		type (
 			Request  = struct{}
-			Params   = GetModelParams
+			Params   = GetInferenceModelParams
 			Response = *Model
 		)
 		response, err = middleware.HookMiddleware[
@@ -600,14 +600,14 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 		](
 			m,
 			mreq,
-			unpackGetModelParams,
+			unpackGetInferenceModelParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetModel(ctx, params)
+				response, err = s.h.GetInferenceModel(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetModel(ctx, params)
+		response, err = s.h.GetInferenceModel(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -626,7 +626,7 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 		return
 	}
 
-	if err := encodeGetModelResponse(response, w, span); err != nil {
+	if err := encodeGetInferenceModelResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -635,16 +635,16 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 	}
 }
 
-// handleListModelsRequest handles list-models operation.
+// handleListInferenceModelsRequest handles list-inference-models operation.
 //
 // List callable models with capabilities and parameter limits.
 //
 // GET /v1/models
-func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleListInferenceModelsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-models"),
+		otelogen.OperationID("list-inference-models"),
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/v1/models"),
 	}
@@ -652,7 +652,7 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListModelsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInferenceModelsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -707,15 +707,15 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListModelsOperation,
-			ID:   "list-models",
+			Name: ListInferenceModelsOperation,
+			ID:   "list-inference-models",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListModelsOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ListInferenceModelsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -764,9 +764,9 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListModelsOperation,
+			OperationName:    ListInferenceModelsOperation,
 			OperationSummary: "List callable models with capabilities and parameter limits",
-			OperationID:      "list-models",
+			OperationID:      "list-inference-models",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -787,12 +787,12 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListModels(ctx)
+				response, err = s.h.ListInferenceModels(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListModels(ctx)
+		response, err = s.h.ListInferenceModels(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -811,7 +811,7 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeListModelsResponse(response, w, span); err != nil {
+	if err := encodeListInferenceModelsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

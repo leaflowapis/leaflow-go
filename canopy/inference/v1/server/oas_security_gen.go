@@ -46,8 +46,8 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 var operationRolesBearerAuth = map[string][]string{
 	CreateChatCompletionOperation: []string{},
 	CreateEmbeddingsOperation:     []string{},
-	GetModelOperation:             []string{},
-	ListModelsOperation:           []string{},
+	GetInferenceModelOperation:    []string{},
+	ListInferenceModelsOperation:  []string{},
 }
 
 // GetRolesForBearerAuth returns the required roles for the given operation.
