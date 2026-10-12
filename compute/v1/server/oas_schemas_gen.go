@@ -1321,15 +1321,15 @@ func NewExistingBootDiskBootDisk(v ExistingBootDisk) BootDisk {
 
 // Shared checkout choices for a product purchase. Omitting this object or mode selects automatic
 // checkout. Each purchase creates its own order. Promotion codes are supplied only to Billing quote
-// and checkout operations. A service may retain a failed creation record when Billing refuses a
+// and payment operations. A service may retain a failed creation record when Billing refuses a
 // purchase; no infrastructure is created for that refusal.
 // Ref: #/components/schemas/CheckoutOptions
 type CheckoutOptions struct {
 	Mode OptCheckoutOptionsMode `json:"mode"`
 	// Expected invoice total after discounts and tax, before applying credit grants or balance. A
 	// different total fails with BILLING_AMOUNT_CHANGED without charging or reserving a discount. Accepted
-	// only in automatic mode; with deferred it is refused with HTTP 400. For deferred checkout, confirm
-	// the amount through Billing.
+	// only in automatic mode; with deferred it is refused with HTTP 400. For deferred checkout, give the
+	// expected amount when paying the invoice through Billing.
 	ExpectedAmount OptString `json:"expected_amount"`
 }
 
