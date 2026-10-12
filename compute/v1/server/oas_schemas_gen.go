@@ -4253,6 +4253,89 @@ func (s *FloatingIPResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Account funding for this purchase, calculated by Billing. Amounts use the enclosing response
+// currency. Credit eligibility and all purchase requirements are already evaluated. Nothing is charged
+// or reserved. A prepaid purchase may instead use an online payment method.
+// Ref: #/components/schemas/Funds
+type Funds struct {
+	// Spendable balance after pending returns.
+	AvailableBalanceAmount Money `json:"available_balance_amount"`
+	// Currently effective credits eligible for the quoted purchases or postpaid usage. Each grant is
+	// counted once.
+	UsableCreditAmount Money `json:"usable_credit_amount"`
+	// Currently effective credits that cannot fund any quoted purchase or postpaid target. Unused eligible
+	// credits are not restricted.
+	RestrictedCreditAmount Money `json:"restricted_credit_amount"`
+	// Minimum spendable balance needed after eligible credits, covering immediate charges and every new
+	// postpaid admission requirement.
+	RequiredBalanceAmount Money `json:"required_balance_amount"`
+	// Additional balance needed now. Zero means account funds satisfy this quote. No funds are reserved.
+	BalanceShortfallAmount Money `json:"balance_shortfall_amount"`
+	// Minimum recharge that covers the shortfall, respecting the currency minimum recharge and currency
+	// precision. Zero when no additional balance is needed.
+	RequiredTopUpAmount Money `json:"required_top_up_amount"`
+}
+
+// GetAvailableBalanceAmount returns the value of AvailableBalanceAmount.
+func (s *Funds) GetAvailableBalanceAmount() Money {
+	return s.AvailableBalanceAmount
+}
+
+// GetUsableCreditAmount returns the value of UsableCreditAmount.
+func (s *Funds) GetUsableCreditAmount() Money {
+	return s.UsableCreditAmount
+}
+
+// GetRestrictedCreditAmount returns the value of RestrictedCreditAmount.
+func (s *Funds) GetRestrictedCreditAmount() Money {
+	return s.RestrictedCreditAmount
+}
+
+// GetRequiredBalanceAmount returns the value of RequiredBalanceAmount.
+func (s *Funds) GetRequiredBalanceAmount() Money {
+	return s.RequiredBalanceAmount
+}
+
+// GetBalanceShortfallAmount returns the value of BalanceShortfallAmount.
+func (s *Funds) GetBalanceShortfallAmount() Money {
+	return s.BalanceShortfallAmount
+}
+
+// GetRequiredTopUpAmount returns the value of RequiredTopUpAmount.
+func (s *Funds) GetRequiredTopUpAmount() Money {
+	return s.RequiredTopUpAmount
+}
+
+// SetAvailableBalanceAmount sets the value of AvailableBalanceAmount.
+func (s *Funds) SetAvailableBalanceAmount(val Money) {
+	s.AvailableBalanceAmount = val
+}
+
+// SetUsableCreditAmount sets the value of UsableCreditAmount.
+func (s *Funds) SetUsableCreditAmount(val Money) {
+	s.UsableCreditAmount = val
+}
+
+// SetRestrictedCreditAmount sets the value of RestrictedCreditAmount.
+func (s *Funds) SetRestrictedCreditAmount(val Money) {
+	s.RestrictedCreditAmount = val
+}
+
+// SetRequiredBalanceAmount sets the value of RequiredBalanceAmount.
+func (s *Funds) SetRequiredBalanceAmount(val Money) {
+	s.RequiredBalanceAmount = val
+}
+
+// SetBalanceShortfallAmount sets the value of BalanceShortfallAmount.
+func (s *Funds) SetBalanceShortfallAmount(val Money) {
+	s.BalanceShortfallAmount = val
+}
+
+// SetRequiredTopUpAmount sets the value of RequiredTopUpAmount.
+func (s *Funds) SetRequiredTopUpAmount(val Money) {
+	s.RequiredTopUpAmount = val
+}
+
 // Ref: #/components/schemas/IPv4Binding
 type IPv4Binding struct {
 	ID               uuid.UUID        `json:"id"`
@@ -10783,10 +10866,13 @@ func (*PrivateNetworkResource) deletePrivateNetworkRes() {}
 // it never returns a partial quote with HTTP 200.
 // Ref: #/components/schemas/Quote
 type Quote struct {
+	Funds Funds `json:"funds"`
 	// Whether the account's current balance and eligible credits cover immediate charges and the
 	// currency's minimum top-up for every new postpaid item. False preserves this complete price preview.
 	// Nothing is reserved; checkout rechecks funds. Prepaid purchases may also use an online payment
 	// method.
+	//
+	// Deprecated: schema marks this property as deprecated.
 	FundsSufficient bool `json:"funds_sufficient"`
 	// One line for each item the purchase would order, in the order it would order them.
 	Items []QuoteItem `json:"items"`
@@ -10810,6 +10896,11 @@ type Quote struct {
 	// Changes that lower the price only; null otherwise. What the change would return to the original
 	// payment sources, including the tax paid on it. total is zero for such a change.
 	RefundableAmount NilMoney `json:"refundable_amount"`
+}
+
+// GetFunds returns the value of Funds.
+func (s *Quote) GetFunds() Funds {
+	return s.Funds
 }
 
 // GetFundsSufficient returns the value of FundsSufficient.
@@ -10860,6 +10951,11 @@ func (s *Quote) GetProrationDate() NilDateTime {
 // GetRefundableAmount returns the value of RefundableAmount.
 func (s *Quote) GetRefundableAmount() NilMoney {
 	return s.RefundableAmount
+}
+
+// SetFunds sets the value of Funds.
+func (s *Quote) SetFunds(val Funds) {
+	s.Funds = val
 }
 
 // SetFundsSufficient sets the value of FundsSufficient.

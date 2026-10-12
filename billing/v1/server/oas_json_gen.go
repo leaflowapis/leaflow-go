@@ -8747,6 +8747,175 @@ func (s *FeatureGrantStatus) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *Funds) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *Funds) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("available_balance_amount")
+		s.AvailableBalanceAmount.Encode(e)
+	}
+	{
+		e.FieldStart("usable_credit_amount")
+		s.UsableCreditAmount.Encode(e)
+	}
+	{
+		e.FieldStart("restricted_credit_amount")
+		s.RestrictedCreditAmount.Encode(e)
+	}
+	{
+		e.FieldStart("required_balance_amount")
+		s.RequiredBalanceAmount.Encode(e)
+	}
+	{
+		e.FieldStart("balance_shortfall_amount")
+		s.BalanceShortfallAmount.Encode(e)
+	}
+	{
+		e.FieldStart("required_top_up_amount")
+		s.RequiredTopUpAmount.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfFunds = [6]string{
+	0: "available_balance_amount",
+	1: "usable_credit_amount",
+	2: "restricted_credit_amount",
+	3: "required_balance_amount",
+	4: "balance_shortfall_amount",
+	5: "required_top_up_amount",
+}
+
+// Decode decodes Funds from json.
+func (s *Funds) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode Funds to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "available_balance_amount":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.AvailableBalanceAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"available_balance_amount\"")
+			}
+		case "usable_credit_amount":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.UsableCreditAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"usable_credit_amount\"")
+			}
+		case "restricted_credit_amount":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.RestrictedCreditAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"restricted_credit_amount\"")
+			}
+		case "required_balance_amount":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.RequiredBalanceAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"required_balance_amount\"")
+			}
+		case "balance_shortfall_amount":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.BalanceShortfallAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"balance_shortfall_amount\"")
+			}
+		case "required_top_up_amount":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.RequiredTopUpAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"required_top_up_amount\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode Funds")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfFunds) {
+					name = jsonFieldsNameOfFunds[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *Funds) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *Funds) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *Invoice) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -11966,6 +12135,39 @@ func (s OptErrorMeta) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptErrorMeta) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes Funds as json.
+func (o OptFunds) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes Funds from json.
+func (o *OptFunds) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptFunds to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptFunds) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptFunds) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -17186,6 +17388,12 @@ func (s *PaymentPreview) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PaymentPreview) encodeFields(e *jx.Encoder) {
 	{
+		if s.Funds.Set {
+			e.FieldStart("funds")
+			s.Funds.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("currency")
 		e.Str(s.Currency)
 	}
@@ -17229,15 +17437,16 @@ func (s *PaymentPreview) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPaymentPreview = [8]string{
-	0: "currency",
-	1: "amount_due",
-	2: "credit_applied",
-	3: "credit_grants",
-	4: "balance_applied",
-	5: "gateway_amount",
-	6: "balance_after",
-	7: "invoices",
+var jsonFieldsNameOfPaymentPreview = [9]string{
+	0: "funds",
+	1: "currency",
+	2: "amount_due",
+	3: "credit_applied",
+	4: "credit_grants",
+	5: "balance_applied",
+	6: "gateway_amount",
+	7: "balance_after",
+	8: "invoices",
 }
 
 // Decode decodes PaymentPreview from json.
@@ -17245,12 +17454,22 @@ func (s *PaymentPreview) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode PaymentPreview to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "funds":
+			if err := func() error {
+				s.Funds.Reset()
+				if err := s.Funds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"funds\"")
+			}
 		case "currency":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -17262,7 +17481,7 @@ func (s *PaymentPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "amount_due":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.AmountDue.Decode(d); err != nil {
 					return err
@@ -17272,7 +17491,7 @@ func (s *PaymentPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"amount_due\"")
 			}
 		case "credit_applied":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.CreditApplied.Decode(d); err != nil {
 					return err
@@ -17282,7 +17501,7 @@ func (s *PaymentPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"credit_applied\"")
 			}
 		case "credit_grants":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				s.CreditGrants = make([]AppliedCredit, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -17300,7 +17519,7 @@ func (s *PaymentPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"credit_grants\"")
 			}
 		case "balance_applied":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.BalanceApplied.Decode(d); err != nil {
 					return err
@@ -17310,7 +17529,7 @@ func (s *PaymentPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"balance_applied\"")
 			}
 		case "gateway_amount":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.GatewayAmount.Decode(d); err != nil {
 					return err
@@ -17320,7 +17539,7 @@ func (s *PaymentPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"gateway_amount\"")
 			}
 		case "balance_after":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.BalanceAfter.Decode(d); err != nil {
 					return err
@@ -17355,8 +17574,9 @@ func (s *PaymentPreview) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b01111111,
+	for i, mask := range [2]uint8{
+		0b11111110,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -20274,6 +20494,12 @@ func (s *Quote) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Quote) encodeFields(e *jx.Encoder) {
 	{
+		if s.Funds.Set {
+			e.FieldStart("funds")
+			s.Funds.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("subtotal")
 		s.Subtotal.Encode(e)
 	}
@@ -20327,17 +20553,18 @@ func (s *Quote) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfQuote = [10]string{
-	0: "subtotal",
-	1: "discount_amount",
-	2: "tax_amount",
-	3: "discount",
-	4: "items",
-	5: "renewals",
-	6: "cancellation",
-	7: "total",
-	8: "currency",
-	9: "refund",
+var jsonFieldsNameOfQuote = [11]string{
+	0:  "funds",
+	1:  "subtotal",
+	2:  "discount_amount",
+	3:  "tax_amount",
+	4:  "discount",
+	5:  "items",
+	6:  "renewals",
+	7:  "cancellation",
+	8:  "total",
+	9:  "currency",
+	10: "refund",
 }
 
 // Decode decodes Quote from json.
@@ -20349,8 +20576,18 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "funds":
+			if err := func() error {
+				s.Funds.Reset()
+				if err := s.Funds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"funds\"")
+			}
 		case "subtotal":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				if err := s.Subtotal.Decode(d); err != nil {
 					return err
@@ -20360,7 +20597,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subtotal\"")
 			}
 		case "discount_amount":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.DiscountAmount.Decode(d); err != nil {
 					return err
@@ -20370,7 +20607,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"discount_amount\"")
 			}
 		case "tax_amount":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.TaxAmount.Decode(d); err != nil {
 					return err
@@ -20380,7 +20617,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_amount\"")
 			}
 		case "discount":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.Discount.Decode(d); err != nil {
 					return err
@@ -20390,7 +20627,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"discount\"")
 			}
 		case "items":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				s.Items = make([]QuoteItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -20408,7 +20645,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"items\"")
 			}
 		case "renewals":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				s.Renewals = make([]QuoteRenewalResult, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -20436,7 +20673,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"cancellation\"")
 			}
 		case "total":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.Total.Decode(d); err != nil {
 					return err
@@ -20446,7 +20683,7 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"total\"")
 			}
 		case "currency":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -20477,8 +20714,8 @@ func (s *Quote) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10111111,
-		0b00000001,
+		0b01111110,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

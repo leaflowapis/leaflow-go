@@ -25,7 +25,7 @@ func TestTenantCancellationDiagnosticWire(t *testing.T) {
 				"id":              "bb3b9c54-99ea-4aef-b375-ec61df426d5c",
 				"subscription_id": "74825f39-3b5a-47be-ae44-0b8f55a39f0b",
 				"plan_id":         "2289b2ca-cfa8-4ae9-9b11-c76b93a78593",
-				"plan_name":       "Plan", "billing_type": "prepaid", "status": "releasing",
+				"plan_name":       "Plan", "charge_type": "prepaid", "status": "releasing",
 				"failure_reason": "Private operator diagnostic",
 			}
 			if row.set {

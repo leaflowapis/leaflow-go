@@ -55,7 +55,7 @@ func TestCancellationRefundAbsence(t *testing.T) {
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			var item CancellationItem
-			raw := `{"id":"bb3b9c54-99ea-4aef-b375-ec61df426d5c","subscription_id":"74825f39-3b5a-47be-ae44-0b8f55a39f0b","plan_id":"2289b2ca-cfa8-4ae9-9b11-c76b93a78593","plan_name":"plan","billing_type":"prepaid","status":"` + map[bool]string{false: "releasing", true: "completed"}[row.set] + `"` + row.amount + `}`
+			raw := `{"id":"bb3b9c54-99ea-4aef-b375-ec61df426d5c","subscription_id":"74825f39-3b5a-47be-ae44-0b8f55a39f0b","plan_id":"2289b2ca-cfa8-4ae9-9b11-c76b93a78593","plan_name":"plan","charge_type":"prepaid","status":"` + map[bool]string{false: "releasing", true: "completed"}[row.set] + `"` + row.amount + `}`
 			if err := item.Decode(jx.DecodeBytes([]byte(raw))); err != nil {
 				t.Fatal(err)
 			}

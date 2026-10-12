@@ -42,7 +42,7 @@ func TestContactClientAccountPaths(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id": id.String(), "billing_account_id": 42, "name": name,
-			"active": true, "tax_exempt": false, "created_at": "2026-10-06T00:00:00Z",
+			"active": true, "tax_exempt": "none", "created_at": "2026-10-06T00:00:00Z",
 		})
 	}))
 	defer server.Close()

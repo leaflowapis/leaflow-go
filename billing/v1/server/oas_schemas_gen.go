@@ -4287,6 +4287,89 @@ func (s *FeatureGrantStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Account funding for this purchase, calculated by Billing. Amounts use the enclosing response
+// currency. Credit eligibility and all purchase requirements are already evaluated. Nothing is charged
+// or reserved. A prepaid purchase may instead use an online payment method.
+// Ref: #/components/schemas/Funds
+type Funds struct {
+	// Spendable balance after pending returns.
+	AvailableBalanceAmount Money `json:"available_balance_amount"`
+	// Currently effective credits eligible for the quoted purchases or postpaid usage. Each grant is
+	// counted once.
+	UsableCreditAmount Money `json:"usable_credit_amount"`
+	// Currently effective credits that cannot fund any quoted purchase or postpaid target. Unused eligible
+	// credits are not restricted.
+	RestrictedCreditAmount Money `json:"restricted_credit_amount"`
+	// Minimum spendable balance needed after eligible credits, covering immediate charges and every new
+	// postpaid admission requirement.
+	RequiredBalanceAmount Money `json:"required_balance_amount"`
+	// Additional balance needed now. Zero means account funds satisfy this quote. No funds are reserved.
+	BalanceShortfallAmount Money `json:"balance_shortfall_amount"`
+	// Minimum recharge that covers the shortfall, respecting the currency minimum recharge and currency
+	// precision. Zero when no additional balance is needed.
+	RequiredTopUpAmount Money `json:"required_top_up_amount"`
+}
+
+// GetAvailableBalanceAmount returns the value of AvailableBalanceAmount.
+func (s *Funds) GetAvailableBalanceAmount() Money {
+	return s.AvailableBalanceAmount
+}
+
+// GetUsableCreditAmount returns the value of UsableCreditAmount.
+func (s *Funds) GetUsableCreditAmount() Money {
+	return s.UsableCreditAmount
+}
+
+// GetRestrictedCreditAmount returns the value of RestrictedCreditAmount.
+func (s *Funds) GetRestrictedCreditAmount() Money {
+	return s.RestrictedCreditAmount
+}
+
+// GetRequiredBalanceAmount returns the value of RequiredBalanceAmount.
+func (s *Funds) GetRequiredBalanceAmount() Money {
+	return s.RequiredBalanceAmount
+}
+
+// GetBalanceShortfallAmount returns the value of BalanceShortfallAmount.
+func (s *Funds) GetBalanceShortfallAmount() Money {
+	return s.BalanceShortfallAmount
+}
+
+// GetRequiredTopUpAmount returns the value of RequiredTopUpAmount.
+func (s *Funds) GetRequiredTopUpAmount() Money {
+	return s.RequiredTopUpAmount
+}
+
+// SetAvailableBalanceAmount sets the value of AvailableBalanceAmount.
+func (s *Funds) SetAvailableBalanceAmount(val Money) {
+	s.AvailableBalanceAmount = val
+}
+
+// SetUsableCreditAmount sets the value of UsableCreditAmount.
+func (s *Funds) SetUsableCreditAmount(val Money) {
+	s.UsableCreditAmount = val
+}
+
+// SetRestrictedCreditAmount sets the value of RestrictedCreditAmount.
+func (s *Funds) SetRestrictedCreditAmount(val Money) {
+	s.RestrictedCreditAmount = val
+}
+
+// SetRequiredBalanceAmount sets the value of RequiredBalanceAmount.
+func (s *Funds) SetRequiredBalanceAmount(val Money) {
+	s.RequiredBalanceAmount = val
+}
+
+// SetBalanceShortfallAmount sets the value of BalanceShortfallAmount.
+func (s *Funds) SetBalanceShortfallAmount(val Money) {
+	s.BalanceShortfallAmount = val
+}
+
+// SetRequiredTopUpAmount sets the value of RequiredTopUpAmount.
+func (s *Funds) SetRequiredTopUpAmount(val Money) {
+	s.RequiredTopUpAmount = val
+}
+
 // GetPlanNotModified is response for GetPlan operation.
 type GetPlanNotModified struct{}
 
@@ -6707,6 +6790,52 @@ func (o OptFeatureGrantStatus) Get() (v FeatureGrantStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptFeatureGrantStatus) Or(d FeatureGrantStatus) FeatureGrantStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptFunds returns new OptFunds with value set to v.
+func NewOptFunds(v Funds) OptFunds {
+	return OptFunds{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptFunds is optional Funds.
+type OptFunds struct {
+	Value Funds
+	Set   bool
+}
+
+// IsSet returns true if OptFunds was set.
+func (o OptFunds) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptFunds) Reset() {
+	var v Funds
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptFunds) SetTo(v Funds) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptFunds) Get() (v Funds, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptFunds) Or(d Funds) Funds {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -11135,7 +11264,8 @@ func (s *PaymentOptionMethod) SetReusable(val bool) {
 // What paying would take, computed as paying computes it. Nothing is charged or reserved.
 // Ref: #/components/schemas/PaymentPreview
 type PaymentPreview struct {
-	Currency string `json:"currency"`
+	Funds    OptFunds `json:"funds"`
+	Currency string   `json:"currency"`
 	// What is outstanding before paying.
 	AmountDue Money `json:"amount_due"`
 	// What credit grants would pay. Grants restricted to other purchases pay nothing here.
@@ -11151,6 +11281,11 @@ type PaymentPreview struct {
 	BalanceAfter Money `json:"balance_after"`
 	// Paying together only. Each invoice, in the order it would be paid.
 	Invoices []PaymentPreviewInvoice `json:"invoices"`
+}
+
+// GetFunds returns the value of Funds.
+func (s *PaymentPreview) GetFunds() OptFunds {
+	return s.Funds
 }
 
 // GetCurrency returns the value of Currency.
@@ -11191,6 +11326,11 @@ func (s *PaymentPreview) GetBalanceAfter() Money {
 // GetInvoices returns the value of Invoices.
 func (s *PaymentPreview) GetInvoices() []PaymentPreviewInvoice {
 	return s.Invoices
+}
+
+// SetFunds sets the value of Funds.
+func (s *PaymentPreview) SetFunds(val OptFunds) {
+	s.Funds = val
 }
 
 // SetCurrency sets the value of Currency.
@@ -12919,6 +13059,9 @@ func (s *PurchaseOperation) UnmarshalText(data []byte) error {
 // provides that order's checkout amount.
 // Ref: #/components/schemas/Quote
 type Quote struct {
+	// Account funding for an existing-order checkout quote. Absent for usage estimates, refunds and
+	// cancellation previews.
+	Funds OptFunds `json:"funds"`
 	// Sum before discounts, excluding tax already included in the item amounts. Zero for a
 	// cancellation-only quote.
 	Subtotal Money `json:"subtotal"`
@@ -12941,6 +13084,11 @@ type Quote struct {
 	Currency string `json:"currency"`
 	// Present only when an order refund was requested. Nothing is collectible for this target.
 	Refund OptOrderRefundQuote `json:"refund"`
+}
+
+// GetFunds returns the value of Funds.
+func (s *Quote) GetFunds() OptFunds {
+	return s.Funds
 }
 
 // GetSubtotal returns the value of Subtotal.
@@ -12991,6 +13139,11 @@ func (s *Quote) GetCurrency() string {
 // GetRefund returns the value of Refund.
 func (s *Quote) GetRefund() OptOrderRefundQuote {
 	return s.Refund
+}
+
+// SetFunds sets the value of Funds.
+func (s *Quote) SetFunds(val OptFunds) {
+	s.Funds = val
 }
 
 // SetSubtotal sets the value of Subtotal.
