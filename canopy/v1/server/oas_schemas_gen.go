@@ -3002,6 +3002,11 @@ func (s *PlacedOrder) SetInvoice(val InvoiceSummary) {
 // it never returns a partial quote with HTTP 200.
 // Ref: #/components/schemas/Quote
 type Quote struct {
+	// Whether the account's current balance and eligible credits cover immediate charges and the
+	// currency's minimum top-up for every new postpaid item. False preserves this complete price preview.
+	// Nothing is reserved; checkout rechecks funds. Prepaid purchases may also use an online payment
+	// method.
+	FundsSufficient bool `json:"funds_sufficient"`
 	// One line for each item the purchase would order, in the order it would order them.
 	Items []QuoteItem `json:"items"`
 	// Sum of line amounts before discounts, less tax already included in the discounted line amounts, as
@@ -3024,6 +3029,11 @@ type Quote struct {
 	// Changes that lower the price only; null otherwise. What the change would return to the original
 	// payment sources, including the tax paid on it. total is zero for such a change.
 	RefundableAmount NilMoney `json:"refundable_amount"`
+}
+
+// GetFundsSufficient returns the value of FundsSufficient.
+func (s *Quote) GetFundsSufficient() bool {
+	return s.FundsSufficient
 }
 
 // GetItems returns the value of Items.
@@ -3069,6 +3079,11 @@ func (s *Quote) GetProrationDate() NilDateTime {
 // GetRefundableAmount returns the value of RefundableAmount.
 func (s *Quote) GetRefundableAmount() NilMoney {
 	return s.RefundableAmount
+}
+
+// SetFundsSufficient sets the value of FundsSufficient.
+func (s *Quote) SetFundsSufficient(val bool) {
+	s.FundsSufficient = val
 }
 
 // SetItems sets the value of Items.
