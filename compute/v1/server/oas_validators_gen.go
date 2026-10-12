@@ -192,17 +192,6 @@ func (s *AllocateFloatingIPResponseBody) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -1030,17 +1019,6 @@ func (s *CreateBackupCapacityPackResponseBody) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -1126,17 +1104,6 @@ func (s *CreateBackupServiceResponseBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "backup_service",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
 			Error: err,
 		})
 	}
@@ -1315,17 +1282,6 @@ func (s *CreateDiskResponseBody) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -1433,17 +1389,6 @@ func (s *CreateImageResponseBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "image",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
 			Error: err,
 		})
 	}
@@ -3056,6 +3001,42 @@ func (s *IPv4PoolResource) Validate() error {
 	return nil
 }
 
+func (s *IPv6ResponseBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Status.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "status",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s IPv6ResponseBodyStatus) Validate() error {
+	switch s {
+	case "pending":
+		return nil
+	case "active":
+		return nil
+	case "draining":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *ImageListResponseBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -3977,69 +3958,6 @@ func (s *InstanceTypeResource) Validate() error {
 	return nil
 }
 
-func (s InvoiceStatus) Validate() error {
-	switch s {
-	case "draft":
-		return nil
-	case "open":
-		return nil
-	case "paid":
-		return nil
-	case "void":
-		return nil
-	case "uncollectible":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *InvoiceSummary) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Status.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "status",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:     0,
-			MinLengthSet:  false,
-			MaxLength:     0,
-			MaxLengthSet:  false,
-			Email:         false,
-			Hostname:      false,
-			Regex:         regexMap["^\\d+(\\.\\d{1,10})?$"],
-			MinNumeric:    0,
-			MinNumericSet: false,
-			MaxNumeric:    0,
-			MaxNumericSet: false,
-		}).Validate(string(s.AmountDue)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "amount_due",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
 func (s *LaunchInstanceQuoteRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -4415,17 +4333,6 @@ func (s *LaunchInstanceResponseBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "instances",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
 			Error: err,
 		})
 	}
@@ -4825,29 +4732,6 @@ func (s PeeringResourceStatus) Validate() error {
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
-}
-
-func (s *PlacedOrder) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Invoice.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "invoice",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
 }
 
 func (s *PortAddress) Validate() error {
@@ -6088,17 +5972,6 @@ func (s *ResizeDiskResponseBody) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -6149,17 +6022,6 @@ func (s *ResizeInstanceResponseBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "instance",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
 			Error: err,
 		})
 	}
@@ -6649,17 +6511,6 @@ func (s *SetFloatingIPBandwidthResponseBody) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -6878,17 +6729,6 @@ func (s *SetSnapshotQuotaResponseBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "snapshot_quota",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Order.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "order",
 			Error: err,
 		})
 	}
