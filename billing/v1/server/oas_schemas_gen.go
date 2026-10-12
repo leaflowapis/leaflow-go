@@ -4800,6 +4800,9 @@ type InvoiceItem struct {
 	Currency         string         `json:"currency"`
 	PeriodStart      OptNilDateTime `json:"period_start"`
 	PeriodEnd        OptNilDateTime `json:"period_end"`
+	// Present on a line that changes a subscription immediately, one entry for each paid period it covers.
+	// `amount` is the sum of `remaining_amount` minus `credited_amount` over the entries.
+	Prorations []InvoiceItemProration `json:"prorations"`
 }
 
 // GetTaxable returns the value of Taxable.
@@ -4902,6 +4905,11 @@ func (s *InvoiceItem) GetPeriodEnd() OptNilDateTime {
 	return s.PeriodEnd
 }
 
+// GetProrations returns the value of Prorations.
+func (s *InvoiceItem) GetProrations() []InvoiceItemProration {
+	return s.Prorations
+}
+
 // SetTaxable sets the value of Taxable.
 func (s *InvoiceItem) SetTaxable(val OptBool) {
 	s.Taxable = val
@@ -5002,6 +5010,11 @@ func (s *InvoiceItem) SetPeriodEnd(val OptNilDateTime) {
 	s.PeriodEnd = val
 }
 
+// SetProrations sets the value of Prorations.
+func (s *InvoiceItem) SetProrations(val []InvoiceItemProration) {
+	s.Prorations = val
+}
+
 // Ref: #/components/schemas/InvoiceItemList
 type InvoiceItemList struct {
 	Items      []InvoiceItem    `json:"items"`
@@ -5026,6 +5039,83 @@ func (s *InvoiceItemList) SetItems(val []InvoiceItem) {
 // SetPagination sets the value of Pagination.
 func (s *InvoiceItemList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// The value of one paid period moved to the new configuration of a subscription.
+// Ref: #/components/schemas/InvoiceItemProration
+type InvoiceItemProration struct {
+	// The earlier invoice line that paid for the period.
+	CreditedInvoiceItemID uuid.UUID `json:"credited_invoice_item_id"`
+	// The wording of the earlier invoice line as recorded when this invoice was created.
+	Description string    `json:"description"`
+	PeriodStart time.Time `json:"period_start"`
+	// Exclusive.
+	PeriodEnd time.Time `json:"period_end"`
+	// Before tax and discounts, the new configuration for the period.
+	RemainingAmount Money `json:"remaining_amount"`
+	// Before tax, the unused value of the earlier line for the period, credited against
+	// `remaining_amount`.
+	CreditedAmount Money `json:"credited_amount"`
+}
+
+// GetCreditedInvoiceItemID returns the value of CreditedInvoiceItemID.
+func (s *InvoiceItemProration) GetCreditedInvoiceItemID() uuid.UUID {
+	return s.CreditedInvoiceItemID
+}
+
+// GetDescription returns the value of Description.
+func (s *InvoiceItemProration) GetDescription() string {
+	return s.Description
+}
+
+// GetPeriodStart returns the value of PeriodStart.
+func (s *InvoiceItemProration) GetPeriodStart() time.Time {
+	return s.PeriodStart
+}
+
+// GetPeriodEnd returns the value of PeriodEnd.
+func (s *InvoiceItemProration) GetPeriodEnd() time.Time {
+	return s.PeriodEnd
+}
+
+// GetRemainingAmount returns the value of RemainingAmount.
+func (s *InvoiceItemProration) GetRemainingAmount() Money {
+	return s.RemainingAmount
+}
+
+// GetCreditedAmount returns the value of CreditedAmount.
+func (s *InvoiceItemProration) GetCreditedAmount() Money {
+	return s.CreditedAmount
+}
+
+// SetCreditedInvoiceItemID sets the value of CreditedInvoiceItemID.
+func (s *InvoiceItemProration) SetCreditedInvoiceItemID(val uuid.UUID) {
+	s.CreditedInvoiceItemID = val
+}
+
+// SetDescription sets the value of Description.
+func (s *InvoiceItemProration) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetPeriodStart sets the value of PeriodStart.
+func (s *InvoiceItemProration) SetPeriodStart(val time.Time) {
+	s.PeriodStart = val
+}
+
+// SetPeriodEnd sets the value of PeriodEnd.
+func (s *InvoiceItemProration) SetPeriodEnd(val time.Time) {
+	s.PeriodEnd = val
+}
+
+// SetRemainingAmount sets the value of RemainingAmount.
+func (s *InvoiceItemProration) SetRemainingAmount(val Money) {
+	s.RemainingAmount = val
+}
+
+// SetCreditedAmount sets the value of CreditedAmount.
+func (s *InvoiceItemProration) SetCreditedAmount(val Money) {
+	s.CreditedAmount = val
 }
 
 type InvoiceItemType string
@@ -9536,10 +9626,10 @@ type OrderItem struct {
 	UnitAmount OptMoney `json:"unit_amount"`
 	// Before discounts: the price applied to the quantity, which for a per-unit price is `unit_amount`
 	// times `quantity`; a minimum charge can make it higher. For an upgrade that takes effect at once it
-	// is the new price minus the old price for the time left in the paid period, both at the
-	// subscription's own period price, and the period end does not move; a downgrade charges nothing and
-	// may refund the difference instead. A change between equal period prices charges and refunds nothing.
-	// The setup fee is not part of it; see `setup_amount`.
+	// is the new price for the time left in the paid period, at the subscription's own period price, minus
+	// the amount paid for that time, and the period end does not move; a downgrade charges nothing and may
+	// refund the difference instead. A change between equal period prices charges and refunds nothing. The
+	// setup fee is not part of it; see `setup_amount`.
 	//
 	// Under an inclusive tax rate it includes tax, as the price does, and the included part is
 	// `tax_included_amount`. A renewal at the agreed terms is the exception: the agreed amount excludes
@@ -16117,13 +16207,10 @@ type Subscription struct {
 	// Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Pending
 	// subscriptions show base terms until paying the order fixes any new continuing discount. Absent for
 	// other charge types.
-	RecurringAmount   OptString            `json:"recurring_amount"`
-	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
-	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
-	OrderItemID       OptUUID              `json:"order_item_id"`
-	// Present only on subscriptions created by an earlier change that replaced the subscription. A change
-	// now keeps the subscription ID.
-	ReplacesSubscriptionID      OptUUID                     `json:"replaces_subscription_id"`
+	RecurringAmount             OptString                   `json:"recurring_amount"`
+	TerminationPolicy           OptTerminationPolicy        `json:"termination_policy"`
+	RefundPolicy                OptRefundPolicy             `json:"refund_policy"`
+	OrderItemID                 OptUUID                     `json:"order_item_id"`
 	CouponID                    OptUUID                     `json:"coupon_id"`
 	Coupon                      OptObjectIdentity           `json:"coupon"`
 	DiscountedRenewalsRemaining OptInt                      `json:"discounted_renewals_remaining"`
@@ -16218,11 +16305,6 @@ func (s *Subscription) GetRefundPolicy() OptRefundPolicy {
 // GetOrderItemID returns the value of OrderItemID.
 func (s *Subscription) GetOrderItemID() OptUUID {
 	return s.OrderItemID
-}
-
-// GetReplacesSubscriptionID returns the value of ReplacesSubscriptionID.
-func (s *Subscription) GetReplacesSubscriptionID() OptUUID {
-	return s.ReplacesSubscriptionID
 }
 
 // GetCouponID returns the value of CouponID.
@@ -16398,11 +16480,6 @@ func (s *Subscription) SetRefundPolicy(val OptRefundPolicy) {
 // SetOrderItemID sets the value of OrderItemID.
 func (s *Subscription) SetOrderItemID(val OptUUID) {
 	s.OrderItemID = val
-}
-
-// SetReplacesSubscriptionID sets the value of ReplacesSubscriptionID.
-func (s *Subscription) SetReplacesSubscriptionID(val OptUUID) {
-	s.ReplacesSubscriptionID = val
 }
 
 // SetCouponID sets the value of CouponID.
