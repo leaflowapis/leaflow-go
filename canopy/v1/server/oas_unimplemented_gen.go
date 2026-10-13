@@ -22,7 +22,27 @@ var _ Handler = UnimplementedHandler{}
 // OpenAI, Anthropic and Gemini request formats alike.
 //
 // POST /api/v1/keys
-func (UnimplementedHandler) CreateAPIKey(ctx context.Context, req *CreateAPIKeyRequestBody) (r *IssuedAPIKeyResource, _ error) {
+func (UnimplementedHandler) CreateAPIKey(ctx context.Context, req *CreateAPIKeyRequestBody) (r CreateAPIKeyRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateChatCompletion implements create-chat-completion operation.
+//
+// Authenticated project inference. Billing ownership comes only from the verified project token; no
+// Canopy API key or project header is required.
+//
+// POST /v1/chat/completions
+func (UnimplementedHandler) CreateChatCompletion(ctx context.Context, req *ChatCompletionRequest) (r CreateChatCompletionRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateEmbeddings implements create-embeddings operation.
+//
+// Authenticated project inference. Billing ownership comes only from the verified project token; no
+// Canopy API key or project header is required.
+//
+// POST /v1/embeddings
+func (UnimplementedHandler) CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (r CreateEmbeddingsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -65,7 +85,7 @@ func (UnimplementedHandler) CreateServiceQuote(ctx context.Context) (r CreateSer
 // permanently.
 //
 // POST /api/v1/keys/{keyId}/disable
-func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (r *APIKeyResource, _ error) {
+func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (r DisableAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -76,7 +96,7 @@ func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPI
 // the latter requires the project to be restored first.
 //
 // POST /api/v1/keys/{keyId}/enable
-func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (r *APIKeyResource, _ error) {
+func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (r EnableAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -85,7 +105,16 @@ func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKe
 // Get an API key.
 //
 // GET /api/v1/keys/{keyId}
-func (UnimplementedHandler) GetAPIKey(ctx context.Context, params GetAPIKeyParams) (r *APIKeyResource, _ error) {
+func (UnimplementedHandler) GetAPIKey(ctx context.Context, params GetAPIKeyParams) (r GetAPIKeyRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetInferenceModel implements get-inference-model operation.
+//
+// Get a callable model with capabilities and parameter limits.
+//
+// GET /v1/models/{model}
+func (UnimplementedHandler) GetInferenceModel(ctx context.Context, params GetInferenceModelParams) (r GetInferenceModelRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -95,7 +124,7 @@ func (UnimplementedHandler) GetAPIKey(ctx context.Context, params GetAPIKeyParam
 // `MODEL_RETIRED`. That is distinct from a model that does not exist.
 //
 // GET /api/v1/models/{modelId}
-func (UnimplementedHandler) GetModel(ctx context.Context, params GetModelParams) (r *ModelResource, _ error) {
+func (UnimplementedHandler) GetModel(ctx context.Context, params GetModelParams) (r GetModelRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -104,7 +133,7 @@ func (UnimplementedHandler) GetModel(ctx context.Context, params GetModelParams)
 // Get a single request record.
 //
 // GET /api/v1/requests/{requestId}
-func (UnimplementedHandler) GetRequest(ctx context.Context, params GetRequestParams) (r *RequestResource, _ error) {
+func (UnimplementedHandler) GetRequest(ctx context.Context, params GetRequestParams) (r GetRequestRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -118,7 +147,7 @@ func (UnimplementedHandler) GetRequest(ctx context.Context, params GetRequestPar
 // then reads `inactive` with `ended_at` set.
 //
 // GET /api/v1/service
-func (UnimplementedHandler) GetService(ctx context.Context) (r *ServiceResource, _ error) {
+func (UnimplementedHandler) GetService(ctx context.Context) (r GetServiceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -131,7 +160,7 @@ func (UnimplementedHandler) GetService(ctx context.Context) (r *ServiceResource,
 // ordinary input, and a single total cannot be decomposed again.
 //
 // GET /api/v1/usage/summary
-func (UnimplementedHandler) GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (r *TotalsResource, _ error) {
+func (UnimplementedHandler) GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (r GetUsageSummaryRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -144,7 +173,7 @@ func (UnimplementedHandler) GetUsageSummary(ctx context.Context, params GetUsage
 // The server does not infer a timezone.
 //
 // GET /api/v1/usage/timeline
-func (UnimplementedHandler) GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (r *UsageTimelineResponseBody, _ error) {
+func (UnimplementedHandler) GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (r GetUsageTimelineRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -153,7 +182,16 @@ func (UnimplementedHandler) GetUsageTimeline(ctx context.Context, params GetUsag
 // List API keys.
 //
 // GET /api/v1/keys
-func (UnimplementedHandler) ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (r *LengthAwarePageAPIKeyResource, _ error) {
+func (UnimplementedHandler) ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (r ListAPIKeysRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListInferenceModels implements list-inference-models operation.
+//
+// List callable models with capabilities and parameter limits.
+//
+// GET /v1/models
+func (UnimplementedHandler) ListInferenceModels(ctx context.Context) (r ListInferenceModelsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -168,7 +206,7 @@ func (UnimplementedHandler) ListAPIKeys(ctx context.Context, params ListAPIKeysP
 // account.
 //
 // GET /api/v1/models
-func (UnimplementedHandler) ListModels(ctx context.Context) (r *ModelListResponseBody, _ error) {
+func (UnimplementedHandler) ListModels(ctx context.Context) (r ListModelsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -185,7 +223,7 @@ func (UnimplementedHandler) ListModels(ctx context.Context) (r *ModelListRespons
 // Omit cursor on the first page. Stop when next_cursor is empty; do not send an empty cursor.
 //
 // GET /api/v1/requests
-func (UnimplementedHandler) ListRequests(ctx context.Context, params ListRequestsParams) (r *CursorPageRequestResource, _ error) {
+func (UnimplementedHandler) ListRequests(ctx context.Context, params ListRequestsParams) (r ListRequestsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -195,7 +233,7 @@ func (UnimplementedHandler) ListRequests(ctx context.Context, params ListRequest
 // usage it accrued beforehand is part of that answer.
 //
 // GET /api/v1/usage/by-api-key
-func (UnimplementedHandler) ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (r *APIKeyUsageListResponseBody, _ error) {
+func (UnimplementedHandler) ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (r ListUsageByAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -204,7 +242,7 @@ func (UnimplementedHandler) ListUsageByAPIKey(ctx context.Context, params ListUs
 // Get usage by model.
 //
 // GET /api/v1/usage/by-model
-func (UnimplementedHandler) ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (r *ModelUsageListResponseBody, _ error) {
+func (UnimplementedHandler) ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (r ListUsageByModelRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -217,7 +255,7 @@ func (UnimplementedHandler) ListUsageByModel(ctx context.Context, params ListUsa
 // Use disabling for a temporary measure.
 //
 // POST /api/v1/keys/{keyId}/revoke
-func (UnimplementedHandler) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (r *APIKeyResource, _ error) {
+func (UnimplementedHandler) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (r RevokeAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -231,14 +269,6 @@ func (UnimplementedHandler) RevokeAPIKey(ctx context.Context, params RevokeAPIKe
 // A revoked key accepts no modification.
 //
 // PATCH /api/v1/keys/{keyId}
-func (UnimplementedHandler) UpdateAPIKey(ctx context.Context, req *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (r *APIKeyResource, _ error) {
+func (UnimplementedHandler) UpdateAPIKey(ctx context.Context, req *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (r UpdateAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
-}
-
-// NewError creates *ErrorStatusCode from error returned by handler.
-//
-// Used for common default response.
-func (UnimplementedHandler) NewError(ctx context.Context, err error) (r *ErrorStatusCode) {
-	r = new(ErrorStatusCode)
-	return r
 }

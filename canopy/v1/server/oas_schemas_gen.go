@@ -3,17 +3,13 @@
 package canopyv1server
 
 import (
-	"fmt"
+	"io"
 	"time"
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
 )
-
-func (s *ErrorStatusCode) Error() string {
-	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
-}
 
 // Ref: #/components/schemas/APIKeyResource
 type APIKeyResource struct {
@@ -160,6 +156,12 @@ func (s *APIKeyResource) SetSuspended(val bool) {
 	s.Suspended = val
 }
 
+func (*APIKeyResource) disableAPIKeyRes() {}
+func (*APIKeyResource) enableAPIKeyRes()  {}
+func (*APIKeyResource) getAPIKeyRes()     {}
+func (*APIKeyResource) revokeAPIKeyRes()  {}
+func (*APIKeyResource) updateAPIKeyRes()  {}
+
 type APIKeyResourceStatus string
 
 const (
@@ -222,6 +224,8 @@ func (s *APIKeyUsageListResponseBody) GetItems() []APIKeyUsageResource {
 func (s *APIKeyUsageListResponseBody) SetItems(val []APIKeyUsageResource) {
 	s.Items = val
 }
+
+func (*APIKeyUsageListResponseBody) listUsageByAPIKeyRes() {}
 
 // Ref: #/components/schemas/APIKeyUsageResource
 type APIKeyUsageResource struct {
@@ -327,6 +331,123 @@ func (s *BearerAuth) SetToken(val string) {
 // SetRoles sets the value of Roles.
 func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
+}
+
+// Ref: #/components/schemas/ChatCompletion
+type ChatCompletion map[string]jx.Raw
+
+func (s *ChatCompletion) init() ChatCompletion {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+func (*ChatCompletion) createChatCompletionRes() {}
+
+// Ref: #/components/schemas/ChatCompletionRequest
+type ChatCompletionRequest struct {
+	Model               string                              `json:"model"`
+	Messages            []ChatCompletionRequestMessagesItem `json:"messages"`
+	Stream              OptBool                             `json:"stream"`
+	MaxTokens           OptInt                              `json:"max_tokens"`
+	MaxCompletionTokens OptInt                              `json:"max_completion_tokens"`
+	ReasoningEffort     OptString                           `json:"reasoning_effort"`
+	AdditionalProps     ChatCompletionRequestAdditional
+}
+
+// GetModel returns the value of Model.
+func (s *ChatCompletionRequest) GetModel() string {
+	return s.Model
+}
+
+// GetMessages returns the value of Messages.
+func (s *ChatCompletionRequest) GetMessages() []ChatCompletionRequestMessagesItem {
+	return s.Messages
+}
+
+// GetStream returns the value of Stream.
+func (s *ChatCompletionRequest) GetStream() OptBool {
+	return s.Stream
+}
+
+// GetMaxTokens returns the value of MaxTokens.
+func (s *ChatCompletionRequest) GetMaxTokens() OptInt {
+	return s.MaxTokens
+}
+
+// GetMaxCompletionTokens returns the value of MaxCompletionTokens.
+func (s *ChatCompletionRequest) GetMaxCompletionTokens() OptInt {
+	return s.MaxCompletionTokens
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *ChatCompletionRequest) GetReasoningEffort() OptString {
+	return s.ReasoningEffort
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *ChatCompletionRequest) GetAdditionalProps() ChatCompletionRequestAdditional {
+	return s.AdditionalProps
+}
+
+// SetModel sets the value of Model.
+func (s *ChatCompletionRequest) SetModel(val string) {
+	s.Model = val
+}
+
+// SetMessages sets the value of Messages.
+func (s *ChatCompletionRequest) SetMessages(val []ChatCompletionRequestMessagesItem) {
+	s.Messages = val
+}
+
+// SetStream sets the value of Stream.
+func (s *ChatCompletionRequest) SetStream(val OptBool) {
+	s.Stream = val
+}
+
+// SetMaxTokens sets the value of MaxTokens.
+func (s *ChatCompletionRequest) SetMaxTokens(val OptInt) {
+	s.MaxTokens = val
+}
+
+// SetMaxCompletionTokens sets the value of MaxCompletionTokens.
+func (s *ChatCompletionRequest) SetMaxCompletionTokens(val OptInt) {
+	s.MaxCompletionTokens = val
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *ChatCompletionRequest) SetReasoningEffort(val OptString) {
+	s.ReasoningEffort = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *ChatCompletionRequest) SetAdditionalProps(val ChatCompletionRequestAdditional) {
+	s.AdditionalProps = val
+}
+
+type ChatCompletionRequestAdditional map[string]jx.Raw
+
+func (s *ChatCompletionRequestAdditional) init() ChatCompletionRequestAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type ChatCompletionRequestMessagesItem map[string]jx.Raw
+
+func (s *ChatCompletionRequestMessagesItem) init() ChatCompletionRequestMessagesItem {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
 }
 
 // Shared checkout choices for a product purchase. Omitting this object or mode selects automatic
@@ -457,6 +578,23 @@ func (s *CreateAPIKeyRequestBody) SetRestrictModels(val OptBool) {
 	s.RestrictModels = val
 }
 
+// OpenAI chat.completion.chunk SSE frames, ending with data: [DONE].
+type CreateChatCompletionOKTextEventStream struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s CreateChatCompletionOKTextEventStream) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
+	return s.Data.Read(p)
+}
+
+func (*CreateChatCompletionOKTextEventStream) createChatCompletionRes() {}
+
 // Ref: #/components/schemas/CreateServiceRequestBody
 type CreateServiceRequestBody struct {
 	Checkout OptCheckoutOptions `json:"checkout"`
@@ -528,6 +666,211 @@ func (s *CursorPageRequestResource) SetItems(val []RequestResource) {
 func (s *CursorPageRequestResource) SetNextCursor(val string) {
 	s.NextCursor = val
 }
+
+func (*CursorPageRequestResource) listRequestsRes() {}
+
+// Ref: #/components/schemas/EmbeddingRequest
+type EmbeddingRequest struct {
+	Model string `json:"model"`
+	// A nonempty string, string array, token integer array, or array of token integer arrays.
+	Input           EmbeddingRequestInput             `json:"input"`
+	EncodingFormat  OptEmbeddingRequestEncodingFormat `json:"encoding_format"`
+	Dimensions      OptInt                            `json:"dimensions"`
+	User            OptString                         `json:"user"`
+	AdditionalProps EmbeddingRequestAdditional
+}
+
+// GetModel returns the value of Model.
+func (s *EmbeddingRequest) GetModel() string {
+	return s.Model
+}
+
+// GetInput returns the value of Input.
+func (s *EmbeddingRequest) GetInput() EmbeddingRequestInput {
+	return s.Input
+}
+
+// GetEncodingFormat returns the value of EncodingFormat.
+func (s *EmbeddingRequest) GetEncodingFormat() OptEmbeddingRequestEncodingFormat {
+	return s.EncodingFormat
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *EmbeddingRequest) GetDimensions() OptInt {
+	return s.Dimensions
+}
+
+// GetUser returns the value of User.
+func (s *EmbeddingRequest) GetUser() OptString {
+	return s.User
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *EmbeddingRequest) GetAdditionalProps() EmbeddingRequestAdditional {
+	return s.AdditionalProps
+}
+
+// SetModel sets the value of Model.
+func (s *EmbeddingRequest) SetModel(val string) {
+	s.Model = val
+}
+
+// SetInput sets the value of Input.
+func (s *EmbeddingRequest) SetInput(val EmbeddingRequestInput) {
+	s.Input = val
+}
+
+// SetEncodingFormat sets the value of EncodingFormat.
+func (s *EmbeddingRequest) SetEncodingFormat(val OptEmbeddingRequestEncodingFormat) {
+	s.EncodingFormat = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *EmbeddingRequest) SetDimensions(val OptInt) {
+	s.Dimensions = val
+}
+
+// SetUser sets the value of User.
+func (s *EmbeddingRequest) SetUser(val OptString) {
+	s.User = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *EmbeddingRequest) SetAdditionalProps(val EmbeddingRequestAdditional) {
+	s.AdditionalProps = val
+}
+
+type EmbeddingRequestAdditional map[string]jx.Raw
+
+func (s *EmbeddingRequestAdditional) init() EmbeddingRequestAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type EmbeddingRequestEncodingFormat string
+
+const (
+	EmbeddingRequestEncodingFormatFloat  EmbeddingRequestEncodingFormat = "float"
+	EmbeddingRequestEncodingFormatBase64 EmbeddingRequestEncodingFormat = "base64"
+)
+
+// AllValues returns all EmbeddingRequestEncodingFormat values.
+func (EmbeddingRequestEncodingFormat) AllValues() []EmbeddingRequestEncodingFormat {
+	return []EmbeddingRequestEncodingFormat{
+		EmbeddingRequestEncodingFormatFloat,
+		EmbeddingRequestEncodingFormatBase64,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s EmbeddingRequestEncodingFormat) MarshalText() ([]byte, error) {
+	switch s {
+	case EmbeddingRequestEncodingFormatFloat:
+		return []byte(s), nil
+	case EmbeddingRequestEncodingFormatBase64:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *EmbeddingRequestEncodingFormat) UnmarshalText(data []byte) error {
+	switch EmbeddingRequestEncodingFormat(data) {
+	case EmbeddingRequestEncodingFormatFloat:
+		*s = EmbeddingRequestEncodingFormatFloat
+		return nil
+	case EmbeddingRequestEncodingFormatBase64:
+		*s = EmbeddingRequestEncodingFormatBase64
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A nonempty string, string array, token integer array, or array of token integer arrays.
+// EmbeddingRequestInput represents sum type.
+type EmbeddingRequestInput struct {
+	// Type selects the active sum variant, switch on this field.
+	Type     EmbeddingRequestInputType
+	String   string
+	AnyArray []jx.Raw
+}
+
+// EmbeddingRequestInputType is oneOf type of EmbeddingRequestInput.
+type EmbeddingRequestInputType string
+
+// Possible values for EmbeddingRequestInputType.
+const (
+	StringEmbeddingRequestInput   EmbeddingRequestInputType = "string"
+	AnyArrayEmbeddingRequestInput EmbeddingRequestInputType = "[]jx.Raw"
+)
+
+// IsString reports whether EmbeddingRequestInput is string.
+func (s EmbeddingRequestInput) IsString() bool { return s.Type == StringEmbeddingRequestInput }
+
+// IsAnyArray reports whether EmbeddingRequestInput is []jx.Raw.
+func (s EmbeddingRequestInput) IsAnyArray() bool { return s.Type == AnyArrayEmbeddingRequestInput }
+
+// SetString sets EmbeddingRequestInput to string.
+func (s *EmbeddingRequestInput) SetString(v string) {
+	s.Type = StringEmbeddingRequestInput
+	s.String = v
+}
+
+// GetString returns string and true boolean if EmbeddingRequestInput is string.
+func (s EmbeddingRequestInput) GetString() (v string, ok bool) {
+	if !s.IsString() {
+		return v, false
+	}
+	return s.String, true
+}
+
+// NewStringEmbeddingRequestInput returns new EmbeddingRequestInput from string.
+func NewStringEmbeddingRequestInput(v string) EmbeddingRequestInput {
+	var s EmbeddingRequestInput
+	s.SetString(v)
+	return s
+}
+
+// SetAnyArray sets EmbeddingRequestInput to []jx.Raw.
+func (s *EmbeddingRequestInput) SetAnyArray(v []jx.Raw) {
+	s.Type = AnyArrayEmbeddingRequestInput
+	s.AnyArray = v
+}
+
+// GetAnyArray returns []jx.Raw and true boolean if EmbeddingRequestInput is []jx.Raw.
+func (s EmbeddingRequestInput) GetAnyArray() (v []jx.Raw, ok bool) {
+	if !s.IsAnyArray() {
+		return v, false
+	}
+	return s.AnyArray, true
+}
+
+// NewAnyArrayEmbeddingRequestInput returns new EmbeddingRequestInput from []jx.Raw.
+func NewAnyArrayEmbeddingRequestInput(v []jx.Raw) EmbeddingRequestInput {
+	var s EmbeddingRequestInput
+	s.SetAnyArray(v)
+	return s
+}
+
+// Ref: #/components/schemas/EmbeddingResponse
+type EmbeddingResponse map[string]jx.Raw
+
+func (s *EmbeddingResponse) init() EmbeddingResponse {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+func (*EmbeddingResponse) createEmbeddingsRes() {}
 
 // Ref: #/components/schemas/Error
 type Error struct {
@@ -620,6 +963,25 @@ func (s *ErrorStatusCode) SetStatusCode(val int) {
 func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
 }
+
+func (*ErrorStatusCode) createAPIKeyRes()       {}
+func (*ErrorStatusCode) createServiceQuoteRes() {}
+func (*ErrorStatusCode) createServiceRes()      {}
+func (*ErrorStatusCode) disableAPIKeyRes()      {}
+func (*ErrorStatusCode) enableAPIKeyRes()       {}
+func (*ErrorStatusCode) getAPIKeyRes()          {}
+func (*ErrorStatusCode) getModelRes()           {}
+func (*ErrorStatusCode) getRequestRes()         {}
+func (*ErrorStatusCode) getServiceRes()         {}
+func (*ErrorStatusCode) getUsageSummaryRes()    {}
+func (*ErrorStatusCode) getUsageTimelineRes()   {}
+func (*ErrorStatusCode) listAPIKeysRes()        {}
+func (*ErrorStatusCode) listModelsRes()         {}
+func (*ErrorStatusCode) listRequestsRes()       {}
+func (*ErrorStatusCode) listUsageByAPIKeyRes()  {}
+func (*ErrorStatusCode) listUsageByModelRes()   {}
+func (*ErrorStatusCode) revokeAPIKeyRes()       {}
+func (*ErrorStatusCode) updateAPIKeyRes()       {}
 
 // Account funding for this purchase, calculated by Billing. Amounts use the enclosing response
 // currency. Credit eligibility and all purchase requirements are already evaluated. Nothing is charged
@@ -829,6 +1191,121 @@ func (s *GetUsageTimelineStatus) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// Ref: #/components/schemas/InferenceError
+type InferenceError struct {
+	Error InferenceErrorError `json:"error"`
+}
+
+// GetError returns the value of Error.
+func (s *InferenceError) GetError() InferenceErrorError {
+	return s.Error
+}
+
+// SetError sets the value of Error.
+func (s *InferenceError) SetError(val InferenceErrorError) {
+	s.Error = val
+}
+
+type InferenceErrorError struct {
+	Message         string       `json:"message"`
+	Type            string       `json:"type"`
+	Param           OptNilString `json:"param"`
+	Code            OptNilString `json:"code"`
+	AdditionalProps InferenceErrorErrorAdditional
+}
+
+// GetMessage returns the value of Message.
+func (s *InferenceErrorError) GetMessage() string {
+	return s.Message
+}
+
+// GetType returns the value of Type.
+func (s *InferenceErrorError) GetType() string {
+	return s.Type
+}
+
+// GetParam returns the value of Param.
+func (s *InferenceErrorError) GetParam() OptNilString {
+	return s.Param
+}
+
+// GetCode returns the value of Code.
+func (s *InferenceErrorError) GetCode() OptNilString {
+	return s.Code
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *InferenceErrorError) GetAdditionalProps() InferenceErrorErrorAdditional {
+	return s.AdditionalProps
+}
+
+// SetMessage sets the value of Message.
+func (s *InferenceErrorError) SetMessage(val string) {
+	s.Message = val
+}
+
+// SetType sets the value of Type.
+func (s *InferenceErrorError) SetType(val string) {
+	s.Type = val
+}
+
+// SetParam sets the value of Param.
+func (s *InferenceErrorError) SetParam(val OptNilString) {
+	s.Param = val
+}
+
+// SetCode sets the value of Code.
+func (s *InferenceErrorError) SetCode(val OptNilString) {
+	s.Code = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *InferenceErrorError) SetAdditionalProps(val InferenceErrorErrorAdditional) {
+	s.AdditionalProps = val
+}
+
+type InferenceErrorErrorAdditional map[string]jx.Raw
+
+func (s *InferenceErrorErrorAdditional) init() InferenceErrorErrorAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// InferenceErrorStatusCode wraps InferenceError with StatusCode.
+type InferenceErrorStatusCode struct {
+	StatusCode int
+	Response   InferenceError
+}
+
+// GetStatusCode returns the value of StatusCode.
+func (s *InferenceErrorStatusCode) GetStatusCode() int {
+	return s.StatusCode
+}
+
+// GetResponse returns the value of Response.
+func (s *InferenceErrorStatusCode) GetResponse() InferenceError {
+	return s.Response
+}
+
+// SetStatusCode sets the value of StatusCode.
+func (s *InferenceErrorStatusCode) SetStatusCode(val int) {
+	s.StatusCode = val
+}
+
+// SetResponse sets the value of Response.
+func (s *InferenceErrorStatusCode) SetResponse(val InferenceError) {
+	s.Response = val
+}
+
+func (*InferenceErrorStatusCode) createChatCompletionRes() {}
+func (*InferenceErrorStatusCode) createEmbeddingsRes()     {}
+func (*InferenceErrorStatusCode) getInferenceModelRes()    {}
+func (*InferenceErrorStatusCode) listInferenceModelsRes()  {}
 
 // A draft is not yet issued. The draft invoice of an order shows base prices until it is paid, when
 // the discount is applied and it is issued; other drafts are private to administrators. An issued
@@ -1227,6 +1704,8 @@ func (s *IssuedAPIKeyResource) SetSuspended(val bool) {
 	s.Suspended = val
 }
 
+func (*IssuedAPIKeyResource) createAPIKeyRes() {}
+
 type IssuedAPIKeyResourceStatus string
 
 const (
@@ -1326,6 +1805,8 @@ func (s *LengthAwarePageAPIKeyResource) SetOffset(val int64) {
 func (s *LengthAwarePageAPIKeyResource) SetTotal(val int64) {
 	s.Total = val
 }
+
+func (*LengthAwarePageAPIKeyResource) listAPIKeysRes() {}
 
 // Restricts the result to the specified status. Every status is returned while this is absent.
 type ListAPIKeysStatus string
@@ -1565,6 +2046,161 @@ func (s *ListUsageByModelStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/Model
+type Model struct {
+	ID                string   `json:"id"`
+	Object            string   `json:"object"`
+	Created           int64    `json:"created"`
+	OwnedBy           string   `json:"owned_by"`
+	DisplayName       string   `json:"display_name"`
+	ContextLength     int64    `json:"context_length"`
+	MaxOutputTokens   int64    `json:"max_output_tokens"`
+	SupportsVision    bool     `json:"supports_vision"`
+	SupportsTools     bool     `json:"supports_tools"`
+	SupportsReasoning bool     `json:"supports_reasoning"`
+	ReasoningTiers    []string `json:"reasoning_tiers"`
+}
+
+// GetID returns the value of ID.
+func (s *Model) GetID() string {
+	return s.ID
+}
+
+// GetObject returns the value of Object.
+func (s *Model) GetObject() string {
+	return s.Object
+}
+
+// GetCreated returns the value of Created.
+func (s *Model) GetCreated() int64 {
+	return s.Created
+}
+
+// GetOwnedBy returns the value of OwnedBy.
+func (s *Model) GetOwnedBy() string {
+	return s.OwnedBy
+}
+
+// GetDisplayName returns the value of DisplayName.
+func (s *Model) GetDisplayName() string {
+	return s.DisplayName
+}
+
+// GetContextLength returns the value of ContextLength.
+func (s *Model) GetContextLength() int64 {
+	return s.ContextLength
+}
+
+// GetMaxOutputTokens returns the value of MaxOutputTokens.
+func (s *Model) GetMaxOutputTokens() int64 {
+	return s.MaxOutputTokens
+}
+
+// GetSupportsVision returns the value of SupportsVision.
+func (s *Model) GetSupportsVision() bool {
+	return s.SupportsVision
+}
+
+// GetSupportsTools returns the value of SupportsTools.
+func (s *Model) GetSupportsTools() bool {
+	return s.SupportsTools
+}
+
+// GetSupportsReasoning returns the value of SupportsReasoning.
+func (s *Model) GetSupportsReasoning() bool {
+	return s.SupportsReasoning
+}
+
+// GetReasoningTiers returns the value of ReasoningTiers.
+func (s *Model) GetReasoningTiers() []string {
+	return s.ReasoningTiers
+}
+
+// SetID sets the value of ID.
+func (s *Model) SetID(val string) {
+	s.ID = val
+}
+
+// SetObject sets the value of Object.
+func (s *Model) SetObject(val string) {
+	s.Object = val
+}
+
+// SetCreated sets the value of Created.
+func (s *Model) SetCreated(val int64) {
+	s.Created = val
+}
+
+// SetOwnedBy sets the value of OwnedBy.
+func (s *Model) SetOwnedBy(val string) {
+	s.OwnedBy = val
+}
+
+// SetDisplayName sets the value of DisplayName.
+func (s *Model) SetDisplayName(val string) {
+	s.DisplayName = val
+}
+
+// SetContextLength sets the value of ContextLength.
+func (s *Model) SetContextLength(val int64) {
+	s.ContextLength = val
+}
+
+// SetMaxOutputTokens sets the value of MaxOutputTokens.
+func (s *Model) SetMaxOutputTokens(val int64) {
+	s.MaxOutputTokens = val
+}
+
+// SetSupportsVision sets the value of SupportsVision.
+func (s *Model) SetSupportsVision(val bool) {
+	s.SupportsVision = val
+}
+
+// SetSupportsTools sets the value of SupportsTools.
+func (s *Model) SetSupportsTools(val bool) {
+	s.SupportsTools = val
+}
+
+// SetSupportsReasoning sets the value of SupportsReasoning.
+func (s *Model) SetSupportsReasoning(val bool) {
+	s.SupportsReasoning = val
+}
+
+// SetReasoningTiers sets the value of ReasoningTiers.
+func (s *Model) SetReasoningTiers(val []string) {
+	s.ReasoningTiers = val
+}
+
+func (*Model) getInferenceModelRes() {}
+
+// Ref: #/components/schemas/ModelList
+type ModelList struct {
+	Object string  `json:"object"`
+	Data   []Model `json:"data"`
+}
+
+// GetObject returns the value of Object.
+func (s *ModelList) GetObject() string {
+	return s.Object
+}
+
+// GetData returns the value of Data.
+func (s *ModelList) GetData() []Model {
+	return s.Data
+}
+
+// SetObject sets the value of Object.
+func (s *ModelList) SetObject(val string) {
+	s.Object = val
+}
+
+// SetData sets the value of Data.
+func (s *ModelList) SetData(val []Model) {
+	s.Data = val
+}
+
+func (*ModelList) listInferenceModelsRes() {}
+
 // Ref: #/components/schemas/ModelListResponseBody
 type ModelListResponseBody struct {
 	Items []ModelResource `json:"items"`
@@ -1579,6 +2215,8 @@ func (s *ModelListResponseBody) GetItems() []ModelResource {
 func (s *ModelListResponseBody) SetItems(val []ModelResource) {
 	s.Items = val
 }
+
+func (*ModelListResponseBody) listModelsRes() {}
 
 // What requests to a model cost, as Billing prices them in the currency of the project's current
 // billing account. These are list amounts before promotion codes, not a checkout guarantee; usage is
@@ -1746,6 +2384,8 @@ func (s *ModelResource) SetSupportsVision(val bool) {
 	s.SupportsVision = val
 }
 
+func (*ModelResource) getModelRes() {}
+
 type ModelResourceStatus string
 
 const (
@@ -1808,6 +2448,8 @@ func (s *ModelUsageListResponseBody) GetItems() []ModelUsageResource {
 func (s *ModelUsageListResponseBody) SetItems(val []ModelUsageResource) {
 	s.Items = val
 }
+
+func (*ModelUsageListResponseBody) listUsageByModelRes() {}
 
 // Ref: #/components/schemas/ModelUsageResource
 type ModelUsageResource struct {
@@ -2346,6 +2988,52 @@ func (o OptDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewOptEmbeddingRequestEncodingFormat returns new OptEmbeddingRequestEncodingFormat with value set to v.
+func NewOptEmbeddingRequestEncodingFormat(v EmbeddingRequestEncodingFormat) OptEmbeddingRequestEncodingFormat {
+	return OptEmbeddingRequestEncodingFormat{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptEmbeddingRequestEncodingFormat is optional EmbeddingRequestEncodingFormat.
+type OptEmbeddingRequestEncodingFormat struct {
+	Value EmbeddingRequestEncodingFormat
+	Set   bool
+}
+
+// IsSet returns true if OptEmbeddingRequestEncodingFormat was set.
+func (o OptEmbeddingRequestEncodingFormat) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptEmbeddingRequestEncodingFormat) Reset() {
+	var v EmbeddingRequestEncodingFormat
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptEmbeddingRequestEncodingFormat) SetTo(v EmbeddingRequestEncodingFormat) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptEmbeddingRequestEncodingFormat) Get() (v EmbeddingRequestEncodingFormat, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptEmbeddingRequestEncodingFormat) Or(d EmbeddingRequestEncodingFormat) EmbeddingRequestEncodingFormat {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptErrorMeta returns new OptErrorMeta with value set to v.
 func NewOptErrorMeta(v ErrorMeta) OptErrorMeta {
 	return OptErrorMeta{
@@ -2478,6 +3166,52 @@ func (o OptGetUsageTimelineStatus) Get() (v GetUsageTimelineStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptGetUsageTimelineStatus) Or(d GetUsageTimelineStatus) GetUsageTimelineStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInt returns new OptInt with value set to v.
+func NewOptInt(v int) OptInt {
+	return OptInt{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInt is optional int.
+type OptInt struct {
+	Value int
+	Set   bool
+}
+
+// IsSet returns true if OptInt was set.
+func (o OptInt) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInt) Reset() {
+	var v int
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInt) SetTo(v int) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInt) Get() (v int, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInt) Or(d int) int {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3552,6 +4286,8 @@ func (s *RequestResource) SetUsageSource(val RequestResourceUsageSource) {
 	s.UsageSource = val
 }
 
+func (*RequestResource) getRequestRes() {}
+
 type RequestResourceStatus string
 
 const (
@@ -3745,6 +4481,8 @@ func (s *ServiceResource) SetActivatedAt(val NilDateTime) {
 func (s *ServiceResource) SetEndedAt(val NilDateTime) {
 	s.EndedAt = val
 }
+
+func (*ServiceResource) getServiceRes() {}
 
 // Why the enablement failed; null unless `status` is `failed`. `order_declined` means Billing did not
 // accept the order, for example because the billing account is suspended; `order_canceled` means the
@@ -4027,6 +4765,8 @@ func (s *TotalsResource) SetRequests(val int64) {
 	s.Requests = val
 }
 
+func (*TotalsResource) getUsageSummaryRes() {}
+
 // Ref: #/components/schemas/UpdateAPIKeyRequestBody
 type UpdateAPIKeyRequestBody struct {
 	AllowedModels OptNilStringArray `json:"allowed_models"`
@@ -4196,3 +4936,5 @@ func (s *UsageTimelineResponseBody) GetItems() []UsageBucketResource {
 func (s *UsageTimelineResponseBody) SetItems(val []UsageBucketResource) {
 	s.Items = val
 }
+
+func (*UsageTimelineResponseBody) getUsageTimelineRes() {}

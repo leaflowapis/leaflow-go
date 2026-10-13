@@ -17,7 +17,21 @@ type Handler interface {
 	// OpenAI, Anthropic and Gemini request formats alike.
 	//
 	// POST /api/v1/keys
-	CreateAPIKey(ctx context.Context, req *CreateAPIKeyRequestBody) (*IssuedAPIKeyResource, error)
+	CreateAPIKey(ctx context.Context, req *CreateAPIKeyRequestBody) (CreateAPIKeyRes, error)
+	// CreateChatCompletion implements create-chat-completion operation.
+	//
+	// Authenticated project inference. Billing ownership comes only from the verified project token; no
+	// Canopy API key or project header is required.
+	//
+	// POST /v1/chat/completions
+	CreateChatCompletion(ctx context.Context, req *ChatCompletionRequest) (CreateChatCompletionRes, error)
+	// CreateEmbeddings implements create-embeddings operation.
+	//
+	// Authenticated project inference. Billing ownership comes only from the verified project token; no
+	// Canopy API key or project header is required.
+	//
+	// POST /v1/embeddings
+	CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (CreateEmbeddingsRes, error)
 	// CreateService implements create-service operation.
 	//
 	// Purchases the model platform service for this project. The service itself has no charge; requests
@@ -51,7 +65,7 @@ type Handler interface {
 	// permanently.
 	//
 	// POST /api/v1/keys/{keyId}/disable
-	DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (*APIKeyResource, error)
+	DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (DisableAPIKeyRes, error)
 	// EnableAPIKey implements enable-api-key operation.
 	//
 	// Two cases cannot be enabled again. A revoked key answers `API_KEY_REVOKED`, and a key disabled
@@ -59,26 +73,32 @@ type Handler interface {
 	// the latter requires the project to be restored first.
 	//
 	// POST /api/v1/keys/{keyId}/enable
-	EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (*APIKeyResource, error)
+	EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (EnableAPIKeyRes, error)
 	// GetAPIKey implements get-api-key operation.
 	//
 	// Get an API key.
 	//
 	// GET /api/v1/keys/{keyId}
-	GetAPIKey(ctx context.Context, params GetAPIKeyParams) (*APIKeyResource, error)
+	GetAPIKey(ctx context.Context, params GetAPIKeyParams) (GetAPIKeyRes, error)
+	// GetInferenceModel implements get-inference-model operation.
+	//
+	// Get a callable model with capabilities and parameter limits.
+	//
+	// GET /v1/models/{model}
+	GetInferenceModel(ctx context.Context, params GetInferenceModelParams) (GetInferenceModelRes, error)
 	// GetModel implements get-model operation.
 	//
 	// A model that has been retired remains readable here, while forwarding to it is refused with
 	// `MODEL_RETIRED`. That is distinct from a model that does not exist.
 	//
 	// GET /api/v1/models/{modelId}
-	GetModel(ctx context.Context, params GetModelParams) (*ModelResource, error)
+	GetModel(ctx context.Context, params GetModelParams) (GetModelRes, error)
 	// GetRequest implements get-request operation.
 	//
 	// Get a single request record.
 	//
 	// GET /api/v1/requests/{requestId}
-	GetRequest(ctx context.Context, params GetRequestParams) (*RequestResource, error)
+	GetRequest(ctx context.Context, params GetRequestParams) (GetRequestRes, error)
 	// GetService implements get-service operation.
 	//
 	// The model platform service of the authenticated project. The forwarding endpoints accept its
@@ -89,7 +109,7 @@ type Handler interface {
 	// then reads `inactive` with `ended_at` set.
 	//
 	// GET /api/v1/service
-	GetService(ctx context.Context) (*ServiceResource, error)
+	GetService(ctx context.Context) (GetServiceRes, error)
 	// GetUsageSummary implements get-usage-summary operation.
 	//
 	// `from` and `to` are required and may span no more than 31 days. Both carry a timezone offset, so
@@ -99,7 +119,7 @@ type Handler interface {
 	// ordinary input, and a single total cannot be decomposed again.
 	//
 	// GET /api/v1/usage/summary
-	GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (*TotalsResource, error)
+	GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (GetUsageSummaryRes, error)
 	// GetUsageTimeline implements get-usage-timeline operation.
 	//
 	// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial, and the
@@ -109,13 +129,19 @@ type Handler interface {
 	// The server does not infer a timezone.
 	//
 	// GET /api/v1/usage/timeline
-	GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (*UsageTimelineResponseBody, error)
+	GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (GetUsageTimelineRes, error)
 	// ListAPIKeys implements list-api-keys operation.
 	//
 	// List API keys.
 	//
 	// GET /api/v1/keys
-	ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (*LengthAwarePageAPIKeyResource, error)
+	ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (ListAPIKeysRes, error)
+	// ListInferenceModels implements list-inference-models operation.
+	//
+	// List callable models with capabilities and parameter limits.
+	//
+	// GET /v1/models
+	ListInferenceModels(ctx context.Context) (ListInferenceModelsRes, error)
 	// ListModels implements list-models operation.
 	//
 	// A model that has been retired does not appear here, while it remains readable individually.
@@ -127,7 +153,7 @@ type Handler interface {
 	// account.
 	//
 	// GET /api/v1/models
-	ListModels(ctx context.Context) (*ModelListResponseBody, error)
+	ListModels(ctx context.Context) (ListModelsRes, error)
 	// ListRequests implements list-requests operation.
 	//
 	// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.
@@ -141,20 +167,20 @@ type Handler interface {
 	// Omit cursor on the first page. Stop when next_cursor is empty; do not send an empty cursor.
 	//
 	// GET /api/v1/requests
-	ListRequests(ctx context.Context, params ListRequestsParams) (*CursorPageRequestResource, error)
+	ListRequests(ctx context.Context, params ListRequestsParams) (ListRequestsRes, error)
 	// ListUsageByAPIKey implements list-usage-by-api-key operation.
 	//
 	// Answers which key is consuming the budget. A key that has been revoked still appears, since the
 	// usage it accrued beforehand is part of that answer.
 	//
 	// GET /api/v1/usage/by-api-key
-	ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (*APIKeyUsageListResponseBody, error)
+	ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (ListUsageByAPIKeyRes, error)
 	// ListUsageByModel implements list-usage-by-model operation.
 	//
 	// Get usage by model.
 	//
 	// GET /api/v1/usage/by-model
-	ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (*ModelUsageListResponseBody, error)
+	ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (ListUsageByModelRes, error)
 	// RevokeAPIKey implements revoke-api-key operation.
 	//
 	// Irreversible. It is intended for a key that has been exposed, such as one committed to a repository.
@@ -164,7 +190,7 @@ type Handler interface {
 	// Use disabling for a temporary measure.
 	//
 	// POST /api/v1/keys/{keyId}/revoke
-	RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (*APIKeyResource, error)
+	RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (RevokeAPIKeyRes, error)
 	// UpdateAPIKey implements update-api-key operation.
 	//
 	// Attributes only. Enabling, disabling and revoking each have their own endpoint.
@@ -175,11 +201,7 @@ type Handler interface {
 	// A revoked key accepts no modification.
 	//
 	// PATCH /api/v1/keys/{keyId}
-	UpdateAPIKey(ctx context.Context, req *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (*APIKeyResource, error)
-	// NewError creates *ErrorStatusCode from error returned by handler.
-	//
-	// Used for common default response.
-	NewError(ctx context.Context, err error) *ErrorStatusCode
+	UpdateAPIKey(ctx context.Context, req *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (UpdateAPIKeyRes, error)
 }
 
 // Server implements http server based on OpenAPI v3 specification and

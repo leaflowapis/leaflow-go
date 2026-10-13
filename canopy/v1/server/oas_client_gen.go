@@ -38,7 +38,21 @@ type Invoker interface {
 	// OpenAI, Anthropic and Gemini request formats alike.
 	//
 	// POST /api/v1/keys
-	CreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (*IssuedAPIKeyResource, error)
+	CreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (CreateAPIKeyRes, error)
+	// CreateChatCompletion invokes create-chat-completion operation.
+	//
+	// Authenticated project inference. Billing ownership comes only from the verified project token; no
+	// Canopy API key or project header is required.
+	//
+	// POST /v1/chat/completions
+	CreateChatCompletion(ctx context.Context, request *ChatCompletionRequest) (CreateChatCompletionRes, error)
+	// CreateEmbeddings invokes create-embeddings operation.
+	//
+	// Authenticated project inference. Billing ownership comes only from the verified project token; no
+	// Canopy API key or project header is required.
+	//
+	// POST /v1/embeddings
+	CreateEmbeddings(ctx context.Context, request *EmbeddingRequest) (CreateEmbeddingsRes, error)
 	// CreateService invokes create-service operation.
 	//
 	// Purchases the model platform service for this project. The service itself has no charge; requests
@@ -72,7 +86,7 @@ type Invoker interface {
 	// permanently.
 	//
 	// POST /api/v1/keys/{keyId}/disable
-	DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (*APIKeyResource, error)
+	DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (DisableAPIKeyRes, error)
 	// EnableAPIKey invokes enable-api-key operation.
 	//
 	// Two cases cannot be enabled again. A revoked key answers `API_KEY_REVOKED`, and a key disabled
@@ -80,26 +94,32 @@ type Invoker interface {
 	// the latter requires the project to be restored first.
 	//
 	// POST /api/v1/keys/{keyId}/enable
-	EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (*APIKeyResource, error)
+	EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (EnableAPIKeyRes, error)
 	// GetAPIKey invokes get-api-key operation.
 	//
 	// Get an API key.
 	//
 	// GET /api/v1/keys/{keyId}
-	GetAPIKey(ctx context.Context, params GetAPIKeyParams) (*APIKeyResource, error)
+	GetAPIKey(ctx context.Context, params GetAPIKeyParams) (GetAPIKeyRes, error)
+	// GetInferenceModel invokes get-inference-model operation.
+	//
+	// Get a callable model with capabilities and parameter limits.
+	//
+	// GET /v1/models/{model}
+	GetInferenceModel(ctx context.Context, params GetInferenceModelParams) (GetInferenceModelRes, error)
 	// GetModel invokes get-model operation.
 	//
 	// A model that has been retired remains readable here, while forwarding to it is refused with
 	// `MODEL_RETIRED`. That is distinct from a model that does not exist.
 	//
 	// GET /api/v1/models/{modelId}
-	GetModel(ctx context.Context, params GetModelParams) (*ModelResource, error)
+	GetModel(ctx context.Context, params GetModelParams) (GetModelRes, error)
 	// GetRequest invokes get-request operation.
 	//
 	// Get a single request record.
 	//
 	// GET /api/v1/requests/{requestId}
-	GetRequest(ctx context.Context, params GetRequestParams) (*RequestResource, error)
+	GetRequest(ctx context.Context, params GetRequestParams) (GetRequestRes, error)
 	// GetService invokes get-service operation.
 	//
 	// The model platform service of the authenticated project. The forwarding endpoints accept its
@@ -110,7 +130,7 @@ type Invoker interface {
 	// then reads `inactive` with `ended_at` set.
 	//
 	// GET /api/v1/service
-	GetService(ctx context.Context) (*ServiceResource, error)
+	GetService(ctx context.Context) (GetServiceRes, error)
 	// GetUsageSummary invokes get-usage-summary operation.
 	//
 	// `from` and `to` are required and may span no more than 31 days. Both carry a timezone offset, so
@@ -120,7 +140,7 @@ type Invoker interface {
 	// ordinary input, and a single total cannot be decomposed again.
 	//
 	// GET /api/v1/usage/summary
-	GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (*TotalsResource, error)
+	GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (GetUsageSummaryRes, error)
 	// GetUsageTimeline invokes get-usage-timeline operation.
 	//
 	// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial, and the
@@ -130,13 +150,19 @@ type Invoker interface {
 	// The server does not infer a timezone.
 	//
 	// GET /api/v1/usage/timeline
-	GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (*UsageTimelineResponseBody, error)
+	GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (GetUsageTimelineRes, error)
 	// ListAPIKeys invokes list-api-keys operation.
 	//
 	// List API keys.
 	//
 	// GET /api/v1/keys
-	ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (*LengthAwarePageAPIKeyResource, error)
+	ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (ListAPIKeysRes, error)
+	// ListInferenceModels invokes list-inference-models operation.
+	//
+	// List callable models with capabilities and parameter limits.
+	//
+	// GET /v1/models
+	ListInferenceModels(ctx context.Context) (ListInferenceModelsRes, error)
 	// ListModels invokes list-models operation.
 	//
 	// A model that has been retired does not appear here, while it remains readable individually.
@@ -148,7 +174,7 @@ type Invoker interface {
 	// account.
 	//
 	// GET /api/v1/models
-	ListModels(ctx context.Context) (*ModelListResponseBody, error)
+	ListModels(ctx context.Context) (ListModelsRes, error)
 	// ListRequests invokes list-requests operation.
 	//
 	// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.
@@ -162,20 +188,20 @@ type Invoker interface {
 	// Omit cursor on the first page. Stop when next_cursor is empty; do not send an empty cursor.
 	//
 	// GET /api/v1/requests
-	ListRequests(ctx context.Context, params ListRequestsParams) (*CursorPageRequestResource, error)
+	ListRequests(ctx context.Context, params ListRequestsParams) (ListRequestsRes, error)
 	// ListUsageByAPIKey invokes list-usage-by-api-key operation.
 	//
 	// Answers which key is consuming the budget. A key that has been revoked still appears, since the
 	// usage it accrued beforehand is part of that answer.
 	//
 	// GET /api/v1/usage/by-api-key
-	ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (*APIKeyUsageListResponseBody, error)
+	ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (ListUsageByAPIKeyRes, error)
 	// ListUsageByModel invokes list-usage-by-model operation.
 	//
 	// Get usage by model.
 	//
 	// GET /api/v1/usage/by-model
-	ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (*ModelUsageListResponseBody, error)
+	ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (ListUsageByModelRes, error)
 	// RevokeAPIKey invokes revoke-api-key operation.
 	//
 	// Irreversible. It is intended for a key that has been exposed, such as one committed to a repository.
@@ -185,7 +211,7 @@ type Invoker interface {
 	// Use disabling for a temporary measure.
 	//
 	// POST /api/v1/keys/{keyId}/revoke
-	RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (*APIKeyResource, error)
+	RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (RevokeAPIKeyRes, error)
 	// UpdateAPIKey invokes update-api-key operation.
 	//
 	// Attributes only. Enabling, disabling and revoking each have their own endpoint.
@@ -196,7 +222,7 @@ type Invoker interface {
 	// A revoked key accepts no modification.
 	//
 	// PATCH /api/v1/keys/{keyId}
-	UpdateAPIKey(ctx context.Context, request *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (*APIKeyResource, error)
+	UpdateAPIKey(ctx context.Context, request *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (UpdateAPIKeyRes, error)
 }
 
 // Client implements OAS client.
@@ -249,12 +275,12 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // OpenAI, Anthropic and Gemini request formats alike.
 //
 // POST /api/v1/keys
-func (c *Client) CreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (*IssuedAPIKeyResource, error) {
+func (c *Client) CreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (CreateAPIKeyRes, error) {
 	res, err := c.sendCreateAPIKey(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (res *IssuedAPIKeyResource, err error) {
+func (c *Client) sendCreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (res CreateAPIKeyRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -362,6 +388,258 @@ func (c *Client) sendCreateAPIKey(ctx context.Context, request *CreateAPIKeyRequ
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateAPIKeyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateChatCompletion invokes create-chat-completion operation.
+//
+// Authenticated project inference. Billing ownership comes only from the verified project token; no
+// Canopy API key or project header is required.
+//
+// POST /v1/chat/completions
+func (c *Client) CreateChatCompletion(ctx context.Context, request *ChatCompletionRequest) (CreateChatCompletionRes, error) {
+	res, err := c.sendCreateChatCompletion(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateChatCompletion(ctx context.Context, request *ChatCompletionRequest) (res CreateChatCompletionRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-chat-completion"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/chat/completions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateChatCompletionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/chat/completions"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateChatCompletionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateChatCompletionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateChatCompletionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateEmbeddings invokes create-embeddings operation.
+//
+// Authenticated project inference. Billing ownership comes only from the verified project token; no
+// Canopy API key or project header is required.
+//
+// POST /v1/embeddings
+func (c *Client) CreateEmbeddings(ctx context.Context, request *EmbeddingRequest) (CreateEmbeddingsRes, error) {
+	res, err := c.sendCreateEmbeddings(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateEmbeddings(ctx context.Context, request *EmbeddingRequest) (res CreateEmbeddingsRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-embeddings"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/embeddings"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateEmbeddingsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/embeddings"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateEmbeddingsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateEmbeddingsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateEmbeddingsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -628,12 +906,12 @@ func (c *Client) sendCreateServiceQuote(ctx context.Context) (res CreateServiceQ
 // permanently.
 //
 // POST /api/v1/keys/{keyId}/disable
-func (c *Client) DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (*APIKeyResource, error) {
+func (c *Client) DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (DisableAPIKeyRes, error) {
 	res, err := c.sendDisableAPIKey(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (res *APIKeyResource, err error) {
+func (c *Client) sendDisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (res DisableAPIKeyRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("disable-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -762,12 +1040,12 @@ func (c *Client) sendDisableAPIKey(ctx context.Context, params DisableAPIKeyPara
 // the latter requires the project to be restored first.
 //
 // POST /api/v1/keys/{keyId}/enable
-func (c *Client) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (*APIKeyResource, error) {
+func (c *Client) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (EnableAPIKeyRes, error) {
 	res, err := c.sendEnableAPIKey(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendEnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (res *APIKeyResource, err error) {
+func (c *Client) sendEnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (res EnableAPIKeyRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("enable-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -894,12 +1172,12 @@ func (c *Client) sendEnableAPIKey(ctx context.Context, params EnableAPIKeyParams
 // Get an API key.
 //
 // GET /api/v1/keys/{keyId}
-func (c *Client) GetAPIKey(ctx context.Context, params GetAPIKeyParams) (*APIKeyResource, error) {
+func (c *Client) GetAPIKey(ctx context.Context, params GetAPIKeyParams) (GetAPIKeyRes, error) {
 	res, err := c.sendGetAPIKey(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetAPIKey(ctx context.Context, params GetAPIKeyParams) (res *APIKeyResource, err error) {
+func (c *Client) sendGetAPIKey(ctx context.Context, params GetAPIKeyParams) (res GetAPIKeyRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-api-key"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1020,18 +1298,149 @@ func (c *Client) sendGetAPIKey(ctx context.Context, params GetAPIKeyParams) (res
 	return result, nil
 }
 
+// GetInferenceModel invokes get-inference-model operation.
+//
+// Get a callable model with capabilities and parameter limits.
+//
+// GET /v1/models/{model}
+func (c *Client) GetInferenceModel(ctx context.Context, params GetInferenceModelParams) (GetInferenceModelRes, error) {
+	res, err := c.sendGetInferenceModel(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInferenceModel(ctx context.Context, params GetInferenceModelParams) (res GetInferenceModelRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-inference-model"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/v1/models/{model}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInferenceModelOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/v1/models/"
+	{
+		// Encode "model" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "model",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Model))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetInferenceModelOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInferenceModelResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetModel invokes get-model operation.
 //
 // A model that has been retired remains readable here, while forwarding to it is refused with
 // `MODEL_RETIRED`. That is distinct from a model that does not exist.
 //
 // GET /api/v1/models/{modelId}
-func (c *Client) GetModel(ctx context.Context, params GetModelParams) (*ModelResource, error) {
+func (c *Client) GetModel(ctx context.Context, params GetModelParams) (GetModelRes, error) {
 	res, err := c.sendGetModel(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res *ModelResource, err error) {
+func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res GetModelRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-model"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1157,12 +1566,12 @@ func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res *
 // Get a single request record.
 //
 // GET /api/v1/requests/{requestId}
-func (c *Client) GetRequest(ctx context.Context, params GetRequestParams) (*RequestResource, error) {
+func (c *Client) GetRequest(ctx context.Context, params GetRequestParams) (GetRequestRes, error) {
 	res, err := c.sendGetRequest(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetRequest(ctx context.Context, params GetRequestParams) (res *RequestResource, err error) {
+func (c *Client) sendGetRequest(ctx context.Context, params GetRequestParams) (res GetRequestRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-request"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1293,12 +1702,12 @@ func (c *Client) sendGetRequest(ctx context.Context, params GetRequestParams) (r
 // then reads `inactive` with `ended_at` set.
 //
 // GET /api/v1/service
-func (c *Client) GetService(ctx context.Context) (*ServiceResource, error) {
+func (c *Client) GetService(ctx context.Context) (GetServiceRes, error) {
 	res, err := c.sendGetService(ctx)
 	return res, err
 }
 
-func (c *Client) sendGetService(ctx context.Context) (res *ServiceResource, err error) {
+func (c *Client) sendGetService(ctx context.Context) (res GetServiceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-service"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1410,12 +1819,12 @@ func (c *Client) sendGetService(ctx context.Context) (res *ServiceResource, err 
 // ordinary input, and a single total cannot be decomposed again.
 //
 // GET /api/v1/usage/summary
-func (c *Client) GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (*TotalsResource, error) {
+func (c *Client) GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (GetUsageSummaryRes, error) {
 	res, err := c.sendGetUsageSummary(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (res *TotalsResource, err error) {
+func (c *Client) sendGetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (res GetUsageSummaryRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-usage-summary"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1610,12 +2019,12 @@ func (c *Client) sendGetUsageSummary(ctx context.Context, params GetUsageSummary
 // The server does not infer a timezone.
 //
 // GET /api/v1/usage/timeline
-func (c *Client) GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (*UsageTimelineResponseBody, error) {
+func (c *Client) GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (GetUsageTimelineRes, error) {
 	res, err := c.sendGetUsageTimeline(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (res *UsageTimelineResponseBody, err error) {
+func (c *Client) sendGetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (res GetUsageTimelineRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-usage-timeline"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1823,12 +2232,12 @@ func (c *Client) sendGetUsageTimeline(ctx context.Context, params GetUsageTimeli
 // List API keys.
 //
 // GET /api/v1/keys
-func (c *Client) ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (*LengthAwarePageAPIKeyResource, error) {
+func (c *Client) ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (ListAPIKeysRes, error) {
 	res, err := c.sendListAPIKeys(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListAPIKeys(ctx context.Context, params ListAPIKeysParams) (res *LengthAwarePageAPIKeyResource, err error) {
+func (c *Client) sendListAPIKeys(ctx context.Context, params ListAPIKeysParams) (res ListAPIKeysRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-api-keys"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1986,6 +2395,119 @@ func (c *Client) sendListAPIKeys(ctx context.Context, params ListAPIKeysParams) 
 	return result, nil
 }
 
+// ListInferenceModels invokes list-inference-models operation.
+//
+// List callable models with capabilities and parameter limits.
+//
+// GET /v1/models
+func (c *Client) ListInferenceModels(ctx context.Context) (ListInferenceModelsRes, error) {
+	res, err := c.sendListInferenceModels(ctx)
+	return res, err
+}
+
+func (c *Client) sendListInferenceModels(ctx context.Context) (res ListInferenceModelsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-inference-models"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/v1/models"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInferenceModelsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/models"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListInferenceModelsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInferenceModelsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListModels invokes list-models operation.
 //
 // A model that has been retired does not appear here, while it remains readable individually.
@@ -1997,12 +2519,12 @@ func (c *Client) sendListAPIKeys(ctx context.Context, params ListAPIKeysParams) 
 // account.
 //
 // GET /api/v1/models
-func (c *Client) ListModels(ctx context.Context) (*ModelListResponseBody, error) {
+func (c *Client) ListModels(ctx context.Context) (ListModelsRes, error) {
 	res, err := c.sendListModels(ctx)
 	return res, err
 }
 
-func (c *Client) sendListModels(ctx context.Context) (res *ModelListResponseBody, err error) {
+func (c *Client) sendListModels(ctx context.Context) (res ListModelsRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-models"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -2118,12 +2640,12 @@ func (c *Client) sendListModels(ctx context.Context) (res *ModelListResponseBody
 // Omit cursor on the first page. Stop when next_cursor is empty; do not send an empty cursor.
 //
 // GET /api/v1/requests
-func (c *Client) ListRequests(ctx context.Context, params ListRequestsParams) (*CursorPageRequestResource, error) {
+func (c *Client) ListRequests(ctx context.Context, params ListRequestsParams) (ListRequestsRes, error) {
 	res, err := c.sendListRequests(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListRequests(ctx context.Context, params ListRequestsParams) (res *CursorPageRequestResource, err error) {
+func (c *Client) sendListRequests(ctx context.Context, params ListRequestsParams) (res ListRequestsRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-requests"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -2349,12 +2871,12 @@ func (c *Client) sendListRequests(ctx context.Context, params ListRequestsParams
 // usage it accrued beforehand is part of that answer.
 //
 // GET /api/v1/usage/by-api-key
-func (c *Client) ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (*APIKeyUsageListResponseBody, error) {
+func (c *Client) ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (ListUsageByAPIKeyRes, error) {
 	res, err := c.sendListUsageByAPIKey(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (res *APIKeyUsageListResponseBody, err error) {
+func (c *Client) sendListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (res ListUsageByAPIKeyRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-usage-by-api-key"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -2545,12 +3067,12 @@ func (c *Client) sendListUsageByAPIKey(ctx context.Context, params ListUsageByAP
 // Get usage by model.
 //
 // GET /api/v1/usage/by-model
-func (c *Client) ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (*ModelUsageListResponseBody, error) {
+func (c *Client) ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (ListUsageByModelRes, error) {
 	res, err := c.sendListUsageByModel(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListUsageByModel(ctx context.Context, params ListUsageByModelParams) (res *ModelUsageListResponseBody, err error) {
+func (c *Client) sendListUsageByModel(ctx context.Context, params ListUsageByModelParams) (res ListUsageByModelRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-usage-by-model"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -2745,12 +3267,12 @@ func (c *Client) sendListUsageByModel(ctx context.Context, params ListUsageByMod
 // Use disabling for a temporary measure.
 //
 // POST /api/v1/keys/{keyId}/revoke
-func (c *Client) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (*APIKeyResource, error) {
+func (c *Client) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (RevokeAPIKeyRes, error) {
 	res, err := c.sendRevokeAPIKey(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendRevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (res *APIKeyResource, err error) {
+func (c *Client) sendRevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (res RevokeAPIKeyRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revoke-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2882,12 +3404,12 @@ func (c *Client) sendRevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams
 // A revoked key accepts no modification.
 //
 // PATCH /api/v1/keys/{keyId}
-func (c *Client) UpdateAPIKey(ctx context.Context, request *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (*APIKeyResource, error) {
+func (c *Client) UpdateAPIKey(ctx context.Context, request *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (UpdateAPIKeyRes, error) {
 	res, err := c.sendUpdateAPIKey(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateAPIKey(ctx context.Context, request *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (res *APIKeyResource, err error) {
+func (c *Client) sendUpdateAPIKey(ctx context.Context, request *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (res UpdateAPIKeyRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {

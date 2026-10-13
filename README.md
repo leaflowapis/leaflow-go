@@ -93,7 +93,13 @@ OGEN_BIN 可指定已安装的官方 ogen v1.24.0；脚本核对模块版本。�
 新候选时应改用准确 API 包的生成类型；不提供兼容 alias/wrapper。旧发布 type tags 和 Git 历史不动，
 固定旧版本的消费者不因此被改写。尚未核对仓库外的真实使用者，正式版本由父代理确定。
 
-当前 `CONTRACTS_REF` 固定为已推送的公开源
-[`9dc43285d1e9043e779158f7098870f2623705a2`](https://github.com/leaflowapis/leaflowapis/commit/9dc43285d1e9043e779158f7098870f2623705a2)。
-产物使用正式脚本、原生 ogen v1.24.0，从该远端提交的干净 checkout 生成。
-这份 SDK 提交仍是发布候选；各改变模块的新 tag 由发布方决定。
+## Canopy 迁移
+
+公开管理与项目推理统一使用 `github.com/leaflowapis/leaflow-go/canopy/v1/server`。
+旧 `canopy/inference` 模块已移除。`CreateChatCompletion`、`CreateEmbeddings`、
+`ListInferenceModels` 和 `GetInferenceModel` 与管理方法属于同一 Client。
+OpenAI 兼容路径仍为 `/v1`，管理路径仍为 `/api/v1`；认证均为 IAM ScopedToken。
+
+管理错误与 OpenAI 错误各保留原格式，因此操作返回 ogen 原生响应联合类型。
+服务端业务错误统一由配置的 ErrorHandler 编码，不再使用全契约的 NewError。
+当前固定契约版本见 `CONTRACTS_REF`。
