@@ -16360,16 +16360,18 @@ type Subscription struct {
 	// Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Pending
 	// subscriptions show base terms until paying the order fixes any new continuing discount. Absent for
 	// other charge types.
-	RecurringAmount             OptString                   `json:"recurring_amount"`
-	TerminationPolicy           OptTerminationPolicy        `json:"termination_policy"`
-	RefundPolicy                OptRefundPolicy             `json:"refund_policy"`
-	OrderItemID                 OptUUID                     `json:"order_item_id"`
-	CouponID                    OptUUID                     `json:"coupon_id"`
-	Coupon                      OptObjectIdentity           `json:"coupon"`
-	DiscountedRenewalsRemaining OptInt                      `json:"discounted_renewals_remaining"`
-	SuspendReason               OptString                   `json:"suspend_reason"`
-	BillingCycleAnchor          OptDateTime                 `json:"billing_cycle_anchor"`
-	Cancellation                OptSubscriptionCancellation `json:"cancellation"`
+	RecurringAmount             OptString            `json:"recurring_amount"`
+	TerminationPolicy           OptTerminationPolicy `json:"termination_policy"`
+	RefundPolicy                OptRefundPolicy      `json:"refund_policy"`
+	OrderItemID                 OptUUID              `json:"order_item_id"`
+	CouponID                    OptUUID              `json:"coupon_id"`
+	Coupon                      OptObjectIdentity    `json:"coupon"`
+	DiscountedRenewalsRemaining OptInt               `json:"discounted_renewals_remaining"`
+	// The operations currently prevented on the subscription, sorted. The subscription is suspended while
+	// this contains billing.subscriptions.use.
+	Restrictions       []SubscriptionRestriction   `json:"restrictions"`
+	BillingCycleAnchor OptDateTime                 `json:"billing_cycle_anchor"`
+	Cancellation       OptSubscriptionCancellation `json:"cancellation"`
 	// The accepted period-end change currently scheduled for this subscription. Null when no such change
 	// exists.
 	ScheduledChange OptNilScheduledChange `json:"scheduled_change"`
@@ -16475,9 +16477,9 @@ func (s *Subscription) GetDiscountedRenewalsRemaining() OptInt {
 	return s.DiscountedRenewalsRemaining
 }
 
-// GetSuspendReason returns the value of SuspendReason.
-func (s *Subscription) GetSuspendReason() OptString {
-	return s.SuspendReason
+// GetRestrictions returns the value of Restrictions.
+func (s *Subscription) GetRestrictions() []SubscriptionRestriction {
+	return s.Restrictions
 }
 
 // GetBillingCycleAnchor returns the value of BillingCycleAnchor.
@@ -16650,9 +16652,9 @@ func (s *Subscription) SetDiscountedRenewalsRemaining(val OptInt) {
 	s.DiscountedRenewalsRemaining = val
 }
 
-// SetSuspendReason sets the value of SuspendReason.
-func (s *Subscription) SetSuspendReason(val OptString) {
-	s.SuspendReason = val
+// SetRestrictions sets the value of Restrictions.
+func (s *Subscription) SetRestrictions(val []SubscriptionRestriction) {
+	s.Restrictions = val
 }
 
 // SetBillingCycleAnchor sets the value of BillingCycleAnchor.
@@ -17180,6 +17182,72 @@ func (s *SubscriptionList) SetItems(val []Subscription) {
 // SetPagination sets the value of Pagination.
 func (s *SubscriptionList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// An operation Leaflow prevents on a subscription. billing.subscriptions.use stops the service. renew
+// prevents renewal and payment of a renewal order. modify prevents placing a change order. cancel
+// prevents cancellation. terminate prevents immediate termination.
+// Ref: #/components/schemas/SubscriptionRestriction
+type SubscriptionRestriction string
+
+const (
+	SubscriptionRestrictionBillingSubscriptionsUse       SubscriptionRestriction = "billing.subscriptions.use"
+	SubscriptionRestrictionBillingSubscriptionsRenew     SubscriptionRestriction = "billing.subscriptions.renew"
+	SubscriptionRestrictionBillingSubscriptionsModify    SubscriptionRestriction = "billing.subscriptions.modify"
+	SubscriptionRestrictionBillingSubscriptionsCancel    SubscriptionRestriction = "billing.subscriptions.cancel"
+	SubscriptionRestrictionBillingSubscriptionsTerminate SubscriptionRestriction = "billing.subscriptions.terminate"
+)
+
+// AllValues returns all SubscriptionRestriction values.
+func (SubscriptionRestriction) AllValues() []SubscriptionRestriction {
+	return []SubscriptionRestriction{
+		SubscriptionRestrictionBillingSubscriptionsUse,
+		SubscriptionRestrictionBillingSubscriptionsRenew,
+		SubscriptionRestrictionBillingSubscriptionsModify,
+		SubscriptionRestrictionBillingSubscriptionsCancel,
+		SubscriptionRestrictionBillingSubscriptionsTerminate,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionRestriction) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionRestrictionBillingSubscriptionsUse:
+		return []byte(s), nil
+	case SubscriptionRestrictionBillingSubscriptionsRenew:
+		return []byte(s), nil
+	case SubscriptionRestrictionBillingSubscriptionsModify:
+		return []byte(s), nil
+	case SubscriptionRestrictionBillingSubscriptionsCancel:
+		return []byte(s), nil
+	case SubscriptionRestrictionBillingSubscriptionsTerminate:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionRestriction) UnmarshalText(data []byte) error {
+	switch SubscriptionRestriction(data) {
+	case SubscriptionRestrictionBillingSubscriptionsUse:
+		*s = SubscriptionRestrictionBillingSubscriptionsUse
+		return nil
+	case SubscriptionRestrictionBillingSubscriptionsRenew:
+		*s = SubscriptionRestrictionBillingSubscriptionsRenew
+		return nil
+	case SubscriptionRestrictionBillingSubscriptionsModify:
+		*s = SubscriptionRestrictionBillingSubscriptionsModify
+		return nil
+	case SubscriptionRestrictionBillingSubscriptionsCancel:
+		*s = SubscriptionRestrictionBillingSubscriptionsCancel
+		return nil
+	case SubscriptionRestrictionBillingSubscriptionsTerminate:
+		*s = SubscriptionRestrictionBillingSubscriptionsTerminate
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Pending means the purchase relationship exists but its order has not been accepted. provisioning

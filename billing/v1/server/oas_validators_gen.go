@@ -7255,6 +7255,31 @@ func (s *Subscription) Validate() error {
 		})
 	}
 	if err := func() error {
+		var failures []validate.FieldError
+		for i, elem := range s.Restrictions {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "restrictions",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.Cancellation.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -7488,6 +7513,23 @@ func (s *SubscriptionList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s SubscriptionRestriction) Validate() error {
+	switch s {
+	case "billing.subscriptions.use":
+		return nil
+	case "billing.subscriptions.renew":
+		return nil
+	case "billing.subscriptions.modify":
+		return nil
+	case "billing.subscriptions.cancel":
+		return nil
+	case "billing.subscriptions.terminate":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s SubscriptionStatus) Validate() error {

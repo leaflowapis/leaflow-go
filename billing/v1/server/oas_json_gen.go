@@ -26513,9 +26513,13 @@ func (s *Subscription) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.SuspendReason.Set {
-			e.FieldStart("suspend_reason")
-			s.SuspendReason.Encode(e)
+		if s.Restrictions != nil {
+			e.FieldStart("restrictions")
+			e.ArrStart()
+			for _, elem := range s.Restrictions {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
 		}
 	}
 	{
@@ -26648,7 +26652,7 @@ var jsonFieldsNameOfSubscription = [35]string{
 	8:  "coupon_id",
 	9:  "coupon",
 	10: "discounted_renewals_remaining",
-	11: "suspend_reason",
+	11: "restrictions",
 	12: "billing_cycle_anchor",
 	13: "cancellation",
 	14: "scheduled_change",
@@ -26795,15 +26799,22 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"discounted_renewals_remaining\"")
 			}
-		case "suspend_reason":
+		case "restrictions":
 			if err := func() error {
-				s.SuspendReason.Reset()
-				if err := s.SuspendReason.Decode(d); err != nil {
+				s.Restrictions = make([]SubscriptionRestriction, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SubscriptionRestriction
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Restrictions = append(s.Restrictions, elem)
+					return nil
+				}); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"suspend_reason\"")
+				return errors.Wrap(err, "decode field \"restrictions\"")
 			}
 		case "billing_cycle_anchor":
 			if err := func() error {
@@ -27731,6 +27742,52 @@ func (s *SubscriptionList) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *SubscriptionList) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SubscriptionRestriction as json.
+func (s SubscriptionRestriction) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SubscriptionRestriction from json.
+func (s *SubscriptionRestriction) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SubscriptionRestriction to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SubscriptionRestriction(v) {
+	case SubscriptionRestrictionBillingSubscriptionsUse:
+		*s = SubscriptionRestrictionBillingSubscriptionsUse
+	case SubscriptionRestrictionBillingSubscriptionsRenew:
+		*s = SubscriptionRestrictionBillingSubscriptionsRenew
+	case SubscriptionRestrictionBillingSubscriptionsModify:
+		*s = SubscriptionRestrictionBillingSubscriptionsModify
+	case SubscriptionRestrictionBillingSubscriptionsCancel:
+		*s = SubscriptionRestrictionBillingSubscriptionsCancel
+	case SubscriptionRestrictionBillingSubscriptionsTerminate:
+		*s = SubscriptionRestrictionBillingSubscriptionsTerminate
+	default:
+		*s = SubscriptionRestriction(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SubscriptionRestriction) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SubscriptionRestriction) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
