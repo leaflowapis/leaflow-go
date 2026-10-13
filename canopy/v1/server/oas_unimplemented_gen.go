@@ -46,6 +46,18 @@ func (UnimplementedHandler) CreateEmbeddings(ctx context.Context, req *Embedding
 	return r, ht.ErrNotImplemented
 }
 
+// CreateResponse implements create-response operation.
+//
+// Supports JSON, SSE and native upstream response storage. Stored continuation is restricted to the
+// current project and original provider credential. WebSocket clients connect with GET /v1/responses
+// and send response.create events; one response may be active on a connection at a time. The
+// connection stays on its initial model and provider credential.
+//
+// POST /v1/responses
+func (UnimplementedHandler) CreateResponse(ctx context.Context, req *ResponseCreate) (r CreateResponseRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateService implements create-service operation.
 //
 // Purchases the model platform service for this project. The service itself has no charge; requests
@@ -76,6 +88,15 @@ func (UnimplementedHandler) CreateService(ctx context.Context, req *CreateServic
 //
 // POST /api/v1/service/quote
 func (UnimplementedHandler) CreateServiceQuote(ctx context.Context) (r CreateServiceQuoteRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteResponse implements delete-response operation.
+//
+// Delete a stored response.
+//
+// DELETE /v1/responses/{response}
+func (UnimplementedHandler) DeleteResponse(ctx context.Context, params DeleteResponseParams) (r DeleteResponseRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -134,6 +155,15 @@ func (UnimplementedHandler) GetModel(ctx context.Context, params GetModelParams)
 //
 // GET /api/v1/requests/{requestId}
 func (UnimplementedHandler) GetRequest(ctx context.Context, params GetRequestParams) (r GetRequestRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetResponse implements get-response operation.
+//
+// Get a stored response.
+//
+// GET /v1/responses/{response}
+func (UnimplementedHandler) GetResponse(ctx context.Context, params GetResponseParams) (r GetResponseRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

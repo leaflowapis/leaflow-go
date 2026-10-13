@@ -53,6 +53,15 @@ type Invoker interface {
 	//
 	// POST /v1/embeddings
 	CreateEmbeddings(ctx context.Context, request *EmbeddingRequest) (CreateEmbeddingsRes, error)
+	// CreateResponse invokes create-response operation.
+	//
+	// Supports JSON, SSE and native upstream response storage. Stored continuation is restricted to the
+	// current project and original provider credential. WebSocket clients connect with GET /v1/responses
+	// and send response.create events; one response may be active on a connection at a time. The
+	// connection stays on its initial model and provider credential.
+	//
+	// POST /v1/responses
+	CreateResponse(ctx context.Context, request *ResponseCreate) (CreateResponseRes, error)
 	// CreateService invokes create-service operation.
 	//
 	// Purchases the model platform service for this project. The service itself has no charge; requests
@@ -80,6 +89,12 @@ type Invoker interface {
 	//
 	// POST /api/v1/service/quote
 	CreateServiceQuote(ctx context.Context) (CreateServiceQuoteRes, error)
+	// DeleteResponse invokes delete-response operation.
+	//
+	// Delete a stored response.
+	//
+	// DELETE /v1/responses/{response}
+	DeleteResponse(ctx context.Context, params DeleteResponseParams) (DeleteResponseRes, error)
 	// DisableAPIKey invokes disable-api-key operation.
 	//
 	// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
@@ -120,6 +135,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/requests/{requestId}
 	GetRequest(ctx context.Context, params GetRequestParams) (GetRequestRes, error)
+	// GetResponse invokes get-response operation.
+	//
+	// Get a stored response.
+	//
+	// GET /v1/responses/{response}
+	GetResponse(ctx context.Context, params GetResponseParams) (GetResponseRes, error)
 	// GetService invokes get-service operation.
 	//
 	// The model platform service of the authenticated project. The forwarding endpoints accept its
@@ -647,6 +668,134 @@ func (c *Client) sendCreateEmbeddings(ctx context.Context, request *EmbeddingReq
 	return result, nil
 }
 
+// CreateResponse invokes create-response operation.
+//
+// Supports JSON, SSE and native upstream response storage. Stored continuation is restricted to the
+// current project and original provider credential. WebSocket clients connect with GET /v1/responses
+// and send response.create events; one response may be active on a connection at a time. The
+// connection stays on its initial model and provider credential.
+//
+// POST /v1/responses
+func (c *Client) CreateResponse(ctx context.Context, request *ResponseCreate) (CreateResponseRes, error) {
+	res, err := c.sendCreateResponse(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateResponse(ctx context.Context, request *ResponseCreate) (res CreateResponseRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-response"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/responses"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateResponseOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/responses"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateResponseRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateResponseOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateResponseResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateService invokes create-service operation.
 //
 // Purchases the model platform service for this project. The service itself has no charge; requests
@@ -893,6 +1042,137 @@ func (c *Client) sendCreateServiceQuote(ctx context.Context) (res CreateServiceQ
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateServiceQuoteResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteResponse invokes delete-response operation.
+//
+// Delete a stored response.
+//
+// DELETE /v1/responses/{response}
+func (c *Client) DeleteResponse(ctx context.Context, params DeleteResponseParams) (DeleteResponseRes, error) {
+	res, err := c.sendDeleteResponse(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteResponse(ctx context.Context, params DeleteResponseParams) (res DeleteResponseRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-response"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/v1/responses/{response}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteResponseOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/v1/responses/"
+	{
+		// Encode "response" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "response",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Response))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteResponseOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteResponseResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1685,6 +1965,137 @@ func (c *Client) sendGetRequest(ctx context.Context, params GetRequestParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeGetRequestResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetResponse invokes get-response operation.
+//
+// Get a stored response.
+//
+// GET /v1/responses/{response}
+func (c *Client) GetResponse(ctx context.Context, params GetResponseParams) (GetResponseRes, error) {
+	res, err := c.sendGetResponse(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetResponse(ctx context.Context, params GetResponseParams) (res GetResponseRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-response"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/v1/responses/{response}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetResponseOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/v1/responses/"
+	{
+		// Encode "response" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "response",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Response))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetResponseOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetResponseResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

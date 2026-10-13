@@ -32,6 +32,15 @@ type Handler interface {
 	//
 	// POST /v1/embeddings
 	CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (CreateEmbeddingsRes, error)
+	// CreateResponse implements create-response operation.
+	//
+	// Supports JSON, SSE and native upstream response storage. Stored continuation is restricted to the
+	// current project and original provider credential. WebSocket clients connect with GET /v1/responses
+	// and send response.create events; one response may be active on a connection at a time. The
+	// connection stays on its initial model and provider credential.
+	//
+	// POST /v1/responses
+	CreateResponse(ctx context.Context, req *ResponseCreate) (CreateResponseRes, error)
 	// CreateService implements create-service operation.
 	//
 	// Purchases the model platform service for this project. The service itself has no charge; requests
@@ -59,6 +68,12 @@ type Handler interface {
 	//
 	// POST /api/v1/service/quote
 	CreateServiceQuote(ctx context.Context) (CreateServiceQuoteRes, error)
+	// DeleteResponse implements delete-response operation.
+	//
+	// Delete a stored response.
+	//
+	// DELETE /v1/responses/{response}
+	DeleteResponse(ctx context.Context, params DeleteResponseParams) (DeleteResponseRes, error)
 	// DisableAPIKey implements disable-api-key operation.
 	//
 	// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
@@ -99,6 +114,12 @@ type Handler interface {
 	//
 	// GET /api/v1/requests/{requestId}
 	GetRequest(ctx context.Context, params GetRequestParams) (GetRequestRes, error)
+	// GetResponse implements get-response operation.
+	//
+	// Get a stored response.
+	//
+	// GET /v1/responses/{response}
+	GetResponse(ctx context.Context, params GetResponseParams) (GetResponseRes, error)
 	// GetService implements get-service operation.
 	//
 	// The model platform service of the authenticated project. The forwarding endpoints accept its

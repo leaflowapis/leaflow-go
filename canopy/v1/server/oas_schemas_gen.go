@@ -595,6 +595,22 @@ func (s CreateChatCompletionOKTextEventStream) Read(p []byte) (n int, err error)
 
 func (*CreateChatCompletionOKTextEventStream) createChatCompletionRes() {}
 
+type CreateResponseOKTextEventStream struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s CreateResponseOKTextEventStream) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
+	return s.Data.Read(p)
+}
+
+func (*CreateResponseOKTextEventStream) createResponseRes() {}
+
 // Ref: #/components/schemas/CreateServiceRequestBody
 type CreateServiceRequestBody struct {
 	Checkout OptCheckoutOptions `json:"checkout"`
@@ -871,6 +887,43 @@ func (s *EmbeddingResponse) init() EmbeddingResponse {
 }
 
 func (*EmbeddingResponse) createEmbeddingsRes() {}
+
+// Ref: #/components/schemas/EndpointCapabilities
+type EndpointCapabilities struct {
+	FunctionCalling  NilBool                  `json:"function_calling"`
+	StructuredOutput NilBool                  `json:"structured_output"`
+	Reasoning        NilReasoningCapabilities `json:"reasoning"`
+}
+
+// GetFunctionCalling returns the value of FunctionCalling.
+func (s *EndpointCapabilities) GetFunctionCalling() NilBool {
+	return s.FunctionCalling
+}
+
+// GetStructuredOutput returns the value of StructuredOutput.
+func (s *EndpointCapabilities) GetStructuredOutput() NilBool {
+	return s.StructuredOutput
+}
+
+// GetReasoning returns the value of Reasoning.
+func (s *EndpointCapabilities) GetReasoning() NilReasoningCapabilities {
+	return s.Reasoning
+}
+
+// SetFunctionCalling sets the value of FunctionCalling.
+func (s *EndpointCapabilities) SetFunctionCalling(val NilBool) {
+	s.FunctionCalling = val
+}
+
+// SetStructuredOutput sets the value of StructuredOutput.
+func (s *EndpointCapabilities) SetStructuredOutput(val NilBool) {
+	s.StructuredOutput = val
+}
+
+// SetReasoning sets the value of Reasoning.
+func (s *EndpointCapabilities) SetReasoning(val NilReasoningCapabilities) {
+	s.Reasoning = val
+}
 
 // Ref: #/components/schemas/Error
 type Error struct {
@@ -1304,7 +1357,10 @@ func (s *InferenceErrorStatusCode) SetResponse(val InferenceError) {
 
 func (*InferenceErrorStatusCode) createChatCompletionRes() {}
 func (*InferenceErrorStatusCode) createEmbeddingsRes()     {}
+func (*InferenceErrorStatusCode) createResponseRes()       {}
+func (*InferenceErrorStatusCode) deleteResponseRes()       {}
 func (*InferenceErrorStatusCode) getInferenceModelRes()    {}
+func (*InferenceErrorStatusCode) getResponseRes()          {}
 func (*InferenceErrorStatusCode) listInferenceModelsRes()  {}
 
 // A draft is not yet issued. The draft invoice of an order shows base prices until it is paid, when
@@ -2046,19 +2102,96 @@ func (s *ListUsageByModelStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/Modality
+type Modality string
+
+const (
+	ModalityText      Modality = "text"
+	ModalityImage     Modality = "image"
+	ModalityAudio     Modality = "audio"
+	ModalityVideo     Modality = "video"
+	ModalityFile      Modality = "file"
+	ModalityEmbedding Modality = "embedding"
+)
+
+// AllValues returns all Modality values.
+func (Modality) AllValues() []Modality {
+	return []Modality{
+		ModalityText,
+		ModalityImage,
+		ModalityAudio,
+		ModalityVideo,
+		ModalityFile,
+		ModalityEmbedding,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s Modality) MarshalText() ([]byte, error) {
+	switch s {
+	case ModalityText:
+		return []byte(s), nil
+	case ModalityImage:
+		return []byte(s), nil
+	case ModalityAudio:
+		return []byte(s), nil
+	case ModalityVideo:
+		return []byte(s), nil
+	case ModalityFile:
+		return []byte(s), nil
+	case ModalityEmbedding:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *Modality) UnmarshalText(data []byte) error {
+	switch Modality(data) {
+	case ModalityText:
+		*s = ModalityText
+		return nil
+	case ModalityImage:
+		*s = ModalityImage
+		return nil
+	case ModalityAudio:
+		*s = ModalityAudio
+		return nil
+	case ModalityVideo:
+		*s = ModalityVideo
+		return nil
+	case ModalityFile:
+		*s = ModalityFile
+		return nil
+	case ModalityEmbedding:
+		*s = ModalityEmbedding
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/Model
 type Model struct {
-	ID                string   `json:"id"`
-	Object            string   `json:"object"`
-	Created           int64    `json:"created"`
-	OwnedBy           string   `json:"owned_by"`
-	DisplayName       string   `json:"display_name"`
-	ContextLength     int64    `json:"context_length"`
-	MaxOutputTokens   int64    `json:"max_output_tokens"`
-	SupportsVision    bool     `json:"supports_vision"`
-	SupportsTools     bool     `json:"supports_tools"`
-	SupportsReasoning bool     `json:"supports_reasoning"`
-	ReasoningTiers    []string `json:"reasoning_tiers"`
+	ID              string `json:"id"`
+	Object          string `json:"object"`
+	Created         int64  `json:"created"`
+	OwnedBy         string `json:"owned_by"`
+	DisplayName     string `json:"display_name"`
+	ContextLength   int64  `json:"context_length"`
+	MaxOutputTokens int64  `json:"max_output_tokens"`
+	// The model developer; not the upstream provider or model family.
+	Developer   string `json:"developer"`
+	Description string `json:"description"`
+	// Accepted input modalities. Null means unknown.
+	InputModalities []Modality `json:"input_modalities"`
+	// Produced output modalities. Image input does not imply image generation.
+	OutputModalities []Modality        `json:"output_modalities"`
+	Capabilities     ModelCapabilities `json:"capabilities"`
+	// Explicitly supported API endpoints. Requests to any other endpoint are rejected before upstream
+	// admission.
+	SupportedEndpoints []ModelEndpoint `json:"supported_endpoints"`
 }
 
 // GetID returns the value of ID.
@@ -2096,24 +2229,34 @@ func (s *Model) GetMaxOutputTokens() int64 {
 	return s.MaxOutputTokens
 }
 
-// GetSupportsVision returns the value of SupportsVision.
-func (s *Model) GetSupportsVision() bool {
-	return s.SupportsVision
+// GetDeveloper returns the value of Developer.
+func (s *Model) GetDeveloper() string {
+	return s.Developer
 }
 
-// GetSupportsTools returns the value of SupportsTools.
-func (s *Model) GetSupportsTools() bool {
-	return s.SupportsTools
+// GetDescription returns the value of Description.
+func (s *Model) GetDescription() string {
+	return s.Description
 }
 
-// GetSupportsReasoning returns the value of SupportsReasoning.
-func (s *Model) GetSupportsReasoning() bool {
-	return s.SupportsReasoning
+// GetInputModalities returns the value of InputModalities.
+func (s *Model) GetInputModalities() []Modality {
+	return s.InputModalities
 }
 
-// GetReasoningTiers returns the value of ReasoningTiers.
-func (s *Model) GetReasoningTiers() []string {
-	return s.ReasoningTiers
+// GetOutputModalities returns the value of OutputModalities.
+func (s *Model) GetOutputModalities() []Modality {
+	return s.OutputModalities
+}
+
+// GetCapabilities returns the value of Capabilities.
+func (s *Model) GetCapabilities() ModelCapabilities {
+	return s.Capabilities
+}
+
+// GetSupportedEndpoints returns the value of SupportedEndpoints.
+func (s *Model) GetSupportedEndpoints() []ModelEndpoint {
+	return s.SupportedEndpoints
 }
 
 // SetID sets the value of ID.
@@ -2151,27 +2294,142 @@ func (s *Model) SetMaxOutputTokens(val int64) {
 	s.MaxOutputTokens = val
 }
 
-// SetSupportsVision sets the value of SupportsVision.
-func (s *Model) SetSupportsVision(val bool) {
-	s.SupportsVision = val
+// SetDeveloper sets the value of Developer.
+func (s *Model) SetDeveloper(val string) {
+	s.Developer = val
 }
 
-// SetSupportsTools sets the value of SupportsTools.
-func (s *Model) SetSupportsTools(val bool) {
-	s.SupportsTools = val
+// SetDescription sets the value of Description.
+func (s *Model) SetDescription(val string) {
+	s.Description = val
 }
 
-// SetSupportsReasoning sets the value of SupportsReasoning.
-func (s *Model) SetSupportsReasoning(val bool) {
-	s.SupportsReasoning = val
+// SetInputModalities sets the value of InputModalities.
+func (s *Model) SetInputModalities(val []Modality) {
+	s.InputModalities = val
 }
 
-// SetReasoningTiers sets the value of ReasoningTiers.
-func (s *Model) SetReasoningTiers(val []string) {
-	s.ReasoningTiers = val
+// SetOutputModalities sets the value of OutputModalities.
+func (s *Model) SetOutputModalities(val []Modality) {
+	s.OutputModalities = val
+}
+
+// SetCapabilities sets the value of Capabilities.
+func (s *Model) SetCapabilities(val ModelCapabilities) {
+	s.Capabilities = val
+}
+
+// SetSupportedEndpoints sets the value of SupportedEndpoints.
+func (s *Model) SetSupportedEndpoints(val []ModelEndpoint) {
+	s.SupportedEndpoints = val
 }
 
 func (*Model) getInferenceModelRes() {}
+
+// Verified capabilities keyed by API endpoint, for example /v1/chat/completions or /v1/responses.
+// Missing keys and null values mean unknown. Current route availability is separate.
+// Ref: #/components/schemas/ModelCapabilities
+type ModelCapabilities map[string]EndpointCapabilities
+
+func (s *ModelCapabilities) init() ModelCapabilities {
+	m := *s
+	if m == nil {
+		m = map[string]EndpointCapabilities{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/ModelEndpoint
+type ModelEndpoint string
+
+const (
+	ModelEndpointSlashV1SlashChatSlashCompletions     ModelEndpoint = "/v1/chat/completions"
+	ModelEndpointSlashV1SlashResponses                ModelEndpoint = "/v1/responses"
+	ModelEndpointSlashV1SlashEmbeddings               ModelEndpoint = "/v1/embeddings"
+	ModelEndpointSlashV1SlashImagesSlashGenerations   ModelEndpoint = "/v1/images/generations"
+	ModelEndpointSlashV1SlashImagesSlashEdits         ModelEndpoint = "/v1/images/edits"
+	ModelEndpointSlashV1SlashAudioSlashTranscriptions ModelEndpoint = "/v1/audio/transcriptions"
+	ModelEndpointSlashV1SlashAudioSlashTranslations   ModelEndpoint = "/v1/audio/translations"
+	ModelEndpointSlashV1SlashAudioSlashSpeech         ModelEndpoint = "/v1/audio/speech"
+	ModelEndpointSlashV1SlashRealtime                 ModelEndpoint = "/v1/realtime"
+)
+
+// AllValues returns all ModelEndpoint values.
+func (ModelEndpoint) AllValues() []ModelEndpoint {
+	return []ModelEndpoint{
+		ModelEndpointSlashV1SlashChatSlashCompletions,
+		ModelEndpointSlashV1SlashResponses,
+		ModelEndpointSlashV1SlashEmbeddings,
+		ModelEndpointSlashV1SlashImagesSlashGenerations,
+		ModelEndpointSlashV1SlashImagesSlashEdits,
+		ModelEndpointSlashV1SlashAudioSlashTranscriptions,
+		ModelEndpointSlashV1SlashAudioSlashTranslations,
+		ModelEndpointSlashV1SlashAudioSlashSpeech,
+		ModelEndpointSlashV1SlashRealtime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ModelEndpoint) MarshalText() ([]byte, error) {
+	switch s {
+	case ModelEndpointSlashV1SlashChatSlashCompletions:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashResponses:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashEmbeddings:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashImagesSlashGenerations:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashImagesSlashEdits:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashAudioSlashTranscriptions:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashAudioSlashTranslations:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashAudioSlashSpeech:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashRealtime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ModelEndpoint) UnmarshalText(data []byte) error {
+	switch ModelEndpoint(data) {
+	case ModelEndpointSlashV1SlashChatSlashCompletions:
+		*s = ModelEndpointSlashV1SlashChatSlashCompletions
+		return nil
+	case ModelEndpointSlashV1SlashResponses:
+		*s = ModelEndpointSlashV1SlashResponses
+		return nil
+	case ModelEndpointSlashV1SlashEmbeddings:
+		*s = ModelEndpointSlashV1SlashEmbeddings
+		return nil
+	case ModelEndpointSlashV1SlashImagesSlashGenerations:
+		*s = ModelEndpointSlashV1SlashImagesSlashGenerations
+		return nil
+	case ModelEndpointSlashV1SlashImagesSlashEdits:
+		*s = ModelEndpointSlashV1SlashImagesSlashEdits
+		return nil
+	case ModelEndpointSlashV1SlashAudioSlashTranscriptions:
+		*s = ModelEndpointSlashV1SlashAudioSlashTranscriptions
+		return nil
+	case ModelEndpointSlashV1SlashAudioSlashTranslations:
+		*s = ModelEndpointSlashV1SlashAudioSlashTranslations
+		return nil
+	case ModelEndpointSlashV1SlashAudioSlashSpeech:
+		*s = ModelEndpointSlashV1SlashAudioSlashSpeech
+		return nil
+	case ModelEndpointSlashV1SlashRealtime:
+		*s = ModelEndpointSlashV1SlashRealtime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // Ref: #/components/schemas/ModelList
 type ModelList struct {
@@ -2265,13 +2523,19 @@ type ModelResource struct {
 	// The maximum output length. Advisory only.
 	MaxOutputTokens int64 `json:"max_output_tokens"`
 	// What requests to this model cost. Null when the project has no billing account.
-	Pricing NilModelPricing `json:"pricing"`
-	// The values accepted for `reasoning_effort`. Empty means it is not supported.
-	ReasoningTiers    []string            `json:"reasoning_tiers"`
-	Status            ModelResourceStatus `json:"status"`
-	SupportsReasoning bool                `json:"supports_reasoning"`
-	SupportsTools     bool                `json:"supports_tools"`
-	SupportsVision    bool                `json:"supports_vision"`
+	Pricing NilModelPricing     `json:"pricing"`
+	Status  ModelResourceStatus `json:"status"`
+	// The model developer; not the upstream provider or model family.
+	Developer   string `json:"developer"`
+	Description string `json:"description"`
+	// Accepted input modalities. Null means unknown.
+	InputModalities []Modality `json:"input_modalities"`
+	// Produced output modalities. Image input does not imply image generation.
+	OutputModalities []Modality        `json:"output_modalities"`
+	Capabilities     ModelCapabilities `json:"capabilities"`
+	// Explicitly supported API endpoints. Requests to any other endpoint are rejected before upstream
+	// admission.
+	SupportedEndpoints []ModelEndpoint `json:"supported_endpoints"`
 }
 
 // GetContextLength returns the value of ContextLength.
@@ -2304,29 +2568,39 @@ func (s *ModelResource) GetPricing() NilModelPricing {
 	return s.Pricing
 }
 
-// GetReasoningTiers returns the value of ReasoningTiers.
-func (s *ModelResource) GetReasoningTiers() []string {
-	return s.ReasoningTiers
-}
-
 // GetStatus returns the value of Status.
 func (s *ModelResource) GetStatus() ModelResourceStatus {
 	return s.Status
 }
 
-// GetSupportsReasoning returns the value of SupportsReasoning.
-func (s *ModelResource) GetSupportsReasoning() bool {
-	return s.SupportsReasoning
+// GetDeveloper returns the value of Developer.
+func (s *ModelResource) GetDeveloper() string {
+	return s.Developer
 }
 
-// GetSupportsTools returns the value of SupportsTools.
-func (s *ModelResource) GetSupportsTools() bool {
-	return s.SupportsTools
+// GetDescription returns the value of Description.
+func (s *ModelResource) GetDescription() string {
+	return s.Description
 }
 
-// GetSupportsVision returns the value of SupportsVision.
-func (s *ModelResource) GetSupportsVision() bool {
-	return s.SupportsVision
+// GetInputModalities returns the value of InputModalities.
+func (s *ModelResource) GetInputModalities() []Modality {
+	return s.InputModalities
+}
+
+// GetOutputModalities returns the value of OutputModalities.
+func (s *ModelResource) GetOutputModalities() []Modality {
+	return s.OutputModalities
+}
+
+// GetCapabilities returns the value of Capabilities.
+func (s *ModelResource) GetCapabilities() ModelCapabilities {
+	return s.Capabilities
+}
+
+// GetSupportedEndpoints returns the value of SupportedEndpoints.
+func (s *ModelResource) GetSupportedEndpoints() []ModelEndpoint {
+	return s.SupportedEndpoints
 }
 
 // SetContextLength sets the value of ContextLength.
@@ -2359,29 +2633,39 @@ func (s *ModelResource) SetPricing(val NilModelPricing) {
 	s.Pricing = val
 }
 
-// SetReasoningTiers sets the value of ReasoningTiers.
-func (s *ModelResource) SetReasoningTiers(val []string) {
-	s.ReasoningTiers = val
-}
-
 // SetStatus sets the value of Status.
 func (s *ModelResource) SetStatus(val ModelResourceStatus) {
 	s.Status = val
 }
 
-// SetSupportsReasoning sets the value of SupportsReasoning.
-func (s *ModelResource) SetSupportsReasoning(val bool) {
-	s.SupportsReasoning = val
+// SetDeveloper sets the value of Developer.
+func (s *ModelResource) SetDeveloper(val string) {
+	s.Developer = val
 }
 
-// SetSupportsTools sets the value of SupportsTools.
-func (s *ModelResource) SetSupportsTools(val bool) {
-	s.SupportsTools = val
+// SetDescription sets the value of Description.
+func (s *ModelResource) SetDescription(val string) {
+	s.Description = val
 }
 
-// SetSupportsVision sets the value of SupportsVision.
-func (s *ModelResource) SetSupportsVision(val bool) {
-	s.SupportsVision = val
+// SetInputModalities sets the value of InputModalities.
+func (s *ModelResource) SetInputModalities(val []Modality) {
+	s.InputModalities = val
+}
+
+// SetOutputModalities sets the value of OutputModalities.
+func (s *ModelResource) SetOutputModalities(val []Modality) {
+	s.OutputModalities = val
+}
+
+// SetCapabilities sets the value of Capabilities.
+func (s *ModelResource) SetCapabilities(val ModelCapabilities) {
+	s.Capabilities = val
+}
+
+// SetSupportedEndpoints sets the value of SupportedEndpoints.
+func (s *ModelResource) SetSupportedEndpoints(val []ModelEndpoint) {
+	s.SupportedEndpoints = val
 }
 
 func (*ModelResource) getModelRes() {}
@@ -2534,6 +2818,51 @@ func (s *ModelUsageResource) SetRequests(val int64) {
 
 type Money string
 
+// NewNilBool returns new NilBool with value set to v.
+func NewNilBool(v bool) NilBool {
+	return NilBool{
+		Value: v,
+	}
+}
+
+// NilBool is nullable bool.
+type NilBool struct {
+	Value bool
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilBool) SetTo(v bool) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilBool) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilBool) SetToNull() {
+	o.Null = true
+	var v bool
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilBool) Get() (v bool, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilBool) Or(d bool) bool {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilDateTime returns new NilDateTime with value set to v.
 func NewNilDateTime(v time.Time) NilDateTime {
 	return NilDateTime{
@@ -2663,6 +2992,141 @@ func (o NilMoney) Get() (v Money, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilMoney) Or(d Money) Money {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilReasoningCapabilities returns new NilReasoningCapabilities with value set to v.
+func NewNilReasoningCapabilities(v ReasoningCapabilities) NilReasoningCapabilities {
+	return NilReasoningCapabilities{
+		Value: v,
+	}
+}
+
+// NilReasoningCapabilities is nullable ReasoningCapabilities.
+type NilReasoningCapabilities struct {
+	Value ReasoningCapabilities
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilReasoningCapabilities) SetTo(v ReasoningCapabilities) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilReasoningCapabilities) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilReasoningCapabilities) SetToNull() {
+	o.Null = true
+	var v ReasoningCapabilities
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilReasoningCapabilities) Get() (v ReasoningCapabilities, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilReasoningCapabilities) Or(d ReasoningCapabilities) ReasoningCapabilities {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilReasoningCapabilitiesBudgetTokens returns new NilReasoningCapabilitiesBudgetTokens with value set to v.
+func NewNilReasoningCapabilitiesBudgetTokens(v ReasoningCapabilitiesBudgetTokens) NilReasoningCapabilitiesBudgetTokens {
+	return NilReasoningCapabilitiesBudgetTokens{
+		Value: v,
+	}
+}
+
+// NilReasoningCapabilitiesBudgetTokens is nullable ReasoningCapabilitiesBudgetTokens.
+type NilReasoningCapabilitiesBudgetTokens struct {
+	Value ReasoningCapabilitiesBudgetTokens
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilReasoningCapabilitiesBudgetTokens) SetTo(v ReasoningCapabilitiesBudgetTokens) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilReasoningCapabilitiesBudgetTokens) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilReasoningCapabilitiesBudgetTokens) SetToNull() {
+	o.Null = true
+	var v ReasoningCapabilitiesBudgetTokens
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilReasoningCapabilitiesBudgetTokens) Get() (v ReasoningCapabilitiesBudgetTokens, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilReasoningCapabilitiesBudgetTokens) Or(d ReasoningCapabilitiesBudgetTokens) ReasoningCapabilitiesBudgetTokens {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilReasoningDiagnostics returns new NilReasoningDiagnostics with value set to v.
+func NewNilReasoningDiagnostics(v ReasoningDiagnostics) NilReasoningDiagnostics {
+	return NilReasoningDiagnostics{
+		Value: v,
+	}
+}
+
+// NilReasoningDiagnostics is nullable ReasoningDiagnostics.
+type NilReasoningDiagnostics struct {
+	Value ReasoningDiagnostics
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilReasoningDiagnostics) SetTo(v ReasoningDiagnostics) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilReasoningDiagnostics) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilReasoningDiagnostics) SetToNull() {
+	o.Null = true
+	var v ReasoningDiagnostics
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilReasoningDiagnostics) Get() (v ReasoningDiagnostics, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilReasoningDiagnostics) Or(d ReasoningDiagnostics) ReasoningDiagnostics {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3720,6 +4184,144 @@ func (o OptNilStringArray) Or(d []string) []string {
 	return d
 }
 
+// NewOptReasoningDiagnosticsEffective returns new OptReasoningDiagnosticsEffective with value set to v.
+func NewOptReasoningDiagnosticsEffective(v ReasoningDiagnosticsEffective) OptReasoningDiagnosticsEffective {
+	return OptReasoningDiagnosticsEffective{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptReasoningDiagnosticsEffective is optional ReasoningDiagnosticsEffective.
+type OptReasoningDiagnosticsEffective struct {
+	Value ReasoningDiagnosticsEffective
+	Set   bool
+}
+
+// IsSet returns true if OptReasoningDiagnosticsEffective was set.
+func (o OptReasoningDiagnosticsEffective) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptReasoningDiagnosticsEffective) Reset() {
+	var v ReasoningDiagnosticsEffective
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptReasoningDiagnosticsEffective) SetTo(v ReasoningDiagnosticsEffective) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptReasoningDiagnosticsEffective) Get() (v ReasoningDiagnosticsEffective, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptReasoningDiagnosticsEffective) Or(d ReasoningDiagnosticsEffective) ReasoningDiagnosticsEffective {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptReasoningDiagnosticsTranslation returns new OptReasoningDiagnosticsTranslation with value set to v.
+func NewOptReasoningDiagnosticsTranslation(v ReasoningDiagnosticsTranslation) OptReasoningDiagnosticsTranslation {
+	return OptReasoningDiagnosticsTranslation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptReasoningDiagnosticsTranslation is optional ReasoningDiagnosticsTranslation.
+type OptReasoningDiagnosticsTranslation struct {
+	Value ReasoningDiagnosticsTranslation
+	Set   bool
+}
+
+// IsSet returns true if OptReasoningDiagnosticsTranslation was set.
+func (o OptReasoningDiagnosticsTranslation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptReasoningDiagnosticsTranslation) Reset() {
+	var v ReasoningDiagnosticsTranslation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptReasoningDiagnosticsTranslation) SetTo(v ReasoningDiagnosticsTranslation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptReasoningDiagnosticsTranslation) Get() (v ReasoningDiagnosticsTranslation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptReasoningDiagnosticsTranslation) Or(d ReasoningDiagnosticsTranslation) ReasoningDiagnosticsTranslation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptResponseCreateReasoning returns new OptResponseCreateReasoning with value set to v.
+func NewOptResponseCreateReasoning(v ResponseCreateReasoning) OptResponseCreateReasoning {
+	return OptResponseCreateReasoning{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptResponseCreateReasoning is optional ResponseCreateReasoning.
+type OptResponseCreateReasoning struct {
+	Value ResponseCreateReasoning
+	Set   bool
+}
+
+// IsSet returns true if OptResponseCreateReasoning was set.
+func (o OptResponseCreateReasoning) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptResponseCreateReasoning) Reset() {
+	var v ResponseCreateReasoning
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptResponseCreateReasoning) SetTo(v ResponseCreateReasoning) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptResponseCreateReasoning) Get() (v ResponseCreateReasoning, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptResponseCreateReasoning) Or(d ResponseCreateReasoning) ResponseCreateReasoning {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -4075,6 +4677,209 @@ func (s *QuoteItem) SetCurrency(val string) {
 	s.Currency = val
 }
 
+// Ref: #/components/schemas/ReasoningCapabilities
+type ReasoningCapabilities struct {
+	Supported bool `json:"supported"`
+	// Null means unknown; an empty array means effort is not configurable.
+	EffortLevels  []string                             `json:"effort_levels"`
+	DefaultEffort NilString                            `json:"default_effort"`
+	Modes         []string                             `json:"modes"`
+	BudgetTokens  NilReasoningCapabilitiesBudgetTokens `json:"budget_tokens"`
+	Summary       []string                             `json:"summary"`
+}
+
+// GetSupported returns the value of Supported.
+func (s *ReasoningCapabilities) GetSupported() bool {
+	return s.Supported
+}
+
+// GetEffortLevels returns the value of EffortLevels.
+func (s *ReasoningCapabilities) GetEffortLevels() []string {
+	return s.EffortLevels
+}
+
+// GetDefaultEffort returns the value of DefaultEffort.
+func (s *ReasoningCapabilities) GetDefaultEffort() NilString {
+	return s.DefaultEffort
+}
+
+// GetModes returns the value of Modes.
+func (s *ReasoningCapabilities) GetModes() []string {
+	return s.Modes
+}
+
+// GetBudgetTokens returns the value of BudgetTokens.
+func (s *ReasoningCapabilities) GetBudgetTokens() NilReasoningCapabilitiesBudgetTokens {
+	return s.BudgetTokens
+}
+
+// GetSummary returns the value of Summary.
+func (s *ReasoningCapabilities) GetSummary() []string {
+	return s.Summary
+}
+
+// SetSupported sets the value of Supported.
+func (s *ReasoningCapabilities) SetSupported(val bool) {
+	s.Supported = val
+}
+
+// SetEffortLevels sets the value of EffortLevels.
+func (s *ReasoningCapabilities) SetEffortLevels(val []string) {
+	s.EffortLevels = val
+}
+
+// SetDefaultEffort sets the value of DefaultEffort.
+func (s *ReasoningCapabilities) SetDefaultEffort(val NilString) {
+	s.DefaultEffort = val
+}
+
+// SetModes sets the value of Modes.
+func (s *ReasoningCapabilities) SetModes(val []string) {
+	s.Modes = val
+}
+
+// SetBudgetTokens sets the value of BudgetTokens.
+func (s *ReasoningCapabilities) SetBudgetTokens(val NilReasoningCapabilitiesBudgetTokens) {
+	s.BudgetTokens = val
+}
+
+// SetSummary sets the value of Summary.
+func (s *ReasoningCapabilities) SetSummary(val []string) {
+	s.Summary = val
+}
+
+type ReasoningCapabilitiesBudgetTokens struct {
+	Min int `json:"min"`
+	Max int `json:"max"`
+}
+
+// GetMin returns the value of Min.
+func (s *ReasoningCapabilitiesBudgetTokens) GetMin() int {
+	return s.Min
+}
+
+// GetMax returns the value of Max.
+func (s *ReasoningCapabilitiesBudgetTokens) GetMax() int {
+	return s.Max
+}
+
+// SetMin sets the value of Min.
+func (s *ReasoningCapabilitiesBudgetTokens) SetMin(val int) {
+	s.Min = val
+}
+
+// SetMax sets the value of Max.
+func (s *ReasoningCapabilitiesBudgetTokens) SetMax(val int) {
+	s.Max = val
+}
+
+// Ref: #/components/schemas/ReasoningDiagnostics
+type ReasoningDiagnostics struct {
+	Requested   ReasoningDiagnosticsRequested      `json:"requested"`
+	Effective   OptReasoningDiagnosticsEffective   `json:"effective"`
+	Translation OptReasoningDiagnosticsTranslation `json:"translation"`
+}
+
+// GetRequested returns the value of Requested.
+func (s *ReasoningDiagnostics) GetRequested() ReasoningDiagnosticsRequested {
+	return s.Requested
+}
+
+// GetEffective returns the value of Effective.
+func (s *ReasoningDiagnostics) GetEffective() OptReasoningDiagnosticsEffective {
+	return s.Effective
+}
+
+// GetTranslation returns the value of Translation.
+func (s *ReasoningDiagnostics) GetTranslation() OptReasoningDiagnosticsTranslation {
+	return s.Translation
+}
+
+// SetRequested sets the value of Requested.
+func (s *ReasoningDiagnostics) SetRequested(val ReasoningDiagnosticsRequested) {
+	s.Requested = val
+}
+
+// SetEffective sets the value of Effective.
+func (s *ReasoningDiagnostics) SetEffective(val OptReasoningDiagnosticsEffective) {
+	s.Effective = val
+}
+
+// SetTranslation sets the value of Translation.
+func (s *ReasoningDiagnostics) SetTranslation(val OptReasoningDiagnosticsTranslation) {
+	s.Translation = val
+}
+
+type ReasoningDiagnosticsEffective map[string]jx.Raw
+
+func (s *ReasoningDiagnosticsEffective) init() ReasoningDiagnosticsEffective {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type ReasoningDiagnosticsRequested map[string]jx.Raw
+
+func (s *ReasoningDiagnosticsRequested) init() ReasoningDiagnosticsRequested {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type ReasoningDiagnosticsTranslation string
+
+const (
+	ReasoningDiagnosticsTranslationTranslate   ReasoningDiagnosticsTranslation = "translate"
+	ReasoningDiagnosticsTranslationPassthrough ReasoningDiagnosticsTranslation = "passthrough"
+	ReasoningDiagnosticsTranslationStrip       ReasoningDiagnosticsTranslation = "strip"
+)
+
+// AllValues returns all ReasoningDiagnosticsTranslation values.
+func (ReasoningDiagnosticsTranslation) AllValues() []ReasoningDiagnosticsTranslation {
+	return []ReasoningDiagnosticsTranslation{
+		ReasoningDiagnosticsTranslationTranslate,
+		ReasoningDiagnosticsTranslationPassthrough,
+		ReasoningDiagnosticsTranslationStrip,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ReasoningDiagnosticsTranslation) MarshalText() ([]byte, error) {
+	switch s {
+	case ReasoningDiagnosticsTranslationTranslate:
+		return []byte(s), nil
+	case ReasoningDiagnosticsTranslationPassthrough:
+		return []byte(s), nil
+	case ReasoningDiagnosticsTranslationStrip:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ReasoningDiagnosticsTranslation) UnmarshalText(data []byte) error {
+	switch ReasoningDiagnosticsTranslation(data) {
+	case ReasoningDiagnosticsTranslationTranslate:
+		*s = ReasoningDiagnosticsTranslationTranslate
+		return nil
+	case ReasoningDiagnosticsTranslationPassthrough:
+		*s = ReasoningDiagnosticsTranslationPassthrough
+		return nil
+	case ReasoningDiagnosticsTranslationStrip:
+		*s = ReasoningDiagnosticsTranslationStrip
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/RequestResource
 type RequestResource struct {
 	// Null for a request made by an internal service directly for the project.
@@ -4104,6 +4909,7 @@ type RequestResource struct {
 	// Upstream means the figures were reported by the provider; estimated means they were derived from the
 	// character classes of the payload.
 	UsageSource RequestResourceUsageSource `json:"usage_source"`
+	Reasoning   NilReasoningDiagnostics    `json:"reasoning"`
 }
 
 // GetAPIKeyID returns the value of APIKeyID.
@@ -4196,6 +5002,11 @@ func (s *RequestResource) GetUsageSource() RequestResourceUsageSource {
 	return s.UsageSource
 }
 
+// GetReasoning returns the value of Reasoning.
+func (s *RequestResource) GetReasoning() NilReasoningDiagnostics {
+	return s.Reasoning
+}
+
 // SetAPIKeyID sets the value of APIKeyID.
 func (s *RequestResource) SetAPIKeyID(val NilUUID) {
 	s.APIKeyID = val
@@ -4284,6 +5095,11 @@ func (s *RequestResource) SetUpstreamStatus(val int64) {
 // SetUsageSource sets the value of UsageSource.
 func (s *RequestResource) SetUsageSource(val RequestResourceUsageSource) {
 	s.UsageSource = val
+}
+
+// SetReasoning sets the value of Reasoning.
+func (s *RequestResource) SetReasoning(val NilReasoningDiagnostics) {
+	s.Reasoning = val
 }
 
 func (*RequestResource) getRequestRes() {}
@@ -4399,6 +5215,210 @@ func (s *RequestResourceUsageSource) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// Native Responses request. model may be omitted when continuing a project-owned stored response.
+// store defaults to false. Only caller-executed function and custom tools are supported. background,
+// conversation and WebSocket-only fields are rejected over HTTP.
+// Ref: #/components/schemas/ResponseCreate
+type ResponseCreate struct {
+	Model              OptString                  `json:"model"`
+	Input              jx.Raw                     `json:"input"`
+	Instructions       OptNilString               `json:"instructions"`
+	Store              OptBool                    `json:"store"`
+	Stream             OptBool                    `json:"stream"`
+	PreviousResponseID OptNilString               `json:"previous_response_id"`
+	Reasoning          OptResponseCreateReasoning `json:"reasoning"`
+	Tools              []ResponseCreateToolsItem  `json:"tools"`
+	MaxOutputTokens    OptInt                     `json:"max_output_tokens"`
+	AdditionalProps    ResponseCreateAdditional
+}
+
+// GetModel returns the value of Model.
+func (s *ResponseCreate) GetModel() OptString {
+	return s.Model
+}
+
+// GetInput returns the value of Input.
+func (s *ResponseCreate) GetInput() jx.Raw {
+	return s.Input
+}
+
+// GetInstructions returns the value of Instructions.
+func (s *ResponseCreate) GetInstructions() OptNilString {
+	return s.Instructions
+}
+
+// GetStore returns the value of Store.
+func (s *ResponseCreate) GetStore() OptBool {
+	return s.Store
+}
+
+// GetStream returns the value of Stream.
+func (s *ResponseCreate) GetStream() OptBool {
+	return s.Stream
+}
+
+// GetPreviousResponseID returns the value of PreviousResponseID.
+func (s *ResponseCreate) GetPreviousResponseID() OptNilString {
+	return s.PreviousResponseID
+}
+
+// GetReasoning returns the value of Reasoning.
+func (s *ResponseCreate) GetReasoning() OptResponseCreateReasoning {
+	return s.Reasoning
+}
+
+// GetTools returns the value of Tools.
+func (s *ResponseCreate) GetTools() []ResponseCreateToolsItem {
+	return s.Tools
+}
+
+// GetMaxOutputTokens returns the value of MaxOutputTokens.
+func (s *ResponseCreate) GetMaxOutputTokens() OptInt {
+	return s.MaxOutputTokens
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *ResponseCreate) GetAdditionalProps() ResponseCreateAdditional {
+	return s.AdditionalProps
+}
+
+// SetModel sets the value of Model.
+func (s *ResponseCreate) SetModel(val OptString) {
+	s.Model = val
+}
+
+// SetInput sets the value of Input.
+func (s *ResponseCreate) SetInput(val jx.Raw) {
+	s.Input = val
+}
+
+// SetInstructions sets the value of Instructions.
+func (s *ResponseCreate) SetInstructions(val OptNilString) {
+	s.Instructions = val
+}
+
+// SetStore sets the value of Store.
+func (s *ResponseCreate) SetStore(val OptBool) {
+	s.Store = val
+}
+
+// SetStream sets the value of Stream.
+func (s *ResponseCreate) SetStream(val OptBool) {
+	s.Stream = val
+}
+
+// SetPreviousResponseID sets the value of PreviousResponseID.
+func (s *ResponseCreate) SetPreviousResponseID(val OptNilString) {
+	s.PreviousResponseID = val
+}
+
+// SetReasoning sets the value of Reasoning.
+func (s *ResponseCreate) SetReasoning(val OptResponseCreateReasoning) {
+	s.Reasoning = val
+}
+
+// SetTools sets the value of Tools.
+func (s *ResponseCreate) SetTools(val []ResponseCreateToolsItem) {
+	s.Tools = val
+}
+
+// SetMaxOutputTokens sets the value of MaxOutputTokens.
+func (s *ResponseCreate) SetMaxOutputTokens(val OptInt) {
+	s.MaxOutputTokens = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *ResponseCreate) SetAdditionalProps(val ResponseCreateAdditional) {
+	s.AdditionalProps = val
+}
+
+type ResponseCreateAdditional map[string]jx.Raw
+
+func (s *ResponseCreateAdditional) init() ResponseCreateAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type ResponseCreateReasoning map[string]jx.Raw
+
+func (s *ResponseCreateReasoning) init() ResponseCreateReasoning {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type ResponseCreateToolsItem map[string]jx.Raw
+
+func (s *ResponseCreateToolsItem) init() ResponseCreateToolsItem {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/ResponseDeleted
+type ResponseDeleted struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Deleted bool   `json:"deleted"`
+}
+
+// GetID returns the value of ID.
+func (s *ResponseDeleted) GetID() string {
+	return s.ID
+}
+
+// GetObject returns the value of Object.
+func (s *ResponseDeleted) GetObject() string {
+	return s.Object
+}
+
+// GetDeleted returns the value of Deleted.
+func (s *ResponseDeleted) GetDeleted() bool {
+	return s.Deleted
+}
+
+// SetID sets the value of ID.
+func (s *ResponseDeleted) SetID(val string) {
+	s.ID = val
+}
+
+// SetObject sets the value of Object.
+func (s *ResponseDeleted) SetObject(val string) {
+	s.Object = val
+}
+
+// SetDeleted sets the value of Deleted.
+func (s *ResponseDeleted) SetDeleted(val bool) {
+	s.Deleted = val
+}
+
+func (*ResponseDeleted) deleteResponseRes() {}
+
+// Ref: #/components/schemas/ResponseResource
+type ResponseResource map[string]jx.Raw
+
+func (s *ResponseResource) init() ResponseResource {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+func (*ResponseResource) createResponseRes() {}
+func (*ResponseResource) getResponseRes()    {}
 
 // The model platform service of a project.
 // Ref: #/components/schemas/ServiceResource

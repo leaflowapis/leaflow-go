@@ -9,3 +9,15 @@ func (s *CheckoutOptions) setDefaults() {
 		s.Mode.SetTo(val)
 	}
 }
+
+// setDefaults set default value of fields.
+func (s *ResponseCreate) setDefaults() {
+	{
+		val := bool(false)
+		s.Store.SetTo(val)
+	}
+	{
+		val := bool(false)
+		s.Stream.SetTo(val)
+	}
+}

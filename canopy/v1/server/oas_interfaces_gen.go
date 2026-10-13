@@ -13,12 +13,20 @@ type CreateEmbeddingsRes interface {
 	createEmbeddingsRes()
 }
 
+type CreateResponseRes interface {
+	createResponseRes()
+}
+
 type CreateServiceQuoteRes interface {
 	createServiceQuoteRes()
 }
 
 type CreateServiceRes interface {
 	createServiceRes()
+}
+
+type DeleteResponseRes interface {
+	deleteResponseRes()
 }
 
 type DisableAPIKeyRes interface {
@@ -43,6 +51,10 @@ type GetModelRes interface {
 
 type GetRequestRes interface {
 	getRequestRes()
+}
+
+type GetResponseRes interface {
+	getResponseRes()
 }
 
 type GetServiceRes interface {

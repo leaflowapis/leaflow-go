@@ -16,6 +16,71 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
+// DeleteResponseParams is parameters of delete-response operation.
+type DeleteResponseParams struct {
+	Response string
+}
+
+func unpackDeleteResponseParams(packed middleware.Parameters) (params DeleteResponseParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "response",
+			In:   "path",
+		}
+		params.Response = packed[key].(string)
+	}
+	return params
+}
+
+func decodeDeleteResponseParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteResponseParams, _ error) {
+	// Decode path: response.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "response",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Response = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "response",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DisableAPIKeyParams is parameters of disable-api-key operation.
 type DisableAPIKeyParams struct {
 	KeyId uuid.UUID
@@ -419,6 +484,71 @@ func decodeGetRequestParams(args [1]string, argsEscaped bool, r *http.Request) (
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "requestId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetResponseParams is parameters of get-response operation.
+type GetResponseParams struct {
+	Response string
+}
+
+func unpackGetResponseParams(packed middleware.Parameters) (params GetResponseParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "response",
+			In:   "path",
+		}
+		params.Response = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetResponseParams(args [1]string, argsEscaped bool, r *http.Request) (params GetResponseParams, _ error) {
+	// Decode path: response.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "response",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Response = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "response",
 			In:   "path",
 			Err:  err,
 		}
