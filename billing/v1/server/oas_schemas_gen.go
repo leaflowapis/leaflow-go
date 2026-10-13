@@ -9711,6 +9711,9 @@ func (s *OrderChangeEffective) UnmarshalText(data []byte) error {
 // payment succeeds.
 // Ref: #/components/schemas/OrderItem
 type OrderItem struct {
+	// Whether new account discounts may apply to future renewals. A fixed operator renewal agreement
+	// disables automatic discounts; catalog repricing or a newly selected purchase agreement enables them.
+	RenewalDiscountsEnabled OptBool `json:"renewal_discounts_enabled"`
 	// Financial lines produced by this purchase item, including setup charges.
 	InvoiceItemIds []uuid.UUID               `json:"invoice_item_ids"`
 	Position       OptInt                    `json:"position"`
@@ -9782,6 +9785,11 @@ type OrderItem struct {
 	// The end of that service period, exclusive.
 	PeriodEnd OptNilDateTime  `json:"period_end"`
 	Status    OrderItemStatus `json:"status"`
+}
+
+// GetRenewalDiscountsEnabled returns the value of RenewalDiscountsEnabled.
+func (s *OrderItem) GetRenewalDiscountsEnabled() OptBool {
+	return s.RenewalDiscountsEnabled
 }
 
 // GetInvoiceItemIds returns the value of InvoiceItemIds.
@@ -9937,6 +9945,11 @@ func (s *OrderItem) GetPeriodEnd() OptNilDateTime {
 // GetStatus returns the value of Status.
 func (s *OrderItem) GetStatus() OrderItemStatus {
 	return s.Status
+}
+
+// SetRenewalDiscountsEnabled sets the value of RenewalDiscountsEnabled.
+func (s *OrderItem) SetRenewalDiscountsEnabled(val OptBool) {
+	s.RenewalDiscountsEnabled = val
 }
 
 // SetInvoiceItemIds sets the value of InvoiceItemIds.
@@ -16353,10 +16366,13 @@ func (s *StatementType) UnmarshalText(data []byte) error {
 // the owning service enforces current holdings against the purchased count.
 // Ref: #/components/schemas/Subscription
 type Subscription struct {
-	Currency      string                 `json:"currency"`
-	ChargeType    SubscriptionChargeType `json:"charge_type"`
-	Interval      SubscriptionInterval   `json:"interval"`
-	IntervalCount OptInt                 `json:"interval_count"`
+	// Whether new account discounts may apply to future renewals. A fixed operator renewal agreement
+	// disables automatic discounts; catalog repricing or a newly selected purchase agreement enables them.
+	RenewalDiscountsEnabled OptBool                `json:"renewal_discounts_enabled"`
+	Currency                string                 `json:"currency"`
+	ChargeType              SubscriptionChargeType `json:"charge_type"`
+	Interval                SubscriptionInterval   `json:"interval"`
+	IntervalCount           OptInt                 `json:"interval_count"`
 	// Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Pending
 	// subscriptions show base terms until paying the order fixes any new continuing discount. Absent for
 	// other charge types.
@@ -16420,6 +16436,11 @@ type Subscription struct {
 	// Confirmed start of service. Null until a new subscription becomes active, including after payment.
 	StartedAt OptNilDateTime `json:"started_at"`
 	EndedAt   OptNilDateTime `json:"ended_at"`
+}
+
+// GetRenewalDiscountsEnabled returns the value of RenewalDiscountsEnabled.
+func (s *Subscription) GetRenewalDiscountsEnabled() OptBool {
+	return s.RenewalDiscountsEnabled
 }
 
 // GetCurrency returns the value of Currency.
@@ -16595,6 +16616,11 @@ func (s *Subscription) GetStartedAt() OptNilDateTime {
 // GetEndedAt returns the value of EndedAt.
 func (s *Subscription) GetEndedAt() OptNilDateTime {
 	return s.EndedAt
+}
+
+// SetRenewalDiscountsEnabled sets the value of RenewalDiscountsEnabled.
+func (s *Subscription) SetRenewalDiscountsEnabled(val OptBool) {
+	s.RenewalDiscountsEnabled = val
 }
 
 // SetCurrency sets the value of Currency.

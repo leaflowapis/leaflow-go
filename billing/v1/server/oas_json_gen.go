@@ -14245,6 +14245,12 @@ func (s *OrderItem) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *OrderItem) encodeFields(e *jx.Encoder) {
 	{
+		if s.RenewalDiscountsEnabled.Set {
+			e.FieldStart("renewal_discounts_enabled")
+			s.RenewalDiscountsEnabled.Encode(e)
+		}
+	}
+	{
 		if s.InvoiceItemIds != nil {
 			e.FieldStart("invoice_item_ids")
 			e.ArrStart()
@@ -14418,38 +14424,39 @@ func (s *OrderItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOrderItem = [31]string{
-	0:  "invoice_item_ids",
-	1:  "position",
-	2:  "configuration",
-	3:  "subscription_id",
-	4:  "interval",
-	5:  "interval_count",
-	6:  "termination_policy",
-	7:  "refund_policy",
-	8:  "refund_monthly_amount",
-	9:  "refund_hourly_amount",
-	10: "recurring_amount",
-	11: "setup_amount",
-	12: "charge_type",
-	13: "tax_amount",
-	14: "tax_included_amount",
-	15: "id",
-	16: "order_id",
-	17: "price_id",
-	18: "product_id",
-	19: "product",
-	20: "plan_id",
-	21: "plan_name",
-	22: "quantity",
-	23: "unit_amount",
-	24: "gross_amount",
-	25: "discount_amount",
-	26: "amount",
-	27: "currency",
-	28: "period_start",
-	29: "period_end",
-	30: "status",
+var jsonFieldsNameOfOrderItem = [32]string{
+	0:  "renewal_discounts_enabled",
+	1:  "invoice_item_ids",
+	2:  "position",
+	3:  "configuration",
+	4:  "subscription_id",
+	5:  "interval",
+	6:  "interval_count",
+	7:  "termination_policy",
+	8:  "refund_policy",
+	9:  "refund_monthly_amount",
+	10: "refund_hourly_amount",
+	11: "recurring_amount",
+	12: "setup_amount",
+	13: "charge_type",
+	14: "tax_amount",
+	15: "tax_included_amount",
+	16: "id",
+	17: "order_id",
+	18: "price_id",
+	19: "product_id",
+	20: "product",
+	21: "plan_id",
+	22: "plan_name",
+	23: "quantity",
+	24: "unit_amount",
+	25: "gross_amount",
+	26: "discount_amount",
+	27: "amount",
+	28: "currency",
+	29: "period_start",
+	30: "period_end",
+	31: "status",
 }
 
 // Decode decodes OrderItem from json.
@@ -14461,6 +14468,16 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "renewal_discounts_enabled":
+			if err := func() error {
+				s.RenewalDiscountsEnabled.Reset()
+				if err := s.RenewalDiscountsEnabled.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"renewal_discounts_enabled\"")
+			}
 		case "invoice_item_ids":
 			if err := func() error {
 				s.InvoiceItemIds = make([]uuid.UUID, 0)
@@ -14511,7 +14528,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subscription_id\"")
 			}
 		case "interval":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Interval.Decode(d); err != nil {
 					return err
@@ -14591,7 +14608,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"setup_amount\"")
 			}
 		case "charge_type":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.ChargeType.Decode(d); err != nil {
 					return err
@@ -14621,7 +14638,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_included_amount\"")
 			}
 		case "id":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -14643,7 +14660,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_id\"")
 			}
 		case "price_id":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PriceID = v
@@ -14675,7 +14692,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"product\"")
 			}
 		case "plan_id":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -14687,7 +14704,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "plan_name":
-			requiredBitSet[2] |= 1 << 5
+			requiredBitSet[2] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.PlanName = string(v)
@@ -14699,7 +14716,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_name\"")
 			}
 		case "quantity":
-			requiredBitSet[2] |= 1 << 6
+			requiredBitSet[2] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.Quantity = string(v)
@@ -14751,7 +14768,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"amount\"")
 			}
 		case "currency":
-			requiredBitSet[3] |= 1 << 3
+			requiredBitSet[3] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -14783,7 +14800,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"period_end\"")
 			}
 		case "status":
-			requiredBitSet[3] |= 1 << 6
+			requiredBitSet[3] |= 1 << 7
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -14802,10 +14819,10 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [4]uint8{
-		0b00010000,
+		0b00100000,
+		0b00100000,
+		0b11100101,
 		0b10010000,
-		0b01110010,
-		0b01001000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -26453,6 +26470,12 @@ func (s *Subscription) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Subscription) encodeFields(e *jx.Encoder) {
 	{
+		if s.RenewalDiscountsEnabled.Set {
+			e.FieldStart("renewal_discounts_enabled")
+			s.RenewalDiscountsEnabled.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("currency")
 		e.Str(s.Currency)
 	}
@@ -26640,42 +26663,43 @@ func (s *Subscription) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSubscription = [35]string{
-	0:  "currency",
-	1:  "charge_type",
-	2:  "interval",
-	3:  "interval_count",
-	4:  "recurring_amount",
-	5:  "termination_policy",
-	6:  "refund_policy",
-	7:  "order_item_id",
-	8:  "coupon_id",
-	9:  "coupon",
-	10: "discounted_renewals_remaining",
-	11: "restrictions",
-	12: "billing_cycle_anchor",
-	13: "cancellation",
-	14: "scheduled_change",
-	15: "default_payment_method_id",
-	16: "created_at",
-	17: "id",
-	18: "billing_account_id",
-	19: "account",
-	20: "product_id",
-	21: "project_id",
-	22: "project",
-	23: "product",
-	24: "plan_id",
-	25: "plan_name",
-	26: "price_id",
-	27: "quantity",
-	28: "current_term_end",
-	29: "current_period_start",
-	30: "current_period_end",
-	31: "auto_renew",
-	32: "status",
-	33: "started_at",
-	34: "ended_at",
+var jsonFieldsNameOfSubscription = [36]string{
+	0:  "renewal_discounts_enabled",
+	1:  "currency",
+	2:  "charge_type",
+	3:  "interval",
+	4:  "interval_count",
+	5:  "recurring_amount",
+	6:  "termination_policy",
+	7:  "refund_policy",
+	8:  "order_item_id",
+	9:  "coupon_id",
+	10: "coupon",
+	11: "discounted_renewals_remaining",
+	12: "restrictions",
+	13: "billing_cycle_anchor",
+	14: "cancellation",
+	15: "scheduled_change",
+	16: "default_payment_method_id",
+	17: "created_at",
+	18: "id",
+	19: "billing_account_id",
+	20: "account",
+	21: "product_id",
+	22: "project_id",
+	23: "project",
+	24: "product",
+	25: "plan_id",
+	26: "plan_name",
+	27: "price_id",
+	28: "quantity",
+	29: "current_term_end",
+	30: "current_period_start",
+	31: "current_period_end",
+	32: "auto_renew",
+	33: "status",
+	34: "started_at",
+	35: "ended_at",
 }
 
 // Decode decodes Subscription from json.
@@ -26687,8 +26711,18 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "renewal_discounts_enabled":
+			if err := func() error {
+				s.RenewalDiscountsEnabled.Reset()
+				if err := s.RenewalDiscountsEnabled.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"renewal_discounts_enabled\"")
+			}
 		case "currency":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -26700,7 +26734,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "charge_type":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.ChargeType.Decode(d); err != nil {
 					return err
@@ -26710,7 +26744,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"charge_type\"")
 			}
 		case "interval":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.Interval.Decode(d); err != nil {
 					return err
@@ -26867,7 +26901,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "id":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -26879,7 +26913,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "billing_account_id":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.BillingAccountID = int64(v)
@@ -26891,7 +26925,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"billing_account_id\"")
 			}
 		case "account":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				if err := s.Account.Decode(d); err != nil {
 					return err
@@ -26901,7 +26935,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"account\"")
 			}
 		case "product_id":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				if err := s.ProductID.Decode(d); err != nil {
 					return err
@@ -26931,7 +26965,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"project\"")
 			}
 		case "product":
-			requiredBitSet[2] |= 1 << 7
+			requiredBitSet[3] |= 1 << 0
 			if err := func() error {
 				if err := s.Product.Decode(d); err != nil {
 					return err
@@ -26941,7 +26975,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"product\"")
 			}
 		case "plan_id":
-			requiredBitSet[3] |= 1 << 0
+			requiredBitSet[3] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -26953,7 +26987,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "plan_name":
-			requiredBitSet[3] |= 1 << 1
+			requiredBitSet[3] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.PlanName = string(v)
@@ -26965,7 +26999,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_name\"")
 			}
 		case "price_id":
-			requiredBitSet[3] |= 1 << 2
+			requiredBitSet[3] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PriceID = v
@@ -26977,7 +27011,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "quantity":
-			requiredBitSet[3] |= 1 << 3
+			requiredBitSet[3] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Quantity = string(v)
@@ -27019,7 +27053,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"current_period_end\"")
 			}
 		case "auto_renew":
-			requiredBitSet[3] |= 1 << 7
+			requiredBitSet[4] |= 1 << 0
 			if err := func() error {
 				v, err := d.Bool()
 				s.AutoRenew = bool(v)
@@ -27031,7 +27065,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"auto_renew\"")
 			}
 		case "status":
-			requiredBitSet[4] |= 1 << 0
+			requiredBitSet[4] |= 1 << 1
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -27070,11 +27104,11 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [5]uint8{
-		0b00000111,
+		0b00001110,
 		0b00000000,
-		0b10011110,
-		0b10001111,
-		0b00000001,
+		0b00111100,
+		0b00011111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
