@@ -240,9 +240,8 @@ func (s *AttachPortRequestBody) SetPortID(val uuid.UUID) {
 	s.PortID = val
 }
 
-// Prepaid backup capacity for one region, sold by Compute and bought for a term through its own
-// Billing subscription. Compute applies its coverage to backup usage; it is not a Billing allowance or
-// credit.
+// Backup capacity for one region, sold by Compute and bought for a term through its own Billing
+// subscription. Compute applies its coverage to backup usage; it is not a Billing allowance or credit.
 // Ref: #/components/schemas/BackupCapacityPack
 type BackupCapacityPack struct {
 	ID          uuid.UUID `json:"id"`
@@ -851,10 +850,10 @@ type BackupService struct {
 	RetainedCapacityGib int64 `json:"retained_capacity_gib"`
 	// The total `capacity_gib` of the active capacity packs in this region; this much retained capacity is
 	// covered each hour.
-	PrepaidCapacityGib int64 `json:"prepaid_capacity_gib"`
-	// The postpaid usage price of backups in this region. Null when the project has no billing account.
+	PackCapacityGib int64 `json:"pack_capacity_gib"`
+	// The metered usage price of backups in this region. Null when the project has no billing account.
 	Pricing NilPricing `json:"pricing"`
-	// The prepaid options of capacity packs in this region, per GiB. Null when the project has no billing
+	// The licensed options of capacity packs in this region, per GiB. Null when the project has no billing
 	// account.
 	CapacityPackPricing NilPricing `json:"capacity_pack_pricing"`
 }
@@ -894,9 +893,9 @@ func (s *BackupService) GetRetainedCapacityGib() int64 {
 	return s.RetainedCapacityGib
 }
 
-// GetPrepaidCapacityGib returns the value of PrepaidCapacityGib.
-func (s *BackupService) GetPrepaidCapacityGib() int64 {
-	return s.PrepaidCapacityGib
+// GetPackCapacityGib returns the value of PackCapacityGib.
+func (s *BackupService) GetPackCapacityGib() int64 {
+	return s.PackCapacityGib
 }
 
 // GetPricing returns the value of Pricing.
@@ -944,9 +943,9 @@ func (s *BackupService) SetRetainedCapacityGib(val int64) {
 	s.RetainedCapacityGib = val
 }
 
-// SetPrepaidCapacityGib sets the value of PrepaidCapacityGib.
-func (s *BackupService) SetPrepaidCapacityGib(val int64) {
-	s.PrepaidCapacityGib = val
+// SetPackCapacityGib sets the value of PackCapacityGib.
+func (s *BackupService) SetPackCapacityGib(val int64) {
+	s.PackCapacityGib = val
 }
 
 // SetPricing sets the value of Pricing.
@@ -1088,19 +1087,20 @@ func (s *BackupServiceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// The commercial terms for one newly purchased component. Prepaid requires period and
-// termination_policy; postpaid refuses both. Components in one instance order must use the same mode
-// and period, while their termination policies may differ.
+// The commercial terms for one newly purchased component. Licensed requires period and
+// termination_policy; metered refuses both. Components in one instance order must use the same usage
+// type and period, while their termination policies may differ.
 // Ref: #/components/schemas/BillingChoice
 type BillingChoice struct {
-	Mode              BillingChoiceMode    `json:"mode"`
-	Period            OptBillingPeriod     `json:"period"`
-	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
+	// `licensed` pays for a period in advance; `metered` bills usage until canceled.
+	UsageType         BillingChoiceUsageType `json:"usage_type"`
+	Period            OptBillingPeriod       `json:"period"`
+	TerminationPolicy OptTerminationPolicy   `json:"termination_policy"`
 }
 
-// GetMode returns the value of Mode.
-func (s *BillingChoice) GetMode() BillingChoiceMode {
-	return s.Mode
+// GetUsageType returns the value of UsageType.
+func (s *BillingChoice) GetUsageType() BillingChoiceUsageType {
+	return s.UsageType
 }
 
 // GetPeriod returns the value of Period.
@@ -1113,9 +1113,9 @@ func (s *BillingChoice) GetTerminationPolicy() OptTerminationPolicy {
 	return s.TerminationPolicy
 }
 
-// SetMode sets the value of Mode.
-func (s *BillingChoice) SetMode(val BillingChoiceMode) {
-	s.Mode = val
+// SetUsageType sets the value of UsageType.
+func (s *BillingChoice) SetUsageType(val BillingChoiceUsageType) {
+	s.UsageType = val
 }
 
 // SetPeriod sets the value of Period.
@@ -1128,27 +1128,28 @@ func (s *BillingChoice) SetTerminationPolicy(val OptTerminationPolicy) {
 	s.TerminationPolicy = val
 }
 
-type BillingChoiceMode string
+// `licensed` pays for a period in advance; `metered` bills usage until canceled.
+type BillingChoiceUsageType string
 
 const (
-	BillingChoiceModePrepaid  BillingChoiceMode = "prepaid"
-	BillingChoiceModePostpaid BillingChoiceMode = "postpaid"
+	BillingChoiceUsageTypeLicensed BillingChoiceUsageType = "licensed"
+	BillingChoiceUsageTypeMetered  BillingChoiceUsageType = "metered"
 )
 
-// AllValues returns all BillingChoiceMode values.
-func (BillingChoiceMode) AllValues() []BillingChoiceMode {
-	return []BillingChoiceMode{
-		BillingChoiceModePrepaid,
-		BillingChoiceModePostpaid,
+// AllValues returns all BillingChoiceUsageType values.
+func (BillingChoiceUsageType) AllValues() []BillingChoiceUsageType {
+	return []BillingChoiceUsageType{
+		BillingChoiceUsageTypeLicensed,
+		BillingChoiceUsageTypeMetered,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s BillingChoiceMode) MarshalText() ([]byte, error) {
+func (s BillingChoiceUsageType) MarshalText() ([]byte, error) {
 	switch s {
-	case BillingChoiceModePrepaid:
+	case BillingChoiceUsageTypeLicensed:
 		return []byte(s), nil
-	case BillingChoiceModePostpaid:
+	case BillingChoiceUsageTypeMetered:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1156,13 +1157,13 @@ func (s BillingChoiceMode) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BillingChoiceMode) UnmarshalText(data []byte) error {
-	switch BillingChoiceMode(data) {
-	case BillingChoiceModePrepaid:
-		*s = BillingChoiceModePrepaid
+func (s *BillingChoiceUsageType) UnmarshalText(data []byte) error {
+	switch BillingChoiceUsageType(data) {
+	case BillingChoiceUsageTypeLicensed:
+		*s = BillingChoiceUsageTypeLicensed
 		return nil
-	case BillingChoiceModePostpaid:
-		*s = BillingChoiceModePostpaid
+	case BillingChoiceUsageTypeMetered:
+		*s = BillingChoiceUsageTypeMetered
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -10465,26 +10466,27 @@ func (s *Pricing) SetOptions(val []PricingOption) {
 	s.Options = val
 }
 
-// One way to buy an item. Choose it by giving its mode, period and explicit prepaid termination_policy
-// as billing.
+// One way to buy an item. Choose it by giving its usage_type, period and termination_policy as
+// billing.
 // Ref: #/components/schemas/PricingOption
 type PricingOption struct {
-	Mode PricingOptionMode `json:"mode"`
-	// The term of a prepaid option; null for postpaid.
+	// `licensed` pays for a period in advance; `metered` bills usage until canceled.
+	UsageType PricingOptionUsageType `json:"usage_type"`
+	// The term of a licensed option; null for metered.
 	Period NilBillingPeriod `json:"period"`
 	// What the amounts are for: one `item`, such as an instance or an address; one `gib` of size or
 	// capacity; one `mbps` of bandwidth; or one `snapshot` slot.
 	QuantityUnit PricingOptionQuantityUnit `json:"quantity_unit"`
-	// Prepaid only; null for postpaid. The amount for one period, per quantity unit.
+	// Licensed only; null for metered. The amount for one period, per quantity unit.
 	Amount NilString `json:"amount"`
-	// Prepaid only; null for postpaid. `amount` spread over the months of the period.
+	// Licensed only; null for metered. `amount` spread over the months of the period.
 	MonthlyAmount NilString `json:"monthly_amount"`
-	// Prepaid only. How much lower `monthly_amount` is than that of the shortest prepaid period of the
-	// same item, as a decimal percentage. Null for that shortest period and for postpaid.
+	// Licensed only. How much lower `monthly_amount` is than that of the shortest licensed period of the
+	// same item, as a decimal percentage. Null for that shortest period and for metered.
 	SavingPercent NilString `json:"saving_percent"`
-	// Postpaid only; null for prepaid. The amount for one `unit` of time, per quantity unit.
+	// Metered only; null for licensed. The amount for one `unit` of time, per quantity unit.
 	UnitAmount NilString `json:"unit_amount"`
-	// Postpaid only; null for prepaid. The time unit of `unit_amount`.
+	// Metered only; null for licensed. The time unit of `unit_amount`.
 	Unit NilPricingOptionUnit `json:"unit"`
 	// What canceling does under this option: `immediate` ends the service at once, with any refund
 	// following the option's terms; `period_end` ends it at the end of the paid period. Null means no
@@ -10492,9 +10494,9 @@ type PricingOption struct {
 	TerminationPolicy NilPricingOptionTerminationPolicy `json:"termination_policy"`
 }
 
-// GetMode returns the value of Mode.
-func (s *PricingOption) GetMode() PricingOptionMode {
-	return s.Mode
+// GetUsageType returns the value of UsageType.
+func (s *PricingOption) GetUsageType() PricingOptionUsageType {
+	return s.UsageType
 }
 
 // GetPeriod returns the value of Period.
@@ -10537,9 +10539,9 @@ func (s *PricingOption) GetTerminationPolicy() NilPricingOptionTerminationPolicy
 	return s.TerminationPolicy
 }
 
-// SetMode sets the value of Mode.
-func (s *PricingOption) SetMode(val PricingOptionMode) {
-	s.Mode = val
+// SetUsageType sets the value of UsageType.
+func (s *PricingOption) SetUsageType(val PricingOptionUsageType) {
+	s.UsageType = val
 }
 
 // SetPeriod sets the value of Period.
@@ -10580,47 +10582,6 @@ func (s *PricingOption) SetUnit(val NilPricingOptionUnit) {
 // SetTerminationPolicy sets the value of TerminationPolicy.
 func (s *PricingOption) SetTerminationPolicy(val NilPricingOptionTerminationPolicy) {
 	s.TerminationPolicy = val
-}
-
-type PricingOptionMode string
-
-const (
-	PricingOptionModePrepaid  PricingOptionMode = "prepaid"
-	PricingOptionModePostpaid PricingOptionMode = "postpaid"
-)
-
-// AllValues returns all PricingOptionMode values.
-func (PricingOptionMode) AllValues() []PricingOptionMode {
-	return []PricingOptionMode{
-		PricingOptionModePrepaid,
-		PricingOptionModePostpaid,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PricingOptionMode) MarshalText() ([]byte, error) {
-	switch s {
-	case PricingOptionModePrepaid:
-		return []byte(s), nil
-	case PricingOptionModePostpaid:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PricingOptionMode) UnmarshalText(data []byte) error {
-	switch PricingOptionMode(data) {
-	case PricingOptionModePrepaid:
-		*s = PricingOptionModePrepaid
-		return nil
-	case PricingOptionModePostpaid:
-		*s = PricingOptionModePostpaid
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // What the amounts are for: one `item`, such as an instance or an address; one `gib` of size or
@@ -10724,7 +10685,7 @@ func (s *PricingOptionTerminationPolicy) UnmarshalText(data []byte) error {
 	}
 }
 
-// Postpaid only; null for prepaid. The time unit of `unit_amount`.
+// Metered only; null for licensed. The time unit of `unit_amount`.
 type PricingOptionUnit string
 
 const (
@@ -10753,6 +10714,48 @@ func (s *PricingOptionUnit) UnmarshalText(data []byte) error {
 	switch PricingOptionUnit(data) {
 	case PricingOptionUnitHour:
 		*s = PricingOptionUnitHour
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `licensed` pays for a period in advance; `metered` bills usage until canceled.
+type PricingOptionUsageType string
+
+const (
+	PricingOptionUsageTypeLicensed PricingOptionUsageType = "licensed"
+	PricingOptionUsageTypeMetered  PricingOptionUsageType = "metered"
+)
+
+// AllValues returns all PricingOptionUsageType values.
+func (PricingOptionUsageType) AllValues() []PricingOptionUsageType {
+	return []PricingOptionUsageType{
+		PricingOptionUsageTypeLicensed,
+		PricingOptionUsageTypeMetered,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PricingOptionUsageType) MarshalText() ([]byte, error) {
+	switch s {
+	case PricingOptionUsageTypeLicensed:
+		return []byte(s), nil
+	case PricingOptionUsageTypeMetered:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PricingOptionUsageType) UnmarshalText(data []byte) error {
+	switch PricingOptionUsageType(data) {
+	case PricingOptionUsageTypeLicensed:
+		*s = PricingOptionUsageTypeLicensed
+		return nil
+	case PricingOptionUsageTypeMetered:
+		*s = PricingOptionUsageTypeMetered
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

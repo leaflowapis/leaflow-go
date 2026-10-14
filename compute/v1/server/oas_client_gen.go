@@ -101,8 +101,8 @@ type Invoker interface {
 	CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (CreateBackupRes, error)
 	// CreateBackupCapacityPack invokes create-backup-capacity-pack operation.
 	//
-	// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or
-	// year: `billing` must be prepaid with a period, as offered in the backup service's
+	// Purchases a capacity pack, backup capacity for this project and region bought in advance by month or
+	// year: `billing` must be licensed with a period, as offered in the backup service's
 	// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
 	// total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
 	// excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
@@ -120,9 +120,9 @@ type Invoker interface {
 	// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
 	// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
 	// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-	// different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and
-	// is not collected at checkout. A request the purchase would refuse is refused the same way. Prices
-	// may change, so quote again before final confirmation.
+	// different amount. `estimated_usage_amount` projects metered usage over one month of 730 hours and is
+	// not collected at checkout. A request the purchase would refuse is refused the same way. Prices may
+	// change, so quote again before final confirmation.
 	//
 	// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
 	CreateBackupCapacityPackQuote(ctx context.Context, request *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (CreateBackupCapacityPackQuoteRes, error)
@@ -132,7 +132,7 @@ type Invoker interface {
 	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
 	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
 	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 	// again before final confirmation.
 	//
@@ -141,8 +141,8 @@ type Invoker interface {
 	// CreateBackupService invokes create-backup-service operation.
 	//
 	// Purchases the backup service for this project and region. The service itself has no charge; backups
-	// are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service
-	// as `pending` with its order; it becomes `active` once the order is accepted.
+	// are metered under it by retained capacity. It takes no billing choice. Returns the service as
+	// `pending` with its order; it becomes `active` once the order is accepted.
 	//
 	// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or
 	// suspended.
@@ -155,7 +155,7 @@ type Invoker interface {
 	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
 	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
 	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 	// again before final confirmation.
 	//
@@ -178,7 +178,7 @@ type Invoker interface {
 	// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
 	// automatic checkout. `total` is what automatic checkout would collect before credit grants and
 	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 	// again before final confirmation.
 	//
@@ -212,7 +212,7 @@ type Invoker interface {
 	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
 	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
 	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 	// again before final confirmation.
 	//
@@ -264,7 +264,7 @@ type Invoker interface {
 	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
 	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
 	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 	// again before final confirmation.
 	//
@@ -355,7 +355,7 @@ type Invoker interface {
 	// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
 	// automatic checkout would collect before credit grants and balance; give it as
 	// `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 	// again before final confirmation.
 	//
@@ -936,7 +936,7 @@ type Invoker interface {
 	// ResizeDisk invokes resize-disk operation.
 	//
 	// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the
-	// resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until
+	// resize, which keeps the disk's usage type and period. The disk shows the `resize` operation until
 	// the resize is applied or its order is canceled, including while the order awaits checkout, so other
 	// operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps
 	// its current size until the resize is applied; once `size_gb` shows the new size, extend the file
@@ -961,10 +961,9 @@ type Invoker interface {
 	// ResizeInstance invokes resize-instance operation.
 	//
 	// Creates a Billing change order, including for metered pricing, and returns the instance with the
-	// order. The instance keeps its billing mode and period, priced with the target type's matching
-	// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not
-	// submit a new purchase after paying. After an uncertain response, look the order up before submitting
-	// again.
+	// order. The instance keeps its usage type and period, priced with the target type's matching option;
+	// a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a
+	// new purchase after paying. After an uncertain response, look the order up before submitting again.
 	//
 	// The instance shows the `resize` operation until the resize is applied or its order is canceled,
 	// including while the order awaits checkout, so other operations and a second resize are refused with
@@ -1034,9 +1033,9 @@ type Invoker interface {
 	RunInstanceCommand(ctx context.Context, request *RunCommandRequestBody, params RunInstanceCommandParams) (*CommandResultResponseBody, error)
 	// SetFloatingIPBandwidth invokes set-floating-ip-bandwidth operation.
 	//
-	// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period;
-	// no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike.
-	// The floating IP shows the `set_bandwidth` operation until the change is applied or its order is
+	// Changes the bandwidth of this floating IP through an order that keeps its usage type and period; no
+	// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
+	// floating IP shows the `set_bandwidth` operation until the change is applied or its order is
 	// canceled, including while the order awaits checkout, so other operations and a second change are
 	// refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change
 	// is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
@@ -1073,7 +1072,7 @@ type Invoker interface {
 	//
 	// Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
 	// the target total, not an additional number of slots or a consumable create allowance. billing
-	// chooses one of the quota's pricing options; a change of an existing purchase keeps its billing mode
+	// chooses one of the quota's pricing options; a change of an existing purchase keeps its usage type
 	// and period, and billing must name that option. The purchased quantity is this count.
 	//
 	// Returns the quota with the order. pending_limit records the target while the current limit stays in
@@ -2112,8 +2111,8 @@ func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequ
 
 // CreateBackupCapacityPack invokes create-backup-capacity-pack operation.
 //
-// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or
-// year: `billing` must be prepaid with a period, as offered in the backup service's
+// Purchases a capacity pack, backup capacity for this project and region bought in advance by month or
+// year: `billing` must be licensed with a period, as offered in the backup service's
 // `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
 // total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
 // excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
@@ -2269,9 +2268,9 @@ func (c *Client) sendCreateBackupCapacityPack(ctx context.Context, request *Crea
 // creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
 // and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
 // grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and
-// is not collected at checkout. A request the purchase would refuse is refused the same way. Prices
-// may change, so quote again before final confirmation.
+// different amount. `estimated_usage_amount` projects metered usage over one month of 730 hours and is
+// not collected at checkout. A request the purchase would refuse is refused the same way. Prices may
+// change, so quote again before final confirmation.
 //
 // POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
 func (c *Client) CreateBackupCapacityPackQuote(ctx context.Context, request *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (CreateBackupCapacityPackQuoteRes, error) {
@@ -2419,7 +2418,7 @@ func (c *Client) sendCreateBackupCapacityPackQuote(ctx context.Context, request 
 // anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
 // for automatic checkout. `total` is what automatic checkout would collect before credit grants and
 // balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 // checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 // again before final confirmation.
 //
@@ -2566,8 +2565,8 @@ func (c *Client) sendCreateBackupRestoreQuote(ctx context.Context, request *Rest
 // CreateBackupService invokes create-backup-service operation.
 //
 // Purchases the backup service for this project and region. The service itself has no charge; backups
-// are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service
-// as `pending` with its order; it becomes `active` once the order is accepted.
+// are metered under it by retained capacity. It takes no billing choice. Returns the service as
+// `pending` with its order; it becomes `active` once the order is accepted.
 //
 // Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or
 // suspended.
@@ -2718,7 +2717,7 @@ func (c *Client) sendCreateBackupService(ctx context.Context, request *CreateBac
 // anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
 // for automatic checkout. `total` is what automatic checkout would collect before credit grants and
 // balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 // checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 // again before final confirmation.
 //
@@ -2986,7 +2985,7 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 // nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
 // automatic checkout. `total` is what automatic checkout would collect before credit grants and
 // balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 // checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 // again before final confirmation.
 //
@@ -3415,7 +3414,7 @@ func (c *Client) sendCreateFloatingIPBandwidthQuote(ctx context.Context, request
 // anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
 // for automatic checkout. `total` is what automatic checkout would collect before credit grants and
 // balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 // checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 // again before final confirmation.
 //
@@ -3824,7 +3823,7 @@ func (c *Client) sendCreateImageQuote(ctx context.Context, request *CreateImageQ
 // anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
 // for automatic checkout. `total` is what automatic checkout would collect before credit grants and
 // balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 // checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 // again before final confirmation.
 //
@@ -5034,7 +5033,7 @@ func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshot
 // Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
 // automatic checkout would collect before credit grants and balance; give it as
 // `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
+// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
 // checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
 // again before final confirmation.
 //
@@ -15345,7 +15344,7 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 // ResizeDisk invokes resize-disk operation.
 //
 // Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the
-// resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until
+// resize, which keeps the disk's usage type and period. The disk shows the `resize` operation until
 // the resize is applied or its order is canceled, including while the order awaits checkout, so other
 // operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps
 // its current size until the resize is applied; once `size_gb` shows the new size, extend the file
@@ -15508,10 +15507,9 @@ func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestB
 // ResizeInstance invokes resize-instance operation.
 //
 // Creates a Billing change order, including for metered pricing, and returns the instance with the
-// order. The instance keeps its billing mode and period, priced with the target type's matching
-// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not
-// submit a new purchase after paying. After an uncertain response, look the order up before submitting
-// again.
+// order. The instance keeps its usage type and period, priced with the target type's matching option;
+// a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a
+// new purchase after paying. After an uncertain response, look the order up before submitting again.
 //
 // The instance shows the `resize` operation until the resize is applied or its order is canceled,
 // including while the order awaits checkout, so other operations and a second resize are refused with
@@ -16124,9 +16122,9 @@ func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunCommand
 
 // SetFloatingIPBandwidth invokes set-floating-ip-bandwidth operation.
 //
-// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period;
-// no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike.
-// The floating IP shows the `set_bandwidth` operation until the change is applied or its order is
+// Changes the bandwidth of this floating IP through an order that keeps its usage type and period; no
+// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
+// floating IP shows the `set_bandwidth` operation until the change is applied or its order is
 // canceled, including while the order awaits checkout, so other operations and a second change are
 // refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change
 // is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
@@ -16577,7 +16575,7 @@ func (c *Client) sendSetInstanceNotes(ctx context.Context, request *SetInstanceN
 //
 // Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
 // the target total, not an additional number of slots or a consumable create allowance. billing
-// chooses one of the quota's pricing options; a change of an existing purchase keeps its billing mode
+// chooses one of the quota's pricing options; a change of an existing purchase keeps its usage type
 // and period, and billing must name that option. The purchased quantity is this count.
 //
 // Returns the quota with the order. pending_limit records the target while the current limit stays in

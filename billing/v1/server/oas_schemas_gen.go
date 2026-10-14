@@ -4841,12 +4841,15 @@ type InvoiceItem struct {
 	Unit        OptString `json:"unit"`
 	Quantity    OptString `json:"quantity"`
 	// The part covered by an included allowance, and therefore not charged.
-	DeductedQuantity OptString      `json:"deducted_quantity"`
-	UnitAmount       OptMoney       `json:"unit_amount"`
-	Amount           Money          `json:"amount"`
-	Currency         string         `json:"currency"`
-	PeriodStart      OptNilDateTime `json:"period_start"`
-	PeriodEnd        OptNilDateTime `json:"period_end"`
+	DeductedQuantity OptString `json:"deducted_quantity"`
+	UnitAmount       OptMoney  `json:"unit_amount"`
+	// The quantity `unit_amount` prices, such as 1000000 tokens or 3600 seconds: `amount` is `quantity` ×
+	// `unit_amount` ÷ `unit_quantity`. Present together with `unit_amount`.
+	UnitQuantity OptString      `json:"unit_quantity"`
+	Amount       Money          `json:"amount"`
+	Currency     string         `json:"currency"`
+	PeriodStart  OptNilDateTime `json:"period_start"`
+	PeriodEnd    OptNilDateTime `json:"period_end"`
 	// For a usage line, the values of its meter's presentation dimensions, such as the model and token
 	// kind. Empty for other lines.
 	Dimensions OptInvoiceItemDimensions `json:"dimensions"`
@@ -4933,6 +4936,11 @@ func (s *InvoiceItem) GetDeductedQuantity() OptString {
 // GetUnitAmount returns the value of UnitAmount.
 func (s *InvoiceItem) GetUnitAmount() OptMoney {
 	return s.UnitAmount
+}
+
+// GetUnitQuantity returns the value of UnitQuantity.
+func (s *InvoiceItem) GetUnitQuantity() OptString {
+	return s.UnitQuantity
 }
 
 // GetAmount returns the value of Amount.
@@ -5043,6 +5051,11 @@ func (s *InvoiceItem) SetDeductedQuantity(val OptString) {
 // SetUnitAmount sets the value of UnitAmount.
 func (s *InvoiceItem) SetUnitAmount(val OptMoney) {
 	s.UnitAmount = val
+}
+
+// SetUnitQuantity sets the value of UnitQuantity.
+func (s *InvoiceItem) SetUnitQuantity(val OptString) {
+	s.UnitQuantity = val
 }
 
 // SetAmount sets the value of Amount.
@@ -18387,8 +18400,11 @@ type UsageCharge struct {
 	// The quantity charged: gross quantity less the part covered by allowances.
 	Quantity   string   `json:"quantity"`
 	UnitAmount OptMoney `json:"unit_amount"`
-	Amount     Money    `json:"amount"`
-	Currency   string   `json:"currency"`
+	// The quantity `unit_amount` prices, such as 1000000 tokens or 3600 seconds: `amount` is `quantity` ×
+	// `unit_amount` ÷ `unit_quantity`.
+	UnitQuantity OptString `json:"unit_quantity"`
+	Amount       Money     `json:"amount"`
+	Currency     string    `json:"currency"`
 	// Present after the statement is closed and its invoice is issued.
 	InvoiceID OptNilUUID `json:"invoice_id"`
 	// Present after the statement is closed and its invoice is issued.
@@ -18470,6 +18486,11 @@ func (s *UsageCharge) GetQuantity() string {
 // GetUnitAmount returns the value of UnitAmount.
 func (s *UsageCharge) GetUnitAmount() OptMoney {
 	return s.UnitAmount
+}
+
+// GetUnitQuantity returns the value of UnitQuantity.
+func (s *UsageCharge) GetUnitQuantity() OptString {
+	return s.UnitQuantity
 }
 
 // GetAmount returns the value of Amount.
@@ -18570,6 +18591,11 @@ func (s *UsageCharge) SetQuantity(val string) {
 // SetUnitAmount sets the value of UnitAmount.
 func (s *UsageCharge) SetUnitAmount(val OptMoney) {
 	s.UnitAmount = val
+}
+
+// SetUnitQuantity sets the value of UnitQuantity.
+func (s *UsageCharge) SetUnitQuantity(val OptString) {
+	s.UnitQuantity = val
 }
 
 // SetAmount sets the value of Amount.

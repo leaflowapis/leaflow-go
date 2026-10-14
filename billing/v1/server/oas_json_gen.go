@@ -9680,6 +9680,12 @@ func (s *InvoiceItem) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.UnitQuantity.Set {
+			e.FieldStart("unit_quantity")
+			s.UnitQuantity.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("amount")
 		s.Amount.Encode(e)
 	}
@@ -9717,7 +9723,7 @@ func (s *InvoiceItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfInvoiceItem = [22]string{
+var jsonFieldsNameOfInvoiceItem = [23]string{
 	0:  "taxable",
 	1:  "discount_amount",
 	2:  "discount_id",
@@ -9734,12 +9740,13 @@ var jsonFieldsNameOfInvoiceItem = [22]string{
 	13: "quantity",
 	14: "deducted_quantity",
 	15: "unit_amount",
-	16: "amount",
-	17: "currency",
-	18: "period_start",
-	19: "period_end",
-	20: "dimensions",
-	21: "prorations",
+	16: "unit_quantity",
+	17: "amount",
+	18: "currency",
+	19: "period_start",
+	20: "period_end",
+	21: "dimensions",
+	22: "prorations",
 }
 
 // Decode decodes InvoiceItem from json.
@@ -9915,8 +9922,18 @@ func (s *InvoiceItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"unit_amount\"")
 			}
+		case "unit_quantity":
+			if err := func() error {
+				s.UnitQuantity.Reset()
+				if err := s.UnitQuantity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"unit_quantity\"")
+			}
 		case "amount":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.Amount.Decode(d); err != nil {
 					return err
@@ -9926,7 +9943,7 @@ func (s *InvoiceItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"amount\"")
 			}
 		case "currency":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -9996,7 +10013,7 @@ func (s *InvoiceItem) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b01000000,
 		0b00001000,
-		0b00000011,
+		0b00000110,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -30208,6 +30225,12 @@ func (s *UsageCharge) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.UnitQuantity.Set {
+			e.FieldStart("unit_quantity")
+			s.UnitQuantity.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("amount")
 		s.Amount.Encode(e)
 	}
@@ -30235,7 +30258,7 @@ func (s *UsageCharge) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUsageCharge = [20]string{
+var jsonFieldsNameOfUsageCharge = [21]string{
 	0:  "subscription_id",
 	1:  "id",
 	2:  "project_id",
@@ -30251,11 +30274,12 @@ var jsonFieldsNameOfUsageCharge = [20]string{
 	12: "deducted_quantity",
 	13: "quantity",
 	14: "unit_amount",
-	15: "amount",
-	16: "currency",
-	17: "invoice_id",
-	18: "invoice_item_id",
-	19: "statement_id",
+	15: "unit_quantity",
+	16: "amount",
+	17: "currency",
+	18: "invoice_id",
+	19: "invoice_item_id",
+	20: "statement_id",
 }
 
 // Decode decodes UsageCharge from json.
@@ -30427,8 +30451,18 @@ func (s *UsageCharge) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"unit_amount\"")
 			}
+		case "unit_quantity":
+			if err := func() error {
+				s.UnitQuantity.Reset()
+				if err := s.UnitQuantity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"unit_quantity\"")
+			}
 		case "amount":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.Amount.Decode(d); err != nil {
 					return err
@@ -30438,7 +30472,7 @@ func (s *UsageCharge) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"amount\"")
 			}
 		case "currency":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -30490,8 +30524,8 @@ func (s *UsageCharge) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
 		0b01010011,
-		0b10100110,
-		0b00000001,
+		0b00100110,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
