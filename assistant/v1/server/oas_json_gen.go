@@ -7818,32 +7818,13 @@ func (s *ModelConfigurationResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *ModelConfigurationResource) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("allowModelSelection")
-		e.Bool(s.AllowModelSelection)
-	}
-	{
 		e.FieldStart("defaultModelId")
 		e.Str(s.DefaultModelId)
 	}
-	{
-		e.FieldStart("allowedModelIds")
-		e.ArrStart()
-		for _, elem := range s.AllowedModelIds {
-			e.Str(elem)
-		}
-		e.ArrEnd()
-	}
-	{
-		e.FieldStart("defaultReasoningEffort")
-		e.Str(s.DefaultReasoningEffort)
-	}
 }
 
-var jsonFieldsNameOfModelConfigurationResource = [4]string{
-	0: "allowModelSelection",
-	1: "defaultModelId",
-	2: "allowedModelIds",
-	3: "defaultReasoningEffort",
+var jsonFieldsNameOfModelConfigurationResource = [1]string{
+	0: "defaultModelId",
 }
 
 // Decode decodes ModelConfigurationResource from json.
@@ -7855,20 +7836,8 @@ func (s *ModelConfigurationResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "allowModelSelection":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Bool()
-				s.AllowModelSelection = bool(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"allowModelSelection\"")
-			}
 		case "defaultModelId":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.DefaultModelId = string(v)
@@ -7878,38 +7847,6 @@ func (s *ModelConfigurationResource) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"defaultModelId\"")
-			}
-		case "allowedModelIds":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				s.AllowedModelIds = make([]string, 0)
-				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem string
-					v, err := d.Str()
-					elem = string(v)
-					if err != nil {
-						return err
-					}
-					s.AllowedModelIds = append(s.AllowedModelIds, elem)
-					return nil
-				}); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"allowedModelIds\"")
-			}
-		case "defaultReasoningEffort":
-			requiredBitSet[0] |= 1 << 3
-			if err := func() error {
-				v, err := d.Str()
-				s.DefaultReasoningEffort = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"defaultReasoningEffort\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -7921,7 +7858,7 @@ func (s *ModelConfigurationResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

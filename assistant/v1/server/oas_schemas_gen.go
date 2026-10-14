@@ -1959,9 +1959,9 @@ func (s *CreateTaskRequestBody) SetTimeoutSeconds(val OptInt64) {
 type CreateThreadRequestBody struct {
 	// Absent uses the platform's default approval mode.
 	ApprovalMode OptCreateThreadRequestBodyApprovalMode `json:"approvalMode"`
-	// A Canopy model id to prefer. Omit or pass null to follow the platform default. Non-null requires
-	// allowModelSelection; a disallowed, retired or removed id falls back to the default without clearing
-	// the preference.
+	// A Canopy model id to prefer. Omit or pass null to follow the platform default. The model must be
+	// available in Canopy and support Assistant conversations. A retired or removed id falls back to the
+	// default without clearing the preference.
 	PreferredModelId OptNilString `json:"preferredModelId"`
 	// Use a non-disabled tier declared by Canopy reasoning_tiers. Null uses the model default. Changes
 	// apply at the next model request boundary, including an active conversation.
@@ -3896,15 +3896,8 @@ func (s *MessagePartData) init() MessagePartData {
 
 // Ref: #/components/schemas/ModelConfigurationResource
 type ModelConfigurationResource struct {
-	AllowModelSelection    bool     `json:"allowModelSelection"`
-	DefaultModelId         string   `json:"defaultModelId"`
-	AllowedModelIds        []string `json:"allowedModelIds"`
-	DefaultReasoningEffort string   `json:"defaultReasoningEffort"`
-}
-
-// GetAllowModelSelection returns the value of AllowModelSelection.
-func (s *ModelConfigurationResource) GetAllowModelSelection() bool {
-	return s.AllowModelSelection
+	// Default Canopy model id. The model catalogue and capabilities are owned by Canopy.
+	DefaultModelId string `json:"defaultModelId"`
 }
 
 // GetDefaultModelId returns the value of DefaultModelId.
@@ -3912,34 +3905,9 @@ func (s *ModelConfigurationResource) GetDefaultModelId() string {
 	return s.DefaultModelId
 }
 
-// GetAllowedModelIds returns the value of AllowedModelIds.
-func (s *ModelConfigurationResource) GetAllowedModelIds() []string {
-	return s.AllowedModelIds
-}
-
-// GetDefaultReasoningEffort returns the value of DefaultReasoningEffort.
-func (s *ModelConfigurationResource) GetDefaultReasoningEffort() string {
-	return s.DefaultReasoningEffort
-}
-
-// SetAllowModelSelection sets the value of AllowModelSelection.
-func (s *ModelConfigurationResource) SetAllowModelSelection(val bool) {
-	s.AllowModelSelection = val
-}
-
 // SetDefaultModelId sets the value of DefaultModelId.
 func (s *ModelConfigurationResource) SetDefaultModelId(val string) {
 	s.DefaultModelId = val
-}
-
-// SetAllowedModelIds sets the value of AllowedModelIds.
-func (s *ModelConfigurationResource) SetAllowedModelIds(val []string) {
-	s.AllowedModelIds = val
-}
-
-// SetDefaultReasoningEffort sets the value of DefaultReasoningEffort.
-func (s *ModelConfigurationResource) SetDefaultReasoningEffort(val string) {
-	s.DefaultReasoningEffort = val
 }
 
 // Ref: #/components/schemas/MoveFolderRequestBody
