@@ -534,8 +534,8 @@ func (UnimplementedHandler) ListTaskRuns(ctx context.Context, params ListTaskRun
 // opens a window that contains an ordinal, for jumping to a turn from list-thread-turns or to a search
 // result.
 //
-// Long reasoning, tool arguments and tool output are cut to a preview and marked `truncated`; read the
-// item for all of it. Messages are never cut.
+// Long reasoning and tool arguments are cut to a preview and marked `truncated`; read the item for all
+// of it. Messages are never cut.
 //
 // When the window reaches the end, `queued` holds the messages waiting for the assistant and
 // `streamCursor` is set: subscribe to `thread:{id}` on /api/v1/realtime from it to follow what is

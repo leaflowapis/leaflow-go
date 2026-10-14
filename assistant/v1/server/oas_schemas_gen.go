@@ -9329,15 +9329,17 @@ type ThreadItemResource struct {
 	Status ThreadItemResourceStatus `json:"status"`
 	// Left out of model requests since a revert. Shown, but marked.
 	Reverted bool `json:"reverted"`
-	// Part of the content was cut from this list; read the item for all of it.
+	// Long reasoning or tool arguments were cut from this list; read the item for all of it.
 	Truncated bool `json:"truncated"`
 	// Who wrote an `external_message`. Null for other items.
 	Source NilItemSourceResource `json:"source"`
 	// The Canopy model that produced this item. Null for messages a person or another source sent.
 	ModelId NilString `json:"modelId"`
+	// How long the reasoning or the tool call took. Null while it runs and for other items.
+	DurationMs NilInt64 `json:"durationMs"`
 	// The content, in the order it was written. Text arrives as `append` frames on the realtime stream. An
-	// attachment belongs where it was written, so render parts in order. For a tool call these are its
-	// output.
+	// attachment belongs where it was written, so render parts in order. Empty for tool calls; their
+	// outcome is in `toolCall.detail` and `toolCall.presentation`.
 	Parts       []PartResource       `json:"parts"`
 	Attachments []AttachmentResource `json:"attachments"`
 	// The `data-*` blocks the client attached to a user message. They are not part of what the person
@@ -9391,6 +9393,11 @@ func (s *ThreadItemResource) GetSource() NilItemSourceResource {
 // GetModelId returns the value of ModelId.
 func (s *ThreadItemResource) GetModelId() NilString {
 	return s.ModelId
+}
+
+// GetDurationMs returns the value of DurationMs.
+func (s *ThreadItemResource) GetDurationMs() NilInt64 {
+	return s.DurationMs
 }
 
 // GetParts returns the value of Parts.
@@ -9461,6 +9468,11 @@ func (s *ThreadItemResource) SetSource(val NilItemSourceResource) {
 // SetModelId sets the value of ModelId.
 func (s *ThreadItemResource) SetModelId(val NilString) {
 	s.ModelId = val
+}
+
+// SetDurationMs sets the value of DurationMs.
+func (s *ThreadItemResource) SetDurationMs(val NilInt64) {
+	s.DurationMs = val
 }
 
 // SetParts sets the value of Parts.
@@ -10396,7 +10408,6 @@ type ToolCallResource struct {
 	// A one-line description of what the call did.
 	Detail       NilString               `json:"detail"`
 	Presentation NilPresentationResource `json:"presentation"`
-	DurationMs   NilInt64                `json:"durationMs"`
 	// Whether the call needed a decision before it ran. Null for calls that need none. `auto_approved` was
 	// approved by the automatic reviewer.
 	ApprovalStatus NilToolCallResourceApprovalStatus `json:"approvalStatus"`
@@ -10440,11 +10451,6 @@ func (s *ToolCallResource) GetDetail() NilString {
 // GetPresentation returns the value of Presentation.
 func (s *ToolCallResource) GetPresentation() NilPresentationResource {
 	return s.Presentation
-}
-
-// GetDurationMs returns the value of DurationMs.
-func (s *ToolCallResource) GetDurationMs() NilInt64 {
-	return s.DurationMs
 }
 
 // GetApprovalStatus returns the value of ApprovalStatus.
@@ -10505,11 +10511,6 @@ func (s *ToolCallResource) SetDetail(val NilString) {
 // SetPresentation sets the value of Presentation.
 func (s *ToolCallResource) SetPresentation(val NilPresentationResource) {
 	s.Presentation = val
-}
-
-// SetDurationMs sets the value of DurationMs.
-func (s *ToolCallResource) SetDurationMs(val NilInt64) {
-	s.DurationMs = val
 }
 
 // SetApprovalStatus sets the value of ApprovalStatus.

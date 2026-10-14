@@ -16282,6 +16282,10 @@ func (s *ThreadItemResource) encodeFields(e *jx.Encoder) {
 		s.ModelId.Encode(e)
 	}
 	{
+		e.FieldStart("durationMs")
+		s.DurationMs.Encode(e)
+	}
+	{
 		e.FieldStart("parts")
 		e.ArrStart()
 		for _, elem := range s.Parts {
@@ -16315,7 +16319,7 @@ func (s *ThreadItemResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfThreadItemResource = [14]string{
+var jsonFieldsNameOfThreadItemResource = [15]string{
 	0:  "id",
 	1:  "ordinal",
 	2:  "turnId",
@@ -16325,11 +16329,12 @@ var jsonFieldsNameOfThreadItemResource = [14]string{
 	6:  "truncated",
 	7:  "source",
 	8:  "modelId",
-	9:  "parts",
-	10: "attachments",
-	11: "clientContext",
-	12: "toolCall",
-	13: "createdAt",
+	9:  "durationMs",
+	10: "parts",
+	11: "attachments",
+	12: "clientContext",
+	13: "toolCall",
+	14: "createdAt",
 }
 
 // Decode decodes ThreadItemResource from json.
@@ -16437,8 +16442,18 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"modelId\"")
 			}
-		case "parts":
+		case "durationMs":
 			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				if err := s.DurationMs.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"durationMs\"")
+			}
+		case "parts":
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				s.Parts = make([]PartResource, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -16456,7 +16471,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"parts\"")
 			}
 		case "attachments":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				s.Attachments = make([]AttachmentResource, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -16474,7 +16489,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"attachments\"")
 			}
 		case "clientContext":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				s.ClientContext = make([]ClientContextPart, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -16492,7 +16507,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"clientContext\"")
 			}
 		case "toolCall":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.ToolCall.Decode(d); err != nil {
 					return err
@@ -16502,7 +16517,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"toolCall\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -16524,7 +16539,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -18003,10 +18018,6 @@ func (s *ToolCallResource) encodeFields(e *jx.Encoder) {
 		s.Presentation.Encode(e)
 	}
 	{
-		e.FieldStart("durationMs")
-		s.DurationMs.Encode(e)
-	}
-	{
 		e.FieldStart("approvalStatus")
 		s.ApprovalStatus.Encode(e)
 	}
@@ -18040,20 +18051,19 @@ func (s *ToolCallResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfToolCallResource = [13]string{
+var jsonFieldsNameOfToolCallResource = [12]string{
 	0:  "namespace",
 	1:  "tool",
 	2:  "arguments",
 	3:  "target",
 	4:  "detail",
 	5:  "presentation",
-	6:  "durationMs",
-	7:  "approvalStatus",
-	8:  "approvalReason",
-	9:  "decidedAt",
-	10: "questions",
-	11: "answers",
-	12: "autoAnswerMs",
+	6:  "approvalStatus",
+	7:  "approvalReason",
+	8:  "decidedAt",
+	9:  "questions",
+	10: "answers",
+	11: "autoAnswerMs",
 }
 
 // Decode decodes ToolCallResource from json.
@@ -18131,18 +18141,8 @@ func (s *ToolCallResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"presentation\"")
 			}
-		case "durationMs":
-			requiredBitSet[0] |= 1 << 6
-			if err := func() error {
-				if err := s.DurationMs.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"durationMs\"")
-			}
 		case "approvalStatus":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.ApprovalStatus.Decode(d); err != nil {
 					return err
@@ -18152,7 +18152,7 @@ func (s *ToolCallResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"approvalStatus\"")
 			}
 		case "approvalReason":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.ApprovalReason.Decode(d); err != nil {
 					return err
@@ -18162,7 +18162,7 @@ func (s *ToolCallResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"approvalReason\"")
 			}
 		case "decidedAt":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.DecidedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -18172,7 +18172,7 @@ func (s *ToolCallResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"decidedAt\"")
 			}
 		case "questions":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				switch tt := d.Next(); tt {
 				case jx.Null:
@@ -18197,7 +18197,7 @@ func (s *ToolCallResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"questions\"")
 			}
 		case "answers":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.Answers.Decode(d); err != nil {
 					return err
@@ -18207,7 +18207,7 @@ func (s *ToolCallResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"answers\"")
 			}
 		case "autoAnswerMs":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.AutoAnswerMs.Decode(d); err != nil {
 					return err
@@ -18227,7 +18227,7 @@ func (s *ToolCallResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00011111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
