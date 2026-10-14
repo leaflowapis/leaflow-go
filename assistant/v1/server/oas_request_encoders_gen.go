@@ -25,6 +25,20 @@ func encodeAnswerQuestionRequest(
 	return nil
 }
 
+func encodeCompleteUploadRequest(
+	req *CompleteUploadRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateChannelRequest(
 	req *CreateChannelRequestBody,
 	r *http.Request,
@@ -53,8 +67,64 @@ func encodeCreateFolderRequest(
 	return nil
 }
 
+func encodeCreateScheduleRequest(
+	req *CreateScheduleRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateSubagentRequest(
+	req *CreateSubagentRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateTaskRequest(
+	req *CreateTaskRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateThreadRequest(
 	req *CreateThreadRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateUploadRequest(
+	req *CreateUploadRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -81,6 +151,34 @@ func encodeDecideApprovalRequest(
 	return nil
 }
 
+func encodeMoveFolderRequest(
+	req *MoveFolderRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeMoveThreadRequest(
+	req *MoveThreadRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodePutSkillRequest(
 	req *SkillRequestBody,
 	r *http.Request,
@@ -92,6 +190,16 @@ func encodePutSkillRequest(
 	}
 	encoded := e.Bytes()
 	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePutUploadPartRequest(
+	req PutUploadPartReq,
+	r *http.Request,
+) error {
+	const contentType = "application/octet-stream"
+	body := req
+	ht.SetBody(r, body, contentType)
 	return nil
 }
 
@@ -131,6 +239,20 @@ func encodeRotateChannelSecretRequest(
 
 func encodeSendMessageRequest(
 	req *SendMessageRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSendSubagentMessageRequest(
+	req *SendSubagentRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -213,8 +335,64 @@ func encodeUpdateFolderRequest(
 	return nil
 }
 
+func encodeUpdateScheduleRequest(
+	req *UpdateScheduleRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateSubagentRequest(
+	req *UpdateSubagentRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateTaskRequest(
+	req *UpdateTaskRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeUpdateThreadRequest(
 	req *UpdateThreadRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateUploadRequest(
+	req *UpdateUploadRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

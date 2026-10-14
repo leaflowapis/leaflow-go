@@ -35,6 +35,24 @@ func (UnimplementedHandler) BeginWeixinLogin(ctx context.Context, params BeginWe
 	return r, ht.ErrNotImplemented
 }
 
+// CancelTask implements cancel-task operation.
+//
+// Cancel task.
+//
+// POST /api/v1/tasks/{task}/cancel
+func (UnimplementedHandler) CancelTask(ctx context.Context, params CancelTaskParams) error {
+	return ht.ErrNotImplemented
+}
+
+// CancelUpload implements cancel-upload operation.
+//
+// Cancel upload.
+//
+// POST /api/v1/uploads/{upload}/cancel
+func (UnimplementedHandler) CancelUpload(ctx context.Context, params CancelUploadParams) error {
+	return ht.ErrNotImplemented
+}
+
 // CheckSender implements check-sender operation.
 //
 // For checking a sender policy after changing it. Sends nothing and changes nothing: it runs exactly
@@ -44,6 +62,15 @@ func (UnimplementedHandler) BeginWeixinLogin(ctx context.Context, params BeginWe
 //
 // GET /api/v1/channels/{channel}/sender-check
 func (UnimplementedHandler) CheckSender(ctx context.Context, params CheckSenderParams) (r *SenderCheckResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CompleteUpload implements complete-upload operation.
+//
+// Complete upload.
+//
+// POST /api/v1/uploads/{upload}/complete
+func (UnimplementedHandler) CompleteUpload(ctx context.Context, req *CompleteUploadRequestBody, params CompleteUploadParams) (r *UploadedResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -86,6 +113,33 @@ func (UnimplementedHandler) CreateFolder(ctx context.Context, req *CreateFolderR
 	return r, ht.ErrNotImplemented
 }
 
+// CreateSchedule implements create-schedule operation.
+//
+// Create schedule.
+//
+// POST /api/v1/threads/{thread}/schedules
+func (UnimplementedHandler) CreateSchedule(ctx context.Context, req *CreateScheduleRequestBody, params CreateScheduleParams) (r *ScheduleResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateSubagent implements create-subagent operation.
+//
+// Create subagent.
+//
+// POST /api/v1/threads/{thread}/subagents
+func (UnimplementedHandler) CreateSubagent(ctx context.Context, req *CreateSubagentRequestBody, params CreateSubagentParams) (r *SubagentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateTask implements create-task operation.
+//
+// Create task.
+//
+// POST /api/v1/threads/{thread}/tasks
+func (UnimplementedHandler) CreateTask(ctx context.Context, req *CreateTaskRequestBody, params CreateTaskParams) (r *TaskResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateThread implements create-thread operation.
 //
 // Omit preferredModelId or set it to null to follow the platform default. A non-null preference is
@@ -99,6 +153,15 @@ func (UnimplementedHandler) CreateFolder(ctx context.Context, req *CreateFolderR
 //
 // POST /api/v1/threads
 func (UnimplementedHandler) CreateThread(ctx context.Context, req *CreateThreadRequestBody) (r *ThreadSummaryResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateUpload implements create-upload operation.
+//
+// Create upload.
+//
+// POST /api/v1/uploads
+func (UnimplementedHandler) CreateUpload(ctx context.Context, req *CreateUploadRequestBody) (r *UploadResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -155,12 +218,39 @@ func (UnimplementedHandler) DeleteMemory(ctx context.Context, params DeleteMemor
 	return ht.ErrNotImplemented
 }
 
+// DeleteSchedule implements delete-schedule operation.
+//
+// Delete schedule.
+//
+// DELETE /api/v1/schedules/{schedule}
+func (UnimplementedHandler) DeleteSchedule(ctx context.Context, params DeleteScheduleParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DeleteSkill implements delete-skill operation.
 //
 // A built-in skill of the same name, if there was one, becomes visible again.
 //
 // DELETE /api/v1/skills/{skill}
 func (UnimplementedHandler) DeleteSkill(ctx context.Context, params DeleteSkillParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteSubagent implements delete-subagent operation.
+//
+// Delete subagent.
+//
+// DELETE /api/v1/threads/{thread}/subagents/{subagent}
+func (UnimplementedHandler) DeleteSubagent(ctx context.Context, params DeleteSubagentParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteTask implements delete-task operation.
+//
+// Delete task.
+//
+// DELETE /api/v1/tasks/{task}
+func (UnimplementedHandler) DeleteTask(ctx context.Context, params DeleteTaskParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -182,6 +272,15 @@ func (UnimplementedHandler) DeleteSkill(ctx context.Context, params DeleteSkillP
 //
 // DELETE /api/v1/threads/{thread}
 func (UnimplementedHandler) DeleteThread(ctx context.Context, params DeleteThreadParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteUpload implements delete-upload operation.
+//
+// Delete upload.
+//
+// DELETE /api/v1/uploads/{upload}
+func (UnimplementedHandler) DeleteUpload(ctx context.Context, params DeleteUploadParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -230,12 +329,48 @@ func (UnimplementedHandler) GetFolder(ctx context.Context, params GetFolderParam
 	return r, ht.ErrNotImplemented
 }
 
+// GetModelConfiguration implements getModelConfiguration operation.
+//
+// Model metadata is provided by Canopy. This endpoint exposes only assistant deployment policy.
+//
+// GET /api/v1/model-configuration
+func (UnimplementedHandler) GetModelConfiguration(ctx context.Context) (r *ModelConfigurationResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetSchedule implements get-schedule operation.
+//
+// Get schedule.
+//
+// GET /api/v1/schedules/{schedule}
+func (UnimplementedHandler) GetSchedule(ctx context.Context, params GetScheduleParams) (r *ScheduleResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetSkill implements get-skill operation.
 //
 // Works for built-in skills too; they simply cannot be written.
 //
 // GET /api/v1/skills/{skill}
 func (UnimplementedHandler) GetSkill(ctx context.Context, params GetSkillParams) (r *SkillResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetSubagent implements get-subagent operation.
+//
+// Get subagent.
+//
+// GET /api/v1/threads/{thread}/subagents/{subagent}
+func (UnimplementedHandler) GetSubagent(ctx context.Context, params GetSubagentParams) (r *SubagentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetTask implements get-task operation.
+//
+// Get task.
+//
+// GET /api/v1/tasks/{task}
+func (UnimplementedHandler) GetTask(ctx context.Context, params GetTaskParams) (r *TaskResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -250,6 +385,24 @@ func (UnimplementedHandler) GetThread(ctx context.Context, params GetThreadParam
 	return r, ht.ErrNotImplemented
 }
 
+// GetUpload implements get-upload operation.
+//
+// Get upload.
+//
+// GET /api/v1/uploads/{upload}
+func (UnimplementedHandler) GetUpload(ctx context.Context, params GetUploadParams) (r *UploadResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetUploadConfiguration implements get-upload-configuration operation.
+//
+// Get upload configuration.
+//
+// GET /api/v1/upload-configuration
+func (UnimplementedHandler) GetUploadConfiguration(ctx context.Context) (r *UploadConfigurationResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetWeixinLogin implements get-weixin-login operation.
 //
 // Poll this until the status is success or failure. When the status asks for a verification code,
@@ -258,6 +411,15 @@ func (UnimplementedHandler) GetThread(ctx context.Context, params GetThreadParam
 // GET /api/v1/weixin-logins/{login}
 func (UnimplementedHandler) GetWeixinLogin(ctx context.Context, params GetWeixinLoginParams) (r *LoginResource, _ error) {
 	return r, ht.ErrNotImplemented
+}
+
+// InterruptSubagent implements interrupt-subagent operation.
+//
+// Interrupt subagent.
+//
+// POST /api/v1/threads/{thread}/subagents/{subagent}/interrupt
+func (UnimplementedHandler) InterruptSubagent(ctx context.Context, params InterruptSubagentParams) error {
+	return ht.ErrNotImplemented
 }
 
 // InterruptThread implements interrupt-thread operation.
@@ -337,28 +499,6 @@ func (UnimplementedHandler) ListMemories(ctx context.Context) (r *MemoryListResp
 	return r, ht.ErrNotImplemented
 }
 
-// ListModels implements list-models operation.
-//
-// Returns Canopy's models filtered by Assistant's saved allowlist and selection policy. There is no
-// separately maintained assistant catalogue. The complete list is not paginated and is ordered by
-// displayName, then id.
-//
-// When allowModelSelection is true, models contains allowed Canopy models that remain callable,
-// support tools and have positive context and output limits. When false, only the default is returned
-// if it meets those conditions. defaultModelId is null if no usable default is known. Disallowed,
-// retired and incompatible models are omitted, while saved preferences may still reference them.
-//
-// This operation reads capabilities without making an inference request. It does not check live
-// provider health or the inference key's model restrictions. If Canopy cannot be read and no usable
-// cached snapshot exists, it returns 503 with code MODEL_CATALOG_UNAVAILABLE; a failed read is not an
-// empty catalogue. An empty allowlist returns an empty list without needing Canopy. Supplier
-// connection details and credentials are not returned.
-//
-// GET /api/v1/models
-func (UnimplementedHandler) ListModels(ctx context.Context) (r *ModelListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListPlatforms implements list-platforms operation.
 //
 // The instant messaging platforms that can currently be connected, along with the flow and the
@@ -368,6 +508,15 @@ func (UnimplementedHandler) ListModels(ctx context.Context) (r *ModelListRespons
 //
 // GET /api/v1/platforms
 func (UnimplementedHandler) ListPlatforms(ctx context.Context) (r *PlatformListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListSchedules implements list-schedules operation.
+//
+// List schedules.
+//
+// GET /api/v1/threads/{thread}/schedules
+func (UnimplementedHandler) ListSchedules(ctx context.Context, params ListSchedulesParams) (r *ScheduleListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -384,18 +533,50 @@ func (UnimplementedHandler) ListSkills(ctx context.Context) (r *SkillListRespons
 	return r, ht.ErrNotImplemented
 }
 
+// ListSubagents implements list-subagents operation.
+//
+// List subagents.
+//
+// GET /api/v1/threads/{thread}/subagents
+func (UnimplementedHandler) ListSubagents(ctx context.Context, params ListSubagentsParams) (r *SubagentListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListTasks implements list-tasks operation.
+//
+// List tasks.
+//
+// GET /api/v1/threads/{thread}/tasks
+func (UnimplementedHandler) ListTasks(ctx context.Context, params ListTasksParams) (r *TaskListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListThreads implements list-threads operation.
 //
-// Ordered by most recent activity, limited to the current account's conversations in the current
-// project. `archived` selects between two sets rather than widening one: archived conversations are
-// absent from the default list, and turning the flag on shows those instead.
-//
-// Pass the returned nextCursor as cursor; omit cursor on the first page. Continue with the same q,
-// archived and folder filters. The cursor marks a position in the activity order, so changing filters
-// between pages does not continue the same list.
+// Lists root conversations with execution and usage summaries. Sorting is applied before cursor
+// pagination. Keep identical sorting and filters for subsequent pages. ids requests are bounded
+// batches without pagination.
 //
 // GET /api/v1/threads
 func (UnimplementedHandler) ListThreads(ctx context.Context, params ListThreadsParams) (r *ThreadListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListUploads implements list-uploads operation.
+//
+// List uploads.
+//
+// GET /api/v1/uploads
+func (UnimplementedHandler) ListUploads(ctx context.Context) (r *UploadListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListWorkspaceSchedules implements list-workspace-schedules operation.
+//
+// List schedules in the current workspace.
+//
+// GET /api/v1/schedules
+func (UnimplementedHandler) ListWorkspaceSchedules(ctx context.Context, params ListWorkspaceSchedulesParams) (r *ScheduleListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -405,6 +586,33 @@ func (UnimplementedHandler) ListThreads(ctx context.Context, params ListThreadsP
 //
 // POST /api/v1/threads/{thread}/read
 func (UnimplementedHandler) MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error {
+	return ht.ErrNotImplemented
+}
+
+// MoveFolder implements move-folder operation.
+//
+// Reorder a folder.
+//
+// POST /api/v1/folders/{folder}/move
+func (UnimplementedHandler) MoveFolder(ctx context.Context, req *MoveFolderRequestBody, params MoveFolderParams) (r *FolderResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// MoveThread implements move-thread operation.
+//
+// Move and reorder a conversation.
+//
+// POST /api/v1/threads/{thread}/move
+func (UnimplementedHandler) MoveThread(ctx context.Context, req *MoveThreadRequestBody, params MoveThreadParams) (r *ThreadSummaryResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PauseSchedule implements pause-schedule operation.
+//
+// Pause schedule.
+//
+// POST /api/v1/schedules/{schedule}/pause
+func (UnimplementedHandler) PauseSchedule(ctx context.Context, params PauseScheduleParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -419,6 +627,24 @@ func (UnimplementedHandler) MarkThreadRead(ctx context.Context, params MarkThrea
 // POST /api/v1/skills
 func (UnimplementedHandler) PutSkill(ctx context.Context, req *SkillRequestBody) (r *SkillResource, _ error) {
 	return r, ht.ErrNotImplemented
+}
+
+// PutUploadPart implements put-upload-part operation.
+//
+// Put upload part.
+//
+// PUT /api/v1/uploads/{upload}/parts/{part}
+func (UnimplementedHandler) PutUploadPart(ctx context.Context, req PutUploadPartReq, params PutUploadPartParams) (r *UploadPartResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ResumeSchedule implements resume-schedule operation.
+//
+// Resume schedule.
+//
+// POST /api/v1/schedules/{schedule}/resume
+func (UnimplementedHandler) ResumeSchedule(ctx context.Context, params ResumeScheduleParams) error {
+	return ht.ErrNotImplemented
 }
 
 // RevertThread implements revert-thread operation.
@@ -457,6 +683,15 @@ func (UnimplementedHandler) SendMessage(ctx context.Context, req *SendMessageReq
 	return r, ht.ErrNotImplemented
 }
 
+// SendSubagentMessage implements send-subagent-message operation.
+//
+// Send subagent message.
+//
+// POST /api/v1/threads/{thread}/subagents/{subagent}/messages
+func (UnimplementedHandler) SendSubagentMessage(ctx context.Context, req *SendSubagentRequestBody, params SendSubagentMessageParams) error {
+	return ht.ErrNotImplemented
+}
+
 // SetSkillEnabled implements set-skill-enabled operation.
 //
 // Separate from writing it, because this is the frequent one: a skill that is off costs nothing and
@@ -468,6 +703,15 @@ func (UnimplementedHandler) SendMessage(ctx context.Context, req *SendMessageReq
 // PATCH /api/v1/skills/{skill}
 func (UnimplementedHandler) SetSkillEnabled(ctx context.Context, req *SkillEnabledRequestBody, params SetSkillEnabledParams) (r *SkillResource, _ error) {
 	return r, ht.ErrNotImplemented
+}
+
+// StartTask implements start-task operation.
+//
+// Start task.
+//
+// POST /api/v1/tasks/{task}/start
+func (UnimplementedHandler) StartTask(ctx context.Context, params StartTaskParams) error {
+	return ht.ErrNotImplemented
 }
 
 // SubmitDynamicCallResult implements submit-dynamic-call-result operation.
@@ -492,6 +736,15 @@ func (UnimplementedHandler) SubmitWeixinVerifyCode(ctx context.Context, req *Ver
 	return r, ht.ErrNotImplemented
 }
 
+// TriggerSchedule implements trigger-schedule operation.
+//
+// Trigger schedule.
+//
+// POST /api/v1/schedules/{schedule}/trigger
+func (UnimplementedHandler) TriggerSchedule(ctx context.Context, params TriggerScheduleParams) error {
+	return ht.ErrNotImplemented
+}
+
 // UpdateChannel implements update-channel operation.
 //
 // Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy
@@ -510,6 +763,33 @@ func (UnimplementedHandler) UpdateChannel(ctx context.Context, req *UpdateChanne
 //
 // PATCH /api/v1/folders/{folder}
 func (UnimplementedHandler) UpdateFolder(ctx context.Context, req *UpdateFolderRequestBody, params UpdateFolderParams) (r *FolderResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateSchedule implements update-schedule operation.
+//
+// Update schedule.
+//
+// PATCH /api/v1/schedules/{schedule}
+func (UnimplementedHandler) UpdateSchedule(ctx context.Context, req *UpdateScheduleRequestBody, params UpdateScheduleParams) (r *ScheduleResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateSubagent implements update-subagent operation.
+//
+// Update subagent.
+//
+// PATCH /api/v1/threads/{thread}/subagents/{subagent}
+func (UnimplementedHandler) UpdateSubagent(ctx context.Context, req *UpdateSubagentRequestBody, params UpdateSubagentParams) (r *SubagentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateTask implements update-task operation.
+//
+// Update task.
+//
+// PATCH /api/v1/tasks/{task}
+func (UnimplementedHandler) UpdateTask(ctx context.Context, req *UpdateTaskRequestBody, params UpdateTaskParams) (r *TaskResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -543,6 +823,15 @@ func (UnimplementedHandler) UpdateFolder(ctx context.Context, req *UpdateFolderR
 //
 // PATCH /api/v1/threads/{thread}
 func (UnimplementedHandler) UpdateThread(ctx context.Context, req *UpdateThreadRequestBody, params UpdateThreadParams) (r *ThreadSummaryResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateUpload implements update-upload operation.
+//
+// Update upload.
+//
+// PATCH /api/v1/uploads/{upload}
+func (UnimplementedHandler) UpdateUpload(ctx context.Context, req *UpdateUploadRequestBody, params UpdateUploadParams) (r *UploadResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

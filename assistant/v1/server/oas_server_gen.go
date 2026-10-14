@@ -24,6 +24,18 @@ type Handler interface {
 	//
 	// POST /api/v1/channels/{channel}/weixin-logins
 	BeginWeixinLogin(ctx context.Context, params BeginWeixinLoginParams) (*LoginResource, error)
+	// CancelTask implements cancel-task operation.
+	//
+	// Cancel task.
+	//
+	// POST /api/v1/tasks/{task}/cancel
+	CancelTask(ctx context.Context, params CancelTaskParams) error
+	// CancelUpload implements cancel-upload operation.
+	//
+	// Cancel upload.
+	//
+	// POST /api/v1/uploads/{upload}/cancel
+	CancelUpload(ctx context.Context, params CancelUploadParams) error
 	// CheckSender implements check-sender operation.
 	//
 	// For checking a sender policy after changing it. Sends nothing and changes nothing: it runs exactly
@@ -33,6 +45,12 @@ type Handler interface {
 	//
 	// GET /api/v1/channels/{channel}/sender-check
 	CheckSender(ctx context.Context, params CheckSenderParams) (*SenderCheckResource, error)
+	// CompleteUpload implements complete-upload operation.
+	//
+	// Complete upload.
+	//
+	// POST /api/v1/uploads/{upload}/complete
+	CompleteUpload(ctx context.Context, req *CompleteUploadRequestBody, params CompleteUploadParams) (*UploadedResource, error)
 	// CreateBindingCode implements create-binding-code operation.
 	//
 	// Produces a single-use code to hand to the person being bound. They send that code to the assistant
@@ -63,6 +81,24 @@ type Handler interface {
 	//
 	// POST /api/v1/folders
 	CreateFolder(ctx context.Context, req *CreateFolderRequestBody) (*FolderResource, error)
+	// CreateSchedule implements create-schedule operation.
+	//
+	// Create schedule.
+	//
+	// POST /api/v1/threads/{thread}/schedules
+	CreateSchedule(ctx context.Context, req *CreateScheduleRequestBody, params CreateScheduleParams) (*ScheduleResource, error)
+	// CreateSubagent implements create-subagent operation.
+	//
+	// Create subagent.
+	//
+	// POST /api/v1/threads/{thread}/subagents
+	CreateSubagent(ctx context.Context, req *CreateSubagentRequestBody, params CreateSubagentParams) (*SubagentResource, error)
+	// CreateTask implements create-task operation.
+	//
+	// Create task.
+	//
+	// POST /api/v1/threads/{thread}/tasks
+	CreateTask(ctx context.Context, req *CreateTaskRequestBody, params CreateTaskParams) (*TaskResource, error)
 	// CreateThread implements create-thread operation.
 	//
 	// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is
@@ -76,6 +112,12 @@ type Handler interface {
 	//
 	// POST /api/v1/threads
 	CreateThread(ctx context.Context, req *CreateThreadRequestBody) (*ThreadSummaryResource, error)
+	// CreateUpload implements create-upload operation.
+	//
+	// Create upload.
+	//
+	// POST /api/v1/uploads
+	CreateUpload(ctx context.Context, req *CreateUploadRequestBody) (*UploadResource, error)
 	// DecideApproval implements decide-approval operation.
 	//
 	// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same
@@ -114,12 +156,30 @@ type Handler interface {
 	//
 	// DELETE /api/v1/memories/{memory}
 	DeleteMemory(ctx context.Context, params DeleteMemoryParams) error
+	// DeleteSchedule implements delete-schedule operation.
+	//
+	// Delete schedule.
+	//
+	// DELETE /api/v1/schedules/{schedule}
+	DeleteSchedule(ctx context.Context, params DeleteScheduleParams) error
 	// DeleteSkill implements delete-skill operation.
 	//
 	// A built-in skill of the same name, if there was one, becomes visible again.
 	//
 	// DELETE /api/v1/skills/{skill}
 	DeleteSkill(ctx context.Context, params DeleteSkillParams) error
+	// DeleteSubagent implements delete-subagent operation.
+	//
+	// Delete subagent.
+	//
+	// DELETE /api/v1/threads/{thread}/subagents/{subagent}
+	DeleteSubagent(ctx context.Context, params DeleteSubagentParams) error
+	// DeleteTask implements delete-task operation.
+	//
+	// Delete task.
+	//
+	// DELETE /api/v1/tasks/{task}
+	DeleteTask(ctx context.Context, params DeleteTaskParams) error
 	// DeleteThread implements delete-thread operation.
 	//
 	// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer
@@ -138,6 +198,12 @@ type Handler interface {
 	//
 	// DELETE /api/v1/threads/{thread}
 	DeleteThread(ctx context.Context, params DeleteThreadParams) error
+	// DeleteUpload implements delete-upload operation.
+	//
+	// Delete upload.
+	//
+	// DELETE /api/v1/uploads/{upload}
+	DeleteUpload(ctx context.Context, params DeleteUploadParams) error
 	// DownloadAttachment implements download-attachment operation.
 	//
 	// Returns the original bytes for an attachment id. The response carries long-lived cache headers
@@ -171,12 +237,36 @@ type Handler interface {
 	//
 	// GET /api/v1/folders/{folder}
 	GetFolder(ctx context.Context, params GetFolderParams) (*FolderResource, error)
+	// GetModelConfiguration implements getModelConfiguration operation.
+	//
+	// Model metadata is provided by Canopy. This endpoint exposes only assistant deployment policy.
+	//
+	// GET /api/v1/model-configuration
+	GetModelConfiguration(ctx context.Context) (*ModelConfigurationResource, error)
+	// GetSchedule implements get-schedule operation.
+	//
+	// Get schedule.
+	//
+	// GET /api/v1/schedules/{schedule}
+	GetSchedule(ctx context.Context, params GetScheduleParams) (*ScheduleResource, error)
 	// GetSkill implements get-skill operation.
 	//
 	// Works for built-in skills too; they simply cannot be written.
 	//
 	// GET /api/v1/skills/{skill}
 	GetSkill(ctx context.Context, params GetSkillParams) (*SkillResource, error)
+	// GetSubagent implements get-subagent operation.
+	//
+	// Get subagent.
+	//
+	// GET /api/v1/threads/{thread}/subagents/{subagent}
+	GetSubagent(ctx context.Context, params GetSubagentParams) (*SubagentResource, error)
+	// GetTask implements get-task operation.
+	//
+	// Get task.
+	//
+	// GET /api/v1/tasks/{task}
+	GetTask(ctx context.Context, params GetTaskParams) (*TaskResource, error)
 	// GetThread implements get-thread operation.
 	//
 	// The complete current state of a conversation, for the first render. Its `stream` gives the address
@@ -185,6 +275,18 @@ type Handler interface {
 	//
 	// GET /api/v1/threads/{thread}
 	GetThread(ctx context.Context, params GetThreadParams) (*DocumentResource, error)
+	// GetUpload implements get-upload operation.
+	//
+	// Get upload.
+	//
+	// GET /api/v1/uploads/{upload}
+	GetUpload(ctx context.Context, params GetUploadParams) (*UploadResource, error)
+	// GetUploadConfiguration implements get-upload-configuration operation.
+	//
+	// Get upload configuration.
+	//
+	// GET /api/v1/upload-configuration
+	GetUploadConfiguration(ctx context.Context) (*UploadConfigurationResource, error)
 	// GetWeixinLogin implements get-weixin-login operation.
 	//
 	// Poll this until the status is success or failure. When the status asks for a verification code,
@@ -192,6 +294,12 @@ type Handler interface {
 	//
 	// GET /api/v1/weixin-logins/{login}
 	GetWeixinLogin(ctx context.Context, params GetWeixinLoginParams) (*LoginResource, error)
+	// InterruptSubagent implements interrupt-subagent operation.
+	//
+	// Interrupt subagent.
+	//
+	// POST /api/v1/threads/{thread}/subagents/{subagent}/interrupt
+	InterruptSubagent(ctx context.Context, params InterruptSubagentParams) error
 	// InterruptThread implements interrupt-thread operation.
 	//
 	// Calling this on a conversation with no running turn also returns 204 rather than an error — the
@@ -248,25 +356,6 @@ type Handler interface {
 	//
 	// GET /api/v1/memories
 	ListMemories(ctx context.Context) (*MemoryListResponseBody, error)
-	// ListModels implements list-models operation.
-	//
-	// Returns Canopy's models filtered by Assistant's saved allowlist and selection policy. There is no
-	// separately maintained assistant catalogue. The complete list is not paginated and is ordered by
-	// displayName, then id.
-	//
-	// When allowModelSelection is true, models contains allowed Canopy models that remain callable,
-	// support tools and have positive context and output limits. When false, only the default is returned
-	// if it meets those conditions. defaultModelId is null if no usable default is known. Disallowed,
-	// retired and incompatible models are omitted, while saved preferences may still reference them.
-	//
-	// This operation reads capabilities without making an inference request. It does not check live
-	// provider health or the inference key's model restrictions. If Canopy cannot be read and no usable
-	// cached snapshot exists, it returns 503 with code MODEL_CATALOG_UNAVAILABLE; a failed read is not an
-	// empty catalogue. An empty allowlist returns an empty list without needing Canopy. Supplier
-	// connection details and credentials are not returned.
-	//
-	// GET /api/v1/models
-	ListModels(ctx context.Context) (*ModelListResponseBody, error)
 	// ListPlatforms implements list-platforms operation.
 	//
 	// The instant messaging platforms that can currently be connected, along with the flow and the
@@ -276,6 +365,12 @@ type Handler interface {
 	//
 	// GET /api/v1/platforms
 	ListPlatforms(ctx context.Context) (*PlatformListResponseBody, error)
+	// ListSchedules implements list-schedules operation.
+	//
+	// List schedules.
+	//
+	// GET /api/v1/threads/{thread}/schedules
+	ListSchedules(ctx context.Context, params ListSchedulesParams) (*ScheduleListResponseBody, error)
 	// ListSkills implements list-skills operation.
 	//
 	// Everything the assistant can reach in this project, including the ones that are turned off — an
@@ -286,24 +381,62 @@ type Handler interface {
 	//
 	// GET /api/v1/skills
 	ListSkills(ctx context.Context) (*SkillListResponseBody, error)
+	// ListSubagents implements list-subagents operation.
+	//
+	// List subagents.
+	//
+	// GET /api/v1/threads/{thread}/subagents
+	ListSubagents(ctx context.Context, params ListSubagentsParams) (*SubagentListResponseBody, error)
+	// ListTasks implements list-tasks operation.
+	//
+	// List tasks.
+	//
+	// GET /api/v1/threads/{thread}/tasks
+	ListTasks(ctx context.Context, params ListTasksParams) (*TaskListResponseBody, error)
 	// ListThreads implements list-threads operation.
 	//
-	// Ordered by most recent activity, limited to the current account's conversations in the current
-	// project. `archived` selects between two sets rather than widening one: archived conversations are
-	// absent from the default list, and turning the flag on shows those instead.
-	//
-	// Pass the returned nextCursor as cursor; omit cursor on the first page. Continue with the same q,
-	// archived and folder filters. The cursor marks a position in the activity order, so changing filters
-	// between pages does not continue the same list.
+	// Lists root conversations with execution and usage summaries. Sorting is applied before cursor
+	// pagination. Keep identical sorting and filters for subsequent pages. ids requests are bounded
+	// batches without pagination.
 	//
 	// GET /api/v1/threads
 	ListThreads(ctx context.Context, params ListThreadsParams) (*ThreadListResponseBody, error)
+	// ListUploads implements list-uploads operation.
+	//
+	// List uploads.
+	//
+	// GET /api/v1/uploads
+	ListUploads(ctx context.Context) (*UploadListResponseBody, error)
+	// ListWorkspaceSchedules implements list-workspace-schedules operation.
+	//
+	// List schedules in the current workspace.
+	//
+	// GET /api/v1/schedules
+	ListWorkspaceSchedules(ctx context.Context, params ListWorkspaceSchedulesParams) (*ScheduleListResponseBody, error)
 	// MarkThreadRead implements mark-thread-read operation.
 	//
 	// Mark a conversation as read.
 	//
 	// POST /api/v1/threads/{thread}/read
 	MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error
+	// MoveFolder implements move-folder operation.
+	//
+	// Reorder a folder.
+	//
+	// POST /api/v1/folders/{folder}/move
+	MoveFolder(ctx context.Context, req *MoveFolderRequestBody, params MoveFolderParams) (*FolderResource, error)
+	// MoveThread implements move-thread operation.
+	//
+	// Move and reorder a conversation.
+	//
+	// POST /api/v1/threads/{thread}/move
+	MoveThread(ctx context.Context, req *MoveThreadRequestBody, params MoveThreadParams) (*ThreadSummaryResource, error)
+	// PauseSchedule implements pause-schedule operation.
+	//
+	// Pause schedule.
+	//
+	// POST /api/v1/schedules/{schedule}/pause
+	PauseSchedule(ctx context.Context, params PauseScheduleParams) error
 	// PutSkill implements put-skill operation.
 	//
 	// Creates it, or replaces the project's skill of that name. The whole package goes in each time: files
@@ -314,6 +447,18 @@ type Handler interface {
 	//
 	// POST /api/v1/skills
 	PutSkill(ctx context.Context, req *SkillRequestBody) (*SkillResource, error)
+	// PutUploadPart implements put-upload-part operation.
+	//
+	// Put upload part.
+	//
+	// PUT /api/v1/uploads/{upload}/parts/{part}
+	PutUploadPart(ctx context.Context, req PutUploadPartReq, params PutUploadPartParams) (*UploadPartResource, error)
+	// ResumeSchedule implements resume-schedule operation.
+	//
+	// Resume schedule.
+	//
+	// POST /api/v1/schedules/{schedule}/resume
+	ResumeSchedule(ctx context.Context, params ResumeScheduleParams) error
 	// RevertThread implements revert-thread operation.
 	//
 	// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript
@@ -341,6 +486,12 @@ type Handler interface {
 	//
 	// POST /api/v1/threads/{thread}/messages
 	SendMessage(ctx context.Context, req *SendMessageRequestBody, params SendMessageParams) (*TurnIDResponseBody, error)
+	// SendSubagentMessage implements send-subagent-message operation.
+	//
+	// Send subagent message.
+	//
+	// POST /api/v1/threads/{thread}/subagents/{subagent}/messages
+	SendSubagentMessage(ctx context.Context, req *SendSubagentRequestBody, params SendSubagentMessageParams) error
 	// SetSkillEnabled implements set-skill-enabled operation.
 	//
 	// Separate from writing it, because this is the frequent one: a skill that is off costs nothing and
@@ -351,6 +502,12 @@ type Handler interface {
 	//
 	// PATCH /api/v1/skills/{skill}
 	SetSkillEnabled(ctx context.Context, req *SkillEnabledRequestBody, params SetSkillEnabledParams) (*SkillResource, error)
+	// StartTask implements start-task operation.
+	//
+	// Start task.
+	//
+	// POST /api/v1/tasks/{task}/start
+	StartTask(ctx context.Context, params StartTaskParams) error
 	// SubmitDynamicCallResult implements submit-dynamic-call-result operation.
 	//
 	// The assistant asks the client to run an action by adding a tool call to the conversation with the
@@ -367,6 +524,12 @@ type Handler interface {
 	//
 	// POST /api/v1/weixin-logins/{login}/verify-code
 	SubmitWeixinVerifyCode(ctx context.Context, req *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error)
+	// TriggerSchedule implements trigger-schedule operation.
+	//
+	// Trigger schedule.
+	//
+	// POST /api/v1/schedules/{schedule}/trigger
+	TriggerSchedule(ctx context.Context, params TriggerScheduleParams) error
 	// UpdateChannel implements update-channel operation.
 	//
 	// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy
@@ -382,6 +545,24 @@ type Handler interface {
 	//
 	// PATCH /api/v1/folders/{folder}
 	UpdateFolder(ctx context.Context, req *UpdateFolderRequestBody, params UpdateFolderParams) (*FolderResource, error)
+	// UpdateSchedule implements update-schedule operation.
+	//
+	// Update schedule.
+	//
+	// PATCH /api/v1/schedules/{schedule}
+	UpdateSchedule(ctx context.Context, req *UpdateScheduleRequestBody, params UpdateScheduleParams) (*ScheduleResource, error)
+	// UpdateSubagent implements update-subagent operation.
+	//
+	// Update subagent.
+	//
+	// PATCH /api/v1/threads/{thread}/subagents/{subagent}
+	UpdateSubagent(ctx context.Context, req *UpdateSubagentRequestBody, params UpdateSubagentParams) (*SubagentResource, error)
+	// UpdateTask implements update-task operation.
+	//
+	// Update task.
+	//
+	// PATCH /api/v1/tasks/{task}
+	UpdateTask(ctx context.Context, req *UpdateTaskRequestBody, params UpdateTaskParams) (*TaskResource, error)
 	// UpdateThread implements update-thread operation.
 	//
 	// Changes the title, folder, approval mode, model preference, and whether the conversation is
@@ -412,6 +593,12 @@ type Handler interface {
 	//
 	// PATCH /api/v1/threads/{thread}
 	UpdateThread(ctx context.Context, req *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error)
+	// UpdateUpload implements update-upload operation.
+	//
+	// Update upload.
+	//
+	// PATCH /api/v1/uploads/{upload}
+	UpdateUpload(ctx context.Context, req *UpdateUploadRequestBody, params UpdateUploadParams) (*UploadResource, error)
 	// UploadAttachment implements upload-attachment operation.
 	//
 	// The body is the file bytes themselves, not multipart, one file per request. The kind is determined

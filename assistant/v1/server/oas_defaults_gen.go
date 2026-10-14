@@ -11,9 +11,57 @@ func (s *ClientActionRequest) setDefaults() {
 }
 
 // setDefaults set default value of fields.
+func (s *CreateScheduleRequestBody) setDefaults() {
+	{
+		val := string("UTC")
+		s.Timezone.SetTo(val)
+	}
+	{
+		val := CreateScheduleRequestBodyOverlapPolicy("buffer_one")
+		s.OverlapPolicy.SetTo(val)
+	}
+	{
+		val := int64(300)
+		s.CatchupSeconds.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *CreateSubagentRequestBody) setDefaults() {
+	{
+		val := CreateSubagentRequestBodyForkMode("all")
+		s.ForkMode.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *CreateTaskRequestBody) setDefaults() {
+	{
+		val := int64(3600)
+		s.TimeoutSeconds.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *SkillRequestBody) setDefaults() {
 	{
 		val := bool(true)
 		s.Enabled.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *UpdateScheduleRequestBody) setDefaults() {
+	{
+		val := string("UTC")
+		s.Timezone.SetTo(val)
+	}
+	{
+		val := UpdateScheduleRequestBodyOverlapPolicy("buffer_one")
+		s.OverlapPolicy.SetTo(val)
+	}
+	{
+		val := int64(300)
+		s.CatchupSeconds.SetTo(val)
 	}
 }
