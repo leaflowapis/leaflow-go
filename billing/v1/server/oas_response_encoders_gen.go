@@ -159,19 +159,6 @@ func encodeCreatePaymentMethodSetupResponse(response *PaymentMethodSetupResult, 
 	return nil
 }
 
-func encodeCreateQuoteResponse(response *Quote, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeCreateRenewalOrderResponse(response CreateRenewalOrderRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *Order:
@@ -471,6 +458,19 @@ func encodeGetProductResponse(response GetProductRes, w http.ResponseWriter, spa
 }
 
 func encodeGetProjectAssignmentResponse(response *ProjectAssignment, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetQuoteResponse(response *Quote, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

@@ -10,236 +10,190 @@ import (
 type Handler interface {
 	// CancelOrder implements cancel-order operation.
 	//
-	// Cancels the selected, still-undelivered items of an unaccepted order without recording a delivery
-	// failure. Omit order_item_ids to select every still-pending item, or name one or more items.
-	// Successful items remain delivered and are not refunded. Whole-order and partial cancellation both
-	// require confirmed non-delivery and necessary cleanup. The order keeps its existing pending phase
-	// while any item is still pending; its final outcome follows all item outcomes. Previously failed
-	// items keep their failure outcome.
+	// Cancels the selected undelivered items of an order that has not been accepted, without recording a
+	// delivery failure. Omit order_item_ids to select every pending item. Delivered items stay delivered
+	// and are not refunded; failed items keep their outcome. The order stays pending while any item is
+	// pending, and its final status follows its items.
 	//
-	// Payment may be absent, partial or complete. Once the order's terms are fixed, the selected items
-	// keep their agreed amounts and discounts; credit notes reduce issued invoices, and collected amounts
-	// are returned to their original payment sources. While the terms of a deferred order are not fixed,
-	// the remaining items are priced again. External payment-method refunds can finish asynchronously. An
-	// online payment still waiting for the payer is canceled with the order; one the gateway is already
-	// processing is refused with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`. The order and
-	// financial history are retained; the same cancellation does not refund twice.
+	// Once the order's terms are fixed, the canceled items keep their agreed amounts and discounts: credit
+	// notes reduce the issued invoice, and collected amounts return to their original payment sources,
+	// possibly asynchronously. While a deferred order's terms are not fixed, the remaining items are
+	// priced again. An online payment waiting for the payer is canceled with the order; one the gateway is
+	// processing is refused with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`. Repeating the
+	// cancellation does not refund twice.
 	//
-	// Once the order is accepted, its owning service coordinates cancellation and confirms non-delivery
-	// and cleanup through the cancellation RPC. Delivered items are ended through subscription
-	// cancellation. Unknown delivery or payment outcomes are not refund evidence; in-flight or unknown
-	// payments must be reconciled first. Scheduled changes continue to be canceled through the owning
-	// service. Refund quotations use CreateQuote.refund.
+	// An accepted order is canceled by its owning service, and delivered items through subscription
+	// cancellation. Refunds are quoted with the quote operation's `refund` target.
 	//
 	// POST /api/v1/orders/{orderId}/cancel
 	CancelOrder(ctx context.Context, req OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error)
 	// CancelSubscription implements cancel-subscription operation.
 	//
-	// Requests cancellation on the purchase's agreed terms. Uses the same quotation, eligibility, metering
-	// and original-payment-source refund rules as creating a cancellation. Supply the refund amount from
-	// create-quote with this subscription in cancellation.subscription_ids. Your account access token must
-	// authorize the subscription's current billing account.
+	// Requests cancellation on the purchase's agreed terms, with the same rules as creating a
+	// cancellation. Give the refund amount from a quote with this subscription in
+	// `cancellation.subscription_ids`. The token must authorize the subscription's current billing
+	// account.
 	//
-	// Immediate cancellation asks the owning service to clean up now. Period-end cancellation keeps the
-	// subscription active or suspended until the paid term ends. Neither payment nor acceptance of this
-	// request proves cleanup. The subscription becomes canceled only after the service confirms release
-	// and the end of metering; follow the returned cancellation for progress.
-	//
-	// Related subscriptions released together must be submitted as one group to create-cancellation.
-	// Pending or provisioning purchases are canceled through their order, not this operation. Repeating
-	// the same open cancellation returns it without another refund or command.
+	// Immediate cancellation asks the owning service to release the resources now; period-end cancellation
+	// keeps the subscription active or suspended until the paid term ends. The subscription becomes
+	// canceled when the service confirms the release; follow the returned cancellation. Subscriptions
+	// released together must be canceled together through create-cancellation, and pending or provisioning
+	// purchases through their order. Repeating the request while the cancellation is open returns it.
 	//
 	// POST /api/v1/subscriptions/{subscriptionId}/cancel
 	CancelSubscription(ctx context.Context, req *CancelSubscriptionRequest, params CancelSubscriptionParams) (*Cancellation, error)
 	// CancelTopUp implements cancel-top-up operation.
 	//
-	// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
-	// `canceled` with `cancellation_reason` `requested_by_customer`, and no money is collected for it.
-	// Canceling a top-up that is already canceled returns it unchanged.
+	// Withdraws a pending top-up of the authenticated user at the payment gateway. It becomes `canceled`
+	// with `cancellation_reason` `requested_by_customer`, and nothing is collected. Canceling a canceled
+	// top-up returns it unchanged. If the gateway has already collected the payment, the top-up is
+	// returned as `succeeded` with the balance increased; check `status` in the response.
 	//
-	// If the gateway has already collected the payment, nothing is withdrawn and the top-up is returned as
-	// `succeeded` with the balance increased. Check `status` in the answer rather than assuming the
-	// cancellation took effect.
-	//
-	// Fails with 409 and BILLING_TOPUP_NOT_CANCELABLE when the top-up has already succeeded or failed,
-	// with `status` naming that outcome, and while the gateway is processing the payment and can no longer
-	// withdraw it, with `status` set to `pending`; read the top-up again later in that case.
+	// Fails with 409 `BILLING_TOPUP_NOT_CANCELABLE` when the top-up has succeeded or failed, with `status`
+	// naming the outcome, or while the gateway is processing the payment, with `status` `pending`; read
+	// the top-up again later.
 	//
 	// POST /api/v1/top-ups/{topUpId}/cancel
 	CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error)
 	// CreateBillingAccount implements create-billing-account operation.
 	//
-	// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
-	// prices, orders, invoices, balance — is denominated in it.
-	//
-	// One person may hold several accounts, for example a personal one and one for a team.
+	// Creates a billing account. Its currency is fixed: prices, orders, invoices and balance are all in
+	// it.
 	//
 	// POST /api/v1/billing-accounts
 	CreateBillingAccount(ctx context.Context, req *BillingAccountCreate) (*BillingAccount, error)
 	// CreateCancellation implements create-cancellation operation.
 	//
-	// Ends a set of subscriptions of one service together, at one time. Deleting a resource that a
-	// subscription pays for is an `immediate` cancellation of every subscription released with it, such as
-	// a server with the disks deleted along with it, or an address with its bandwidth.
+	// Ends subscriptions of one service together. Deleting a resource is an `immediate` cancellation of
+	// every subscription released with it, such as a server with its disks or an address with its
+	// bandwidth.
 	//
-	// The service that provides the resources releases them: at once for `immediate`, or at
-	// `scheduled_at`, the end of the paid term, for `period_end`. When release is confirmed, the unused
-	// value is returned the way it was paid, under the refund terms agreed when each subscription was
-	// bought. For `immediate` the refund is computed as of `proration_date`, so the amount confirmed here
-	// is the amount returned: prepaid service used while the resources are being released is not deducted
-	// from it. Usage of a postpaid subscription is charged until its resources are released, as usual.
+	// The owning service releases the resources at once for `immediate`, or at `scheduled_at`, the end of
+	// the paid term, for `period_end`. When release is confirmed, the unused value is returned to the
+	// original payment sources under each subscription's refund terms. For `immediate` the refund is
+	// computed as of `proration_date` and is not reduced by service used during release. Metered usage is
+	// charged until release.
 	//
-	// `mode` must be allowed for every subscription. Postpaid and one-time subscriptions end only
-	// `immediate`. A prepaid subscription ends `period_end` while its paid term lasts, and `immediate`
-	// unless its termination terms allow only the end of the paid term and that term has not ended yet.
-	// For `period_end` the paid terms of all the subscriptions must end at the same time.
+	// `mode` must be allowed for every subscription. Metered and one-time subscriptions end only
+	// `immediate`. A licensed subscription ends `period_end` while its paid term lasts, and `immediate`
+	// unless its terms allow only the end of the paid term and that term has not ended. For `period_end`
+	// all paid terms must end at the same time.
 	//
 	// Refused with:
 	//
-	//  - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is not acceptable
-	//    (`meta.field`), or the subscriptions do not all belong to one service, project, account and
-	//    currency;
+	//  - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is invalid
+	//    (`meta.field`), or the subscriptions do not share one service, project, account and currency;
 	//  - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
-	//  - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed for a subscription, and
-	//    `BILLING_CANCELLATION_TERMS_UNSET` when a prepaid subscription has no termination terms; both
-	//    carry `meta.subscription_id`;
+	//  - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed, and
+	//    `BILLING_CANCELLATION_TERMS_UNSET` when a licensed subscription has no termination terms, both
+	//    with `meta.subscription_id`;
 	//  - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 	//    different times;
 	//  - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
 	//    (`meta.cancellation_id`) or reclaimed (`meta.reason` `reclaim_requested`), or has a paid change
-	//    still waiting to switch (`meta.order_id`);
-	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online payment for a renewal of one of them is in
+	//    waiting to switch (`meta.order_id`);
+	//  - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online renewal payment for one of them is in
 	//    progress;
-	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund is no longer
-	//    `expected_refundable_amount`; quote again.
+	//  - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund no longer equals
+	//    `expected_refundable_amount`.
 	//
-	// Sending the same request again, for the same subscriptions, mode and amount while that cancellation
-	// is still open, returns it with 200 rather than creating another. Renewal orders still waiting for
-	// payment are canceled along with it, and automatic renewal is turned off for every subscription in
-	// the set, for `period_end` as well as `immediate`.
+	// Repeating the request for the same subscriptions, mode and amount while the cancellation is open
+	// returns it with 200. Unpaid renewal orders are canceled with it, and automatic renewal is turned off
+	// for every subscription.
 	//
 	// POST /api/v1/cancellations
 	CreateCancellation(ctx context.Context, req *CancellationCreate) (CreateCancellationRes, error)
 	// CreateContact implements create-contact operation.
 	//
-	// Creates a contact profile for the billing account in the path. Creating a contact does not select it
-	// for invoicing; set the account invoice_contact_id separately.
+	// Creates a contact for the billing account. To use it on invoices, set the account's
+	// invoice_contact_id.
 	//
 	// POST /api/v1/billing-accounts/{accountId}/contacts
 	CreateContact(ctx context.Context, req *ContactCreate, params CreateContactParams) (*Contact, error)
 	// CreatePaymentMethodSetup implements create-payment-method-setup operation.
 	//
-	// Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
-	// charged, and the method appears in the list once the gateway confirms it.
-	//
-	// Card numbers are never sent to or stored by this service.
+	// Returns what the browser needs to open the payment gateway's card form. Nothing is charged; the
+	// method is listed once the gateway confirms it. Card numbers never reach this service.
 	//
 	// POST /api/v1/payment-methods/setup
 	CreatePaymentMethodSetup(ctx context.Context, req *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
-	// CreateQuote implements create-quote operation.
-	//
-	// Calculates exactly one target for a billing account you own: proposed items, an existing order,
-	// renewals, cancellation or order refund. Returns all requested calculations or a structured error. No
-	// quote is saved and no resource, payment, reservation or redemption is created.
-	//
-	// Existing orders use their recorded purchase account and terms. Renewals and cancellations use the
-	// account currently paying for each subscription. Every target must belong to the requested account. A
-	// project association or project token does not authorize a quote.
-	//
-	// Use an existing order quote's total as expected_amount when paying the order's invoice. An order
-	// whose terms are fixed returns its recorded amounts; a different promotion code is refused. Requested
-	// future usage estimates are not collectible checkout amounts. An unknown delivery outcome is not
-	// proof of refund eligibility.
-	//
-	// POST /api/v1/quotes
-	CreateQuote(ctx context.Context, req *QuoteRequest) (*Quote, error)
 	// CreateRenewalOrder implements create-renewal-order operation.
 	//
 	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
 	// Pay its invoice to renew; a promotion code can be applied when paying. Existing subscription
-	// discount commitments are retained. The periods and price are chosen as for renewing. The order can
-	// be paid until the current paid period ends, and never after the end of the first period it renews;
-	// unpaid by then, it is canceled. While auto-renew is on, the renewal due at the end of the period
-	// pays this order instead of placing another, applying an applicable account discount first if the
-	// order's terms are not fixed yet.
+	// discounts are kept. Periods and price are chosen as for renewing. The order can be paid until the
+	// current paid period ends, and never after the end of the first period it renews; unpaid by then, it
+	// is canceled. While auto-renew is on, the renewal due at the end of the period pays this order
+	// instead of placing another, applying an applicable account discount first if its terms are not fixed
+	// yet.
 	//
-	// Save `order_id` before submitting and read the order after an unknown outcome; creating it a second
-	// time conflicts.
+	// Keep `order_id` and read the order after an unknown outcome; creating it again conflicts.
 	//
 	// POST /api/v1/subscriptions/{subscriptionId}/renewal-orders
 	CreateRenewalOrder(ctx context.Context, req *RenewalOrderRequest, params CreateRenewalOrderParams) (CreateRenewalOrderRes, error)
 	// CreateTopUp implements create-top-up operation.
 	//
-	// Creates a top-up for an account owned by the authenticated user and returns its payment information.
-	// The balance increases only after the payment gateway confirms receipt. A top-up has no invoice. Keep
-	// the supplied ID to query the original attempt after a lost response; duplicate creation conflicts.
+	// Creates a top-up for an account of the authenticated user and returns its payment information. The
+	// balance increases when the gateway confirms receipt. Keep the supplied ID to read the attempt after
+	// a lost response; creating it again conflicts.
 	//
 	// POST /api/v1/top-ups
 	CreateTopUp(ctx context.Context, req *TopUpCreate) (*TopUp, error)
 	// CreateWithdrawal implements create-withdrawal operation.
 	//
-	// Withdraws the requested account balance through the original top-ups in receipt order. Fees are
-	// calculated independently per source. expected_items and expected_refund_amount must match the
-	// accepted preview. Reusing the same ID with different terms fails. Only successful items collect a
-	// fee.
+	// Withdraws the requested balance through the original top-ups, oldest first, with fees calculated per
+	// source. expected_items and expected_refund_amount must match the preview. Reusing the ID with
+	// different terms fails. Only successful items are charged a fee.
 	//
 	// POST /api/v1/withdrawals
 	CreateWithdrawal(ctx context.Context, req *WithdrawalCreate) (*Withdrawal, error)
 	// DeleteContact implements delete-contact operation.
 	//
-	// Deletes a contact belonging to this billing account. Returns 404 if the contact does not exist in
-	// this account. The selected invoice contact must be cleared or replaced before deletion. Issued
-	// invoice snapshots are retained.
+	// Deletes a contact of this billing account; 404 if it does not exist in the account. A contact
+	// selected for invoices must be cleared or replaced first. Issued invoices keep their copy.
 	//
 	// DELETE /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 	DeleteContact(ctx context.Context, params DeleteContactParams) error
 	// DeletePaymentMethod implements delete-payment-method operation.
 	//
-	// Refused when it is the only method on an account that has resources billed by the hour, as there
-	// would be nothing left to charge when the balance runs out.
+	// Refused when it is the only payment method of an account with metered resources.
 	//
 	// DELETE /api/v1/payment-methods/{paymentMethodId}
 	DeletePaymentMethod(ctx context.Context, params DeletePaymentMethodParams) error
 	// DeleteSubscription implements delete-subscription operation.
 	//
-	// Sets deleted_at on a canceled or terminated subscription, hiding it from your subscription list and
-	// detail. Your account access token must authorize the subscription's current billing account.
-	// Preserves commercial status, ended_at and billing and financial history. Completed cancellations and
-	// canceled unfulfilled purchases can be deleted directly, without termination. Pending, provisioning,
-	// active and suspended subscriptions are refused with 409 BILLING_SUBSCRIPTION_NOT_ENDED and status in
-	// error params. A scheduled or releasing cancellation does not make a subscription canceled. There is
-	// no force, skip-cleanup or override option. Repeating deletion preserves the original deleted_at.
-	// Sends no cleanup command and creates no refund; outstanding cleanup continues.
+	// Hides a canceled or terminated subscription from your subscription list and detail by setting
+	// deleted_at; its status, ended_at and history are kept. The token must authorize the subscription's
+	// current billing account. A subscription that has not ended is refused with 409
+	// `BILLING_SUBSCRIPTION_NOT_ENDED` and `status`. Repeating it keeps the original deleted_at. It sends
+	// no cleanup command and creates no refund.
 	//
 	// DELETE /api/v1/subscriptions/{subscriptionId}
 	DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error
 	// GetAccountBalance implements get-account-balance operation.
 	//
-	// Returns the owned account balance, applicable credit groups, unpaid invoice amounts, unbilled
-	// estimates and pending returns separately. Returns 404 for a missing account and 403 for an account
-	// owned by another user.
+	// The balance of your account, with credit groups, unpaid invoice amounts, unbilled estimates and
+	// pending returns. Returns 404 for a missing account and 403 for another user's account.
 	//
 	// GET /api/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
 	// GetBillingAccount implements get-billing-account operation.
 	//
-	// Returns an owned account settlement currency, lifecycle state and selected invoice contact. Returns
-	// 404 if the account does not exist and 403 if it belongs to another user.
+	// Your billing account with its currency, status and invoice contact. Returns 404 if it does not exist
+	// and 403 if it belongs to another user.
 	//
 	// GET /api/v1/billing-accounts/{accountId}
 	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
 	// GetCancellation implements get-cancellation operation.
 	//
-	// Returns a cancellation for an authorized billing account with its schedule, expected refundable
-	// amount and individual subscription outcomes. Read individual item states for per-subscription
-	// outcomes, including partial success.
+	// A cancellation of your billing account with its schedule, expected refundable amount and the outcome
+	// for each subscription, including partial success.
 	//
 	// GET /api/v1/cancellations/{cancellationId}
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
 	// GetContact implements get-contact operation.
 	//
-	// Returns a contact belonging to this billing account. Returns 404 if the contact does not exist in
-	// this account.
+	// A contact of this billing account. Returns 404 if it does not exist in the account.
 	//
 	// GET /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 	GetContact(ctx context.Context, params GetContactParams) (*Contact, error)
@@ -251,203 +205,194 @@ type Handler interface {
 	GetCreditNote(ctx context.Context, params GetCreditNoteParams) (*CreditNote, error)
 	// GetInvoice implements get-invoice operation.
 	//
-	// Returns an invoice for an owned billing account with its amounts, tax lines and payment state,
-	// whether issued or the draft invoice of an order. Returns 404 for a missing invoice or another draft
-	// and 403 when its account belongs to another user.
+	// An invoice of your billing account, issued or an order's draft, with its amounts, tax lines and
+	// payment state. A missing invoice or another draft returns 404; an invoice of another user's account
+	// returns 403.
 	//
 	// GET /api/v1/invoices/{invoiceId}
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
 	// GetOrder implements get-order operation.
 	//
-	// Returns an order charged to an owned billing account with its commercial state and invoice
-	// reference. An unknown order returns 404; an order on another user account is forbidden.
+	// An order of your billing account with its status and invoice. An unknown order returns 404; another
+	// user's order returns 403.
 	//
 	// GET /api/v1/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
 	// GetPlan implements get-plan operation.
 	//
-	// Resolves a stored identifier into something that can be displayed. Returns items that are no longer
-	// on sale: an existing purchase still refers to one.
+	// A plan, including one no longer on sale.
 	//
 	// GET /api/v1/plans/{planId}
 	GetPlan(ctx context.Context, params GetPlanParams) (GetPlanRes, error)
 	// GetPrice implements get-price operation.
 	//
-	// Returns the catalog price, including archived prices. Fixed purchase history and renewal agreements
-	// are shown on orders and subscriptions rather than reconstructed from today's catalog.
+	// A catalog price, archived prices included. The terms of past purchases are on their orders and
+	// subscriptions.
 	//
 	// GET /api/v1/prices/{priceId}
 	GetPrice(ctx context.Context, params GetPriceParams) (GetPriceRes, error)
 	// GetProduct implements get-product operation.
 	//
-	// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or the terms
-	// of a credit — into something that can be displayed.
+	// A product by its ID.
 	//
 	// GET /api/v1/products/{productId}
 	GetProduct(ctx context.Context, params GetProductParams) (GetProductRes, error)
 	// GetProjectAssignment implements get-project-assignment operation.
 	//
-	// Returns the current assignment for the project identified by projectId. Returns 404 when no billing
-	// account is assigned; no resources can be created until one is assigned.
+	// The project's current assignment. Returns 404 when no billing account is assigned; the project
+	// cannot create resources until one is.
 	//
 	// GET /api/v1/assignments/{projectId}
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
+	// GetQuote implements get-quote operation.
+	//
+	// Calculates exactly one target for a billing account you own: proposed items, an existing order,
+	// renewals, a cancellation or an order refund. Nothing is saved, reserved or redeemed.
+	//
+	// Existing orders use their recorded account and terms; renewals and cancellations use the account
+	// currently paying for each subscription. Every target must belong to the requested account; a project
+	// token does not authorize a quote. An existing order's total is the expected_amount for paying its
+	// invoice. Usage estimates are not checkout amounts.
+	//
+	// QUERY /api/v1/quotes
+	GetQuote(ctx context.Context, req *QuoteRequest) (*Quote, error)
 	// GetStatement implements get-statement operation.
 	//
-	// Returns an owned-account consumption batch with its period, estimated or closed amounts and invoice
-	// reference. Returns 404 for a missing batch and 403 when the billing account belongs to another user.
+	// A statement of your billing account with its period, estimated or closed amounts and invoice.
+	// Returns 404 for a missing statement and 403 for another user's account.
 	//
 	// GET /api/v1/statements/{statementId}
 	GetStatement(ctx context.Context, params GetStatementParams) (*Statement, error)
 	// GetStatementUsage implements get-statement-usage operation.
 	//
-	// Reads the consumption summary that is updated in the same transaction as usage is priced. Group by
-	// project, product or meter and filter within the statement. Quantities are included only for meter
-	// groups so different units are never combined.
+	// The statement's consumption, grouped by project, product or meter and filtered within the statement.
+	// Quantities are given only for meter groups; grouping by meter also splits by the meter's
+	// presentation dimensions.
 	//
 	// GET /api/v1/statements/{statementId}/usage-summary
 	GetStatementUsage(ctx context.Context, params GetStatementUsageParams) (*StatementSummary, error)
 	// GetSubscription implements get-subscription operation.
 	//
-	// Returns a subscription visible to the authorized billing account. Soft-deleted subscriptions are
-	// reported as not found.
+	// A subscription of the authorized billing account. Deleted subscriptions are reported as not found.
 	//
 	// GET /api/v1/subscriptions/{subscriptionId}
 	GetSubscription(ctx context.Context, params GetSubscriptionParams) (*Subscription, error)
 	// GetTopUp implements get-top-up operation.
 	//
-	// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet
-	// spent. It is not an invoice.
-	//
-	// While the top-up is pending, the answer includes the customer's next step as the payment gateway
-	// currently reports it, so that a payment interrupted by a closed page can be continued. When the
-	// gateway cannot be reached, the top-up is returned without `action`; read it again later.
+	// A top-up of the authenticated user, with its outcome and unspent amount. While it is pending,
+	// `action` carries the customer's next step as the gateway reports it, so an interrupted payment can
+	// be continued; when the gateway cannot be reached, `action` is omitted.
 	//
 	// GET /api/v1/top-ups/{topUpId}
 	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
 	// GetWithdrawal implements get-withdrawal operation.
 	//
-	// Reads the accepted amounts and aggregate outcome of an authorized withdrawal. List its source items
-	// for each original-method refund result.
+	// A withdrawal with its accepted amounts and overall outcome; list its items for each refund result.
 	//
 	// GET /api/v1/withdrawals/{withdrawalId}
 	GetWithdrawal(ctx context.Context, params GetWithdrawalParams) (*Withdrawal, error)
 	// ListAccountDiscounts implements list-account-discounts operation.
 	//
-	// Coupons placed on the account directly, which apply at checkout without a code being entered. A
-	// coupon reached through a code is not listed here.
+	// Coupons held by the account, applied at checkout without a code. Coupons reached through a code are
+	// not listed.
 	//
 	// GET /api/v1/discounts
 	ListAccountDiscounts(ctx context.Context, params ListAccountDiscountsParams) (*DiscountList, error)
 	// ListActiveResources implements list-active-resources operation.
 	//
-	// Lists continuous metering registrations paid for by your billing accounts. Their state does not
-	// describe machine runtime or health. Project filters narrow the authorized accounts; they do not
-	// grant project-based access.
+	// Continuous metering registrations paid for by your billing accounts. Their state does not describe
+	// the resource's runtime. Project filters only narrow the result.
 	//
 	// GET /api/v1/active-resources
 	ListActiveResources(ctx context.Context, params ListActiveResourcesParams) (*ActiveResourceList, error)
 	// ListAllowances implements list-allowances operation.
 	//
-	// Lists remaining usage quantities, such as bytes, seconds or tokens. Applicable allowances are
-	// consumed before usage is charged. Lower priority values are consumed first, followed by earlier
-	// expiry and earlier issuance.
-	//
-	// Unused quantity expires without a refund or carry-over. Promotional allowances apply to usage paid
-	// by their holding account. Included allowances apply only to the associated subscription, including
-	// after its project moves to another billing account.
+	// Remaining usage quantities, such as bytes, seconds or tokens. Applicable allowances are consumed
+	// before usage is charged: lower priority values first, then earlier expiry, then earlier issuance.
+	// Unused quantity expires without refund or carry-over. Promotional allowances apply to usage paid by
+	// their holding account; included allowances apply only to their subscription, also after its project
+	// moves to another billing account.
 	//
 	// GET /api/v1/allowances
 	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
 	// ListBillingAccounts implements list-billing-accounts operation.
 	//
-	// Paginated billing accounts owned by the authenticated user. Accounts owned by other users are
-	// excluded; the result is empty when the user owns none.
+	// Billing accounts owned by the authenticated user.
 	//
 	// GET /api/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
 	// ListCancellations implements list-cancellations operation.
 	//
-	// Newest first. Filter by `subscription_id` and `status=open` to find the cancellation now under way
-	// for a subscription.
+	// Newest first. Filter by `subscription_id` and `status=open` to find a subscription's cancellation in
+	// progress.
 	//
 	// GET /api/v1/cancellations
 	ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error)
 	// ListContacts implements list-contacts operation.
 	//
-	// Paginated contact profiles belonging to the billing account in the path, including inactive
-	// contacts. Returns 404 if the account does not exist.
+	// Contacts of the billing account, inactive ones included. Returns 404 if the account does not exist.
 	//
 	// GET /api/v1/billing-accounts/{accountId}/contacts
 	ListContacts(ctx context.Context, params ListContactsParams) (*ContactList, error)
 	// ListCreditGrants implements list-credit-grants operation.
 	//
-	// Each grant shows what remains and what it may be used for. Credit is spent before the balance and
-	// cannot be withdrawn.
+	// Credit grants with what remains and what each may pay for. Credit is spent before balance and cannot
+	// be withdrawn.
 	//
 	// GET /api/v1/credit-grants
 	ListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (*CreditGrantList, error)
 	// ListCreditNoteItems implements list-credit-note-items operation.
 	//
-	// The original invoice lines reduced by this note. Requires authorization for their invoice's billing
-	// account.
+	// The invoice lines this credit note reduced.
 	//
 	// GET /api/v1/credit-notes/{creditNoteId}/items
 	ListCreditNoteItems(ctx context.Context, params ListCreditNoteItemsParams) (*CreditNoteItemList, error)
 	// ListCreditNotes implements list-credit-notes operation.
 	//
-	// Newest issued_at first, then ID. Requires authorization for the invoice's billing account. Filters
-	// narrow authorized results and apply before counting and paging.
+	// Credit notes, newest first. Filters apply within the billing accounts you are authorized for.
 	//
 	// GET /api/v1/credit-notes
 	ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error)
 	// ListCurrencies implements list-currencies operation.
 	//
-	// The currencies a new billing account can be opened in. A retired currency is not listed, although
-	// accounts already opened in it keep working. Results are paginated.
+	// Currencies a new billing account can be opened in; retired currencies are not listed.
 	//
 	// GET /api/v1/currencies
 	ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error)
 	// ListEntitlements implements list-entitlements operation.
 	//
-	// Capabilities that come with what has been bought. A capability that is not held simply does not
-	// appear, so that "this does not exist" and "this has not been bought" cannot be confused.
-	//
-	// Derived from live subscriptions and active feature grants rather than stored, so this always agrees
-	// with what is being paid for and granted. It stops being listed as soon as the subscription or grant
-	// providing it ends.
+	// Capabilities granted by live subscriptions and active feature grants. A capability not held is not
+	// listed, and one stops being listed when the subscription or grant providing it ends.
 	//
 	// GET /api/v1/entitlements
 	ListEntitlements(ctx context.Context, params ListEntitlementsParams) (*EntitlementList, error)
 	// ListFeatureGrants implements list-feature-grants operation.
 	//
-	// Access to features held by a billing account for a period, for example through a membership. While a
-	// grant is active, every project whose current billing account holds it has the feature, in addition
-	// to the features of its own subscriptions.
+	// Features held by a billing account for a period, for example through a membership. While a grant is
+	// active, every project whose current billing account holds it has the feature, in addition to its
+	// subscriptions' features.
 	//
 	// GET /api/v1/feature-grants
 	ListFeatureGrants(ctx context.Context, params ListFeatureGrantsParams) (*FeatureGrantList, error)
 	// ListInvoiceItems implements list-invoice-items operation.
 	//
-	// Paginated lines of an invoice belonging to an owned billing account, issued or the draft invoice of
-	// an order, including their service periods and project references. A missing invoice or another draft
-	// returns 404; another user account returns 403.
+	// Lines of an invoice of your billing account, issued or an order's draft, with their service periods
+	// and projects. A missing invoice or another draft returns 404; an invoice of another user's account
+	// returns 403.
 	//
 	// GET /api/v1/invoices/{invoiceId}/items
 	ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error)
 	// ListInvoices implements list-invoices operation.
 	//
-	// Paginated issued invoices belonging to owned billing accounts, filtered by billing_account_id,
-	// subscription_id, status and creation interval. Drafts are excluded, including the draft invoice of
-	// an order awaiting payment, which is reached through its order; top-ups do not create invoices.
+	// Issued invoices of your billing accounts. Drafts are not listed; an order's draft invoice is reached
+	// through its order. Top-ups have no invoices.
 	//
 	// GET /api/v1/invoices
 	ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error)
 	// ListMonthlyStatements implements list-monthly-statements operation.
 	//
-	// Usage billing by UTC calendar month for owned billing accounts, newest first. Each period combines
-	// its statements, the invoices they issued and how those invoices were paid; usage is billed about
-	// hourly, so a month holds many statements. Filter by billing_account_id and by period start.
+	// Usage billing per UTC calendar month for your billing accounts, newest first. Each month combines
+	// its statements, the invoices they issued and how those were paid.
 	//
 	// GET /api/v1/monthly-statements
 	ListMonthlyStatements(ctx context.Context, params ListMonthlyStatementsParams) (*MonthlyStatementList, error)
@@ -459,74 +404,62 @@ type Handler interface {
 	ListOrderItems(ctx context.Context, params ListOrderItemsParams) (*OrderItemList, error)
 	// ListOrders implements list-orders operation.
 	//
-	// Lists acceptance status and associated invoice amounts. A pending order is not yet accepted; its
-	// invoice shows whether it still needs payment. accepted means accepted, not delivered. Pending orders
-	// can expire at expires_at.
+	// Orders with their status and invoice amounts. A pending order is not yet accepted and can expire at
+	// expires_at; its invoice shows whether payment is needed. Accepted does not mean delivered.
 	//
 	// GET /api/v1/orders
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
 	// ListPaymentMethods implements list-payment-methods operation.
 	//
-	// Paginated saved payment methods for owned billing accounts, optionally restricted to
-	// billing_account_id. Removed methods are excluded; they do not disappear from historical payment
-	// records.
+	// Saved payment methods of your billing accounts, optionally for one billing_account_id. Removed
+	// methods are not listed.
 	//
 	// GET /api/v1/payment-methods
 	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
 	// ListPaymentOptions implements list-payment-options operation.
 	//
-	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
-	// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
-	// others are refused. An empty result means no online payment is available for this account. Results
-	// are paginated.
+	// The payment gateways and methods currently accepting the account's currency, preferred gateway
+	// first. Top-ups and invoice payments must use one listed here. An empty result means online payment
+	// is unavailable for the account.
 	//
 	// GET /api/v1/billing-accounts/{accountId}/payment-options
 	ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error)
 	// ListPlans implements list-plans operation.
 	//
-	// Paginated active plans for the required product_id, with their feature allocations. An unknown
-	// product returns 404; If-None-Match can return 304 for an unchanged page.
+	// Active plans of product_id with their features. An unknown product returns 404; If-None-Match
+	// returns 304 for an unchanged page.
 	//
 	// GET /api/v1/plans
 	ListPlans(ctx context.Context, params ListPlansParams) (ListPlansRes, error)
 	// ListPrices implements list-prices operation.
 	//
-	// Every sellable thing and what it costs, in one request. A plan appears once per price.
-	//
-	// `currency` is required: a plan has a price in each currency it is sold in, so "what does this cost"
-	// has no answer without one.
-	//
-	// Archived prices are left out. Existing subscriptions keep the terms they were bought at, so this is
-	// not the place to look up what an existing purchase is paying.
+	// Every active price in the currency, one entry per plan and price. Archived prices are not listed;
+	// existing subscriptions keep the terms they were bought at.
 	//
 	// GET /api/v1/prices
 	ListPrices(ctx context.Context, params ListPricesParams) (ListPricesRes, error)
 	// ListPricesByPlan implements list-prices-by-plan operation.
 	//
-	// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
-	// charged more.
+	// Public list prices. An account with a negotiated agreement may be charged less, never more.
 	//
 	// GET /api/v1/plans/{planId}/prices
 	ListPricesByPlan(ctx context.Context, params ListPricesByPlanParams) (ListPricesByPlanRes, error)
 	// ListProducts implements list-products operation.
 	//
-	// Paginated registered catalog products with their service identities and descriptions. Supports If-
-	// None-Match and returns 304 when the selected page has not changed.
+	// Registered products. If-None-Match returns 304 for an unchanged page.
 	//
 	// GET /api/v1/products
 	ListProducts(ctx context.Context, params ListProductsParams) (ListProductsRes, error)
 	// ListProjectAssignments implements list-project-assignments operation.
 	//
-	// Paginated current project assignments to accounts owned by the authenticated user. Filter by
-	// billing_account_id or project_ids; historical financial records keep their original account
-	// assignment.
+	// Current project assignments to your billing accounts, filtered by billing_account_id or project_ids.
+	// Past charges keep the account they were assigned to.
 	//
 	// GET /api/v1/assignments
 	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
 	// ListRates implements list-rates operation.
 	//
-	// Only public price lists are readable here. A list written for a single agreement is not, and its
-	// identifier cannot be used to reach it.
+	// Rules of a public rate card; contract cards are not readable here.
 	//
 	// GET /api/v1/rate-cards/{rateCardId}/rules
 	ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error)
@@ -556,110 +489,99 @@ type Handler interface {
 	ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error)
 	// ListStatements implements list-statements operation.
 	//
-	// Paginated consumption statement batches for owned billing accounts, filtered by billing_account_id,
-	// open or closed state and period-start interval. A closed batch is not proof that the whole month has
-	// finished.
+	// Statements of your billing accounts, filtered by billing_account_id, open or closed and period
+	// start. A closed statement does not mean the month is complete.
 	//
 	// GET /api/v1/statements
 	ListStatements(ctx context.Context, params ListStatementsParams) (*StatementList, error)
 	// ListSubscriptions implements list-subscriptions operation.
 	//
-	// Lists subscriptions visible to the authorized billing account. Soft-deleted subscriptions are
-	// excluded.
+	// Subscriptions of the authorized billing account. Deleted subscriptions are not listed.
 	//
 	// GET /api/v1/subscriptions
 	ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error)
 	// ListTopUps implements list-top-ups operation.
 	//
-	// Lists only the authenticated user's top-ups. Includes pending, failed and canceled attempts; no
-	// invoice is created for a top-up. Items carry no `action`; read a pending top-up with get-top-up to
-	// continue its payment.
+	// Your top-ups, including pending, failed and canceled attempts. Items carry no `action`; read a
+	// pending top-up with get-top-up to continue its payment.
 	//
 	// GET /api/v1/top-ups
 	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
 	// ListTransactions implements list-transactions operation.
 	//
-	// Paginated ledger entries for owned billing accounts, optionally filtered by billing_account_id and
-	// creation interval. Each entry retains its amount, currency and any referenced credit grant.
+	// Ledger entries of your billing accounts, filtered by billing_account_id and creation time.
 	//
 	// GET /api/v1/transactions
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
 	// ListUsageCharges implements list-usage-charges operation.
 	//
-	// Lists priced usage charges in the requested financial scope. Usage without a price at occurrence
-	// time is never charged retrospectively.
+	// Priced usage charges in the requested scope. Usage that had no price when it occurred is never
+	// charged later.
 	//
 	// GET /api/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
 	// ListWithdrawalItems implements list-withdrawal-items operation.
 	//
-	// Paginated fixed source allocations and their outcomes. A failed source does not undo refunds already
-	// completed through other sources.
+	// The withdrawal's items and their outcomes. A failed item does not undo refunds completed through
+	// other items.
 	//
 	// GET /api/v1/withdrawals/{withdrawalId}/items
 	ListWithdrawalItems(ctx context.Context, params ListWithdrawalItemsParams) (*WithdrawalItemList, error)
 	// ListWithdrawals implements list-withdrawals operation.
 	//
-	// Paginated account withdrawal history, newest first. Account authorization applies to every record.
+	// Withdrawals, newest first.
 	//
 	// GET /api/v1/withdrawals
 	ListWithdrawals(ctx context.Context, params ListWithdrawalsParams) (*WithdrawalList, error)
 	// PayInvoice implements pay-invoice operation.
 	//
-	// Applies eligible credit grants and available balance as requested, then collects the remainder
-	// through the selected payment gateway and method. With no gateway selection, insufficient account
-	// funds fail without starting an online payment. Card and non-card methods use this same operation.
+	// Pays the invoice from eligible credit grants and balance as requested, and collects the remainder
+	// through the selected gateway and method. Without a gateway, insufficient funds fail and no online
+	// payment starts.
 	//
-	// The draft invoice of a deferred order is priced when it is first paid: Billing applies
-	// promotion_code, or the best applicable account discount when it is omitted, compares the total with
-	// expected_amount, records the discount on the order and issues the invoice before collecting. An
-	// invalid or inapplicable code fails rather than collecting full price, and a different total fails
-	// with `BILLING_AMOUNT_CHANGED`; in both cases nothing changes. The terms are fixed before any funds
-	// are collected and stay fixed when collection does not complete, for example with insufficient funds
-	// or a declined card: later attempts reuse them, and a different promotion_code is then refused with
-	// `BILLING_ORDER_CHECKOUT_CONFLICT`. A deferred period-end change can be paid once its first period is
-	// due to be invoiced; earlier attempts are refused with `BILLING_CHANGE_NOT_INVOICED`.
+	// The draft invoice of a deferred order is priced on its first payment: promotion_code, or otherwise
+	// the best applicable account discount, is applied, the total is compared with expected_amount, and
+	// the invoice is issued before collection. An invalid or inapplicable code fails, and a total other
+	// than expected_amount fails with `BILLING_AMOUNT_CHANGED`; neither changes anything. Once fixed, the
+	// terms stay fixed even if collection does not complete, and a different promotion_code is refused
+	// with `BILLING_ORDER_CHECKOUT_CONFLICT`. A deferred period-end change can be paid only once its first
+	// period is due to be invoiced; earlier attempts fail with `BILLING_CHANGE_NOT_INVOICED`.
 	//
-	// Returns a payment action when customer interaction is required. requires_action and processing do
-	// not mean paid; the invoice is marked paid after payment is confirmed. An unresolved online payment
-	// made with the same gateway, method and saved payment method is reused, and retries do not apply
-	// credit grants or balance twice. Paying any other way cancels that earlier online payment first; if
-	// the gateway had already collected it, the invoice is paid by it and nothing more is charged. One the
-	// gateway is still processing is refused with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`;
-	// wait for its outcome.
+	// Returns a payment action when the customer must act; requires_action and processing are not paid. An
+	// unresolved online payment with the same gateway, method and saved payment method is reused, and
+	// retries never apply credit grants or balance twice. Paying any other way first cancels that payment;
+	// if the gateway had already collected it, the invoice is paid by it and nothing more is charged. A
+	// payment the gateway is still processing fails with `BILLING_PAYMENT_PENDING` and
+	// `meta.transaction_id`.
 	//
-	// Calling this on an invoice that is already paid returns the existing payment result without another
-	// charge. A void invoice is refused with `BILLING_INVOICE_NOT_PAYABLE`; the invoice of an order that
-	// has failed or was canceled, with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`; and that of an
-	// order whose payment deadline has passed, with `BILLING_ORDER_EXPIRED`. A renewal invoice is also
-	// refused with `BILLING_INVOICE_NOT_PAYABLE` while its subscription is being canceled, is being
-	// reclaimed or has ended, with `meta.reason` `subscription_canceling`, `subscription_reclaiming` or
-	// `subscription_ended` respectively. A usage invoice is billed to the smallest fraction a balance can
-	// hold, finer than a payment method can charge, so paying one online is refused with
-	// `BILLING_INVOICE_NOT_PAYABLE` and `meta.reason` `usage_invoice`; it is collected from credit grants
-	// and balance automatically, including right after a top-up.
+	// A paid invoice returns its existing result without another charge. Refused with
+	// `BILLING_INVOICE_NOT_PAYABLE` for a void invoice; `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`
+	// for the invoice of a failed or canceled order; `BILLING_ORDER_EXPIRED` after the order's payment
+	// deadline; `BILLING_INVOICE_NOT_PAYABLE` with `meta.reason` `subscription_canceling`,
+	// `subscription_reclaiming` or `subscription_ended` for a renewal invoice whose subscription is being
+	// canceled, is being reclaimed or has ended; and `BILLING_INVOICE_NOT_PAYABLE` with `meta.reason`
+	// `usage_invoice` for a usage invoice, which is collected from credit grants and balance
+	// automatically, including right after a top-up.
 	//
 	// POST /api/v1/invoices/{invoiceId}/pay
 	PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (*PaymentResult, error)
 	// PayTogether implements pay-together operation.
 	//
-	// Pays outstanding invoices, including the invoices of the listed orders, from the account's eligible
-	// credit grants and then its balance. No payment gateway is used; an invoice to be paid online is paid
-	// on its own. The draft invoice of a deferred order takes the best applicable account discount and is
-	// issued first, and stays issued if the payment fails; pay it on its own to apply a promotion code.
+	// Pays outstanding invoices, including those of the listed orders, from eligible credit grants and
+	// then balance, without a payment gateway. The draft invoice of a deferred order takes the best
+	// applicable account discount and is issued first, staying issued if payment fails; pay it alone to
+	// use a promotion code.
 	//
-	// Either every invoice is paid or none is. When the credit grants and balance cannot cover them all,
-	// the request fails with `BILLING_INSUFFICIENT_FUNDS` and nothing is charged. A total different from
-	// expected_amount fails with `BILLING_AMOUNT_CHANGED` and nothing is charged. Invoices that are
-	// already paid are not charged again. An online payment started earlier for one of the invoices is
-	// canceled first; one the gateway is still processing is refused with `BILLING_PAYMENT_PENDING` and
-	// `meta.transaction_id`, a void invoice with `BILLING_INVOICE_NOT_PAYABLE`, a deferred period-end
-	// change not yet due to be invoiced with `BILLING_CHANGE_NOT_INVOICED`, an order that has failed or
-	// was canceled with `BILLING_ORDER_FAILED` or `BILLING_ORDER_CANCELED`, and an order whose payment
-	// deadline has passed with `BILLING_ORDER_EXPIRED`. A renewal invoice is refused with
-	// `BILLING_INVOICE_NOT_PAYABLE` while its subscription is being canceled, is being reclaimed or has
-	// ended, with `meta.reason` `subscription_canceling`, `subscription_reclaiming` or
-	// `subscription_ended` respectively.
+	// All invoices are paid or none: insufficient funds fail with `BILLING_INSUFFICIENT_FUNDS`, and a
+	// total other than expected_amount fails with `BILLING_AMOUNT_CHANGED`, charging nothing. Paid
+	// invoices are not charged again. An earlier online payment for one of the invoices is canceled first;
+	// one the gateway is still processing is refused with `BILLING_PAYMENT_PENDING` and
+	// `meta.transaction_id`. Also refused with `BILLING_INVOICE_NOT_PAYABLE` for a void invoice;
+	// `BILLING_CHANGE_NOT_INVOICED` for a period-end change not yet due; `BILLING_ORDER_FAILED`,
+	// `BILLING_ORDER_CANCELED` or `BILLING_ORDER_EXPIRED` for an order in that state; and
+	// `BILLING_INVOICE_NOT_PAYABLE` with `meta.reason` `subscription_canceling`, `subscription_reclaiming`
+	// or `subscription_ended` for a renewal invoice of a subscription being canceled, being reclaimed or
+	// ended.
 	//
 	// POST /api/v1/payments
 	PayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentResult, error)
@@ -679,113 +601,96 @@ type Handler interface {
 	PreviewInvoicePayment(ctx context.Context, params PreviewInvoicePaymentParams) (*PaymentPreview, error)
 	// PreviewPayTogether implements preview-pay-together operation.
 	//
-	// What paying these invoices together now would take from credit grants and from the balance, invoice
-	// by invoice in the order they would be paid. It is computed as paying together computes it. Nothing
-	// is charged, reserved or created.
+	// What paying these invoices together now would take from credit grants and from the balance, per
+	// invoice in payment order, calculated as paying together does. Nothing is charged, reserved or
+	// created. Refused with the same errors as paying together, except that insufficient funds show as a
+	// `gateway_amount` above zero instead of an error.
 	//
-	// Refused with the same errors as paying together, except that insufficient funds are not an error
-	// here: they show as a `gateway_amount` above zero, and paying together would then be refused with
-	// `BILLING_INSUFFICIENT_FUNDS`.
-	//
-	// POST /api/v1/payments/preview
+	// QUERY /api/v1/payments/preview
 	PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentPreview, error)
 	// PreviewWithdrawal implements preview-withdrawal operation.
 	//
-	// Previews the available balance deduction, fees and exact refund allocation by original source. Omit
-	// amount to preview all available principal. Creates no withdrawal and reserves no funds. Fails if a
-	// selected source has no configured refund route or its original processing cost is not yet available.
+	// Previews the balance deduction, fees and refund split by original top-up. Omit amount to preview all
+	// available balance. Nothing is created or reserved. Fails when a selected source has no refund route
+	// or its original processing cost is not yet known.
 	//
-	// POST /api/v1/withdrawals/preview
+	// QUERY /api/v1/withdrawals/preview
 	PreviewWithdrawal(ctx context.Context, req *WithdrawalPreviewRequest) (*WithdrawalPreview, error)
 	// RenewSubscription implements renew-subscription operation.
 	//
-	// Purchases prepaid periods from current_term_end using the agreed recurring amount, and pays for them
-	// at once. A changed interval selects a current price and freezes new terms on the order, applied only
-	// after fulfillment. Existing paid periods keep their value.
+	// Buys licensed periods from current_term_end at the agreed recurring amount and pays for them at
+	// once. A different interval selects the price currently sold for it and fixes new terms on the order,
+	// applied after fulfillment. Paid periods keep their value.
 	//
-	// Without `payment_method_id`, the renewal is paid from credit grants and the balance as `use_credits`
-	// and `use_balance` allow; when they cannot pay it all, the renewal is refused with
-	// `BILLING_INSUFFICIENT_FUNDS` and no order is left. To pay another way, create a renewal order and
-	// pay its invoice instead.
+	// Without `payment_method_id`, the renewal is paid from credit grants and balance as `use_credits` and
+	// `use_balance` allow; when they cannot cover it, the request fails with `BILLING_INSUFFICIENT_FUNDS`
+	// and no order is left. To pay another way, create a renewal order and pay its invoice.
 	//
-	// Save order_id before submitting and query the order after an unknown outcome; duplicate creation
-	// conflicts.
+	// Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 	//
 	// POST /api/v1/subscriptions/{subscriptionId}/renew
 	RenewSubscription(ctx context.Context, req *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error)
 	// SetAutoRenew implements set-auto-renew operation.
 	//
-	// Controls automatic prepaid renewal for an active or suspended subscription. A pending or
-	// provisioning subscription cannot set this preference and returns 409
-	// `BILLING_SUBSCRIPTION_AUTO_RENEW_INACTIVE`. Disabling it does not shorten current_term_end and still
-	// permits manual renewal. A postpaid subscription always continues until it is canceled; setting it is
-	// refused with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED`.
-	//
-	// While the subscription has an open cancellation, turning it on or off is refused with 409
-	// `BILLING_SUBSCRIPTION_OPERATION_PENDING` and `meta.cancellation_id`: creating the cancellation
-	// turned it off, and withdrawing the cancellation does not turn it back on.
+	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
+	// does not shorten current_term_end and still allows manual renewal. Refused with 409
+	// `BILLING_SUBSCRIPTION_AUTO_RENEW_INACTIVE` for a pending or provisioning subscription, 409
+	// `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED` for a metered subscription, which continues until it is
+	// canceled, and 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` with `meta.cancellation_id` while a
+	// cancellation is open: creating it turned renewal off, and withdrawing it does not turn renewal back
+	// on.
 	//
 	// PUT /api/v1/subscriptions/{subscriptionId}/auto-renew
 	SetAutoRenew(ctx context.Context, req *AutoRenewSet, params SetAutoRenewParams) (*Subscription, error)
 	// SetDefaultPaymentMethod implements set-default-payment-method operation.
 	//
-	// Selects an active saved payment method as the default for its owned billing account and returns it.
-	// Expired or removed methods cannot be selected; selecting the current default is idempotent.
+	// Makes an active saved payment method the default for its billing account and returns it. Expired or
+	// removed methods cannot be selected; selecting the current default changes nothing.
 	//
 	// PUT /api/v1/payment-methods/{paymentMethodId}/default
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
 	// SetProjectAssignment implements set-project-assignment operation.
 	//
-	// Charges already incurred remain with the billing account that was linked when they occurred, and are
-	// still invoiced to it. Metered resources are settled up to the moment of the change. Amounts owed by
-	// the previous billing account remain owed by it and do not prevent the change.
+	// Links the project to another billing account. Charges already incurred stay with the account linked
+	// when they occurred and are invoiced to it; metered resources are settled up to the moment of the
+	// change. Amounts the previous account owes do not prevent the change. Orders keep the account they
+	// were placed with; paid periods are unaffected, and renewals are charged to the new account.
 	//
-	// Orders keep the billing account they were placed with and are fulfilled as placed. Periods already
-	// paid for are unaffected; renewals are charged to the new billing account.
-	//
-	// The request is refused once the project no longer accepts purchases because it is being deleted, and
-	// while a subscription or an order in progress in the project uses a currency other than that of the
-	// new billing account.
+	// Refused once the project no longer accepts purchases because it is being deleted, and while a
+	// subscription or an in-progress order of the project uses a currency other than the new account's.
 	//
 	// PUT /api/v1/assignments/{projectId}
 	SetProjectAssignment(ctx context.Context, req *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
 	// UnlinkProjectBillingAccount implements unlink-project-billing-account operation.
 	//
-	// Ends the project's current assignment without deleting its assignment history.
-	//
-	// Permitted only when nothing in the project is still running or in progress: no metered resources, no
-	// subscriptions that have not ended, and no orders in progress, including changes scheduled for the
-	// end of a period. Orders are not modified by this request; wait for them to complete, and have the
-	// service that scheduled a change call it off.
-	//
-	// Charges already incurred remain with the billing account and are invoiced to it as usual. Amounts
-	// the billing account owes do not prevent unlinking.
-	//
-	// After this the project cannot make purchases until a billing account is linked again.
+	// Ends the project's current assignment; the assignment history is kept. Allowed only when the project
+	// has no metered resources, no subscriptions that have not ended and no orders in progress, including
+	// period-end changes; orders are not modified, so wait for them to complete. Charges already incurred
+	// stay with the billing account and are invoiced as usual; amounts it owes do not prevent unlinking.
+	// The project cannot make purchases until a billing account is linked again.
 	//
 	// DELETE /api/v1/assignments/{projectId}
 	UnlinkProjectBillingAccount(ctx context.Context, params UnlinkProjectBillingAccountParams) error
 	// UpdateBillingAccount implements update-billing-account operation.
 	//
-	// Select an active contact belonging to this account for future invoices. Its legal name, address and
-	// tax identifier are copied when an invoice is issued; issued snapshots are retained. Set
-	// invoice_contact_id to null to clear the selection. The currency cannot change.
+	// Selects an active contact of this account for future invoices; its legal name, address and tax
+	// identifier are copied when an invoice is issued. Set invoice_contact_id to null to clear it. The
+	// currency cannot change.
 	//
 	// PATCH /api/v1/billing-accounts/{accountId}
 	UpdateBillingAccount(ctx context.Context, req *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
 	// UpdateContact implements update-contact operation.
 	//
-	// Updates a contact belonging to this billing account. Returns 404 if the contact does not exist in
-	// this account.
+	// Updates a contact of this billing account. Returns 404 if it does not exist in the account.
 	//
 	// PATCH /api/v1/billing-accounts/{accountId}/contacts/{contactId}
 	UpdateContact(ctx context.Context, req *ContactUpdate, params UpdateContactParams) (*Contact, error)
 	// WithdrawCancellation implements withdraw-cancellation operation.
 	//
-	// Withdraws the whole cancellation while none of its resources has begun to be released; the
-	// subscriptions continue as before, except that automatic renewal, turned off when the cancellation
-	// was created, stays off until it is turned on again. After that it is refused with 409
-	// `BILLING_CANCELLATION_CONFLICT`. Withdrawing one that is already withdrawn returns it unchanged.
+	// Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
+	// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
+	// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
+	// withdrawn cancellation returns it unchanged.
 	//
 	// POST /api/v1/cancellations/{cancellationId}/withdraw
 	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)

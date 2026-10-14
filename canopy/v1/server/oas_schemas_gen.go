@@ -1038,19 +1038,19 @@ func (*ErrorStatusCode) updateAPIKeyRes()       {}
 
 // Account funding for this purchase, calculated by Billing. Amounts use the enclosing response
 // currency. Credit eligibility and all purchase requirements are already evaluated. Nothing is charged
-// or reserved. A prepaid purchase may instead use an online payment method.
+// or reserved. A licensed purchase may instead be paid with an online payment method.
 // Ref: #/components/schemas/Funds
 type Funds struct {
 	// Spendable balance after pending returns.
 	AvailableBalanceAmount Money `json:"available_balance_amount"`
-	// Currently effective credits eligible for the quoted purchases or postpaid usage. Each grant is
+	// Currently effective credits eligible for the quoted purchases or metered usage. Each grant is
 	// counted once.
 	UsableCreditAmount Money `json:"usable_credit_amount"`
-	// Currently effective credits that cannot fund any quoted purchase or postpaid target. Unused eligible
+	// Currently effective credits that cannot fund any quoted purchase or metered target. Unused eligible
 	// credits are not restricted.
 	RestrictedCreditAmount Money `json:"restricted_credit_amount"`
 	// Minimum spendable balance needed after eligible credits, covering immediate charges and every new
-	// postpaid admission requirement.
+	// metered purchase's admission requirement.
 	RequiredBalanceAmount Money `json:"required_balance_amount"`
 	// Additional balance needed now. Zero means account funds satisfy this quote. No funds are reserved.
 	BalanceShortfallAmount Money `json:"balance_shortfall_amount"`
@@ -1363,21 +1363,19 @@ func (*InferenceErrorStatusCode) getInferenceModelRes()    {}
 func (*InferenceErrorStatusCode) getResponseRes()          {}
 func (*InferenceErrorStatusCode) listInferenceModelsRes()  {}
 
-// A draft is not yet issued. The draft invoice of an order shows base prices until it is paid, when
-// the discount is applied and it is issued; other drafts are private to administrators. An issued
-// invoice is open until settled; a zero-total issued invoice is immediately paid. Unbilled usage
-// remains separate from invoices until it is invoiced. A refund does not change the status: a paid
-// invoice stays paid, with the refunded part in amount_refunded. void means collection has stopped and
-// any funds received have been returned.
+// `draft`: not yet issued; an order's draft invoice shows base prices until it is paid, when the
+// discount is applied and it is issued. Other drafts are visible only to operators. `open`: issued and
+// not yet settled; a zero-total invoice is paid at once. `paid` stays paid after a refund, with the
+// refunded part in amount_refunded. `void`: collection has stopped and any funds received have been
+// returned. Usage not yet invoiced is not on any invoice.
 // Ref: #/components/schemas/InvoiceStatus
 type InvoiceStatus string
 
 const (
-	InvoiceStatusDraft         InvoiceStatus = "draft"
-	InvoiceStatusOpen          InvoiceStatus = "open"
-	InvoiceStatusPaid          InvoiceStatus = "paid"
-	InvoiceStatusVoid          InvoiceStatus = "void"
-	InvoiceStatusUncollectible InvoiceStatus = "uncollectible"
+	InvoiceStatusDraft InvoiceStatus = "draft"
+	InvoiceStatusOpen  InvoiceStatus = "open"
+	InvoiceStatusPaid  InvoiceStatus = "paid"
+	InvoiceStatusVoid  InvoiceStatus = "void"
 )
 
 // AllValues returns all InvoiceStatus values.
@@ -1387,7 +1385,6 @@ func (InvoiceStatus) AllValues() []InvoiceStatus {
 		InvoiceStatusOpen,
 		InvoiceStatusPaid,
 		InvoiceStatusVoid,
-		InvoiceStatusUncollectible,
 	}
 }
 
@@ -1401,8 +1398,6 @@ func (s InvoiceStatus) MarshalText() ([]byte, error) {
 	case InvoiceStatusPaid:
 		return []byte(s), nil
 	case InvoiceStatusVoid:
-		return []byte(s), nil
-	case InvoiceStatusUncollectible:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1424,18 +1419,14 @@ func (s *InvoiceStatus) UnmarshalText(data []byte) error {
 	case InvoiceStatusVoid:
 		*s = InvoiceStatusVoid
 		return nil
-	case InvoiceStatusUncollectible:
-		*s = InvoiceStatusUncollectible
-		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Purchase-related invoice amounts, without account contact details or payment methods. Every order
-// has an invoice from placement. A draft shows base prices until it is paid, when the discount is
-// applied and it is issued; a zero-total invoice is issued and paid at placement whatever the checkout
-// mode. Neither establishes acceptance or delivery.
+// An order's invoice amounts, without contact details or payment methods. A draft shows base prices
+// until it is paid, when the discount is applied and it is issued; a zero-total invoice is issued and
+// paid at placement.
 // Ref: #/components/schemas/InvoiceSummary
 type InvoiceSummary struct {
 	ID       uuid.UUID     `json:"id"`
@@ -1451,11 +1442,9 @@ type InvoiceSummary struct {
 	TaxAmount      string `json:"tax_amount"`
 	Total          string `json:"total"`
 	AmountPaid     string `json:"amount_paid"`
-	// Issued, non-void credit notes that reduced unpaid receivables. Does not rewrite the original invoice
-	// total.
+	// Issued credit notes that reduced unpaid receivables; the original invoice total is unchanged.
 	PrePaymentCreditNotesAmount Money `json:"pre_payment_credit_notes_amount"`
-	// Issued credit notes against payments already received. This is a return obligation, not evidence of
-	// completed refunds.
+	// Issued credit notes against payments already received; their refunds may not have completed.
 	PostPaymentCreditNotesAmount Money `json:"post_payment_credit_notes_amount"`
 	// What is still collectible after unpaid credit notes and successful payments; never below zero.
 	AmountDue      string      `json:"amount_due"`

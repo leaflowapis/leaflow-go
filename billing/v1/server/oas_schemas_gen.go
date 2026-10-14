@@ -41,42 +41,39 @@ func (s *AccessTokenAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
-// Account balance, credits, and unpaid charges are reported separately.
+// Balance, credits and unpaid charges, each reported separately.
 // Ref: #/components/schemas/AccountBalance
 type AccountBalance struct {
 	// Balance minus pending balance returns and the part of unbilled_amount and due that
 	// estimated_credit_applied does not cover. Negative only when the balance and applicable credit fall
 	// short of what the account owes.
 	AvailableCredit Money `json:"available_credit"`
-	// Credit expected to pay unbilled_amount and due. Each charge is matched to grants whose scope,
-	// validity and conditions it meets, in the order credit is applied at payment. Nothing is reserved or
-	// deducted until an invoice is paid, so credits still includes this amount.
+	// Credit expected to pay unbilled_amount and due, matching each charge to the grants whose scope,
+	// validity and conditions it meets, in the order credit is applied at payment. Nothing is deducted
+	// until an invoice is paid, so credits still includes this amount.
 	EstimatedCreditApplied Money `json:"estimated_credit_applied"`
-	// Current estimate of rated usage that has not been invoiced. Final pricing and tax are fixed at
+	// Current estimate of priced usage that has not been invoiced. Final pricing and tax are fixed at
 	// issuance.
 	UnbilledAmount   Money  `json:"unbilled_amount"`
 	BillingAccountID int64  `json:"billing_account_id"`
 	Currency         string `json:"currency"`
-	// Prepaid funds in the account currency, excluding credits. May be negative after a payment dispute.
-	// Outstanding charges are reported separately in due; this value is not a withdrawal quote.
+	// Topped-up funds in the account's currency, excluding credits. May be negative after a payment
+	// dispute. Amounts owed are reported in due; this is not a withdrawable amount.
 	Balance Money `json:"balance"`
-	// The recorded remaining credit, including restricted grants. It is not withdrawable and is not part
-	// of balance. credit_groups describes currently valid credit by permitted use; a positive credits
-	// balance does not imply that due is zero.
+	// Remaining credit, including restricted grants; not withdrawable and not part of balance.
+	// credit_groups shows currently valid credit by permitted use; positive credits do not mean due is
+	// zero.
 	Credits Money `json:"credits"`
-	// Currently valid credit whose use has applicable product, operation or eligibility conditions.
-	// Included in credits, separate from the balance.
+	// Currently valid credit restricted to certain products, operations or conditions; part of credits,
+	// not of balance.
 	RestrictedCredits Money `json:"restricted_credits"`
-	// Currently valid, unspent credit grouped by permitted use. Restrictions and validity dates determine
-	// which charges a group can cover, so these groups are not a general spendable balance and may differ
-	// from the recorded credits total.
+	// Currently valid unspent credit grouped by permitted use. Each group covers only the charges its
+	// restrictions and validity allow, and the groups may differ from the recorded credits total.
 	CreditGroups []CreditGroup `json:"credit_groups"`
-	// Amount still payable on issued invoices. The invoice of an order not yet accepted is a request to
-	// pay for that order rather than a debt, so it is excluded here and from available_credit. Unbilled
-	// usage is reported separately; arrears depend on actual eligible funding and grace terms.
+	// Amount still payable on issued invoices. The invoice of an order not yet accepted is excluded, here
+	// and from available_credit. Usage not yet invoiced is reported separately.
 	Due Money `json:"due"`
-	// Balance committed to pending top-up refunds. Already unavailable for spending; unbilled usage does
-	// not freeze the balance.
+	// Balance held for pending top-up refunds and not spendable. Unbilled usage does not hold balance.
 	PendingReturnsAmount Money `json:"pending_returns_amount"`
 }
 
@@ -227,28 +224,28 @@ func (s *AccountIdentity) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// A resource currently accruing charges by the second.
+// A resource charged continuously by the second.
 // Ref: #/components/schemas/ActiveResource
 type ActiveResource struct {
 	ID             uuid.UUID   `json:"id"`
 	EndedAt        OptDateTime `json:"ended_at"`
 	SuspendedAt    OptDateTime `json:"suspended_at"`
 	StateChangedAt OptDateTime `json:"state_changed_at"`
-	// The postpaid subscription charged for this metering record, including shared services.
+	// The metered subscription charged for this metering record.
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	ResourceID     string    `json:"resource_id"`
 	Product        Product   `json:"product"`
-	// What it is, as its own service names it.
+	// The resource type, as the owning service names it.
 	ResourceType OptString      `json:"resource_type"`
 	Meter        ObjectIdentity `json:"meter"`
 	Unit         OptString      `json:"unit"`
-	// How much is held — cores, MiB, cards. Not how much has been used.
+	// How much is held, such as cores, MiB or cards; not how much was used.
 	Quantity   string                      `json:"quantity"`
 	Dimensions OptActiveResourceDimensions `json:"dimensions"`
 	Status     ActiveResourceStatus        `json:"status"`
 	StartedAt  time.Time                   `json:"started_at"`
 	ProjectID  OptUUID                     `json:"project_id"`
-	// Usage has been generated up to this boundary; it does not imply invoicing or payment.
+	// Usage has been generated up to this boundary; it says nothing about invoicing or payment.
 	UsageGeneratedUntil time.Time `json:"usage_generated_until"`
 }
 
@@ -515,7 +512,7 @@ type Allowance struct {
 	Meter            ObjectIdentity `json:"meter"`
 	// The unit it is counted in, such as `MiB`.
 	Unit OptString `json:"unit"`
-	// Whether the quantity was paid for or granted free of charge. Both are consumed the same way.
+	// Whether the quantity was paid for or granted free; both are consumed the same way.
 	Category AllowanceCategory `json:"category"`
 	// Exact values for a subset of the meter's dimensions. Only usage with these values is deducted;
 	// omitted dimensions are not restricted.
@@ -525,13 +522,11 @@ type Allowance struct {
 	Quantity string `json:"quantity"`
 	// How much is left.
 	RemainingQuantity string `json:"remaining_quantity"`
-	// Lower values are consumed first. At equal priority, earlier expiry and then earlier issuance take
-	// precedence.
+	// Lower values are consumed first; at equal priority, earlier expiry and then earlier issuance.
 	Priority  OptInt          `json:"priority"`
 	Status    AllowanceStatus `json:"status"`
 	ValidFrom time.Time       `json:"valid_from"`
-	// When it lapses. Anything unused at that point is lost; it is not refunded and does not carry over.
-	// Absent when it does not expire on its own.
+	// When the allowance lapses; unused quantity is lost. Absent when it does not expire.
 	ValidUntil OptNilDateTime `json:"valid_until"`
 }
 
@@ -695,7 +690,7 @@ func (s *Allowance) SetValidUntil(val OptNilDateTime) {
 	s.ValidUntil = val
 }
 
-// Whether the quantity was paid for or granted free of charge. Both are consumed the same way.
+// Whether the quantity was paid for or granted free; both are consumed the same way.
 type AllowanceCategory string
 
 const (
@@ -831,18 +826,21 @@ func (s *AllowanceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Anything not excluded that matches an inclusion, or anything not excluded when no inclusion is
-// given, subject to the charge type, operation and term conditions. Entries always include their
-// display fields; archived plans and prices stay listed with active set to false.
+// Covers anything not excluded that matches an inclusion, or anything not excluded when no inclusion
+// is given, subject to the price type, usage type, operation and term conditions. Archived plans and
+// prices stay listed with active false.
 // Ref: #/components/schemas/Applicability
 type Applicability struct {
-	Products   []Product           `json:"products"`
-	Plans      []ApplicablePlan    `json:"plans"`
-	Prices     []PriceOption       `json:"prices"`
-	PriceTypes []string            `json:"price_types"`
+	Products []Product        `json:"products"`
+	Plans    []ApplicablePlan `json:"plans"`
+	Prices   []PriceOption    `json:"prices"`
+	// The price types covered; empty covers both.
+	PriceTypes []PriceType `json:"price_types"`
+	// The usage types covered; empty covers both.
+	UsageTypes []UsageType         `json:"usage_types"`
 	Operations []PurchaseOperation `json:"operations"`
-	// The shortest term a purchase may have, in months. A purchase with no term, such as metered usage,
-	// never qualifies while this is set.
+	// The shortest term a purchase may have, in months. Purchases without a term, such as metered usage,
+	// do not qualify while this is set.
 	MinTermMonths OptInt `json:"min_term_months"`
 	// The longest term a purchase may have, in months.
 	MaxTermMonths    OptInt           `json:"max_term_months"`
@@ -867,8 +865,13 @@ func (s *Applicability) GetPrices() []PriceOption {
 }
 
 // GetPriceTypes returns the value of PriceTypes.
-func (s *Applicability) GetPriceTypes() []string {
+func (s *Applicability) GetPriceTypes() []PriceType {
 	return s.PriceTypes
+}
+
+// GetUsageTypes returns the value of UsageTypes.
+func (s *Applicability) GetUsageTypes() []UsageType {
+	return s.UsageTypes
 }
 
 // GetOperations returns the value of Operations.
@@ -917,8 +920,13 @@ func (s *Applicability) SetPrices(val []PriceOption) {
 }
 
 // SetPriceTypes sets the value of PriceTypes.
-func (s *Applicability) SetPriceTypes(val []string) {
+func (s *Applicability) SetPriceTypes(val []PriceType) {
 	s.PriceTypes = val
+}
+
+// SetUsageTypes sets the value of UsageTypes.
+func (s *Applicability) SetUsageTypes(val []UsageType) {
+	s.UsageTypes = val
 }
 
 // SetOperations sets the value of Operations.
@@ -951,8 +959,8 @@ func (s *Applicability) SetExcludedPrices(val []PriceOption) {
 	s.ExcludedPrices = val
 }
 
-// A plan it refers to. active is false once the plan is archived; it still applies to subscriptions
-// already on this plan.
+// A plan referenced by an applicability; active is false once it is archived, and the reference still
+// applies.
 // Ref: #/components/schemas/ApplicablePlan
 type ApplicablePlan struct {
 	ID     uuid.UUID `json:"id"`
@@ -1045,22 +1053,21 @@ func (s *AutoRenewSet) SetAutoRenew(val bool) {
 
 // Ref: #/components/schemas/BillingAccount
 type BillingAccount struct {
-	// The active contact used for invoicing. Must belong to this account; null clears the selection.
+	// The active contact used for invoices, of this account; null clears it.
 	InvoiceContactID OptNilUUID `json:"invoice_contact_id"`
 	ID               int64      `json:"id"`
-	// What you call this account.
+	// Your name for the account.
 	Name OptString `json:"name"`
 	// Fixed when the account was opened.
 	Currency string               `json:"currency"`
 	Status   BillingAccountStatus `json:"status"`
-	// How far past the suspension threshold this account may go before its resources are suspended. "0"
-	// means none: the account is suspended as soon as it crosses the threshold.
+	// How far past the suspension threshold the account may go before its resources are suspended; `0`
+	// means none.
 	GraceAmount OptString `json:"grace_amount"`
-	// How long this account has to top up after crossing the suspension threshold. 0 means none. Whichever
-	// runs out first — this or grace_amount — ends the grace.
+	// How long the account has to top up after crossing the suspension threshold, in seconds; `0` means
+	// none. Grace ends when this or grace_amount runs out.
 	GracePeriodSeconds OptInt64 `json:"grace_period_seconds"`
-	// The actual time this account was closed, in UTC (RFC 3339). Null or absent if the account is not
-	// closed or its historical close time is unknown.
+	// When the account was closed. Null if it is not closed or the time is unknown.
 	ClosedAt  OptNilDateTime `json:"closed_at"`
 	CreatedAt time.Time      `json:"created_at"`
 }
@@ -1257,7 +1264,7 @@ func (s *BillingAccountStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/BillingAccountUpdate
 type BillingAccountUpdate struct {
-	// The active contact used for invoicing. Must belong to this account; null clears the selection.
+	// The active contact used for invoices, of this account; null clears it.
 	InvoiceContactID OptNilUUID `json:"invoice_contact_id"`
 	Name             OptString  `json:"name"`
 }
@@ -1280,6 +1287,49 @@ func (s *BillingAccountUpdate) SetInvoiceContactID(val OptNilUUID) {
 // SetName sets the value of Name.
 func (s *BillingAccountUpdate) SetName(val OptString) {
 	s.Name = val
+}
+
+// `per_unit` multiplies a unit amount; `tiered` walks a ladder.
+// Ref: #/components/schemas/BillingScheme
+type BillingScheme string
+
+const (
+	BillingSchemePerUnit BillingScheme = "per_unit"
+	BillingSchemeTiered  BillingScheme = "tiered"
+)
+
+// AllValues returns all BillingScheme values.
+func (BillingScheme) AllValues() []BillingScheme {
+	return []BillingScheme{
+		BillingSchemePerUnit,
+		BillingSchemeTiered,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s BillingScheme) MarshalText() ([]byte, error) {
+	switch s {
+	case BillingSchemePerUnit:
+		return []byte(s), nil
+	case BillingSchemeTiered:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *BillingScheme) UnmarshalText(data []byte) error {
+	switch BillingScheme(data) {
+	case BillingSchemePerUnit:
+		*s = BillingSchemePerUnit
+		return nil
+	case BillingSchemeTiered:
+		*s = BillingSchemeTiered
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/CancelSubscriptionRequest
@@ -1350,16 +1400,16 @@ type Cancellation struct {
 	ScheduledAt OptDateTime        `json:"scheduled_at"`
 	// For `immediate`, the second the refund is computed as of.
 	ProrationDate OptDateTime `json:"proration_date"`
-	// Who asked for it. `project_deletion` means the project was deleted.
+	// Who requested it; `project_deletion` means the project was deleted.
 	Origin CancellationOrigin `json:"origin"`
-	// The billing account that paid for these subscriptions when the cancellation was created: the account
-	// of an account-level purchase, or the account the project was linked to.
+	// The billing account paying for these subscriptions when the cancellation was created: the purchasing
+	// account of an account-level purchase, or the project's linked account.
 	BillingAccountID int64  `json:"billing_account_id"`
 	Currency         string `json:"currency"`
-	// The refund confirmed when it was created. Absent when the platform created it.
+	// The refund confirmed when the cancellation was created. Absent when the platform created it.
 	ExpectedRefundableAmount OptMoney `json:"expected_refundable_amount"`
-	// Present with `failed`. A code of the service that provides the resources, such as a disk that can
-	// only be released with its server. Clients map it to their own wording.
+	// Present with `failed`: the owning service's code, such as for a disk that can only be released with
+	// its server.
 	FailureCode OptString          `json:"failure_code"`
 	RequestedAt time.Time          `json:"requested_at"`
 	CompletedAt OptDateTime        `json:"completed_at"`
@@ -1512,12 +1562,12 @@ type CancellationCreate struct {
 	// As in the quote.
 	SubscriptionIds []uuid.UUID       `json:"subscription_ids"`
 	Mode            TerminationPolicy `json:"mode"`
-	// For `immediate`, the `proration_date` of the quote: a whole second, not in the future and at most
-	// ten minutes old. The refund is computed as of it. Now when omitted.
+	// For `immediate`, the quote's `proration_date`: a whole second, not in the future and at most ten
+	// minutes old; the refund is computed as of it. Now when omitted.
 	ProrationDate OptDateTime `json:"proration_date"`
-	// The `refundable_amount` of the quote. The cancellation is refused when the refund differs.
+	// The quote's `refundable_amount`; the cancellation is refused when the refund differs.
 	ExpectedRefundableAmount string `json:"expected_refundable_amount"`
-	// A note from the account holder. It is kept with the cancellation and not shown elsewhere.
+	// A note from the account holder, kept with the cancellation.
 	Reason OptString `json:"reason"`
 }
 
@@ -1574,17 +1624,17 @@ func (s *CancellationCreate) SetReason(val OptString) {
 // One subscription of the cancellation.
 // Ref: #/components/schemas/CancellationItem
 type CancellationItem struct {
-	// The cancellation item of this subscription, the same as `Subscription.cancellation.id`.
+	// The subscription's cancellation item, the same as `Subscription.cancellation.id`.
 	ID             uuid.UUID `json:"id"`
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	PlanID         uuid.UUID `json:"plan_id"`
 	PlanName       string    `json:"plan_name"`
-	// How the subscription is charged. Creating the cancellation turned automatic renewal off; withdrawing
-	// it turns renewal back on for a `postpaid` subscription and leaves it off for a `prepaid` one.
-	ChargeType CancellationItemChargeType `json:"charge_type"`
-	Status     CancellationItemStatus     `json:"status"`
-	// Execution stopped or its result is unknown. Present while release still requires resolution; it does
-	// not establish refund eligibility.
+	Type           PriceType `json:"type"`
+	// Creating the cancellation turned automatic renewal off; withdrawing it turns renewal back on for a
+	// `metered` subscription and leaves it off for a `licensed` one.
+	UsageType UsageType              `json:"usage_type"`
+	Status    CancellationItemStatus `json:"status"`
+	// The release stopped or its result is unknown; present while the release needs resolution.
 	FailureCode      OptString   `json:"failure_code"`
 	ReleaseStartedAt OptDateTime `json:"release_started_at"`
 	// When the service ended, as confirmed by the service that provides it.
@@ -1617,9 +1667,14 @@ func (s *CancellationItem) GetPlanName() string {
 	return s.PlanName
 }
 
-// GetChargeType returns the value of ChargeType.
-func (s *CancellationItem) GetChargeType() CancellationItemChargeType {
-	return s.ChargeType
+// GetType returns the value of Type.
+func (s *CancellationItem) GetType() PriceType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *CancellationItem) GetUsageType() UsageType {
+	return s.UsageType
 }
 
 // GetStatus returns the value of Status.
@@ -1677,9 +1732,14 @@ func (s *CancellationItem) SetPlanName(val string) {
 	s.PlanName = val
 }
 
-// SetChargeType sets the value of ChargeType.
-func (s *CancellationItem) SetChargeType(val CancellationItemChargeType) {
-	s.ChargeType = val
+// SetType sets the value of Type.
+func (s *CancellationItem) SetType(val PriceType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *CancellationItem) SetUsageType(val UsageType) {
+	s.UsageType = val
 }
 
 // SetStatus sets the value of Status.
@@ -1715,56 +1775,6 @@ func (s *CancellationItem) SetCreditAmount(val OptMoney) {
 // SetGatewayAmount sets the value of GatewayAmount.
 func (s *CancellationItem) SetGatewayAmount(val OptMoney) {
 	s.GatewayAmount = val
-}
-
-// How the subscription is charged. Creating the cancellation turned automatic renewal off; withdrawing
-// it turns renewal back on for a `postpaid` subscription and leaves it off for a `prepaid` one.
-type CancellationItemChargeType string
-
-const (
-	CancellationItemChargeTypePostpaid CancellationItemChargeType = "postpaid"
-	CancellationItemChargeTypePrepaid  CancellationItemChargeType = "prepaid"
-	CancellationItemChargeTypeOneTime  CancellationItemChargeType = "one_time"
-)
-
-// AllValues returns all CancellationItemChargeType values.
-func (CancellationItemChargeType) AllValues() []CancellationItemChargeType {
-	return []CancellationItemChargeType{
-		CancellationItemChargeTypePostpaid,
-		CancellationItemChargeTypePrepaid,
-		CancellationItemChargeTypeOneTime,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CancellationItemChargeType) MarshalText() ([]byte, error) {
-	switch s {
-	case CancellationItemChargeTypePostpaid:
-		return []byte(s), nil
-	case CancellationItemChargeTypePrepaid:
-		return []byte(s), nil
-	case CancellationItemChargeTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CancellationItemChargeType) UnmarshalText(data []byte) error {
-	switch CancellationItemChargeType(data) {
-	case CancellationItemChargeTypePostpaid:
-		*s = CancellationItemChargeTypePostpaid
-		return nil
-	case CancellationItemChargeTypePrepaid:
-		*s = CancellationItemChargeTypePrepaid
-		return nil
-	case CancellationItemChargeTypeOneTime:
-		*s = CancellationItemChargeTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 type CancellationItemStatus string
@@ -1862,7 +1872,7 @@ func (s *CancellationList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Who asked for it. `project_deletion` means the project was deleted.
+// Who requested it; `project_deletion` means the project was deleted.
 type CancellationOrigin string
 
 const (
@@ -1911,19 +1921,19 @@ func (s *CancellationOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
-// What the cancellation would return, subscription by subscription and in total, as of now. Give
-// `proration_date` and `refundable_amount` when creating the cancellation.
+// What the cancellation would return, per subscription and in total, as of now. Give `proration_date`
+// and `refundable_amount` when creating the cancellation.
 //
 //   - `unused_amount`: before tax, the amount paid for the current periods minus the value of the time
 //     used, valued as refund policy `prorated` describes, whatever the refund terms say.
-//   - `refundable_amount`: what is returned the way it was paid, including the tax paid on it;
-//     `refund_amount` plus `credit_amount`.
-//   - `refund_amount`: the part returned to the balance or to the payment method.
+//   - `refundable_amount`: what is returned the way it was paid, tax included; `refund_amount` plus
+//     `credit_amount`.
+//   - `refund_amount`: the part returned to the balance or the payment method.
 //   - `credit_amount`: the part restored to the credit grants that paid.
 //   - `tax_amount`: the tax included in `refundable_amount`.
 //   - `forfeited_amount`: before tax, the part of `unused_amount` the refund terms do not return.
 //
-// Postpaid and one-time subscriptions show zero; usage until release is charged as usual.
+// Metered and one-time subscriptions show zero; their usage until release is charged as usual.
 // Ref: #/components/schemas/CancellationRefundPreview
 type CancellationRefundPreview struct {
 	Mode TerminationPolicy `json:"mode"`
@@ -2051,19 +2061,19 @@ func (s *CancellationRefundPreview) SetItems(val []CancellationRefundPreviewItem
 	s.Items = val
 }
 
-// One subscription of the quoted cancellation. The amounts mean what they mean in the total.
+// One subscription of the quoted cancellation.
 // Ref: #/components/schemas/CancellationRefundPreviewItem
 type CancellationRefundPreviewItem struct {
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	PlanID         uuid.UUID `json:"plan_id"`
 	PlanName       string    `json:"plan_name"`
-	// The project and its current name, for display. Absent for a purchase at account level, and when the
-	// project details cannot be read at the moment.
-	Project    OptNilNamedIdentity                     `json:"project"`
-	ChargeType CancellationRefundPreviewItemChargeType `json:"charge_type"`
-	// Whether automatic renewal is on now. Creating the cancellation turns it off. Withdrawing the
-	// cancellation does not turn it back on for a prepaid subscription; a postpaid subscription continues
-	// until it is canceled and turns it back on.
+	// The project and its current name. Absent for an account-level purchase or when the project cannot be
+	// read.
+	Project   OptNilNamedIdentity `json:"project"`
+	Type      PriceType           `json:"type"`
+	UsageType UsageType           `json:"usage_type"`
+	// Whether automatic renewal is on now. Creating the cancellation turns it off; withdrawing it turns it
+	// back on for a metered subscription but not for a licensed one.
 	AutoRenew        bool  `json:"auto_renew"`
 	UnusedAmount     Money `json:"unused_amount"`
 	RefundableAmount Money `json:"refundable_amount"`
@@ -2093,9 +2103,14 @@ func (s *CancellationRefundPreviewItem) GetProject() OptNilNamedIdentity {
 	return s.Project
 }
 
-// GetChargeType returns the value of ChargeType.
-func (s *CancellationRefundPreviewItem) GetChargeType() CancellationRefundPreviewItemChargeType {
-	return s.ChargeType
+// GetType returns the value of Type.
+func (s *CancellationRefundPreviewItem) GetType() PriceType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *CancellationRefundPreviewItem) GetUsageType() UsageType {
+	return s.UsageType
 }
 
 // GetAutoRenew returns the value of AutoRenew.
@@ -2153,9 +2168,14 @@ func (s *CancellationRefundPreviewItem) SetProject(val OptNilNamedIdentity) {
 	s.Project = val
 }
 
-// SetChargeType sets the value of ChargeType.
-func (s *CancellationRefundPreviewItem) SetChargeType(val CancellationRefundPreviewItemChargeType) {
-	s.ChargeType = val
+// SetType sets the value of Type.
+func (s *CancellationRefundPreviewItem) SetType(val PriceType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *CancellationRefundPreviewItem) SetUsageType(val UsageType) {
+	s.UsageType = val
 }
 
 // SetAutoRenew sets the value of AutoRenew.
@@ -2191,54 +2211,6 @@ func (s *CancellationRefundPreviewItem) SetTaxAmount(val Money) {
 // SetForfeitedAmount sets the value of ForfeitedAmount.
 func (s *CancellationRefundPreviewItem) SetForfeitedAmount(val Money) {
 	s.ForfeitedAmount = val
-}
-
-type CancellationRefundPreviewItemChargeType string
-
-const (
-	CancellationRefundPreviewItemChargeTypePostpaid CancellationRefundPreviewItemChargeType = "postpaid"
-	CancellationRefundPreviewItemChargeTypePrepaid  CancellationRefundPreviewItemChargeType = "prepaid"
-	CancellationRefundPreviewItemChargeTypeOneTime  CancellationRefundPreviewItemChargeType = "one_time"
-)
-
-// AllValues returns all CancellationRefundPreviewItemChargeType values.
-func (CancellationRefundPreviewItemChargeType) AllValues() []CancellationRefundPreviewItemChargeType {
-	return []CancellationRefundPreviewItemChargeType{
-		CancellationRefundPreviewItemChargeTypePostpaid,
-		CancellationRefundPreviewItemChargeTypePrepaid,
-		CancellationRefundPreviewItemChargeTypeOneTime,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CancellationRefundPreviewItemChargeType) MarshalText() ([]byte, error) {
-	switch s {
-	case CancellationRefundPreviewItemChargeTypePostpaid:
-		return []byte(s), nil
-	case CancellationRefundPreviewItemChargeTypePrepaid:
-		return []byte(s), nil
-	case CancellationRefundPreviewItemChargeTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CancellationRefundPreviewItemChargeType) UnmarshalText(data []byte) error {
-	switch CancellationRefundPreviewItemChargeType(data) {
-	case CancellationRefundPreviewItemChargeTypePostpaid:
-		*s = CancellationRefundPreviewItemChargeTypePostpaid
-		return nil
-	case CancellationRefundPreviewItemChargeTypePrepaid:
-		*s = CancellationRefundPreviewItemChargeTypePrepaid
-		return nil
-	case CancellationRefundPreviewItemChargeTypeOneTime:
-		*s = CancellationRefundPreviewItemChargeTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 type CancellationStatus string
@@ -2310,8 +2282,8 @@ func (s *CancellationStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// A billing-account contact profile with one address. An account can hold multiple contacts; this is
-// not a login identity.
+// A contact of a billing account with one address. An account can hold several; a contact is not a
+// login.
 // Ref: #/components/schemas/Contact
 type Contact struct {
 	ID                uuid.UUID `json:"id"`
@@ -2326,9 +2298,9 @@ type Contact struct {
 	AddressState      OptString `json:"address_state"`
 	AddressPostalCode OptString `json:"address_postal_code"`
 	AddressCountry    OptString `json:"address_country"`
-	// How tax applies to the customer, as in Stripe. `none` taxes normally. `exempt` charges no tax.
-	// `reverse` charges no tax and leaves it to the customer under the reverse-charge mechanism; invoices
-	// state this. Only operators change it.
+	// How tax applies to the customer, as in Stripe: `none` taxes normally, `exempt` charges no tax,
+	// `reverse` charges no tax under the reverse-charge mechanism, stated on invoices. Only operators
+	// change it.
 	TaxExempt ContactTaxExempt `json:"tax_exempt"`
 	Active    bool             `json:"active"`
 	CreatedAt time.Time        `json:"created_at"`
@@ -2624,9 +2596,9 @@ func (s *ContactList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// How tax applies to the customer, as in Stripe. `none` taxes normally. `exempt` charges no tax.
-// `reverse` charges no tax and leaves it to the customer under the reverse-charge mechanism; invoices
-// state this. Only operators change it.
+// How tax applies to the customer, as in Stripe: `none` taxes normally, `exempt` charges no tax,
+// `reverse` charges no tax under the reverse-charge mechanism, stated on invoices. Only operators
+// change it.
 type ContactTaxExempt string
 
 const (
@@ -3029,7 +3001,7 @@ func (s *CreditGrantStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/CreditGroup
 type CreditGroup struct {
-	// What the credit in this group may pay for. No restrictions means anything on the account.
+	// What the credit in this group may pay for; no restrictions means anything on the account.
 	AppliesTo Applicability `json:"applies_to"`
 	// Restricted to your first purchase of anything it applies to.
 	FirstPurchaseOnly OptBool `json:"first_purchase_only"`
@@ -3066,9 +3038,9 @@ func (s *CreditGroup) SetAmount(val Money) {
 	s.Amount = val
 }
 
-// An issued invoice reduction. Its credited amount is pre_payment_amount plus post_payment_amount. A
-// paid credit records a return obligation; refund_id identifies its refund, whose outcome may still be
-// pending. Original invoice amounts remain unchanged.
+// A reduction of an issued invoice; the original invoice amounts do not change. The credited amount is
+// pre_payment_amount plus post_payment_amount. A paid part creates a refund, identified by refund_id,
+// whose outcome may still be pending.
 // Ref: #/components/schemas/CreditNote
 type CreditNote struct {
 	ID        uuid.UUID        `json:"id"`
@@ -3080,13 +3052,13 @@ type CreditNote struct {
 	VoidedAt NilDateTime `json:"voided_at"`
 	// The reduction of unpaid receivables. A void note no longer reduces what is due.
 	PrePaymentAmount Money `json:"pre_payment_amount"`
-	// The credited part of payments already received. This is not proof that its refund has completed.
+	// The credited part of payments already received; its refund may not have completed.
 	PostPaymentAmount Money `json:"post_payment_amount"`
-	// The refund to the original payment sources, or null when no paid amount was credited.
+	// The refund to the original payment sources; null when no paid amount was credited.
 	RefundID NilUUID `json:"refund_id"`
-	// Why the note was issued. Notes from canceled, expired or failed orders carry the order's reason;
-	// `usage_true_up` returns a tier price reduction settled after the original invoice; `operator` is
-	// issued by Leaflow on request.
+	// Why the note was issued. Notes for canceled, expired or failed orders carry the order's reason;
+	// `usage_true_up` returns a tier price reduction settled after the original invoice; `operator` was
+	// issued on request.
 	Reason CreditNoteReason `json:"reason"`
 }
 
@@ -3301,9 +3273,9 @@ func (s *CreditNoteList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Why the note was issued. Notes from canceled, expired or failed orders carry the order's reason;
-// `usage_true_up` returns a tier price reduction settled after the original invoice; `operator` is
-// issued by Leaflow on request.
+// Why the note was issued. Notes for canceled, expired or failed orders carry the order's reason;
+// `usage_true_up` returns a tier price reduction settled after the original invoice; `operator` was
+// issued on request.
 type CreditNoteReason string
 
 const (
@@ -3433,7 +3405,7 @@ func (s *CreditNoteStatus) UnmarshalText(data []byte) error {
 type Currency struct {
 	// ISO 4217 alpha-3, uppercase.
 	Code string `json:"code"`
-	// Decimal places of the currency, the ISO 4217 minor unit.
+	// Decimal places of the ISO 4217 minor unit.
 	Exponent int32  `json:"exponent"`
 	Name     string `json:"name"`
 	// The smallest top-up accepted. Zero means no lower bound.
@@ -3515,8 +3487,8 @@ type DeletePaymentMethodNoContent struct{}
 // DeleteSubscriptionNoContent is response for DeleteSubscription operation.
 type DeleteSubscriptionNoContent struct{}
 
-// A coupon held on this account for a period. Within the period it applies without a code to purchases
-// and to metered usage that the coupon covers.
+// A coupon held by the account for a period, applying without a code to the purchases and metered
+// usage it covers.
 // Ref: #/components/schemas/Discount
 type Discount struct {
 	MinAmount        OptString `json:"min_amount"`
@@ -3524,26 +3496,25 @@ type Discount struct {
 	CouponID         uuid.UUID `json:"coupon_id"`
 	PromotionCodeID  OptUUID   `json:"promotion_code_id"`
 	// `scheduled` before valid_from, `active` within the validity, `expired` after valid_until, or
-	// `voided` once Leaflow withdrew it.
+	// `voided` once withdrawn.
 	Status   DiscountStatus `json:"status"`
 	VoidedAt OptDateTime    `json:"voided_at"`
 	Type     DiscountType   `json:"type"`
-	// Whether the discount continues on renewals of the purchased item. `once` applies only to the
-	// purchase or renewal that uses the coupon, `recurring` continues for `frequency_duration` billing
-	// periods including the first, and `forever` continues on every renewal.
+	// Whether the discount continues on renewals: `once` applies only to the purchase or renewal using the
+	// coupon, `recurring` for `frequency_duration` periods including the first, `forever` on every
+	// renewal.
 	Frequency         OptDiscountFrequency `json:"frequency"`
 	FrequencyDuration OptInt               `json:"frequency_duration"`
 	ID                uuid.UUID            `json:"id"`
 	Name              OptString            `json:"name"`
 	// For a percentage discount, out of one hundred.
 	PercentOff OptString `json:"percent_off"`
-	// Fixed discount or per-unit interval price override for this account currency.
+	// A fixed reduction or per-unit price override in this account currency.
 	Amount OptMoney `json:"amount"`
 	// Caps a percentage discount.
 	MaxDiscount OptMoney  `json:"max_discount"`
 	Currency    OptString `json:"currency"`
-	// What it may be used for. Absent means it applies to anything on the account, including setup fees
-	// and traffic.
+	// What it may pay for. Absent means anything on the account, including setup fees and usage.
 	AppliesTo Applicability `json:"applies_to"`
 	// Restricted to your first purchase of anything it applies to.
 	FirstPurchaseOnly OptBool     `json:"first_purchase_only"`
@@ -3742,9 +3713,9 @@ func (s *Discount) SetValidUntil(val OptNilDateTime) {
 	s.ValidUntil = val
 }
 
-// Whether the discount continues on renewals of the purchased item. `once` applies only to the
-// purchase or renewal that uses the coupon, `recurring` continues for `frequency_duration` billing
-// periods including the first, and `forever` continues on every renewal.
+// Whether the discount continues on renewals: `once` applies only to the purchase or renewal using the
+// coupon, `recurring` for `frequency_duration` periods including the first, `forever` on every
+// renewal.
 type DiscountFrequency string
 
 const (
@@ -3820,7 +3791,7 @@ func (s *DiscountList) SetPagination(val OffsetPagination) {
 }
 
 // `scheduled` before valid_from, `active` within the validity, `expired` after valid_until, or
-// `voided` once Leaflow withdrew it.
+// `voided` once withdrawn.
 type DiscountStatus string
 
 const (
@@ -3937,7 +3908,7 @@ type Entitlement struct {
 	Feature ObjectIdentity `json:"feature"`
 	Name    OptString      `json:"name"`
 	Enabled bool           `json:"enabled"`
-	// When the subscription providing it ends. Absent for a metered subscription, which has no end date.
+	// When the providing subscription ends. Absent for a metered subscription.
 	ExpiresAt OptNilDateTime `json:"expires_at"`
 }
 
@@ -4289,19 +4260,19 @@ func (s *FeatureGrantStatus) UnmarshalText(data []byte) error {
 
 // Account funding for this purchase, calculated by Billing. Amounts use the enclosing response
 // currency. Credit eligibility and all purchase requirements are already evaluated. Nothing is charged
-// or reserved. A prepaid purchase may instead use an online payment method.
+// or reserved. A licensed purchase may instead be paid with an online payment method.
 // Ref: #/components/schemas/Funds
 type Funds struct {
 	// Spendable balance after pending returns.
 	AvailableBalanceAmount Money `json:"available_balance_amount"`
-	// Currently effective credits eligible for the quoted purchases or postpaid usage. Each grant is
+	// Currently effective credits eligible for the quoted purchases or metered usage. Each grant is
 	// counted once.
 	UsableCreditAmount Money `json:"usable_credit_amount"`
-	// Currently effective credits that cannot fund any quoted purchase or postpaid target. Unused eligible
+	// Currently effective credits that cannot fund any quoted purchase or metered target. Unused eligible
 	// credits are not restricted.
 	RestrictedCreditAmount Money `json:"restricted_credit_amount"`
 	// Minimum spendable balance needed after eligible credits, covering immediate charges and every new
-	// postpaid admission requirement.
+	// metered purchase's admission requirement.
 	RequiredBalanceAmount Money `json:"required_balance_amount"`
 	// Additional balance needed now. Zero means account funds satisfy this quote. No funds are reserved.
 	BalanceShortfallAmount Money `json:"balance_shortfall_amount"`
@@ -4435,7 +4406,7 @@ func (s *GetStatementUsageGroupBy) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/Invoice
 type Invoice struct {
-	// Collection has been stopped; any accepted return obligations are completed before final voiding.
+	// Collection has stopped; accepted return obligations are completed.
 	VoidRequestedAt  OptDateTime `json:"void_requested_at"`
 	DueAt            OptDateTime `json:"due_at"`
 	AmountRefunded   OptString   `json:"amount_refunded"`
@@ -4453,33 +4424,28 @@ type Invoice struct {
 	// Sum of the line discounts, taken off before tax.
 	DiscountAmount OptMoney `json:"discount_amount"`
 	TaxAmount      OptMoney `json:"tax_amount"`
-	// Successful credit-grant payments included in amount_paid. Does not reduce the receivable or tax
+	// Successful credit-grant payments, included in amount_paid; they do not reduce the receivable or tax
 	// base.
 	CreditApplied OptMoney `json:"credit_applied"`
-	// Subtotal less discount plus tax. Balance and credit grants are payment sources, not reductions of
-	// the receivable.
+	// Subtotal less discount plus tax. Balance and credit grants pay it; they do not reduce it.
 	Total      Money    `json:"total"`
 	AmountPaid OptMoney `json:"amount_paid"`
-	// Issued, non-void credit notes that reduced unpaid receivables. Does not rewrite the original invoice
-	// total.
+	// Issued credit notes that reduced unpaid receivables; the original invoice total is unchanged.
 	PrePaymentCreditNotesAmount Money `json:"pre_payment_credit_notes_amount"`
-	// Issued credit notes against payments already received. This is a return obligation, not evidence of
-	// completed refunds.
+	// Issued credit notes against payments already received; their refunds may not have completed.
 	PostPaymentCreditNotesAmount Money `json:"post_payment_credit_notes_amount"`
-	// What is still collectible after unpaid credit notes and successful payments; never below zero. A
-	// draft has none; its total is the base price, and a payment preview shows what paying it would
-	// collect. A paid or void invoice has none either.
+	// What is still collectible after unpaid credit notes and successful payments; never below zero. Zero
+	// for a draft, whose total is the base price, and for a paid or void invoice.
 	AmountDue   Money          `json:"amount_due"`
 	PeriodStart OptNilDateTime `json:"period_start"`
 	// Exclusive.
 	PeriodEnd OptNilDateTime `json:"period_end"`
-	// Who this was billed to, as recorded when the invoice was issued. Later changes to the account do not
-	// alter it.
+	// The billing details recorded when the invoice was issued.
 	CustomerName  OptString `json:"customer_name"`
 	CustomerEmail OptString `json:"customer_email"`
 	CustomerTaxID OptString `json:"customer_tax_id"`
-	// How tax applied to the customer when the invoice was issued. `reverse` means no tax was charged
-	// because the customer accounts for it under the reverse-charge mechanism.
+	// How tax applied to the customer when the invoice was issued; `reverse` means no tax was charged
+	// under the reverse-charge mechanism.
 	CustomerTaxExempt         OptInvoiceCustomerTaxExempt `json:"customer_tax_exempt"`
 	CustomerAddressLine1      OptString                   `json:"customer_address_line1"`
 	CustomerAddressLine2      OptString                   `json:"customer_address_line2"`
@@ -4800,8 +4766,8 @@ func (s *Invoice) SetPaidAt(val OptNilDateTime) {
 	s.PaidAt = val
 }
 
-// How tax applied to the customer when the invoice was issued. `reverse` means no tax was charged
-// because the customer accounts for it under the reverse-charge mechanism.
+// How tax applied to the customer when the invoice was issued; `reverse` means no tax was charged
+// under the reverse-charge mechanism.
 type InvoiceCustomerTaxExempt string
 
 const (
@@ -4866,13 +4832,11 @@ type InvoiceItem struct {
 	ID                uuid.UUID          `json:"id"`
 	Type              OptInvoiceItemType `json:"type"`
 	ProjectID         OptNilUUID         `json:"project_id"`
-	// The project the charge was for and its current name, for display. Absent when the line is not for a
-	// project, and when the project no longer exists or its details cannot be read at the moment;
-	// `project_id` still identifies it then.
+	// The project the charge was for and its current name. Absent when the line has no project or the
+	// project cannot be read; `project_id` still identifies it.
 	Project    OptNilNamedIdentity `json:"project"`
 	ResourceID OptString           `json:"resource_id"`
-	// The wording as recorded when the invoice was issued. It is not re-translated afterwards, so that an
-	// invoice continues to read as it did when it was sent.
+	// The line's wording as recorded when the invoice was issued.
 	Description string    `json:"description"`
 	Unit        OptString `json:"unit"`
 	Quantity    OptString `json:"quantity"`
@@ -4883,6 +4847,9 @@ type InvoiceItem struct {
 	Currency         string         `json:"currency"`
 	PeriodStart      OptNilDateTime `json:"period_start"`
 	PeriodEnd        OptNilDateTime `json:"period_end"`
+	// For a usage line, the values of its meter's presentation dimensions, such as the model and token
+	// kind. Empty for other lines.
+	Dimensions OptInvoiceItemDimensions `json:"dimensions"`
 	// Present on a line that changes a subscription immediately, one entry for each paid period it covers.
 	// `amount` is the sum of `remaining_amount` minus `credited_amount` over the entries.
 	Prorations []InvoiceItemProration `json:"prorations"`
@@ -4986,6 +4953,11 @@ func (s *InvoiceItem) GetPeriodStart() OptNilDateTime {
 // GetPeriodEnd returns the value of PeriodEnd.
 func (s *InvoiceItem) GetPeriodEnd() OptNilDateTime {
 	return s.PeriodEnd
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *InvoiceItem) GetDimensions() OptInvoiceItemDimensions {
+	return s.Dimensions
 }
 
 // GetProrations returns the value of Prorations.
@@ -5093,9 +5065,27 @@ func (s *InvoiceItem) SetPeriodEnd(val OptNilDateTime) {
 	s.PeriodEnd = val
 }
 
+// SetDimensions sets the value of Dimensions.
+func (s *InvoiceItem) SetDimensions(val OptInvoiceItemDimensions) {
+	s.Dimensions = val
+}
+
 // SetProrations sets the value of Prorations.
 func (s *InvoiceItem) SetProrations(val []InvoiceItemProration) {
 	s.Prorations = val
+}
+
+// For a usage line, the values of its meter's presentation dimensions, such as the model and token
+// kind. Empty for other lines.
+type InvoiceItemDimensions map[string]string
+
+func (s *InvoiceItemDimensions) init() InvoiceItemDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/InvoiceItemList
@@ -5129,7 +5119,7 @@ func (s *InvoiceItemList) SetPagination(val OffsetPagination) {
 type InvoiceItemProration struct {
 	// The earlier invoice line that paid for the period.
 	CreditedInvoiceItemID uuid.UUID `json:"credited_invoice_item_id"`
-	// The wording of the earlier invoice line as recorded when this invoice was created.
+	// The earlier invoice line's wording as recorded.
 	Description string    `json:"description"`
 	PeriodStart time.Time `json:"period_start"`
 	// Exclusive.
@@ -5289,21 +5279,19 @@ func (s *InvoiceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// A draft is not yet issued. The draft invoice of an order shows base prices until it is paid, when
-// the discount is applied and it is issued; other drafts are private to administrators. An issued
-// invoice is open until settled; a zero-total issued invoice is immediately paid. Unbilled usage
-// remains separate from invoices until it is invoiced. A refund does not change the status: a paid
-// invoice stays paid, with the refunded part in amount_refunded. void means collection has stopped and
-// any funds received have been returned.
+// `draft`: not yet issued; an order's draft invoice shows base prices until it is paid, when the
+// discount is applied and it is issued. Other drafts are visible only to operators. `open`: issued and
+// not yet settled; a zero-total invoice is paid at once. `paid` stays paid after a refund, with the
+// refunded part in amount_refunded. `void`: collection has stopped and any funds received have been
+// returned. Usage not yet invoiced is not on any invoice.
 // Ref: #/components/schemas/InvoiceStatus
 type InvoiceStatus string
 
 const (
-	InvoiceStatusDraft         InvoiceStatus = "draft"
-	InvoiceStatusOpen          InvoiceStatus = "open"
-	InvoiceStatusPaid          InvoiceStatus = "paid"
-	InvoiceStatusVoid          InvoiceStatus = "void"
-	InvoiceStatusUncollectible InvoiceStatus = "uncollectible"
+	InvoiceStatusDraft InvoiceStatus = "draft"
+	InvoiceStatusOpen  InvoiceStatus = "open"
+	InvoiceStatusPaid  InvoiceStatus = "paid"
+	InvoiceStatusVoid  InvoiceStatus = "void"
 )
 
 // AllValues returns all InvoiceStatus values.
@@ -5313,7 +5301,6 @@ func (InvoiceStatus) AllValues() []InvoiceStatus {
 		InvoiceStatusOpen,
 		InvoiceStatusPaid,
 		InvoiceStatusVoid,
-		InvoiceStatusUncollectible,
 	}
 }
 
@@ -5327,8 +5314,6 @@ func (s InvoiceStatus) MarshalText() ([]byte, error) {
 	case InvoiceStatusPaid:
 		return []byte(s), nil
 	case InvoiceStatusVoid:
-		return []byte(s), nil
-	case InvoiceStatusUncollectible:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5350,18 +5335,14 @@ func (s *InvoiceStatus) UnmarshalText(data []byte) error {
 	case InvoiceStatusVoid:
 		*s = InvoiceStatusVoid
 		return nil
-	case InvoiceStatusUncollectible:
-		*s = InvoiceStatusUncollectible
-		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Purchase-related invoice amounts, without account contact details or payment methods. Every order
-// has an invoice from placement. A draft shows base prices until it is paid, when the discount is
-// applied and it is issued; a zero-total invoice is issued and paid at placement whatever the checkout
-// mode. Neither establishes acceptance or delivery.
+// An order's invoice amounts, without contact details or payment methods. A draft shows base prices
+// until it is paid, when the discount is applied and it is issued; a zero-total invoice is issued and
+// paid at placement.
 // Ref: #/components/schemas/InvoiceSummary
 type InvoiceSummary struct {
 	ID       uuid.UUID     `json:"id"`
@@ -5377,11 +5358,9 @@ type InvoiceSummary struct {
 	TaxAmount      string `json:"tax_amount"`
 	Total          string `json:"total"`
 	AmountPaid     string `json:"amount_paid"`
-	// Issued, non-void credit notes that reduced unpaid receivables. Does not rewrite the original invoice
-	// total.
+	// Issued credit notes that reduced unpaid receivables; the original invoice total is unchanged.
 	PrePaymentCreditNotesAmount Money `json:"pre_payment_credit_notes_amount"`
-	// Issued credit notes against payments already received. This is a return obligation, not evidence of
-	// completed refunds.
+	// Issued credit notes against payments already received; their refunds may not have completed.
 	PostPaymentCreditNotesAmount Money `json:"post_payment_credit_notes_amount"`
 	// What is still collectible after unpaid credit notes and successful payments; never below zero.
 	AmountDue      string      `json:"amount_due"`
@@ -5775,60 +5754,13 @@ type ListPricesNotModified struct{}
 
 func (*ListPricesNotModified) listPricesRes() {}
 
-type ListPricesType string
-
-const (
-	ListPricesTypePostpaid ListPricesType = "postpaid"
-	ListPricesTypePrepaid  ListPricesType = "prepaid"
-	ListPricesTypeOneTime  ListPricesType = "one_time"
-)
-
-// AllValues returns all ListPricesType values.
-func (ListPricesType) AllValues() []ListPricesType {
-	return []ListPricesType{
-		ListPricesTypePostpaid,
-		ListPricesTypePrepaid,
-		ListPricesTypeOneTime,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ListPricesType) MarshalText() ([]byte, error) {
-	switch s {
-	case ListPricesTypePostpaid:
-		return []byte(s), nil
-	case ListPricesTypePrepaid:
-		return []byte(s), nil
-	case ListPricesTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListPricesType) UnmarshalText(data []byte) error {
-	switch ListPricesType(data) {
-	case ListPricesTypePostpaid:
-		*s = ListPricesTypePostpaid
-		return nil
-	case ListPricesTypePrepaid:
-		*s = ListPricesTypePrepaid
-		return nil
-	case ListPricesTypeOneTime:
-		*s = ListPricesTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 type ListSpendGroupBy string
 
 const (
 	ListSpendGroupByProduct  ListSpendGroupBy = "product"
 	ListSpendGroupByPlan     ListSpendGroupBy = "plan"
 	ListSpendGroupByResource ListSpendGroupBy = "resource"
+	ListSpendGroupByMeter    ListSpendGroupBy = "meter"
 )
 
 // AllValues returns all ListSpendGroupBy values.
@@ -5837,6 +5769,7 @@ func (ListSpendGroupBy) AllValues() []ListSpendGroupBy {
 		ListSpendGroupByProduct,
 		ListSpendGroupByPlan,
 		ListSpendGroupByResource,
+		ListSpendGroupByMeter,
 	}
 }
 
@@ -5848,6 +5781,8 @@ func (s ListSpendGroupBy) MarshalText() ([]byte, error) {
 	case ListSpendGroupByPlan:
 		return []byte(s), nil
 	case ListSpendGroupByResource:
+		return []byte(s), nil
+	case ListSpendGroupByMeter:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5866,6 +5801,9 @@ func (s *ListSpendGroupBy) UnmarshalText(data []byte) error {
 	case ListSpendGroupByResource:
 		*s = ListSpendGroupByResource
 		return nil
+	case ListSpendGroupByMeter:
+		*s = ListSpendGroupByMeter
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
@@ -5873,33 +5811,33 @@ func (s *ListSpendGroupBy) UnmarshalText(data []byte) error {
 
 type Money string
 
-// One billing account's usage billing for one UTC calendar month, summed over the month's statements.
-// It is a summary, not something to pay; each closing's invoice is collected on its own.
+// One billing account's usage billing for one UTC calendar month, summed over its statements. Not
+// payable itself; each statement's invoice is collected on its own.
 // Ref: #/components/schemas/MonthlyStatement
 type MonthlyStatement struct {
 	BillingAccountID int64     `json:"billing_account_id"`
 	Currency         string    `json:"currency"`
 	PeriodStart      time.Time `json:"period_start"`
 	PeriodEnd        time.Time `json:"period_end"`
-	// True after the period's final closing, which applies minimum charges for the whole month. Usage
-	// priced later is still billed in supplement statements and added here.
+	// True after the period's final closing, which applies the month's minimum charges. Usage priced later
+	// is billed in supplement statements and added here.
 	Finalized   bool        `json:"finalized"`
 	FinalizedAt OptDateTime `json:"finalized_at"`
 	// Statements of the period, including the open one.
 	StatementCount int32 `json:"statement_count"`
 	// The sum of the closed statements' invoiced amounts.
 	Billed StatementAmounts `json:"billed"`
-	// Credit issued at closings against the period's earlier invoices, including tax. The period's net
-	// charge is the billed total less this amount.
+	// Credit issued at closings against the period's earlier invoices, tax included; the period's net
+	// charge is the billed total less this.
 	CreditedAmount Money `json:"credited_amount"`
-	// The open statement's estimate for usage priced since the last closing. Absent when the period has no
-	// open statement.
+	// The open statement's estimate for usage priced since the last closing. Absent without an open
+	// statement.
 	Unbilled OptStatementAmounts `json:"unbilled"`
 	// Paid from credit grants on the period's invoices.
 	CreditApplied Money `json:"credit_applied"`
 	// Paid on the period's invoices, including credit grants.
 	AmountPaid Money `json:"amount_paid"`
-	// Still owed on the period's invoices. It is collected from balance and credits as soon as they are
+	// Still owed on the period's invoices, collected from balance and credits as soon as they are
 	// available.
 	AmountDue Money `json:"amount_due"`
 	// Returned from the period's invoices after credit was issued against paid amounts.
@@ -6351,7 +6289,7 @@ func (*NotModified) listPricesByPlanRes() {}
 func (*NotModified) listProductsRes()     {}
 func (*NotModified) listRatesRes()        {}
 
-// A catalog object inlined for display.
+// A catalog object, inlined for display.
 // Ref: #/components/schemas/ObjectIdentity
 type ObjectIdentity struct {
 	LookupKey OptString `json:"lookup_key"`
@@ -6514,6 +6452,52 @@ func (o OptActiveResourceDimensions) Get() (v ActiveResourceDimensions, ok bool)
 
 // Or returns value if set, or given parameter if does not.
 func (o OptActiveResourceDimensions) Or(d ActiveResourceDimensions) ActiveResourceDimensions {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptBillingScheme returns new OptBillingScheme with value set to v.
+func NewOptBillingScheme(v BillingScheme) OptBillingScheme {
+	return OptBillingScheme{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBillingScheme is optional BillingScheme.
+type OptBillingScheme struct {
+	Value BillingScheme
+	Set   bool
+}
+
+// IsSet returns true if OptBillingScheme was set.
+func (o OptBillingScheme) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBillingScheme) Reset() {
+	var v BillingScheme
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBillingScheme) SetTo(v BillingScheme) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBillingScheme) Get() (v BillingScheme, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBillingScheme) Or(d BillingScheme) BillingScheme {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7026,6 +7010,52 @@ func (o OptInvoiceCustomerTaxExempt) Or(d InvoiceCustomerTaxExempt) InvoiceCusto
 	return d
 }
 
+// NewOptInvoiceItemDimensions returns new OptInvoiceItemDimensions with value set to v.
+func NewOptInvoiceItemDimensions(v InvoiceItemDimensions) OptInvoiceItemDimensions {
+	return OptInvoiceItemDimensions{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInvoiceItemDimensions is optional InvoiceItemDimensions.
+type OptInvoiceItemDimensions struct {
+	Value InvoiceItemDimensions
+	Set   bool
+}
+
+// IsSet returns true if OptInvoiceItemDimensions was set.
+func (o OptInvoiceItemDimensions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInvoiceItemDimensions) Reset() {
+	var v InvoiceItemDimensions
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInvoiceItemDimensions) SetTo(v InvoiceItemDimensions) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInvoiceItemDimensions) Get() (v InvoiceItemDimensions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInvoiceItemDimensions) Or(d InvoiceItemDimensions) InvoiceItemDimensions {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInvoiceItemType returns new OptInvoiceItemType with value set to v.
 func NewOptInvoiceItemType(v InvoiceItemType) OptInvoiceItemType {
 	return OptInvoiceItemType{
@@ -7296,52 +7326,6 @@ func (o OptListCreditGrantsStatus) Get() (v ListCreditGrantsStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptListCreditGrantsStatus) Or(d ListCreditGrantsStatus) ListCreditGrantsStatus {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptListPricesType returns new OptListPricesType with value set to v.
-func NewOptListPricesType(v ListPricesType) OptListPricesType {
-	return OptListPricesType{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptListPricesType is optional ListPricesType.
-type OptListPricesType struct {
-	Value ListPricesType
-	Set   bool
-}
-
-// IsSet returns true if OptListPricesType was set.
-func (o OptListPricesType) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptListPricesType) Reset() {
-	var v ListPricesType
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptListPricesType) SetTo(v ListPricesType) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptListPricesType) Get() (v ListPricesType, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptListPricesType) Or(d ListPricesType) ListPricesType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8400,6 +8384,52 @@ func (o OptPriceTiersMode) Or(d PriceTiersMode) PriceTiersMode {
 	return d
 }
 
+// NewOptPriceType returns new OptPriceType with value set to v.
+func NewOptPriceType(v PriceType) OptPriceType {
+	return OptPriceType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPriceType is optional PriceType.
+type OptPriceType struct {
+	Value PriceType
+	Set   bool
+}
+
+// IsSet returns true if OptPriceType was set.
+func (o OptPriceType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPriceType) Reset() {
+	var v PriceType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPriceType) SetTo(v PriceType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPriceType) Get() (v PriceType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPriceType) Or(d PriceType) PriceType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptProduct returns new OptProduct with value set to v.
 func NewOptProduct(v Product) OptProduct {
 	return OptProduct{
@@ -8624,52 +8654,6 @@ func (o OptQuoteItemInputInterval) Get() (v QuoteItemInputInterval, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptQuoteItemInputInterval) Or(d QuoteItemInputInterval) QuoteItemInputInterval {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptQuoteItemInputPriceType returns new OptQuoteItemInputPriceType with value set to v.
-func NewOptQuoteItemInputPriceType(v QuoteItemInputPriceType) OptQuoteItemInputPriceType {
-	return OptQuoteItemInputPriceType{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptQuoteItemInputPriceType is optional QuoteItemInputPriceType.
-type OptQuoteItemInputPriceType struct {
-	Value QuoteItemInputPriceType
-	Set   bool
-}
-
-// IsSet returns true if OptQuoteItemInputPriceType was set.
-func (o OptQuoteItemInputPriceType) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptQuoteItemInputPriceType) Reset() {
-	var v QuoteItemInputPriceType
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptQuoteItemInputPriceType) SetTo(v QuoteItemInputPriceType) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptQuoteItemInputPriceType) Get() (v QuoteItemInputPriceType, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptQuoteItemInputPriceType) Or(d QuoteItemInputPriceType) QuoteItemInputPriceType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8906,6 +8890,52 @@ func (o OptRenewalOrderRequestInterval) Or(d RenewalOrderRequestInterval) Renewa
 	return d
 }
 
+// NewOptSpendRowDimensions returns new OptSpendRowDimensions with value set to v.
+func NewOptSpendRowDimensions(v SpendRowDimensions) OptSpendRowDimensions {
+	return OptSpendRowDimensions{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSpendRowDimensions is optional SpendRowDimensions.
+type OptSpendRowDimensions struct {
+	Value SpendRowDimensions
+	Set   bool
+}
+
+// IsSet returns true if OptSpendRowDimensions was set.
+func (o OptSpendRowDimensions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSpendRowDimensions) Reset() {
+	var v SpendRowDimensions
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSpendRowDimensions) SetTo(v SpendRowDimensions) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSpendRowDimensions) Get() (v SpendRowDimensions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSpendRowDimensions) Or(d SpendRowDimensions) SpendRowDimensions {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptStatementAmounts returns new OptStatementAmounts with value set to v.
 func NewOptStatementAmounts(v StatementAmounts) OptStatementAmounts {
 	return OptStatementAmounts{
@@ -8946,6 +8976,52 @@ func (o OptStatementAmounts) Get() (v StatementAmounts, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptStatementAmounts) Or(d StatementAmounts) StatementAmounts {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptStatementItemDimensions returns new OptStatementItemDimensions with value set to v.
+func NewOptStatementItemDimensions(v StatementItemDimensions) OptStatementItemDimensions {
+	return OptStatementItemDimensions{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptStatementItemDimensions is optional StatementItemDimensions.
+type OptStatementItemDimensions struct {
+	Value StatementItemDimensions
+	Set   bool
+}
+
+// IsSet returns true if OptStatementItemDimensions was set.
+func (o OptStatementItemDimensions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptStatementItemDimensions) Reset() {
+	var v StatementItemDimensions
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptStatementItemDimensions) SetTo(v StatementItemDimensions) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptStatementItemDimensions) Get() (v StatementItemDimensions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptStatementItemDimensions) Or(d StatementItemDimensions) StatementItemDimensions {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9366,18 +9442,63 @@ func (o OptUsageChargeDimensions) Or(d UsageChargeDimensions) UsageChargeDimensi
 	return d
 }
 
-// A recorded purchase with its invoice from placement; a zero-total invoice, such as for postpaid
-// admission, is issued and paid at placement whatever the checkout mode. Until checkout_confirmed_at
-// is set, the invoice is a draft at base prices: paying it fixes the discount and amount, issues it
-// and collects it, and the order cannot be accepted before then. Coupon fields describe the discount
-// fixed at that point and are absent before it; a quote never populates them. Payment and acceptance
-// remain separate from resource delivery.
+// NewOptUsageType returns new OptUsageType with value set to v.
+func NewOptUsageType(v UsageType) OptUsageType {
+	return OptUsageType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUsageType is optional UsageType.
+type OptUsageType struct {
+	Value UsageType
+	Set   bool
+}
+
+// IsSet returns true if OptUsageType was set.
+func (o OptUsageType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUsageType) Reset() {
+	var v UsageType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUsageType) SetTo(v UsageType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUsageType) Get() (v UsageType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUsageType) Or(d UsageType) UsageType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// A recorded purchase with its invoice from placement; a zero-total invoice, such as for a metered
+// purchase, is issued and paid at placement in either checkout mode. Until checkout_confirmed_at is
+// set, the invoice is a draft at base prices: paying it fixes the discount and amount, issues it and
+// collects it, and the order cannot be accepted before then. Coupon fields describe the discount fixed
+// then and are absent before. Payment and acceptance do not mean the resources were delivered.
 // Ref: #/components/schemas/Order
 type Order struct {
 	CouponID        OptUUID           `json:"coupon_id"`
 	Coupon          OptObjectIdentity `json:"coupon"`
 	PromotionCodeID OptUUID           `json:"promotion_code_id"`
-	// Code text frozen when the coupon was applied. Absent for an account discount.
+	// The promotion code applied. Absent for an account discount.
 	PromotionCode OptString `json:"promotion_code"`
 	// The order's invoice, the same as invoice.id.
 	InvoiceID uuid.UUID      `json:"invoice_id"`
@@ -9387,37 +9508,34 @@ type Order struct {
 	Account           OptAccountIdentity `json:"account"`
 	ChangeEffectiveAt OptDateTime        `json:"change_effective_at"`
 	ID                uuid.UUID          `json:"id"`
-	// Which project it was bought for. Absent for a purchase made at account level, such as a membership.
+	// The project it was bought for. Absent for an account-level purchase, such as a membership.
 	ProjectID OptNilUUID `json:"project_id"`
-	// The project and its current name, for display. Absent for a purchase at account level, and when the
-	// project no longer exists or its details cannot be read at the moment; `project_id` still identifies
-	// it then.
+	// The project and its current name. Absent for an account-level purchase or when the project cannot be
+	// read; `project_id` still identifies it.
 	Project OptNilNamedIdentity `json:"project"`
-	// The billing account the order was placed with. It does not change when the project is later linked
-	// to another billing account. While this account is suspended or closed the order cannot be accepted,
-	// and the invoice of a change scheduled for the end of a period is not issued and the change is called
-	// off when the current period ends; such requests fail with BILLING_ACCOUNT_UNAVAILABLE.
+	// The billing account the order was placed with, unchanged when the project is later linked to another
+	// account. While it is suspended or closed, the order cannot be accepted, and a period-end change's
+	// invoice is not issued and the change is called off when the current period ends; such requests fail
+	// with `BILLING_ACCOUNT_UNAVAILABLE`.
 	BillingAccountID OptInt64 `json:"billing_account_id"`
 	Currency         string   `json:"currency"`
-	// `new` buys, `renew` extends a prepaid subscription, `modify` changes a subscription's configuration
+	// `new` buys, `renew` extends a licensed subscription, `modify` changes a subscription's configuration
 	// or billing terms.
 	Type   OrderType   `json:"type"`
 	Status OrderStatus `json:"status"`
-	// When a plan change takes effect. `none` on anything that is not a change.
-	//
-	// `period_end` orders stay pending until the first period at the new price is paid. That period is
-	// invoiced shortly before the current paid period ends and starts when it ends; if the invoice is
-	// still unpaid by then, the order is canceled and the subscription renews or ends as usual. Renewing
-	// in the meantime moves all of this along with it.
+	// When a plan change takes effect; `none` for anything that is not a change. A `period_end` order
+	// stays pending until the first period at the new price is paid. That period is invoiced shortly
+	// before the current paid period ends and starts when it ends; if the invoice is unpaid by then, the
+	// order is canceled and the subscription renews or ends as usual. A renewal in the meantime moves the
+	// change to the end of the renewed period.
 	ChangeEffective OptOrderChangeEffective `json:"change_effective"`
-	// Acceptance deadline. Pending orders can expire automatically.
+	// Acceptance deadline; a pending order expires after it.
 	ExpiresAt OptNilDateTime `json:"expires_at"`
-	// When the discount and amount were fixed: at placement for automatic checkout and for a zero total,
+	// When the discount and amount were fixed: at placement for automatic checkout or a zero total,
 	// otherwise when the invoice was first paid. Null while a deferred order awaits payment.
 	CheckoutConfirmedAt OptNilDateTime `json:"checkout_confirmed_at"`
 	CreatedAt           time.Time      `json:"created_at"`
-	// What was bought. Present on a single order and on every order in a list, so a list can be rendered
-	// without a further request per row.
+	// What was bought.
 	Items []OrderItem `json:"items"`
 }
 
@@ -9651,12 +9769,11 @@ func (s *OrderCancel) SetOrderItemIds(val []uuid.UUID) {
 	s.OrderItemIds = val
 }
 
-// When a plan change takes effect. `none` on anything that is not a change.
-//
-// `period_end` orders stay pending until the first period at the new price is paid. That period is
-// invoiced shortly before the current paid period ends and starts when it ends; if the invoice is
-// still unpaid by then, the order is canceled and the subscription renews or ends as usual. Renewing
-// in the meantime moves all of this along with it.
+// When a plan change takes effect; `none` for anything that is not a change. A `period_end` order
+// stays pending until the first period at the new price is paid. That period is invoiced shortly
+// before the current paid period ends and starts when it ends; if the invoice is unpaid by then, the
+// order is canceled and the subscription renews or ends as usual. A renewal in the meantime moves the
+// change to the end of the renewed period.
 type OrderChangeEffective string
 
 const (
@@ -9705,10 +9822,9 @@ func (s *OrderChangeEffective) UnmarshalText(data []byte) error {
 	}
 }
 
-// Frozen purchase terms. Monetary fields come from related invoice-line snapshots and are zero for a
-// line with no immediate charge, such as postpaid admission. Later catalog changes do not reprice this
-// line. A new service purchase creates its pending subscription when this item is recorded, not when
-// payment succeeds.
+// The purchase terms frozen at placement. Monetary fields come from the order's invoice lines and are
+// zero without an immediate charge, such as for a metered purchase. Later catalog changes do not
+// reprice the line. A new service purchase has its pending subscription from placement.
 // Ref: #/components/schemas/OrderItem
 type OrderItem struct {
 	// Whether new account discounts may apply to future renewals. A fixed operator renewal agreement
@@ -9718,25 +9834,28 @@ type OrderItem struct {
 	InvoiceItemIds []uuid.UUID               `json:"invoice_item_ids"`
 	Position       OptInt                    `json:"position"`
 	Configuration  OptOrderItemConfiguration `json:"configuration"`
-	// Stable Billing subscription ID. A new prepaid or postpaid service purchase returns the pending
-	// subscription here; renewals and changes reference the existing subscription, which keeps its ID.
-	// Absent for delivery without a subscription. This is not a business resource ID.
+	// The Billing subscription: the new pending subscription of a recurring purchase, or the existing one
+	// renewed or changed, which keeps its ID. Absent for a purchase without a subscription.
 	SubscriptionID    OptUUID              `json:"subscription_id"`
 	Interval          OrderItemInterval    `json:"interval"`
 	IntervalCount     OptInt               `json:"interval_count"`
 	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
-	// Prepaid items only: the plan's one-month prepaid price for this item's quantity before tax, frozen
-	// at purchase, used to value time used under a prorated refund or a downgrade. Null when the plan has
-	// no prepaid period shorter than the one bought.
+	// Recurring licensed items only: the plan's one-month licensed price for this item's quantity, before
+	// tax and frozen at purchase, used to value time under a prorated refund or a downgrade. Null when the
+	// plan has no licensed period shorter than the one bought.
 	RefundMonthlyAmount OptNilString `json:"refund_monthly_amount"`
-	// Prepaid items only: the plan's postpaid hourly price for this item's quantity before tax, frozen at
-	// purchase, used for time used short of a full month. Null when the plan has no postpaid price.
+	// Recurring licensed items only, the plan's metered hourly price for this item's quantity before tax,
+	// frozen at purchase, used for time used short of a full month. Null when the licensed price has no
+	// meter.
 	RefundHourlyAmount OptNilString `json:"refund_hourly_amount"`
 	RecurringAmount    OptString    `json:"recurring_amount"`
 	SetupAmount        OptString    `json:"setup_amount"`
-	// The payment timing of the selected price.
-	ChargeType OrderItemChargeType `json:"charge_type"`
+	Type               PriceType    `json:"type"`
+	UsageType          UsageType    `json:"usage_type"`
+	// The dimension values the line was bought with, such as region and instance type. Empty when the
+	// purchase gave none.
+	Dimensions OrderItemDimensions `json:"dimensions"`
 	// Total tax after discounts, including any tax already included in the price.
 	TaxAmount OptString `json:"tax_amount"`
 	// The part of tax_amount already included in gross_amount; it is not charged again.
@@ -9749,38 +9868,31 @@ type OrderItem struct {
 	Product   OptProduct   `json:"product"`
 	// Which plan was bought.
 	PlanID uuid.UUID `json:"plan_id"`
-	// What it was called when bought. It does not follow later catalogue renames and is not translated.
+	// The name when bought.
 	PlanName string `json:"plan_name"`
 	Quantity string `json:"quantity"`
-	// The unit amount of the price this line is charged under. Absent for a tiered price, which has no
-	// single unit amount, and for a change that takes effect at once, which is charged as `gross_amount`
-	// describes.
+	// The unit amount of the price the line is charged under. Absent for a tiered price, and for an
+	// immediate change, which is charged as `gross_amount` describes.
 	UnitAmount OptMoney `json:"unit_amount"`
-	// Before discounts: the price applied to the quantity, which for a per-unit price is `unit_amount`
-	// times `quantity`; a minimum charge can make it higher. For an upgrade that takes effect at once it
-	// is the new price for the time left in the paid period, at the subscription's own period price, minus
-	// the amount paid for that time, and the period end does not move; a downgrade charges nothing and may
-	// refund the difference instead. A change between equal period prices charges and refunds nothing. The
-	// setup fee is not part of it; see `setup_amount`.
+	// Before discounts and setup fees: the price applied to the quantity, `unit_amount` times `quantity`
+	// for a per- unit price, raised by any minimum charge. For an immediate upgrade it is the new price
+	// for the rest of the paid period minus the amount paid for that time; a downgrade, or a change
+	// between equal period prices, charges nothing.
 	//
-	// Under an inclusive tax rate it includes tax, as the price does, and the included part is
-	// `tax_included_amount`. A renewal at the agreed terms is the exception: the agreed amount excludes
-	// tax, and tax is added to it.
+	// Under an inclusive tax rate it includes tax, shown in `tax_included_amount`, except for a renewal at
+	// agreed terms, whose amount excludes tax.
 	GrossAmount OptMoney `json:"gross_amount"`
-	// The reduction on this line: from the coupon the order uses and, for a renewal at the agreed terms,
-	// from the discount the subscription carries.
-	//
-	// A carried discount is part of the agreed amount. It is listed here, and `gross_amount` is then
-	// `unit_amount` times `quantity`, except in two cases where `gross_amount` is the agreed amount and
-	// the carried discount is already reflected in it: the renewal order also uses a coupon the account
-	// holds, or the account's tax rate is inclusive.
+	// The reduction on this line, from the order's coupon and, for a renewal at agreed terms, from the
+	// subscription's carried discount. With a carried discount, `gross_amount` is `unit_amount` times
+	// `quantity`, except when the renewal order also uses an account coupon or the tax rate is inclusive:
+	// then `gross_amount` is the agreed amount, which already reflects the carried discount.
 	DiscountAmount OptMoney `json:"discount_amount"`
 	// `gross_amount` less `discount_amount`.
 	Amount   OptMoney `json:"amount"`
 	Currency string   `json:"currency"`
-	// The start of the service period this line paid for. Frozen at placement for renewals and period-end
-	// changes; for a prepaid line of a new purchase, fixed from the second its invoice is paid and kept
-	// when delivery is confirmed. Absent for postpaid and one-time lines.
+	// The start of the service period this line paid for. Fixed at placement for renewals and period-end
+	// changes, and for a licensed line of a new purchase when its invoice is paid. Absent for metered and
+	// one-time lines.
 	PeriodStart OptNilDateTime `json:"period_start"`
 	// The end of that service period, exclusive.
 	PeriodEnd OptNilDateTime  `json:"period_end"`
@@ -9852,9 +9964,19 @@ func (s *OrderItem) GetSetupAmount() OptString {
 	return s.SetupAmount
 }
 
-// GetChargeType returns the value of ChargeType.
-func (s *OrderItem) GetChargeType() OrderItemChargeType {
-	return s.ChargeType
+// GetType returns the value of Type.
+func (s *OrderItem) GetType() PriceType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *OrderItem) GetUsageType() UsageType {
+	return s.UsageType
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *OrderItem) GetDimensions() OrderItemDimensions {
+	return s.Dimensions
 }
 
 // GetTaxAmount returns the value of TaxAmount.
@@ -10012,9 +10134,19 @@ func (s *OrderItem) SetSetupAmount(val OptString) {
 	s.SetupAmount = val
 }
 
-// SetChargeType sets the value of ChargeType.
-func (s *OrderItem) SetChargeType(val OrderItemChargeType) {
-	s.ChargeType = val
+// SetType sets the value of Type.
+func (s *OrderItem) SetType(val PriceType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *OrderItem) SetUsageType(val UsageType) {
+	s.UsageType = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *OrderItem) SetDimensions(val OrderItemDimensions) {
+	s.Dimensions = val
 }
 
 // SetTaxAmount sets the value of TaxAmount.
@@ -10107,61 +10239,25 @@ func (s *OrderItem) SetStatus(val OrderItemStatus) {
 	s.Status = val
 }
 
-// The payment timing of the selected price.
-type OrderItemChargeType string
-
-const (
-	OrderItemChargeTypePostpaid OrderItemChargeType = "postpaid"
-	OrderItemChargeTypePrepaid  OrderItemChargeType = "prepaid"
-	OrderItemChargeTypeOneTime  OrderItemChargeType = "one_time"
-)
-
-// AllValues returns all OrderItemChargeType values.
-func (OrderItemChargeType) AllValues() []OrderItemChargeType {
-	return []OrderItemChargeType{
-		OrderItemChargeTypePostpaid,
-		OrderItemChargeTypePrepaid,
-		OrderItemChargeTypeOneTime,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s OrderItemChargeType) MarshalText() ([]byte, error) {
-	switch s {
-	case OrderItemChargeTypePostpaid:
-		return []byte(s), nil
-	case OrderItemChargeTypePrepaid:
-		return []byte(s), nil
-	case OrderItemChargeTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *OrderItemChargeType) UnmarshalText(data []byte) error {
-	switch OrderItemChargeType(data) {
-	case OrderItemChargeTypePostpaid:
-		*s = OrderItemChargeTypePostpaid
-		return nil
-	case OrderItemChargeTypePrepaid:
-		*s = OrderItemChargeTypePrepaid
-		return nil
-	case OrderItemChargeTypeOneTime:
-		*s = OrderItemChargeTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 type OrderItemConfiguration map[string]jx.Raw
 
 func (s *OrderItemConfiguration) init() OrderItemConfiguration {
 	m := *s
 	if m == nil {
 		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// The dimension values the line was bought with, such as region and instance type. Empty when the
+// purchase gave none.
+type OrderItemDimensions map[string]string
+
+func (s *OrderItemDimensions) init() OrderItemDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
 		*s = m
 	}
 	return m
@@ -10248,10 +10344,9 @@ func (s *OrderItemList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// `pending` is waiting to be set up. `completed` was confirmed by the service. `failed` was not set up
-// and its amount was refunded to the original payment sources. `canceled` was confirmed withdrawn
-// without delivery; any collected amount is returned. A completed item is ended by canceling its
-// subscription.
+// `pending`: waiting to be set up. `completed`: set up, as confirmed by the service. `failed`: not set
+// up; its amount was refunded to the original payment sources. `canceled`: withdrawn without delivery;
+// any collected amount is returned. A completed item ends when its subscription is canceled.
 // Ref: #/components/schemas/OrderItemStatus
 type OrderItemStatus string
 
@@ -10334,11 +10429,10 @@ func (s *OrderList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An estimated refund to original payment sources. Before acceptance, cancellation returns the
-// collected amount. For delivered service, only value funded by this order is included; renewals are
-// evaluated under their own orders and the agreed termination terms apply. An unknown delivery outcome
-// is not evidence that a refund is eligible. This calculation does not create a refund; the amount
-// returned is determined when cancellation or termination is confirmed.
+// An estimated refund to the original payment sources. Before acceptance, cancellation returns the
+// collected amount. For delivered service, only value paid by this order is included; renewals are
+// evaluated with their own orders under the agreed termination terms. Nothing is refunded by the
+// quote; the amount is fixed when cancellation or termination is confirmed.
 // Ref: #/components/schemas/OrderRefundQuote
 type OrderRefundQuote struct {
 	OrderID uuid.UUID `json:"order_id"`
@@ -10401,8 +10495,7 @@ func (s *OrderRefundQuote) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// An estimate of the refundable value of one order or selected items. This does not cancel the order,
-// stop service or create a refund.
+// An estimate of the refundable value of an order or selected items; nothing is canceled or refunded.
 // Ref: #/components/schemas/OrderRefundQuoteInput
 type OrderRefundQuoteInput struct {
 	OrderID uuid.UUID `json:"order_id"`
@@ -10430,14 +10523,13 @@ func (s *OrderRefundQuoteInput) SetOrderItemIds(val []uuid.UUID) {
 	s.OrderItemIds = val
 }
 
-// Follows the items. `pending` is not yet accepted and may be unpaid or paid; its invoice shows
-// whether payment is still needed, and it can expire or be canceled. `accepted` is accepted with items
-// still being set up. `completed` means every item was set up. `partially_completed` means some items
-// were set up and the others failed or were canceled and were refunded to their original payment
-// sources. `failed` means no item was delivered and at least one failed; collected amounts for the
-// undelivered items are refunded. `canceled` means every item was withdrawn without delivery;
-// collected amounts are returned to their original payment sources. No status establishes service
-// delivery by itself.
+// Follows the items. `pending`: not yet accepted, paid or unpaid; its invoice shows whether payment is
+// needed, and it can expire or be canceled. `accepted`: items are being set up. `completed`: every
+// item was set up. `partially_completed`: some items were set up and the others failed or were
+// canceled and refunded to their original payment sources. `failed`: no item was delivered and at
+// least one failed; amounts collected for undelivered items are refunded. `canceled`: every item was
+// withdrawn without delivery; collected amounts are returned to their original payment sources. No
+// status by itself means the service was delivered.
 // Ref: #/components/schemas/OrderStatus
 type OrderStatus string
 
@@ -10508,7 +10600,7 @@ func (s *OrderStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// `new` buys, `renew` extends a prepaid subscription, `modify` changes a subscription's configuration
+// `new` buys, `renew` extends a licensed subscription, `modify` changes a subscription's configuration
 // or billing terms.
 type OrderType string
 
@@ -10558,8 +10650,7 @@ func (s *OrderType) UnmarshalText(data []byte) error {
 	}
 }
 
-// How it was paid. Removing the payment method afterwards does not change it; `payment_method_id` then
-// names a removed payment method.
+// How it was paid. `payment_method_id` still names the payment method after it is removed.
 // Ref: #/components/schemas/PaidWith
 type PaidWith struct {
 	// `balance` when the account's balance and credits covered it in full. Otherwise the method used with
@@ -10633,25 +10724,23 @@ func (s *PaidWith) SetLast4(val OptString) {
 // otherwise the request is refused with `BILLING_PURCHASE_INVALID`.
 // Ref: #/components/schemas/PayInvoiceRequest
 type PayInvoiceRequest struct {
-	// Required to collect an online remainder. An existing attempt keeps its original gateway.
+	// Required to collect an online remainder. An existing attempt keeps its gateway.
 	PaymentGateway OptString `json:"payment_gateway"`
 	// Required with payment_gateway; for example card, wechat_pay or alipay.
 	MethodType OptString `json:"method_type"`
-	// Optional saved card owned by this billing account and belonging to the selected gateway. Omit to
-	// complete payment interactively.
+	// A saved card of this billing account at the selected gateway. Omit to pay interactively.
 	PaymentMethodID OptUUID `json:"payment_method_id"`
-	// Whether to apply the available balance. Credit grants are controlled separately by use_credits.
+	// Whether to apply the balance; credit grants are controlled by use_credits.
 	UseBalance OptBool `json:"use_balance"`
-	// Apply eligible, unexpired credit grants before using the balance. This never withdraws grants or
-	// converts them into balance.
+	// Apply eligible, unexpired credit grants before the balance. Grants are never converted into balance.
 	UseCredits OptBool   `json:"use_credits"`
 	ReturnURL  OptString `json:"return_url"`
-	// The code to apply while the order's terms are not yet fixed. Omit to apply the best applicable
-	// account discount, or to keep the discount already recorded.
+	// The code to apply while the order's terms are not fixed. Omit to apply the best applicable account
+	// discount, or to keep the discount already recorded.
 	PromotionCode OptString `json:"promotion_code"`
 	// The invoice total to expect, after discounts and tax and before credit grants or balance, as the
-	// payment preview or an order quote gave it. A different total fails with BILLING_AMOUNT_CHANGED and
-	// nothing is charged. Omit to skip the comparison; an explicit zero is compared.
+	// payment preview or an order quote gave it. A different total fails with `BILLING_AMOUNT_CHANGED` and
+	// nothing is charged. Omit to skip the check; zero is checked.
 	ExpectedAmount OptString `json:"expected_amount"`
 }
 
@@ -10735,15 +10824,14 @@ func (s *PayInvoiceRequest) SetExpectedAmount(val OptString) {
 	s.ExpectedAmount = val
 }
 
-// Name at least one invoice or order. They must all belong to the same account and share its currency;
-// anything else is refused rather than partly paid.
+// Name at least one invoice or order. All must belong to one account in its currency.
 // Ref: #/components/schemas/PayTogetherRequest
 type PayTogetherRequest struct {
 	InvoiceIds []uuid.UUID `json:"invoice_ids"`
 	OrderIds   []uuid.UUID `json:"order_ids"`
-	// The amount due to expect across all of them, before credit grants or balance, as
-	// preview-pay-together gave it. A different amount fails with BILLING_AMOUNT_CHANGED and nothing is
-	// charged. Omit to skip the comparison.
+	// The amount due across all invoices, before credit grants or balance, as preview-pay-together gave
+	// it. A different amount fails with `BILLING_AMOUNT_CHANGED` and nothing is charged. Omit to skip the
+	// check.
 	ExpectedAmount OptString `json:"expected_amount"`
 }
 
@@ -10777,16 +10865,16 @@ func (s *PayTogetherRequest) SetExpectedAmount(val OptString) {
 	s.ExpectedAmount = val
 }
 
-// The customer's next interaction. The gateway reports the actual payment outcome separately.
+// The customer's next step; the payment outcome is reported separately.
 // Ref: #/components/schemas/PaymentAction
 type PaymentAction struct {
 	Type PaymentActionType `json:"type"`
-	// Identifies the browser adapter for an SDK action, for example stripe.
+	// The browser adapter for the action, for example stripe.
 	Provider OptString `json:"provider"`
 	URL      OptURI    `json:"url"`
-	// QR content to render and scan, not an image URL.
+	// QR content to render, not an image URL.
 	QrCode OptString `json:"qr_code"`
-	// Short-lived client credential for this payment's browser confirmation.
+	// Short-lived client credential for confirming this payment in the browser.
 	ClientSecret OptString `json:"client_secret"`
 	PublicKey    OptString `json:"public_key"`
 }
@@ -10899,8 +10987,8 @@ func (s *PaymentActionType) UnmarshalText(data []byte) error {
 	}
 }
 
-// Why a gateway payment was withdrawn. `abandoned` means the customer did not complete it within the
-// time allowed for payment. `requested_by_customer` means the customer canceled it.
+// Why a gateway payment was withdrawn: `abandoned` when the customer did not complete it in time,
+// `requested_by_customer` when the customer canceled it.
 // Ref: #/components/schemas/PaymentCancellationReason
 type PaymentCancellationReason string
 
@@ -11099,17 +11187,14 @@ func (s *PaymentMethodSetup) SetBillingAccountID(val int64) {
 	s.BillingAccountID = val
 }
 
-// What the payment gateway's browser library needs in order to collect a card. There is no address to
-// redirect to: the form is rendered in the page, and the card goes straight from the browser to the
-// gateway.
+// What the payment gateway's browser library needs to collect a card in the page; the card goes from
+// the browser straight to the gateway.
 // Ref: #/components/schemas/PaymentMethodSetupResult
 type PaymentMethodSetupResult struct {
-	// The gateway's identifier for this attempt. Use it to tell a reloaded page apart from a second
-	// attempt.
+	// The gateway's identifier for this attempt.
 	SetupID        string `json:"setup_id"`
 	PaymentGateway string `json:"payment_gateway"`
-	// Browser configuration and credentials for this card setup, including the provider's public key. No
-	// server secret is returned.
+	// Browser configuration for this card setup, including the gateway's public key; no secrets.
 	Action PaymentAction `json:"action"`
 }
 
@@ -11191,7 +11276,7 @@ func (s *PaymentMethodStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// A payment gateway that accepts payment in the account's currency, with the methods it accepts.
+// A gateway accepting the account's currency, with its payment methods.
 // Ref: #/components/schemas/PaymentOption
 type PaymentOption struct {
 	// The value to send as `payment_gateway`.
@@ -11249,8 +11334,8 @@ func (s *PaymentOptionList) SetPagination(val OffsetPagination) {
 type PaymentOptionMethod struct {
 	// The value to send as `method_type`, such as card, wechat_pay or alipay.
 	MethodType string `json:"method_type"`
-	// Whether a method of this type can be saved with create-payment-method-setup and charged later
-	// without the customer present. Methods that are not reusable are paid anew each time.
+	// Whether this method type can be saved with create-payment-method-setup and charged later without the
+	// customer.
 	Reusable bool `json:"reusable"`
 }
 
@@ -11274,7 +11359,7 @@ func (s *PaymentOptionMethod) SetReusable(val bool) {
 	s.Reusable = val
 }
 
-// What paying would take, computed as paying computes it. Nothing is charged or reserved.
+// What paying would take, calculated as paying does. Nothing is charged or reserved.
 // Ref: #/components/schemas/PaymentPreview
 type PaymentPreview struct {
 	Funds    OptFunds `json:"funds"`
@@ -11283,16 +11368,16 @@ type PaymentPreview struct {
 	AmountDue Money `json:"amount_due"`
 	// What credit grants would pay. Grants restricted to other purchases pay nothing here.
 	CreditApplied Money `json:"credit_applied"`
-	// The credit grants that would pay, in the order they would be used.
+	// The credit grants that would pay, in the order used.
 	CreditGrants []AppliedCredit `json:"credit_grants"`
 	// What the balance would pay.
 	BalanceApplied Money `json:"balance_applied"`
-	// What would remain to be paid online. Paying without a gateway is refused with
+	// What would remain to pay online. Paying without a gateway is refused with
 	// `BILLING_INSUFFICIENT_FUNDS` while this is above zero.
 	GatewayAmount Money `json:"gateway_amount"`
 	// The available balance after paying.
 	BalanceAfter Money `json:"balance_after"`
-	// Paying together only. Each invoice, in the order it would be paid.
+	// Paying together only: each invoice, in payment order.
 	Invoices []PaymentPreviewInvoice `json:"invoices"`
 }
 
@@ -11448,35 +11533,32 @@ func (s *PaymentPreviewInvoice) SetBalanceApplied(val Money) {
 // Ref: #/components/schemas/PaymentResult
 type PaymentResult struct {
 	Transactions []Transaction `json:"transactions"`
-	// The gateway transaction, when one is involved. Balance and credit-grant payments are separate
-	// transactions.
+	// The gateway transaction, when one is involved.
 	TransactionID OptUUID       `json:"transaction_id"`
 	Status        PaymentStatus `json:"status"`
 	AmountPaid    Money         `json:"amount_paid"`
-	// What is still outstanding. Zero once the payment succeeds. Unchanged while `processing`: nothing is
-	// collected until the gateway confirms it.
+	// What is still outstanding: zero once the payment succeeds, unchanged while `processing`.
 	AmountDue Money  `json:"amount_due"`
 	Currency  string `json:"currency"`
-	// Credit grants applied to this invoice. Not a payment from the balance and not withdrawable.
+	// Credit grants applied to this invoice.
 	CreditApplied OptMoney `json:"credit_applied"`
-	// The remaining amount submitted to the selected payment gateway.
+	// The remainder sent to the selected payment gateway.
 	GatewayAmount  OptMoney  `json:"gateway_amount"`
 	PaymentGateway OptString `json:"payment_gateway"`
 	MethodType     OptString `json:"method_type"`
-	// The amount already paid from the account's balance toward this invoice. Retrying an online remainder
-	// does not debit it again. A canceled purchase returns funds through its refund process.
+	// The amount already paid from balance toward this invoice; retrying the online remainder does not
+	// debit it again.
 	BalanceApplied OptMoney         `json:"balance_applied"`
 	Action         OptPaymentAction `json:"action"`
-	// Whether paying again is worth attempting. False for a refusal that will keep happening — a closed
-	// account, an amount over a limit — so that a client does not retry in a loop.
+	// Whether paying again can succeed. False for a refusal that will repeat, such as a closed account or
+	// an amount over a limit.
 	Retriable OptBool    `json:"retriable"`
 	InvoiceID OptNilUUID `json:"invoice_id"`
 	OrderID   OptNilUUID `json:"order_id"`
-	// Why the payment did not go through. Present with `failed`. For a declined gateway payment the value
-	// is the gateway's own code, passed on unchanged: the card issuer's decline code when there is one
-	// (Stripe's decline_code, such as insufficient_funds or lost_card), otherwise the gateway's error code
-	// (Stripe's code, such as card_declined, expired_card or payment_intent_authentication_failure).
-	// Clients map it to their own wording and treat an unknown value as a generic decline.
+	// Why the payment failed; present with `failed`. For a declined gateway payment, the gateway's code
+	// unchanged: the issuer's decline code when there is one (Stripe decline_code, such as
+	// insufficient_funds), otherwise the gateway's error code (Stripe code, such as card_declined). Treat
+	// an unknown value as a generic decline.
 	FailureReason OptString `json:"failure_reason"`
 }
 
@@ -11642,13 +11724,10 @@ func (s *PaymentResult) SetFailureReason(val OptString) {
 
 func (*PaymentResult) renewSubscriptionRes() {}
 
-// The current payment outcome.
-//
-// succeeded means payment is complete. processing means confirmation is pending; poll the invoice or
-// order rather than submitting another payment. requires_action means the customer must complete the
-// supplied action. failed means the attempt did not succeed and failure_reason explains the outcome; a
-// declined gateway payment is withdrawn at the gateway, and paying again starts a new payment with the
-// same or another method.
+// `succeeded`: paid. `processing`: confirmation is pending; poll the invoice or order instead of
+// paying again. `requires_action`: the customer must complete the returned action. `failed`: the
+// attempt did not succeed, for the reason in failure_reason; a declined gateway payment is withdrawn,
+// and paying again starts a new payment.
 // Ref: #/components/schemas/PaymentStatus
 type PaymentStatus string
 
@@ -11908,10 +11987,12 @@ func (*PlanListHeaders) listPlansRes() {}
 
 // Ref: #/components/schemas/Price
 type Price struct {
-	RateCard     OptObjectIdentity `json:"rate_card"`
-	LookupKey    OptString         `json:"lookup_key"`
-	Product      Product           `json:"product"`
-	Plan         ObjectIdentity    `json:"plan"`
+	RateCard  OptObjectIdentity `json:"rate_card"`
+	LookupKey OptString         `json:"lookup_key"`
+	Product   Product           `json:"product"`
+	Plan      ObjectIdentity    `json:"plan"`
+	// For a metered price with its own amounts, the meter it charges. For a licensed price, the meter its
+	// quantity is held on. Absent otherwise.
 	MeterID      OptUUID           `json:"meter_id"`
 	Meter        OptObjectIdentity `json:"meter"`
 	UnitQuantity string            `json:"unit_quantity"`
@@ -11923,30 +12004,28 @@ type Price struct {
 	ID                uuid.UUID            `json:"id"`
 	PlanID            uuid.UUID            `json:"plan_id"`
 	Currency          string               `json:"currency"`
-	// `postpaid` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
-	Type PriceType `json:"type"`
-	// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
-	// type, and is looked up on a price list.
-	BillingScheme PriceBillingScheme `json:"billing_scheme"`
+	Type              PriceType            `json:"type"`
+	UsageType         UsageType            `json:"usage_type"`
+	// Absent when the price delegates to a rate card, where the rate depends on attributes such as region
+	// or machine type.
+	BillingScheme OptBillingScheme `json:"billing_scheme"`
 	// Present for `per_unit`.
 	UnitAmount OptMoney `json:"unit_amount"`
-	// `none` for a price that is not tiered, which is most of them.
-	//
-	// Otherwise `graduated` charges each band at its own rate, and `volume` charges everything at the rate
-	// of the band the total falls in.
+	// How a ladder is walked: `graduated` charges each band at its own rate, `volume` charges everything
+	// at the rate of the band the total falls in. `none` when not tiered.
 	TiersMode OptPriceTiersMode `json:"tiers_mode"`
 	// Present for `tiered`, in ascending order.
 	Tiers []Tier `json:"tiers"`
-	// For `rated` prices, the price list the rates are read from.
+	// Present when the price delegates to a rate card, the price list its rates are read from.
 	RateCardID OptUUID `json:"rate_card_id"`
 	// The smallest quantity that can be bought. Absent means no lower bound.
 	MinQuantity OptString `json:"min_quantity"`
-	// The largest purchasable quantity. Omitted when no maximum applies. A quantity above this limit is
-	// rejected with BILLING_PRICE_INVALID and field=max_quantity.
+	// The largest quantity that may be bought; absent when there is no limit. A larger quantity is refused
+	// with `BILLING_PRICE_INVALID` and `field` `max_quantity`.
 	MaxQuantity OptString `json:"max_quantity"`
 	// Quantities must be a multiple of this. Absent means any quantity within the bounds.
 	QuantityStep OptString `json:"quantity_step"`
-	// For prepaid prices, how many periods one purchase covers.
+	// For recurring licensed prices, how many interval units one period covers.
 	IntervalCount OptInt        `json:"interval_count"`
 	Interval      PriceInterval `json:"interval"`
 	SetupFee      OptMoney      `json:"setup_fee"`
@@ -12027,8 +12106,13 @@ func (s *Price) GetType() PriceType {
 	return s.Type
 }
 
+// GetUsageType returns the value of UsageType.
+func (s *Price) GetUsageType() UsageType {
+	return s.UsageType
+}
+
 // GetBillingScheme returns the value of BillingScheme.
-func (s *Price) GetBillingScheme() PriceBillingScheme {
+func (s *Price) GetBillingScheme() OptBillingScheme {
 	return s.BillingScheme
 }
 
@@ -12157,8 +12241,13 @@ func (s *Price) SetType(val PriceType) {
 	s.Type = val
 }
 
+// SetUsageType sets the value of UsageType.
+func (s *Price) SetUsageType(val UsageType) {
+	s.UsageType = val
+}
+
 // SetBillingScheme sets the value of BillingScheme.
-func (s *Price) SetBillingScheme(val PriceBillingScheme) {
+func (s *Price) SetBillingScheme(val OptBillingScheme) {
 	s.BillingScheme = val
 }
 
@@ -12210,56 +12299,6 @@ func (s *Price) SetInterval(val PriceInterval) {
 // SetSetupFee sets the value of SetupFee.
 func (s *Price) SetSetupFee(val OptMoney) {
 	s.SetupFee = val
-}
-
-// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
-// type, and is looked up on a price list.
-type PriceBillingScheme string
-
-const (
-	PriceBillingSchemePerUnit PriceBillingScheme = "per_unit"
-	PriceBillingSchemeTiered  PriceBillingScheme = "tiered"
-	PriceBillingSchemeRated   PriceBillingScheme = "rated"
-)
-
-// AllValues returns all PriceBillingScheme values.
-func (PriceBillingScheme) AllValues() []PriceBillingScheme {
-	return []PriceBillingScheme{
-		PriceBillingSchemePerUnit,
-		PriceBillingSchemeTiered,
-		PriceBillingSchemeRated,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PriceBillingScheme) MarshalText() ([]byte, error) {
-	switch s {
-	case PriceBillingSchemePerUnit:
-		return []byte(s), nil
-	case PriceBillingSchemeTiered:
-		return []byte(s), nil
-	case PriceBillingSchemeRated:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PriceBillingScheme) UnmarshalText(data []byte) error {
-	switch PriceBillingScheme(data) {
-	case PriceBillingSchemePerUnit:
-		*s = PriceBillingSchemePerUnit
-		return nil
-	case PriceBillingSchemeTiered:
-		*s = PriceBillingSchemeTiered
-		return nil
-	case PriceBillingSchemeRated:
-		*s = PriceBillingSchemeRated
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // PriceHeaders wraps Price with response headers.
@@ -12400,17 +12439,19 @@ func (s *PriceListHeaders) SetResponse(val PriceList) {
 func (*PriceListHeaders) listPricesByPlanRes() {}
 func (*PriceListHeaders) listPricesRes()       {}
 
-// A price's display terms, including archived prices referenced by an applicability list.
+// A price's display terms, including archived prices referenced by an applicability.
 // Ref: #/components/schemas/PriceOption
 type PriceOption struct {
-	Product       Product                  `json:"product"`
-	Plan          ObjectIdentity           `json:"plan"`
-	BillingScheme PriceOptionBillingScheme `json:"billing_scheme"`
-	UnitQuantity  string                   `json:"unit_quantity"`
-	ID            uuid.UUID                `json:"id"`
-	Currency      string                   `json:"currency"`
-	Type          PriceOptionType          `json:"type"`
-	Interval      PriceOptionInterval      `json:"interval"`
+	Product Product        `json:"product"`
+	Plan    ObjectIdentity `json:"plan"`
+	// Absent when the price delegates to a rate card.
+	BillingScheme OptBillingScheme    `json:"billing_scheme"`
+	UnitQuantity  string              `json:"unit_quantity"`
+	ID            uuid.UUID           `json:"id"`
+	Currency      string              `json:"currency"`
+	Type          PriceType           `json:"type"`
+	UsageType     UsageType           `json:"usage_type"`
+	Interval      PriceOptionInterval `json:"interval"`
 	// How many periods one purchase covers.
 	IntervalCount OptInt   `json:"interval_count"`
 	UnitAmount    OptMoney `json:"unit_amount"`
@@ -12429,7 +12470,7 @@ func (s *PriceOption) GetPlan() ObjectIdentity {
 }
 
 // GetBillingScheme returns the value of BillingScheme.
-func (s *PriceOption) GetBillingScheme() PriceOptionBillingScheme {
+func (s *PriceOption) GetBillingScheme() OptBillingScheme {
 	return s.BillingScheme
 }
 
@@ -12449,8 +12490,13 @@ func (s *PriceOption) GetCurrency() string {
 }
 
 // GetType returns the value of Type.
-func (s *PriceOption) GetType() PriceOptionType {
+func (s *PriceOption) GetType() PriceType {
 	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *PriceOption) GetUsageType() UsageType {
+	return s.UsageType
 }
 
 // GetInterval returns the value of Interval.
@@ -12484,7 +12530,7 @@ func (s *PriceOption) SetPlan(val ObjectIdentity) {
 }
 
 // SetBillingScheme sets the value of BillingScheme.
-func (s *PriceOption) SetBillingScheme(val PriceOptionBillingScheme) {
+func (s *PriceOption) SetBillingScheme(val OptBillingScheme) {
 	s.BillingScheme = val
 }
 
@@ -12504,8 +12550,13 @@ func (s *PriceOption) SetCurrency(val string) {
 }
 
 // SetType sets the value of Type.
-func (s *PriceOption) SetType(val PriceOptionType) {
+func (s *PriceOption) SetType(val PriceType) {
 	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *PriceOption) SetUsageType(val UsageType) {
+	s.UsageType = val
 }
 
 // SetInterval sets the value of Interval.
@@ -12526,54 +12577,6 @@ func (s *PriceOption) SetUnitAmount(val OptMoney) {
 // SetActive sets the value of Active.
 func (s *PriceOption) SetActive(val bool) {
 	s.Active = val
-}
-
-type PriceOptionBillingScheme string
-
-const (
-	PriceOptionBillingSchemePerUnit PriceOptionBillingScheme = "per_unit"
-	PriceOptionBillingSchemeTiered  PriceOptionBillingScheme = "tiered"
-	PriceOptionBillingSchemeRated   PriceOptionBillingScheme = "rated"
-)
-
-// AllValues returns all PriceOptionBillingScheme values.
-func (PriceOptionBillingScheme) AllValues() []PriceOptionBillingScheme {
-	return []PriceOptionBillingScheme{
-		PriceOptionBillingSchemePerUnit,
-		PriceOptionBillingSchemeTiered,
-		PriceOptionBillingSchemeRated,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PriceOptionBillingScheme) MarshalText() ([]byte, error) {
-	switch s {
-	case PriceOptionBillingSchemePerUnit:
-		return []byte(s), nil
-	case PriceOptionBillingSchemeTiered:
-		return []byte(s), nil
-	case PriceOptionBillingSchemeRated:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PriceOptionBillingScheme) UnmarshalText(data []byte) error {
-	switch PriceOptionBillingScheme(data) {
-	case PriceOptionBillingSchemePerUnit:
-		*s = PriceOptionBillingSchemePerUnit
-		return nil
-	case PriceOptionBillingSchemeTiered:
-		*s = PriceOptionBillingSchemeTiered
-		return nil
-	case PriceOptionBillingSchemeRated:
-		*s = PriceOptionBillingSchemeRated
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 type PriceOptionInterval string
@@ -12631,58 +12634,8 @@ func (s *PriceOptionInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-type PriceOptionType string
-
-const (
-	PriceOptionTypePostpaid PriceOptionType = "postpaid"
-	PriceOptionTypePrepaid  PriceOptionType = "prepaid"
-	PriceOptionTypeOneTime  PriceOptionType = "one_time"
-)
-
-// AllValues returns all PriceOptionType values.
-func (PriceOptionType) AllValues() []PriceOptionType {
-	return []PriceOptionType{
-		PriceOptionTypePostpaid,
-		PriceOptionTypePrepaid,
-		PriceOptionTypeOneTime,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PriceOptionType) MarshalText() ([]byte, error) {
-	switch s {
-	case PriceOptionTypePostpaid:
-		return []byte(s), nil
-	case PriceOptionTypePrepaid:
-		return []byte(s), nil
-	case PriceOptionTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PriceOptionType) UnmarshalText(data []byte) error {
-	switch PriceOptionType(data) {
-	case PriceOptionTypePostpaid:
-		*s = PriceOptionTypePostpaid
-		return nil
-	case PriceOptionTypePrepaid:
-		*s = PriceOptionTypePrepaid
-		return nil
-	case PriceOptionTypeOneTime:
-		*s = PriceOptionTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `none` for a price that is not tiered, which is most of them.
-//
-// Otherwise `graduated` charges each band at its own rate, and `volume` charges everything at the rate
-// of the band the total falls in.
+// How a ladder is walked: `graduated` charges each band at its own rate, `volume` charges everything
+// at the rate of the band the total falls in. `none` when not tiered.
 type PriceTiersMode string
 
 const (
@@ -12731,32 +12684,30 @@ func (s *PriceTiersMode) UnmarshalText(data []byte) error {
 	}
 }
 
-// `postpaid` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
+// `one_time` charges once when bought. `recurring` charges again for every period, or for usage as it
+// is settled.
+// Ref: #/components/schemas/PriceType
 type PriceType string
 
 const (
-	PriceTypePostpaid PriceType = "postpaid"
-	PriceTypePrepaid  PriceType = "prepaid"
-	PriceTypeOneTime  PriceType = "one_time"
+	PriceTypeOneTime   PriceType = "one_time"
+	PriceTypeRecurring PriceType = "recurring"
 )
 
 // AllValues returns all PriceType values.
 func (PriceType) AllValues() []PriceType {
 	return []PriceType{
-		PriceTypePostpaid,
-		PriceTypePrepaid,
 		PriceTypeOneTime,
+		PriceTypeRecurring,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s PriceType) MarshalText() ([]byte, error) {
 	switch s {
-	case PriceTypePostpaid:
-		return []byte(s), nil
-	case PriceTypePrepaid:
-		return []byte(s), nil
 	case PriceTypeOneTime:
+		return []byte(s), nil
+	case PriceTypeRecurring:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -12766,14 +12717,11 @@ func (s PriceType) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *PriceType) UnmarshalText(data []byte) error {
 	switch PriceType(data) {
-	case PriceTypePostpaid:
-		*s = PriceTypePostpaid
-		return nil
-	case PriceTypePrepaid:
-		*s = PriceTypePrepaid
-		return nil
 	case PriceTypeOneTime:
 		*s = PriceTypeOneTime
+		return nil
+	case PriceTypeRecurring:
+		*s = PriceTypeRecurring
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -12901,13 +12849,13 @@ func (s *ProductListHeaders) SetResponse(val ProductList) {
 
 func (*ProductListHeaders) listProductsRes() {}
 
-// A project's assignment to a billing account for the interval from effective_from to effective_to. An
-// open-ended assignment has no end time.
+// A project's assignment to a billing account from effective_from until effective_to; an open
+// assignment has no end.
 // Ref: #/components/schemas/ProjectAssignment
 type ProjectAssignment struct {
 	ProjectID uuid.UUID `json:"project_id"`
-	// The project and its current name, for display. Absent when the project no longer exists or its
-	// details cannot be read at the moment; `project_id` still identifies it.
+	// The project and its current name. Absent when the project cannot be read; `project_id` still
+	// identifies it.
 	Project          OptNilNamedIdentity `json:"project"`
 	BillingAccountID int64               `json:"billing_account_id"`
 	AccountName      OptString           `json:"account_name"`
@@ -13012,11 +12960,9 @@ func (s *ProjectAssignmentList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Which purchase operation this applies to. `new` covers every new purchase, including zero-charge
-// purchases. It does not mean the account's first purchase; use `first_purchase_only` for that
-// restriction. `renew` covers renewals. `modify` covers configuration or billing-term changes,
-// including changes that increase or decrease the amount due and changes with no additional charge or
-// refund.
+// The purchase operation covered. `new`: every new purchase, including zero-charge ones; it does not
+// mean the account's first purchase, which `first_purchase_only` restricts. `renew`: renewals.
+// `modify`: configuration or billing-term changes, whether they charge, refund or neither.
 // Ref: #/components/schemas/PurchaseOperation
 type PurchaseOperation string
 
@@ -13066,14 +13012,13 @@ func (s *PurchaseOperation) UnmarshalText(data []byte) error {
 	}
 }
 
-// A complete calculation in one billing-account currency, without saving a quote or reserving funds or
-// redemptions. The request fails if any item cannot be priced. Requested future usage estimates are
-// included in totals for reporting and are not collectible at checkout. Only an existing-order quote
-// provides that order's checkout amount.
+// A complete calculation in the billing account's currency; nothing is saved or reserved. The request
+// fails if any item cannot be priced. Usage estimates are included in totals but are not collected at
+// checkout; only an existing-order quote gives that order's checkout amount.
 // Ref: #/components/schemas/Quote
 type Quote struct {
-	// Account funding for an existing-order checkout quote. Absent for usage estimates, refunds and
-	// cancellation previews.
+	// Account funds for an existing-order checkout quote. Absent for usage estimates, refunds and
+	// cancellations.
 	Funds OptFunds `json:"funds"`
 	// Sum before discounts, excluding tax already included in the item amounts. Zero for a
 	// cancellation-only quote.
@@ -13082,20 +13027,20 @@ type Quote struct {
 	DiscountAmount Money `json:"discount_amount"`
 	// Total tax on the discounted amounts. Zero for a cancellation-only quote.
 	TaxAmount Money `json:"tax_amount"`
-	// The discount evaluated for a purchase or order, without applying it. Null when none is selected or
-	// when quoting renewals or a cancellation. A confirmed order reports its recorded discount.
+	// The discount a purchase or order would get, not yet applied. Null when there is none, and for
+	// renewals and cancellations. A confirmed order reports its recorded discount.
 	Discount NilQuotedDiscount    `json:"discount"`
 	Items    []QuoteItem          `json:"items"`
 	Renewals []QuoteRenewalResult `json:"renewals"`
 	// What the cancellation requested would return. Present only when one was requested.
 	Cancellation OptCancellationRefundPreview `json:"cancellation"`
-	// Subtotal minus discount_amount plus tax_amount, before credit grants or balance. For an existing
-	// order, pass this as expected_amount when paying its invoice. Renewal entries are separate orders;
-	// use each entry's total. Future usage estimates are not checkout amounts. Cancellation and refund
-	// targets have zero totals and report returned value separately.
+	// Subtotal minus discount_amount plus tax_amount, before credit grants and balance. For an existing
+	// order, pass it as expected_amount when paying its invoice. Renewal entries are separate orders; use
+	// each entry's total. Usage estimates are not checkout amounts. Cancellation and refund targets have a
+	// zero total and report the returned value separately.
 	Total    Money  `json:"total"`
 	Currency string `json:"currency"`
-	// Present only when an order refund was requested. Nothing is collectible for this target.
+	// Present when an order refund was requested.
 	Refund OptOrderRefundQuote `json:"refund"`
 }
 
@@ -13209,16 +13154,15 @@ func (s *Quote) SetRefund(val OptOrderRefundQuote) {
 	s.Refund = val
 }
 
-// A cancellation to quote: what ending these subscriptions together would return. One mode per
-// request; to compare, quote `immediate` and `period_end` separately.
-//
-// Refused with 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being
-// canceled (`meta.cancellation_id`), is being reclaimed (`meta.reason` `reclaim_requested`) or has a
-// paid change still waiting to switch (`meta.order_id`).
+// A cancellation to quote: what ending these subscriptions together would return, for one mode; quote
+// `immediate` and `period_end` separately to compare. Refused with 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
+// (`meta.cancellation_id`), is being reclaimed (`meta.reason` `reclaim_requested`) or has a paid
+// change waiting to switch (`meta.order_id`).
 // Ref: #/components/schemas/QuoteCancellation
 type QuoteCancellation struct {
-	// The subscriptions to end together, all of one service. Every subscription released with a resource
-	// must be included.
+	// The subscriptions to end together, all of one service, including every subscription released with a
+	// resource.
 	SubscriptionIds []uuid.UUID       `json:"subscription_ids"`
 	Mode            TerminationPolicy `json:"mode"`
 }
@@ -13243,7 +13187,7 @@ func (s *QuoteCancellation) SetMode(val TerminationPolicy) {
 	s.Mode = val
 }
 
-// One fully calculated purchase, estimated postpaid usage or recorded order item. Amounts use the
+// One fully calculated purchase, estimated metered usage or recorded order item. Amounts use the
 // billing-account currency. An item with no immediate charge has zero checkout amounts.
 // Ref: #/components/schemas/QuoteItem
 type QuoteItem struct {
@@ -13251,23 +13195,22 @@ type QuoteItem struct {
 	TaxAmount Money `json:"tax_amount"`
 	// The part of tax_amount already contained in amount minus discount_amount.
 	TaxIncludedAmount Money `json:"tax_included_amount"`
-	// Zero-based request line index, or the recorded order item's position for an order quote.
+	// The zero-based request line index, or the recorded order item's position for an order quote.
 	Index int `json:"index"`
 	// Present for an existing order quote; identifies the recorded item being priced.
 	OrderItemID OptUUID `json:"order_item_id"`
-	// The selected price, including when the request identified it indirectly.
+	// The selected price, also when the request identified it indirectly.
 	PriceID  uuid.UUID `json:"price_id"`
 	PlanName string    `json:"plan_name"`
 	// Unit price before discounts. Null when no single unit price applies, such as tiered or multiple-rate
 	// pricing.
 	UnitAmount NilMoney `json:"unit_amount"`
-	// The quantity priced. When duration_seconds is supplied for metered usage, this is quantity
-	// multiplied by that duration.
+	// The quantity priced; with duration_seconds, quantity times the duration.
 	Quantity string `json:"quantity"`
 	// Amount before discounts and including any setup charge. For requested future usage this is an
 	// estimate, not a collectible checkout amount.
 	Amount Money `json:"amount"`
-	// Total reduction on this line, including any committed recurring discount.
+	// Total reduction on this line, including any continuing renewal discount.
 	DiscountAmount Money `json:"discount_amount"`
 	// Amount minus discount_amount plus tax_amount minus tax_included_amount.
 	Total    Money  `json:"total"`
@@ -13394,10 +13337,10 @@ func (s *QuoteItem) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// Identify a price directly, or select a price for a plan. For each resource give its ID or lookup
-// key, never both. Lookup keys require product_id. Meter, dimensions or duration_seconds request a
-// postpaid usage estimate. Such an estimate cannot be combined with a promotion code or treated as a
-// checkout amount. Without a usage estimate, a postpaid item includes only any setup charge.
+// Identify a price, or select one for a plan; give each resource's ID or lookup key, never both, and
+// product_id with lookup keys. For a metered price, a meter or duration_seconds requests a usage
+// estimate, which cannot be combined with a promotion code and is not a checkout amount. Without one,
+// a metered item includes only any setup charge.
 // Ref: #/components/schemas/QuoteItemInput
 type QuoteItemInput struct {
 	PriceLookupKey OptString    `json:"price_lookup_key"`
@@ -13405,28 +13348,26 @@ type QuoteItemInput struct {
 	PriceID        OptUUID      `json:"price_id"`
 	ProductID      OptProductID `json:"product_id"`
 	PlanID         OptUUID      `json:"plan_id"`
-	// Narrows the selection when a plan offers more than one charge type.
-	PriceType     OptQuoteItemInputPriceType `json:"price_type"`
-	Interval      OptQuoteItemInputInterval  `json:"interval"`
-	IntervalCount OptInt                     `json:"interval_count"`
-	// Selects among prepaid prices with otherwise identical billing terms. Ambiguous terms are refused
+	// Narrows the selection when a plan offers more than one price type.
+	PriceType OptPriceType `json:"price_type"`
+	// Narrows the selection when a plan offers more than one usage type.
+	UsageType     OptUsageType              `json:"usage_type"`
+	Interval      OptQuoteItemInputInterval `json:"interval"`
+	IntervalCount OptInt                    `json:"interval_count"`
+	// Selects among licensed prices with otherwise identical billing terms. Ambiguous terms are refused
 	// instead of choosing a price arbitrarily.
 	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 	Quantity          string               `json:"quantity"`
 	MeterID           OptUUID              `json:"meter_id"`
 	MeterLookupKey    OptString            `json:"meter_lookup_key"`
-	// The attributes the price depends on — region, instance type, token class.
-	//
-	// Required when the price draws its rates from a price list, which is how anything sold by region or
-	// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
-	// to give and takes none.
-	//
-	// Every attribute the meter declares must be present. A combination with no rate covering it is
-	// refused rather than priced at zero.
+	// The dimension values the rate depends on, such as region, instance type or token kind: those of the
+	// usage for a metered estimate, and those of what is bought for a licensed price on a rate card.
+	// Required whenever the price uses a rate card; prices with their own amounts ignore them. Every key
+	// the meter declares must be given. A combination no rate covers is refused rather than priced at
+	// zero.
 	Dimensions OptQuoteItemInputDimensions `json:"dimensions"`
-	// For metered items, how long to price for. This allows an estimate such as "about this much per
-	// month" to be shown before anything exists. The priced quantity is `quantity` multiplied by this
-	// duration.
+	// For a metered estimate, how long to price for, in seconds; the priced quantity is `quantity` times
+	// this duration.
 	DurationSeconds OptInt64 `json:"duration_seconds"`
 }
 
@@ -13456,8 +13397,13 @@ func (s *QuoteItemInput) GetPlanID() OptUUID {
 }
 
 // GetPriceType returns the value of PriceType.
-func (s *QuoteItemInput) GetPriceType() OptQuoteItemInputPriceType {
+func (s *QuoteItemInput) GetPriceType() OptPriceType {
 	return s.PriceType
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *QuoteItemInput) GetUsageType() OptUsageType {
+	return s.UsageType
 }
 
 // GetInterval returns the value of Interval.
@@ -13526,8 +13472,13 @@ func (s *QuoteItemInput) SetPlanID(val OptUUID) {
 }
 
 // SetPriceType sets the value of PriceType.
-func (s *QuoteItemInput) SetPriceType(val OptQuoteItemInputPriceType) {
+func (s *QuoteItemInput) SetPriceType(val OptPriceType) {
 	s.PriceType = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *QuoteItemInput) SetUsageType(val OptUsageType) {
+	s.UsageType = val
 }
 
 // SetInterval sets the value of Interval.
@@ -13570,14 +13521,11 @@ func (s *QuoteItemInput) SetDurationSeconds(val OptInt64) {
 	s.DurationSeconds = val
 }
 
-// The attributes the price depends on — region, instance type, token class.
-//
-// Required when the price draws its rates from a price list, which is how anything sold by region or
-// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
-// to give and takes none.
-//
-// Every attribute the meter declares must be present. A combination with no rate covering it is
-// refused rather than priced at zero.
+// The dimension values the rate depends on, such as region, instance type or token kind: those of the
+// usage for a metered estimate, and those of what is bought for a licensed price on a rate card.
+// Required whenever the price uses a rate card; prices with their own amounts ignore them. Every key
+// the meter declares must be given. A combination no rate covers is refused rather than priced at
+// zero.
 type QuoteItemInputDimensions map[string]string
 
 func (s *QuoteItemInputDimensions) init() QuoteItemInputDimensions {
@@ -13644,56 +13592,7 @@ func (s *QuoteItemInputInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// Narrows the selection when a plan offers more than one charge type.
-type QuoteItemInputPriceType string
-
-const (
-	QuoteItemInputPriceTypePostpaid QuoteItemInputPriceType = "postpaid"
-	QuoteItemInputPriceTypePrepaid  QuoteItemInputPriceType = "prepaid"
-	QuoteItemInputPriceTypeOneTime  QuoteItemInputPriceType = "one_time"
-)
-
-// AllValues returns all QuoteItemInputPriceType values.
-func (QuoteItemInputPriceType) AllValues() []QuoteItemInputPriceType {
-	return []QuoteItemInputPriceType{
-		QuoteItemInputPriceTypePostpaid,
-		QuoteItemInputPriceTypePrepaid,
-		QuoteItemInputPriceTypeOneTime,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s QuoteItemInputPriceType) MarshalText() ([]byte, error) {
-	switch s {
-	case QuoteItemInputPriceTypePostpaid:
-		return []byte(s), nil
-	case QuoteItemInputPriceTypePrepaid:
-		return []byte(s), nil
-	case QuoteItemInputPriceTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *QuoteItemInputPriceType) UnmarshalText(data []byte) error {
-	switch QuoteItemInputPriceType(data) {
-	case QuoteItemInputPriceTypePostpaid:
-		*s = QuoteItemInputPriceTypePostpaid
-		return nil
-	case QuoteItemInputPriceTypePrepaid:
-		*s = QuoteItemInputPriceTypePrepaid
-		return nil
-	case QuoteItemInputPriceTypeOneTime:
-		*s = QuoteItemInputPriceTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Price renewing a prepaid subscription. Give `price_id`, or `interval` with `interval_count`, to
+// Price renewing a licensed subscription. Give `price_id`, or `interval` with `interval_count`, to
 // renew for another term at the price currently sold for it. Naming the current term, or giving
 // neither, renews at the agreed amount. A term sold at several prices that differ in termination
 // policy is refused with 409 `BILLING_RENEWAL_OPTION_AMBIGUOUS` unless `termination_policy` or
@@ -13819,8 +13718,8 @@ func (s *QuoteRenewalInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// What renewing would charge. Renewing the same subscription for the same term and number of periods
-// charges exactly `total`, unless prices or the discounts the account holds change in between.
+// What renewing would charge. Renewing the same subscription for the same term and periods charges
+// exactly `total` unless prices or the account's discounts change first.
 // Ref: #/components/schemas/QuoteRenewalResult
 type QuoteRenewalResult struct {
 	// Which renewal of the request this answers.
@@ -13831,8 +13730,8 @@ type QuoteRenewalResult struct {
 	Interval      QuoteRenewalResultInterval `json:"interval"`
 	IntervalCount int                        `json:"interval_count"`
 	Periods       int                        `json:"periods"`
-	// The price of the periods before the discounts the account holds. A discount the subscription already
-	// carries is reflected here. Contains tax only where the price itself includes it.
+	// The price of the periods before the account's discounts, with any discount the subscription carries
+	// already reflected; includes tax only where the price does.
 	Amount Money `json:"amount"`
 	// The reduction from a discount the account holds.
 	DiscountAmount Money `json:"discount_amount"`
@@ -14003,23 +13902,22 @@ func (s *QuoteRenewalResultInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// "Quote exactly one target: proposed items, an existing order, renewals, a cancellation or an order
-// refund. All targets use the specified billing account. Nothing is saved, charged, reserved or
-// canceled. Promotion codes apply only to a purchase basket or an existing order. An invalid
-// combination returns BILLING_PURCHASE_INVALID with the offending field.".
+// Quote exactly one target for the billing account: proposed items, an existing order, renewals, a
+// cancellation or an order refund. Promotion codes apply only to proposed items or an existing order.
+// An invalid combination fails with `BILLING_PURCHASE_INVALID` and the field.
 // Ref: #/components/schemas/QuoteRequest
 type QuoteRequest struct {
-	// The billing account to price for. It must belong to you. Existing orders must have been purchased
-	// with this account; renewals and cancellations must currently be paid for by it.
+	// The billing account to price for; it must be yours. Existing orders must have been placed with it,
+	// and renewals and cancellations must currently be paid by it.
 	BillingAccountID int64 `json:"billing_account_id"`
-	// A proposed purchase priced in the account currency. Metered items may estimate specified usage
-	// quantities; those estimates are not amounts collectible at checkout.
+	// A proposed purchase priced in the account's currency. Metered items may include usage estimates,
+	// which are not checkout amounts.
 	Items []QuoteItemInput `json:"items"`
-	// Preview paying this existing order. Its recorded purchase terms supply every line, and an order
-	// whose terms are fixed returns its recorded amounts. A preview does not change the order.
+	// Preview paying this order. Its recorded terms supply every line, and an order whose terms are fixed
+	// returns its recorded amounts. The order does not change.
 	OrderID OptUUID `json:"order_id"`
-	// Preview renewing these subscriptions, each at most once. Each entry represents a separate renewal
-	// order. To preview a new promotion code, create a renewal order and quote it by order_id.
+	// Preview renewing these subscriptions, each at most once; each entry is a separate renewal order. To
+	// preview a promotion code, create a renewal order and quote it by order_id.
 	Renewals      []QuoteRenewal           `json:"renewals"`
 	Cancellation  OptQuoteCancellation     `json:"cancellation"`
 	PromotionCode OptString                `json:"promotion_code"`
@@ -14096,8 +13994,8 @@ func (s *QuoteRequest) SetRefund(val OptOrderRefundQuoteInput) {
 	s.Refund = val
 }
 
-// The discount selected for this calculation. Its presence in a quote does not apply it or reserve a
-// redemption. Discount amounts are reported on the quote and its lines.
+// The discount selected for this calculation, not applied and not reserved. Amounts are on the quote
+// and its lines.
 // Ref: #/components/schemas/QuotedDiscount
 type QuotedDiscount struct {
 	Type QuotedDiscountType `json:"type"`
@@ -14180,12 +14078,16 @@ func (s *QuotedDiscountType) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/Rate
 type Rate struct {
 	Meter ObjectIdentity `json:"meter"`
-	// The unit readings arrive in, such as `core-second`.
+	// The unit readings are reported in, such as `core-second`.
 	Unit OptString `json:"unit"`
-	// The attributes this rate applies to, such as region and machine type.
-	Dimensions RateDimensions `json:"dimensions"`
-	// `per_unit` multiplies `unit_amount`; `tiered` walks the tiers as `tiers_mode` says.
-	BillingScheme RateBillingScheme `json:"billing_scheme"`
+	// The dimension values this rate applies to, such as region and machine type.
+	Dimensions    RateDimensions `json:"dimensions"`
+	BillingScheme BillingScheme  `json:"billing_scheme"`
+	// `metered` prices usage; `licensed` prices holding a quantity for one period.
+	UsageType UsageType `json:"usage_type"`
+	// Licensed rates only, the period the amount buys; `none` for metered rates.
+	Interval      RateInterval `json:"interval"`
+	IntervalCount OptNilInt    `json:"interval_count"`
 	// `graduated` charges each band at its own rate; `volume` charges everything at the rate of the band
 	// the total lands in. `none` for a `per_unit` rate.
 	TiersMode RateTiersMode `json:"tiers_mode"`
@@ -14193,7 +14095,7 @@ type Rate struct {
 	UnitAmount OptMoney `json:"unit_amount"`
 	// Present for a tiered rate, in ascending order.
 	Tiers []Tier `json:"tiers"`
-	// How many measured units one amount covers. An hourly rate on a per-second meter is `"3600"`.
+	// How many measured units one amount covers; an hourly rate on a per-second meter is `"3600"`.
 	UnitQuantity  OptString      `json:"unit_quantity"`
 	Currency      string         `json:"currency"`
 	EffectiveFrom time.Time      `json:"effective_from"`
@@ -14216,8 +14118,23 @@ func (s *Rate) GetDimensions() RateDimensions {
 }
 
 // GetBillingScheme returns the value of BillingScheme.
-func (s *Rate) GetBillingScheme() RateBillingScheme {
+func (s *Rate) GetBillingScheme() BillingScheme {
 	return s.BillingScheme
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *Rate) GetUsageType() UsageType {
+	return s.UsageType
+}
+
+// GetInterval returns the value of Interval.
+func (s *Rate) GetInterval() RateInterval {
+	return s.Interval
+}
+
+// GetIntervalCount returns the value of IntervalCount.
+func (s *Rate) GetIntervalCount() OptNilInt {
+	return s.IntervalCount
 }
 
 // GetTiersMode returns the value of TiersMode.
@@ -14271,8 +14188,23 @@ func (s *Rate) SetDimensions(val RateDimensions) {
 }
 
 // SetBillingScheme sets the value of BillingScheme.
-func (s *Rate) SetBillingScheme(val RateBillingScheme) {
+func (s *Rate) SetBillingScheme(val BillingScheme) {
 	s.BillingScheme = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *Rate) SetUsageType(val UsageType) {
+	s.UsageType = val
+}
+
+// SetInterval sets the value of Interval.
+func (s *Rate) SetInterval(val RateInterval) {
+	s.Interval = val
+}
+
+// SetIntervalCount sets the value of IntervalCount.
+func (s *Rate) SetIntervalCount(val OptNilInt) {
+	s.IntervalCount = val
 }
 
 // SetTiersMode sets the value of TiersMode.
@@ -14310,49 +14242,7 @@ func (s *Rate) SetEffectiveTo(val OptNilDateTime) {
 	s.EffectiveTo = val
 }
 
-// `per_unit` multiplies `unit_amount`; `tiered` walks the tiers as `tiers_mode` says.
-type RateBillingScheme string
-
-const (
-	RateBillingSchemePerUnit RateBillingScheme = "per_unit"
-	RateBillingSchemeTiered  RateBillingScheme = "tiered"
-)
-
-// AllValues returns all RateBillingScheme values.
-func (RateBillingScheme) AllValues() []RateBillingScheme {
-	return []RateBillingScheme{
-		RateBillingSchemePerUnit,
-		RateBillingSchemeTiered,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s RateBillingScheme) MarshalText() ([]byte, error) {
-	switch s {
-	case RateBillingSchemePerUnit:
-		return []byte(s), nil
-	case RateBillingSchemeTiered:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *RateBillingScheme) UnmarshalText(data []byte) error {
-	switch RateBillingScheme(data) {
-	case RateBillingSchemePerUnit:
-		*s = RateBillingSchemePerUnit
-		return nil
-	case RateBillingSchemeTiered:
-		*s = RateBillingSchemeTiered
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// The attributes this rate applies to, such as region and machine type.
+// The dimension values this rate applies to, such as region and machine type.
 type RateDimensions map[string]string
 
 func (s *RateDimensions) init() RateDimensions {
@@ -14362,6 +14252,62 @@ func (s *RateDimensions) init() RateDimensions {
 		*s = m
 	}
 	return m
+}
+
+// Licensed rates only, the period the amount buys; `none` for metered rates.
+type RateInterval string
+
+const (
+	RateIntervalNone  RateInterval = "none"
+	RateIntervalDay   RateInterval = "day"
+	RateIntervalMonth RateInterval = "month"
+	RateIntervalYear  RateInterval = "year"
+)
+
+// AllValues returns all RateInterval values.
+func (RateInterval) AllValues() []RateInterval {
+	return []RateInterval{
+		RateIntervalNone,
+		RateIntervalDay,
+		RateIntervalMonth,
+		RateIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RateInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case RateIntervalNone:
+		return []byte(s), nil
+	case RateIntervalDay:
+		return []byte(s), nil
+	case RateIntervalMonth:
+		return []byte(s), nil
+	case RateIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RateInterval) UnmarshalText(data []byte) error {
+	switch RateInterval(data) {
+	case RateIntervalNone:
+		*s = RateIntervalNone
+		return nil
+	case RateIntervalDay:
+		*s = RateIntervalDay
+		return nil
+	case RateIntervalMonth:
+		*s = RateIntervalMonth
+		return nil
+	case RateIntervalYear:
+		*s = RateIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/RateList
@@ -14472,13 +14418,13 @@ func (s *RateTiersMode) UnmarshalText(data []byte) error {
 type Refund struct {
 	TransactionID      OptUUID `json:"transaction_id"`
 	CancellationItemID OptUUID `json:"cancellation_item_id"`
-	// Original funds-return split and each result. Unknown gateway results remain pending.
+	// The refund split by original payment source, with each result. Unknown gateway results stay pending.
 	Transactions     []Transaction `json:"transactions"`
 	ID               uuid.UUID     `json:"id"`
 	BillingAccountID OptInt64      `json:"billing_account_id"`
 	InvoiceID        OptNilUUID    `json:"invoice_id"`
 	// The order the refund belongs to: the order that caused it, such as a downgrade, otherwise the order
-	// of the refunded invoice. Null for refunds of top-ups and of usage invoices.
+	// of the refunded invoice. Null for refunds of top-ups and usage invoices.
 	OrderID OptNilUUID `json:"order_id"`
 	// The whole refund. Equals balance_amount plus credit_amount plus gateway_amount.
 	Amount Money `json:"amount"`
@@ -14491,7 +14437,7 @@ type Refund struct {
 	// What has actually been returned.
 	SettledAmount OptMoney `json:"settled_amount"`
 	Currency      string   `json:"currency"`
-	// Use balance_amount, credit_amount and gateway_amount, which also show a refund split between several
+	// Use balance_amount, credit_amount and gateway_amount, which also show a refund split between
 	// destinations.
 	//
 	// Deprecated: schema marks this property as deprecated.
@@ -14693,7 +14639,7 @@ func (s *Refund) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// Use balance_amount, credit_amount and gateway_amount, which also show a refund split between several
+// Use balance_amount, credit_amount and gateway_amount, which also show a refund split between
 // destinations.
 //
 // Deprecated: schema marks this type as deprecated.
@@ -14764,16 +14710,13 @@ func (s *RefundList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// None refunds nothing. prorated refunds the amount paid for the current period minus the value of the
-// time used, never below zero and never more than what remains unrefunded. The time used runs from the
-// period start to the effective cancellation time and is valued at the plan's shorter-period prices in
-// the same currency, frozen at purchase as the order item's refund_monthly_amount and
-// refund_hourly_amount: each full calendar month at the one-month prepaid price, the remainder at the
-// postpaid hourly price or, without one, at the one-month price by the second. When the plan has no
-// prepaid period shorter than the one bought, the time used is valued at the price paid, pro rata by
-// the second. Discounts are not refunded, as they were never paid, and setup fees are excluded. The
-// refunded part returns to the payment sources it came from. Tax paid is refunded in the same
-// proportion as the amount it was paid on.
+// `none` refunds nothing. `prorated` refunds the amount paid for the current period minus the value of
+// the time used, never below zero or above what remains unrefunded. Time used runs from the period
+// start to the effective cancellation and is valued at prices frozen on the order item: each full
+// calendar month at `refund_monthly_amount`, the rest at `refund_hourly_amount` or, without it, at the
+// monthly price by the second. When the plan has no licensed period shorter than the one bought, time
+// used is valued pro rata at the price paid. Discounts and setup fees are not refunded. Refunds return
+// to the original payment sources, with tax refunded in proportion.
 // Ref: #/components/schemas/RefundPolicy
 type RefundPolicy string
 
@@ -14816,22 +14759,19 @@ func (s *RefundPolicy) UnmarshalText(data []byte) error {
 	}
 }
 
-// Why the refund was made. Clients map the code to their own wording. More codes may be added; treat
-// an unknown code as a refund without a stated reason.
+// Why the refund was made. New codes may be added; treat an unknown code as unspecified.
 //
 //   - `provisioning_failed`: the purchase could not be delivered.
-//   - `order_expired`: the order expired after part of it had been paid.
-//   - `order_canceled`: the account holder canceled the order after part of it had been paid.
-//   - `change_canceled`: a scheduled change was withdrawn after part of it had been paid.
-//   - `change_expired`: a scheduled change could not take effect before its time passed.
-//   - `subscription_canceled`: the subscription was canceled and its unused value returned under its
-//     refund terms.
-//   - `future_period_canceled`: a renewal that had not started yet was withdrawn.
-//   - `downgrade_difference`: after a downgrade, the remaining value of what was paid, valued as refund
-//     policy `prorated` describes, minus the new configuration's cost for the remaining time at the
-//     change item's `refund_monthly_amount` and `refund_hourly_amount`. Nothing is refunded when that
-//     is zero or less.
-//   - `usage_true_up`: usage priced again over the whole month cost less than was charged.
+//   - `order_expired`: the order expired after part of it was paid.
+//   - `order_canceled`: the order was canceled after part of it was paid.
+//   - `change_canceled`: a scheduled change was withdrawn after part of it was paid.
+//   - `change_expired`: a scheduled change could not take effect in time.
+//   - `subscription_canceled`: the unused value of a canceled subscription, under its refund terms.
+//   - `future_period_canceled`: a renewal that had not started was withdrawn.
+//   - `downgrade_difference`: after a downgrade, the remaining paid value, valued as refund policy
+//     `prorated` describes, minus the new configuration's cost for the remaining time at the change
+//     item's `refund_monthly_amount` and `refund_hourly_amount`.
+//   - `usage_true_up`: usage priced over the whole month cost less than was charged.
 //   - `payment_not_applied`: a payment arrived after its invoice could no longer be paid.
 //   - `operator`: made by the platform operator.
 //
@@ -15007,14 +14947,11 @@ func (s *RefundStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/RenewRequest
 type RenewRequest struct {
-	// Purchase ID saved before submitting. Duplicate creation conflicts; query this order after an unknown
-	// result.
+	// The order ID, chosen by the caller. Creating it again conflicts; read the order after an unknown
+	// outcome.
 	OrderID uuid.UUID `json:"order_id"`
-	// How many further periods to buy, each at the price this item already bills at.
-	//
-	// Buying twelve monthly periods is not the same as buying one yearly term: a longer term is usually
-	// sold at a lower price, and that price is only reached by naming the interval. Use `interval_count`
-	// and `interval` for that.
+	// How many further periods to buy, each at the price the subscription already renews at. To buy a
+	// longer term at its own price, give `interval` and `interval_count` instead.
 	Periods OptInt `json:"periods"`
 	// Renew for a term of this length instead, at the price currently sold for it. Give `interval` with
 	// it.
@@ -15179,11 +15116,11 @@ func (s *RenewRequestInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// The periods and price of the renewal, chosen as in renewing.
+// The renewal's periods and price, chosen as in renewing.
 // Ref: #/components/schemas/RenewalOrderRequest
 type RenewalOrderRequest struct {
-	// Purchase ID saved before submitting. Duplicate creation conflicts; query this order after an unknown
-	// result.
+	// The order ID, chosen by the caller. Creating it again conflicts; read the order after an unknown
+	// outcome.
 	OrderID uuid.UUID `json:"order_id"`
 	// As in renewing.
 	Periods OptInt `json:"periods"`
@@ -15305,8 +15242,7 @@ type RenewalPrice struct {
 	// What renewing for this term costs, for the quantity held.
 	Amount   OptMoney  `json:"amount"`
 	Currency OptString `json:"currency"`
-	// The term this item already bills at. Renewing for it uses the price bought originally, so a later
-	// price change does not affect it.
+	// The term the subscription renews at now; renewing for it keeps the agreed price.
 	Current bool `json:"current"`
 }
 
@@ -15464,8 +15400,7 @@ func (s *RenewalPriceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// The next accepted period-end change for a subscription. It describes the target terms and does not
-// change the current subscription until effective_at.
+// The next accepted period-end change of the subscription: the target terms, applied at effective_at.
 // Ref: #/components/schemas/ScheduledChange
 type ScheduledChange struct {
 	OrderID uuid.UUID   `json:"order_id"`
@@ -15476,7 +15411,7 @@ type ScheduledChange struct {
 	PlanName    string    `json:"plan_name"`
 	PriceID     uuid.UUID `json:"price_id"`
 	Quantity    string    `json:"quantity"`
-	// The target prepaid renewal amount before tax.
+	// The target licensed renewal amount before tax.
 	RecurringAmount string                  `json:"recurring_amount"`
 	Currency        string                  `json:"currency"`
 	Interval        ScheduledChangeInterval `json:"interval"`
@@ -15663,8 +15598,16 @@ type SpendRow struct {
 	PlanName OptString  `json:"plan_name"`
 	// Present only when grouped by resource.
 	ResourceID OptString `json:"resource_id"`
-	Amount     Money     `json:"amount"`
-	Currency   string    `json:"currency"`
+	// Present only when grouped by meter.
+	Meter OptObjectIdentity `json:"meter"`
+	// Present only when grouped by meter.
+	Unit OptString `json:"unit"`
+	// Net usage quantity, present only when grouped by meter.
+	Quantity OptString `json:"quantity"`
+	// The values of the meter's presentation dimensions, present only when grouped by meter.
+	Dimensions OptSpendRowDimensions `json:"dimensions"`
+	Amount     Money                 `json:"amount"`
+	Currency   string                `json:"currency"`
 }
 
 // GetProduct returns the value of Product.
@@ -15685,6 +15628,26 @@ func (s *SpendRow) GetPlanName() OptString {
 // GetResourceID returns the value of ResourceID.
 func (s *SpendRow) GetResourceID() OptString {
 	return s.ResourceID
+}
+
+// GetMeter returns the value of Meter.
+func (s *SpendRow) GetMeter() OptObjectIdentity {
+	return s.Meter
+}
+
+// GetUnit returns the value of Unit.
+func (s *SpendRow) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *SpendRow) GetQuantity() OptString {
+	return s.Quantity
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *SpendRow) GetDimensions() OptSpendRowDimensions {
+	return s.Dimensions
 }
 
 // GetAmount returns the value of Amount.
@@ -15717,6 +15680,26 @@ func (s *SpendRow) SetResourceID(val OptString) {
 	s.ResourceID = val
 }
 
+// SetMeter sets the value of Meter.
+func (s *SpendRow) SetMeter(val OptObjectIdentity) {
+	s.Meter = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *SpendRow) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *SpendRow) SetQuantity(val OptString) {
+	s.Quantity = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *SpendRow) SetDimensions(val OptSpendRowDimensions) {
+	s.Dimensions = val
+}
+
 // SetAmount sets the value of Amount.
 func (s *SpendRow) SetAmount(val Money) {
 	s.Amount = val
@@ -15727,10 +15710,22 @@ func (s *SpendRow) SetCurrency(val string) {
 	s.Currency = val
 }
 
+// The values of the meter's presentation dimensions, present only when grouped by meter.
+type SpendRowDimensions map[string]string
+
+func (s *SpendRowDimensions) init() SpendRowDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
 // Ref: #/components/schemas/SpendRowList
 type SpendRowList struct {
 	Items []SpendRow `json:"items"`
-	// The sum over the whole period, not only the page returned.
+	// The total over all matching groups, not only the page returned.
 	Total      Money            `json:"total"`
 	Currency   string           `json:"currency"`
 	Pagination OffsetPagination `json:"pagination"`
@@ -15776,11 +15771,11 @@ func (s *SpendRowList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An account's consumption for one billing period, collected at one closing. Usage is billed after
-// every settlement run, about hourly; each closing issues an invoice for the usage priced since the
-// previous closing and collects it from credits and balance at once, and later usage is collected in
-// the next statement of the same period. A closed statement is never rewritten. The period's
-// consumption is the sum of its statements.
+// An account's consumption for one billing period up to one closing. Usage is invoiced after every
+// settlement run, about hourly: each closing issues an invoice for the usage priced since the previous
+// one and collects it from credits and balance, and later usage goes into the next statement of the
+// same period. A closed statement does not change. The period's consumption is the sum of its
+// statements.
 // Ref: #/components/schemas/Statement
 type Statement struct {
 	ID               uuid.UUID `json:"id"`
@@ -15792,10 +15787,10 @@ type Statement struct {
 	Sequence int32           `json:"sequence"`
 	Status   StatementStatus `json:"status"`
 	Type     StatementType   `json:"type"`
-	// True while the statement is open. The estimate applies tier pricing to the period's usage so far and
+	// True while the statement is open. The estimate prices the period's usage so far at tier prices and
 	// adds tax for the current invoice contact. Minimum charges are added at the period's final closing,
-	// and a tier reduction larger than this statement's own charges is credited to earlier invoices of the
-	// period at closing.
+	// and a tier reduction larger than this statement's charges is credited to the period's earlier
+	// invoices at closing.
 	Estimated bool `json:"estimated"`
 	// The current estimate while open, or the invoiced result when closed.
 	Amounts  StatementAmounts `json:"amounts"`
@@ -16013,6 +16008,9 @@ type StatementItem struct {
 	ProductID OptString `json:"product_id"`
 	MeterID   OptUUID   `json:"meter_id"`
 	Unit      OptString `json:"unit"`
+	// The values of the meter's presentation dimensions, such as the model and token kind. Included only
+	// when grouping by meter, which splits each meter by these values.
+	Dimensions OptStatementItemDimensions `json:"dimensions"`
 	// Net usage quantity. Included only when grouping by meter.
 	Quantity         OptString `json:"quantity"`
 	DeductedQuantity OptString `json:"deducted_quantity"`
@@ -16039,6 +16037,11 @@ func (s *StatementItem) GetMeterID() OptUUID {
 // GetUnit returns the value of Unit.
 func (s *StatementItem) GetUnit() OptString {
 	return s.Unit
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *StatementItem) GetDimensions() OptStatementItemDimensions {
+	return s.Dimensions
 }
 
 // GetQuantity returns the value of Quantity.
@@ -16076,6 +16079,11 @@ func (s *StatementItem) SetUnit(val OptString) {
 	s.Unit = val
 }
 
+// SetDimensions sets the value of Dimensions.
+func (s *StatementItem) SetDimensions(val OptStatementItemDimensions) {
+	s.Dimensions = val
+}
+
 // SetQuantity sets the value of Quantity.
 func (s *StatementItem) SetQuantity(val OptString) {
 	s.Quantity = val
@@ -16089,6 +16097,19 @@ func (s *StatementItem) SetDeductedQuantity(val OptString) {
 // SetAmount sets the value of Amount.
 func (s *StatementItem) SetAmount(val Money) {
 	s.Amount = val
+}
+
+// The values of the meter's presentation dimensions, such as the model and token kind. Included only
+// when grouping by meter, which splits each meter by these values.
+type StatementItemDimensions map[string]string
+
+func (s *StatementItemDimensions) init() StatementItemDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/StatementList
@@ -16288,10 +16309,10 @@ func (s *StatementSummaryGroupBy) UnmarshalText(data []byte) error {
 	}
 }
 
-// Interim: a closing before the period's usage is final; minimum charges are not applied. final: the
-// first closing after the period ended and its late usage was settled; minimum charges for the whole
-// period are applied. supplement: a closing after the final one, for usage priced late. An open
-// statement is interim.
+// `interim`: a closing before the period's usage is final, without minimum charges. `final`: the first
+// closing after the period ended and its late usage was settled, applying the period's minimum
+// charges. `supplement`: a closing after the final one, for usage priced late. An open statement is
+// interim.
 // Ref: #/components/schemas/StatementType
 type StatementType string
 
@@ -16341,41 +16362,36 @@ func (s *StatementType) UnmarshalText(data []byte) error {
 	}
 }
 
-// An independently billed purchase relationship, separate from the owning service's resource. Placing
-// a new prepaid or postpaid service order creates a pending subscription for each line in the same
-// purchase transaction. Its ID is returned on the order item and remains stable through checkout and
-// delivery. One order may create several subscriptions, such as an instance, its system disk and its
-// address; it has no single subscription ID.
+// A purchase that is billed, renewed and changed on its own, separate from the owning service's
+// resource. A new recurring purchase creates a pending subscription for each order line; its ID is
+// returned on the order item and stays the same through checkout, delivery, renewals and changes. A
+// one-time purchase may create none.
 //
-// Pending and provisioning do not grant service or accrue usage. A service-owned subscription becomes
-// provisioning when the owning service accepts the order, and active when the service confirms
-// delivery, with started_at set to the confirmed effective time; payment changes neither. Prepaid
-// service periods start then; postpaid usage starts only when the service reports actual delivery and
-// metering.
+// Pending and provisioning subscriptions grant no service. A subscription becomes provisioning when
+// the owning service accepts the order, and active when the service confirms delivery, which sets
+// started_at; payment changes neither. Licensed service periods start at delivery, and metered usage
+// is charged as the service reports it. Canceling or failing an undelivered purchase cancels its
+// subscriptions without starting a period. Renewals use recurring_amount and the agreed interval; paid
+// periods keep their value.
 //
-// One-time delivery may omit a subscription. Renewals reference and extend existing subscriptions
-// rather than creating another; a change keeps the subscription ID and switches its terms when it
-// takes effect. Canceling or failing an unfulfilled purchase sets its pending or provisioning
-// subscriptions to canceled without starting a service period. Fixed renewals use the agreed
-// recurring_amount and interval; already paid periods retain their original value. Technical state
-// belongs to the owning service.
-//
-// A purchased shared capacity limit, such as a regional snapshot count quota, can have its own
-// subscription. Activating that capacity confirms delivery of the quota, not individual snapshots.
-// Creating or deleting snapshots within it does not create, activate or terminate more subscriptions;
-// the owning service enforces current holdings against the purchased count.
+// A shared capacity limit, such as a regional snapshot quota, has one subscription for the purchased
+// quantity rather than one per item.
 // Ref: #/components/schemas/Subscription
 type Subscription struct {
 	// Whether new account discounts may apply to future renewals. A fixed operator renewal agreement
 	// disables automatic discounts; catalog repricing or a newly selected purchase agreement enables them.
-	RenewalDiscountsEnabled OptBool                `json:"renewal_discounts_enabled"`
-	Currency                string                 `json:"currency"`
-	ChargeType              SubscriptionChargeType `json:"charge_type"`
-	Interval                SubscriptionInterval   `json:"interval"`
-	IntervalCount           OptInt                 `json:"interval_count"`
-	// Whole-subscription prepaid renewal amount, after continuing discounts and before tax. Pending
-	// subscriptions show base terms until paying the order fixes any new continuing discount. Absent for
-	// other charge types.
+	RenewalDiscountsEnabled OptBool   `json:"renewal_discounts_enabled"`
+	Currency                string    `json:"currency"`
+	Type                    PriceType `json:"type"`
+	UsageType               UsageType `json:"usage_type"`
+	// The dimension values of what was bought, such as region and instance type. Empty when the purchase
+	// gave none.
+	Dimensions    SubscriptionDimensions `json:"dimensions"`
+	Interval      SubscriptionInterval   `json:"interval"`
+	IntervalCount OptInt                 `json:"interval_count"`
+	// The whole licensed subscription's renewal amount, after continuing discounts and before tax. A
+	// pending subscription shows base terms until paying the order fixes any new discount. Absent for
+	// metered and one-time subscriptions.
 	RecurringAmount             OptString            `json:"recurring_amount"`
 	TerminationPolicy           OptTerminationPolicy `json:"termination_policy"`
 	RefundPolicy                OptRefundPolicy      `json:"refund_policy"`
@@ -16383,18 +16399,16 @@ type Subscription struct {
 	CouponID                    OptUUID              `json:"coupon_id"`
 	Coupon                      OptObjectIdentity    `json:"coupon"`
 	DiscountedRenewalsRemaining OptInt               `json:"discounted_renewals_remaining"`
-	// The operations currently prevented on the subscription, sorted. The subscription is suspended while
-	// this contains billing.subscriptions.use.
+	// The operations currently prevented on the subscription, sorted; it is suspended while this contains
+	// `billing.subscriptions.use`.
 	Restrictions       []SubscriptionRestriction   `json:"restrictions"`
 	BillingCycleAnchor OptDateTime                 `json:"billing_cycle_anchor"`
 	Cancellation       OptSubscriptionCancellation `json:"cancellation"`
-	// The accepted period-end change currently scheduled for this subscription. Null when no such change
-	// exists.
+	// The accepted period-end change scheduled for this subscription; null when there is none.
 	ScheduledChange OptNilScheduledChange `json:"scheduled_change"`
-	// The saved payment method automatic renewal charges after the account's balance and credits, before
-	// the account's default payment method. Set when the purchase, a renewal or a change is paid with a
-	// saved payment method; paying any other way leaves it unchanged. It is used only while it belongs to
-	// the account that pays the renewal.
+	// The saved payment method automatic renewal charges after balance and credits, before the account's
+	// default payment method. Set when a purchase, renewal or change is paid with a saved payment method.
+	// Used only while it belongs to the account paying the renewal.
 	DefaultPaymentMethodID OptNilUUID  `json:"default_payment_method_id"`
 	CreatedAt              OptDateTime `json:"created_at"`
 	ID                     uuid.UUID   `json:"id"`
@@ -16403,37 +16417,35 @@ type Subscription struct {
 	BillingAccountID int64           `json:"billing_account_id"`
 	Account          AccountIdentity `json:"account"`
 	ProductID        ProductID       `json:"product_id"`
-	// Which project this is for. Absent when it was bought at account level, such as a membership, which
-	// belongs to no single project.
+	// The project it is for. Absent for an account-level purchase, such as a membership.
 	ProjectID OptNilUUID `json:"project_id"`
-	// The project and its current name, for display. Absent for a purchase at account level, and when the
-	// project no longer exists or its details cannot be read at the moment; `project_id` still identifies
-	// it then.
+	// The project and its current name. Absent for an account-level purchase or when the project cannot be
+	// read; `project_id` still identifies it.
 	Project  OptNilNamedIdentity `json:"project"`
 	Product  Product             `json:"product"`
 	PlanID   uuid.UUID           `json:"plan_id"`
 	PlanName string              `json:"plan_name"`
 	PriceID  uuid.UUID           `json:"price_id"`
 	Quantity string              `json:"quantity"`
-	// When a prepaid subscription renews or expires, the end of the last service period bought. Renewing
-	// several periods in advance moves it. Null until a new subscription becomes active, even when its
-	// purchase has been paid, and for postpaid subscriptions.
+	// When a licensed subscription renews or expires: the end of the last period bought, moved by renewing
+	// in advance. Null until the subscription becomes active, even when its purchase has been paid, and
+	// for metered subscriptions.
 	CurrentTermEnd OptNilDateTime `json:"current_term_end"`
-	// Start of the service period in effect now. Null when none is, including for postpaid subscriptions.
+	// Start of the service period in effect now. Null when none is, including for metered subscriptions.
 	CurrentPeriodStart OptNilDateTime `json:"current_period_start"`
-	// End of the service period in effect now. Renewing in advance moves `current_term_end`, not this.
-	// Null when no period is in effect, including for postpaid subscriptions.
+	// End of the service period in effect now; renewing in advance moves `current_term_end`, not this.
+	// Null when no period is in effect, including for metered subscriptions.
 	CurrentPeriodEnd OptNilDateTime `json:"current_period_end"`
-	// A prepaid subscription renews automatically while this is on. A postpaid subscription always
-	// continues until it is canceled; this is true until a cancellation is requested and cannot be set.
+	// Whether a licensed subscription renews automatically. A metered subscription continues until it is
+	// canceled; for it this is true until a cancellation is requested, and cannot be set.
 	AutoRenew bool `json:"auto_renew"`
-	// Pending means the purchase relationship exists but its order has not been accepted. provisioning
-	// means the service accepted the order and is delivering. For a service-owned purchase, only confirmed
-	// delivery moves it to active; paying alone does not. canceled means cancellation completed, or an
-	// unfulfilled purchase was canceled or failed without delivery. terminated means an administrator or
-	// the owning service immediately ended the commercial relationship.
+	// `pending`: the order has not been accepted. `provisioning`: the owning service accepted the order
+	// and is delivering. `active`: delivery was confirmed; payment alone does not make a subscription
+	// active. `suspended`: service is stopped while a lien restricts its use. `canceled`: cancellation
+	// completed, or an undelivered purchase was canceled or failed. `terminated`: an operator or the
+	// owning service ended it immediately.
 	Status SubscriptionStatus `json:"status"`
-	// Confirmed start of service. Null until a new subscription becomes active, including after payment.
+	// When service started. Null until a new subscription becomes active, also after payment.
 	StartedAt OptNilDateTime `json:"started_at"`
 	EndedAt   OptNilDateTime `json:"ended_at"`
 }
@@ -16448,9 +16460,19 @@ func (s *Subscription) GetCurrency() string {
 	return s.Currency
 }
 
-// GetChargeType returns the value of ChargeType.
-func (s *Subscription) GetChargeType() SubscriptionChargeType {
-	return s.ChargeType
+// GetType returns the value of Type.
+func (s *Subscription) GetType() PriceType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *Subscription) GetUsageType() UsageType {
+	return s.UsageType
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *Subscription) GetDimensions() SubscriptionDimensions {
+	return s.Dimensions
 }
 
 // GetInterval returns the value of Interval.
@@ -16628,9 +16650,19 @@ func (s *Subscription) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetChargeType sets the value of ChargeType.
-func (s *Subscription) SetChargeType(val SubscriptionChargeType) {
-	s.ChargeType = val
+// SetType sets the value of Type.
+func (s *Subscription) SetType(val PriceType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *Subscription) SetUsageType(val UsageType) {
+	s.UsageType = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *Subscription) SetDimensions(val SubscriptionDimensions) {
+	s.Dimensions = val
 }
 
 // SetInterval sets the value of Interval.
@@ -16798,13 +16830,13 @@ func (s *Subscription) SetEndedAt(val OptNilDateTime) {
 	s.EndedAt = val
 }
 
-// The latest cancellation that includes the subscription, with this subscription's item. `id` is the
-// item; `cancellation_id` is the cancellation. scheduled_at is the intended time; effective_at is the
-// confirmed end of service. A cancellation alone does not stop metering or issue a refund.
+// The latest cancellation including the subscription, with this subscription's item: `id` is the item
+// and `cancellation_id` the cancellation. scheduled_at is the intended time and effective_at the
+// confirmed end of service.
 // Ref: #/components/schemas/SubscriptionCancellation
 type SubscriptionCancellation struct {
 	Reason OptString `json:"reason"`
-	// The cancellation this request belongs to, with the other subscriptions released together.
+	// The cancellation this item belongs to, with the other subscriptions released together.
 	CancellationID        OptUUID                        `json:"cancellation_id"`
 	ID                    uuid.UUID                      `json:"id"`
 	SubscriptionID        uuid.UUID                      `json:"subscription_id"`
@@ -17081,52 +17113,17 @@ func (s *SubscriptionCancellationStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-type SubscriptionChargeType string
+// The dimension values of what was bought, such as region and instance type. Empty when the purchase
+// gave none.
+type SubscriptionDimensions map[string]string
 
-const (
-	SubscriptionChargeTypePostpaid SubscriptionChargeType = "postpaid"
-	SubscriptionChargeTypePrepaid  SubscriptionChargeType = "prepaid"
-	SubscriptionChargeTypeOneTime  SubscriptionChargeType = "one_time"
-)
-
-// AllValues returns all SubscriptionChargeType values.
-func (SubscriptionChargeType) AllValues() []SubscriptionChargeType {
-	return []SubscriptionChargeType{
-		SubscriptionChargeTypePostpaid,
-		SubscriptionChargeTypePrepaid,
-		SubscriptionChargeTypeOneTime,
+func (s *SubscriptionDimensions) init() SubscriptionDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
 	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SubscriptionChargeType) MarshalText() ([]byte, error) {
-	switch s {
-	case SubscriptionChargeTypePostpaid:
-		return []byte(s), nil
-	case SubscriptionChargeTypePrepaid:
-		return []byte(s), nil
-	case SubscriptionChargeTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SubscriptionChargeType) UnmarshalText(data []byte) error {
-	switch SubscriptionChargeType(data) {
-	case SubscriptionChargeTypePostpaid:
-		*s = SubscriptionChargeTypePostpaid
-		return nil
-	case SubscriptionChargeTypePrepaid:
-		*s = SubscriptionChargeTypePrepaid
-		return nil
-	case SubscriptionChargeTypeOneTime:
-		*s = SubscriptionChargeTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+	return m
 }
 
 type SubscriptionInterval string
@@ -17210,9 +17207,9 @@ func (s *SubscriptionList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An operation Leaflow prevents on a subscription. billing.subscriptions.use stops the service. renew
-// prevents renewal and payment of a renewal order. modify prevents placing a change order. cancel
-// prevents cancellation. terminate prevents immediate termination.
+// An operation prevented on the subscription. `billing.subscriptions.use` stops the service. `renew`
+// prevents renewal and paying a renewal order. `modify` prevents placing a change order. `cancel`
+// prevents cancellation. `terminate` prevents immediate termination.
 // Ref: #/components/schemas/SubscriptionRestriction
 type SubscriptionRestriction string
 
@@ -17276,11 +17273,11 @@ func (s *SubscriptionRestriction) UnmarshalText(data []byte) error {
 	}
 }
 
-// Pending means the purchase relationship exists but its order has not been accepted. provisioning
-// means the service accepted the order and is delivering. For a service-owned purchase, only confirmed
-// delivery moves it to active; paying alone does not. canceled means cancellation completed, or an
-// unfulfilled purchase was canceled or failed without delivery. terminated means an administrator or
-// the owning service immediately ended the commercial relationship.
+// `pending`: the order has not been accepted. `provisioning`: the owning service accepted the order
+// and is delivering. `active`: delivery was confirmed; payment alone does not make a subscription
+// active. `suspended`: service is stopped while a lien restricts its use. `canceled`: cancellation
+// completed, or an undelivered purchase was canceled or failed. `terminated`: an operator or the
+// owning service ended it immediately.
 type SubscriptionStatus string
 
 const (
@@ -17454,8 +17451,8 @@ func (s *TaxItem) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a
-// refund. When absent, the terms are not configured and termination requires review.
+// Whether a delivered purchase may end immediately or only at the end of its paid term; refunds follow
+// the refund policy. When absent, no termination terms were agreed.
 // Ref: #/components/schemas/TerminationPolicy
 type TerminationPolicy string
 
@@ -17500,7 +17497,7 @@ func (s *TerminationPolicy) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/Tier
 type Tier struct {
-	// The upper bound of this band. Null on the last band, which has no bound.
+	// The band's inclusive upper bound; null for the last band.
 	UpTo       OptNilString `json:"up_to"`
 	UnitAmount Money        `json:"unit_amount"`
 	// Charged once when this band is reached, in addition to the per-unit amount.
@@ -17537,28 +17534,25 @@ func (s *Tier) SetFlatAmount(val OptMoney) {
 	s.FlatAmount = val
 }
 
-// A top-up attempt and its outcome. A successful top-up adds a traceable amount to the balance; it is
-// not a credit grant and has no associated invoice.
+// A top-up attempt and its outcome. A successful top-up adds to the balance; it is not a credit grant
+// and has no invoice.
 // Ref: #/components/schemas/TopUp
 type TopUp struct {
 	ID               uuid.UUID       `json:"id"`
 	BillingAccountID int64           `json:"billing_account_id"`
 	Account          AccountIdentity `json:"account"`
-	// What is credited to the account, in the account's own currency.
+	// What is credited to the account, in its currency.
 	Amount   Money  `json:"amount"`
 	Currency string `json:"currency"`
-	// The part of this top-up still held in the balance. Pending refunds can temporarily reserve part of
-	// it; it is not a promise that the whole amount is immediately withdrawable.
+	// The part of this top-up still in the balance. Pending refunds may hold part of it, so not all of it
+	// is necessarily withdrawable.
 	RemainingAmount OptMoney `json:"remaining_amount"`
-	// `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
-	//
-	// `failed` means the gateway declined the payment. A declined attempt ends the top-up at once and the
-	// payment is withdrawn at the gateway; to pay another way, create a new top-up. `canceled` means the
-	// attempt was withdrawn without collecting money; `cancellation_reason` says why. Unknown gateway
-	// outcomes remain `pending`, and a browser redirect is not proof of payment.
-	//
-	// `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an attempt,
-	// the amount is credited as a separate `succeeded` top-up.
+	// `pending` until the payment gateway reaches a result; the balance increases on `succeeded`.
+	// `failed`: the gateway declined the payment, which is withdrawn at the gateway; create a new top-up
+	// to pay another way. `canceled`: withdrawn without collecting money, for the reason in
+	// `cancellation_reason`. Unknown gateway outcomes stay `pending`; a browser redirect is not proof of
+	// payment. `failed` and `canceled` are final; a payment the gateway collects afterwards is credited as
+	// a separate `succeeded` top-up.
 	Status TopUpStatus `json:"status"`
 	// Why the top-up was withdrawn. Present with `canceled`.
 	CancellationReason OptPaymentCancellationReason `json:"cancellation_reason"`
@@ -17566,26 +17560,22 @@ type TopUp struct {
 	PaymentGateway OptString `json:"payment_gateway"`
 	// The selected payment method, such as card, wechat_pay or alipay.
 	MethodType OptString `json:"method_type"`
-	// The currency the customer was actually charged in, when the checkout page collected a local one.
-	// Absent when it was the same as the account's.
+	// The currency the customer was charged in when the checkout collected a local currency; absent when
+	// it is the account's.
 	PresentmentCurrency OptString `json:"presentment_currency"`
-	// What was charged, in `presentment_currency`. It will not equal `amount`, and it is the figure that
-	// appears on the customer's card or wallet statement.
+	// The amount charged in `presentment_currency`, as shown on the customer's statement.
 	PresentmentAmount OptMoney `json:"presentment_amount"`
-	// Why the gateway declined it. Present with `failed`. The value is the gateway's own code, passed on
-	// unchanged: the card issuer's decline code when there is one (Stripe's decline_code, such as
-	// insufficient_funds or lost_card), otherwise the gateway's error code (Stripe's code, such as
-	// card_declined, expired_card or payment_intent_authentication_failure). Clients map it to their own
-	// wording and treat an unknown value as a generic decline.
+	// Why the gateway declined it; present with `failed`. The gateway's code unchanged: the issuer's
+	// decline code when there is one (Stripe decline_code, such as insufficient_funds), otherwise the
+	// gateway's error code (Stripe code, such as card_declined). Treat an unknown value as a generic
+	// decline.
 	FailureReason OptString `json:"failure_reason"`
-	// The customer's next step while the top-up is `pending` and the gateway still awaits them. Returned
-	// by create-top-up and get-top-up as the gateway currently reports it; absent from list-top-ups and
-	// once the top-up has a result. Completing it does not replace confirmation of receipt.
+	// The customer's next step while the top-up is `pending` and the gateway awaits them, as the gateway
+	// currently reports it. Returned by create-top-up and get-top-up, not by list-top-ups, and absent once
+	// the top-up has a result. Completing it is not confirmation of receipt.
 	Action    OptPaymentAction `json:"action"`
 	CreatedAt time.Time        `json:"created_at"`
-	// When the funds arrived. Later than `created_at` — by days for a bank transfer — so reconciling
-	// against a statement uses this rather than the moment it was started. Absent until the payment
-	// completes.
+	// When the funds arrived, possibly days after `created_at`. Absent until the payment completes.
 	SettledAt OptNilDateTime `json:"settled_at"`
 }
 
@@ -17753,22 +17743,18 @@ func (*TopUp) cancelTopUpRes() {}
 
 // Ref: #/components/schemas/TopUpCreate
 type TopUpCreate struct {
-	// The gateway explicitly selected from the available payment options.
+	// The gateway selected from the available payment options.
 	PaymentGateway string `json:"payment_gateway"`
 	// The selected method, such as card, wechat_pay or alipay.
 	MethodType string `json:"method_type"`
-	// The ID of this top-up attempt. Keep it before submitting and query it after an uncertain response.
+	// The top-up ID, chosen by the caller. Read it after an uncertain response.
 	ID               uuid.UUID `json:"id"`
 	BillingAccountID int64     `json:"billing_account_id"`
-	// In the account's currency, and no finer than that currency's smallest unit: two decimals for most,
-	// none for the yen. A finer amount is refused here rather than at the checkout page, where the
-	// customer would see the gateway's own wording instead of an explanation.
-	//
-	// There is a minimum, which differs by currency. Below it the gateway's fee exceeds the top-up itself,
-	// so such a payment costs more to accept than it brings. The minimum in force is returned with the
-	// rejection.
+	// In the account's currency, no finer than its smallest unit (two decimals for most currencies, none
+	// for JPY). An amount below the currency's minimum top-up is refused, and the minimum is returned with
+	// the error.
 	Amount string `json:"amount"`
-	// Charge a saved method instead of opening a checkout page.
+	// Charge a saved payment method instead of opening a checkout page.
 	PaymentMethodID OptUUID `json:"payment_method_id"`
 	// Where to send the customer after checkout.
 	ReturnURL OptString `json:"return_url"`
@@ -17870,15 +17856,12 @@ func (s *TopUpList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
-//
-// `failed` means the gateway declined the payment. A declined attempt ends the top-up at once and the
-// payment is withdrawn at the gateway; to pay another way, create a new top-up. `canceled` means the
-// attempt was withdrawn without collecting money; `cancellation_reason` says why. Unknown gateway
-// outcomes remain `pending`, and a browser redirect is not proof of payment.
-//
-// `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an attempt,
-// the amount is credited as a separate `succeeded` top-up.
+// `pending` until the payment gateway reaches a result; the balance increases on `succeeded`.
+// `failed`: the gateway declined the payment, which is withdrawn at the gateway; create a new top-up
+// to pay another way. `canceled`: withdrawn without collecting money, for the reason in
+// `cancellation_reason`. Unknown gateway outcomes stay `pending`; a browser redirect is not proof of
+// payment. `failed` and `canceled` are final; a payment the gateway collects afterwards is credited as
+// a separate `succeeded` top-up.
 type TopUpStatus string
 
 const (
@@ -17934,9 +17917,8 @@ func (s *TopUpStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// A funds operation. Each payment has one source; refunds identify the original successful
-// transaction. Unknown gateway results remain pending. Payments from the balance or a gateway are
-// distinct from credit-grant payments.
+// A funds movement with one source. Refunds name the original transaction. Unknown gateway results
+// stay pending.
 // Ref: #/components/schemas/Transaction
 type Transaction struct {
 	InvoiceID     OptUUID `json:"invoice_id"`
@@ -17945,37 +17927,33 @@ type Transaction struct {
 	CreditGrantID OptUUID           `json:"credit_grant_id"`
 	CreditGrant   OptObjectIdentity `json:"credit_grant"`
 	RefundID      OptUUID           `json:"refund_id"`
-	// Present on refunds. Where this part of the refund goes.
-	//
-	//  - `balance`: back to the account balance.
-	//  - `credit`: back to the credit grant that paid, which keeps its original expiry.
-	//  - `gateway`: back to the payment method it was paid with.
+	// Present on refunds: where this part goes. `balance`: the account balance. `credit`: the credit grant
+	// that paid, keeping its original expiry. `gateway`: the payment method it was paid with.
 	RefundDestination OptTransactionRefundDestination `json:"refund_destination"`
-	// `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
-	// `canceled` means a gateway payment was withdrawn without collecting money. After either, an invoice
-	// the payment was meant to pay remains open for another payment.
+	// `failed`: the operation did not succeed; for a gateway payment, the gateway declined it. `canceled`:
+	// a gateway payment was withdrawn without collecting money. Either way, the invoice it was for stays
+	// open.
 	Status OptTransactionStatus `json:"status"`
 	// Why the payment was withdrawn. Present with `canceled`.
 	CancellationReason OptPaymentCancellationReason `json:"cancellation_reason"`
 	PaymentGateway     OptString                    `json:"payment_gateway"`
 	MethodType         OptString                    `json:"method_type"`
-	// Why it failed. Present with `failed`. For a declined gateway payment the value is the gateway's own
-	// code, passed on unchanged: the card issuer's decline code when there is one (Stripe's decline_code,
-	// such as insufficient_funds or lost_card), otherwise the gateway's error code (Stripe's code, such as
-	// card_declined, expired_card or payment_intent_authentication_failure). Clients map it to their own
-	// wording and treat an unknown value as a generic decline.
+	// Why it failed; present with `failed`. For a declined gateway payment, the gateway's code unchanged:
+	// the issuer's decline code when there is one (Stripe decline_code, such as insufficient_funds),
+	// otherwise the gateway's error code (Stripe code, such as card_declined). Treat an unknown value as a
+	// generic decline.
 	FailureReason    OptString       `json:"failure_reason"`
 	SettledAt        OptDateTime     `json:"settled_at"`
 	ID               uuid.UUID       `json:"id"`
 	BillingAccountID OptInt64        `json:"billing_account_id"`
 	Type             TransactionType `json:"type"`
 	// Signed by type: positive for `topup` and `payment`, negative for `refund`. An `adjustment` is
-	// positive when it adds to the balance and negative when it takes from it. For the other types the
-	// sign does not tell the effect on the balance: a payment from the balance lowers it, while a payment
-	// by gateway or by credit leaves it unchanged.
+	// positive when it adds to the balance and negative when it takes from it. For other types the sign
+	// does not show the effect on the balance: a payment from balance lowers it, a payment by gateway or
+	// credit does not.
 	Amount Money `json:"amount"`
-	// How much of this transaction is still available in the balance. Only top-ups, positive adjustments
-	// and gateway payments later returned to the balance can be non-zero.
+	// How much of this transaction is still in the balance. Only top-ups, positive adjustments and gateway
+	// payments returned to the balance can be non-zero.
 	RemainingAmount Money     `json:"remaining_amount"`
 	Currency        string    `json:"currency"`
 	Reason          OptString `json:"reason"`
@@ -18208,11 +18186,8 @@ func (s *TransactionList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Present on refunds. Where this part of the refund goes.
-//
-//   - `balance`: back to the account balance.
-//   - `credit`: back to the credit grant that paid, which keeps its original expiry.
-//   - `gateway`: back to the payment method it was paid with.
+// Present on refunds: where this part goes. `balance`: the account balance. `credit`: the credit grant
+// that paid, keeping its original expiry. `gateway`: the payment method it was paid with.
 type TransactionRefundDestination string
 
 const (
@@ -18261,9 +18236,9 @@ func (s *TransactionRefundDestination) UnmarshalText(data []byte) error {
 	}
 }
 
-// `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
-// `canceled` means a gateway payment was withdrawn without collecting money. After either, an invoice
-// the payment was meant to pay remains open for another payment.
+// `failed`: the operation did not succeed; for a gateway payment, the gateway declined it. `canceled`:
+// a gateway payment was withdrawn without collecting money. Either way, the invoice it was for stays
+// open.
 type TransactionStatus string
 
 const (
@@ -18392,24 +18367,24 @@ type UsageCharge struct {
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	ID             uuid.UUID `json:"id"`
 	ProjectID      OptUUID   `json:"project_id"`
-	// The project and its current name, for display. Absent when the project no longer exists or its
-	// details cannot be read at the moment; `project_id` still identifies it.
+	// The project and its current name. Absent when the project cannot be read; `project_id` still
+	// identifies it.
 	Project OptNilNamedIdentity `json:"project"`
 	Product Product             `json:"product"`
 	// Which resource this was charged for. Empty for charges not tied to one.
 	ResourceID OptString      `json:"resource_id"`
 	Meter      ObjectIdentity `json:"meter"`
 	Unit       OptString      `json:"unit"`
-	// The attributes the rate was chosen by, such as region and machine type.
+	// The dimension values the rate was matched by, such as region and machine type.
 	Dimensions  OptUsageChargeDimensions `json:"dimensions"`
 	WindowStart time.Time                `json:"window_start"`
 	// Exclusive.
 	WindowEnd time.Time `json:"window_end"`
-	// How much was used, before any included allowance.
+	// Quantity used before allowances.
 	GrossQuantity OptString `json:"gross_quantity"`
 	// How much of that was covered by an allowance.
 	DeductedQuantity OptString `json:"deducted_quantity"`
-	// What was charged for — the gross quantity less the part covered.
+	// The quantity charged: gross quantity less the part covered by allowances.
 	Quantity   string   `json:"quantity"`
 	UnitAmount OptMoney `json:"unit_amount"`
 	Amount     Money    `json:"amount"`
@@ -18622,7 +18597,7 @@ func (s *UsageCharge) SetStatementID(val OptUUID) {
 	s.StatementID = val
 }
 
-// The attributes the rate was chosen by, such as region and machine type.
+// The dimension values the rate was matched by, such as region and machine type.
 type UsageChargeDimensions map[string]string
 
 func (s *UsageChargeDimensions) init() UsageChargeDimensions {
@@ -18660,10 +18635,54 @@ func (s *UsageChargeList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An account withdrawal to the original payment methods of its unused top-ups. Accepted amounts are
-// fixed. deducted_amount, settled_amount and charged_fee_amount report completed source items. Failed
-// items release their principal and fee reservations; successful items are retained when another
-// source fails.
+// `licensed` charges for the quantity bought, each period paid before it starts. `metered` charges for
+// the usage reported, after it is settled; a metered subscription lasts until it is canceled. A
+// one-time price is licensed.
+// Ref: #/components/schemas/UsageType
+type UsageType string
+
+const (
+	UsageTypeLicensed UsageType = "licensed"
+	UsageTypeMetered  UsageType = "metered"
+)
+
+// AllValues returns all UsageType values.
+func (UsageType) AllValues() []UsageType {
+	return []UsageType{
+		UsageTypeLicensed,
+		UsageTypeMetered,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s UsageType) MarshalText() ([]byte, error) {
+	switch s {
+	case UsageTypeLicensed:
+		return []byte(s), nil
+	case UsageTypeMetered:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *UsageType) UnmarshalText(data []byte) error {
+	switch UsageType(data) {
+	case UsageTypeLicensed:
+		*s = UsageTypeLicensed
+		return nil
+	case UsageTypeMetered:
+		*s = UsageTypeMetered
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A withdrawal of account balance to the original payment methods of its unused top-ups. Accepted
+// amounts are fixed. deducted_amount, settled_amount and charged_fee_amount cover completed items. A
+// failed item releases its principal and fee; successful items stand when another item fails.
 // Ref: #/components/schemas/Withdrawal
 type Withdrawal struct {
 	ID               uuid.UUID        `json:"id"`
@@ -18678,7 +18697,7 @@ type Withdrawal struct {
 	Status           WithdrawalStatus `json:"status"`
 	CreatedAt        time.Time        `json:"created_at"`
 	CompletedAt      OptDateTime      `json:"completed_at"`
-	// Identity that submitted this withdrawal. It can differ from the billing account owner.
+	// Who submitted the withdrawal; may differ from the account owner.
 	CreatedBy OptString `json:"created_by"`
 }
 
@@ -18919,8 +18938,8 @@ func (s *WithdrawalCreate) SetExpectedItems(val []WithdrawalAllocation) {
 	s.ExpectedItems = val
 }
 
-// The fixed principal deduction, withdrawal fee and exact refund obligation for one original top-up.
-// Each item has its own refund; payment_gateway and method_type identify the original route.
+// For one original top-up: the principal deducted, the withdrawal fee and the amount refunded, through
+// its own refund. payment_gateway and method_type identify the original route.
 // Ref: #/components/schemas/WithdrawalItem
 type WithdrawalItem struct {
 	SourceTransactionID uuid.UUID            `json:"source_transaction_id"`
@@ -18938,8 +18957,8 @@ type WithdrawalItem struct {
 	PaymentGateway      string               `json:"payment_gateway"`
 	MethodType          string               `json:"method_type"`
 	Source              WithdrawalSource     `json:"source"`
-	// The original gateway failure code when a refund failed, or refund_reversed when a completed refund
-	// was reversed. Absent while pending or successful.
+	// The gateway's failure code when a refund failed, or `refund_reversed` when a completed refund was
+	// reversed. Absent while pending or successful.
 	FailureCode OptString `json:"failure_code"`
 }
 
@@ -19376,8 +19395,8 @@ func (s *WithdrawalPreviewRequest) SetAmount(val OptString) {
 	s.Amount = val
 }
 
-// The original top-up and its refund destination. Card details are included when the original payment
-// method was saved; missing card details do not change the original refund route.
+// The original top-up and where its refund goes. Card details are included when the original payment
+// method was saved.
 // Ref: #/components/schemas/WithdrawalSource
 type WithdrawalSource struct {
 	Amount         string    `json:"amount"`

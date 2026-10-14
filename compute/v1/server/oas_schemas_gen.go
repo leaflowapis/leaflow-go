@@ -4255,19 +4255,19 @@ func (s *FloatingIPResourceStatus) UnmarshalText(data []byte) error {
 
 // Account funding for this purchase, calculated by Billing. Amounts use the enclosing response
 // currency. Credit eligibility and all purchase requirements are already evaluated. Nothing is charged
-// or reserved. A prepaid purchase may instead use an online payment method.
+// or reserved. A licensed purchase may instead be paid with an online payment method.
 // Ref: #/components/schemas/Funds
 type Funds struct {
 	// Spendable balance after pending returns.
 	AvailableBalanceAmount Money `json:"available_balance_amount"`
-	// Currently effective credits eligible for the quoted purchases or postpaid usage. Each grant is
+	// Currently effective credits eligible for the quoted purchases or metered usage. Each grant is
 	// counted once.
 	UsableCreditAmount Money `json:"usable_credit_amount"`
-	// Currently effective credits that cannot fund any quoted purchase or postpaid target. Unused eligible
+	// Currently effective credits that cannot fund any quoted purchase or metered target. Unused eligible
 	// credits are not restricted.
 	RestrictedCreditAmount Money `json:"restricted_credit_amount"`
 	// Minimum spendable balance needed after eligible credits, covering immediate charges and every new
-	// postpaid admission requirement.
+	// metered purchase's admission requirement.
 	RequiredBalanceAmount Money `json:"required_balance_amount"`
 	// Additional balance needed now. Zero means account funds satisfy this quote. No funds are reserved.
 	BalanceShortfallAmount Money `json:"balance_shortfall_amount"`
