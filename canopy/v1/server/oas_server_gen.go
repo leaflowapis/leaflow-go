@@ -52,9 +52,9 @@ type Handler interface {
 	// CreateService implements create-service operation.
 	//
 	// Purchases the model platform service for this project. The service itself has no charge; requests
-	// are billed under it postpaid, by the tokens they use. It takes no billing choice. Returns the
-	// service as `pending` with its order; it becomes `active` once the order is accepted, which for an
-	// order with nothing to pay happens without further action.
+	// are metered under it by the tokens they use. It takes no billing choice. Returns the service as
+	// `pending` with its order; it becomes `active` once the order is accepted, which for an order with
+	// nothing to pay happens without further action.
 	//
 	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active.
 	// A refusal of the order by Billing is returned with Billing's code, such as

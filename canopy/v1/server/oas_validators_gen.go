@@ -631,8 +631,6 @@ func (s InvoiceStatus) Validate() error {
 		return nil
 	case "void":
 		return nil
-	case "uncollectible":
-		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}

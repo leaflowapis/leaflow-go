@@ -1717,8 +1717,6 @@ func (s *InvoiceStatus) Decode(d *jx.Decoder) error {
 		*s = InvoiceStatusPaid
 	case InvoiceStatusVoid:
 		*s = InvoiceStatusVoid
-	case InvoiceStatusUncollectible:
-		*s = InvoiceStatusUncollectible
 	default:
 		*s = InvoiceStatus(v)
 	}

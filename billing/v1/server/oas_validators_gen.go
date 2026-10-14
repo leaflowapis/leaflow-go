@@ -329,6 +329,56 @@ func (s *Applicability) Validate() error {
 	}
 	if err := func() error {
 		var failures []validate.FieldError
+		for i, elem := range s.PriceTypes {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "price_types",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		var failures []validate.FieldError
+		for i, elem := range s.UsageTypes {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_types",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		var failures []validate.FieldError
 		for i, elem := range s.Operations {
 			if err := func() error {
 				if err := elem.Validate(); err != nil {
@@ -602,6 +652,17 @@ func (s *BillingAccountUpdate) Validate() error {
 	return nil
 }
 
+func (s BillingScheme) Validate() error {
+	switch s {
+	case "per_unit":
+		return nil
+	case "tiered":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *CancelSubscriptionRequest) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -856,13 +917,24 @@ func (s *CancellationItem) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.ChargeType.Validate(); err != nil {
+		if err := s.Type.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "charge_type",
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.UsageType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_type",
 			Error: err,
 		})
 	}
@@ -881,19 +953,6 @@ func (s *CancellationItem) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s CancellationItemChargeType) Validate() error {
-	switch s {
-	case "postpaid":
-		return nil
-	case "prepaid":
-		return nil
-	case "one_time":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s CancellationItemStatus) Validate() error {
@@ -1055,13 +1114,24 @@ func (s *CancellationRefundPreviewItem) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.ChargeType.Validate(); err != nil {
+		if err := s.Type.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "charge_type",
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.UsageType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_type",
 			Error: err,
 		})
 	}
@@ -1069,19 +1139,6 @@ func (s *CancellationRefundPreviewItem) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s CancellationRefundPreviewItemChargeType) Validate() error {
-	switch s {
-	case "postpaid":
-		return nil
-	case "prepaid":
-		return nil
-	case "one_time":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s CancellationStatus) Validate() error {
@@ -3136,8 +3193,6 @@ func (s InvoiceStatus) Validate() error {
 		return nil
 	case "void":
 		return nil
-	case "uncollectible":
-		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -3255,19 +3310,6 @@ func (s ListCreditGrantsStatus) Validate() error {
 	}
 }
 
-func (s ListPricesType) Validate() error {
-	switch s {
-	case "postpaid":
-		return nil
-	case "prepaid":
-		return nil
-	case "one_time":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s ListSpendGroupBy) Validate() error {
 	switch s {
 	case "product":
@@ -3275,6 +3317,8 @@ func (s ListSpendGroupBy) Validate() error {
 	case "plan":
 		return nil
 	case "resource":
+		return nil
+	case "meter":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3698,13 +3742,24 @@ func (s *OrderItem) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.ChargeType.Validate(); err != nil {
+		if err := s.Type.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "charge_type",
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.UsageType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_type",
 			Error: err,
 		})
 	}
@@ -3759,19 +3814,6 @@ func (s *OrderItem) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s OrderItemChargeType) Validate() error {
-	switch s {
-	case "postpaid":
-		return nil
-	case "prepaid":
-		return nil
-	case "one_time":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s OrderItemInterval) Validate() error {
@@ -4782,8 +4824,26 @@ func (s *Price) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.BillingScheme.Validate(); err != nil {
+		if err := s.UsageType.Validate(); err != nil {
 			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.BillingScheme.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
@@ -4825,19 +4885,6 @@ func (s *Price) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s PriceBillingScheme) Validate() error {
-	switch s {
-	case "per_unit":
-		return nil
-	case "tiered":
-		return nil
-	case "rated":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *PriceHeaders) Validate() error {
@@ -4970,8 +5017,15 @@ func (s *PriceOption) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.BillingScheme.Validate(); err != nil {
-			return err
+		if value, ok := s.BillingScheme.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
@@ -4992,6 +5046,17 @@ func (s *PriceOption) Validate() error {
 		})
 	}
 	if err := func() error {
+		if err := s.UsageType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_type",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.Interval.Validate(); err != nil {
 			return err
 		}
@@ -5008,19 +5073,6 @@ func (s *PriceOption) Validate() error {
 	return nil
 }
 
-func (s PriceOptionBillingScheme) Validate() error {
-	switch s {
-	case "per_unit":
-		return nil
-	case "tiered":
-		return nil
-	case "rated":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s PriceOptionInterval) Validate() error {
 	switch s {
 	case "none":
@@ -5030,19 +5082,6 @@ func (s PriceOptionInterval) Validate() error {
 	case "month":
 		return nil
 	case "year":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s PriceOptionType) Validate() error {
-	switch s {
-	case "postpaid":
-		return nil
-	case "prepaid":
-		return nil
-	case "one_time":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -5064,11 +5103,9 @@ func (s PriceTiersMode) Validate() error {
 
 func (s PriceType) Validate() error {
 	switch s {
-	case "postpaid":
-		return nil
-	case "prepaid":
-		return nil
 	case "one_time":
+		return nil
+	case "recurring":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -5594,6 +5631,24 @@ func (s *QuoteItemInput) Validate() error {
 		})
 	}
 	if err := func() error {
+		if value, ok := s.UsageType.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_type",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.Interval.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -5725,19 +5780,6 @@ func (s QuoteItemInputInterval) Validate() error {
 	case "month":
 		return nil
 	case "year":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s QuoteItemInputPriceType) Validate() error {
-	switch s {
-	case "postpaid":
-		return nil
-	case "prepaid":
-		return nil
-	case "one_time":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -6150,6 +6192,28 @@ func (s *Rate) Validate() error {
 		})
 	}
 	if err := func() error {
+		if err := s.UsageType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Interval.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "interval",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.TiersMode.Validate(); err != nil {
 			return err
 		}
@@ -6166,11 +6230,15 @@ func (s *Rate) Validate() error {
 	return nil
 }
 
-func (s RateBillingScheme) Validate() error {
+func (s RateInterval) Validate() error {
 	switch s {
-	case "per_unit":
+	case "none":
 		return nil
-	case "tiered":
+	case "day":
+		return nil
+	case "month":
+		return nil
+	case "year":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -7141,13 +7209,24 @@ func (s *Subscription) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.ChargeType.Validate(); err != nil {
+		if err := s.Type.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "charge_type",
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.UsageType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "usage_type",
 			Error: err,
 		})
 	}
@@ -7430,19 +7509,6 @@ func (s SubscriptionCancellationStatus) Validate() error {
 	case "completed":
 		return nil
 	case "canceled":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s SubscriptionChargeType) Validate() error {
-	switch s {
-	case "postpaid":
-		return nil
-	case "prepaid":
-		return nil
-	case "one_time":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -8031,6 +8097,17 @@ func (s *UsageChargeList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s UsageType) Validate() error {
+	switch s {
+	case "licensed":
+		return nil
+	case "metered":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s *Withdrawal) Validate() error {

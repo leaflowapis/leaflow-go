@@ -597,13 +597,13 @@ func (s *BackupService) Validate() error {
 			MultipleOfSet: false,
 			MultipleOf:    0,
 			Pattern:       nil,
-		}).Validate(int64(s.PrepaidCapacityGib)); err != nil {
+		}).Validate(int64(s.PackCapacityGib)); err != nil {
 			return errors.Wrap(err, "int")
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "prepaid_capacity_gib",
+			Name:  "pack_capacity_gib",
 			Error: err,
 		})
 	}
@@ -690,13 +690,13 @@ func (s *BillingChoice) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.Mode.Validate(); err != nil {
+		if err := s.UsageType.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "mode",
+			Name:  "usage_type",
 			Error: err,
 		})
 	}
@@ -742,11 +742,11 @@ func (s *BillingChoice) Validate() error {
 	return nil
 }
 
-func (s BillingChoiceMode) Validate() error {
+func (s BillingChoiceUsageType) Validate() error {
 	switch s {
-	case "prepaid":
+	case "licensed":
 		return nil
-	case "postpaid":
+	case "metered":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -5201,13 +5201,13 @@ func (s *PricingOption) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.Mode.Validate(); err != nil {
+		if err := s.UsageType.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "mode",
+			Name:  "usage_type",
 			Error: err,
 		})
 	}
@@ -5282,17 +5282,6 @@ func (s *PricingOption) Validate() error {
 	return nil
 }
 
-func (s PricingOptionMode) Validate() error {
-	switch s {
-	case "prepaid":
-		return nil
-	case "postpaid":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s PricingOptionQuantityUnit) Validate() error {
 	switch s {
 	case "item":
@@ -5322,6 +5311,17 @@ func (s PricingOptionTerminationPolicy) Validate() error {
 func (s PricingOptionUnit) Validate() error {
 	switch s {
 	case "hour":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s PricingOptionUsageType) Validate() error {
+	switch s {
+	case "licensed":
+		return nil
+	case "metered":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

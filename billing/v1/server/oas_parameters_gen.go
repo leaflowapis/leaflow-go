@@ -1099,10 +1099,8 @@ func decodeGetOrderParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 
 // GetPlanParams is parameters of get-plan operation.
 type GetPlanParams struct {
-	// The `ETag` from an earlier reply. When the catalogue has not changed since, the answer is `304` with
-	// no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
+	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	PlanId      uuid.UUID
 }
@@ -1218,10 +1216,8 @@ func decodeGetPlanParams(args [1]string, argsEscaped bool, r *http.Request) (par
 
 // GetPriceParams is parameters of get-price operation.
 type GetPriceParams struct {
-	// The `ETag` from an earlier reply. When the catalogue has not changed since, the answer is `304` with
-	// no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
+	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	PriceId     uuid.UUID
 }
@@ -1337,10 +1333,8 @@ func decodeGetPriceParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 
 // GetProductParams is parameters of get-product operation.
 type GetProductParams struct {
-	// The `ETag` from an earlier reply. When the catalogue has not changed since, the answer is `304` with
-	// no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
+	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	ProductId   ProductID
 }
@@ -2300,7 +2294,7 @@ type ListAccountDiscountsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -2530,10 +2524,10 @@ type ListActiveResourcesParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize   OptInt64  `json:",omitempty,omitzero"`
 	ResourceID OptString `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds []uuid.UUID                  `json:",omitempty"`
 	MeterID    OptUUID                      `json:",omitempty,omitzero"`
 	ProductID  OptProductID                 `json:",omitempty,omitzero"`
@@ -3074,14 +3068,14 @@ type ListAllowancesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Filter by the meter UUID.
 	MeterID   OptUUID                 `json:",omitempty,omitzero"`
 	Status    OptListAllowancesStatus `json:",omitempty,omitzero"`
 	ProductID OptProductID            `json:",omitempty,omitzero"`
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -3746,14 +3740,14 @@ type ListCancellationsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only cancellations that include this subscription.
 	SubscriptionID OptUUID `json:",omitempty,omitzero"`
 	// Only cancellations in this status. `open` means requested, scheduled or releasing.
 	Status OptListCancellationsStatus `json:",omitempty,omitzero"`
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -4399,7 +4393,7 @@ type ListCreditGrantsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64                  `json:",omitempty,omitzero"`
 	Status           OptListCreditGrantsStatus `json:",omitempty,omitzero"`
 }
@@ -4924,7 +4918,7 @@ type ListCreditNotesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only the notes for this invoice.
 	InvoiceID OptUUID `json:",omitempty,omitzero"`
@@ -5382,10 +5376,10 @@ type ListEntitlementsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds []uuid.UUID  `json:",omitempty"`
 	ProductID  OptProductID `json:",omitempty,omitzero"`
 }
@@ -5759,7 +5753,7 @@ type ListFeatureGrantsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64              `json:",omitempty,omitzero"`
 	ProductID        OptProductID          `json:",omitempty,omitzero"`
 	Status           OptFeatureGrantStatus `json:",omitempty,omitzero"`
@@ -6357,11 +6351,10 @@ type ListInvoicesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64         `json:",omitempty,omitzero"`
 	Status           OptInvoiceStatus `json:",omitempty,omitzero"`
-	// Only invoices containing a charge from this subscription. The returned invoice amount is the total
-	// for the whole invoice.
+	// Only invoices with a charge from this subscription; amounts are for the whole invoice.
 	SubscriptionID OptUUID     `json:",omitempty,omitzero"`
 	From           OptDateTime `json:",omitempty,omitzero"`
 	// Exclusive.
@@ -7370,14 +7363,14 @@ type ListOrdersParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64       `json:",omitempty,omitzero"`
 	Status           OptOrderStatus `json:",omitempty,omitzero"`
 	From             OptDateTime    `json:",omitempty,omitzero"`
 	// Exclusive.
 	To OptDateTime `json:",omitempty,omitzero"`
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -7843,7 +7836,7 @@ type ListPaymentMethodsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -8302,10 +8295,8 @@ type ListPlansParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// The `ETag` from an earlier reply. When the catalogue has not changed since, the answer is `304` with
-	// no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
+	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	ProductID   ProductID
 }
@@ -8592,16 +8583,16 @@ type ListPricesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// The `ETag` from an earlier reply. When the catalogue has not changed since, the answer is `304` with
-	// no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
+	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	// ISO 4217, three uppercase letters.
 	Currency  string
 	ProductID OptProductID `json:",omitempty,omitzero"`
-	// Narrows to one payment timing.
-	Type OptListPricesType `json:",omitempty,omitzero"`
+	// Narrows to one price type.
+	Type OptPriceType `json:",omitempty,omitzero"`
+	// Narrows to one usage type.
+	UsageType OptUsageType `json:",omitempty,omitzero"`
 }
 
 func unpackListPricesParams(packed middleware.Parameters) (params ListPricesParams) {
@@ -8654,7 +8645,16 @@ func unpackListPricesParams(packed middleware.Parameters) (params ListPricesPara
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Type = v.(OptListPricesType)
+			params.Type = v.(OptPriceType)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "usage_type",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.UsageType = v.(OptUsageType)
 		}
 	}
 	return params
@@ -8973,7 +8973,7 @@ func decodeListPricesParams(args [0]string, argsEscaped bool, r *http.Request) (
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotTypeVal ListPricesType
+				var paramsDotTypeVal PriceType
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -8985,7 +8985,7 @@ func decodeListPricesParams(args [0]string, argsEscaped bool, r *http.Request) (
 						return err
 					}
 
-					paramsDotTypeVal = ListPricesType(c)
+					paramsDotTypeVal = PriceType(c)
 					return nil
 				}(); err != nil {
 					return err
@@ -9019,6 +9019,62 @@ func decodeListPricesParams(args [0]string, argsEscaped bool, r *http.Request) (
 			Err:  err,
 		}
 	}
+	// Decode query: usage_type.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "usage_type",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotUsageTypeVal UsageType
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotUsageTypeVal = UsageType(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.UsageType.SetTo(paramsDotUsageTypeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.UsageType.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "usage_type",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	return params, nil
 }
 
@@ -9028,10 +9084,8 @@ type ListPricesByPlanParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// The `ETag` from an earlier reply. When the catalogue has not changed since, the answer is `304` with
-	// no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
+	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	Currency    OptString `json:",omitempty,omitzero"`
 	PlanId      uuid.UUID
@@ -9363,10 +9417,8 @@ type ListProductsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// The `ETag` from an earlier reply. When the catalogue has not changed since, the answer is `304` with
-	// no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
+	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 }
 
@@ -9595,8 +9647,8 @@ type ListProjectAssignmentsParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize         OptInt64 `json:",omitempty,omitzero"`
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -9897,14 +9949,12 @@ type ListRatesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// The `ETag` from an earlier reply. When the catalogue has not changed since, the answer is `304` with
-	// no body.
-	//
-	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
+	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	// Filter by the meter UUID.
 	MeterID OptUUID `json:",omitempty,omitzero"`
-	// Return the rates in effect at this moment. Defaults to now.
+	// Rates in effect at this moment; defaults to now.
 	At         OptDateTime `json:",omitempty,omitzero"`
 	RateCardId uuid.UUID
 }
@@ -10285,13 +10335,12 @@ type ListRefundsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only the refunds of this invoice.
 	InvoiceID OptUUID `json:",omitempty,omitzero"`
-	// Only the refunds that belong to this order: those of its invoice, such as the refund of a purchase
-	// that could not be delivered, and those it caused on an earlier invoice, such as the difference
-	// returned after a downgrade.
+	// Refunds of this order: those of its invoice, such as for an undeliverable purchase, and those it
+	// caused on an earlier invoice, such as a downgrade difference.
 	OrderID OptUUID `json:",omitempty,omitzero"`
 }
 
@@ -10849,11 +10898,10 @@ type ListSpendParams struct {
 	From time.Time
 	// Exclusive. One month is `[2026-09-01, 2026-10-01)`.
 	To time.Time
-	// `plan` groups by the plan of the price each charge was priced with, which stays the same after the
-	// subscription changes plan. `resource` groups by the resource each charge names. Items billed under
-	// their own identifier — a disk, a public address — appear as their own rows rather than under the
-	// machine they are attached to, since the relationship between them is known to the owning service and
-	// not here.
+	// `plan` groups by the plan of the price each charge was priced with, unchanged after the subscription
+	// changes plan. `resource` groups by the resource each charge names; a disk or an address billed under
+	// its own identifier is its own row. `meter` groups by meter and the values of its presentation
+	// dimensions, such as the model and token kind, and includes the quantity used.
 	GroupBy OptListSpendGroupBy `json:",omitempty,omitzero"`
 	// Filter by the fixed platform service ID.
 	ProductID OptProductID `json:",omitempty,omitzero"`
@@ -10861,10 +10909,10 @@ type ListSpendParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// The authorized billing account whose currency and charges are used for this report.
+	// The billing account whose currency and charges the report uses; it must be authorized.
 	BillingAccountID int64
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -11783,10 +11831,10 @@ type ListSubscriptionsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -12137,7 +12185,7 @@ type ListTopUpsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -12366,7 +12414,7 @@ type ListTransactionsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64    `json:",omitempty,omitzero"`
 	From             OptDateTime `json:",omitempty,omitzero"`
 	// Exclusive.
@@ -12698,7 +12746,7 @@ type ListUsageChargesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Restrict to one of your accounts. All of them when omitted.
+	// Only this account of yours; all when omitted.
 	BillingAccountID OptInt64     `json:",omitempty,omitzero"`
 	ProductID        OptProductID `json:",omitempty,omitzero"`
 	ResourceID       OptString    `json:",omitempty,omitzero"`
@@ -12707,8 +12755,8 @@ type ListUsageChargesParams struct {
 	From          OptDateTime `json:",omitempty,omitzero"`
 	// Exclusive.
 	To OptDateTime `json:",omitempty,omitzero"`
-	// Restrict the account-authorized results to these projects. Omit for all projects and account-level
-	// records. This filter does not grant access to another billing account.
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
 	ProjectIds  []uuid.UUID `json:",omitempty"`
 	MeterID     OptUUID     `json:",omitempty,omitzero"`
 	StatementID OptUUID     `json:",omitempty,omitzero"`
@@ -13902,7 +13950,7 @@ func decodePayInvoiceParams(args [1]string, argsEscaped bool, r *http.Request) (
 
 // PreviewInvoicePaymentParams is parameters of preview-invoice-payment operation.
 type PreviewInvoicePaymentParams struct {
-	// As in paying. Considered only while the order's terms are not yet fixed.
+	// As in paying; used only while the order's terms are not fixed.
 	PromotionCode OptString `json:",omitempty,omitzero"`
 	// As in paying. True when omitted.
 	UseBalance OptBool `json:",omitempty,omitzero"`

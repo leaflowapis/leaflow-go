@@ -1855,8 +1855,8 @@ func (s *BackupService) encodeFields(e *jx.Encoder) {
 		e.Int64(s.RetainedCapacityGib)
 	}
 	{
-		e.FieldStart("prepaid_capacity_gib")
-		e.Int64(s.PrepaidCapacityGib)
+		e.FieldStart("pack_capacity_gib")
+		e.Int64(s.PackCapacityGib)
 	}
 	{
 		e.FieldStart("pricing")
@@ -1876,7 +1876,7 @@ var jsonFieldsNameOfBackupService = [10]string{
 	4: "subscription_id",
 	5: "release_subscription_ids",
 	6: "retained_capacity_gib",
-	7: "prepaid_capacity_gib",
+	7: "pack_capacity_gib",
 	8: "pricing",
 	9: "capacity_pack_pricing",
 }
@@ -1974,17 +1974,17 @@ func (s *BackupService) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"retained_capacity_gib\"")
 			}
-		case "prepaid_capacity_gib":
+		case "pack_capacity_gib":
 			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Int64()
-				s.PrepaidCapacityGib = int64(v)
+				s.PackCapacityGib = int64(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"prepaid_capacity_gib\"")
+				return errors.Wrap(err, "decode field \"pack_capacity_gib\"")
 			}
 		case "pricing":
 			requiredBitSet[1] |= 1 << 0
@@ -2165,8 +2165,8 @@ func (s *BillingChoice) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *BillingChoice) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("mode")
-		s.Mode.Encode(e)
+		e.FieldStart("usage_type")
+		s.UsageType.Encode(e)
 	}
 	{
 		if s.Period.Set {
@@ -2183,7 +2183,7 @@ func (s *BillingChoice) encodeFields(e *jx.Encoder) {
 }
 
 var jsonFieldsNameOfBillingChoice = [3]string{
-	0: "mode",
+	0: "usage_type",
 	1: "period",
 	2: "termination_policy",
 }
@@ -2197,15 +2197,15 @@ func (s *BillingChoice) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "mode":
+		case "usage_type":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.Mode.Decode(d); err != nil {
+				if err := s.UsageType.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"mode\"")
+				return errors.Wrap(err, "decode field \"usage_type\"")
 			}
 		case "period":
 			if err := func() error {
@@ -2283,42 +2283,42 @@ func (s *BillingChoice) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes BillingChoiceMode as json.
-func (s BillingChoiceMode) Encode(e *jx.Encoder) {
+// Encode encodes BillingChoiceUsageType as json.
+func (s BillingChoiceUsageType) Encode(e *jx.Encoder) {
 	e.Str(string(s))
 }
 
-// Decode decodes BillingChoiceMode from json.
-func (s *BillingChoiceMode) Decode(d *jx.Decoder) error {
+// Decode decodes BillingChoiceUsageType from json.
+func (s *BillingChoiceUsageType) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode BillingChoiceMode to nil")
+		return errors.New("invalid: unable to decode BillingChoiceUsageType to nil")
 	}
 	v, err := d.StrBytes()
 	if err != nil {
 		return err
 	}
 	// Try to use constant string.
-	switch BillingChoiceMode(v) {
-	case BillingChoiceModePrepaid:
-		*s = BillingChoiceModePrepaid
-	case BillingChoiceModePostpaid:
-		*s = BillingChoiceModePostpaid
+	switch BillingChoiceUsageType(v) {
+	case BillingChoiceUsageTypeLicensed:
+		*s = BillingChoiceUsageTypeLicensed
+	case BillingChoiceUsageTypeMetered:
+		*s = BillingChoiceUsageTypeMetered
 	default:
-		*s = BillingChoiceMode(v)
+		*s = BillingChoiceUsageType(v)
 	}
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s BillingChoiceMode) MarshalJSON() ([]byte, error) {
+func (s BillingChoiceUsageType) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *BillingChoiceMode) UnmarshalJSON(data []byte) error {
+func (s *BillingChoiceUsageType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -18389,8 +18389,8 @@ func (s *PricingOption) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PricingOption) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("mode")
-		s.Mode.Encode(e)
+		e.FieldStart("usage_type")
+		s.UsageType.Encode(e)
 	}
 	{
 		e.FieldStart("period")
@@ -18427,7 +18427,7 @@ func (s *PricingOption) encodeFields(e *jx.Encoder) {
 }
 
 var jsonFieldsNameOfPricingOption = [9]string{
-	0: "mode",
+	0: "usage_type",
 	1: "period",
 	2: "quantity_unit",
 	3: "amount",
@@ -18447,15 +18447,15 @@ func (s *PricingOption) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "mode":
+		case "usage_type":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.Mode.Decode(d); err != nil {
+				if err := s.UsageType.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"mode\"")
+				return errors.Wrap(err, "decode field \"usage_type\"")
 			}
 		case "period":
 			requiredBitSet[0] |= 1 << 1
@@ -18594,46 +18594,6 @@ func (s *PricingOption) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes PricingOptionMode as json.
-func (s PricingOptionMode) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes PricingOptionMode from json.
-func (s *PricingOptionMode) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode PricingOptionMode to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch PricingOptionMode(v) {
-	case PricingOptionModePrepaid:
-		*s = PricingOptionModePrepaid
-	case PricingOptionModePostpaid:
-		*s = PricingOptionModePostpaid
-	default:
-		*s = PricingOptionMode(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s PricingOptionMode) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *PricingOptionMode) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes PricingOptionQuantityUnit as json.
 func (s PricingOptionQuantityUnit) Encode(e *jx.Encoder) {
 	e.Str(string(s))
@@ -18752,6 +18712,46 @@ func (s PricingOptionUnit) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PricingOptionUnit) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PricingOptionUsageType as json.
+func (s PricingOptionUsageType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PricingOptionUsageType from json.
+func (s *PricingOptionUsageType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PricingOptionUsageType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PricingOptionUsageType(v) {
+	case PricingOptionUsageTypeLicensed:
+		*s = PricingOptionUsageTypeLicensed
+	case PricingOptionUsageTypeMetered:
+		*s = PricingOptionUsageTypeMetered
+	default:
+		*s = PricingOptionUsageType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PricingOptionUsageType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PricingOptionUsageType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
