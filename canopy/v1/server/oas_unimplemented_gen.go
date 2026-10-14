@@ -28,8 +28,8 @@ func (UnimplementedHandler) CreateAPIKey(ctx context.Context, req *CreateAPIKeyR
 
 // CreateChatCompletion implements create-chat-completion operation.
 //
-// Authenticated project inference. Billing ownership comes only from the verified project token; no
-// Canopy API key or project header is required.
+// Authenticated project inference in the OpenAI Chat Completions protocol, forwarded unchanged to an
+// upstream that speaks it. Billing ownership comes only from the verified project token.
 //
 // POST /v1/chat/completions
 func (UnimplementedHandler) CreateChatCompletion(ctx context.Context, req *ChatCompletionRequest) (r CreateChatCompletionRes, _ error) {
@@ -43,6 +43,17 @@ func (UnimplementedHandler) CreateChatCompletion(ctx context.Context, req *ChatC
 //
 // POST /v1/embeddings
 func (UnimplementedHandler) CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (r CreateEmbeddingsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateMessage implements create-message operation.
+//
+// Authenticated project inference in the Anthropic Messages protocol, forwarded unchanged to an
+// upstream that speaks it. Accepts the `x-api-key` header as well as Authorization. Streams Anthropic
+// SSE events when `stream` is true.
+//
+// POST /v1/messages
+func (UnimplementedHandler) CreateMessage(ctx context.Context, req NativeRequest) (r CreateMessageRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -118,6 +129,16 @@ func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPI
 //
 // POST /api/v1/keys/{keyId}/enable
 func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (r EnableAPIKeyRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GenerateContent implements generate-content operation.
+//
+// Authenticated project inference in the Gemini protocol, forwarded unchanged to an upstream that
+// speaks it. Accepts the `x-goog-api-key` header as well as Authorization.
+//
+// POST /v1beta/models/{model}:generateContent
+func (UnimplementedHandler) GenerateContent(ctx context.Context, req NativeRequest, params GenerateContentParams) (r GenerateContentRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -286,6 +307,15 @@ func (UnimplementedHandler) ListUsageByModel(ctx context.Context, params ListUsa
 //
 // POST /api/v1/keys/{keyId}/revoke
 func (UnimplementedHandler) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (r RevokeAPIKeyRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StreamGenerateContent implements stream-generate-content operation.
+//
+// The streaming form of generate-content. Use `alt=sse` for server-sent events.
+//
+// POST /v1beta/models/{model}:streamGenerateContent
+func (UnimplementedHandler) StreamGenerateContent(ctx context.Context, req NativeRequest, params StreamGenerateContentParams) (r StreamGenerateContentRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

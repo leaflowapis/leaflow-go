@@ -11,34 +11,26 @@ func (s *ClientActionRequest) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *CreateScheduleRequestBody) setDefaults() {
+func (s *SearchTasksRequestBody) setDefaults() {
 	{
-		val := string("UTC")
-		s.Timezone.SetTo(val)
-	}
-	{
-		val := CreateScheduleRequestBodyOverlapPolicy("buffer_one")
-		s.OverlapPolicy.SetTo(val)
-	}
-	{
-		val := int64(300)
-		s.CatchupSeconds.SetTo(val)
+		val := int(50)
+		s.Limit.SetTo(val)
 	}
 }
 
 // setDefaults set default value of fields.
-func (s *CreateSubagentRequestBody) setDefaults() {
+func (s *SearchThreadsRequestBody) setDefaults() {
 	{
-		val := CreateSubagentRequestBodyForkMode("all")
-		s.ForkMode.SetTo(val)
+		val := bool(false)
+		s.Archived.SetTo(val)
 	}
-}
-
-// setDefaults set default value of fields.
-func (s *CreateTaskRequestBody) setDefaults() {
 	{
-		val := int64(3600)
-		s.TimeoutSeconds.SetTo(val)
+		val := SearchThreadsRequestBodySort("attention")
+		s.Sort.SetTo(val)
+	}
+	{
+		val := int(50)
+		s.Limit.SetTo(val)
 	}
 }
 
@@ -51,13 +43,21 @@ func (s *SkillRequestBody) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *UpdateScheduleRequestBody) setDefaults() {
+func (s *TaskAction) setDefaults() {
+	{
+		val := int64(3600)
+		s.TimeoutSeconds.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *TaskTrigger) setDefaults() {
 	{
 		val := string("UTC")
 		s.Timezone.SetTo(val)
 	}
 	{
-		val := UpdateScheduleRequestBodyOverlapPolicy("buffer_one")
+		val := TaskTriggerOverlapPolicy("buffer_one")
 		s.OverlapPolicy.SetTo(val)
 	}
 	{

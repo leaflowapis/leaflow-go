@@ -52,6 +52,20 @@ func encodeCreateEmbeddingsRequest(
 	return nil
 }
 
+func encodeCreateMessageRequest(
+	req NativeRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateResponseRequest(
 	req *ResponseCreate,
 	r *http.Request,
@@ -68,6 +82,34 @@ func encodeCreateResponseRequest(
 
 func encodeCreateServiceRequest(
 	req *CreateServiceRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeGenerateContentRequest(
+	req NativeRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeStreamGenerateContentRequest(
+	req NativeRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

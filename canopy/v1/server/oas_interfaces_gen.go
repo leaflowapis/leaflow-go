@@ -13,6 +13,10 @@ type CreateEmbeddingsRes interface {
 	createEmbeddingsRes()
 }
 
+type CreateMessageRes interface {
+	createMessageRes()
+}
+
 type CreateResponseRes interface {
 	createResponseRes()
 }
@@ -35,6 +39,10 @@ type DisableAPIKeyRes interface {
 
 type EnableAPIKeyRes interface {
 	enableAPIKeyRes()
+}
+
+type GenerateContentRes interface {
+	generateContentRes()
 }
 
 type GetAPIKeyRes interface {
@@ -95,6 +103,10 @@ type ListUsageByModelRes interface {
 
 type RevokeAPIKeyRes interface {
 	revokeAPIKeyRes()
+}
+
+type StreamGenerateContentRes interface {
+	streamGenerateContentRes()
 }
 
 type UpdateAPIKeyRes interface {

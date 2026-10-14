@@ -41,8 +41,8 @@ type Invoker interface {
 	CreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (CreateAPIKeyRes, error)
 	// CreateChatCompletion invokes create-chat-completion operation.
 	//
-	// Authenticated project inference. Billing ownership comes only from the verified project token; no
-	// Canopy API key or project header is required.
+	// Authenticated project inference in the OpenAI Chat Completions protocol, forwarded unchanged to an
+	// upstream that speaks it. Billing ownership comes only from the verified project token.
 	//
 	// POST /v1/chat/completions
 	CreateChatCompletion(ctx context.Context, request *ChatCompletionRequest) (CreateChatCompletionRes, error)
@@ -53,6 +53,14 @@ type Invoker interface {
 	//
 	// POST /v1/embeddings
 	CreateEmbeddings(ctx context.Context, request *EmbeddingRequest) (CreateEmbeddingsRes, error)
+	// CreateMessage invokes create-message operation.
+	//
+	// Authenticated project inference in the Anthropic Messages protocol, forwarded unchanged to an
+	// upstream that speaks it. Accepts the `x-api-key` header as well as Authorization. Streams Anthropic
+	// SSE events when `stream` is true.
+	//
+	// POST /v1/messages
+	CreateMessage(ctx context.Context, request NativeRequest) (CreateMessageRes, error)
 	// CreateResponse invokes create-response operation.
 	//
 	// Supports JSON, SSE and native upstream response storage. Stored continuation is restricted to the
@@ -110,6 +118,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/keys/{keyId}/enable
 	EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (EnableAPIKeyRes, error)
+	// GenerateContent invokes generate-content operation.
+	//
+	// Authenticated project inference in the Gemini protocol, forwarded unchanged to an upstream that
+	// speaks it. Accepts the `x-goog-api-key` header as well as Authorization.
+	//
+	// POST /v1beta/models/{model}:generateContent
+	GenerateContent(ctx context.Context, request NativeRequest, params GenerateContentParams) (GenerateContentRes, error)
 	// GetAPIKey invokes get-api-key operation.
 	//
 	// Get an API key.
@@ -233,6 +248,12 @@ type Invoker interface {
 	//
 	// POST /api/v1/keys/{keyId}/revoke
 	RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (RevokeAPIKeyRes, error)
+	// StreamGenerateContent invokes stream-generate-content operation.
+	//
+	// The streaming form of generate-content. Use `alt=sse` for server-sent events.
+	//
+	// POST /v1beta/models/{model}:streamGenerateContent
+	StreamGenerateContent(ctx context.Context, request NativeRequest, params StreamGenerateContentParams) (StreamGenerateContentRes, error)
 	// UpdateAPIKey invokes update-api-key operation.
 	//
 	// Attributes only. Enabling, disabling and revoking each have their own endpoint.
@@ -418,8 +439,8 @@ func (c *Client) sendCreateAPIKey(ctx context.Context, request *CreateAPIKeyRequ
 
 // CreateChatCompletion invokes create-chat-completion operation.
 //
-// Authenticated project inference. Billing ownership comes only from the verified project token; no
-// Canopy API key or project header is required.
+// Authenticated project inference in the OpenAI Chat Completions protocol, forwarded unchanged to an
+// upstream that speaks it. Billing ownership comes only from the verified project token.
 //
 // POST /v1/chat/completions
 func (c *Client) CreateChatCompletion(ctx context.Context, request *ChatCompletionRequest) (CreateChatCompletionRes, error) {
@@ -661,6 +682,124 @@ func (c *Client) sendCreateEmbeddings(ctx context.Context, request *EmbeddingReq
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateEmbeddingsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateMessage invokes create-message operation.
+//
+// Authenticated project inference in the Anthropic Messages protocol, forwarded unchanged to an
+// upstream that speaks it. Accepts the `x-api-key` header as well as Authorization. Streams Anthropic
+// SSE events when `stream` is true.
+//
+// POST /v1/messages
+func (c *Client) CreateMessage(ctx context.Context, request NativeRequest) (CreateMessageRes, error) {
+	res, err := c.sendCreateMessage(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateMessage(ctx context.Context, request NativeRequest) (res CreateMessageRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-message"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/messages"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateMessageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/messages"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateMessageRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateMessageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateMessageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1440,6 +1579,142 @@ func (c *Client) sendEnableAPIKey(ctx context.Context, params EnableAPIKeyParams
 
 	stage = "DecodeResponse"
 	result, err := decodeEnableAPIKeyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GenerateContent invokes generate-content operation.
+//
+// Authenticated project inference in the Gemini protocol, forwarded unchanged to an upstream that
+// speaks it. Accepts the `x-goog-api-key` header as well as Authorization.
+//
+// POST /v1beta/models/{model}:generateContent
+func (c *Client) GenerateContent(ctx context.Context, request NativeRequest, params GenerateContentParams) (GenerateContentRes, error) {
+	res, err := c.sendGenerateContent(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendGenerateContent(ctx context.Context, request NativeRequest, params GenerateContentParams) (res GenerateContentRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("generate-content"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1beta/models/{model}:generateContent"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GenerateContentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/v1beta/models/"
+	{
+		// Encode "model" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "model",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Model))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":generateContent"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeGenerateContentRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GenerateContentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGenerateContentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3798,6 +4073,162 @@ func (c *Client) sendRevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams
 
 	stage = "DecodeResponse"
 	result, err := decodeRevokeAPIKeyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// StreamGenerateContent invokes stream-generate-content operation.
+//
+// The streaming form of generate-content. Use `alt=sse` for server-sent events.
+//
+// POST /v1beta/models/{model}:streamGenerateContent
+func (c *Client) StreamGenerateContent(ctx context.Context, request NativeRequest, params StreamGenerateContentParams) (StreamGenerateContentRes, error) {
+	res, err := c.sendStreamGenerateContent(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendStreamGenerateContent(ctx context.Context, request NativeRequest, params StreamGenerateContentParams) (res StreamGenerateContentRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("stream-generate-content"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1beta/models/{model}:streamGenerateContent"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StreamGenerateContentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/v1beta/models/"
+	{
+		// Encode "model" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "model",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Model))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":streamGenerateContent"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "alt" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "alt",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Alt.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeStreamGenerateContentRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, StreamGenerateContentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStreamGenerateContentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

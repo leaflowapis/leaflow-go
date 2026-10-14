@@ -20,8 +20,8 @@ type Handler interface {
 	CreateAPIKey(ctx context.Context, req *CreateAPIKeyRequestBody) (CreateAPIKeyRes, error)
 	// CreateChatCompletion implements create-chat-completion operation.
 	//
-	// Authenticated project inference. Billing ownership comes only from the verified project token; no
-	// Canopy API key or project header is required.
+	// Authenticated project inference in the OpenAI Chat Completions protocol, forwarded unchanged to an
+	// upstream that speaks it. Billing ownership comes only from the verified project token.
 	//
 	// POST /v1/chat/completions
 	CreateChatCompletion(ctx context.Context, req *ChatCompletionRequest) (CreateChatCompletionRes, error)
@@ -32,6 +32,14 @@ type Handler interface {
 	//
 	// POST /v1/embeddings
 	CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (CreateEmbeddingsRes, error)
+	// CreateMessage implements create-message operation.
+	//
+	// Authenticated project inference in the Anthropic Messages protocol, forwarded unchanged to an
+	// upstream that speaks it. Accepts the `x-api-key` header as well as Authorization. Streams Anthropic
+	// SSE events when `stream` is true.
+	//
+	// POST /v1/messages
+	CreateMessage(ctx context.Context, req NativeRequest) (CreateMessageRes, error)
 	// CreateResponse implements create-response operation.
 	//
 	// Supports JSON, SSE and native upstream response storage. Stored continuation is restricted to the
@@ -89,6 +97,13 @@ type Handler interface {
 	//
 	// POST /api/v1/keys/{keyId}/enable
 	EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (EnableAPIKeyRes, error)
+	// GenerateContent implements generate-content operation.
+	//
+	// Authenticated project inference in the Gemini protocol, forwarded unchanged to an upstream that
+	// speaks it. Accepts the `x-goog-api-key` header as well as Authorization.
+	//
+	// POST /v1beta/models/{model}:generateContent
+	GenerateContent(ctx context.Context, req NativeRequest, params GenerateContentParams) (GenerateContentRes, error)
 	// GetAPIKey implements get-api-key operation.
 	//
 	// Get an API key.
@@ -212,6 +227,12 @@ type Handler interface {
 	//
 	// POST /api/v1/keys/{keyId}/revoke
 	RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (RevokeAPIKeyRes, error)
+	// StreamGenerateContent implements stream-generate-content operation.
+	//
+	// The streaming form of generate-content. Use `alt=sse` for server-sent events.
+	//
+	// POST /v1beta/models/{model}:streamGenerateContent
+	StreamGenerateContent(ctx context.Context, req NativeRequest, params StreamGenerateContentParams) (StreamGenerateContentRes, error)
 	// UpdateAPIKey implements update-api-key operation.
 	//
 	// Attributes only. Enabling, disabling and revoking each have their own endpoint.

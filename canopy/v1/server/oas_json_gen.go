@@ -4153,6 +4153,10 @@ func (s *ModelEndpoint) Decode(d *jx.Decoder) error {
 		*s = ModelEndpointSlashV1SlashResponses
 	case ModelEndpointSlashV1SlashEmbeddings:
 		*s = ModelEndpointSlashV1SlashEmbeddings
+	case ModelEndpointSlashV1SlashMessages:
+		*s = ModelEndpointSlashV1SlashMessages
+	case ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent:
+		*s = ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent
 	case ModelEndpointSlashV1SlashImagesSlashGenerations:
 		*s = ModelEndpointSlashV1SlashImagesSlashGenerations
 	case ModelEndpointSlashV1SlashImagesSlashEdits:
@@ -5270,6 +5274,122 @@ func (s *Money) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode implements json.Marshaler.
+func (s NativeRequest) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s NativeRequest) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		if len(elem) != 0 {
+			e.Raw(elem)
+		}
+	}
+}
+
+// Decode decodes NativeRequest from json.
+func (s *NativeRequest) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NativeRequest to nil")
+	}
+	m := s.init()
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		var elem jx.Raw
+		if err := func() error {
+			v, err := d.RawAppend(nil)
+			elem = jx.Raw(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NativeRequest")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NativeRequest) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NativeRequest) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s NativeResponse) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s NativeResponse) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		if len(elem) != 0 {
+			e.Raw(elem)
+		}
+	}
+}
+
+// Decode decodes NativeResponse from json.
+func (s *NativeResponse) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NativeResponse to nil")
+	}
+	m := s.init()
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		var elem jx.Raw
+		if err := func() error {
+			v, err := d.RawAppend(nil)
+			elem = jx.Raw(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NativeResponse")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NativeResponse) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NativeResponse) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes bool as json.
 func (o NilBool) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -6168,73 +6288,6 @@ func (s OptNilStringArray) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNilStringArray) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes ReasoningDiagnosticsEffective as json.
-func (o OptReasoningDiagnosticsEffective) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes ReasoningDiagnosticsEffective from json.
-func (o *OptReasoningDiagnosticsEffective) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptReasoningDiagnosticsEffective to nil")
-	}
-	o.Set = true
-	o.Value = make(ReasoningDiagnosticsEffective)
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptReasoningDiagnosticsEffective) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptReasoningDiagnosticsEffective) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes ReasoningDiagnosticsTranslation as json.
-func (o OptReasoningDiagnosticsTranslation) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	e.Str(string(o.Value))
-}
-
-// Decode decodes ReasoningDiagnosticsTranslation from json.
-func (o *OptReasoningDiagnosticsTranslation) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptReasoningDiagnosticsTranslation to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptReasoningDiagnosticsTranslation) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptReasoningDiagnosticsTranslation) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -7288,24 +7341,10 @@ func (s *ReasoningDiagnostics) encodeFields(e *jx.Encoder) {
 		e.FieldStart("requested")
 		s.Requested.Encode(e)
 	}
-	{
-		if s.Effective.Set {
-			e.FieldStart("effective")
-			s.Effective.Encode(e)
-		}
-	}
-	{
-		if s.Translation.Set {
-			e.FieldStart("translation")
-			s.Translation.Encode(e)
-		}
-	}
 }
 
-var jsonFieldsNameOfReasoningDiagnostics = [3]string{
+var jsonFieldsNameOfReasoningDiagnostics = [1]string{
 	0: "requested",
-	1: "effective",
-	2: "translation",
 }
 
 // Decode decodes ReasoningDiagnostics from json.
@@ -7326,26 +7365,6 @@ func (s *ReasoningDiagnostics) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"requested\"")
-			}
-		case "effective":
-			if err := func() error {
-				s.Effective.Reset()
-				if err := s.Effective.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"effective\"")
-			}
-		case "translation":
-			if err := func() error {
-				s.Translation.Reset()
-				if err := s.Translation.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"translation\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -7404,64 +7423,6 @@ func (s *ReasoningDiagnostics) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s ReasoningDiagnosticsEffective) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields implements json.Marshaler.
-func (s ReasoningDiagnosticsEffective) encodeFields(e *jx.Encoder) {
-	for k, elem := range s {
-		e.FieldStart(k)
-
-		if len(elem) != 0 {
-			e.Raw(elem)
-		}
-	}
-}
-
-// Decode decodes ReasoningDiagnosticsEffective from json.
-func (s *ReasoningDiagnosticsEffective) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode ReasoningDiagnosticsEffective to nil")
-	}
-	m := s.init()
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		var elem jx.Raw
-		if err := func() error {
-			v, err := d.RawAppend(nil)
-			elem = jx.Raw(v)
-			if err != nil {
-				return err
-			}
-			return nil
-		}(); err != nil {
-			return errors.Wrapf(err, "decode field %q", k)
-		}
-		m[string(k)] = elem
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode ReasoningDiagnosticsEffective")
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s ReasoningDiagnosticsEffective) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ReasoningDiagnosticsEffective) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
 func (s ReasoningDiagnosticsRequested) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -7515,48 +7476,6 @@ func (s ReasoningDiagnosticsRequested) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ReasoningDiagnosticsRequested) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes ReasoningDiagnosticsTranslation as json.
-func (s ReasoningDiagnosticsTranslation) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes ReasoningDiagnosticsTranslation from json.
-func (s *ReasoningDiagnosticsTranslation) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode ReasoningDiagnosticsTranslation to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch ReasoningDiagnosticsTranslation(v) {
-	case ReasoningDiagnosticsTranslationTranslate:
-		*s = ReasoningDiagnosticsTranslationTranslate
-	case ReasoningDiagnosticsTranslationPassthrough:
-		*s = ReasoningDiagnosticsTranslationPassthrough
-	case ReasoningDiagnosticsTranslationStrip:
-		*s = ReasoningDiagnosticsTranslationStrip
-	default:
-		*s = ReasoningDiagnosticsTranslation(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s ReasoningDiagnosticsTranslation) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ReasoningDiagnosticsTranslation) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

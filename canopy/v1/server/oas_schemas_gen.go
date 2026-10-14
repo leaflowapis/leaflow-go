@@ -595,6 +595,23 @@ func (s CreateChatCompletionOKTextEventStream) Read(p []byte) (n int, err error)
 
 func (*CreateChatCompletionOKTextEventStream) createChatCompletionRes() {}
 
+// Anthropic message stream events.
+type CreateMessageOKTextEventStream struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s CreateMessageOKTextEventStream) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
+	return s.Data.Read(p)
+}
+
+func (*CreateMessageOKTextEventStream) createMessageRes() {}
+
 type CreateResponseOKTextEventStream struct {
 	Data io.Reader
 }
@@ -1355,13 +1372,16 @@ func (s *InferenceErrorStatusCode) SetResponse(val InferenceError) {
 	s.Response = val
 }
 
-func (*InferenceErrorStatusCode) createChatCompletionRes() {}
-func (*InferenceErrorStatusCode) createEmbeddingsRes()     {}
-func (*InferenceErrorStatusCode) createResponseRes()       {}
-func (*InferenceErrorStatusCode) deleteResponseRes()       {}
-func (*InferenceErrorStatusCode) getInferenceModelRes()    {}
-func (*InferenceErrorStatusCode) getResponseRes()          {}
-func (*InferenceErrorStatusCode) listInferenceModelsRes()  {}
+func (*InferenceErrorStatusCode) createChatCompletionRes()  {}
+func (*InferenceErrorStatusCode) createEmbeddingsRes()      {}
+func (*InferenceErrorStatusCode) createMessageRes()         {}
+func (*InferenceErrorStatusCode) createResponseRes()        {}
+func (*InferenceErrorStatusCode) deleteResponseRes()        {}
+func (*InferenceErrorStatusCode) generateContentRes()       {}
+func (*InferenceErrorStatusCode) getInferenceModelRes()     {}
+func (*InferenceErrorStatusCode) getResponseRes()           {}
+func (*InferenceErrorStatusCode) listInferenceModelsRes()   {}
+func (*InferenceErrorStatusCode) streamGenerateContentRes() {}
 
 // A draft is not yet issued. The draft invoice of an order shows base prices until it is paid, when
 // the discount is applied and it is issued; other drafts are private to administrators. An issued
@@ -2344,15 +2364,17 @@ func (s *ModelCapabilities) init() ModelCapabilities {
 type ModelEndpoint string
 
 const (
-	ModelEndpointSlashV1SlashChatSlashCompletions     ModelEndpoint = "/v1/chat/completions"
-	ModelEndpointSlashV1SlashResponses                ModelEndpoint = "/v1/responses"
-	ModelEndpointSlashV1SlashEmbeddings               ModelEndpoint = "/v1/embeddings"
-	ModelEndpointSlashV1SlashImagesSlashGenerations   ModelEndpoint = "/v1/images/generations"
-	ModelEndpointSlashV1SlashImagesSlashEdits         ModelEndpoint = "/v1/images/edits"
-	ModelEndpointSlashV1SlashAudioSlashTranscriptions ModelEndpoint = "/v1/audio/transcriptions"
-	ModelEndpointSlashV1SlashAudioSlashTranslations   ModelEndpoint = "/v1/audio/translations"
-	ModelEndpointSlashV1SlashAudioSlashSpeech         ModelEndpoint = "/v1/audio/speech"
-	ModelEndpointSlashV1SlashRealtime                 ModelEndpoint = "/v1/realtime"
+	ModelEndpointSlashV1SlashChatSlashCompletions                ModelEndpoint = "/v1/chat/completions"
+	ModelEndpointSlashV1SlashResponses                           ModelEndpoint = "/v1/responses"
+	ModelEndpointSlashV1SlashEmbeddings                          ModelEndpoint = "/v1/embeddings"
+	ModelEndpointSlashV1SlashMessages                            ModelEndpoint = "/v1/messages"
+	ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent ModelEndpoint = "/v1beta/models/{model}:generateContent"
+	ModelEndpointSlashV1SlashImagesSlashGenerations              ModelEndpoint = "/v1/images/generations"
+	ModelEndpointSlashV1SlashImagesSlashEdits                    ModelEndpoint = "/v1/images/edits"
+	ModelEndpointSlashV1SlashAudioSlashTranscriptions            ModelEndpoint = "/v1/audio/transcriptions"
+	ModelEndpointSlashV1SlashAudioSlashTranslations              ModelEndpoint = "/v1/audio/translations"
+	ModelEndpointSlashV1SlashAudioSlashSpeech                    ModelEndpoint = "/v1/audio/speech"
+	ModelEndpointSlashV1SlashRealtime                            ModelEndpoint = "/v1/realtime"
 )
 
 // AllValues returns all ModelEndpoint values.
@@ -2361,6 +2383,8 @@ func (ModelEndpoint) AllValues() []ModelEndpoint {
 		ModelEndpointSlashV1SlashChatSlashCompletions,
 		ModelEndpointSlashV1SlashResponses,
 		ModelEndpointSlashV1SlashEmbeddings,
+		ModelEndpointSlashV1SlashMessages,
+		ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent,
 		ModelEndpointSlashV1SlashImagesSlashGenerations,
 		ModelEndpointSlashV1SlashImagesSlashEdits,
 		ModelEndpointSlashV1SlashAudioSlashTranscriptions,
@@ -2378,6 +2402,10 @@ func (s ModelEndpoint) MarshalText() ([]byte, error) {
 	case ModelEndpointSlashV1SlashResponses:
 		return []byte(s), nil
 	case ModelEndpointSlashV1SlashEmbeddings:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashMessages:
+		return []byte(s), nil
+	case ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent:
 		return []byte(s), nil
 	case ModelEndpointSlashV1SlashImagesSlashGenerations:
 		return []byte(s), nil
@@ -2407,6 +2435,12 @@ func (s *ModelEndpoint) UnmarshalText(data []byte) error {
 		return nil
 	case ModelEndpointSlashV1SlashEmbeddings:
 		*s = ModelEndpointSlashV1SlashEmbeddings
+		return nil
+	case ModelEndpointSlashV1SlashMessages:
+		*s = ModelEndpointSlashV1SlashMessages
+		return nil
+	case ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent:
+		*s = ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent
 		return nil
 	case ModelEndpointSlashV1SlashImagesSlashGenerations:
 		*s = ModelEndpointSlashV1SlashImagesSlashGenerations
@@ -2817,6 +2851,36 @@ func (s *ModelUsageResource) SetRequests(val int64) {
 }
 
 type Money string
+
+// A request body in the endpoint's own protocol. Canopy reads only the model name and forwards the
+// rest unchanged.
+// Ref: #/components/schemas/NativeRequest
+type NativeRequest map[string]jx.Raw
+
+func (s *NativeRequest) init() NativeRequest {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// A response body in the endpoint's own protocol, as the upstream returned it.
+// Ref: #/components/schemas/NativeResponse
+type NativeResponse map[string]jx.Raw
+
+func (s *NativeResponse) init() NativeResponse {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+func (*NativeResponse) createMessageRes()   {}
+func (*NativeResponse) generateContentRes() {}
 
 // NewNilBool returns new NilBool with value set to v.
 func NewNilBool(v bool) NilBool {
@@ -4184,98 +4248,6 @@ func (o OptNilStringArray) Or(d []string) []string {
 	return d
 }
 
-// NewOptReasoningDiagnosticsEffective returns new OptReasoningDiagnosticsEffective with value set to v.
-func NewOptReasoningDiagnosticsEffective(v ReasoningDiagnosticsEffective) OptReasoningDiagnosticsEffective {
-	return OptReasoningDiagnosticsEffective{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptReasoningDiagnosticsEffective is optional ReasoningDiagnosticsEffective.
-type OptReasoningDiagnosticsEffective struct {
-	Value ReasoningDiagnosticsEffective
-	Set   bool
-}
-
-// IsSet returns true if OptReasoningDiagnosticsEffective was set.
-func (o OptReasoningDiagnosticsEffective) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptReasoningDiagnosticsEffective) Reset() {
-	var v ReasoningDiagnosticsEffective
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptReasoningDiagnosticsEffective) SetTo(v ReasoningDiagnosticsEffective) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptReasoningDiagnosticsEffective) Get() (v ReasoningDiagnosticsEffective, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptReasoningDiagnosticsEffective) Or(d ReasoningDiagnosticsEffective) ReasoningDiagnosticsEffective {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptReasoningDiagnosticsTranslation returns new OptReasoningDiagnosticsTranslation with value set to v.
-func NewOptReasoningDiagnosticsTranslation(v ReasoningDiagnosticsTranslation) OptReasoningDiagnosticsTranslation {
-	return OptReasoningDiagnosticsTranslation{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptReasoningDiagnosticsTranslation is optional ReasoningDiagnosticsTranslation.
-type OptReasoningDiagnosticsTranslation struct {
-	Value ReasoningDiagnosticsTranslation
-	Set   bool
-}
-
-// IsSet returns true if OptReasoningDiagnosticsTranslation was set.
-func (o OptReasoningDiagnosticsTranslation) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptReasoningDiagnosticsTranslation) Reset() {
-	var v ReasoningDiagnosticsTranslation
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptReasoningDiagnosticsTranslation) SetTo(v ReasoningDiagnosticsTranslation) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptReasoningDiagnosticsTranslation) Get() (v ReasoningDiagnosticsTranslation, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptReasoningDiagnosticsTranslation) Or(d ReasoningDiagnosticsTranslation) ReasoningDiagnosticsTranslation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptResponseCreateReasoning returns new OptResponseCreateReasoning with value set to v.
 func NewOptResponseCreateReasoning(v ResponseCreateReasoning) OptResponseCreateReasoning {
 	return OptResponseCreateReasoning{
@@ -4316,6 +4288,52 @@ func (o OptResponseCreateReasoning) Get() (v ResponseCreateReasoning, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptResponseCreateReasoning) Or(d ResponseCreateReasoning) ResponseCreateReasoning {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptStreamGenerateContentAlt returns new OptStreamGenerateContentAlt with value set to v.
+func NewOptStreamGenerateContentAlt(v StreamGenerateContentAlt) OptStreamGenerateContentAlt {
+	return OptStreamGenerateContentAlt{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptStreamGenerateContentAlt is optional StreamGenerateContentAlt.
+type OptStreamGenerateContentAlt struct {
+	Value StreamGenerateContentAlt
+	Set   bool
+}
+
+// IsSet returns true if OptStreamGenerateContentAlt was set.
+func (o OptStreamGenerateContentAlt) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptStreamGenerateContentAlt) Reset() {
+	var v StreamGenerateContentAlt
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptStreamGenerateContentAlt) SetTo(v StreamGenerateContentAlt) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptStreamGenerateContentAlt) Get() (v StreamGenerateContentAlt, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptStreamGenerateContentAlt) Or(d StreamGenerateContentAlt) StreamGenerateContentAlt {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4680,6 +4698,7 @@ func (s *QuoteItem) SetCurrency(val string) {
 // Ref: #/components/schemas/ReasoningCapabilities
 type ReasoningCapabilities struct {
 	Supported bool `json:"supported"`
+	// The effort values the upstream accepts, sent through unchanged. Agents send low, medium or high.
 	// Null means unknown; an empty array means effort is not configurable.
 	EffortLevels  []string                             `json:"effort_levels"`
 	DefaultEffort NilString                            `json:"default_effort"`
@@ -4775,9 +4794,7 @@ func (s *ReasoningCapabilitiesBudgetTokens) SetMax(val int) {
 
 // Ref: #/components/schemas/ReasoningDiagnostics
 type ReasoningDiagnostics struct {
-	Requested   ReasoningDiagnosticsRequested      `json:"requested"`
-	Effective   OptReasoningDiagnosticsEffective   `json:"effective"`
-	Translation OptReasoningDiagnosticsTranslation `json:"translation"`
+	Requested ReasoningDiagnosticsRequested `json:"requested"`
 }
 
 // GetRequested returns the value of Requested.
@@ -4785,40 +4802,9 @@ func (s *ReasoningDiagnostics) GetRequested() ReasoningDiagnosticsRequested {
 	return s.Requested
 }
 
-// GetEffective returns the value of Effective.
-func (s *ReasoningDiagnostics) GetEffective() OptReasoningDiagnosticsEffective {
-	return s.Effective
-}
-
-// GetTranslation returns the value of Translation.
-func (s *ReasoningDiagnostics) GetTranslation() OptReasoningDiagnosticsTranslation {
-	return s.Translation
-}
-
 // SetRequested sets the value of Requested.
 func (s *ReasoningDiagnostics) SetRequested(val ReasoningDiagnosticsRequested) {
 	s.Requested = val
-}
-
-// SetEffective sets the value of Effective.
-func (s *ReasoningDiagnostics) SetEffective(val OptReasoningDiagnosticsEffective) {
-	s.Effective = val
-}
-
-// SetTranslation sets the value of Translation.
-func (s *ReasoningDiagnostics) SetTranslation(val OptReasoningDiagnosticsTranslation) {
-	s.Translation = val
-}
-
-type ReasoningDiagnosticsEffective map[string]jx.Raw
-
-func (s *ReasoningDiagnosticsEffective) init() ReasoningDiagnosticsEffective {
-	m := *s
-	if m == nil {
-		m = map[string]jx.Raw{}
-		*s = m
-	}
-	return m
 }
 
 type ReasoningDiagnosticsRequested map[string]jx.Raw
@@ -4830,54 +4816,6 @@ func (s *ReasoningDiagnosticsRequested) init() ReasoningDiagnosticsRequested {
 		*s = m
 	}
 	return m
-}
-
-type ReasoningDiagnosticsTranslation string
-
-const (
-	ReasoningDiagnosticsTranslationTranslate   ReasoningDiagnosticsTranslation = "translate"
-	ReasoningDiagnosticsTranslationPassthrough ReasoningDiagnosticsTranslation = "passthrough"
-	ReasoningDiagnosticsTranslationStrip       ReasoningDiagnosticsTranslation = "strip"
-)
-
-// AllValues returns all ReasoningDiagnosticsTranslation values.
-func (ReasoningDiagnosticsTranslation) AllValues() []ReasoningDiagnosticsTranslation {
-	return []ReasoningDiagnosticsTranslation{
-		ReasoningDiagnosticsTranslationTranslate,
-		ReasoningDiagnosticsTranslationPassthrough,
-		ReasoningDiagnosticsTranslationStrip,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ReasoningDiagnosticsTranslation) MarshalText() ([]byte, error) {
-	switch s {
-	case ReasoningDiagnosticsTranslationTranslate:
-		return []byte(s), nil
-	case ReasoningDiagnosticsTranslationPassthrough:
-		return []byte(s), nil
-	case ReasoningDiagnosticsTranslationStrip:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ReasoningDiagnosticsTranslation) UnmarshalText(data []byte) error {
-	switch ReasoningDiagnosticsTranslation(data) {
-	case ReasoningDiagnosticsTranslationTranslate:
-		*s = ReasoningDiagnosticsTranslationTranslate
-		return nil
-	case ReasoningDiagnosticsTranslationPassthrough:
-		*s = ReasoningDiagnosticsTranslationPassthrough
-		return nil
-	case ReasoningDiagnosticsTranslationStrip:
-		*s = ReasoningDiagnosticsTranslationStrip
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/RequestResource
@@ -5612,6 +5550,57 @@ func (s *ServiceResourceStatus) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+type StreamGenerateContentAlt string
+
+const (
+	StreamGenerateContentAltSse StreamGenerateContentAlt = "sse"
+)
+
+// AllValues returns all StreamGenerateContentAlt values.
+func (StreamGenerateContentAlt) AllValues() []StreamGenerateContentAlt {
+	return []StreamGenerateContentAlt{
+		StreamGenerateContentAltSse,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StreamGenerateContentAlt) MarshalText() ([]byte, error) {
+	switch s {
+	case StreamGenerateContentAltSse:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StreamGenerateContentAlt) UnmarshalText(data []byte) error {
+	switch StreamGenerateContentAlt(data) {
+	case StreamGenerateContentAltSse:
+		*s = StreamGenerateContentAltSse
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Gemini GenerateContentResponse chunks.
+type StreamGenerateContentOK struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s StreamGenerateContentOK) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
+	return s.Data.Read(p)
+}
+
+func (*StreamGenerateContentOK) streamGenerateContentRes() {}
 
 // Ref: #/components/schemas/TokenPrice
 type TokenPrice struct {

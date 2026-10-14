@@ -211,6 +211,71 @@ func decodeEnableAPIKeyParams(args [1]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
+// GenerateContentParams is parameters of generate-content operation.
+type GenerateContentParams struct {
+	Model string
+}
+
+func unpackGenerateContentParams(packed middleware.Parameters) (params GenerateContentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "model",
+			In:   "path",
+		}
+		params.Model = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGenerateContentParams(args [1]string, argsEscaped bool, r *http.Request) (params GenerateContentParams, _ error) {
+	// Decode path: model.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "model",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Model = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "model",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetAPIKeyParams is parameters of get-api-key operation.
 type GetAPIKeyParams struct {
 	KeyId uuid.UUID
@@ -2610,6 +2675,138 @@ func decodeRevokeAPIKeyParams(args [1]string, argsEscaped bool, r *http.Request)
 		return params, &ogenerrors.DecodeParamError{
 			Name: "keyId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// StreamGenerateContentParams is parameters of stream-generate-content operation.
+type StreamGenerateContentParams struct {
+	Model string
+	Alt   OptStreamGenerateContentAlt `json:",omitempty,omitzero"`
+}
+
+func unpackStreamGenerateContentParams(packed middleware.Parameters) (params StreamGenerateContentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "model",
+			In:   "path",
+		}
+		params.Model = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "alt",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Alt = v.(OptStreamGenerateContentAlt)
+		}
+	}
+	return params
+}
+
+func decodeStreamGenerateContentParams(args [1]string, argsEscaped bool, r *http.Request) (params StreamGenerateContentParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: model.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "model",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Model = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "model",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: alt.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "alt",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotAltVal StreamGenerateContentAlt
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotAltVal = StreamGenerateContentAlt(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Alt.SetTo(paramsDotAltVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Alt.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "alt",
+			In:   "query",
 			Err:  err,
 		}
 	}

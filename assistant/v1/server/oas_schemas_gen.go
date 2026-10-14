@@ -19,26 +19,26 @@ func (s *ErrorStatusCode) Error() string {
 // AnswerQuestionNoContent is response for AnswerQuestion operation.
 type AnswerQuestionNoContent struct{}
 
-// Ref: #/components/schemas/AnswerRequestBody
-type AnswerRequestBody struct {
-	// A map from question id to the answer chosen.
-	Answers AnswerRequestBodyAnswers `json:"answers"`
+// Ref: #/components/schemas/AnswerQuestionRequestBody
+type AnswerQuestionRequestBody struct {
+	// A map from question id to the answer.
+	Answers AnswerQuestionRequestBodyAnswers `json:"answers"`
 }
 
 // GetAnswers returns the value of Answers.
-func (s *AnswerRequestBody) GetAnswers() AnswerRequestBodyAnswers {
+func (s *AnswerQuestionRequestBody) GetAnswers() AnswerQuestionRequestBodyAnswers {
 	return s.Answers
 }
 
 // SetAnswers sets the value of Answers.
-func (s *AnswerRequestBody) SetAnswers(val AnswerRequestBodyAnswers) {
+func (s *AnswerQuestionRequestBody) SetAnswers(val AnswerQuestionRequestBodyAnswers) {
 	s.Answers = val
 }
 
-// A map from question id to the answer chosen.
-type AnswerRequestBodyAnswers map[string]string
+// A map from question id to the answer.
+type AnswerQuestionRequestBodyAnswers map[string]string
 
-func (s *AnswerRequestBodyAnswers) init() AnswerRequestBodyAnswers {
+func (s *AnswerQuestionRequestBodyAnswers) init() AnswerQuestionRequestBodyAnswers {
 	m := *s
 	if m == nil {
 		m = map[string]string{}
@@ -47,108 +47,34 @@ func (s *AnswerRequestBodyAnswers) init() AnswerRequestBodyAnswers {
 	return m
 }
 
-// Ref: #/components/schemas/AttachmentResource
-type AttachmentResource struct {
-	ByteSize int64  `json:"byteSize"`
-	Filename string `json:"filename"`
-	// Null unless kind is image. Width and height are here so a client can hold the space before the image
-	// itself has loaded.
-	Height NilInt64 `json:"height"`
-	ID     string   `json:"id"`
-	// What this attachment is. A client renders an image in place and everything else as a file to
-	// download.
-	Kind AttachmentResourceKind `json:"kind"`
-	// Null unless kind is image.
-	Width NilInt64 `json:"width"`
-}
-
-// GetByteSize returns the value of ByteSize.
-func (s *AttachmentResource) GetByteSize() int64 {
-	return s.ByteSize
-}
-
-// GetFilename returns the value of Filename.
-func (s *AttachmentResource) GetFilename() string {
-	return s.Filename
-}
-
-// GetHeight returns the value of Height.
-func (s *AttachmentResource) GetHeight() NilInt64 {
-	return s.Height
-}
-
-// GetID returns the value of ID.
-func (s *AttachmentResource) GetID() string {
-	return s.ID
-}
-
-// GetKind returns the value of Kind.
-func (s *AttachmentResource) GetKind() AttachmentResourceKind {
-	return s.Kind
-}
-
-// GetWidth returns the value of Width.
-func (s *AttachmentResource) GetWidth() NilInt64 {
-	return s.Width
-}
-
-// SetByteSize sets the value of ByteSize.
-func (s *AttachmentResource) SetByteSize(val int64) {
-	s.ByteSize = val
-}
-
-// SetFilename sets the value of Filename.
-func (s *AttachmentResource) SetFilename(val string) {
-	s.Filename = val
-}
-
-// SetHeight sets the value of Height.
-func (s *AttachmentResource) SetHeight(val NilInt64) {
-	s.Height = val
-}
-
-// SetID sets the value of ID.
-func (s *AttachmentResource) SetID(val string) {
-	s.ID = val
-}
-
-// SetKind sets the value of Kind.
-func (s *AttachmentResource) SetKind(val AttachmentResourceKind) {
-	s.Kind = val
-}
-
-// SetWidth sets the value of Width.
-func (s *AttachmentResource) SetWidth(val NilInt64) {
-	s.Width = val
-}
-
-// What this attachment is. A client renders an image in place and everything else as a file to
-// download.
-type AttachmentResourceKind string
+// `manual` asks a person before tools that change something, `guardian` lets an automatic reviewer
+// decide, `yolo` runs them without asking.
+// Ref: #/components/schemas/ApprovalMode
+type ApprovalMode string
 
 const (
-	AttachmentResourceKindImage  AttachmentResourceKind = "image"
-	AttachmentResourceKindText   AttachmentResourceKind = "text"
-	AttachmentResourceKindBinary AttachmentResourceKind = "binary"
+	ApprovalModeManual   ApprovalMode = "manual"
+	ApprovalModeGuardian ApprovalMode = "guardian"
+	ApprovalModeYolo     ApprovalMode = "yolo"
 )
 
-// AllValues returns all AttachmentResourceKind values.
-func (AttachmentResourceKind) AllValues() []AttachmentResourceKind {
-	return []AttachmentResourceKind{
-		AttachmentResourceKindImage,
-		AttachmentResourceKindText,
-		AttachmentResourceKindBinary,
+// AllValues returns all ApprovalMode values.
+func (ApprovalMode) AllValues() []ApprovalMode {
+	return []ApprovalMode{
+		ApprovalModeManual,
+		ApprovalModeGuardian,
+		ApprovalModeYolo,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s AttachmentResourceKind) MarshalText() ([]byte, error) {
+func (s ApprovalMode) MarshalText() ([]byte, error) {
 	switch s {
-	case AttachmentResourceKindImage:
+	case ApprovalModeManual:
 		return []byte(s), nil
-	case AttachmentResourceKindText:
+	case ApprovalModeGuardian:
 		return []byte(s), nil
-	case AttachmentResourceKindBinary:
+	case ApprovalModeYolo:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -156,16 +82,138 @@ func (s AttachmentResourceKind) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AttachmentResourceKind) UnmarshalText(data []byte) error {
-	switch AttachmentResourceKind(data) {
-	case AttachmentResourceKindImage:
-		*s = AttachmentResourceKindImage
+func (s *ApprovalMode) UnmarshalText(data []byte) error {
+	switch ApprovalMode(data) {
+	case ApprovalModeManual:
+		*s = ApprovalModeManual
 		return nil
-	case AttachmentResourceKindText:
-		*s = AttachmentResourceKindText
+	case ApprovalModeGuardian:
+		*s = ApprovalModeGuardian
 		return nil
-	case AttachmentResourceKindBinary:
-		*s = AttachmentResourceKindBinary
+	case ApprovalModeYolo:
+		*s = ApprovalModeYolo
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AttachmentResource
+type AttachmentResource struct {
+	ID string `json:"id"`
+	// A client renders an image in place and everything else as a file to download.
+	Type     AttachmentResourceType `json:"type"`
+	Filename string                 `json:"filename"`
+	ByteSize int64                  `json:"byteSize"`
+	// Null unless type is image. Lets a client hold the space before the image loads.
+	Width NilInt64 `json:"width"`
+	// Null unless type is image.
+	Height NilInt64 `json:"height"`
+}
+
+// GetID returns the value of ID.
+func (s *AttachmentResource) GetID() string {
+	return s.ID
+}
+
+// GetType returns the value of Type.
+func (s *AttachmentResource) GetType() AttachmentResourceType {
+	return s.Type
+}
+
+// GetFilename returns the value of Filename.
+func (s *AttachmentResource) GetFilename() string {
+	return s.Filename
+}
+
+// GetByteSize returns the value of ByteSize.
+func (s *AttachmentResource) GetByteSize() int64 {
+	return s.ByteSize
+}
+
+// GetWidth returns the value of Width.
+func (s *AttachmentResource) GetWidth() NilInt64 {
+	return s.Width
+}
+
+// GetHeight returns the value of Height.
+func (s *AttachmentResource) GetHeight() NilInt64 {
+	return s.Height
+}
+
+// SetID sets the value of ID.
+func (s *AttachmentResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetType sets the value of Type.
+func (s *AttachmentResource) SetType(val AttachmentResourceType) {
+	s.Type = val
+}
+
+// SetFilename sets the value of Filename.
+func (s *AttachmentResource) SetFilename(val string) {
+	s.Filename = val
+}
+
+// SetByteSize sets the value of ByteSize.
+func (s *AttachmentResource) SetByteSize(val int64) {
+	s.ByteSize = val
+}
+
+// SetWidth sets the value of Width.
+func (s *AttachmentResource) SetWidth(val NilInt64) {
+	s.Width = val
+}
+
+// SetHeight sets the value of Height.
+func (s *AttachmentResource) SetHeight(val NilInt64) {
+	s.Height = val
+}
+
+// A client renders an image in place and everything else as a file to download.
+type AttachmentResourceType string
+
+const (
+	AttachmentResourceTypeImage  AttachmentResourceType = "image"
+	AttachmentResourceTypeText   AttachmentResourceType = "text"
+	AttachmentResourceTypeBinary AttachmentResourceType = "binary"
+)
+
+// AllValues returns all AttachmentResourceType values.
+func (AttachmentResourceType) AllValues() []AttachmentResourceType {
+	return []AttachmentResourceType{
+		AttachmentResourceTypeImage,
+		AttachmentResourceTypeText,
+		AttachmentResourceTypeBinary,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AttachmentResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case AttachmentResourceTypeImage:
+		return []byte(s), nil
+	case AttachmentResourceTypeText:
+		return []byte(s), nil
+	case AttachmentResourceTypeBinary:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AttachmentResourceType) UnmarshalText(data []byte) error {
+	switch AttachmentResourceType(data) {
+	case AttachmentResourceTypeImage:
+		*s = AttachmentResourceTypeImage
+		return nil
+	case AttachmentResourceTypeText:
+		*s = AttachmentResourceTypeText
+		return nil
+	case AttachmentResourceTypeBinary:
+		*s = AttachmentResourceTypeBinary
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -225,14 +273,14 @@ func (s *BindingCodeResponseBody) SetExpiresAt(val time.Time) {
 
 // Ref: #/components/schemas/BindingResource
 type BindingResource struct {
-	ChannelId  uuid.UUID                `json:"channelId"`
-	ConnState  BindingResourceConnState `json:"connState"`
-	CreatedAt  time.Time                `json:"createdAt"`
-	ID         uuid.UUID                `json:"id"`
-	PeerName   string                   `json:"peerName"`
-	Platform   string                   `json:"platform"`
-	Status     BindingResourceStatus    `json:"status"`
-	VerifiedAt NilDateTime              `json:"verifiedAt"`
+	ChannelId        uuid.UUID                       `json:"channelId"`
+	ConnectionStatus BindingResourceConnectionStatus `json:"connectionStatus"`
+	CreatedAt        time.Time                       `json:"createdAt"`
+	ID               uuid.UUID                       `json:"id"`
+	PeerName         string                          `json:"peerName"`
+	Platform         string                          `json:"platform"`
+	Status           BindingResourceStatus           `json:"status"`
+	VerifiedAt       NilDateTime                     `json:"verifiedAt"`
 }
 
 // GetChannelId returns the value of ChannelId.
@@ -240,9 +288,9 @@ func (s *BindingResource) GetChannelId() uuid.UUID {
 	return s.ChannelId
 }
 
-// GetConnState returns the value of ConnState.
-func (s *BindingResource) GetConnState() BindingResourceConnState {
-	return s.ConnState
+// GetConnectionStatus returns the value of ConnectionStatus.
+func (s *BindingResource) GetConnectionStatus() BindingResourceConnectionStatus {
+	return s.ConnectionStatus
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -280,9 +328,9 @@ func (s *BindingResource) SetChannelId(val uuid.UUID) {
 	s.ChannelId = val
 }
 
-// SetConnState sets the value of ConnState.
-func (s *BindingResource) SetConnState(val BindingResourceConnState) {
-	s.ConnState = val
+// SetConnectionStatus sets the value of ConnectionStatus.
+func (s *BindingResource) SetConnectionStatus(val BindingResourceConnectionStatus) {
+	s.ConnectionStatus = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -315,35 +363,35 @@ func (s *BindingResource) SetVerifiedAt(val NilDateTime) {
 	s.VerifiedAt = val
 }
 
-type BindingResourceConnState string
+type BindingResourceConnectionStatus string
 
 const (
-	BindingResourceConnStateLoggedOut BindingResourceConnState = "logged_out"
-	BindingResourceConnStateQrPending BindingResourceConnState = "qr_pending"
-	BindingResourceConnStateOnline    BindingResourceConnState = "online"
-	BindingResourceConnStateExpired   BindingResourceConnState = "expired"
+	BindingResourceConnectionStatusLoggedOut BindingResourceConnectionStatus = "logged_out"
+	BindingResourceConnectionStatusQrPending BindingResourceConnectionStatus = "qr_pending"
+	BindingResourceConnectionStatusOnline    BindingResourceConnectionStatus = "online"
+	BindingResourceConnectionStatusExpired   BindingResourceConnectionStatus = "expired"
 )
 
-// AllValues returns all BindingResourceConnState values.
-func (BindingResourceConnState) AllValues() []BindingResourceConnState {
-	return []BindingResourceConnState{
-		BindingResourceConnStateLoggedOut,
-		BindingResourceConnStateQrPending,
-		BindingResourceConnStateOnline,
-		BindingResourceConnStateExpired,
+// AllValues returns all BindingResourceConnectionStatus values.
+func (BindingResourceConnectionStatus) AllValues() []BindingResourceConnectionStatus {
+	return []BindingResourceConnectionStatus{
+		BindingResourceConnectionStatusLoggedOut,
+		BindingResourceConnectionStatusQrPending,
+		BindingResourceConnectionStatusOnline,
+		BindingResourceConnectionStatusExpired,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s BindingResourceConnState) MarshalText() ([]byte, error) {
+func (s BindingResourceConnectionStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case BindingResourceConnStateLoggedOut:
+	case BindingResourceConnectionStatusLoggedOut:
 		return []byte(s), nil
-	case BindingResourceConnStateQrPending:
+	case BindingResourceConnectionStatusQrPending:
 		return []byte(s), nil
-	case BindingResourceConnStateOnline:
+	case BindingResourceConnectionStatusOnline:
 		return []byte(s), nil
-	case BindingResourceConnStateExpired:
+	case BindingResourceConnectionStatusExpired:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -351,19 +399,19 @@ func (s BindingResourceConnState) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BindingResourceConnState) UnmarshalText(data []byte) error {
-	switch BindingResourceConnState(data) {
-	case BindingResourceConnStateLoggedOut:
-		*s = BindingResourceConnStateLoggedOut
+func (s *BindingResourceConnectionStatus) UnmarshalText(data []byte) error {
+	switch BindingResourceConnectionStatus(data) {
+	case BindingResourceConnectionStatusLoggedOut:
+		*s = BindingResourceConnectionStatusLoggedOut
 		return nil
-	case BindingResourceConnStateQrPending:
-		*s = BindingResourceConnStateQrPending
+	case BindingResourceConnectionStatusQrPending:
+		*s = BindingResourceConnectionStatusQrPending
 		return nil
-	case BindingResourceConnStateOnline:
-		*s = BindingResourceConnStateOnline
+	case BindingResourceConnectionStatusOnline:
+		*s = BindingResourceConnectionStatusOnline
 		return nil
-	case BindingResourceConnStateExpired:
-		*s = BindingResourceConnStateExpired
+	case BindingResourceConnectionStatusExpired:
+		*s = BindingResourceConnectionStatusExpired
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -418,9 +466,6 @@ func (s *BindingResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// CancelTaskOK is response for CancelTask operation.
-type CancelTaskOK struct{}
-
 // CancelUploadOK is response for CancelUpload operation.
 type CancelUploadOK struct{}
 
@@ -428,16 +473,16 @@ type CancelUploadOK struct{}
 type ChannelResource struct {
 	AllowFrom []string `json:"allowFrom"`
 	// How far this channel is from working. Only `online` receives messages and can issue binding codes.
-	ConnState ChannelResourceConnState `json:"connState"`
-	CreatedAt time.Time                `json:"createdAt"`
-	ID        uuid.UUID                `json:"id"`
-	Name      string                   `json:"name"`
-	Platform  string                   `json:"platform"`
+	ConnectionStatus ChannelResourceConnectionStatus `json:"connectionStatus"`
+	CreatedAt        time.Time                       `json:"createdAt"`
+	ID               uuid.UUID                       `json:"id"`
+	Name             string                          `json:"name"`
+	Platform         string                          `json:"platform"`
 	// The state of the long-lived connection right now. Always `stopped` for webhook platforms.
-	RuntimeState ChannelResourceRuntimeState `json:"runtimeState"`
-	SenderPolicy ChannelResourceSenderPolicy `json:"senderPolicy"`
-	Status       ChannelResourceStatus       `json:"status"`
-	UpdatedAt    time.Time                   `json:"updatedAt"`
+	RuntimeStatus ChannelResourceRuntimeStatus `json:"runtimeStatus"`
+	SenderPolicy  ChannelResourceSenderPolicy  `json:"senderPolicy"`
+	Status        ChannelResourceStatus        `json:"status"`
+	UpdatedAt     time.Time                    `json:"updatedAt"`
 	// The webhook path, for gateway configuration and for diagnosis.
 	WebhookPath string `json:"webhookPath"`
 	// The webhook address to paste into that platform's console. Null when the deployment declares no
@@ -450,9 +495,9 @@ func (s *ChannelResource) GetAllowFrom() []string {
 	return s.AllowFrom
 }
 
-// GetConnState returns the value of ConnState.
-func (s *ChannelResource) GetConnState() ChannelResourceConnState {
-	return s.ConnState
+// GetConnectionStatus returns the value of ConnectionStatus.
+func (s *ChannelResource) GetConnectionStatus() ChannelResourceConnectionStatus {
+	return s.ConnectionStatus
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -475,9 +520,9 @@ func (s *ChannelResource) GetPlatform() string {
 	return s.Platform
 }
 
-// GetRuntimeState returns the value of RuntimeState.
-func (s *ChannelResource) GetRuntimeState() ChannelResourceRuntimeState {
-	return s.RuntimeState
+// GetRuntimeStatus returns the value of RuntimeStatus.
+func (s *ChannelResource) GetRuntimeStatus() ChannelResourceRuntimeStatus {
+	return s.RuntimeStatus
 }
 
 // GetSenderPolicy returns the value of SenderPolicy.
@@ -510,9 +555,9 @@ func (s *ChannelResource) SetAllowFrom(val []string) {
 	s.AllowFrom = val
 }
 
-// SetConnState sets the value of ConnState.
-func (s *ChannelResource) SetConnState(val ChannelResourceConnState) {
-	s.ConnState = val
+// SetConnectionStatus sets the value of ConnectionStatus.
+func (s *ChannelResource) SetConnectionStatus(val ChannelResourceConnectionStatus) {
+	s.ConnectionStatus = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -535,9 +580,9 @@ func (s *ChannelResource) SetPlatform(val string) {
 	s.Platform = val
 }
 
-// SetRuntimeState sets the value of RuntimeState.
-func (s *ChannelResource) SetRuntimeState(val ChannelResourceRuntimeState) {
-	s.RuntimeState = val
+// SetRuntimeStatus sets the value of RuntimeStatus.
+func (s *ChannelResource) SetRuntimeStatus(val ChannelResourceRuntimeStatus) {
+	s.RuntimeStatus = val
 }
 
 // SetSenderPolicy sets the value of SenderPolicy.
@@ -566,35 +611,35 @@ func (s *ChannelResource) SetWebhookUrl(val NilString) {
 }
 
 // How far this channel is from working. Only `online` receives messages and can issue binding codes.
-type ChannelResourceConnState string
+type ChannelResourceConnectionStatus string
 
 const (
-	ChannelResourceConnStateLoggedOut ChannelResourceConnState = "logged_out"
-	ChannelResourceConnStateQrPending ChannelResourceConnState = "qr_pending"
-	ChannelResourceConnStateOnline    ChannelResourceConnState = "online"
-	ChannelResourceConnStateExpired   ChannelResourceConnState = "expired"
+	ChannelResourceConnectionStatusLoggedOut ChannelResourceConnectionStatus = "logged_out"
+	ChannelResourceConnectionStatusQrPending ChannelResourceConnectionStatus = "qr_pending"
+	ChannelResourceConnectionStatusOnline    ChannelResourceConnectionStatus = "online"
+	ChannelResourceConnectionStatusExpired   ChannelResourceConnectionStatus = "expired"
 )
 
-// AllValues returns all ChannelResourceConnState values.
-func (ChannelResourceConnState) AllValues() []ChannelResourceConnState {
-	return []ChannelResourceConnState{
-		ChannelResourceConnStateLoggedOut,
-		ChannelResourceConnStateQrPending,
-		ChannelResourceConnStateOnline,
-		ChannelResourceConnStateExpired,
+// AllValues returns all ChannelResourceConnectionStatus values.
+func (ChannelResourceConnectionStatus) AllValues() []ChannelResourceConnectionStatus {
+	return []ChannelResourceConnectionStatus{
+		ChannelResourceConnectionStatusLoggedOut,
+		ChannelResourceConnectionStatusQrPending,
+		ChannelResourceConnectionStatusOnline,
+		ChannelResourceConnectionStatusExpired,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ChannelResourceConnState) MarshalText() ([]byte, error) {
+func (s ChannelResourceConnectionStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case ChannelResourceConnStateLoggedOut:
+	case ChannelResourceConnectionStatusLoggedOut:
 		return []byte(s), nil
-	case ChannelResourceConnStateQrPending:
+	case ChannelResourceConnectionStatusQrPending:
 		return []byte(s), nil
-	case ChannelResourceConnStateOnline:
+	case ChannelResourceConnectionStatusOnline:
 		return []byte(s), nil
-	case ChannelResourceConnStateExpired:
+	case ChannelResourceConnectionStatusExpired:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -602,19 +647,19 @@ func (s ChannelResourceConnState) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ChannelResourceConnState) UnmarshalText(data []byte) error {
-	switch ChannelResourceConnState(data) {
-	case ChannelResourceConnStateLoggedOut:
-		*s = ChannelResourceConnStateLoggedOut
+func (s *ChannelResourceConnectionStatus) UnmarshalText(data []byte) error {
+	switch ChannelResourceConnectionStatus(data) {
+	case ChannelResourceConnectionStatusLoggedOut:
+		*s = ChannelResourceConnectionStatusLoggedOut
 		return nil
-	case ChannelResourceConnStateQrPending:
-		*s = ChannelResourceConnStateQrPending
+	case ChannelResourceConnectionStatusQrPending:
+		*s = ChannelResourceConnectionStatusQrPending
 		return nil
-	case ChannelResourceConnStateOnline:
-		*s = ChannelResourceConnStateOnline
+	case ChannelResourceConnectionStatusOnline:
+		*s = ChannelResourceConnectionStatusOnline
 		return nil
-	case ChannelResourceConnStateExpired:
-		*s = ChannelResourceConnStateExpired
+	case ChannelResourceConnectionStatusExpired:
+		*s = ChannelResourceConnectionStatusExpired
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -622,27 +667,27 @@ func (s *ChannelResourceConnState) UnmarshalText(data []byte) error {
 }
 
 // The state of the long-lived connection right now. Always `stopped` for webhook platforms.
-type ChannelResourceRuntimeState string
+type ChannelResourceRuntimeStatus string
 
 const (
-	ChannelResourceRuntimeStateStopped ChannelResourceRuntimeState = "stopped"
-	ChannelResourceRuntimeStateRunning ChannelResourceRuntimeState = "running"
+	ChannelResourceRuntimeStatusStopped ChannelResourceRuntimeStatus = "stopped"
+	ChannelResourceRuntimeStatusRunning ChannelResourceRuntimeStatus = "running"
 )
 
-// AllValues returns all ChannelResourceRuntimeState values.
-func (ChannelResourceRuntimeState) AllValues() []ChannelResourceRuntimeState {
-	return []ChannelResourceRuntimeState{
-		ChannelResourceRuntimeStateStopped,
-		ChannelResourceRuntimeStateRunning,
+// AllValues returns all ChannelResourceRuntimeStatus values.
+func (ChannelResourceRuntimeStatus) AllValues() []ChannelResourceRuntimeStatus {
+	return []ChannelResourceRuntimeStatus{
+		ChannelResourceRuntimeStatusStopped,
+		ChannelResourceRuntimeStatusRunning,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ChannelResourceRuntimeState) MarshalText() ([]byte, error) {
+func (s ChannelResourceRuntimeStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case ChannelResourceRuntimeStateStopped:
+	case ChannelResourceRuntimeStatusStopped:
 		return []byte(s), nil
-	case ChannelResourceRuntimeStateRunning:
+	case ChannelResourceRuntimeStatusRunning:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -650,13 +695,13 @@ func (s ChannelResourceRuntimeState) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ChannelResourceRuntimeState) UnmarshalText(data []byte) error {
-	switch ChannelResourceRuntimeState(data) {
-	case ChannelResourceRuntimeStateStopped:
-		*s = ChannelResourceRuntimeStateStopped
+func (s *ChannelResourceRuntimeStatus) UnmarshalText(data []byte) error {
+	switch ChannelResourceRuntimeStatus(data) {
+	case ChannelResourceRuntimeStatusStopped:
+		*s = ChannelResourceRuntimeStatusStopped
 		return nil
-	case ChannelResourceRuntimeStateRunning:
-		*s = ChannelResourceRuntimeStateRunning
+	case ChannelResourceRuntimeStatusRunning:
+		*s = ChannelResourceRuntimeStatusRunning
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -756,16 +801,16 @@ func (s *ChannelResourceStatus) UnmarshalText(data []byte) error {
 type ChannelWithSecretResponseBody struct {
 	AllowFrom []string `json:"allowFrom"`
 	// How far this channel is from working. Only `online` receives messages and can issue binding codes.
-	ConnState ChannelWithSecretResponseBodyConnState `json:"connState"`
-	CreatedAt time.Time                              `json:"createdAt"`
-	ID        uuid.UUID                              `json:"id"`
-	Name      string                                 `json:"name"`
-	Platform  string                                 `json:"platform"`
+	ConnectionStatus ChannelWithSecretResponseBodyConnectionStatus `json:"connectionStatus"`
+	CreatedAt        time.Time                                     `json:"createdAt"`
+	ID               uuid.UUID                                     `json:"id"`
+	Name             string                                        `json:"name"`
+	Platform         string                                        `json:"platform"`
 	// The state of the long-lived connection right now. Always `stopped` for webhook platforms.
-	RuntimeState ChannelWithSecretResponseBodyRuntimeState `json:"runtimeState"`
-	SenderPolicy ChannelWithSecretResponseBodySenderPolicy `json:"senderPolicy"`
-	Status       ChannelWithSecretResponseBodyStatus       `json:"status"`
-	UpdatedAt    time.Time                                 `json:"updatedAt"`
+	RuntimeStatus ChannelWithSecretResponseBodyRuntimeStatus `json:"runtimeStatus"`
+	SenderPolicy  ChannelWithSecretResponseBodySenderPolicy  `json:"senderPolicy"`
+	Status        ChannelWithSecretResponseBodyStatus        `json:"status"`
+	UpdatedAt     time.Time                                  `json:"updatedAt"`
 	// The webhook path, for gateway configuration and for diagnosis.
 	WebhookPath string `json:"webhookPath"`
 	// The webhook secret we generated, to paste into that platform's console. It cannot be retrieved again
@@ -782,9 +827,9 @@ func (s *ChannelWithSecretResponseBody) GetAllowFrom() []string {
 	return s.AllowFrom
 }
 
-// GetConnState returns the value of ConnState.
-func (s *ChannelWithSecretResponseBody) GetConnState() ChannelWithSecretResponseBodyConnState {
-	return s.ConnState
+// GetConnectionStatus returns the value of ConnectionStatus.
+func (s *ChannelWithSecretResponseBody) GetConnectionStatus() ChannelWithSecretResponseBodyConnectionStatus {
+	return s.ConnectionStatus
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -807,9 +852,9 @@ func (s *ChannelWithSecretResponseBody) GetPlatform() string {
 	return s.Platform
 }
 
-// GetRuntimeState returns the value of RuntimeState.
-func (s *ChannelWithSecretResponseBody) GetRuntimeState() ChannelWithSecretResponseBodyRuntimeState {
-	return s.RuntimeState
+// GetRuntimeStatus returns the value of RuntimeStatus.
+func (s *ChannelWithSecretResponseBody) GetRuntimeStatus() ChannelWithSecretResponseBodyRuntimeStatus {
+	return s.RuntimeStatus
 }
 
 // GetSenderPolicy returns the value of SenderPolicy.
@@ -847,9 +892,9 @@ func (s *ChannelWithSecretResponseBody) SetAllowFrom(val []string) {
 	s.AllowFrom = val
 }
 
-// SetConnState sets the value of ConnState.
-func (s *ChannelWithSecretResponseBody) SetConnState(val ChannelWithSecretResponseBodyConnState) {
-	s.ConnState = val
+// SetConnectionStatus sets the value of ConnectionStatus.
+func (s *ChannelWithSecretResponseBody) SetConnectionStatus(val ChannelWithSecretResponseBodyConnectionStatus) {
+	s.ConnectionStatus = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -872,9 +917,9 @@ func (s *ChannelWithSecretResponseBody) SetPlatform(val string) {
 	s.Platform = val
 }
 
-// SetRuntimeState sets the value of RuntimeState.
-func (s *ChannelWithSecretResponseBody) SetRuntimeState(val ChannelWithSecretResponseBodyRuntimeState) {
-	s.RuntimeState = val
+// SetRuntimeStatus sets the value of RuntimeStatus.
+func (s *ChannelWithSecretResponseBody) SetRuntimeStatus(val ChannelWithSecretResponseBodyRuntimeStatus) {
+	s.RuntimeStatus = val
 }
 
 // SetSenderPolicy sets the value of SenderPolicy.
@@ -908,35 +953,35 @@ func (s *ChannelWithSecretResponseBody) SetWebhookUrl(val NilString) {
 }
 
 // How far this channel is from working. Only `online` receives messages and can issue binding codes.
-type ChannelWithSecretResponseBodyConnState string
+type ChannelWithSecretResponseBodyConnectionStatus string
 
 const (
-	ChannelWithSecretResponseBodyConnStateLoggedOut ChannelWithSecretResponseBodyConnState = "logged_out"
-	ChannelWithSecretResponseBodyConnStateQrPending ChannelWithSecretResponseBodyConnState = "qr_pending"
-	ChannelWithSecretResponseBodyConnStateOnline    ChannelWithSecretResponseBodyConnState = "online"
-	ChannelWithSecretResponseBodyConnStateExpired   ChannelWithSecretResponseBodyConnState = "expired"
+	ChannelWithSecretResponseBodyConnectionStatusLoggedOut ChannelWithSecretResponseBodyConnectionStatus = "logged_out"
+	ChannelWithSecretResponseBodyConnectionStatusQrPending ChannelWithSecretResponseBodyConnectionStatus = "qr_pending"
+	ChannelWithSecretResponseBodyConnectionStatusOnline    ChannelWithSecretResponseBodyConnectionStatus = "online"
+	ChannelWithSecretResponseBodyConnectionStatusExpired   ChannelWithSecretResponseBodyConnectionStatus = "expired"
 )
 
-// AllValues returns all ChannelWithSecretResponseBodyConnState values.
-func (ChannelWithSecretResponseBodyConnState) AllValues() []ChannelWithSecretResponseBodyConnState {
-	return []ChannelWithSecretResponseBodyConnState{
-		ChannelWithSecretResponseBodyConnStateLoggedOut,
-		ChannelWithSecretResponseBodyConnStateQrPending,
-		ChannelWithSecretResponseBodyConnStateOnline,
-		ChannelWithSecretResponseBodyConnStateExpired,
+// AllValues returns all ChannelWithSecretResponseBodyConnectionStatus values.
+func (ChannelWithSecretResponseBodyConnectionStatus) AllValues() []ChannelWithSecretResponseBodyConnectionStatus {
+	return []ChannelWithSecretResponseBodyConnectionStatus{
+		ChannelWithSecretResponseBodyConnectionStatusLoggedOut,
+		ChannelWithSecretResponseBodyConnectionStatusQrPending,
+		ChannelWithSecretResponseBodyConnectionStatusOnline,
+		ChannelWithSecretResponseBodyConnectionStatusExpired,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ChannelWithSecretResponseBodyConnState) MarshalText() ([]byte, error) {
+func (s ChannelWithSecretResponseBodyConnectionStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case ChannelWithSecretResponseBodyConnStateLoggedOut:
+	case ChannelWithSecretResponseBodyConnectionStatusLoggedOut:
 		return []byte(s), nil
-	case ChannelWithSecretResponseBodyConnStateQrPending:
+	case ChannelWithSecretResponseBodyConnectionStatusQrPending:
 		return []byte(s), nil
-	case ChannelWithSecretResponseBodyConnStateOnline:
+	case ChannelWithSecretResponseBodyConnectionStatusOnline:
 		return []byte(s), nil
-	case ChannelWithSecretResponseBodyConnStateExpired:
+	case ChannelWithSecretResponseBodyConnectionStatusExpired:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -944,19 +989,19 @@ func (s ChannelWithSecretResponseBodyConnState) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ChannelWithSecretResponseBodyConnState) UnmarshalText(data []byte) error {
-	switch ChannelWithSecretResponseBodyConnState(data) {
-	case ChannelWithSecretResponseBodyConnStateLoggedOut:
-		*s = ChannelWithSecretResponseBodyConnStateLoggedOut
+func (s *ChannelWithSecretResponseBodyConnectionStatus) UnmarshalText(data []byte) error {
+	switch ChannelWithSecretResponseBodyConnectionStatus(data) {
+	case ChannelWithSecretResponseBodyConnectionStatusLoggedOut:
+		*s = ChannelWithSecretResponseBodyConnectionStatusLoggedOut
 		return nil
-	case ChannelWithSecretResponseBodyConnStateQrPending:
-		*s = ChannelWithSecretResponseBodyConnStateQrPending
+	case ChannelWithSecretResponseBodyConnectionStatusQrPending:
+		*s = ChannelWithSecretResponseBodyConnectionStatusQrPending
 		return nil
-	case ChannelWithSecretResponseBodyConnStateOnline:
-		*s = ChannelWithSecretResponseBodyConnStateOnline
+	case ChannelWithSecretResponseBodyConnectionStatusOnline:
+		*s = ChannelWithSecretResponseBodyConnectionStatusOnline
 		return nil
-	case ChannelWithSecretResponseBodyConnStateExpired:
-		*s = ChannelWithSecretResponseBodyConnStateExpired
+	case ChannelWithSecretResponseBodyConnectionStatusExpired:
+		*s = ChannelWithSecretResponseBodyConnectionStatusExpired
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -964,27 +1009,27 @@ func (s *ChannelWithSecretResponseBodyConnState) UnmarshalText(data []byte) erro
 }
 
 // The state of the long-lived connection right now. Always `stopped` for webhook platforms.
-type ChannelWithSecretResponseBodyRuntimeState string
+type ChannelWithSecretResponseBodyRuntimeStatus string
 
 const (
-	ChannelWithSecretResponseBodyRuntimeStateStopped ChannelWithSecretResponseBodyRuntimeState = "stopped"
-	ChannelWithSecretResponseBodyRuntimeStateRunning ChannelWithSecretResponseBodyRuntimeState = "running"
+	ChannelWithSecretResponseBodyRuntimeStatusStopped ChannelWithSecretResponseBodyRuntimeStatus = "stopped"
+	ChannelWithSecretResponseBodyRuntimeStatusRunning ChannelWithSecretResponseBodyRuntimeStatus = "running"
 )
 
-// AllValues returns all ChannelWithSecretResponseBodyRuntimeState values.
-func (ChannelWithSecretResponseBodyRuntimeState) AllValues() []ChannelWithSecretResponseBodyRuntimeState {
-	return []ChannelWithSecretResponseBodyRuntimeState{
-		ChannelWithSecretResponseBodyRuntimeStateStopped,
-		ChannelWithSecretResponseBodyRuntimeStateRunning,
+// AllValues returns all ChannelWithSecretResponseBodyRuntimeStatus values.
+func (ChannelWithSecretResponseBodyRuntimeStatus) AllValues() []ChannelWithSecretResponseBodyRuntimeStatus {
+	return []ChannelWithSecretResponseBodyRuntimeStatus{
+		ChannelWithSecretResponseBodyRuntimeStatusStopped,
+		ChannelWithSecretResponseBodyRuntimeStatusRunning,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ChannelWithSecretResponseBodyRuntimeState) MarshalText() ([]byte, error) {
+func (s ChannelWithSecretResponseBodyRuntimeStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case ChannelWithSecretResponseBodyRuntimeStateStopped:
+	case ChannelWithSecretResponseBodyRuntimeStatusStopped:
 		return []byte(s), nil
-	case ChannelWithSecretResponseBodyRuntimeStateRunning:
+	case ChannelWithSecretResponseBodyRuntimeStatusRunning:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -992,13 +1037,13 @@ func (s ChannelWithSecretResponseBodyRuntimeState) MarshalText() ([]byte, error)
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ChannelWithSecretResponseBodyRuntimeState) UnmarshalText(data []byte) error {
-	switch ChannelWithSecretResponseBodyRuntimeState(data) {
-	case ChannelWithSecretResponseBodyRuntimeStateStopped:
-		*s = ChannelWithSecretResponseBodyRuntimeStateStopped
+func (s *ChannelWithSecretResponseBodyRuntimeStatus) UnmarshalText(data []byte) error {
+	switch ChannelWithSecretResponseBodyRuntimeStatus(data) {
+	case ChannelWithSecretResponseBodyRuntimeStatusStopped:
+		*s = ChannelWithSecretResponseBodyRuntimeStatusStopped
 		return nil
-	case ChannelWithSecretResponseBodyRuntimeStateRunning:
-		*s = ChannelWithSecretResponseBodyRuntimeStateRunning
+	case ChannelWithSecretResponseBodyRuntimeStatusRunning:
+		*s = ChannelWithSecretResponseBodyRuntimeStatusRunning
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -1094,43 +1139,47 @@ func (s *ChannelWithSecretResponseBodyStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/Choice
-type Choice struct {
-	Description string `json:"description"`
+// Ref: #/components/schemas/ChoiceResource
+type ChoiceResource struct {
 	Label       string `json:"label"`
-}
-
-// GetDescription returns the value of Description.
-func (s *Choice) GetDescription() string {
-	return s.Description
+	Description string `json:"description"`
 }
 
 // GetLabel returns the value of Label.
-func (s *Choice) GetLabel() string {
+func (s *ChoiceResource) GetLabel() string {
 	return s.Label
 }
 
-// SetDescription sets the value of Description.
-func (s *Choice) SetDescription(val string) {
-	s.Description = val
+// GetDescription returns the value of Description.
+func (s *ChoiceResource) GetDescription() string {
+	return s.Description
 }
 
 // SetLabel sets the value of Label.
-func (s *Choice) SetLabel(val string) {
+func (s *ChoiceResource) SetLabel(val string) {
 	s.Label = val
 }
 
-// The shape of a tool in the OpenAI Chat Completions API, plus `readOnly` and `timeoutMs`.
+// SetDescription sets the value of Description.
+func (s *ChoiceResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// A tool in the OpenAI Chat Completions format, plus `readOnly` and `timeoutMs`.
 // Ref: #/components/schemas/ClientActionRequest
 type ClientActionRequest struct {
-	Function ClientFunctionRequest `json:"function"`
-	// True when the action changes nothing outside the client. Anything else goes through this
-	// conversation's approval before it runs.
+	Type     OptClientActionRequestType `json:"type"`
+	Function ClientFunctionRequest      `json:"function"`
+	// True when the action changes nothing outside the client. Other actions go through approval before
+	// they run.
 	ReadOnly bool `json:"readOnly"`
-	// How long the assistant should wait for this action. Omit for the default; longer values are capped.
+	// How long the assistant waits for this action. Longer values are capped.
 	TimeoutMs OptInt64 `json:"timeoutMs"`
-	// Only functions are supported.
-	Type OptClientActionRequestType `json:"type"`
+}
+
+// GetType returns the value of Type.
+func (s *ClientActionRequest) GetType() OptClientActionRequestType {
+	return s.Type
 }
 
 // GetFunction returns the value of Function.
@@ -1148,9 +1197,9 @@ func (s *ClientActionRequest) GetTimeoutMs() OptInt64 {
 	return s.TimeoutMs
 }
 
-// GetType returns the value of Type.
-func (s *ClientActionRequest) GetType() OptClientActionRequestType {
-	return s.Type
+// SetType sets the value of Type.
+func (s *ClientActionRequest) SetType(val OptClientActionRequestType) {
+	s.Type = val
 }
 
 // SetFunction sets the value of Function.
@@ -1168,12 +1217,6 @@ func (s *ClientActionRequest) SetTimeoutMs(val OptInt64) {
 	s.TimeoutMs = val
 }
 
-// SetType sets the value of Type.
-func (s *ClientActionRequest) SetType(val OptClientActionRequestType) {
-	s.Type = val
-}
-
-// Only functions are supported.
 type ClientActionRequestType string
 
 const (
@@ -1208,16 +1251,11 @@ func (s *ClientActionRequestType) UnmarshalText(data []byte) error {
 	}
 }
 
-// A `data-*` part as it was sent.
+// A `data-*` part as the client sent it.
 // Ref: #/components/schemas/ClientContextPart
 type ClientContextPart struct {
-	Data ClientContextPartData `json:"data"`
 	Type string                `json:"type"`
-}
-
-// GetData returns the value of Data.
-func (s *ClientContextPart) GetData() ClientContextPartData {
-	return s.Data
+	Data ClientContextPartData `json:"data"`
 }
 
 // GetType returns the value of Type.
@@ -1225,14 +1263,19 @@ func (s *ClientContextPart) GetType() string {
 	return s.Type
 }
 
-// SetData sets the value of Data.
-func (s *ClientContextPart) SetData(val ClientContextPartData) {
-	s.Data = val
+// GetData returns the value of Data.
+func (s *ClientContextPart) GetData() ClientContextPartData {
+	return s.Data
 }
 
 // SetType sets the value of Type.
 func (s *ClientContextPart) SetType(val string) {
 	s.Type = val
+}
+
+// SetData sets the value of Data.
+func (s *ClientContextPart) SetData(val ClientContextPartData) {
+	s.Data = val
 }
 
 type ClientContextPartData map[string]jx.Raw
@@ -1246,28 +1289,17 @@ func (s *ClientContextPartData) init() ClientContextPartData {
 	return m
 }
 
-// Which client this is and what it can do, so the assistant can ask it to do those things while it
-// answers. What the operator is looking at travels as `data-*` parts on the message.
-//
-// Send `actions` only when they differ from the last message on this conversation. Sending the block
-// without `actions` keeps whatever was declared before.
+// Which client this is and which actions it offers, so the assistant can ask it to run them while it
+// answers. Send `actions` only when they changed since the last message; omitting them keeps what was
+// declared before.
 // Ref: #/components/schemas/ClientContextRequest
 type ClientContextRequest struct {
-	// The actions on offer right now.
-	//
-	// Omit it when nothing changed since the last message. Send `[]` to say there is nothing on offer —
-	// those are different: a client that moves off the page it was attached to has to be able to say so,
-	// or the assistant keeps calling actions that no longer make sense.
-	Actions OptNilClientActionRequestArray `json:"actions"`
-	// Identifies this client while it stays open. Any stable string; one per tab or process.
+	// Identifies this client while it stays open; one per tab or process.
 	ClientId string `json:"clientId"`
-	// How the client calls itself, for example "Leaflow console (web)".
+	// How the client names itself, for example "Leaflow console (web)".
 	Label OptString `json:"label"`
-}
-
-// GetActions returns the value of Actions.
-func (s *ClientContextRequest) GetActions() OptNilClientActionRequestArray {
-	return s.Actions
+	// The actions on offer now. `[]` withdraws all of them; null keeps the previous declaration.
+	Actions OptNilClientActionRequestArray `json:"actions"`
 }
 
 // GetClientId returns the value of ClientId.
@@ -1280,9 +1312,9 @@ func (s *ClientContextRequest) GetLabel() OptString {
 	return s.Label
 }
 
-// SetActions sets the value of Actions.
-func (s *ClientContextRequest) SetActions(val OptNilClientActionRequestArray) {
-	s.Actions = val
+// GetActions returns the value of Actions.
+func (s *ClientContextRequest) GetActions() OptNilClientActionRequestArray {
+	return s.Actions
 }
 
 // SetClientId sets the value of ClientId.
@@ -1295,30 +1327,20 @@ func (s *ClientContextRequest) SetLabel(val OptString) {
 	s.Label = val
 }
 
-// The function object from the OpenAI tools format.
+// SetActions sets the value of Actions.
+func (s *ClientContextRequest) SetActions(val OptNilClientActionRequestArray) {
+	s.Actions = val
+}
+
 // Ref: #/components/schemas/ClientFunctionRequest
 type ClientFunctionRequest struct {
-	// What the action does, written for the model. An action without one can only be guessed at from its
-	// name. The 1024 ceiling is OpenAI's own limit on `tools[].function.description`, not a number chosen
-	// here: over it the upstream call fails with `string_above_max_length`, and refusing at submission is
-	// the clearer of the two places to refuse. It was 500, which ran out at about six enumerated entries
-	// — an action that must list what it accepts had nowhere to put the list.
+	Name string `json:"name"`
+	// What the action does, written for the model. OpenAI's limit on tool descriptions is 1024 characters.
 	Description string `json:"description"`
-	// The MCP and Anthropic spelling of `parameters`. Give one or the other, not both.
-	InputSchema OptNilClientFunctionRequestInputSchema `json:"inputSchema"`
-	Name        string                                 `json:"name"`
-	// JSON Schema for the arguments. Omit for an action that takes none.
+	// JSON Schema for the arguments. Omit for an action without arguments.
 	Parameters OptNilClientFunctionRequestParameters `json:"parameters"`
-}
-
-// GetDescription returns the value of Description.
-func (s *ClientFunctionRequest) GetDescription() string {
-	return s.Description
-}
-
-// GetInputSchema returns the value of InputSchema.
-func (s *ClientFunctionRequest) GetInputSchema() OptNilClientFunctionRequestInputSchema {
-	return s.InputSchema
+	// The MCP and Anthropic name for `parameters`. Give one or the other.
+	InputSchema OptNilClientFunctionRequestInputSchema `json:"inputSchema"`
 }
 
 // GetName returns the value of Name.
@@ -1326,19 +1348,19 @@ func (s *ClientFunctionRequest) GetName() string {
 	return s.Name
 }
 
+// GetDescription returns the value of Description.
+func (s *ClientFunctionRequest) GetDescription() string {
+	return s.Description
+}
+
 // GetParameters returns the value of Parameters.
 func (s *ClientFunctionRequest) GetParameters() OptNilClientFunctionRequestParameters {
 	return s.Parameters
 }
 
-// SetDescription sets the value of Description.
-func (s *ClientFunctionRequest) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetInputSchema sets the value of InputSchema.
-func (s *ClientFunctionRequest) SetInputSchema(val OptNilClientFunctionRequestInputSchema) {
-	s.InputSchema = val
+// GetInputSchema returns the value of InputSchema.
+func (s *ClientFunctionRequest) GetInputSchema() OptNilClientFunctionRequestInputSchema {
+	return s.InputSchema
 }
 
 // SetName sets the value of Name.
@@ -1346,12 +1368,22 @@ func (s *ClientFunctionRequest) SetName(val string) {
 	s.Name = val
 }
 
+// SetDescription sets the value of Description.
+func (s *ClientFunctionRequest) SetDescription(val string) {
+	s.Description = val
+}
+
 // SetParameters sets the value of Parameters.
 func (s *ClientFunctionRequest) SetParameters(val OptNilClientFunctionRequestParameters) {
 	s.Parameters = val
 }
 
-// The MCP and Anthropic spelling of `parameters`. Give one or the other, not both.
+// SetInputSchema sets the value of InputSchema.
+func (s *ClientFunctionRequest) SetInputSchema(val OptNilClientFunctionRequestInputSchema) {
+	s.InputSchema = val
+}
+
+// The MCP and Anthropic name for `parameters`. Give one or the other.
 type ClientFunctionRequestInputSchema map[string]jx.Raw
 
 func (s *ClientFunctionRequestInputSchema) init() ClientFunctionRequestInputSchema {
@@ -1363,7 +1395,7 @@ func (s *ClientFunctionRequestInputSchema) init() ClientFunctionRequestInputSche
 	return m
 }
 
-// JSON Schema for the arguments. Omit for an action that takes none.
+// JSON Schema for the arguments. Omit for an action without arguments.
 type ClientFunctionRequestParameters map[string]jx.Raw
 
 func (s *ClientFunctionRequestParameters) init() ClientFunctionRequestParameters {
@@ -1373,6 +1405,136 @@ func (s *ClientFunctionRequestParameters) init() ClientFunctionRequestParameters
 		*s = m
 	}
 	return m
+}
+
+// Ref: #/components/schemas/CommandListResponseBody
+type CommandListResponseBody struct {
+	Commands []CommandResource `json:"commands"`
+}
+
+// GetCommands returns the value of Commands.
+func (s *CommandListResponseBody) GetCommands() []CommandResource {
+	return s.Commands
+}
+
+// SetCommands sets the value of Commands.
+func (s *CommandListResponseBody) SetCommands(val []CommandResource) {
+	s.Commands = val
+}
+
+// Ref: #/components/schemas/CommandResource
+type CommandResource struct {
+	// The command without the slash, for example `status`.
+	Name string `json:"name"`
+	// Other names that run the same command.
+	Aliases     []string `json:"aliases"`
+	Description string   `json:"description"`
+	// How to write the arguments, for example `<model id>`. Empty when the command takes none.
+	ArgumentHint string `json:"argumentHint"`
+}
+
+// GetName returns the value of Name.
+func (s *CommandResource) GetName() string {
+	return s.Name
+}
+
+// GetAliases returns the value of Aliases.
+func (s *CommandResource) GetAliases() []string {
+	return s.Aliases
+}
+
+// GetDescription returns the value of Description.
+func (s *CommandResource) GetDescription() string {
+	return s.Description
+}
+
+// GetArgumentHint returns the value of ArgumentHint.
+func (s *CommandResource) GetArgumentHint() string {
+	return s.ArgumentHint
+}
+
+// SetName sets the value of Name.
+func (s *CommandResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetAliases sets the value of Aliases.
+func (s *CommandResource) SetAliases(val []string) {
+	s.Aliases = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CommandResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetArgumentHint sets the value of ArgumentHint.
+func (s *CommandResource) SetArgumentHint(val string) {
+	s.ArgumentHint = val
+}
+
+// Ref: #/components/schemas/CommandResultResource
+type CommandResultResource struct {
+	// The command that ran, after resolving aliases.
+	Name string `json:"name"`
+	// The result as plain text.
+	Message string `json:"message"`
+	// The conversation after the command, or the new conversation for /new.
+	Thread NilThreadResource `json:"thread"`
+	// The turn the command started, for example the compaction turn of /compact.
+	TurnId NilString `json:"turnId"`
+	// Set by /status.
+	Status NilStatusReportResource `json:"status"`
+}
+
+// GetName returns the value of Name.
+func (s *CommandResultResource) GetName() string {
+	return s.Name
+}
+
+// GetMessage returns the value of Message.
+func (s *CommandResultResource) GetMessage() string {
+	return s.Message
+}
+
+// GetThread returns the value of Thread.
+func (s *CommandResultResource) GetThread() NilThreadResource {
+	return s.Thread
+}
+
+// GetTurnId returns the value of TurnId.
+func (s *CommandResultResource) GetTurnId() NilString {
+	return s.TurnId
+}
+
+// GetStatus returns the value of Status.
+func (s *CommandResultResource) GetStatus() NilStatusReportResource {
+	return s.Status
+}
+
+// SetName sets the value of Name.
+func (s *CommandResultResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetMessage sets the value of Message.
+func (s *CommandResultResource) SetMessage(val string) {
+	s.Message = val
+}
+
+// SetThread sets the value of Thread.
+func (s *CommandResultResource) SetThread(val NilThreadResource) {
+	s.Thread = val
+}
+
+// SetTurnId sets the value of TurnId.
+func (s *CommandResultResource) SetTurnId(val NilString) {
+	s.TurnId = val
+}
+
+// SetStatus sets the value of Status.
+func (s *CommandResultResource) SetStatus(val NilStatusReportResource) {
+	s.Status = val
 }
 
 // Ref: #/components/schemas/CompleteUploadRequestBody
@@ -1390,87 +1552,33 @@ func (s *CompleteUploadRequestBody) SetPolicyId(val string) {
 	s.PolicyId = val
 }
 
-// Ref: #/components/schemas/ContextResource
-type ContextResource struct {
-	CompactAt NilInt64 `json:"compactAt"`
-	// What kinds of input the model behind this conversation accepts, as modality names: text, image.
-	//
-	// This governs images and nothing else. Text and binary attachments reach every model: a small text
-	// file is placed inline, a large one is read on demand, and a binary is downloaded onto a cloud
-	// instance — none of which asks the model to see a picture. So this decides whether pasting a
-	// screenshot does anything, not whether the attach control exists. Hiding file upload on a text-only
-	// model takes away something that would have worked.
-	//
-	// This describes the effective model, including a replacement chosen through fallback, rather than the
-	// saved preference. An empty list means no effective model is available to describe; it is not a claim
-	// that every model rejects files.
-	InputModalities []string `json:"inputModalities"`
-	// The effective Canopy model id for the running turn or the next turn when idle. Null when no model
-	// can be selected; window and compactAt are then null and inputModalities is empty.
-	Model  NilString `json:"model"`
-	Used   NilInt64  `json:"used"`
-	WarnAt int64     `json:"warnAt"`
-	Window NilInt64  `json:"window"`
+// How much of the model's context window the conversation occupies.
+// Ref: #/components/schemas/ContextUsageResource
+type ContextUsageResource struct {
+	// Prompt tokens of the latest model request. Null before the first request.
+	UsedTokens NilInt64 `json:"usedTokens"`
+	// The context window of the conversation's model. Null when the model is not in the catalogue.
+	WindowTokens NilInt64 `json:"windowTokens"`
 }
 
-// GetCompactAt returns the value of CompactAt.
-func (s *ContextResource) GetCompactAt() NilInt64 {
-	return s.CompactAt
+// GetUsedTokens returns the value of UsedTokens.
+func (s *ContextUsageResource) GetUsedTokens() NilInt64 {
+	return s.UsedTokens
 }
 
-// GetInputModalities returns the value of InputModalities.
-func (s *ContextResource) GetInputModalities() []string {
-	return s.InputModalities
+// GetWindowTokens returns the value of WindowTokens.
+func (s *ContextUsageResource) GetWindowTokens() NilInt64 {
+	return s.WindowTokens
 }
 
-// GetModel returns the value of Model.
-func (s *ContextResource) GetModel() NilString {
-	return s.Model
+// SetUsedTokens sets the value of UsedTokens.
+func (s *ContextUsageResource) SetUsedTokens(val NilInt64) {
+	s.UsedTokens = val
 }
 
-// GetUsed returns the value of Used.
-func (s *ContextResource) GetUsed() NilInt64 {
-	return s.Used
-}
-
-// GetWarnAt returns the value of WarnAt.
-func (s *ContextResource) GetWarnAt() int64 {
-	return s.WarnAt
-}
-
-// GetWindow returns the value of Window.
-func (s *ContextResource) GetWindow() NilInt64 {
-	return s.Window
-}
-
-// SetCompactAt sets the value of CompactAt.
-func (s *ContextResource) SetCompactAt(val NilInt64) {
-	s.CompactAt = val
-}
-
-// SetInputModalities sets the value of InputModalities.
-func (s *ContextResource) SetInputModalities(val []string) {
-	s.InputModalities = val
-}
-
-// SetModel sets the value of Model.
-func (s *ContextResource) SetModel(val NilString) {
-	s.Model = val
-}
-
-// SetUsed sets the value of Used.
-func (s *ContextResource) SetUsed(val NilInt64) {
-	s.Used = val
-}
-
-// SetWarnAt sets the value of WarnAt.
-func (s *ContextResource) SetWarnAt(val int64) {
-	s.WarnAt = val
-}
-
-// SetWindow sets the value of Window.
-func (s *ContextResource) SetWindow(val NilInt64) {
-	s.Window = val
+// SetWindowTokens sets the value of WindowTokens.
+func (s *ContextUsageResource) SetWindowTokens(val NilInt64) {
+	s.WindowTokens = val
 }
 
 // Ref: #/components/schemas/CreateChannelRequestBody
@@ -1614,305 +1722,17 @@ func (s *CreateFolderRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/CreateScheduleRequestBody
-type CreateScheduleRequestBody struct {
-	Name            string                                    `json:"name"`
-	Prompt          string                                    `json:"prompt"`
-	Kind            CreateScheduleRequestBodyKind             `json:"kind"`
-	RunAt           OptDateTime                               `json:"runAt"`
-	IntervalSeconds OptInt64                                  `json:"intervalSeconds"`
-	AnchorAt        OptDateTime                               `json:"anchorAt"`
-	Calendar        OptString                                 `json:"calendar"`
-	Timezone        OptString                                 `json:"timezone"`
-	OverlapPolicy   OptCreateScheduleRequestBodyOverlapPolicy `json:"overlapPolicy"`
-	CatchupSeconds  OptInt64                                  `json:"catchupSeconds"`
-}
-
-// GetName returns the value of Name.
-func (s *CreateScheduleRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetPrompt returns the value of Prompt.
-func (s *CreateScheduleRequestBody) GetPrompt() string {
-	return s.Prompt
-}
-
-// GetKind returns the value of Kind.
-func (s *CreateScheduleRequestBody) GetKind() CreateScheduleRequestBodyKind {
-	return s.Kind
-}
-
-// GetRunAt returns the value of RunAt.
-func (s *CreateScheduleRequestBody) GetRunAt() OptDateTime {
-	return s.RunAt
-}
-
-// GetIntervalSeconds returns the value of IntervalSeconds.
-func (s *CreateScheduleRequestBody) GetIntervalSeconds() OptInt64 {
-	return s.IntervalSeconds
-}
-
-// GetAnchorAt returns the value of AnchorAt.
-func (s *CreateScheduleRequestBody) GetAnchorAt() OptDateTime {
-	return s.AnchorAt
-}
-
-// GetCalendar returns the value of Calendar.
-func (s *CreateScheduleRequestBody) GetCalendar() OptString {
-	return s.Calendar
-}
-
-// GetTimezone returns the value of Timezone.
-func (s *CreateScheduleRequestBody) GetTimezone() OptString {
-	return s.Timezone
-}
-
-// GetOverlapPolicy returns the value of OverlapPolicy.
-func (s *CreateScheduleRequestBody) GetOverlapPolicy() OptCreateScheduleRequestBodyOverlapPolicy {
-	return s.OverlapPolicy
-}
-
-// GetCatchupSeconds returns the value of CatchupSeconds.
-func (s *CreateScheduleRequestBody) GetCatchupSeconds() OptInt64 {
-	return s.CatchupSeconds
-}
-
-// SetName sets the value of Name.
-func (s *CreateScheduleRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetPrompt sets the value of Prompt.
-func (s *CreateScheduleRequestBody) SetPrompt(val string) {
-	s.Prompt = val
-}
-
-// SetKind sets the value of Kind.
-func (s *CreateScheduleRequestBody) SetKind(val CreateScheduleRequestBodyKind) {
-	s.Kind = val
-}
-
-// SetRunAt sets the value of RunAt.
-func (s *CreateScheduleRequestBody) SetRunAt(val OptDateTime) {
-	s.RunAt = val
-}
-
-// SetIntervalSeconds sets the value of IntervalSeconds.
-func (s *CreateScheduleRequestBody) SetIntervalSeconds(val OptInt64) {
-	s.IntervalSeconds = val
-}
-
-// SetAnchorAt sets the value of AnchorAt.
-func (s *CreateScheduleRequestBody) SetAnchorAt(val OptDateTime) {
-	s.AnchorAt = val
-}
-
-// SetCalendar sets the value of Calendar.
-func (s *CreateScheduleRequestBody) SetCalendar(val OptString) {
-	s.Calendar = val
-}
-
-// SetTimezone sets the value of Timezone.
-func (s *CreateScheduleRequestBody) SetTimezone(val OptString) {
-	s.Timezone = val
-}
-
-// SetOverlapPolicy sets the value of OverlapPolicy.
-func (s *CreateScheduleRequestBody) SetOverlapPolicy(val OptCreateScheduleRequestBodyOverlapPolicy) {
-	s.OverlapPolicy = val
-}
-
-// SetCatchupSeconds sets the value of CatchupSeconds.
-func (s *CreateScheduleRequestBody) SetCatchupSeconds(val OptInt64) {
-	s.CatchupSeconds = val
-}
-
-type CreateScheduleRequestBodyKind string
-
-const (
-	CreateScheduleRequestBodyKindOnce     CreateScheduleRequestBodyKind = "once"
-	CreateScheduleRequestBodyKindInterval CreateScheduleRequestBodyKind = "interval"
-	CreateScheduleRequestBodyKindCalendar CreateScheduleRequestBodyKind = "calendar"
-)
-
-// AllValues returns all CreateScheduleRequestBodyKind values.
-func (CreateScheduleRequestBodyKind) AllValues() []CreateScheduleRequestBodyKind {
-	return []CreateScheduleRequestBodyKind{
-		CreateScheduleRequestBodyKindOnce,
-		CreateScheduleRequestBodyKindInterval,
-		CreateScheduleRequestBodyKindCalendar,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateScheduleRequestBodyKind) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateScheduleRequestBodyKindOnce:
-		return []byte(s), nil
-	case CreateScheduleRequestBodyKindInterval:
-		return []byte(s), nil
-	case CreateScheduleRequestBodyKindCalendar:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateScheduleRequestBodyKind) UnmarshalText(data []byte) error {
-	switch CreateScheduleRequestBodyKind(data) {
-	case CreateScheduleRequestBodyKindOnce:
-		*s = CreateScheduleRequestBodyKindOnce
-		return nil
-	case CreateScheduleRequestBodyKindInterval:
-		*s = CreateScheduleRequestBodyKindInterval
-		return nil
-	case CreateScheduleRequestBodyKindCalendar:
-		*s = CreateScheduleRequestBodyKindCalendar
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type CreateScheduleRequestBodyOverlapPolicy string
-
-const (
-	CreateScheduleRequestBodyOverlapPolicySkip      CreateScheduleRequestBodyOverlapPolicy = "skip"
-	CreateScheduleRequestBodyOverlapPolicyBufferOne CreateScheduleRequestBodyOverlapPolicy = "buffer_one"
-)
-
-// AllValues returns all CreateScheduleRequestBodyOverlapPolicy values.
-func (CreateScheduleRequestBodyOverlapPolicy) AllValues() []CreateScheduleRequestBodyOverlapPolicy {
-	return []CreateScheduleRequestBodyOverlapPolicy{
-		CreateScheduleRequestBodyOverlapPolicySkip,
-		CreateScheduleRequestBodyOverlapPolicyBufferOne,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateScheduleRequestBodyOverlapPolicy) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateScheduleRequestBodyOverlapPolicySkip:
-		return []byte(s), nil
-	case CreateScheduleRequestBodyOverlapPolicyBufferOne:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateScheduleRequestBodyOverlapPolicy) UnmarshalText(data []byte) error {
-	switch CreateScheduleRequestBodyOverlapPolicy(data) {
-	case CreateScheduleRequestBodyOverlapPolicySkip:
-		*s = CreateScheduleRequestBodyOverlapPolicySkip
-		return nil
-	case CreateScheduleRequestBodyOverlapPolicyBufferOne:
-		*s = CreateScheduleRequestBodyOverlapPolicyBufferOne
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/CreateSubagentRequestBody
-type CreateSubagentRequestBody struct {
-	Name     string                               `json:"name"`
-	Prompt   string                               `json:"prompt"`
-	ForkMode OptCreateSubagentRequestBodyForkMode `json:"forkMode"`
-	// Optional allowed Canopy model ID. Defaults to the parent turn model.
-	ModelId OptString `json:"modelId"`
-}
-
-// GetName returns the value of Name.
-func (s *CreateSubagentRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetPrompt returns the value of Prompt.
-func (s *CreateSubagentRequestBody) GetPrompt() string {
-	return s.Prompt
-}
-
-// GetForkMode returns the value of ForkMode.
-func (s *CreateSubagentRequestBody) GetForkMode() OptCreateSubagentRequestBodyForkMode {
-	return s.ForkMode
-}
-
-// GetModelId returns the value of ModelId.
-func (s *CreateSubagentRequestBody) GetModelId() OptString {
-	return s.ModelId
-}
-
-// SetName sets the value of Name.
-func (s *CreateSubagentRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetPrompt sets the value of Prompt.
-func (s *CreateSubagentRequestBody) SetPrompt(val string) {
-	s.Prompt = val
-}
-
-// SetForkMode sets the value of ForkMode.
-func (s *CreateSubagentRequestBody) SetForkMode(val OptCreateSubagentRequestBodyForkMode) {
-	s.ForkMode = val
-}
-
-// SetModelId sets the value of ModelId.
-func (s *CreateSubagentRequestBody) SetModelId(val OptString) {
-	s.ModelId = val
-}
-
-type CreateSubagentRequestBodyForkMode string
-
-const (
-	CreateSubagentRequestBodyForkModeAll  CreateSubagentRequestBodyForkMode = "all"
-	CreateSubagentRequestBodyForkModeNone CreateSubagentRequestBodyForkMode = "none"
-)
-
-// AllValues returns all CreateSubagentRequestBodyForkMode values.
-func (CreateSubagentRequestBodyForkMode) AllValues() []CreateSubagentRequestBodyForkMode {
-	return []CreateSubagentRequestBodyForkMode{
-		CreateSubagentRequestBodyForkModeAll,
-		CreateSubagentRequestBodyForkModeNone,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateSubagentRequestBodyForkMode) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateSubagentRequestBodyForkModeAll:
-		return []byte(s), nil
-	case CreateSubagentRequestBodyForkModeNone:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateSubagentRequestBodyForkMode) UnmarshalText(data []byte) error {
-	switch CreateSubagentRequestBodyForkMode(data) {
-	case CreateSubagentRequestBodyForkModeAll:
-		*s = CreateSubagentRequestBodyForkModeAll
-		return nil
-	case CreateSubagentRequestBodyForkModeNone:
-		*s = CreateSubagentRequestBodyForkModeNone
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/CreateTaskRequestBody
 type CreateTaskRequestBody struct {
-	Name           string   `json:"name"`
-	InstanceId     string   `json:"instanceId"`
-	Command        string   `json:"command"`
-	TimeoutSeconds OptInt64 `json:"timeoutSeconds"`
+	ThreadId string      `json:"threadId"`
+	Name     string      `json:"name"`
+	Trigger  TaskTrigger `json:"trigger"`
+	Action   TaskAction  `json:"action"`
+}
+
+// GetThreadId returns the value of ThreadId.
+func (s *CreateTaskRequestBody) GetThreadId() string {
+	return s.ThreadId
 }
 
 // GetName returns the value of Name.
@@ -1920,19 +1740,19 @@ func (s *CreateTaskRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetInstanceId returns the value of InstanceId.
-func (s *CreateTaskRequestBody) GetInstanceId() string {
-	return s.InstanceId
+// GetTrigger returns the value of Trigger.
+func (s *CreateTaskRequestBody) GetTrigger() TaskTrigger {
+	return s.Trigger
 }
 
-// GetCommand returns the value of Command.
-func (s *CreateTaskRequestBody) GetCommand() string {
-	return s.Command
+// GetAction returns the value of Action.
+func (s *CreateTaskRequestBody) GetAction() TaskAction {
+	return s.Action
 }
 
-// GetTimeoutSeconds returns the value of TimeoutSeconds.
-func (s *CreateTaskRequestBody) GetTimeoutSeconds() OptInt64 {
-	return s.TimeoutSeconds
+// SetThreadId sets the value of ThreadId.
+func (s *CreateTaskRequestBody) SetThreadId(val string) {
+	s.ThreadId = val
 }
 
 // SetName sets the value of Name.
@@ -1940,111 +1760,115 @@ func (s *CreateTaskRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetInstanceId sets the value of InstanceId.
-func (s *CreateTaskRequestBody) SetInstanceId(val string) {
-	s.InstanceId = val
+// SetTrigger sets the value of Trigger.
+func (s *CreateTaskRequestBody) SetTrigger(val TaskTrigger) {
+	s.Trigger = val
 }
 
-// SetCommand sets the value of Command.
-func (s *CreateTaskRequestBody) SetCommand(val string) {
-	s.Command = val
-}
-
-// SetTimeoutSeconds sets the value of TimeoutSeconds.
-func (s *CreateTaskRequestBody) SetTimeoutSeconds(val OptInt64) {
-	s.TimeoutSeconds = val
+// SetAction sets the value of Action.
+func (s *CreateTaskRequestBody) SetAction(val TaskAction) {
+	s.Action = val
 }
 
 // Ref: #/components/schemas/CreateThreadRequestBody
 type CreateThreadRequestBody struct {
-	// Absent uses the platform's default approval mode.
-	ApprovalMode OptCreateThreadRequestBodyApprovalMode `json:"approvalMode"`
-	// A Canopy model id to prefer. Omit or pass null to follow the platform default. The model must be
-	// available in Canopy and support Assistant conversations. A retired or removed id falls back to the
-	// default without clearing the preference.
-	PreferredModelId OptNilString `json:"preferredModelId"`
-	// Use a non-disabled tier declared by Canopy reasoning_tiers. Null uses the model default. Changes
-	// apply at the next model request boundary, including an active conversation.
-	ReasoningEffort OptNilString `json:"reasoningEffort"`
+	Title OptString `json:"title"`
+	// The folder to file it in. Omit for the inbox.
+	FolderId OptString `json:"folderId"`
+	// Omit to use the caller's default model.
+	ModelId OptString `json:"modelId"`
+	// Omit to use the caller's default effort, or medium.
+	ReasoningEffort OptReasoningEffort `json:"reasoningEffort"`
+	ApprovalMode    OptApprovalMode    `json:"approvalMode"`
+	// The first message. Sending it here starts the first turn immediately.
+	Message OptSendMessageRequestBody `json:"message"`
 }
 
-// GetApprovalMode returns the value of ApprovalMode.
-func (s *CreateThreadRequestBody) GetApprovalMode() OptCreateThreadRequestBodyApprovalMode {
-	return s.ApprovalMode
+// GetTitle returns the value of Title.
+func (s *CreateThreadRequestBody) GetTitle() OptString {
+	return s.Title
 }
 
-// GetPreferredModelId returns the value of PreferredModelId.
-func (s *CreateThreadRequestBody) GetPreferredModelId() OptNilString {
-	return s.PreferredModelId
+// GetFolderId returns the value of FolderId.
+func (s *CreateThreadRequestBody) GetFolderId() OptString {
+	return s.FolderId
+}
+
+// GetModelId returns the value of ModelId.
+func (s *CreateThreadRequestBody) GetModelId() OptString {
+	return s.ModelId
 }
 
 // GetReasoningEffort returns the value of ReasoningEffort.
-func (s *CreateThreadRequestBody) GetReasoningEffort() OptNilString {
+func (s *CreateThreadRequestBody) GetReasoningEffort() OptReasoningEffort {
 	return s.ReasoningEffort
 }
 
-// SetApprovalMode sets the value of ApprovalMode.
-func (s *CreateThreadRequestBody) SetApprovalMode(val OptCreateThreadRequestBodyApprovalMode) {
-	s.ApprovalMode = val
+// GetApprovalMode returns the value of ApprovalMode.
+func (s *CreateThreadRequestBody) GetApprovalMode() OptApprovalMode {
+	return s.ApprovalMode
 }
 
-// SetPreferredModelId sets the value of PreferredModelId.
-func (s *CreateThreadRequestBody) SetPreferredModelId(val OptNilString) {
-	s.PreferredModelId = val
+// GetMessage returns the value of Message.
+func (s *CreateThreadRequestBody) GetMessage() OptSendMessageRequestBody {
+	return s.Message
+}
+
+// SetTitle sets the value of Title.
+func (s *CreateThreadRequestBody) SetTitle(val OptString) {
+	s.Title = val
+}
+
+// SetFolderId sets the value of FolderId.
+func (s *CreateThreadRequestBody) SetFolderId(val OptString) {
+	s.FolderId = val
+}
+
+// SetModelId sets the value of ModelId.
+func (s *CreateThreadRequestBody) SetModelId(val OptString) {
+	s.ModelId = val
 }
 
 // SetReasoningEffort sets the value of ReasoningEffort.
-func (s *CreateThreadRequestBody) SetReasoningEffort(val OptNilString) {
+func (s *CreateThreadRequestBody) SetReasoningEffort(val OptReasoningEffort) {
 	s.ReasoningEffort = val
 }
 
-// Absent uses the platform's default approval mode.
-type CreateThreadRequestBodyApprovalMode string
-
-const (
-	CreateThreadRequestBodyApprovalModeGuardian CreateThreadRequestBodyApprovalMode = "guardian"
-	CreateThreadRequestBodyApprovalModeManual   CreateThreadRequestBodyApprovalMode = "manual"
-	CreateThreadRequestBodyApprovalModeYolo     CreateThreadRequestBodyApprovalMode = "yolo"
-)
-
-// AllValues returns all CreateThreadRequestBodyApprovalMode values.
-func (CreateThreadRequestBodyApprovalMode) AllValues() []CreateThreadRequestBodyApprovalMode {
-	return []CreateThreadRequestBodyApprovalMode{
-		CreateThreadRequestBodyApprovalModeGuardian,
-		CreateThreadRequestBodyApprovalModeManual,
-		CreateThreadRequestBodyApprovalModeYolo,
-	}
+// SetApprovalMode sets the value of ApprovalMode.
+func (s *CreateThreadRequestBody) SetApprovalMode(val OptApprovalMode) {
+	s.ApprovalMode = val
 }
 
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateThreadRequestBodyApprovalMode) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateThreadRequestBodyApprovalModeGuardian:
-		return []byte(s), nil
-	case CreateThreadRequestBodyApprovalModeManual:
-		return []byte(s), nil
-	case CreateThreadRequestBodyApprovalModeYolo:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
+// SetMessage sets the value of Message.
+func (s *CreateThreadRequestBody) SetMessage(val OptSendMessageRequestBody) {
+	s.Message = val
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateThreadRequestBodyApprovalMode) UnmarshalText(data []byte) error {
-	switch CreateThreadRequestBodyApprovalMode(data) {
-	case CreateThreadRequestBodyApprovalModeGuardian:
-		*s = CreateThreadRequestBodyApprovalModeGuardian
-		return nil
-	case CreateThreadRequestBodyApprovalModeManual:
-		*s = CreateThreadRequestBodyApprovalModeManual
-		return nil
-	case CreateThreadRequestBodyApprovalModeYolo:
-		*s = CreateThreadRequestBodyApprovalModeYolo
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+// Ref: #/components/schemas/CreateThreadResponseBody
+type CreateThreadResponseBody struct {
+	Thread ThreadResource `json:"thread"`
+	// The turn started by `message`. Null when no message was sent.
+	TurnId NilString `json:"turnId"`
+}
+
+// GetThread returns the value of Thread.
+func (s *CreateThreadResponseBody) GetThread() ThreadResource {
+	return s.Thread
+}
+
+// GetTurnId returns the value of TurnId.
+func (s *CreateThreadResponseBody) GetTurnId() NilString {
+	return s.TurnId
+}
+
+// SetThread sets the value of Thread.
+func (s *CreateThreadResponseBody) SetThread(val ThreadResource) {
+	s.Thread = val
+}
+
+// SetTurnId sets the value of TurnId.
+func (s *CreateThreadResponseBody) SetTurnId(val NilString) {
+	s.TurnId = val
 }
 
 // Ref: #/components/schemas/CreateUploadRequestBody
@@ -2176,33 +2000,128 @@ func (s *CredentialFieldResource) SetSecret(val bool) {
 	s.Secret = val
 }
 
-// DecideApprovalNoContent is response for DecideApproval operation.
-type DecideApprovalNoContent struct{}
+// DecideToolCallsNoContent is response for DecideToolCalls operation.
+type DecideToolCallsNoContent struct{}
 
-// Ref: #/components/schemas/DecideRequestBody
-type DecideRequestBody struct {
-	Approved bool      `json:"approved"`
-	Reason   OptString `json:"reason"`
+// Ref: #/components/schemas/DecideToolCallsRequestBody
+type DecideToolCallsRequestBody struct {
+	// The tool calls awaiting approval, from `pendingAction.itemIds`.
+	ItemIds  []string `json:"itemIds"`
+	Approved bool     `json:"approved"`
+	// Passed to the assistant with a decline, so it can change course.
+	Reason OptString `json:"reason"`
+}
+
+// GetItemIds returns the value of ItemIds.
+func (s *DecideToolCallsRequestBody) GetItemIds() []string {
+	return s.ItemIds
 }
 
 // GetApproved returns the value of Approved.
-func (s *DecideRequestBody) GetApproved() bool {
+func (s *DecideToolCallsRequestBody) GetApproved() bool {
 	return s.Approved
 }
 
 // GetReason returns the value of Reason.
-func (s *DecideRequestBody) GetReason() OptString {
+func (s *DecideToolCallsRequestBody) GetReason() OptString {
 	return s.Reason
 }
 
+// SetItemIds sets the value of ItemIds.
+func (s *DecideToolCallsRequestBody) SetItemIds(val []string) {
+	s.ItemIds = val
+}
+
 // SetApproved sets the value of Approved.
-func (s *DecideRequestBody) SetApproved(val bool) {
+func (s *DecideToolCallsRequestBody) SetApproved(val bool) {
 	s.Approved = val
 }
 
 // SetReason sets the value of Reason.
-func (s *DecideRequestBody) SetReason(val OptString) {
+func (s *DecideToolCallsRequestBody) SetReason(val OptString) {
 	s.Reason = val
+}
+
+// The model and effort a new conversation gets when it names none.
+// Ref: #/components/schemas/DefaultModelResource
+type DefaultModelResource struct {
+	// Null when the catalogue has no model that can run an agent.
+	ModelId         NilString          `json:"modelId"`
+	ReasoningEffort NilReasoningEffort `json:"reasoningEffort"`
+	// `user` when it is the caller's choice, `catalog` when it comes from the Canopy catalogue.
+	Source DefaultModelResourceSource `json:"source"`
+}
+
+// GetModelId returns the value of ModelId.
+func (s *DefaultModelResource) GetModelId() NilString {
+	return s.ModelId
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *DefaultModelResource) GetReasoningEffort() NilReasoningEffort {
+	return s.ReasoningEffort
+}
+
+// GetSource returns the value of Source.
+func (s *DefaultModelResource) GetSource() DefaultModelResourceSource {
+	return s.Source
+}
+
+// SetModelId sets the value of ModelId.
+func (s *DefaultModelResource) SetModelId(val NilString) {
+	s.ModelId = val
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *DefaultModelResource) SetReasoningEffort(val NilReasoningEffort) {
+	s.ReasoningEffort = val
+}
+
+// SetSource sets the value of Source.
+func (s *DefaultModelResource) SetSource(val DefaultModelResourceSource) {
+	s.Source = val
+}
+
+// `user` when it is the caller's choice, `catalog` when it comes from the Canopy catalogue.
+type DefaultModelResourceSource string
+
+const (
+	DefaultModelResourceSourceUser    DefaultModelResourceSource = "user"
+	DefaultModelResourceSourceCatalog DefaultModelResourceSource = "catalog"
+)
+
+// AllValues returns all DefaultModelResourceSource values.
+func (DefaultModelResourceSource) AllValues() []DefaultModelResourceSource {
+	return []DefaultModelResourceSource{
+		DefaultModelResourceSourceUser,
+		DefaultModelResourceSourceCatalog,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s DefaultModelResourceSource) MarshalText() ([]byte, error) {
+	switch s {
+	case DefaultModelResourceSourceUser:
+		return []byte(s), nil
+	case DefaultModelResourceSourceCatalog:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *DefaultModelResourceSource) UnmarshalText(data []byte) error {
+	switch DefaultModelResourceSource(data) {
+	case DefaultModelResourceSourceUser:
+		*s = DefaultModelResourceSourceUser
+		return nil
+	case DefaultModelResourceSourceCatalog:
+		*s = DefaultModelResourceSourceCatalog
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // DeleteBindingNoContent is response for DeleteBinding operation.
@@ -2217,162 +2136,17 @@ type DeleteFolderNoContent struct{}
 // DeleteMemoryNoContent is response for DeleteMemory operation.
 type DeleteMemoryNoContent struct{}
 
-// DeleteScheduleOK is response for DeleteSchedule operation.
-type DeleteScheduleOK struct{}
-
 // DeleteSkillNoContent is response for DeleteSkill operation.
 type DeleteSkillNoContent struct{}
 
-// DeleteSubagentOK is response for DeleteSubagent operation.
-type DeleteSubagentOK struct{}
-
-// DeleteTaskOK is response for DeleteTask operation.
-type DeleteTaskOK struct{}
+// DeleteTaskNoContent is response for DeleteTask operation.
+type DeleteTaskNoContent struct{}
 
 // DeleteThreadNoContent is response for DeleteThread operation.
 type DeleteThreadNoContent struct{}
 
 // DeleteUploadOK is response for DeleteUpload operation.
 type DeleteUploadOK struct{}
-
-// Ref: #/components/schemas/DocumentResource
-type DocumentResource struct {
-	Context ContextResource    `json:"context"`
-	Cursor  NilString          `json:"cursor"`
-	Earlier NilEarlierResource `json:"earlier"`
-	Items   []ItemResource     `json:"items"`
-	Status  string             `json:"status"`
-	Stream  NilStreamResource  `json:"stream"`
-	Turn    NilTurnResource    `json:"turn"`
-	// The assistant's checklist for the work in this conversation, in the order it intends to do it. Empty
-	// when it has not written one — short tasks do not get a list. It is rewritten in full each time, so
-	// what is here is the current state.
-	Todos     []TodoResource      `json:"todos"`
-	TurnId    NilString           `json:"turnId"`
-	Wait      NilWaitResource     `json:"wait"`
-	Usage     UsageResource       `json:"usage"`
-	TurnUsage []TurnUsageResource `json:"turnUsage"`
-}
-
-// GetContext returns the value of Context.
-func (s *DocumentResource) GetContext() ContextResource {
-	return s.Context
-}
-
-// GetCursor returns the value of Cursor.
-func (s *DocumentResource) GetCursor() NilString {
-	return s.Cursor
-}
-
-// GetEarlier returns the value of Earlier.
-func (s *DocumentResource) GetEarlier() NilEarlierResource {
-	return s.Earlier
-}
-
-// GetItems returns the value of Items.
-func (s *DocumentResource) GetItems() []ItemResource {
-	return s.Items
-}
-
-// GetStatus returns the value of Status.
-func (s *DocumentResource) GetStatus() string {
-	return s.Status
-}
-
-// GetStream returns the value of Stream.
-func (s *DocumentResource) GetStream() NilStreamResource {
-	return s.Stream
-}
-
-// GetTurn returns the value of Turn.
-func (s *DocumentResource) GetTurn() NilTurnResource {
-	return s.Turn
-}
-
-// GetTodos returns the value of Todos.
-func (s *DocumentResource) GetTodos() []TodoResource {
-	return s.Todos
-}
-
-// GetTurnId returns the value of TurnId.
-func (s *DocumentResource) GetTurnId() NilString {
-	return s.TurnId
-}
-
-// GetWait returns the value of Wait.
-func (s *DocumentResource) GetWait() NilWaitResource {
-	return s.Wait
-}
-
-// GetUsage returns the value of Usage.
-func (s *DocumentResource) GetUsage() UsageResource {
-	return s.Usage
-}
-
-// GetTurnUsage returns the value of TurnUsage.
-func (s *DocumentResource) GetTurnUsage() []TurnUsageResource {
-	return s.TurnUsage
-}
-
-// SetContext sets the value of Context.
-func (s *DocumentResource) SetContext(val ContextResource) {
-	s.Context = val
-}
-
-// SetCursor sets the value of Cursor.
-func (s *DocumentResource) SetCursor(val NilString) {
-	s.Cursor = val
-}
-
-// SetEarlier sets the value of Earlier.
-func (s *DocumentResource) SetEarlier(val NilEarlierResource) {
-	s.Earlier = val
-}
-
-// SetItems sets the value of Items.
-func (s *DocumentResource) SetItems(val []ItemResource) {
-	s.Items = val
-}
-
-// SetStatus sets the value of Status.
-func (s *DocumentResource) SetStatus(val string) {
-	s.Status = val
-}
-
-// SetStream sets the value of Stream.
-func (s *DocumentResource) SetStream(val NilStreamResource) {
-	s.Stream = val
-}
-
-// SetTurn sets the value of Turn.
-func (s *DocumentResource) SetTurn(val NilTurnResource) {
-	s.Turn = val
-}
-
-// SetTodos sets the value of Todos.
-func (s *DocumentResource) SetTodos(val []TodoResource) {
-	s.Todos = val
-}
-
-// SetTurnId sets the value of TurnId.
-func (s *DocumentResource) SetTurnId(val NilString) {
-	s.TurnId = val
-}
-
-// SetWait sets the value of Wait.
-func (s *DocumentResource) SetWait(val NilWaitResource) {
-	s.Wait = val
-}
-
-// SetUsage sets the value of Usage.
-func (s *DocumentResource) SetUsage(val UsageResource) {
-	s.Usage = val
-}
-
-// SetTurnUsage sets the value of TurnUsage.
-func (s *DocumentResource) SetTurnUsage(val []TurnUsageResource) {
-	s.TurnUsage = val
-}
 
 type DownloadAttachmentOK struct {
 	Data io.Reader
@@ -2434,133 +2208,6 @@ func (s *DownloadAttachmentOKHeaders) SetContentType(val string) {
 // SetResponse sets the value of Response.
 func (s *DownloadAttachmentOKHeaders) SetResponse(val DownloadAttachmentOK) {
 	s.Response = val
-}
-
-// Ref: #/components/schemas/DynamicCallResultRequestBody
-type DynamicCallResultRequestBody struct {
-	// The same value sent with the message. A result from a different client is refused.
-	ClientId string `json:"clientId"`
-	// Why it failed, when `ok` is false. It reaches the assistant, so write it for a reader who cannot see
-	// the screen.
-	Error OptString `json:"error"`
-	// Pass back when there is more to read. The assistant will call again with it.
-	NextCursor OptString `json:"nextCursor"`
-	Ok         bool      `json:"ok"`
-	// What the action produced. At most 64 KiB; use `nextCursor` for anything larger.
-	Output OptString `json:"output"`
-}
-
-// GetClientId returns the value of ClientId.
-func (s *DynamicCallResultRequestBody) GetClientId() string {
-	return s.ClientId
-}
-
-// GetError returns the value of Error.
-func (s *DynamicCallResultRequestBody) GetError() OptString {
-	return s.Error
-}
-
-// GetNextCursor returns the value of NextCursor.
-func (s *DynamicCallResultRequestBody) GetNextCursor() OptString {
-	return s.NextCursor
-}
-
-// GetOk returns the value of Ok.
-func (s *DynamicCallResultRequestBody) GetOk() bool {
-	return s.Ok
-}
-
-// GetOutput returns the value of Output.
-func (s *DynamicCallResultRequestBody) GetOutput() OptString {
-	return s.Output
-}
-
-// SetClientId sets the value of ClientId.
-func (s *DynamicCallResultRequestBody) SetClientId(val string) {
-	s.ClientId = val
-}
-
-// SetError sets the value of Error.
-func (s *DynamicCallResultRequestBody) SetError(val OptString) {
-	s.Error = val
-}
-
-// SetNextCursor sets the value of NextCursor.
-func (s *DynamicCallResultRequestBody) SetNextCursor(val OptString) {
-	s.NextCursor = val
-}
-
-// SetOk sets the value of Ok.
-func (s *DynamicCallResultRequestBody) SetOk(val bool) {
-	s.Ok = val
-}
-
-// SetOutput sets the value of Output.
-func (s *DynamicCallResultRequestBody) SetOutput(val OptString) {
-	s.Output = val
-}
-
-// Ref: #/components/schemas/EarlierResource
-type EarlierResource struct {
-	Before      int64 `json:"before"`
-	FoldedAbove bool  `json:"foldedAbove"`
-}
-
-// GetBefore returns the value of Before.
-func (s *EarlierResource) GetBefore() int64 {
-	return s.Before
-}
-
-// GetFoldedAbove returns the value of FoldedAbove.
-func (s *EarlierResource) GetFoldedAbove() bool {
-	return s.FoldedAbove
-}
-
-// SetBefore sets the value of Before.
-func (s *EarlierResource) SetBefore(val int64) {
-	s.Before = val
-}
-
-// SetFoldedAbove sets the value of FoldedAbove.
-func (s *EarlierResource) SetFoldedAbove(val bool) {
-	s.FoldedAbove = val
-}
-
-// Ref: #/components/schemas/EarlierResponseBody
-type EarlierResponseBody struct {
-	Earlier   EarlierResource     `json:"earlier"`
-	Items     []ItemResource      `json:"items"`
-	TurnUsage []TurnUsageResource `json:"turnUsage"`
-}
-
-// GetEarlier returns the value of Earlier.
-func (s *EarlierResponseBody) GetEarlier() EarlierResource {
-	return s.Earlier
-}
-
-// GetItems returns the value of Items.
-func (s *EarlierResponseBody) GetItems() []ItemResource {
-	return s.Items
-}
-
-// GetTurnUsage returns the value of TurnUsage.
-func (s *EarlierResponseBody) GetTurnUsage() []TurnUsageResource {
-	return s.TurnUsage
-}
-
-// SetEarlier sets the value of Earlier.
-func (s *EarlierResponseBody) SetEarlier(val EarlierResource) {
-	s.Earlier = val
-}
-
-// SetItems sets the value of Items.
-func (s *EarlierResponseBody) SetItems(val []ItemResource) {
-	s.Items = val
-}
-
-// SetTurnUsage sets the value of TurnUsage.
-func (s *EarlierResponseBody) SetTurnUsage(val []TurnUsageResource) {
-	s.TurnUsage = val
 }
 
 // Ref: #/components/schemas/Error
@@ -2652,137 +2299,19 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
 }
 
-// Ref: #/components/schemas/ExecutionSummaryResource
-type ExecutionSummaryResource struct {
-	State           string    `json:"state"`
-	LastStatus      NilString `json:"lastStatus"`
-	Activity        NilString `json:"activity"`
-	RecentMessage   NilString `json:"recentMessage"`
-	CompletedSteps  int64     `json:"completedSteps"`
-	TotalSteps      int64     `json:"totalSteps"`
-	ChildCount      int64     `json:"childCount"`
-	RunningChildren int64     `json:"runningChildren"`
-	// The next human decision required by this conversation or one of its subagents. Resolve using the
-	// indicated thread, not necessarily the root.
-	PendingAction NilPendingActionResource `json:"pendingAction"`
-}
-
-// GetState returns the value of State.
-func (s *ExecutionSummaryResource) GetState() string {
-	return s.State
-}
-
-// GetLastStatus returns the value of LastStatus.
-func (s *ExecutionSummaryResource) GetLastStatus() NilString {
-	return s.LastStatus
-}
-
-// GetActivity returns the value of Activity.
-func (s *ExecutionSummaryResource) GetActivity() NilString {
-	return s.Activity
-}
-
-// GetRecentMessage returns the value of RecentMessage.
-func (s *ExecutionSummaryResource) GetRecentMessage() NilString {
-	return s.RecentMessage
-}
-
-// GetCompletedSteps returns the value of CompletedSteps.
-func (s *ExecutionSummaryResource) GetCompletedSteps() int64 {
-	return s.CompletedSteps
-}
-
-// GetTotalSteps returns the value of TotalSteps.
-func (s *ExecutionSummaryResource) GetTotalSteps() int64 {
-	return s.TotalSteps
-}
-
-// GetChildCount returns the value of ChildCount.
-func (s *ExecutionSummaryResource) GetChildCount() int64 {
-	return s.ChildCount
-}
-
-// GetRunningChildren returns the value of RunningChildren.
-func (s *ExecutionSummaryResource) GetRunningChildren() int64 {
-	return s.RunningChildren
-}
-
-// GetPendingAction returns the value of PendingAction.
-func (s *ExecutionSummaryResource) GetPendingAction() NilPendingActionResource {
-	return s.PendingAction
-}
-
-// SetState sets the value of State.
-func (s *ExecutionSummaryResource) SetState(val string) {
-	s.State = val
-}
-
-// SetLastStatus sets the value of LastStatus.
-func (s *ExecutionSummaryResource) SetLastStatus(val NilString) {
-	s.LastStatus = val
-}
-
-// SetActivity sets the value of Activity.
-func (s *ExecutionSummaryResource) SetActivity(val NilString) {
-	s.Activity = val
-}
-
-// SetRecentMessage sets the value of RecentMessage.
-func (s *ExecutionSummaryResource) SetRecentMessage(val NilString) {
-	s.RecentMessage = val
-}
-
-// SetCompletedSteps sets the value of CompletedSteps.
-func (s *ExecutionSummaryResource) SetCompletedSteps(val int64) {
-	s.CompletedSteps = val
-}
-
-// SetTotalSteps sets the value of TotalSteps.
-func (s *ExecutionSummaryResource) SetTotalSteps(val int64) {
-	s.TotalSteps = val
-}
-
-// SetChildCount sets the value of ChildCount.
-func (s *ExecutionSummaryResource) SetChildCount(val int64) {
-	s.ChildCount = val
-}
-
-// SetRunningChildren sets the value of RunningChildren.
-func (s *ExecutionSummaryResource) SetRunningChildren(val int64) {
-	s.RunningChildren = val
-}
-
-// SetPendingAction sets the value of PendingAction.
-func (s *ExecutionSummaryResource) SetPendingAction(val NilPendingActionResource) {
-	s.PendingAction = val
-}
-
-// The change a tool call applied to a single file.
-//
-// Populated once the call has completed successfully. It is absent while the call is pending or
-// awaiting approval, as the file's prior contents are read during execution. To preview an edit
-// awaiting approval, derive it from the call's `old_string` and `new_string` arguments.
+// The change a tool call applied to a single file. Present once the call has completed; while it
+// awaits approval, derive a preview from its `old_string` and `new_string` arguments.
 // Ref: #/components/schemas/FileDiffResource
 type FileDiffResource struct {
+	// Absolute path of the file on the instance.
+	Path   string                 `json:"path"`
+	Status FileDiffResourceStatus `json:"status"`
 	// Lines added. Complete even when `unified` is null.
 	Added int64 `json:"added"`
-	// Absolute path of the file on the instance.
-	Path string `json:"path"`
 	// Lines removed. Complete even when `unified` is null.
 	Removed int64 `json:"removed"`
-	// What the call did to the file.
-	Status FileDiffResourceStatus `json:"status"`
-	// The change as a unified diff with three lines of context. A file created by the call is diffed
-	// against `/dev/null`.
-	//
-	// Null when the change exceeds the service's size limit. The diff is omitted in full rather than
-	// truncated; `added` and `removed` remain complete.
-	Unified OptNilString `json:"unified"`
-}
-
-// GetAdded returns the value of Added.
-func (s *FileDiffResource) GetAdded() int64 {
-	return s.Added
+	// The change as a unified diff with three lines of context. Null when it exceeds the size limit.
+	Unified NilString `json:"unified"`
 }
 
 // GetPath returns the value of Path.
@@ -2790,24 +2319,24 @@ func (s *FileDiffResource) GetPath() string {
 	return s.Path
 }
 
-// GetRemoved returns the value of Removed.
-func (s *FileDiffResource) GetRemoved() int64 {
-	return s.Removed
-}
-
 // GetStatus returns the value of Status.
 func (s *FileDiffResource) GetStatus() FileDiffResourceStatus {
 	return s.Status
 }
 
-// GetUnified returns the value of Unified.
-func (s *FileDiffResource) GetUnified() OptNilString {
-	return s.Unified
+// GetAdded returns the value of Added.
+func (s *FileDiffResource) GetAdded() int64 {
+	return s.Added
 }
 
-// SetAdded sets the value of Added.
-func (s *FileDiffResource) SetAdded(val int64) {
-	s.Added = val
+// GetRemoved returns the value of Removed.
+func (s *FileDiffResource) GetRemoved() int64 {
+	return s.Removed
+}
+
+// GetUnified returns the value of Unified.
+func (s *FileDiffResource) GetUnified() NilString {
+	return s.Unified
 }
 
 // SetPath sets the value of Path.
@@ -2815,22 +2344,26 @@ func (s *FileDiffResource) SetPath(val string) {
 	s.Path = val
 }
 
-// SetRemoved sets the value of Removed.
-func (s *FileDiffResource) SetRemoved(val int64) {
-	s.Removed = val
-}
-
 // SetStatus sets the value of Status.
 func (s *FileDiffResource) SetStatus(val FileDiffResourceStatus) {
 	s.Status = val
 }
 
+// SetAdded sets the value of Added.
+func (s *FileDiffResource) SetAdded(val int64) {
+	s.Added = val
+}
+
+// SetRemoved sets the value of Removed.
+func (s *FileDiffResource) SetRemoved(val int64) {
+	s.Removed = val
+}
+
 // SetUnified sets the value of Unified.
-func (s *FileDiffResource) SetUnified(val OptNilString) {
+func (s *FileDiffResource) SetUnified(val NilString) {
 	s.Unified = val
 }
 
-// What the call did to the file.
 type FileDiffResourceStatus string
 
 const (
@@ -2879,6 +2412,44 @@ func (s *FileDiffResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Unarchived conversations in the folder.
+// Ref: #/components/schemas/FolderCountsResource
+type FolderCountsResource struct {
+	Total       int64 `json:"total"`
+	NeedsAction int64 `json:"needsAction"`
+	Running     int64 `json:"running"`
+}
+
+// GetTotal returns the value of Total.
+func (s *FolderCountsResource) GetTotal() int64 {
+	return s.Total
+}
+
+// GetNeedsAction returns the value of NeedsAction.
+func (s *FolderCountsResource) GetNeedsAction() int64 {
+	return s.NeedsAction
+}
+
+// GetRunning returns the value of Running.
+func (s *FolderCountsResource) GetRunning() int64 {
+	return s.Running
+}
+
+// SetTotal sets the value of Total.
+func (s *FolderCountsResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// SetNeedsAction sets the value of NeedsAction.
+func (s *FolderCountsResource) SetNeedsAction(val int64) {
+	s.NeedsAction = val
+}
+
+// SetRunning sets the value of Running.
+func (s *FolderCountsResource) SetRunning(val int64) {
+	s.Running = val
+}
+
 // Ref: #/components/schemas/FolderListResponseBody
 type FolderListResponseBody struct {
 	Folders []FolderResource `json:"folders"`
@@ -2896,19 +2467,14 @@ func (s *FolderListResponseBody) SetFolders(val []FolderResource) {
 
 // Ref: #/components/schemas/FolderResource
 type FolderResource struct {
-	CreatedAt time.Time `json:"createdAt"`
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	// How many conversations are filed here and would show up in the default list. Archived and deleted
-	// ones are not counted, so this is exactly what `GET /api/v1/threads?folder=<id>` returns.
-	ThreadCount  int64     `json:"threadCount"`
-	UpdatedAt    time.Time `json:"updatedAt"`
-	OrderVersion int64     `json:"orderVersion"`
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *FolderResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
+	ID string `json:"id"`
+	// `inbox` holds the conversations nobody filed. Each caller has one per project.
+	Type         FolderResourceType   `json:"type"`
+	Name         string               `json:"name"`
+	Counts       FolderCountsResource `json:"counts"`
+	OrderVersion int64                `json:"orderVersion"`
+	CreatedAt    time.Time            `json:"createdAt"`
+	UpdatedAt    time.Time            `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -2916,19 +2482,19 @@ func (s *FolderResource) GetID() string {
 	return s.ID
 }
 
+// GetType returns the value of Type.
+func (s *FolderResource) GetType() FolderResourceType {
+	return s.Type
+}
+
 // GetName returns the value of Name.
 func (s *FolderResource) GetName() string {
 	return s.Name
 }
 
-// GetThreadCount returns the value of ThreadCount.
-func (s *FolderResource) GetThreadCount() int64 {
-	return s.ThreadCount
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *FolderResource) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
+// GetCounts returns the value of Counts.
+func (s *FolderResource) GetCounts() FolderCountsResource {
+	return s.Counts
 }
 
 // GetOrderVersion returns the value of OrderVersion.
@@ -2936,9 +2502,14 @@ func (s *FolderResource) GetOrderVersion() int64 {
 	return s.OrderVersion
 }
 
-// SetCreatedAt sets the value of CreatedAt.
-func (s *FolderResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
+// GetCreatedAt returns the value of CreatedAt.
+func (s *FolderResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *FolderResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
 }
 
 // SetID sets the value of ID.
@@ -2946,19 +2517,19 @@ func (s *FolderResource) SetID(val string) {
 	s.ID = val
 }
 
+// SetType sets the value of Type.
+func (s *FolderResource) SetType(val FolderResourceType) {
+	s.Type = val
+}
+
 // SetName sets the value of Name.
 func (s *FolderResource) SetName(val string) {
 	s.Name = val
 }
 
-// SetThreadCount sets the value of ThreadCount.
-func (s *FolderResource) SetThreadCount(val int64) {
-	s.ThreadCount = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *FolderResource) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
+// SetCounts sets the value of Counts.
+func (s *FolderResource) SetCounts(val FolderCountsResource) {
+	s.Counts = val
 }
 
 // SetOrderVersion sets the value of OrderVersion.
@@ -2966,485 +2537,208 @@ func (s *FolderResource) SetOrderVersion(val int64) {
 	s.OrderVersion = val
 }
 
-// InterruptSubagentOK is response for InterruptSubagent operation.
-type InterruptSubagentOK struct{}
+// SetCreatedAt sets the value of CreatedAt.
+func (s *FolderResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *FolderResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// `inbox` holds the conversations nobody filed. Each caller has one per project.
+type FolderResourceType string
+
+const (
+	FolderResourceTypeInbox  FolderResourceType = "inbox"
+	FolderResourceTypeCustom FolderResourceType = "custom"
+)
+
+// AllValues returns all FolderResourceType values.
+func (FolderResourceType) AllValues() []FolderResourceType {
+	return []FolderResourceType{
+		FolderResourceTypeInbox,
+		FolderResourceTypeCustom,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s FolderResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case FolderResourceTypeInbox:
+		return []byte(s), nil
+	case FolderResourceTypeCustom:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *FolderResourceType) UnmarshalText(data []byte) error {
+	switch FolderResourceType(data) {
+	case FolderResourceTypeInbox:
+		*s = FolderResourceTypeInbox
+		return nil
+	case FolderResourceTypeCustom:
+		*s = FolderResourceTypeCustom
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // InterruptThreadNoContent is response for InterruptThread operation.
 type InterruptThreadNoContent struct{}
 
-// Ref: #/components/schemas/ItemResource
-type ItemResource struct {
-	SourceKind     OptString                     `json:"sourceKind"`
-	SourceId       OptString                     `json:"sourceId"`
-	SourceEventId  OptString                     `json:"sourceEventId"`
-	Approval       OptNilItemResourceApproval    `json:"approval"`
-	ApprovalReason OptNilString                  `json:"approvalReason"`
-	Arguments      OptString                     `json:"arguments"`
-	Attachments    OptNilAttachmentResourceArray `json:"attachments"`
-	// The context blocks the client attached to this message.
-	//
-	// Not part of what the operator wrote — `text` is. Render the message from `text` and leave these
-	// out of the bubble; they are here so a client that did not send them, or one that reloaded, can still
-	// read what the assistant was given.
-	//
-	// The actions declared alongside them are not returned: they are re-declared as they change and would
-	// make every fetch of the conversation carry them again.
-	ClientContext OptNilClientContextPartArray `json:"clientContext"`
-	CreatedAt     time.Time                    `json:"createdAt"`
-	Detail        OptNilString                 `json:"detail"`
-	Presentation  OptNilPresentationResource   `json:"presentation"`
-	DurationMs    OptNilInt64                  `json:"durationMs"`
-	ID            string                       `json:"id"`
-	// The Canopy model id that actually produced this entry, including after fallback. Never replaced by
-	// the conversation's preference or rewritten when the model is retired or removed from the allowlist.
-	// Null for messages the user sent.
-	Model     NilString          `json:"model"`
-	Namespace OptNilString       `json:"namespace"`
-	Ordinal   int64              `json:"ordinal"`
-	Reverted  bool               `json:"reverted"`
-	Status    ItemResourceStatus `json:"status"`
-	Target    OptNilString       `json:"target"`
-	// The content of this entry, in the order it was written. A message that is only text is a single
-	// part, which is most of them.
-	//
-	// An attachment belongs where it was written, so render these in order rather than putting them all at
-	// the end.
-	Parts OptNilPartResourceArray `json:"parts"`
-	Tool  OptNilString            `json:"tool"`
-	// Determines which fields this entry carries.
-	Type   ItemResourceType `json:"type"`
-	TurnId OptNilString     `json:"turnId"`
+// An edit to the transcript as returned by list-thread-items. `path` is a JSON Pointer under `/items`:
+// `add` appends `value` to `/items` or replaces the item with the same id, `set` replaces the value at
+// `path`, and `append` concatenates the string `value` to the string at `path`, which is how answer
+// text streams in.
+// Ref: #/components/schemas/ItemFrame
+type ItemFrame struct {
+	Path  string      `json:"path"`
+	Op    ItemFrameOp `json:"op"`
+	Value jx.Raw      `json:"value"`
 }
 
-// GetSourceKind returns the value of SourceKind.
-func (s *ItemResource) GetSourceKind() OptString {
-	return s.SourceKind
+// GetPath returns the value of Path.
+func (s *ItemFrame) GetPath() string {
+	return s.Path
 }
 
-// GetSourceId returns the value of SourceId.
-func (s *ItemResource) GetSourceId() OptString {
-	return s.SourceId
+// GetOp returns the value of Op.
+func (s *ItemFrame) GetOp() ItemFrameOp {
+	return s.Op
 }
 
-// GetSourceEventId returns the value of SourceEventId.
-func (s *ItemResource) GetSourceEventId() OptString {
-	return s.SourceEventId
+// GetValue returns the value of Value.
+func (s *ItemFrame) GetValue() jx.Raw {
+	return s.Value
 }
 
-// GetApproval returns the value of Approval.
-func (s *ItemResource) GetApproval() OptNilItemResourceApproval {
-	return s.Approval
+// SetPath sets the value of Path.
+func (s *ItemFrame) SetPath(val string) {
+	s.Path = val
 }
 
-// GetApprovalReason returns the value of ApprovalReason.
-func (s *ItemResource) GetApprovalReason() OptNilString {
-	return s.ApprovalReason
+// SetOp sets the value of Op.
+func (s *ItemFrame) SetOp(val ItemFrameOp) {
+	s.Op = val
 }
 
-// GetArguments returns the value of Arguments.
-func (s *ItemResource) GetArguments() OptString {
-	return s.Arguments
+// SetValue sets the value of Value.
+func (s *ItemFrame) SetValue(val jx.Raw) {
+	s.Value = val
 }
 
-// GetAttachments returns the value of Attachments.
-func (s *ItemResource) GetAttachments() OptNilAttachmentResourceArray {
-	return s.Attachments
+type ItemFrameOp string
+
+const (
+	ItemFrameOpAdd    ItemFrameOp = "add"
+	ItemFrameOpSet    ItemFrameOp = "set"
+	ItemFrameOpAppend ItemFrameOp = "append"
+)
+
+// AllValues returns all ItemFrameOp values.
+func (ItemFrameOp) AllValues() []ItemFrameOp {
+	return []ItemFrameOp{
+		ItemFrameOpAdd,
+		ItemFrameOpSet,
+		ItemFrameOpAppend,
+	}
 }
 
-// GetClientContext returns the value of ClientContext.
-func (s *ItemResource) GetClientContext() OptNilClientContextPartArray {
-	return s.ClientContext
+// MarshalText implements encoding.TextMarshaler.
+func (s ItemFrameOp) MarshalText() ([]byte, error) {
+	switch s {
+	case ItemFrameOpAdd:
+		return []byte(s), nil
+	case ItemFrameOpSet:
+		return []byte(s), nil
+	case ItemFrameOpAppend:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetCreatedAt returns the value of CreatedAt.
-func (s *ItemResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ItemFrameOp) UnmarshalText(data []byte) error {
+	switch ItemFrameOp(data) {
+	case ItemFrameOpAdd:
+		*s = ItemFrameOpAdd
+		return nil
+	case ItemFrameOpSet:
+		*s = ItemFrameOpSet
+		return nil
+	case ItemFrameOpAppend:
+		*s = ItemFrameOpAppend
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// GetDetail returns the value of Detail.
-func (s *ItemResource) GetDetail() OptNilString {
-	return s.Detail
-}
-
-// GetPresentation returns the value of Presentation.
-func (s *ItemResource) GetPresentation() OptNilPresentationResource {
-	return s.Presentation
-}
-
-// GetDurationMs returns the value of DurationMs.
-func (s *ItemResource) GetDurationMs() OptNilInt64 {
-	return s.DurationMs
+// Ref: #/components/schemas/LastTurnResource
+type LastTurnResource struct {
+	ID     string     `json:"id"`
+	Type   TurnType   `json:"type"`
+	Status TurnStatus `json:"status"`
+	// Why the turn failed. Null unless status is failed.
+	FailureCode NilString   `json:"failureCode"`
+	CompletedAt NilDateTime `json:"completedAt"`
 }
 
 // GetID returns the value of ID.
-func (s *ItemResource) GetID() string {
+func (s *LastTurnResource) GetID() string {
 	return s.ID
 }
 
-// GetModel returns the value of Model.
-func (s *ItemResource) GetModel() NilString {
-	return s.Model
-}
-
-// GetNamespace returns the value of Namespace.
-func (s *ItemResource) GetNamespace() OptNilString {
-	return s.Namespace
-}
-
-// GetOrdinal returns the value of Ordinal.
-func (s *ItemResource) GetOrdinal() int64 {
-	return s.Ordinal
-}
-
-// GetReverted returns the value of Reverted.
-func (s *ItemResource) GetReverted() bool {
-	return s.Reverted
-}
-
-// GetStatus returns the value of Status.
-func (s *ItemResource) GetStatus() ItemResourceStatus {
-	return s.Status
-}
-
-// GetTarget returns the value of Target.
-func (s *ItemResource) GetTarget() OptNilString {
-	return s.Target
-}
-
-// GetParts returns the value of Parts.
-func (s *ItemResource) GetParts() OptNilPartResourceArray {
-	return s.Parts
-}
-
-// GetTool returns the value of Tool.
-func (s *ItemResource) GetTool() OptNilString {
-	return s.Tool
-}
-
 // GetType returns the value of Type.
-func (s *ItemResource) GetType() ItemResourceType {
+func (s *LastTurnResource) GetType() TurnType {
 	return s.Type
 }
 
-// GetTurnId returns the value of TurnId.
-func (s *ItemResource) GetTurnId() OptNilString {
-	return s.TurnId
+// GetStatus returns the value of Status.
+func (s *LastTurnResource) GetStatus() TurnStatus {
+	return s.Status
 }
 
-// SetSourceKind sets the value of SourceKind.
-func (s *ItemResource) SetSourceKind(val OptString) {
-	s.SourceKind = val
+// GetFailureCode returns the value of FailureCode.
+func (s *LastTurnResource) GetFailureCode() NilString {
+	return s.FailureCode
 }
 
-// SetSourceId sets the value of SourceId.
-func (s *ItemResource) SetSourceId(val OptString) {
-	s.SourceId = val
-}
-
-// SetSourceEventId sets the value of SourceEventId.
-func (s *ItemResource) SetSourceEventId(val OptString) {
-	s.SourceEventId = val
-}
-
-// SetApproval sets the value of Approval.
-func (s *ItemResource) SetApproval(val OptNilItemResourceApproval) {
-	s.Approval = val
-}
-
-// SetApprovalReason sets the value of ApprovalReason.
-func (s *ItemResource) SetApprovalReason(val OptNilString) {
-	s.ApprovalReason = val
-}
-
-// SetArguments sets the value of Arguments.
-func (s *ItemResource) SetArguments(val OptString) {
-	s.Arguments = val
-}
-
-// SetAttachments sets the value of Attachments.
-func (s *ItemResource) SetAttachments(val OptNilAttachmentResourceArray) {
-	s.Attachments = val
-}
-
-// SetClientContext sets the value of ClientContext.
-func (s *ItemResource) SetClientContext(val OptNilClientContextPartArray) {
-	s.ClientContext = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *ItemResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDetail sets the value of Detail.
-func (s *ItemResource) SetDetail(val OptNilString) {
-	s.Detail = val
-}
-
-// SetPresentation sets the value of Presentation.
-func (s *ItemResource) SetPresentation(val OptNilPresentationResource) {
-	s.Presentation = val
-}
-
-// SetDurationMs sets the value of DurationMs.
-func (s *ItemResource) SetDurationMs(val OptNilInt64) {
-	s.DurationMs = val
+// GetCompletedAt returns the value of CompletedAt.
+func (s *LastTurnResource) GetCompletedAt() NilDateTime {
+	return s.CompletedAt
 }
 
 // SetID sets the value of ID.
-func (s *ItemResource) SetID(val string) {
+func (s *LastTurnResource) SetID(val string) {
 	s.ID = val
 }
 
-// SetModel sets the value of Model.
-func (s *ItemResource) SetModel(val NilString) {
-	s.Model = val
-}
-
-// SetNamespace sets the value of Namespace.
-func (s *ItemResource) SetNamespace(val OptNilString) {
-	s.Namespace = val
-}
-
-// SetOrdinal sets the value of Ordinal.
-func (s *ItemResource) SetOrdinal(val int64) {
-	s.Ordinal = val
-}
-
-// SetReverted sets the value of Reverted.
-func (s *ItemResource) SetReverted(val bool) {
-	s.Reverted = val
-}
-
-// SetStatus sets the value of Status.
-func (s *ItemResource) SetStatus(val ItemResourceStatus) {
-	s.Status = val
-}
-
-// SetTarget sets the value of Target.
-func (s *ItemResource) SetTarget(val OptNilString) {
-	s.Target = val
-}
-
-// SetParts sets the value of Parts.
-func (s *ItemResource) SetParts(val OptNilPartResourceArray) {
-	s.Parts = val
-}
-
-// SetTool sets the value of Tool.
-func (s *ItemResource) SetTool(val OptNilString) {
-	s.Tool = val
-}
-
 // SetType sets the value of Type.
-func (s *ItemResource) SetType(val ItemResourceType) {
+func (s *LastTurnResource) SetType(val TurnType) {
 	s.Type = val
 }
 
-// SetTurnId sets the value of TurnId.
-func (s *ItemResource) SetTurnId(val OptNilString) {
-	s.TurnId = val
+// SetStatus sets the value of Status.
+func (s *LastTurnResource) SetStatus(val TurnStatus) {
+	s.Status = val
 }
 
-type ItemResourceApproval string
-
-const (
-	ItemResourceApprovalApproved     ItemResourceApproval = "approved"
-	ItemResourceApprovalDeclined     ItemResourceApproval = "declined"
-	ItemResourceApprovalAutoApproved ItemResourceApproval = "auto_approved"
-	ItemResourceApprovalUnreviewed   ItemResourceApproval = "unreviewed"
-)
-
-// AllValues returns all ItemResourceApproval values.
-func (ItemResourceApproval) AllValues() []ItemResourceApproval {
-	return []ItemResourceApproval{
-		ItemResourceApprovalApproved,
-		ItemResourceApprovalDeclined,
-		ItemResourceApprovalAutoApproved,
-		ItemResourceApprovalUnreviewed,
-	}
+// SetFailureCode sets the value of FailureCode.
+func (s *LastTurnResource) SetFailureCode(val NilString) {
+	s.FailureCode = val
 }
 
-// MarshalText implements encoding.TextMarshaler.
-func (s ItemResourceApproval) MarshalText() ([]byte, error) {
-	switch s {
-	case ItemResourceApprovalApproved:
-		return []byte(s), nil
-	case ItemResourceApprovalDeclined:
-		return []byte(s), nil
-	case ItemResourceApprovalAutoApproved:
-		return []byte(s), nil
-	case ItemResourceApprovalUnreviewed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ItemResourceApproval) UnmarshalText(data []byte) error {
-	switch ItemResourceApproval(data) {
-	case ItemResourceApprovalApproved:
-		*s = ItemResourceApprovalApproved
-		return nil
-	case ItemResourceApprovalDeclined:
-		*s = ItemResourceApprovalDeclined
-		return nil
-	case ItemResourceApprovalAutoApproved:
-		*s = ItemResourceApprovalAutoApproved
-		return nil
-	case ItemResourceApprovalUnreviewed:
-		*s = ItemResourceApprovalUnreviewed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type ItemResourceStatus string
-
-const (
-	ItemResourceStatusPending     ItemResourceStatus = "pending"
-	ItemResourceStatusInProgress  ItemResourceStatus = "in_progress"
-	ItemResourceStatusCompleted   ItemResourceStatus = "completed"
-	ItemResourceStatusFailed      ItemResourceStatus = "failed"
-	ItemResourceStatusDeclined    ItemResourceStatus = "declined"
-	ItemResourceStatusInterrupted ItemResourceStatus = "interrupted"
-)
-
-// AllValues returns all ItemResourceStatus values.
-func (ItemResourceStatus) AllValues() []ItemResourceStatus {
-	return []ItemResourceStatus{
-		ItemResourceStatusPending,
-		ItemResourceStatusInProgress,
-		ItemResourceStatusCompleted,
-		ItemResourceStatusFailed,
-		ItemResourceStatusDeclined,
-		ItemResourceStatusInterrupted,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ItemResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case ItemResourceStatusPending:
-		return []byte(s), nil
-	case ItemResourceStatusInProgress:
-		return []byte(s), nil
-	case ItemResourceStatusCompleted:
-		return []byte(s), nil
-	case ItemResourceStatusFailed:
-		return []byte(s), nil
-	case ItemResourceStatusDeclined:
-		return []byte(s), nil
-	case ItemResourceStatusInterrupted:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ItemResourceStatus) UnmarshalText(data []byte) error {
-	switch ItemResourceStatus(data) {
-	case ItemResourceStatusPending:
-		*s = ItemResourceStatusPending
-		return nil
-	case ItemResourceStatusInProgress:
-		*s = ItemResourceStatusInProgress
-		return nil
-	case ItemResourceStatusCompleted:
-		*s = ItemResourceStatusCompleted
-		return nil
-	case ItemResourceStatusFailed:
-		*s = ItemResourceStatusFailed
-		return nil
-	case ItemResourceStatusDeclined:
-		*s = ItemResourceStatusDeclined
-		return nil
-	case ItemResourceStatusInterrupted:
-		*s = ItemResourceStatusInterrupted
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Determines which fields this entry carries.
-type ItemResourceType string
-
-const (
-	ItemResourceTypeUserMessage         ItemResourceType = "user_message"
-	ItemResourceTypeAgentMessage        ItemResourceType = "agent_message"
-	ItemResourceTypeReasoning           ItemResourceType = "reasoning"
-	ItemResourceTypeDynamicToolCall     ItemResourceType = "dynamic_tool_call"
-	ItemResourceTypeContextCompaction   ItemResourceType = "context_compaction"
-	ItemResourceTypeTokenBudgetReminder ItemResourceType = "token_budget_reminder"
-	ItemResourceTypeTurnFailure         ItemResourceType = "turn_failure"
-)
-
-// AllValues returns all ItemResourceType values.
-func (ItemResourceType) AllValues() []ItemResourceType {
-	return []ItemResourceType{
-		ItemResourceTypeUserMessage,
-		ItemResourceTypeAgentMessage,
-		ItemResourceTypeReasoning,
-		ItemResourceTypeDynamicToolCall,
-		ItemResourceTypeContextCompaction,
-		ItemResourceTypeTokenBudgetReminder,
-		ItemResourceTypeTurnFailure,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ItemResourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case ItemResourceTypeUserMessage:
-		return []byte(s), nil
-	case ItemResourceTypeAgentMessage:
-		return []byte(s), nil
-	case ItemResourceTypeReasoning:
-		return []byte(s), nil
-	case ItemResourceTypeDynamicToolCall:
-		return []byte(s), nil
-	case ItemResourceTypeContextCompaction:
-		return []byte(s), nil
-	case ItemResourceTypeTokenBudgetReminder:
-		return []byte(s), nil
-	case ItemResourceTypeTurnFailure:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ItemResourceType) UnmarshalText(data []byte) error {
-	switch ItemResourceType(data) {
-	case ItemResourceTypeUserMessage:
-		*s = ItemResourceTypeUserMessage
-		return nil
-	case ItemResourceTypeAgentMessage:
-		*s = ItemResourceTypeAgentMessage
-		return nil
-	case ItemResourceTypeReasoning:
-		*s = ItemResourceTypeReasoning
-		return nil
-	case ItemResourceTypeDynamicToolCall:
-		*s = ItemResourceTypeDynamicToolCall
-		return nil
-	case ItemResourceTypeContextCompaction:
-		*s = ItemResourceTypeContextCompaction
-		return nil
-	case ItemResourceTypeTokenBudgetReminder:
-		*s = ItemResourceTypeTokenBudgetReminder
-		return nil
-	case ItemResourceTypeTurnFailure:
-		*s = ItemResourceTypeTurnFailure
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+// SetCompletedAt sets the value of CompletedAt.
+func (s *LastTurnResource) SetCompletedAt(val NilDateTime) {
+	s.CompletedAt = val
 }
 
 // Ref: #/components/schemas/LengthAwarePageBindingResource
@@ -3549,54 +2843,6 @@ func (s *LengthAwarePageChannelResource) SetOffset(val int64) {
 // SetTotal sets the value of Total.
 func (s *LengthAwarePageChannelResource) SetTotal(val int64) {
 	s.Total = val
-}
-
-type ListThreadsSort string
-
-const (
-	ListThreadsSortRecent    ListThreadsSort = "recent"
-	ListThreadsSortAttention ListThreadsSort = "attention"
-	ListThreadsSortManual    ListThreadsSort = "manual"
-)
-
-// AllValues returns all ListThreadsSort values.
-func (ListThreadsSort) AllValues() []ListThreadsSort {
-	return []ListThreadsSort{
-		ListThreadsSortRecent,
-		ListThreadsSortAttention,
-		ListThreadsSortManual,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ListThreadsSort) MarshalText() ([]byte, error) {
-	switch s {
-	case ListThreadsSortRecent:
-		return []byte(s), nil
-	case ListThreadsSortAttention:
-		return []byte(s), nil
-	case ListThreadsSortManual:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListThreadsSort) UnmarshalText(data []byte) error {
-	switch ListThreadsSort(data) {
-	case ListThreadsSortRecent:
-		*s = ListThreadsSortRecent
-		return nil
-	case ListThreadsSortAttention:
-		*s = ListThreadsSortAttention
-		return nil
-	case ListThreadsSortManual:
-		*s = ListThreadsSortManual
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/LoginResource
@@ -3823,23 +3069,30 @@ func (s *MemoryResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
-// One piece of a message. `type` says which of the fields below carries it:
+// One piece of a message. `type` says which field carries it:
 //
 //   - `text` — the words, in `text`
 //   - `file` — an attachment uploaded earlier, by id in `attachmentId`
-//   - `data-<something>` — context from the client, in `data`. The name after `data-` is yours; it is
-//     shown to the assistant so it can tell one kind of block from another.
+//   - `data-<name>` — context from the client, in `data`. The name is shown to the assistant so it
+//     can tell one block from another.
 //
-// Order matters: an attachment belongs where it was written, not at the end.
 // Ref: #/components/schemas/MessagePart
 type MessagePart struct {
-	// For `file` parts. The attachment must have been uploaded and not yet bound to another message.
-	AttachmentId OptNilString `json:"attachmentId"`
-	// For `data-*` parts. Any object; its keys reach the assistant as they are.
-	Data OptNilMessagePartData `json:"data"`
-	// For `text` parts.
-	Text OptNilString `json:"text"`
 	Type string       `json:"type"`
+	Text OptNilString `json:"text"`
+	// The attachment must have been uploaded and not yet sent with another message.
+	AttachmentId OptNilString          `json:"attachmentId"`
+	Data         OptNilMessagePartData `json:"data"`
+}
+
+// GetType returns the value of Type.
+func (s *MessagePart) GetType() string {
+	return s.Type
+}
+
+// GetText returns the value of Text.
+func (s *MessagePart) GetText() OptNilString {
+	return s.Text
 }
 
 // GetAttachmentId returns the value of AttachmentId.
@@ -3852,14 +3105,14 @@ func (s *MessagePart) GetData() OptNilMessagePartData {
 	return s.Data
 }
 
-// GetText returns the value of Text.
-func (s *MessagePart) GetText() OptNilString {
-	return s.Text
+// SetType sets the value of Type.
+func (s *MessagePart) SetType(val string) {
+	s.Type = val
 }
 
-// GetType returns the value of Type.
-func (s *MessagePart) GetType() string {
-	return s.Type
+// SetText sets the value of Text.
+func (s *MessagePart) SetText(val OptNilString) {
+	s.Text = val
 }
 
 // SetAttachmentId sets the value of AttachmentId.
@@ -3872,17 +3125,6 @@ func (s *MessagePart) SetData(val OptNilMessagePartData) {
 	s.Data = val
 }
 
-// SetText sets the value of Text.
-func (s *MessagePart) SetText(val OptNilString) {
-	s.Text = val
-}
-
-// SetType sets the value of Type.
-func (s *MessagePart) SetType(val string) {
-	s.Type = val
-}
-
-// For `data-*` parts. Any object; its keys reach the assistant as they are.
 type MessagePartData map[string]jx.Raw
 
 func (s *MessagePartData) init() MessagePartData {
@@ -3892,22 +3134,6 @@ func (s *MessagePartData) init() MessagePartData {
 		*s = m
 	}
 	return m
-}
-
-// Ref: #/components/schemas/ModelConfigurationResource
-type ModelConfigurationResource struct {
-	// Default Canopy model id. The model catalogue and capabilities are owned by Canopy.
-	DefaultModelId string `json:"defaultModelId"`
-}
-
-// GetDefaultModelId returns the value of DefaultModelId.
-func (s *ModelConfigurationResource) GetDefaultModelId() string {
-	return s.DefaultModelId
-}
-
-// SetDefaultModelId sets the value of DefaultModelId.
-func (s *ModelConfigurationResource) SetDefaultModelId(val string) {
-	s.DefaultModelId = val
 }
 
 // Ref: #/components/schemas/MoveFolderRequestBody
@@ -3934,60 +3160,6 @@ func (s *MoveFolderRequestBody) SetBeforeFolderId(val NilString) {
 // SetExpectedVersion sets the value of ExpectedVersion.
 func (s *MoveFolderRequestBody) SetExpectedVersion(val int64) {
 	s.ExpectedVersion = val
-}
-
-// Ref: #/components/schemas/MoveThreadRequestBody
-type MoveThreadRequestBody struct {
-	FolderId NilString `json:"folderId"`
-	// Insert immediately before this conversation in the custom order. Null appends to the end. The target
-	// must belong to the same user, project, and archive state; it may be in a different folder. Moving
-	// does not change activity time.
-	BeforeThreadId  NilString `json:"beforeThreadId"`
-	ExpectedVersion int64     `json:"expectedVersion"`
-	// Insert immediately after this conversation. Use either beforeThreadId or afterThreadId; when both
-	// are null the conversation is appended. This allows insertion after the last visible row without
-	// moving past unloaded pages.
-	AfterThreadId OptNilString `json:"afterThreadId"`
-}
-
-// GetFolderId returns the value of FolderId.
-func (s *MoveThreadRequestBody) GetFolderId() NilString {
-	return s.FolderId
-}
-
-// GetBeforeThreadId returns the value of BeforeThreadId.
-func (s *MoveThreadRequestBody) GetBeforeThreadId() NilString {
-	return s.BeforeThreadId
-}
-
-// GetExpectedVersion returns the value of ExpectedVersion.
-func (s *MoveThreadRequestBody) GetExpectedVersion() int64 {
-	return s.ExpectedVersion
-}
-
-// GetAfterThreadId returns the value of AfterThreadId.
-func (s *MoveThreadRequestBody) GetAfterThreadId() OptNilString {
-	return s.AfterThreadId
-}
-
-// SetFolderId sets the value of FolderId.
-func (s *MoveThreadRequestBody) SetFolderId(val NilString) {
-	s.FolderId = val
-}
-
-// SetBeforeThreadId sets the value of BeforeThreadId.
-func (s *MoveThreadRequestBody) SetBeforeThreadId(val NilString) {
-	s.BeforeThreadId = val
-}
-
-// SetExpectedVersion sets the value of ExpectedVersion.
-func (s *MoveThreadRequestBody) SetExpectedVersion(val int64) {
-	s.ExpectedVersion = val
-}
-
-// SetAfterThreadId sets the value of AfterThreadId.
-func (s *MoveThreadRequestBody) SetAfterThreadId(val OptNilString) {
-	s.AfterThreadId = val
 }
 
 // NewNilDateTime returns new NilDateTime with value set to v.
@@ -4035,37 +3207,37 @@ func (o NilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
-// NewNilEarlierResource returns new NilEarlierResource with value set to v.
-func NewNilEarlierResource(v EarlierResource) NilEarlierResource {
-	return NilEarlierResource{
+// NewNilFileDiffResource returns new NilFileDiffResource with value set to v.
+func NewNilFileDiffResource(v FileDiffResource) NilFileDiffResource {
+	return NilFileDiffResource{
 		Value: v,
 	}
 }
 
-// NilEarlierResource is nullable EarlierResource.
-type NilEarlierResource struct {
-	Value EarlierResource
+// NilFileDiffResource is nullable FileDiffResource.
+type NilFileDiffResource struct {
+	Value FileDiffResource
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilEarlierResource) SetTo(v EarlierResource) {
+func (o *NilFileDiffResource) SetTo(v FileDiffResource) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilEarlierResource) IsNull() bool { return o.Null }
+func (o NilFileDiffResource) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilEarlierResource) SetToNull() {
+func (o *NilFileDiffResource) SetToNull() {
 	o.Null = true
-	var v EarlierResource
+	var v FileDiffResource
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilEarlierResource) Get() (v EarlierResource, ok bool) {
+func (o NilFileDiffResource) Get() (v FileDiffResource, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -4073,7 +3245,7 @@ func (o NilEarlierResource) Get() (v EarlierResource, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilEarlierResource) Or(d EarlierResource) EarlierResource {
+func (o NilFileDiffResource) Or(d FileDiffResource) FileDiffResource {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4125,6 +3297,51 @@ func (o NilInt64) Or(d int64) int64 {
 	return d
 }
 
+// NewNilLastTurnResource returns new NilLastTurnResource with value set to v.
+func NewNilLastTurnResource(v LastTurnResource) NilLastTurnResource {
+	return NilLastTurnResource{
+		Value: v,
+	}
+}
+
+// NilLastTurnResource is nullable LastTurnResource.
+type NilLastTurnResource struct {
+	Value LastTurnResource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilLastTurnResource) SetTo(v LastTurnResource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilLastTurnResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilLastTurnResource) SetToNull() {
+	o.Null = true
+	var v LastTurnResource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilLastTurnResource) Get() (v LastTurnResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilLastTurnResource) Or(d LastTurnResource) LastTurnResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilPendingActionResource returns new NilPendingActionResource with value set to v.
 func NewNilPendingActionResource(v PendingActionResource) NilPendingActionResource {
 	return NilPendingActionResource{
@@ -4170,37 +3387,37 @@ func (o NilPendingActionResource) Or(d PendingActionResource) PendingActionResou
 	return d
 }
 
-// NewNilStreamResource returns new NilStreamResource with value set to v.
-func NewNilStreamResource(v StreamResource) NilStreamResource {
-	return NilStreamResource{
+// NewNilPresentationResource returns new NilPresentationResource with value set to v.
+func NewNilPresentationResource(v PresentationResource) NilPresentationResource {
+	return NilPresentationResource{
 		Value: v,
 	}
 }
 
-// NilStreamResource is nullable StreamResource.
-type NilStreamResource struct {
-	Value StreamResource
+// NilPresentationResource is nullable PresentationResource.
+type NilPresentationResource struct {
+	Value PresentationResource
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilStreamResource) SetTo(v StreamResource) {
+func (o *NilPresentationResource) SetTo(v PresentationResource) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilStreamResource) IsNull() bool { return o.Null }
+func (o NilPresentationResource) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilStreamResource) SetToNull() {
+func (o *NilPresentationResource) SetToNull() {
 	o.Null = true
-	var v StreamResource
+	var v PresentationResource
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilStreamResource) Get() (v StreamResource, ok bool) {
+func (o NilPresentationResource) Get() (v PresentationResource, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -4208,7 +3425,97 @@ func (o NilStreamResource) Get() (v StreamResource, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilStreamResource) Or(d StreamResource) StreamResource {
+func (o NilPresentationResource) Or(d PresentationResource) PresentationResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilReasoningEffort returns new NilReasoningEffort with value set to v.
+func NewNilReasoningEffort(v ReasoningEffort) NilReasoningEffort {
+	return NilReasoningEffort{
+		Value: v,
+	}
+}
+
+// NilReasoningEffort is nullable ReasoningEffort.
+type NilReasoningEffort struct {
+	Value ReasoningEffort
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilReasoningEffort) SetTo(v ReasoningEffort) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilReasoningEffort) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilReasoningEffort) SetToNull() {
+	o.Null = true
+	var v ReasoningEffort
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilReasoningEffort) Get() (v ReasoningEffort, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilReasoningEffort) Or(d ReasoningEffort) ReasoningEffort {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilStatusReportResource returns new NilStatusReportResource with value set to v.
+func NewNilStatusReportResource(v StatusReportResource) NilStatusReportResource {
+	return NilStatusReportResource{
+		Value: v,
+	}
+}
+
+// NilStatusReportResource is nullable StatusReportResource.
+type NilStatusReportResource struct {
+	Value StatusReportResource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilStatusReportResource) SetTo(v StatusReportResource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilStatusReportResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilStatusReportResource) SetToNull() {
+	o.Null = true
+	var v StatusReportResource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilStatusReportResource) Get() (v StatusReportResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilStatusReportResource) Or(d StatusReportResource) StatusReportResource {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4260,37 +3567,37 @@ func (o NilString) Or(d string) string {
 	return d
 }
 
-// NewNilTurnResource returns new NilTurnResource with value set to v.
-func NewNilTurnResource(v TurnResource) NilTurnResource {
-	return NilTurnResource{
+// NewNilTaskRunResource returns new NilTaskRunResource with value set to v.
+func NewNilTaskRunResource(v TaskRunResource) NilTaskRunResource {
+	return NilTaskRunResource{
 		Value: v,
 	}
 }
 
-// NilTurnResource is nullable TurnResource.
-type NilTurnResource struct {
-	Value TurnResource
+// NilTaskRunResource is nullable TaskRunResource.
+type NilTaskRunResource struct {
+	Value TaskRunResource
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilTurnResource) SetTo(v TurnResource) {
+func (o *NilTaskRunResource) SetTo(v TaskRunResource) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilTurnResource) IsNull() bool { return o.Null }
+func (o NilTaskRunResource) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilTurnResource) SetToNull() {
+func (o *NilTaskRunResource) SetToNull() {
 	o.Null = true
-	var v TurnResource
+	var v TaskRunResource
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilTurnResource) Get() (v TurnResource, ok bool) {
+func (o NilTaskRunResource) Get() (v TaskRunResource, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -4298,44 +3605,44 @@ func (o NilTurnResource) Get() (v TurnResource, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilTurnResource) Or(d TurnResource) TurnResource {
+func (o NilTaskRunResource) Or(d TaskRunResource) TaskRunResource {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewNilWaitResource returns new NilWaitResource with value set to v.
-func NewNilWaitResource(v WaitResource) NilWaitResource {
-	return NilWaitResource{
+// NewNilThreadItemResourceApprovalStatus returns new NilThreadItemResourceApprovalStatus with value set to v.
+func NewNilThreadItemResourceApprovalStatus(v ThreadItemResourceApprovalStatus) NilThreadItemResourceApprovalStatus {
+	return NilThreadItemResourceApprovalStatus{
 		Value: v,
 	}
 }
 
-// NilWaitResource is nullable WaitResource.
-type NilWaitResource struct {
-	Value WaitResource
+// NilThreadItemResourceApprovalStatus is nullable ThreadItemResourceApprovalStatus.
+type NilThreadItemResourceApprovalStatus struct {
+	Value ThreadItemResourceApprovalStatus
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilWaitResource) SetTo(v WaitResource) {
+func (o *NilThreadItemResourceApprovalStatus) SetTo(v ThreadItemResourceApprovalStatus) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilWaitResource) IsNull() bool { return o.Null }
+func (o NilThreadItemResourceApprovalStatus) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilWaitResource) SetToNull() {
+func (o *NilThreadItemResourceApprovalStatus) SetToNull() {
 	o.Null = true
-	var v WaitResource
+	var v ThreadItemResourceApprovalStatus
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilWaitResource) Get() (v WaitResource, ok bool) {
+func (o NilThreadItemResourceApprovalStatus) Get() (v ThreadItemResourceApprovalStatus, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -4343,7 +3650,188 @@ func (o NilWaitResource) Get() (v WaitResource, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilWaitResource) Or(d WaitResource) WaitResource {
+func (o NilThreadItemResourceApprovalStatus) Or(d ThreadItemResourceApprovalStatus) ThreadItemResourceApprovalStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilThreadItemResourceSourceType returns new NilThreadItemResourceSourceType with value set to v.
+func NewNilThreadItemResourceSourceType(v ThreadItemResourceSourceType) NilThreadItemResourceSourceType {
+	return NilThreadItemResourceSourceType{
+		Value: v,
+	}
+}
+
+// NilThreadItemResourceSourceType is nullable ThreadItemResourceSourceType.
+type NilThreadItemResourceSourceType struct {
+	Value ThreadItemResourceSourceType
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilThreadItemResourceSourceType) SetTo(v ThreadItemResourceSourceType) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilThreadItemResourceSourceType) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilThreadItemResourceSourceType) SetToNull() {
+	o.Null = true
+	var v ThreadItemResourceSourceType
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilThreadItemResourceSourceType) Get() (v ThreadItemResourceSourceType, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilThreadItemResourceSourceType) Or(d ThreadItemResourceSourceType) ThreadItemResourceSourceType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilThreadResource returns new NilThreadResource with value set to v.
+func NewNilThreadResource(v ThreadResource) NilThreadResource {
+	return NilThreadResource{
+		Value: v,
+	}
+}
+
+// NilThreadResource is nullable ThreadResource.
+type NilThreadResource struct {
+	Value ThreadResource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilThreadResource) SetTo(v ThreadResource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilThreadResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilThreadResource) SetToNull() {
+	o.Null = true
+	var v ThreadResource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilThreadResource) Get() (v ThreadResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilThreadResource) Or(d ThreadResource) ThreadResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilThreadTurnResource returns new NilThreadTurnResource with value set to v.
+func NewNilThreadTurnResource(v ThreadTurnResource) NilThreadTurnResource {
+	return NilThreadTurnResource{
+		Value: v,
+	}
+}
+
+// NilThreadTurnResource is nullable ThreadTurnResource.
+type NilThreadTurnResource struct {
+	Value ThreadTurnResource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilThreadTurnResource) SetTo(v ThreadTurnResource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilThreadTurnResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilThreadTurnResource) SetToNull() {
+	o.Null = true
+	var v ThreadTurnResource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilThreadTurnResource) Get() (v ThreadTurnResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilThreadTurnResource) Or(d ThreadTurnResource) ThreadTurnResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptApprovalMode returns new OptApprovalMode with value set to v.
+func NewOptApprovalMode(v ApprovalMode) OptApprovalMode {
+	return OptApprovalMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptApprovalMode is optional ApprovalMode.
+type OptApprovalMode struct {
+	Value ApprovalMode
+	Set   bool
+}
+
+// IsSet returns true if OptApprovalMode was set.
+func (o OptApprovalMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptApprovalMode) Reset() {
+	var v ApprovalMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptApprovalMode) SetTo(v ApprovalMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptApprovalMode) Get() (v ApprovalMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptApprovalMode) Or(d ApprovalMode) ApprovalMode {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4580,190 +4068,6 @@ func (o OptCreateChannelRequestBodySenderPolicy) Or(d CreateChannelRequestBodySe
 	return d
 }
 
-// NewOptCreateScheduleRequestBodyOverlapPolicy returns new OptCreateScheduleRequestBodyOverlapPolicy with value set to v.
-func NewOptCreateScheduleRequestBodyOverlapPolicy(v CreateScheduleRequestBodyOverlapPolicy) OptCreateScheduleRequestBodyOverlapPolicy {
-	return OptCreateScheduleRequestBodyOverlapPolicy{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCreateScheduleRequestBodyOverlapPolicy is optional CreateScheduleRequestBodyOverlapPolicy.
-type OptCreateScheduleRequestBodyOverlapPolicy struct {
-	Value CreateScheduleRequestBodyOverlapPolicy
-	Set   bool
-}
-
-// IsSet returns true if OptCreateScheduleRequestBodyOverlapPolicy was set.
-func (o OptCreateScheduleRequestBodyOverlapPolicy) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCreateScheduleRequestBodyOverlapPolicy) Reset() {
-	var v CreateScheduleRequestBodyOverlapPolicy
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCreateScheduleRequestBodyOverlapPolicy) SetTo(v CreateScheduleRequestBodyOverlapPolicy) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCreateScheduleRequestBodyOverlapPolicy) Get() (v CreateScheduleRequestBodyOverlapPolicy, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCreateScheduleRequestBodyOverlapPolicy) Or(d CreateScheduleRequestBodyOverlapPolicy) CreateScheduleRequestBodyOverlapPolicy {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptCreateSubagentRequestBodyForkMode returns new OptCreateSubagentRequestBodyForkMode with value set to v.
-func NewOptCreateSubagentRequestBodyForkMode(v CreateSubagentRequestBodyForkMode) OptCreateSubagentRequestBodyForkMode {
-	return OptCreateSubagentRequestBodyForkMode{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCreateSubagentRequestBodyForkMode is optional CreateSubagentRequestBodyForkMode.
-type OptCreateSubagentRequestBodyForkMode struct {
-	Value CreateSubagentRequestBodyForkMode
-	Set   bool
-}
-
-// IsSet returns true if OptCreateSubagentRequestBodyForkMode was set.
-func (o OptCreateSubagentRequestBodyForkMode) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCreateSubagentRequestBodyForkMode) Reset() {
-	var v CreateSubagentRequestBodyForkMode
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCreateSubagentRequestBodyForkMode) SetTo(v CreateSubagentRequestBodyForkMode) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCreateSubagentRequestBodyForkMode) Get() (v CreateSubagentRequestBodyForkMode, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCreateSubagentRequestBodyForkMode) Or(d CreateSubagentRequestBodyForkMode) CreateSubagentRequestBodyForkMode {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptCreateThreadRequestBodyApprovalMode returns new OptCreateThreadRequestBodyApprovalMode with value set to v.
-func NewOptCreateThreadRequestBodyApprovalMode(v CreateThreadRequestBodyApprovalMode) OptCreateThreadRequestBodyApprovalMode {
-	return OptCreateThreadRequestBodyApprovalMode{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCreateThreadRequestBodyApprovalMode is optional CreateThreadRequestBodyApprovalMode.
-type OptCreateThreadRequestBodyApprovalMode struct {
-	Value CreateThreadRequestBodyApprovalMode
-	Set   bool
-}
-
-// IsSet returns true if OptCreateThreadRequestBodyApprovalMode was set.
-func (o OptCreateThreadRequestBodyApprovalMode) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCreateThreadRequestBodyApprovalMode) Reset() {
-	var v CreateThreadRequestBodyApprovalMode
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCreateThreadRequestBodyApprovalMode) SetTo(v CreateThreadRequestBodyApprovalMode) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCreateThreadRequestBodyApprovalMode) Get() (v CreateThreadRequestBodyApprovalMode, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCreateThreadRequestBodyApprovalMode) Or(d CreateThreadRequestBodyApprovalMode) CreateThreadRequestBodyApprovalMode {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptDateTime returns new OptDateTime with value set to v.
-func NewOptDateTime(v time.Time) OptDateTime {
-	return OptDateTime{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDateTime is optional time.Time.
-type OptDateTime struct {
-	Value time.Time
-	Set   bool
-}
-
-// IsSet returns true if OptDateTime was set.
-func (o OptDateTime) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDateTime) Reset() {
-	var v time.Time
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDateTime) SetTo(v time.Time) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDateTime) Get() (v time.Time, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDateTime) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptErrorMeta returns new OptErrorMeta with value set to v.
 func NewOptErrorMeta(v ErrorMeta) OptErrorMeta {
 	return OptErrorMeta{
@@ -4804,6 +4108,98 @@ func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptFolderResource returns new OptFolderResource with value set to v.
+func NewOptFolderResource(v FolderResource) OptFolderResource {
+	return OptFolderResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptFolderResource is optional FolderResource.
+type OptFolderResource struct {
+	Value FolderResource
+	Set   bool
+}
+
+// IsSet returns true if OptFolderResource was set.
+func (o OptFolderResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptFolderResource) Reset() {
+	var v FolderResource
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptFolderResource) SetTo(v FolderResource) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptFolderResource) Get() (v FolderResource, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptFolderResource) Or(d FolderResource) FolderResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInt returns new OptInt with value set to v.
+func NewOptInt(v int) OptInt {
+	return OptInt{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInt is optional int.
+type OptInt struct {
+	Value int
+	Set   bool
+}
+
+// IsSet returns true if OptInt was set.
+func (o OptInt) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInt) Reset() {
+	var v int
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInt) SetTo(v int) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInt) Get() (v int, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInt) Or(d int) int {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4856,38 +4252,38 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewOptListThreadsSort returns new OptListThreadsSort with value set to v.
-func NewOptListThreadsSort(v ListThreadsSort) OptListThreadsSort {
-	return OptListThreadsSort{
+// NewOptItemFrame returns new OptItemFrame with value set to v.
+func NewOptItemFrame(v ItemFrame) OptItemFrame {
+	return OptItemFrame{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptListThreadsSort is optional ListThreadsSort.
-type OptListThreadsSort struct {
-	Value ListThreadsSort
+// OptItemFrame is optional ItemFrame.
+type OptItemFrame struct {
+	Value ItemFrame
 	Set   bool
 }
 
-// IsSet returns true if OptListThreadsSort was set.
-func (o OptListThreadsSort) IsSet() bool { return o.Set }
+// IsSet returns true if OptItemFrame was set.
+func (o OptItemFrame) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptListThreadsSort) Reset() {
-	var v ListThreadsSort
+func (o *OptItemFrame) Reset() {
+	var v ItemFrame
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptListThreadsSort) SetTo(v ListThreadsSort) {
+func (o *OptItemFrame) SetTo(v ItemFrame) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptListThreadsSort) Get() (v ListThreadsSort, ok bool) {
+func (o OptItemFrame) Get() (v ItemFrame, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -4895,75 +4291,7 @@ func (o OptListThreadsSort) Get() (v ListThreadsSort, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptListThreadsSort) Or(d ListThreadsSort) ListThreadsSort {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNilAttachmentResourceArray returns new OptNilAttachmentResourceArray with value set to v.
-func NewOptNilAttachmentResourceArray(v []AttachmentResource) OptNilAttachmentResourceArray {
-	return OptNilAttachmentResourceArray{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilAttachmentResourceArray is optional nullable []AttachmentResource.
-type OptNilAttachmentResourceArray struct {
-	Value []AttachmentResource
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilAttachmentResourceArray was set.
-func (o OptNilAttachmentResourceArray) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilAttachmentResourceArray) Reset() {
-	var v []AttachmentResource
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilAttachmentResourceArray) SetTo(v []AttachmentResource) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilAttachmentResourceArray) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilAttachmentResourceArray) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v []AttachmentResource
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilAttachmentResourceArray) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilAttachmentResourceArray) Get() (v []AttachmentResource, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilAttachmentResourceArray) Or(d []AttachmentResource) []AttachmentResource {
+func (o OptItemFrame) Or(d ItemFrame) ItemFrame {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5032,74 +4360,6 @@ func (o OptNilClientActionRequestArray) Get() (v []ClientActionRequest, ok bool)
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilClientActionRequestArray) Or(d []ClientActionRequest) []ClientActionRequest {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNilClientContextPartArray returns new OptNilClientContextPartArray with value set to v.
-func NewOptNilClientContextPartArray(v []ClientContextPart) OptNilClientContextPartArray {
-	return OptNilClientContextPartArray{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilClientContextPartArray is optional nullable []ClientContextPart.
-type OptNilClientContextPartArray struct {
-	Value []ClientContextPart
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilClientContextPartArray was set.
-func (o OptNilClientContextPartArray) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilClientContextPartArray) Reset() {
-	var v []ClientContextPart
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilClientContextPartArray) SetTo(v []ClientContextPart) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilClientContextPartArray) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilClientContextPartArray) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v []ClientContextPart
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilClientContextPartArray) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilClientContextPartArray) Get() (v []ClientContextPart, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilClientContextPartArray) Or(d []ClientContextPart) []ClientContextPart {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5242,57 +4502,57 @@ func (o OptNilClientFunctionRequestParameters) Or(d ClientFunctionRequestParamet
 	return d
 }
 
-// NewOptNilFileDiffResource returns new OptNilFileDiffResource with value set to v.
-func NewOptNilFileDiffResource(v FileDiffResource) OptNilFileDiffResource {
-	return OptNilFileDiffResource{
+// NewOptNilDateTime returns new OptNilDateTime with value set to v.
+func NewOptNilDateTime(v time.Time) OptNilDateTime {
+	return OptNilDateTime{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNilFileDiffResource is optional nullable FileDiffResource.
-type OptNilFileDiffResource struct {
-	Value FileDiffResource
+// OptNilDateTime is optional nullable time.Time.
+type OptNilDateTime struct {
+	Value time.Time
 	Set   bool
 	Null  bool
 }
 
-// IsSet returns true if OptNilFileDiffResource was set.
-func (o OptNilFileDiffResource) IsSet() bool { return o.Set }
+// IsSet returns true if OptNilDateTime was set.
+func (o OptNilDateTime) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNilFileDiffResource) Reset() {
-	var v FileDiffResource
+func (o *OptNilDateTime) Reset() {
+	var v time.Time
 	o.Value = v
 	o.Set = false
 	o.Null = false
 }
 
 // SetTo sets value to v.
-func (o *OptNilFileDiffResource) SetTo(v FileDiffResource) {
+func (o *OptNilDateTime) SetTo(v time.Time) {
 	o.Set = true
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o OptNilFileDiffResource) IsNull() bool { return o.Null }
+func (o OptNilDateTime) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *OptNilFileDiffResource) SetToNull() {
+func (o *OptNilDateTime) SetToNull() {
 	o.Set = true
 	o.Null = true
-	var v FileDiffResource
+	var v time.Time
 	o.Value = v
 }
 
 // IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilFileDiffResource) IsEmpty() bool {
+func (o OptNilDateTime) IsEmpty() bool {
 	return !o.Set && !o.Null
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNilFileDiffResource) Get() (v FileDiffResource, ok bool) {
+func (o OptNilDateTime) Get() (v time.Time, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -5303,7 +4563,7 @@ func (o OptNilFileDiffResource) Get() (v FileDiffResource, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNilFileDiffResource) Or(d FileDiffResource) FileDiffResource {
+func (o OptNilDateTime) Or(d time.Time) time.Time {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5378,74 +4638,6 @@ func (o OptNilInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewOptNilItemResourceApproval returns new OptNilItemResourceApproval with value set to v.
-func NewOptNilItemResourceApproval(v ItemResourceApproval) OptNilItemResourceApproval {
-	return OptNilItemResourceApproval{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilItemResourceApproval is optional nullable ItemResourceApproval.
-type OptNilItemResourceApproval struct {
-	Value ItemResourceApproval
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilItemResourceApproval was set.
-func (o OptNilItemResourceApproval) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilItemResourceApproval) Reset() {
-	var v ItemResourceApproval
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilItemResourceApproval) SetTo(v ItemResourceApproval) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilItemResourceApproval) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilItemResourceApproval) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v ItemResourceApproval
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilItemResourceApproval) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilItemResourceApproval) Get() (v ItemResourceApproval, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilItemResourceApproval) Or(d ItemResourceApproval) ItemResourceApproval {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNilMessagePartData returns new OptNilMessagePartData with value set to v.
 func NewOptNilMessagePartData(v MessagePartData) OptNilMessagePartData {
 	return OptNilMessagePartData{
@@ -5514,57 +4706,57 @@ func (o OptNilMessagePartData) Or(d MessagePartData) MessagePartData {
 	return d
 }
 
-// NewOptNilPartResourceArray returns new OptNilPartResourceArray with value set to v.
-func NewOptNilPartResourceArray(v []PartResource) OptNilPartResourceArray {
-	return OptNilPartResourceArray{
+// NewOptNilReasoningEffort returns new OptNilReasoningEffort with value set to v.
+func NewOptNilReasoningEffort(v ReasoningEffort) OptNilReasoningEffort {
+	return OptNilReasoningEffort{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNilPartResourceArray is optional nullable []PartResource.
-type OptNilPartResourceArray struct {
-	Value []PartResource
+// OptNilReasoningEffort is optional nullable ReasoningEffort.
+type OptNilReasoningEffort struct {
+	Value ReasoningEffort
 	Set   bool
 	Null  bool
 }
 
-// IsSet returns true if OptNilPartResourceArray was set.
-func (o OptNilPartResourceArray) IsSet() bool { return o.Set }
+// IsSet returns true if OptNilReasoningEffort was set.
+func (o OptNilReasoningEffort) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNilPartResourceArray) Reset() {
-	var v []PartResource
+func (o *OptNilReasoningEffort) Reset() {
+	var v ReasoningEffort
 	o.Value = v
 	o.Set = false
 	o.Null = false
 }
 
 // SetTo sets value to v.
-func (o *OptNilPartResourceArray) SetTo(v []PartResource) {
+func (o *OptNilReasoningEffort) SetTo(v ReasoningEffort) {
 	o.Set = true
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o OptNilPartResourceArray) IsNull() bool { return o.Null }
+func (o OptNilReasoningEffort) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *OptNilPartResourceArray) SetToNull() {
+func (o *OptNilReasoningEffort) SetToNull() {
 	o.Set = true
 	o.Null = true
-	var v []PartResource
+	var v ReasoningEffort
 	o.Value = v
 }
 
 // IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilPartResourceArray) IsEmpty() bool {
+func (o OptNilReasoningEffort) IsEmpty() bool {
 	return !o.Set && !o.Null
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNilPartResourceArray) Get() (v []PartResource, ok bool) {
+func (o OptNilReasoningEffort) Get() (v ReasoningEffort, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -5575,143 +4767,7 @@ func (o OptNilPartResourceArray) Get() (v []PartResource, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNilPartResourceArray) Or(d []PartResource) []PartResource {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNilPresentationResource returns new OptNilPresentationResource with value set to v.
-func NewOptNilPresentationResource(v PresentationResource) OptNilPresentationResource {
-	return OptNilPresentationResource{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilPresentationResource is optional nullable PresentationResource.
-type OptNilPresentationResource struct {
-	Value PresentationResource
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilPresentationResource was set.
-func (o OptNilPresentationResource) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilPresentationResource) Reset() {
-	var v PresentationResource
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilPresentationResource) SetTo(v PresentationResource) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilPresentationResource) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilPresentationResource) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v PresentationResource
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilPresentationResource) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilPresentationResource) Get() (v PresentationResource, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilPresentationResource) Or(d PresentationResource) PresentationResource {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNilQuestionArray returns new OptNilQuestionArray with value set to v.
-func NewOptNilQuestionArray(v []Question) OptNilQuestionArray {
-	return OptNilQuestionArray{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilQuestionArray is optional nullable []Question.
-type OptNilQuestionArray struct {
-	Value []Question
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilQuestionArray was set.
-func (o OptNilQuestionArray) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilQuestionArray) Reset() {
-	var v []Question
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilQuestionArray) SetTo(v []Question) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilQuestionArray) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilQuestionArray) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v []Question
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilQuestionArray) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilQuestionArray) Get() (v []Question, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilQuestionArray) Or(d []Question) []Question {
+func (o OptNilReasoningEffort) Or(d ReasoningEffort) ReasoningEffort {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5922,6 +4978,52 @@ func (o OptNilStringArray) Or(d []string) []string {
 	return d
 }
 
+// NewOptReasoningEffort returns new OptReasoningEffort with value set to v.
+func NewOptReasoningEffort(v ReasoningEffort) OptReasoningEffort {
+	return OptReasoningEffort{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptReasoningEffort is optional ReasoningEffort.
+type OptReasoningEffort struct {
+	Value ReasoningEffort
+	Set   bool
+}
+
+// IsSet returns true if OptReasoningEffort was set.
+func (o OptReasoningEffort) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptReasoningEffort) Reset() {
+	var v ReasoningEffort
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptReasoningEffort) SetTo(v ReasoningEffort) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptReasoningEffort) Get() (v ReasoningEffort, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptReasoningEffort) Or(d ReasoningEffort) ReasoningEffort {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptRotateSecretRequestBody returns new OptRotateSecretRequestBody with value set to v.
 func NewOptRotateSecretRequestBody(v RotateSecretRequestBody) OptRotateSecretRequestBody {
 	return OptRotateSecretRequestBody{
@@ -5968,6 +5070,328 @@ func (o OptRotateSecretRequestBody) Or(d RotateSecretRequestBody) RotateSecretRe
 	return d
 }
 
+// NewOptSearchTasksRequestBodyActionType returns new OptSearchTasksRequestBodyActionType with value set to v.
+func NewOptSearchTasksRequestBodyActionType(v SearchTasksRequestBodyActionType) OptSearchTasksRequestBodyActionType {
+	return OptSearchTasksRequestBodyActionType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSearchTasksRequestBodyActionType is optional SearchTasksRequestBodyActionType.
+type OptSearchTasksRequestBodyActionType struct {
+	Value SearchTasksRequestBodyActionType
+	Set   bool
+}
+
+// IsSet returns true if OptSearchTasksRequestBodyActionType was set.
+func (o OptSearchTasksRequestBodyActionType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSearchTasksRequestBodyActionType) Reset() {
+	var v SearchTasksRequestBodyActionType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSearchTasksRequestBodyActionType) SetTo(v SearchTasksRequestBodyActionType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSearchTasksRequestBodyActionType) Get() (v SearchTasksRequestBodyActionType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSearchTasksRequestBodyActionType) Or(d SearchTasksRequestBodyActionType) SearchTasksRequestBodyActionType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSearchTasksRequestBodyStatus returns new OptSearchTasksRequestBodyStatus with value set to v.
+func NewOptSearchTasksRequestBodyStatus(v SearchTasksRequestBodyStatus) OptSearchTasksRequestBodyStatus {
+	return OptSearchTasksRequestBodyStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSearchTasksRequestBodyStatus is optional SearchTasksRequestBodyStatus.
+type OptSearchTasksRequestBodyStatus struct {
+	Value SearchTasksRequestBodyStatus
+	Set   bool
+}
+
+// IsSet returns true if OptSearchTasksRequestBodyStatus was set.
+func (o OptSearchTasksRequestBodyStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSearchTasksRequestBodyStatus) Reset() {
+	var v SearchTasksRequestBodyStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSearchTasksRequestBodyStatus) SetTo(v SearchTasksRequestBodyStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSearchTasksRequestBodyStatus) Get() (v SearchTasksRequestBodyStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSearchTasksRequestBodyStatus) Or(d SearchTasksRequestBodyStatus) SearchTasksRequestBodyStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSearchTasksRequestBodyTriggerType returns new OptSearchTasksRequestBodyTriggerType with value set to v.
+func NewOptSearchTasksRequestBodyTriggerType(v SearchTasksRequestBodyTriggerType) OptSearchTasksRequestBodyTriggerType {
+	return OptSearchTasksRequestBodyTriggerType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSearchTasksRequestBodyTriggerType is optional SearchTasksRequestBodyTriggerType.
+type OptSearchTasksRequestBodyTriggerType struct {
+	Value SearchTasksRequestBodyTriggerType
+	Set   bool
+}
+
+// IsSet returns true if OptSearchTasksRequestBodyTriggerType was set.
+func (o OptSearchTasksRequestBodyTriggerType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSearchTasksRequestBodyTriggerType) Reset() {
+	var v SearchTasksRequestBodyTriggerType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSearchTasksRequestBodyTriggerType) SetTo(v SearchTasksRequestBodyTriggerType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSearchTasksRequestBodyTriggerType) Get() (v SearchTasksRequestBodyTriggerType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSearchTasksRequestBodyTriggerType) Or(d SearchTasksRequestBodyTriggerType) SearchTasksRequestBodyTriggerType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSearchThreadsRequestBodyRole returns new OptSearchThreadsRequestBodyRole with value set to v.
+func NewOptSearchThreadsRequestBodyRole(v SearchThreadsRequestBodyRole) OptSearchThreadsRequestBodyRole {
+	return OptSearchThreadsRequestBodyRole{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSearchThreadsRequestBodyRole is optional SearchThreadsRequestBodyRole.
+type OptSearchThreadsRequestBodyRole struct {
+	Value SearchThreadsRequestBodyRole
+	Set   bool
+}
+
+// IsSet returns true if OptSearchThreadsRequestBodyRole was set.
+func (o OptSearchThreadsRequestBodyRole) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSearchThreadsRequestBodyRole) Reset() {
+	var v SearchThreadsRequestBodyRole
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSearchThreadsRequestBodyRole) SetTo(v SearchThreadsRequestBodyRole) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSearchThreadsRequestBodyRole) Get() (v SearchThreadsRequestBodyRole, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSearchThreadsRequestBodyRole) Or(d SearchThreadsRequestBodyRole) SearchThreadsRequestBodyRole {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSearchThreadsRequestBodySort returns new OptSearchThreadsRequestBodySort with value set to v.
+func NewOptSearchThreadsRequestBodySort(v SearchThreadsRequestBodySort) OptSearchThreadsRequestBodySort {
+	return OptSearchThreadsRequestBodySort{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSearchThreadsRequestBodySort is optional SearchThreadsRequestBodySort.
+type OptSearchThreadsRequestBodySort struct {
+	Value SearchThreadsRequestBodySort
+	Set   bool
+}
+
+// IsSet returns true if OptSearchThreadsRequestBodySort was set.
+func (o OptSearchThreadsRequestBodySort) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSearchThreadsRequestBodySort) Reset() {
+	var v SearchThreadsRequestBodySort
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSearchThreadsRequestBodySort) SetTo(v SearchThreadsRequestBodySort) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSearchThreadsRequestBodySort) Get() (v SearchThreadsRequestBodySort, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSearchThreadsRequestBodySort) Or(d SearchThreadsRequestBodySort) SearchThreadsRequestBodySort {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSearchThreadsRequestBodyState returns new OptSearchThreadsRequestBodyState with value set to v.
+func NewOptSearchThreadsRequestBodyState(v SearchThreadsRequestBodyState) OptSearchThreadsRequestBodyState {
+	return OptSearchThreadsRequestBodyState{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSearchThreadsRequestBodyState is optional SearchThreadsRequestBodyState.
+type OptSearchThreadsRequestBodyState struct {
+	Value SearchThreadsRequestBodyState
+	Set   bool
+}
+
+// IsSet returns true if OptSearchThreadsRequestBodyState was set.
+func (o OptSearchThreadsRequestBodyState) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSearchThreadsRequestBodyState) Reset() {
+	var v SearchThreadsRequestBodyState
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSearchThreadsRequestBodyState) SetTo(v SearchThreadsRequestBodyState) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSearchThreadsRequestBodyState) Get() (v SearchThreadsRequestBodyState, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSearchThreadsRequestBodyState) Or(d SearchThreadsRequestBodyState) SearchThreadsRequestBodyState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSendMessageRequestBody returns new OptSendMessageRequestBody with value set to v.
+func NewOptSendMessageRequestBody(v SendMessageRequestBody) OptSendMessageRequestBody {
+	return OptSendMessageRequestBody{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSendMessageRequestBody is optional SendMessageRequestBody.
+type OptSendMessageRequestBody struct {
+	Value SendMessageRequestBody
+	Set   bool
+}
+
+// IsSet returns true if OptSendMessageRequestBody was set.
+func (o OptSendMessageRequestBody) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSendMessageRequestBody) Reset() {
+	var v SendMessageRequestBody
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSendMessageRequestBody) SetTo(v SendMessageRequestBody) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSendMessageRequestBody) Get() (v SendMessageRequestBody, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSendMessageRequestBody) Or(d SendMessageRequestBody) SendMessageRequestBody {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -6008,6 +5432,282 @@ func (o OptString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTaskAction returns new OptTaskAction with value set to v.
+func NewOptTaskAction(v TaskAction) OptTaskAction {
+	return OptTaskAction{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTaskAction is optional TaskAction.
+type OptTaskAction struct {
+	Value TaskAction
+	Set   bool
+}
+
+// IsSet returns true if OptTaskAction was set.
+func (o OptTaskAction) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTaskAction) Reset() {
+	var v TaskAction
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTaskAction) SetTo(v TaskAction) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTaskAction) Get() (v TaskAction, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTaskAction) Or(d TaskAction) TaskAction {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTaskResource returns new OptTaskResource with value set to v.
+func NewOptTaskResource(v TaskResource) OptTaskResource {
+	return OptTaskResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTaskResource is optional TaskResource.
+type OptTaskResource struct {
+	Value TaskResource
+	Set   bool
+}
+
+// IsSet returns true if OptTaskResource was set.
+func (o OptTaskResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTaskResource) Reset() {
+	var v TaskResource
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTaskResource) SetTo(v TaskResource) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTaskResource) Get() (v TaskResource, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTaskResource) Or(d TaskResource) TaskResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTaskTrigger returns new OptTaskTrigger with value set to v.
+func NewOptTaskTrigger(v TaskTrigger) OptTaskTrigger {
+	return OptTaskTrigger{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTaskTrigger is optional TaskTrigger.
+type OptTaskTrigger struct {
+	Value TaskTrigger
+	Set   bool
+}
+
+// IsSet returns true if OptTaskTrigger was set.
+func (o OptTaskTrigger) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTaskTrigger) Reset() {
+	var v TaskTrigger
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTaskTrigger) SetTo(v TaskTrigger) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTaskTrigger) Get() (v TaskTrigger, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTaskTrigger) Or(d TaskTrigger) TaskTrigger {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTaskTriggerOverlapPolicy returns new OptTaskTriggerOverlapPolicy with value set to v.
+func NewOptTaskTriggerOverlapPolicy(v TaskTriggerOverlapPolicy) OptTaskTriggerOverlapPolicy {
+	return OptTaskTriggerOverlapPolicy{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTaskTriggerOverlapPolicy is optional TaskTriggerOverlapPolicy.
+type OptTaskTriggerOverlapPolicy struct {
+	Value TaskTriggerOverlapPolicy
+	Set   bool
+}
+
+// IsSet returns true if OptTaskTriggerOverlapPolicy was set.
+func (o OptTaskTriggerOverlapPolicy) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTaskTriggerOverlapPolicy) Reset() {
+	var v TaskTriggerOverlapPolicy
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTaskTriggerOverlapPolicy) SetTo(v TaskTriggerOverlapPolicy) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTaskTriggerOverlapPolicy) Get() (v TaskTriggerOverlapPolicy, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTaskTriggerOverlapPolicy) Or(d TaskTriggerOverlapPolicy) TaskTriggerOverlapPolicy {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptThreadResource returns new OptThreadResource with value set to v.
+func NewOptThreadResource(v ThreadResource) OptThreadResource {
+	return OptThreadResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptThreadResource is optional ThreadResource.
+type OptThreadResource struct {
+	Value ThreadResource
+	Set   bool
+}
+
+// IsSet returns true if OptThreadResource was set.
+func (o OptThreadResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptThreadResource) Reset() {
+	var v ThreadResource
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptThreadResource) SetTo(v ThreadResource) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptThreadResource) Get() (v ThreadResource, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptThreadResource) Or(d ThreadResource) ThreadResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptThreadTurnResource returns new OptThreadTurnResource with value set to v.
+func NewOptThreadTurnResource(v ThreadTurnResource) OptThreadTurnResource {
+	return OptThreadTurnResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptThreadTurnResource is optional ThreadTurnResource.
+type OptThreadTurnResource struct {
+	Value ThreadTurnResource
+	Set   bool
+}
+
+// IsSet returns true if OptThreadTurnResource was set.
+func (o OptThreadTurnResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptThreadTurnResource) Reset() {
+	var v ThreadTurnResource
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptThreadTurnResource) SetTo(v ThreadTurnResource) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptThreadTurnResource) Get() (v ThreadTurnResource, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptThreadTurnResource) Or(d ThreadTurnResource) ThreadTurnResource {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6152,116 +5852,16 @@ func (o OptUpdateChannelRequestBodySenderPolicy) Or(d UpdateChannelRequestBodySe
 	return d
 }
 
-// NewOptUpdateScheduleRequestBodyOverlapPolicy returns new OptUpdateScheduleRequestBodyOverlapPolicy with value set to v.
-func NewOptUpdateScheduleRequestBodyOverlapPolicy(v UpdateScheduleRequestBodyOverlapPolicy) OptUpdateScheduleRequestBodyOverlapPolicy {
-	return OptUpdateScheduleRequestBodyOverlapPolicy{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptUpdateScheduleRequestBodyOverlapPolicy is optional UpdateScheduleRequestBodyOverlapPolicy.
-type OptUpdateScheduleRequestBodyOverlapPolicy struct {
-	Value UpdateScheduleRequestBodyOverlapPolicy
-	Set   bool
-}
-
-// IsSet returns true if OptUpdateScheduleRequestBodyOverlapPolicy was set.
-func (o OptUpdateScheduleRequestBodyOverlapPolicy) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptUpdateScheduleRequestBodyOverlapPolicy) Reset() {
-	var v UpdateScheduleRequestBodyOverlapPolicy
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptUpdateScheduleRequestBodyOverlapPolicy) SetTo(v UpdateScheduleRequestBodyOverlapPolicy) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptUpdateScheduleRequestBodyOverlapPolicy) Get() (v UpdateScheduleRequestBodyOverlapPolicy, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptUpdateScheduleRequestBodyOverlapPolicy) Or(d UpdateScheduleRequestBodyOverlapPolicy) UpdateScheduleRequestBodyOverlapPolicy {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptUpdateThreadRequestBodyApprovalMode returns new OptUpdateThreadRequestBodyApprovalMode with value set to v.
-func NewOptUpdateThreadRequestBodyApprovalMode(v UpdateThreadRequestBodyApprovalMode) OptUpdateThreadRequestBodyApprovalMode {
-	return OptUpdateThreadRequestBodyApprovalMode{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptUpdateThreadRequestBodyApprovalMode is optional UpdateThreadRequestBodyApprovalMode.
-type OptUpdateThreadRequestBodyApprovalMode struct {
-	Value UpdateThreadRequestBodyApprovalMode
-	Set   bool
-}
-
-// IsSet returns true if OptUpdateThreadRequestBodyApprovalMode was set.
-func (o OptUpdateThreadRequestBodyApprovalMode) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptUpdateThreadRequestBodyApprovalMode) Reset() {
-	var v UpdateThreadRequestBodyApprovalMode
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptUpdateThreadRequestBodyApprovalMode) SetTo(v UpdateThreadRequestBodyApprovalMode) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptUpdateThreadRequestBodyApprovalMode) Get() (v UpdateThreadRequestBodyApprovalMode, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptUpdateThreadRequestBodyApprovalMode) Or(d UpdateThreadRequestBodyApprovalMode) UpdateThreadRequestBodyApprovalMode {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // Ref: #/components/schemas/PartResource
 type PartResource struct {
-	// For `file` parts. Points at one of this entry's `attachments`.
-	AttachmentId OptNilString `json:"attachmentId"`
-	// Addresses this part in the live stream — text arrives as `append` frames pointing at
-	// `/items/{item}/parts/{id}/text`.
-	//
-	// Not an array index. It looks like one today because parts are only ever appended, and a client that
-	// treats it as one keeps working right up until that stops being true.
-	ID string `json:"id"`
-	// For `text` parts. Grows as the answer is written.
-	Text OptNilString     `json:"text"`
+	// Addresses this part in the realtime stream: text arrives as `append` frames pointing at
+	// `/items/{item}/parts/{id}/text`. Not an array index.
+	ID   string           `json:"id"`
 	Type PartResourceType `json:"type"`
-}
-
-// GetAttachmentId returns the value of AttachmentId.
-func (s *PartResource) GetAttachmentId() OptNilString {
-	return s.AttachmentId
+	// For `text` parts. Grows as the answer is written.
+	Text NilString `json:"text"`
+	// For `file` parts. Points at one of the item's `attachments`.
+	AttachmentId NilString `json:"attachmentId"`
 }
 
 // GetID returns the value of ID.
@@ -6269,19 +5869,19 @@ func (s *PartResource) GetID() string {
 	return s.ID
 }
 
-// GetText returns the value of Text.
-func (s *PartResource) GetText() OptNilString {
-	return s.Text
-}
-
 // GetType returns the value of Type.
 func (s *PartResource) GetType() PartResourceType {
 	return s.Type
 }
 
-// SetAttachmentId sets the value of AttachmentId.
-func (s *PartResource) SetAttachmentId(val OptNilString) {
-	s.AttachmentId = val
+// GetText returns the value of Text.
+func (s *PartResource) GetText() NilString {
+	return s.Text
+}
+
+// GetAttachmentId returns the value of AttachmentId.
+func (s *PartResource) GetAttachmentId() NilString {
+	return s.AttachmentId
 }
 
 // SetID sets the value of ID.
@@ -6289,14 +5889,19 @@ func (s *PartResource) SetID(val string) {
 	s.ID = val
 }
 
-// SetText sets the value of Text.
-func (s *PartResource) SetText(val OptNilString) {
-	s.Text = val
-}
-
 // SetType sets the value of Type.
 func (s *PartResource) SetType(val PartResourceType) {
 	s.Type = val
+}
+
+// SetText sets the value of Text.
+func (s *PartResource) SetText(val NilString) {
+	s.Text = val
+}
+
+// SetAttachmentId sets the value of AttachmentId.
+func (s *PartResource) SetAttachmentId(val NilString) {
+	s.AttachmentId = val
 }
 
 type PartResourceType string
@@ -6340,13 +5945,14 @@ func (s *PartResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// PauseScheduleOK is response for PauseSchedule operation.
-type PauseScheduleOK struct{}
-
+// A tool call that cannot continue until a person approves it or answers it.
 // Ref: #/components/schemas/PendingActionResource
 type PendingActionResource struct {
-	ThreadId string                    `json:"threadId"`
-	Kind     PendingActionResourceKind `json:"kind"`
+	// The conversation the tool call belongs to; a subagent's id when the subagent is the one waiting.
+	ThreadId string `json:"threadId"`
+	// The waiting tool calls. Approvals come in batches; a question is a single item.
+	ItemIds []string                  `json:"itemIds"`
+	Type    PendingActionResourceType `json:"type"`
 }
 
 // GetThreadId returns the value of ThreadId.
@@ -6354,9 +5960,14 @@ func (s *PendingActionResource) GetThreadId() string {
 	return s.ThreadId
 }
 
-// GetKind returns the value of Kind.
-func (s *PendingActionResource) GetKind() PendingActionResourceKind {
-	return s.Kind
+// GetItemIds returns the value of ItemIds.
+func (s *PendingActionResource) GetItemIds() []string {
+	return s.ItemIds
+}
+
+// GetType returns the value of Type.
+func (s *PendingActionResource) GetType() PendingActionResourceType {
+	return s.Type
 }
 
 // SetThreadId sets the value of ThreadId.
@@ -6364,32 +5975,37 @@ func (s *PendingActionResource) SetThreadId(val string) {
 	s.ThreadId = val
 }
 
-// SetKind sets the value of Kind.
-func (s *PendingActionResource) SetKind(val PendingActionResourceKind) {
-	s.Kind = val
+// SetItemIds sets the value of ItemIds.
+func (s *PendingActionResource) SetItemIds(val []string) {
+	s.ItemIds = val
 }
 
-type PendingActionResourceKind string
+// SetType sets the value of Type.
+func (s *PendingActionResource) SetType(val PendingActionResourceType) {
+	s.Type = val
+}
+
+type PendingActionResourceType string
 
 const (
-	PendingActionResourceKindToolApproval PendingActionResourceKind = "tool_approval"
-	PendingActionResourceKindUserInput    PendingActionResourceKind = "user_input"
+	PendingActionResourceTypeApproval PendingActionResourceType = "approval"
+	PendingActionResourceTypeQuestion PendingActionResourceType = "question"
 )
 
-// AllValues returns all PendingActionResourceKind values.
-func (PendingActionResourceKind) AllValues() []PendingActionResourceKind {
-	return []PendingActionResourceKind{
-		PendingActionResourceKindToolApproval,
-		PendingActionResourceKindUserInput,
+// AllValues returns all PendingActionResourceType values.
+func (PendingActionResourceType) AllValues() []PendingActionResourceType {
+	return []PendingActionResourceType{
+		PendingActionResourceTypeApproval,
+		PendingActionResourceTypeQuestion,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s PendingActionResourceKind) MarshalText() ([]byte, error) {
+func (s PendingActionResourceType) MarshalText() ([]byte, error) {
 	switch s {
-	case PendingActionResourceKindToolApproval:
+	case PendingActionResourceTypeApproval:
 		return []byte(s), nil
-	case PendingActionResourceKindUserInput:
+	case PendingActionResourceTypeQuestion:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6397,17 +6013,55 @@ func (s PendingActionResourceKind) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PendingActionResourceKind) UnmarshalText(data []byte) error {
-	switch PendingActionResourceKind(data) {
-	case PendingActionResourceKindToolApproval:
-		*s = PendingActionResourceKindToolApproval
+func (s *PendingActionResourceType) UnmarshalText(data []byte) error {
+	switch PendingActionResourceType(data) {
+	case PendingActionResourceTypeApproval:
+		*s = PendingActionResourceTypeApproval
 		return nil
-	case PendingActionResourceKindUserInput:
-		*s = PendingActionResourceKindUserInput
+	case PendingActionResourceTypeQuestion:
+		*s = PendingActionResourceTypeQuestion
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/PlaceThreadRequestBody
+type PlaceThreadRequestBody struct {
+	BeforeThreadId OptNilString `json:"beforeThreadId"`
+	AfterThreadId  OptNilString `json:"afterThreadId"`
+	// The conversation's `orderVersion`.
+	ExpectedVersion int64 `json:"expectedVersion"`
+}
+
+// GetBeforeThreadId returns the value of BeforeThreadId.
+func (s *PlaceThreadRequestBody) GetBeforeThreadId() OptNilString {
+	return s.BeforeThreadId
+}
+
+// GetAfterThreadId returns the value of AfterThreadId.
+func (s *PlaceThreadRequestBody) GetAfterThreadId() OptNilString {
+	return s.AfterThreadId
+}
+
+// GetExpectedVersion returns the value of ExpectedVersion.
+func (s *PlaceThreadRequestBody) GetExpectedVersion() int64 {
+	return s.ExpectedVersion
+}
+
+// SetBeforeThreadId sets the value of BeforeThreadId.
+func (s *PlaceThreadRequestBody) SetBeforeThreadId(val OptNilString) {
+	s.BeforeThreadId = val
+}
+
+// SetAfterThreadId sets the value of AfterThreadId.
+func (s *PlaceThreadRequestBody) SetAfterThreadId(val OptNilString) {
+	s.AfterThreadId = val
+}
+
+// SetExpectedVersion sets the value of ExpectedVersion.
+func (s *PlaceThreadRequestBody) SetExpectedVersion(val int64) {
+	s.ExpectedVersion = val
 }
 
 // Ref: #/components/schemas/PlatformListResponseBody
@@ -6656,55 +6310,52 @@ func (s *PlatformResourceSetupMethod) UnmarshalText(data []byte) error {
 	}
 }
 
-// Structured detail produced by a tool call, in addition to the single-line `detail`. Null when the
-// call produced none.
-//
-// `kind` determines which of the remaining fields is populated.
+// Structured detail produced by a tool call, in addition to the one-line `detail`.
 // Ref: #/components/schemas/PresentationResource
 type PresentationResource struct {
-	FileDiff OptNilFileDiffResource `json:"fileDiff"`
 	// Determines which of the remaining fields is populated.
-	Kind PresentationResourceKind `json:"kind"`
+	Type     PresentationResourceType `json:"type"`
+	FileDiff NilFileDiffResource      `json:"fileDiff"`
+}
+
+// GetType returns the value of Type.
+func (s *PresentationResource) GetType() PresentationResourceType {
+	return s.Type
 }
 
 // GetFileDiff returns the value of FileDiff.
-func (s *PresentationResource) GetFileDiff() OptNilFileDiffResource {
+func (s *PresentationResource) GetFileDiff() NilFileDiffResource {
 	return s.FileDiff
 }
 
-// GetKind returns the value of Kind.
-func (s *PresentationResource) GetKind() PresentationResourceKind {
-	return s.Kind
+// SetType sets the value of Type.
+func (s *PresentationResource) SetType(val PresentationResourceType) {
+	s.Type = val
 }
 
 // SetFileDiff sets the value of FileDiff.
-func (s *PresentationResource) SetFileDiff(val OptNilFileDiffResource) {
+func (s *PresentationResource) SetFileDiff(val NilFileDiffResource) {
 	s.FileDiff = val
 }
 
-// SetKind sets the value of Kind.
-func (s *PresentationResource) SetKind(val PresentationResourceKind) {
-	s.Kind = val
-}
-
 // Determines which of the remaining fields is populated.
-type PresentationResourceKind string
+type PresentationResourceType string
 
 const (
-	PresentationResourceKindFileDiff PresentationResourceKind = "file_diff"
+	PresentationResourceTypeFileDiff PresentationResourceType = "file_diff"
 )
 
-// AllValues returns all PresentationResourceKind values.
-func (PresentationResourceKind) AllValues() []PresentationResourceKind {
-	return []PresentationResourceKind{
-		PresentationResourceKindFileDiff,
+// AllValues returns all PresentationResourceType values.
+func (PresentationResourceType) AllValues() []PresentationResourceType {
+	return []PresentationResourceType{
+		PresentationResourceTypeFileDiff,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s PresentationResourceKind) MarshalText() ([]byte, error) {
+func (s PresentationResourceType) MarshalText() ([]byte, error) {
 	switch s {
-	case PresentationResourceKindFileDiff:
+	case PresentationResourceTypeFileDiff:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6712,10 +6363,10 @@ func (s PresentationResourceKind) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PresentationResourceKind) UnmarshalText(data []byte) error {
-	switch PresentationResourceKind(data) {
-	case PresentationResourceKindFileDiff:
-		*s = PresentationResourceKindFileDiff
+func (s *PresentationResourceType) UnmarshalText(data []byte) error {
+	switch PresentationResourceType(data) {
+	case PresentationResourceTypeFileDiff:
+		*s = PresentationResourceTypeFileDiff
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -6736,52 +6387,535 @@ func (s PutUploadPartReq) Read(p []byte) (n int, err error) {
 	return s.Data.Read(p)
 }
 
-// Ref: #/components/schemas/Question
-type Question struct {
-	Choices  []Choice `json:"choices"`
-	Header   string   `json:"header"`
-	ID       string   `json:"id"`
-	Question string   `json:"question"`
-}
-
-// GetChoices returns the value of Choices.
-func (s *Question) GetChoices() []Choice {
-	return s.Choices
-}
-
-// GetHeader returns the value of Header.
-func (s *Question) GetHeader() string {
-	return s.Header
+// Ref: #/components/schemas/QuestionResource
+type QuestionResource struct {
+	ID string `json:"id"`
+	// A short label for the question.
+	Header   string `json:"header"`
+	Question string `json:"question"`
+	// Suggested answers. A free-form answer is accepted as well.
+	Choices []ChoiceResource `json:"choices"`
 }
 
 // GetID returns the value of ID.
-func (s *Question) GetID() string {
+func (s *QuestionResource) GetID() string {
 	return s.ID
 }
 
+// GetHeader returns the value of Header.
+func (s *QuestionResource) GetHeader() string {
+	return s.Header
+}
+
 // GetQuestion returns the value of Question.
-func (s *Question) GetQuestion() string {
+func (s *QuestionResource) GetQuestion() string {
 	return s.Question
 }
 
-// SetChoices sets the value of Choices.
-func (s *Question) SetChoices(val []Choice) {
-	s.Choices = val
-}
-
-// SetHeader sets the value of Header.
-func (s *Question) SetHeader(val string) {
-	s.Header = val
+// GetChoices returns the value of Choices.
+func (s *QuestionResource) GetChoices() []ChoiceResource {
+	return s.Choices
 }
 
 // SetID sets the value of ID.
-func (s *Question) SetID(val string) {
+func (s *QuestionResource) SetID(val string) {
 	s.ID = val
 }
 
+// SetHeader sets the value of Header.
+func (s *QuestionResource) SetHeader(val string) {
+	s.Header = val
+}
+
 // SetQuestion sets the value of Question.
-func (s *Question) SetQuestion(val string) {
+func (s *QuestionResource) SetQuestion(val string) {
 	s.Question = val
+}
+
+// SetChoices sets the value of Choices.
+func (s *QuestionResource) SetChoices(val []ChoiceResource) {
+	s.Choices = val
+}
+
+// A message from the client. `type` determines which fields apply.
+// Ref: #/components/schemas/RealtimeClientMessage
+type RealtimeClientMessage struct {
+	Type RealtimeClientMessageType `json:"type"`
+	// `workspace` or `thread:{id}`. For subscribe and unsubscribe.
+	Topic OptString `json:"topic"`
+	// For a `thread:{id}` subscription, the `streamCursor` to replay from.
+	Cursor OptString `json:"cursor"`
+}
+
+// GetType returns the value of Type.
+func (s *RealtimeClientMessage) GetType() RealtimeClientMessageType {
+	return s.Type
+}
+
+// GetTopic returns the value of Topic.
+func (s *RealtimeClientMessage) GetTopic() OptString {
+	return s.Topic
+}
+
+// GetCursor returns the value of Cursor.
+func (s *RealtimeClientMessage) GetCursor() OptString {
+	return s.Cursor
+}
+
+// SetType sets the value of Type.
+func (s *RealtimeClientMessage) SetType(val RealtimeClientMessageType) {
+	s.Type = val
+}
+
+// SetTopic sets the value of Topic.
+func (s *RealtimeClientMessage) SetTopic(val OptString) {
+	s.Topic = val
+}
+
+// SetCursor sets the value of Cursor.
+func (s *RealtimeClientMessage) SetCursor(val OptString) {
+	s.Cursor = val
+}
+
+type RealtimeClientMessageType string
+
+const (
+	RealtimeClientMessageTypeSubscribe   RealtimeClientMessageType = "subscribe"
+	RealtimeClientMessageTypeUnsubscribe RealtimeClientMessageType = "unsubscribe"
+	RealtimeClientMessageTypePing        RealtimeClientMessageType = "ping"
+)
+
+// AllValues returns all RealtimeClientMessageType values.
+func (RealtimeClientMessageType) AllValues() []RealtimeClientMessageType {
+	return []RealtimeClientMessageType{
+		RealtimeClientMessageTypeSubscribe,
+		RealtimeClientMessageTypeUnsubscribe,
+		RealtimeClientMessageTypePing,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RealtimeClientMessageType) MarshalText() ([]byte, error) {
+	switch s {
+	case RealtimeClientMessageTypeSubscribe:
+		return []byte(s), nil
+	case RealtimeClientMessageTypeUnsubscribe:
+		return []byte(s), nil
+	case RealtimeClientMessageTypePing:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RealtimeClientMessageType) UnmarshalText(data []byte) error {
+	switch RealtimeClientMessageType(data) {
+	case RealtimeClientMessageTypeSubscribe:
+		*s = RealtimeClientMessageTypeSubscribe
+		return nil
+	case RealtimeClientMessageTypeUnsubscribe:
+		*s = RealtimeClientMessageTypeUnsubscribe
+		return nil
+	case RealtimeClientMessageTypePing:
+		*s = RealtimeClientMessageTypePing
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Both directions of the WebSocket protocol, for code generation.
+// Ref: #/components/schemas/RealtimeExchange
+type RealtimeExchange struct {
+	Client RealtimeClientMessage `json:"client"`
+	Server RealtimeServerMessage `json:"server"`
+}
+
+// GetClient returns the value of Client.
+func (s *RealtimeExchange) GetClient() RealtimeClientMessage {
+	return s.Client
+}
+
+// GetServer returns the value of Server.
+func (s *RealtimeExchange) GetServer() RealtimeServerMessage {
+	return s.Server
+}
+
+// SetClient sets the value of Client.
+func (s *RealtimeExchange) SetClient(val RealtimeClientMessage) {
+	s.Client = val
+}
+
+// SetServer sets the value of Server.
+func (s *RealtimeExchange) SetServer(val RealtimeServerMessage) {
+	s.Server = val
+}
+
+// A message from the server. `type` determines which fields apply:
+//
+//   - `subscribed` / `unsubscribed` — `topic`
+//   - `thread.updated` — `thread`; `thread.deleted` — `threadId`
+//   - `turn.updated` — `turn`, sent while a turn runs so its usage can be shown live
+//   - `folder.updated` — `folder`; `folder.deleted` — `folderId`
+//   - `task.updated` — `task`; `task.deleted` — `taskId`
+//   - `item.frame` — `threadId`, `cursor` and `frame`, an edit to the transcript
+//   - `resync` — `topic`; the client lost events and reads the current state again
+//   - `error` — `code` and `message`
+//   - `pong`
+//
+// Ref: #/components/schemas/RealtimeServerMessage
+type RealtimeServerMessage struct {
+	Type     RealtimeServerMessageType `json:"type"`
+	Topic    OptString                 `json:"topic"`
+	Thread   OptThreadResource         `json:"thread"`
+	ThreadId OptString                 `json:"threadId"`
+	Turn     OptThreadTurnResource     `json:"turn"`
+	Folder   OptFolderResource         `json:"folder"`
+	FolderId OptString                 `json:"folderId"`
+	Task     OptTaskResource           `json:"task"`
+	TaskId   OptString                 `json:"taskId"`
+	// For `item.frame`. Resubscribe from this cursor to continue after a reconnect.
+	Cursor  OptString    `json:"cursor"`
+	Frame   OptItemFrame `json:"frame"`
+	Code    OptString    `json:"code"`
+	Message OptString    `json:"message"`
+}
+
+// GetType returns the value of Type.
+func (s *RealtimeServerMessage) GetType() RealtimeServerMessageType {
+	return s.Type
+}
+
+// GetTopic returns the value of Topic.
+func (s *RealtimeServerMessage) GetTopic() OptString {
+	return s.Topic
+}
+
+// GetThread returns the value of Thread.
+func (s *RealtimeServerMessage) GetThread() OptThreadResource {
+	return s.Thread
+}
+
+// GetThreadId returns the value of ThreadId.
+func (s *RealtimeServerMessage) GetThreadId() OptString {
+	return s.ThreadId
+}
+
+// GetTurn returns the value of Turn.
+func (s *RealtimeServerMessage) GetTurn() OptThreadTurnResource {
+	return s.Turn
+}
+
+// GetFolder returns the value of Folder.
+func (s *RealtimeServerMessage) GetFolder() OptFolderResource {
+	return s.Folder
+}
+
+// GetFolderId returns the value of FolderId.
+func (s *RealtimeServerMessage) GetFolderId() OptString {
+	return s.FolderId
+}
+
+// GetTask returns the value of Task.
+func (s *RealtimeServerMessage) GetTask() OptTaskResource {
+	return s.Task
+}
+
+// GetTaskId returns the value of TaskId.
+func (s *RealtimeServerMessage) GetTaskId() OptString {
+	return s.TaskId
+}
+
+// GetCursor returns the value of Cursor.
+func (s *RealtimeServerMessage) GetCursor() OptString {
+	return s.Cursor
+}
+
+// GetFrame returns the value of Frame.
+func (s *RealtimeServerMessage) GetFrame() OptItemFrame {
+	return s.Frame
+}
+
+// GetCode returns the value of Code.
+func (s *RealtimeServerMessage) GetCode() OptString {
+	return s.Code
+}
+
+// GetMessage returns the value of Message.
+func (s *RealtimeServerMessage) GetMessage() OptString {
+	return s.Message
+}
+
+// SetType sets the value of Type.
+func (s *RealtimeServerMessage) SetType(val RealtimeServerMessageType) {
+	s.Type = val
+}
+
+// SetTopic sets the value of Topic.
+func (s *RealtimeServerMessage) SetTopic(val OptString) {
+	s.Topic = val
+}
+
+// SetThread sets the value of Thread.
+func (s *RealtimeServerMessage) SetThread(val OptThreadResource) {
+	s.Thread = val
+}
+
+// SetThreadId sets the value of ThreadId.
+func (s *RealtimeServerMessage) SetThreadId(val OptString) {
+	s.ThreadId = val
+}
+
+// SetTurn sets the value of Turn.
+func (s *RealtimeServerMessage) SetTurn(val OptThreadTurnResource) {
+	s.Turn = val
+}
+
+// SetFolder sets the value of Folder.
+func (s *RealtimeServerMessage) SetFolder(val OptFolderResource) {
+	s.Folder = val
+}
+
+// SetFolderId sets the value of FolderId.
+func (s *RealtimeServerMessage) SetFolderId(val OptString) {
+	s.FolderId = val
+}
+
+// SetTask sets the value of Task.
+func (s *RealtimeServerMessage) SetTask(val OptTaskResource) {
+	s.Task = val
+}
+
+// SetTaskId sets the value of TaskId.
+func (s *RealtimeServerMessage) SetTaskId(val OptString) {
+	s.TaskId = val
+}
+
+// SetCursor sets the value of Cursor.
+func (s *RealtimeServerMessage) SetCursor(val OptString) {
+	s.Cursor = val
+}
+
+// SetFrame sets the value of Frame.
+func (s *RealtimeServerMessage) SetFrame(val OptItemFrame) {
+	s.Frame = val
+}
+
+// SetCode sets the value of Code.
+func (s *RealtimeServerMessage) SetCode(val OptString) {
+	s.Code = val
+}
+
+// SetMessage sets the value of Message.
+func (s *RealtimeServerMessage) SetMessage(val OptString) {
+	s.Message = val
+}
+
+type RealtimeServerMessageType string
+
+const (
+	RealtimeServerMessageTypeSubscribed    RealtimeServerMessageType = "subscribed"
+	RealtimeServerMessageTypeUnsubscribed  RealtimeServerMessageType = "unsubscribed"
+	RealtimeServerMessageTypeThreadUpdated RealtimeServerMessageType = "thread.updated"
+	RealtimeServerMessageTypeThreadDeleted RealtimeServerMessageType = "thread.deleted"
+	RealtimeServerMessageTypeTurnUpdated   RealtimeServerMessageType = "turn.updated"
+	RealtimeServerMessageTypeFolderUpdated RealtimeServerMessageType = "folder.updated"
+	RealtimeServerMessageTypeFolderDeleted RealtimeServerMessageType = "folder.deleted"
+	RealtimeServerMessageTypeTaskUpdated   RealtimeServerMessageType = "task.updated"
+	RealtimeServerMessageTypeTaskDeleted   RealtimeServerMessageType = "task.deleted"
+	RealtimeServerMessageTypeItemFrame     RealtimeServerMessageType = "item.frame"
+	RealtimeServerMessageTypeResync        RealtimeServerMessageType = "resync"
+	RealtimeServerMessageTypeError         RealtimeServerMessageType = "error"
+	RealtimeServerMessageTypePong          RealtimeServerMessageType = "pong"
+)
+
+// AllValues returns all RealtimeServerMessageType values.
+func (RealtimeServerMessageType) AllValues() []RealtimeServerMessageType {
+	return []RealtimeServerMessageType{
+		RealtimeServerMessageTypeSubscribed,
+		RealtimeServerMessageTypeUnsubscribed,
+		RealtimeServerMessageTypeThreadUpdated,
+		RealtimeServerMessageTypeThreadDeleted,
+		RealtimeServerMessageTypeTurnUpdated,
+		RealtimeServerMessageTypeFolderUpdated,
+		RealtimeServerMessageTypeFolderDeleted,
+		RealtimeServerMessageTypeTaskUpdated,
+		RealtimeServerMessageTypeTaskDeleted,
+		RealtimeServerMessageTypeItemFrame,
+		RealtimeServerMessageTypeResync,
+		RealtimeServerMessageTypeError,
+		RealtimeServerMessageTypePong,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RealtimeServerMessageType) MarshalText() ([]byte, error) {
+	switch s {
+	case RealtimeServerMessageTypeSubscribed:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeUnsubscribed:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeThreadUpdated:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeThreadDeleted:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeTurnUpdated:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeFolderUpdated:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeFolderDeleted:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeTaskUpdated:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeTaskDeleted:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeItemFrame:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeResync:
+		return []byte(s), nil
+	case RealtimeServerMessageTypeError:
+		return []byte(s), nil
+	case RealtimeServerMessageTypePong:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RealtimeServerMessageType) UnmarshalText(data []byte) error {
+	switch RealtimeServerMessageType(data) {
+	case RealtimeServerMessageTypeSubscribed:
+		*s = RealtimeServerMessageTypeSubscribed
+		return nil
+	case RealtimeServerMessageTypeUnsubscribed:
+		*s = RealtimeServerMessageTypeUnsubscribed
+		return nil
+	case RealtimeServerMessageTypeThreadUpdated:
+		*s = RealtimeServerMessageTypeThreadUpdated
+		return nil
+	case RealtimeServerMessageTypeThreadDeleted:
+		*s = RealtimeServerMessageTypeThreadDeleted
+		return nil
+	case RealtimeServerMessageTypeTurnUpdated:
+		*s = RealtimeServerMessageTypeTurnUpdated
+		return nil
+	case RealtimeServerMessageTypeFolderUpdated:
+		*s = RealtimeServerMessageTypeFolderUpdated
+		return nil
+	case RealtimeServerMessageTypeFolderDeleted:
+		*s = RealtimeServerMessageTypeFolderDeleted
+		return nil
+	case RealtimeServerMessageTypeTaskUpdated:
+		*s = RealtimeServerMessageTypeTaskUpdated
+		return nil
+	case RealtimeServerMessageTypeTaskDeleted:
+		*s = RealtimeServerMessageTypeTaskDeleted
+		return nil
+	case RealtimeServerMessageTypeItemFrame:
+		*s = RealtimeServerMessageTypeItemFrame
+		return nil
+	case RealtimeServerMessageTypeResync:
+		*s = RealtimeServerMessageTypeResync
+		return nil
+	case RealtimeServerMessageTypeError:
+		*s = RealtimeServerMessageTypeError
+		return nil
+	case RealtimeServerMessageTypePong:
+		*s = RealtimeServerMessageTypePong
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/RealtimeTicketResource
+type RealtimeTicketResource struct {
+	// The WebSocket address, absolute or relative to the API origin.
+	URL       string    `json:"url"`
+	Ticket    string    `json:"ticket"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
+// GetURL returns the value of URL.
+func (s *RealtimeTicketResource) GetURL() string {
+	return s.URL
+}
+
+// GetTicket returns the value of Ticket.
+func (s *RealtimeTicketResource) GetTicket() string {
+	return s.Ticket
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *RealtimeTicketResource) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// SetURL sets the value of URL.
+func (s *RealtimeTicketResource) SetURL(val string) {
+	s.URL = val
+}
+
+// SetTicket sets the value of Ticket.
+func (s *RealtimeTicketResource) SetTicket(val string) {
+	s.Ticket = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *RealtimeTicketResource) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
+}
+
+// How much the model reasons before answering. Sent to the model unchanged.
+// Ref: #/components/schemas/ReasoningEffort
+type ReasoningEffort string
+
+const (
+	ReasoningEffortLow    ReasoningEffort = "low"
+	ReasoningEffortMedium ReasoningEffort = "medium"
+	ReasoningEffortHigh   ReasoningEffort = "high"
+)
+
+// AllValues returns all ReasoningEffort values.
+func (ReasoningEffort) AllValues() []ReasoningEffort {
+	return []ReasoningEffort{
+		ReasoningEffortLow,
+		ReasoningEffortMedium,
+		ReasoningEffortHigh,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ReasoningEffort) MarshalText() ([]byte, error) {
+	switch s {
+	case ReasoningEffortLow:
+		return []byte(s), nil
+	case ReasoningEffortMedium:
+		return []byte(s), nil
+	case ReasoningEffortHigh:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ReasoningEffort) UnmarshalText(data []byte) error {
+	switch ReasoningEffort(data) {
+	case ReasoningEffortLow:
+		*s = ReasoningEffortLow
+		return nil
+	case ReasoningEffortMedium:
+		*s = ReasoningEffortMedium
+		return nil
+	case ReasoningEffortHigh:
+		*s = ReasoningEffortHigh
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/RejectionListResponseBody
@@ -6880,12 +7014,25 @@ func (s *RejectionResource) SetVerdict(val string) {
 	s.Verdict = val
 }
 
-// ResumeScheduleOK is response for ResumeSchedule operation.
-type ResumeScheduleOK struct{}
+// Ref: #/components/schemas/ResumeThreadRequestBody
+type ResumeThreadRequestBody struct {
+	// Added to the conversation before the turn starts.
+	Message OptString `json:"message"`
+}
+
+// GetMessage returns the value of Message.
+func (s *ResumeThreadRequestBody) GetMessage() OptString {
+	return s.Message
+}
+
+// SetMessage sets the value of Message.
+func (s *ResumeThreadRequestBody) SetMessage(val OptString) {
+	s.Message = val
+}
 
 // Ref: #/components/schemas/RevertRequestBody
 type RevertRequestBody struct {
-	// The starting ordinal; that entry and everything after it is reverted.
+	// The first item to revert; it and everything after it are reverted.
 	Ordinal int64 `json:"ordinal"`
 }
 
@@ -6931,201 +7078,527 @@ func (s *RotateSecretRequestBody) SetWebhookSecret(val OptString) {
 	s.WebhookSecret = val
 }
 
-// Ref: #/components/schemas/ScheduleListResponseBody
-type ScheduleListResponseBody struct {
-	Schedules  []ScheduleResource `json:"schedules"`
-	NextCursor OptNilString       `json:"nextCursor"`
-}
-
-// GetSchedules returns the value of Schedules.
-func (s *ScheduleListResponseBody) GetSchedules() []ScheduleResource {
-	return s.Schedules
-}
-
-// GetNextCursor returns the value of NextCursor.
-func (s *ScheduleListResponseBody) GetNextCursor() OptNilString {
-	return s.NextCursor
-}
-
-// SetSchedules sets the value of Schedules.
-func (s *ScheduleListResponseBody) SetSchedules(val []ScheduleResource) {
-	s.Schedules = val
-}
-
-// SetNextCursor sets the value of NextCursor.
-func (s *ScheduleListResponseBody) SetNextCursor(val OptNilString) {
-	s.NextCursor = val
-}
-
-// Ref: #/components/schemas/ScheduleResource
-type ScheduleResource struct {
-	ID              string      `json:"id"`
-	ThreadId        string      `json:"threadId"`
-	Name            string      `json:"name"`
-	Status          string      `json:"status"`
-	Prompt          string      `json:"prompt"`
-	Kind            string      `json:"kind"`
-	RunAt           NilDateTime `json:"runAt"`
-	IntervalSeconds int64       `json:"intervalSeconds"`
-	AnchorAt        NilDateTime `json:"anchorAt"`
-	Calendar        string      `json:"calendar"`
-	Timezone        string      `json:"timezone"`
-	OverlapPolicy   string      `json:"overlapPolicy"`
-	CatchupSeconds  int64       `json:"catchupSeconds"`
-	NextRunAt       NilDateTime `json:"nextRunAt"`
-}
-
-// GetID returns the value of ID.
-func (s *ScheduleResource) GetID() string {
-	return s.ID
-}
-
-// GetThreadId returns the value of ThreadId.
-func (s *ScheduleResource) GetThreadId() string {
-	return s.ThreadId
+// Ref: #/components/schemas/RunCommandRequestBody
+type RunCommandRequestBody struct {
+	// The command or one of its aliases, without the slash.
+	Name string `json:"name"`
+	// Everything typed after the command name.
+	Arguments OptString `json:"arguments"`
 }
 
 // GetName returns the value of Name.
-func (s *ScheduleResource) GetName() string {
+func (s *RunCommandRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetStatus returns the value of Status.
-func (s *ScheduleResource) GetStatus() string {
-	return s.Status
-}
-
-// GetPrompt returns the value of Prompt.
-func (s *ScheduleResource) GetPrompt() string {
-	return s.Prompt
-}
-
-// GetKind returns the value of Kind.
-func (s *ScheduleResource) GetKind() string {
-	return s.Kind
-}
-
-// GetRunAt returns the value of RunAt.
-func (s *ScheduleResource) GetRunAt() NilDateTime {
-	return s.RunAt
-}
-
-// GetIntervalSeconds returns the value of IntervalSeconds.
-func (s *ScheduleResource) GetIntervalSeconds() int64 {
-	return s.IntervalSeconds
-}
-
-// GetAnchorAt returns the value of AnchorAt.
-func (s *ScheduleResource) GetAnchorAt() NilDateTime {
-	return s.AnchorAt
-}
-
-// GetCalendar returns the value of Calendar.
-func (s *ScheduleResource) GetCalendar() string {
-	return s.Calendar
-}
-
-// GetTimezone returns the value of Timezone.
-func (s *ScheduleResource) GetTimezone() string {
-	return s.Timezone
-}
-
-// GetOverlapPolicy returns the value of OverlapPolicy.
-func (s *ScheduleResource) GetOverlapPolicy() string {
-	return s.OverlapPolicy
-}
-
-// GetCatchupSeconds returns the value of CatchupSeconds.
-func (s *ScheduleResource) GetCatchupSeconds() int64 {
-	return s.CatchupSeconds
-}
-
-// GetNextRunAt returns the value of NextRunAt.
-func (s *ScheduleResource) GetNextRunAt() NilDateTime {
-	return s.NextRunAt
-}
-
-// SetID sets the value of ID.
-func (s *ScheduleResource) SetID(val string) {
-	s.ID = val
-}
-
-// SetThreadId sets the value of ThreadId.
-func (s *ScheduleResource) SetThreadId(val string) {
-	s.ThreadId = val
+// GetArguments returns the value of Arguments.
+func (s *RunCommandRequestBody) GetArguments() OptString {
+	return s.Arguments
 }
 
 // SetName sets the value of Name.
-func (s *ScheduleResource) SetName(val string) {
+func (s *RunCommandRequestBody) SetName(val string) {
 	s.Name = val
 }
 
+// SetArguments sets the value of Arguments.
+func (s *RunCommandRequestBody) SetArguments(val OptString) {
+	s.Arguments = val
+}
+
+// Ref: #/components/schemas/SearchTasksRequestBody
+type SearchTasksRequestBody struct {
+	// Only the tasks that report to this conversation.
+	ThreadId    OptString                            `json:"threadId"`
+	Status      OptSearchTasksRequestBodyStatus      `json:"status"`
+	TriggerType OptSearchTasksRequestBodyTriggerType `json:"triggerType"`
+	ActionType  OptSearchTasksRequestBodyActionType  `json:"actionType"`
+	Cursor      OptString                            `json:"cursor"`
+	Limit       OptInt                               `json:"limit"`
+}
+
+// GetThreadId returns the value of ThreadId.
+func (s *SearchTasksRequestBody) GetThreadId() OptString {
+	return s.ThreadId
+}
+
+// GetStatus returns the value of Status.
+func (s *SearchTasksRequestBody) GetStatus() OptSearchTasksRequestBodyStatus {
+	return s.Status
+}
+
+// GetTriggerType returns the value of TriggerType.
+func (s *SearchTasksRequestBody) GetTriggerType() OptSearchTasksRequestBodyTriggerType {
+	return s.TriggerType
+}
+
+// GetActionType returns the value of ActionType.
+func (s *SearchTasksRequestBody) GetActionType() OptSearchTasksRequestBodyActionType {
+	return s.ActionType
+}
+
+// GetCursor returns the value of Cursor.
+func (s *SearchTasksRequestBody) GetCursor() OptString {
+	return s.Cursor
+}
+
+// GetLimit returns the value of Limit.
+func (s *SearchTasksRequestBody) GetLimit() OptInt {
+	return s.Limit
+}
+
+// SetThreadId sets the value of ThreadId.
+func (s *SearchTasksRequestBody) SetThreadId(val OptString) {
+	s.ThreadId = val
+}
+
 // SetStatus sets the value of Status.
-func (s *ScheduleResource) SetStatus(val string) {
+func (s *SearchTasksRequestBody) SetStatus(val OptSearchTasksRequestBodyStatus) {
 	s.Status = val
 }
 
-// SetPrompt sets the value of Prompt.
-func (s *ScheduleResource) SetPrompt(val string) {
-	s.Prompt = val
+// SetTriggerType sets the value of TriggerType.
+func (s *SearchTasksRequestBody) SetTriggerType(val OptSearchTasksRequestBodyTriggerType) {
+	s.TriggerType = val
 }
 
-// SetKind sets the value of Kind.
-func (s *ScheduleResource) SetKind(val string) {
-	s.Kind = val
+// SetActionType sets the value of ActionType.
+func (s *SearchTasksRequestBody) SetActionType(val OptSearchTasksRequestBodyActionType) {
+	s.ActionType = val
 }
 
-// SetRunAt sets the value of RunAt.
-func (s *ScheduleResource) SetRunAt(val NilDateTime) {
-	s.RunAt = val
+// SetCursor sets the value of Cursor.
+func (s *SearchTasksRequestBody) SetCursor(val OptString) {
+	s.Cursor = val
 }
 
-// SetIntervalSeconds sets the value of IntervalSeconds.
-func (s *ScheduleResource) SetIntervalSeconds(val int64) {
-	s.IntervalSeconds = val
+// SetLimit sets the value of Limit.
+func (s *SearchTasksRequestBody) SetLimit(val OptInt) {
+	s.Limit = val
 }
 
-// SetAnchorAt sets the value of AnchorAt.
-func (s *ScheduleResource) SetAnchorAt(val NilDateTime) {
-	s.AnchorAt = val
+type SearchTasksRequestBodyActionType string
+
+const (
+	SearchTasksRequestBodyActionTypePrompt  SearchTasksRequestBodyActionType = "prompt"
+	SearchTasksRequestBodyActionTypeCommand SearchTasksRequestBodyActionType = "command"
+)
+
+// AllValues returns all SearchTasksRequestBodyActionType values.
+func (SearchTasksRequestBodyActionType) AllValues() []SearchTasksRequestBodyActionType {
+	return []SearchTasksRequestBodyActionType{
+		SearchTasksRequestBodyActionTypePrompt,
+		SearchTasksRequestBodyActionTypeCommand,
+	}
 }
 
-// SetCalendar sets the value of Calendar.
-func (s *ScheduleResource) SetCalendar(val string) {
-	s.Calendar = val
+// MarshalText implements encoding.TextMarshaler.
+func (s SearchTasksRequestBodyActionType) MarshalText() ([]byte, error) {
+	switch s {
+	case SearchTasksRequestBodyActionTypePrompt:
+		return []byte(s), nil
+	case SearchTasksRequestBodyActionTypeCommand:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// SetTimezone sets the value of Timezone.
-func (s *ScheduleResource) SetTimezone(val string) {
-	s.Timezone = val
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SearchTasksRequestBodyActionType) UnmarshalText(data []byte) error {
+	switch SearchTasksRequestBodyActionType(data) {
+	case SearchTasksRequestBodyActionTypePrompt:
+		*s = SearchTasksRequestBodyActionTypePrompt
+		return nil
+	case SearchTasksRequestBodyActionTypeCommand:
+		*s = SearchTasksRequestBodyActionTypeCommand
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// SetOverlapPolicy sets the value of OverlapPolicy.
-func (s *ScheduleResource) SetOverlapPolicy(val string) {
-	s.OverlapPolicy = val
+type SearchTasksRequestBodyStatus string
+
+const (
+	SearchTasksRequestBodyStatusActive    SearchTasksRequestBodyStatus = "active"
+	SearchTasksRequestBodyStatusPaused    SearchTasksRequestBodyStatus = "paused"
+	SearchTasksRequestBodyStatusCompleted SearchTasksRequestBodyStatus = "completed"
+	SearchTasksRequestBodyStatusCancelled SearchTasksRequestBodyStatus = "cancelled"
+)
+
+// AllValues returns all SearchTasksRequestBodyStatus values.
+func (SearchTasksRequestBodyStatus) AllValues() []SearchTasksRequestBodyStatus {
+	return []SearchTasksRequestBodyStatus{
+		SearchTasksRequestBodyStatusActive,
+		SearchTasksRequestBodyStatusPaused,
+		SearchTasksRequestBodyStatusCompleted,
+		SearchTasksRequestBodyStatusCancelled,
+	}
 }
 
-// SetCatchupSeconds sets the value of CatchupSeconds.
-func (s *ScheduleResource) SetCatchupSeconds(val int64) {
-	s.CatchupSeconds = val
+// MarshalText implements encoding.TextMarshaler.
+func (s SearchTasksRequestBodyStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case SearchTasksRequestBodyStatusActive:
+		return []byte(s), nil
+	case SearchTasksRequestBodyStatusPaused:
+		return []byte(s), nil
+	case SearchTasksRequestBodyStatusCompleted:
+		return []byte(s), nil
+	case SearchTasksRequestBodyStatusCancelled:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// SetNextRunAt sets the value of NextRunAt.
-func (s *ScheduleResource) SetNextRunAt(val NilDateTime) {
-	s.NextRunAt = val
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SearchTasksRequestBodyStatus) UnmarshalText(data []byte) error {
+	switch SearchTasksRequestBodyStatus(data) {
+	case SearchTasksRequestBodyStatusActive:
+		*s = SearchTasksRequestBodyStatusActive
+		return nil
+	case SearchTasksRequestBodyStatusPaused:
+		*s = SearchTasksRequestBodyStatusPaused
+		return nil
+	case SearchTasksRequestBodyStatusCompleted:
+		*s = SearchTasksRequestBodyStatusCompleted
+		return nil
+	case SearchTasksRequestBodyStatusCancelled:
+		*s = SearchTasksRequestBodyStatusCancelled
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type SearchTasksRequestBodyTriggerType string
+
+const (
+	SearchTasksRequestBodyTriggerTypeNow      SearchTasksRequestBodyTriggerType = "now"
+	SearchTasksRequestBodyTriggerTypeAt       SearchTasksRequestBodyTriggerType = "at"
+	SearchTasksRequestBodyTriggerTypeInterval SearchTasksRequestBodyTriggerType = "interval"
+	SearchTasksRequestBodyTriggerTypeCron     SearchTasksRequestBodyTriggerType = "cron"
+)
+
+// AllValues returns all SearchTasksRequestBodyTriggerType values.
+func (SearchTasksRequestBodyTriggerType) AllValues() []SearchTasksRequestBodyTriggerType {
+	return []SearchTasksRequestBodyTriggerType{
+		SearchTasksRequestBodyTriggerTypeNow,
+		SearchTasksRequestBodyTriggerTypeAt,
+		SearchTasksRequestBodyTriggerTypeInterval,
+		SearchTasksRequestBodyTriggerTypeCron,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SearchTasksRequestBodyTriggerType) MarshalText() ([]byte, error) {
+	switch s {
+	case SearchTasksRequestBodyTriggerTypeNow:
+		return []byte(s), nil
+	case SearchTasksRequestBodyTriggerTypeAt:
+		return []byte(s), nil
+	case SearchTasksRequestBodyTriggerTypeInterval:
+		return []byte(s), nil
+	case SearchTasksRequestBodyTriggerTypeCron:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SearchTasksRequestBodyTriggerType) UnmarshalText(data []byte) error {
+	switch SearchTasksRequestBodyTriggerType(data) {
+	case SearchTasksRequestBodyTriggerTypeNow:
+		*s = SearchTasksRequestBodyTriggerTypeNow
+		return nil
+	case SearchTasksRequestBodyTriggerTypeAt:
+		*s = SearchTasksRequestBodyTriggerTypeAt
+		return nil
+	case SearchTasksRequestBodyTriggerTypeInterval:
+		*s = SearchTasksRequestBodyTriggerTypeInterval
+		return nil
+	case SearchTasksRequestBodyTriggerTypeCron:
+		*s = SearchTasksRequestBodyTriggerTypeCron
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/SearchThreadsRequestBody
+type SearchThreadsRequestBody struct {
+	// Read these conversations, including subagents and archived ones. Cannot be combined with cursor.
+	Ids []string `json:"ids"`
+	// Only conversations in this folder.
+	FolderId OptString `json:"folderId"`
+	// Only the subagents of this conversation.
+	ParentId OptString `json:"parentId"`
+	// Defaults to main unless parentId is given.
+	Role OptSearchThreadsRequestBodyRole `json:"role"`
+	// `needs_action` is waiting for a person or ended with a failure, `running` is working, and `done` is
+	// everything else.
+	State OptSearchThreadsRequestBodyState `json:"state"`
+	// True for archived conversations only; otherwise unarchived only.
+	Archived OptBool `json:"archived"`
+	// Matches titles, case-insensitively.
+	Q OptString `json:"q"`
+	// `attention` puts conversations that need action first, then running ones, then the most recent.
+	// `recent` orders by last activity. `manual` is the order inside a folder and requires folderId.
+	Sort   OptSearchThreadsRequestBodySort `json:"sort"`
+	Cursor OptString                       `json:"cursor"`
+	Limit  OptInt                          `json:"limit"`
+}
+
+// GetIds returns the value of Ids.
+func (s *SearchThreadsRequestBody) GetIds() []string {
+	return s.Ids
+}
+
+// GetFolderId returns the value of FolderId.
+func (s *SearchThreadsRequestBody) GetFolderId() OptString {
+	return s.FolderId
+}
+
+// GetParentId returns the value of ParentId.
+func (s *SearchThreadsRequestBody) GetParentId() OptString {
+	return s.ParentId
+}
+
+// GetRole returns the value of Role.
+func (s *SearchThreadsRequestBody) GetRole() OptSearchThreadsRequestBodyRole {
+	return s.Role
+}
+
+// GetState returns the value of State.
+func (s *SearchThreadsRequestBody) GetState() OptSearchThreadsRequestBodyState {
+	return s.State
+}
+
+// GetArchived returns the value of Archived.
+func (s *SearchThreadsRequestBody) GetArchived() OptBool {
+	return s.Archived
+}
+
+// GetQ returns the value of Q.
+func (s *SearchThreadsRequestBody) GetQ() OptString {
+	return s.Q
+}
+
+// GetSort returns the value of Sort.
+func (s *SearchThreadsRequestBody) GetSort() OptSearchThreadsRequestBodySort {
+	return s.Sort
+}
+
+// GetCursor returns the value of Cursor.
+func (s *SearchThreadsRequestBody) GetCursor() OptString {
+	return s.Cursor
+}
+
+// GetLimit returns the value of Limit.
+func (s *SearchThreadsRequestBody) GetLimit() OptInt {
+	return s.Limit
+}
+
+// SetIds sets the value of Ids.
+func (s *SearchThreadsRequestBody) SetIds(val []string) {
+	s.Ids = val
+}
+
+// SetFolderId sets the value of FolderId.
+func (s *SearchThreadsRequestBody) SetFolderId(val OptString) {
+	s.FolderId = val
+}
+
+// SetParentId sets the value of ParentId.
+func (s *SearchThreadsRequestBody) SetParentId(val OptString) {
+	s.ParentId = val
+}
+
+// SetRole sets the value of Role.
+func (s *SearchThreadsRequestBody) SetRole(val OptSearchThreadsRequestBodyRole) {
+	s.Role = val
+}
+
+// SetState sets the value of State.
+func (s *SearchThreadsRequestBody) SetState(val OptSearchThreadsRequestBodyState) {
+	s.State = val
+}
+
+// SetArchived sets the value of Archived.
+func (s *SearchThreadsRequestBody) SetArchived(val OptBool) {
+	s.Archived = val
+}
+
+// SetQ sets the value of Q.
+func (s *SearchThreadsRequestBody) SetQ(val OptString) {
+	s.Q = val
+}
+
+// SetSort sets the value of Sort.
+func (s *SearchThreadsRequestBody) SetSort(val OptSearchThreadsRequestBodySort) {
+	s.Sort = val
+}
+
+// SetCursor sets the value of Cursor.
+func (s *SearchThreadsRequestBody) SetCursor(val OptString) {
+	s.Cursor = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *SearchThreadsRequestBody) SetLimit(val OptInt) {
+	s.Limit = val
+}
+
+// Defaults to main unless parentId is given.
+type SearchThreadsRequestBodyRole string
+
+const (
+	SearchThreadsRequestBodyRoleMain     SearchThreadsRequestBodyRole = "main"
+	SearchThreadsRequestBodyRoleSubagent SearchThreadsRequestBodyRole = "subagent"
+)
+
+// AllValues returns all SearchThreadsRequestBodyRole values.
+func (SearchThreadsRequestBodyRole) AllValues() []SearchThreadsRequestBodyRole {
+	return []SearchThreadsRequestBodyRole{
+		SearchThreadsRequestBodyRoleMain,
+		SearchThreadsRequestBodyRoleSubagent,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SearchThreadsRequestBodyRole) MarshalText() ([]byte, error) {
+	switch s {
+	case SearchThreadsRequestBodyRoleMain:
+		return []byte(s), nil
+	case SearchThreadsRequestBodyRoleSubagent:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SearchThreadsRequestBodyRole) UnmarshalText(data []byte) error {
+	switch SearchThreadsRequestBodyRole(data) {
+	case SearchThreadsRequestBodyRoleMain:
+		*s = SearchThreadsRequestBodyRoleMain
+		return nil
+	case SearchThreadsRequestBodyRoleSubagent:
+		*s = SearchThreadsRequestBodyRoleSubagent
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `attention` puts conversations that need action first, then running ones, then the most recent.
+// `recent` orders by last activity. `manual` is the order inside a folder and requires folderId.
+type SearchThreadsRequestBodySort string
+
+const (
+	SearchThreadsRequestBodySortAttention SearchThreadsRequestBodySort = "attention"
+	SearchThreadsRequestBodySortRecent    SearchThreadsRequestBodySort = "recent"
+	SearchThreadsRequestBodySortManual    SearchThreadsRequestBodySort = "manual"
+)
+
+// AllValues returns all SearchThreadsRequestBodySort values.
+func (SearchThreadsRequestBodySort) AllValues() []SearchThreadsRequestBodySort {
+	return []SearchThreadsRequestBodySort{
+		SearchThreadsRequestBodySortAttention,
+		SearchThreadsRequestBodySortRecent,
+		SearchThreadsRequestBodySortManual,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SearchThreadsRequestBodySort) MarshalText() ([]byte, error) {
+	switch s {
+	case SearchThreadsRequestBodySortAttention:
+		return []byte(s), nil
+	case SearchThreadsRequestBodySortRecent:
+		return []byte(s), nil
+	case SearchThreadsRequestBodySortManual:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SearchThreadsRequestBodySort) UnmarshalText(data []byte) error {
+	switch SearchThreadsRequestBodySort(data) {
+	case SearchThreadsRequestBodySortAttention:
+		*s = SearchThreadsRequestBodySortAttention
+		return nil
+	case SearchThreadsRequestBodySortRecent:
+		*s = SearchThreadsRequestBodySortRecent
+		return nil
+	case SearchThreadsRequestBodySortManual:
+		*s = SearchThreadsRequestBodySortManual
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `needs_action` is waiting for a person or ended with a failure, `running` is working, and `done` is
+// everything else.
+type SearchThreadsRequestBodyState string
+
+const (
+	SearchThreadsRequestBodyStateNeedsAction SearchThreadsRequestBodyState = "needs_action"
+	SearchThreadsRequestBodyStateRunning     SearchThreadsRequestBodyState = "running"
+	SearchThreadsRequestBodyStateDone        SearchThreadsRequestBodyState = "done"
+)
+
+// AllValues returns all SearchThreadsRequestBodyState values.
+func (SearchThreadsRequestBodyState) AllValues() []SearchThreadsRequestBodyState {
+	return []SearchThreadsRequestBodyState{
+		SearchThreadsRequestBodyStateNeedsAction,
+		SearchThreadsRequestBodyStateRunning,
+		SearchThreadsRequestBodyStateDone,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SearchThreadsRequestBodyState) MarshalText() ([]byte, error) {
+	switch s {
+	case SearchThreadsRequestBodyStateNeedsAction:
+		return []byte(s), nil
+	case SearchThreadsRequestBodyStateRunning:
+		return []byte(s), nil
+	case SearchThreadsRequestBodyStateDone:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SearchThreadsRequestBodyState) UnmarshalText(data []byte) error {
+	switch SearchThreadsRequestBodyState(data) {
+	case SearchThreadsRequestBodyStateNeedsAction:
+		*s = SearchThreadsRequestBodyStateNeedsAction
+		return nil
+	case SearchThreadsRequestBodyStateRunning:
+		*s = SearchThreadsRequestBodyStateRunning
+		return nil
+	case SearchThreadsRequestBodyStateDone:
+		*s = SearchThreadsRequestBodyStateDone
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/SendMessageRequestBody
 type SendMessageRequestBody struct {
+	// The message, in the order it was written. A message with nothing but text is a single text part.
+	Parts  []MessagePart           `json:"parts"`
 	Client OptClientContextRequest `json:"client"`
-	// The message, in the order it was written. A message with nothing but text is a single text part;
-	// that is the ordinary case and nothing else is required.
-	Parts []MessagePart `json:"parts"`
-}
-
-// GetClient returns the value of Client.
-func (s *SendMessageRequestBody) GetClient() OptClientContextRequest {
-	return s.Client
 }
 
 // GetParts returns the value of Parts.
@@ -7133,9 +7606,9 @@ func (s *SendMessageRequestBody) GetParts() []MessagePart {
 	return s.Parts
 }
 
-// SetClient sets the value of Client.
-func (s *SendMessageRequestBody) SetClient(val OptClientContextRequest) {
-	s.Client = val
+// GetClient returns the value of Client.
+func (s *SendMessageRequestBody) GetClient() OptClientContextRequest {
+	return s.Client
 }
 
 // SetParts sets the value of Parts.
@@ -7143,33 +7616,48 @@ func (s *SendMessageRequestBody) SetParts(val []MessagePart) {
 	s.Parts = val
 }
 
-// SendSubagentMessageOK is response for SendSubagentMessage operation.
-type SendSubagentMessageOK struct{}
-
-// Ref: #/components/schemas/SendSubagentRequestBody
-type SendSubagentRequestBody struct {
-	Message   string `json:"message"`
-	RequestId string `json:"requestId"`
+// SetClient sets the value of Client.
+func (s *SendMessageRequestBody) SetClient(val OptClientContextRequest) {
+	s.Client = val
 }
 
-// GetMessage returns the value of Message.
-func (s *SendSubagentRequestBody) GetMessage() string {
-	return s.Message
+// Ref: #/components/schemas/SendMessageResponseBody
+type SendMessageResponseBody struct {
+	// The turn this message started. Null when it was queued behind a running turn.
+	TurnId NilString `json:"turnId"`
+	Queued bool      `json:"queued"`
+	// How many messages were waiting ahead of this one when it was queued.
+	QueuedAhead int64 `json:"queuedAhead"`
 }
 
-// GetRequestId returns the value of RequestId.
-func (s *SendSubagentRequestBody) GetRequestId() string {
-	return s.RequestId
+// GetTurnId returns the value of TurnId.
+func (s *SendMessageResponseBody) GetTurnId() NilString {
+	return s.TurnId
 }
 
-// SetMessage sets the value of Message.
-func (s *SendSubagentRequestBody) SetMessage(val string) {
-	s.Message = val
+// GetQueued returns the value of Queued.
+func (s *SendMessageResponseBody) GetQueued() bool {
+	return s.Queued
 }
 
-// SetRequestId sets the value of RequestId.
-func (s *SendSubagentRequestBody) SetRequestId(val string) {
-	s.RequestId = val
+// GetQueuedAhead returns the value of QueuedAhead.
+func (s *SendMessageResponseBody) GetQueuedAhead() int64 {
+	return s.QueuedAhead
+}
+
+// SetTurnId sets the value of TurnId.
+func (s *SendMessageResponseBody) SetTurnId(val NilString) {
+	s.TurnId = val
+}
+
+// SetQueued sets the value of Queued.
+func (s *SendMessageResponseBody) SetQueued(val bool) {
+	s.Queued = val
+}
+
+// SetQueuedAhead sets the value of QueuedAhead.
+func (s *SendMessageResponseBody) SetQueuedAhead(val int64) {
+	s.QueuedAhead = val
 }
 
 // Ref: #/components/schemas/SenderCheckResource
@@ -7284,6 +7772,45 @@ func (s *SenderCheckResourceVerdict) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/SettingsResource
+type SettingsResource struct {
+	// The caller's choice. Null when none is set.
+	DefaultModelId NilString `json:"defaultModelId"`
+	// The caller's choice. Null when none is set.
+	DefaultReasoningEffort NilReasoningEffort   `json:"defaultReasoningEffort"`
+	DefaultModel           DefaultModelResource `json:"defaultModel"`
+}
+
+// GetDefaultModelId returns the value of DefaultModelId.
+func (s *SettingsResource) GetDefaultModelId() NilString {
+	return s.DefaultModelId
+}
+
+// GetDefaultReasoningEffort returns the value of DefaultReasoningEffort.
+func (s *SettingsResource) GetDefaultReasoningEffort() NilReasoningEffort {
+	return s.DefaultReasoningEffort
+}
+
+// GetDefaultModel returns the value of DefaultModel.
+func (s *SettingsResource) GetDefaultModel() DefaultModelResource {
+	return s.DefaultModel
+}
+
+// SetDefaultModelId sets the value of DefaultModelId.
+func (s *SettingsResource) SetDefaultModelId(val NilString) {
+	s.DefaultModelId = val
+}
+
+// SetDefaultReasoningEffort sets the value of DefaultReasoningEffort.
+func (s *SettingsResource) SetDefaultReasoningEffort(val NilReasoningEffort) {
+	s.DefaultReasoningEffort = val
+}
+
+// SetDefaultModel sets the value of DefaultModel.
+func (s *SettingsResource) SetDefaultModel(val DefaultModelResource) {
+	s.DefaultModel = val
 }
 
 // Ref: #/components/schemas/SkillEnabledRequestBody
@@ -7555,137 +8082,251 @@ func (s *SkillResourceOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
-// StartTaskOK is response for StartTask operation.
-type StartTaskOK struct{}
-
-// Ref: #/components/schemas/StreamResource
-type StreamResource struct {
-	Path   string `json:"path"`
-	Ticket string `json:"ticket"`
-}
-
-// GetPath returns the value of Path.
-func (s *StreamResource) GetPath() string {
-	return s.Path
-}
-
-// GetTicket returns the value of Ticket.
-func (s *StreamResource) GetTicket() string {
-	return s.Ticket
-}
-
-// SetPath sets the value of Path.
-func (s *StreamResource) SetPath(val string) {
-	s.Path = val
-}
-
-// SetTicket sets the value of Ticket.
-func (s *StreamResource) SetTicket(val string) {
-	s.Ticket = val
-}
-
-// Ref: #/components/schemas/SubagentListResponseBody
-type SubagentListResponseBody struct {
-	Subagents []SubagentResource `json:"subagents"`
-}
-
-// GetSubagents returns the value of Subagents.
-func (s *SubagentListResponseBody) GetSubagents() []SubagentResource {
-	return s.Subagents
-}
-
-// SetSubagents sets the value of Subagents.
-func (s *SubagentListResponseBody) SetSubagents(val []SubagentResource) {
-	s.Subagents = val
-}
-
-// Ref: #/components/schemas/SubagentResource
-type SubagentResource struct {
-	ID             string `json:"id"`
-	ThreadId       string `json:"threadId"`
-	Name           string `json:"name"`
-	ExecutionState string `json:"executionState"`
-	LastTurnStatus string `json:"lastTurnStatus"`
-	ParentThreadId string `json:"parentThreadId"`
-	ModelId        string `json:"modelId"`
-}
-
-// GetID returns the value of ID.
-func (s *SubagentResource) GetID() string {
-	return s.ID
+// The conversation's configuration and resource use, as shown by /status.
+// Ref: #/components/schemas/StatusReportResource
+type StatusReportResource struct {
+	ThreadId string `json:"threadId"`
+	ModelId  string `json:"modelId"`
+	// The model's display name in the Canopy catalogue. Falls back to modelId.
+	ModelName       string               `json:"modelName"`
+	ReasoningEffort NilReasoningEffort   `json:"reasoningEffort"`
+	ApprovalMode    ApprovalMode         `json:"approvalMode"`
+	Status          ThreadStatus         `json:"status"`
+	Context         ContextUsageResource `json:"context"`
+	// Token usage over the whole conversation.
+	Usage Usage `json:"usage"`
+	// The most recent turn with its own usage. Null before the first message.
+	LastTurn NilThreadTurnResource `json:"lastTurn"`
 }
 
 // GetThreadId returns the value of ThreadId.
-func (s *SubagentResource) GetThreadId() string {
+func (s *StatusReportResource) GetThreadId() string {
 	return s.ThreadId
 }
 
-// GetName returns the value of Name.
-func (s *SubagentResource) GetName() string {
-	return s.Name
-}
-
-// GetExecutionState returns the value of ExecutionState.
-func (s *SubagentResource) GetExecutionState() string {
-	return s.ExecutionState
-}
-
-// GetLastTurnStatus returns the value of LastTurnStatus.
-func (s *SubagentResource) GetLastTurnStatus() string {
-	return s.LastTurnStatus
-}
-
-// GetParentThreadId returns the value of ParentThreadId.
-func (s *SubagentResource) GetParentThreadId() string {
-	return s.ParentThreadId
-}
-
 // GetModelId returns the value of ModelId.
-func (s *SubagentResource) GetModelId() string {
+func (s *StatusReportResource) GetModelId() string {
 	return s.ModelId
 }
 
-// SetID sets the value of ID.
-func (s *SubagentResource) SetID(val string) {
-	s.ID = val
+// GetModelName returns the value of ModelName.
+func (s *StatusReportResource) GetModelName() string {
+	return s.ModelName
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *StatusReportResource) GetReasoningEffort() NilReasoningEffort {
+	return s.ReasoningEffort
+}
+
+// GetApprovalMode returns the value of ApprovalMode.
+func (s *StatusReportResource) GetApprovalMode() ApprovalMode {
+	return s.ApprovalMode
+}
+
+// GetStatus returns the value of Status.
+func (s *StatusReportResource) GetStatus() ThreadStatus {
+	return s.Status
+}
+
+// GetContext returns the value of Context.
+func (s *StatusReportResource) GetContext() ContextUsageResource {
+	return s.Context
+}
+
+// GetUsage returns the value of Usage.
+func (s *StatusReportResource) GetUsage() Usage {
+	return s.Usage
+}
+
+// GetLastTurn returns the value of LastTurn.
+func (s *StatusReportResource) GetLastTurn() NilThreadTurnResource {
+	return s.LastTurn
 }
 
 // SetThreadId sets the value of ThreadId.
-func (s *SubagentResource) SetThreadId(val string) {
+func (s *StatusReportResource) SetThreadId(val string) {
 	s.ThreadId = val
 }
 
-// SetName sets the value of Name.
-func (s *SubagentResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetExecutionState sets the value of ExecutionState.
-func (s *SubagentResource) SetExecutionState(val string) {
-	s.ExecutionState = val
-}
-
-// SetLastTurnStatus sets the value of LastTurnStatus.
-func (s *SubagentResource) SetLastTurnStatus(val string) {
-	s.LastTurnStatus = val
-}
-
-// SetParentThreadId sets the value of ParentThreadId.
-func (s *SubagentResource) SetParentThreadId(val string) {
-	s.ParentThreadId = val
-}
-
 // SetModelId sets the value of ModelId.
-func (s *SubagentResource) SetModelId(val string) {
+func (s *StatusReportResource) SetModelId(val string) {
 	s.ModelId = val
 }
 
-// SubmitDynamicCallResultNoContent is response for SubmitDynamicCallResult operation.
-type SubmitDynamicCallResultNoContent struct{}
+// SetModelName sets the value of ModelName.
+func (s *StatusReportResource) SetModelName(val string) {
+	s.ModelName = val
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *StatusReportResource) SetReasoningEffort(val NilReasoningEffort) {
+	s.ReasoningEffort = val
+}
+
+// SetApprovalMode sets the value of ApprovalMode.
+func (s *StatusReportResource) SetApprovalMode(val ApprovalMode) {
+	s.ApprovalMode = val
+}
+
+// SetStatus sets the value of Status.
+func (s *StatusReportResource) SetStatus(val ThreadStatus) {
+	s.Status = val
+}
+
+// SetContext sets the value of Context.
+func (s *StatusReportResource) SetContext(val ContextUsageResource) {
+	s.Context = val
+}
+
+// SetUsage sets the value of Usage.
+func (s *StatusReportResource) SetUsage(val Usage) {
+	s.Usage = val
+}
+
+// SetLastTurn sets the value of LastTurn.
+func (s *StatusReportResource) SetLastTurn(val NilThreadTurnResource) {
+	s.LastTurn = val
+}
+
+// Ref: #/components/schemas/SubagentCountResource
+type SubagentCountResource struct {
+	Total   int64 `json:"total"`
+	Running int64 `json:"running"`
+}
+
+// GetTotal returns the value of Total.
+func (s *SubagentCountResource) GetTotal() int64 {
+	return s.Total
+}
+
+// GetRunning returns the value of Running.
+func (s *SubagentCountResource) GetRunning() int64 {
+	return s.Running
+}
+
+// SetTotal sets the value of Total.
+func (s *SubagentCountResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// SetRunning sets the value of Running.
+func (s *SubagentCountResource) SetRunning(val int64) {
+	s.Running = val
+}
+
+// SubmitToolResultNoContent is response for SubmitToolResult operation.
+type SubmitToolResultNoContent struct{}
+
+// What a run does. `type` determines which fields apply.
+// Ref: #/components/schemas/TaskAction
+type TaskAction struct {
+	Type TaskActionType `json:"type"`
+	// For `prompt`. Sent to the conversation as a message from the task.
+	Prompt OptNilString `json:"prompt"`
+	// For `command`. The instance that runs it.
+	InstanceId OptNilString `json:"instanceId"`
+	// For `command`. A shell command.
+	Command OptNilString `json:"command"`
+	// For `command`. The run fails with status timed_out after this long.
+	TimeoutSeconds OptInt64 `json:"timeoutSeconds"`
+}
+
+// GetType returns the value of Type.
+func (s *TaskAction) GetType() TaskActionType {
+	return s.Type
+}
+
+// GetPrompt returns the value of Prompt.
+func (s *TaskAction) GetPrompt() OptNilString {
+	return s.Prompt
+}
+
+// GetInstanceId returns the value of InstanceId.
+func (s *TaskAction) GetInstanceId() OptNilString {
+	return s.InstanceId
+}
+
+// GetCommand returns the value of Command.
+func (s *TaskAction) GetCommand() OptNilString {
+	return s.Command
+}
+
+// GetTimeoutSeconds returns the value of TimeoutSeconds.
+func (s *TaskAction) GetTimeoutSeconds() OptInt64 {
+	return s.TimeoutSeconds
+}
+
+// SetType sets the value of Type.
+func (s *TaskAction) SetType(val TaskActionType) {
+	s.Type = val
+}
+
+// SetPrompt sets the value of Prompt.
+func (s *TaskAction) SetPrompt(val OptNilString) {
+	s.Prompt = val
+}
+
+// SetInstanceId sets the value of InstanceId.
+func (s *TaskAction) SetInstanceId(val OptNilString) {
+	s.InstanceId = val
+}
+
+// SetCommand sets the value of Command.
+func (s *TaskAction) SetCommand(val OptNilString) {
+	s.Command = val
+}
+
+// SetTimeoutSeconds sets the value of TimeoutSeconds.
+func (s *TaskAction) SetTimeoutSeconds(val OptInt64) {
+	s.TimeoutSeconds = val
+}
+
+type TaskActionType string
+
+const (
+	TaskActionTypePrompt  TaskActionType = "prompt"
+	TaskActionTypeCommand TaskActionType = "command"
+)
+
+// AllValues returns all TaskActionType values.
+func (TaskActionType) AllValues() []TaskActionType {
+	return []TaskActionType{
+		TaskActionTypePrompt,
+		TaskActionTypeCommand,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskActionType) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskActionTypePrompt:
+		return []byte(s), nil
+	case TaskActionTypeCommand:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskActionType) UnmarshalText(data []byte) error {
+	switch TaskActionType(data) {
+	case TaskActionTypePrompt:
+		*s = TaskActionTypePrompt
+		return nil
+	case TaskActionTypeCommand:
+		*s = TaskActionTypeCommand
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // Ref: #/components/schemas/TaskListResponseBody
 type TaskListResponseBody struct {
-	Tasks []TaskResource `json:"tasks"`
+	Tasks      []TaskResource `json:"tasks"`
+	NextCursor NilString      `json:"nextCursor"`
 }
 
 // GetTasks returns the value of Tasks.
@@ -7693,23 +8334,36 @@ func (s *TaskListResponseBody) GetTasks() []TaskResource {
 	return s.Tasks
 }
 
+// GetNextCursor returns the value of NextCursor.
+func (s *TaskListResponseBody) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
 // SetTasks sets the value of Tasks.
 func (s *TaskListResponseBody) SetTasks(val []TaskResource) {
 	s.Tasks = val
 }
 
+// SetNextCursor sets the value of NextCursor.
+func (s *TaskListResponseBody) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
 // Ref: #/components/schemas/TaskResource
 type TaskResource struct {
-	ID             string   `json:"id"`
-	ThreadId       string   `json:"threadId"`
-	Name           string   `json:"name"`
-	Status         string   `json:"status"`
-	InstanceId     string   `json:"instanceId"`
-	Command        string   `json:"command"`
-	TimeoutSeconds int64    `json:"timeoutSeconds"`
-	ProcessStatus  string   `json:"processStatus"`
-	ExitCode       NilInt64 `json:"exitCode"`
-	Output         string   `json:"output"`
+	ID string `json:"id"`
+	// The conversation the task reports to.
+	ThreadId string `json:"threadId"`
+	Name     string `json:"name"`
+	// `completed` is a one-time task whose run has ended.
+	Status  TaskResourceStatus `json:"status"`
+	Trigger TaskTrigger        `json:"trigger"`
+	Action  TaskAction         `json:"action"`
+	// When the trigger starts the next run. Null when it will not.
+	NextRunAt NilDateTime        `json:"nextRunAt"`
+	LastRun   NilTaskRunResource `json:"lastRun"`
+	CreatedAt time.Time          `json:"createdAt"`
+	UpdatedAt time.Time          `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -7728,38 +8382,38 @@ func (s *TaskResource) GetName() string {
 }
 
 // GetStatus returns the value of Status.
-func (s *TaskResource) GetStatus() string {
+func (s *TaskResource) GetStatus() TaskResourceStatus {
 	return s.Status
 }
 
-// GetInstanceId returns the value of InstanceId.
-func (s *TaskResource) GetInstanceId() string {
-	return s.InstanceId
+// GetTrigger returns the value of Trigger.
+func (s *TaskResource) GetTrigger() TaskTrigger {
+	return s.Trigger
 }
 
-// GetCommand returns the value of Command.
-func (s *TaskResource) GetCommand() string {
-	return s.Command
+// GetAction returns the value of Action.
+func (s *TaskResource) GetAction() TaskAction {
+	return s.Action
 }
 
-// GetTimeoutSeconds returns the value of TimeoutSeconds.
-func (s *TaskResource) GetTimeoutSeconds() int64 {
-	return s.TimeoutSeconds
+// GetNextRunAt returns the value of NextRunAt.
+func (s *TaskResource) GetNextRunAt() NilDateTime {
+	return s.NextRunAt
 }
 
-// GetProcessStatus returns the value of ProcessStatus.
-func (s *TaskResource) GetProcessStatus() string {
-	return s.ProcessStatus
+// GetLastRun returns the value of LastRun.
+func (s *TaskResource) GetLastRun() NilTaskRunResource {
+	return s.LastRun
 }
 
-// GetExitCode returns the value of ExitCode.
-func (s *TaskResource) GetExitCode() NilInt64 {
-	return s.ExitCode
+// GetCreatedAt returns the value of CreatedAt.
+func (s *TaskResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
 }
 
-// GetOutput returns the value of Output.
-func (s *TaskResource) GetOutput() string {
-	return s.Output
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *TaskResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
 }
 
 // SetID sets the value of ID.
@@ -7778,347 +8432,70 @@ func (s *TaskResource) SetName(val string) {
 }
 
 // SetStatus sets the value of Status.
-func (s *TaskResource) SetStatus(val string) {
+func (s *TaskResource) SetStatus(val TaskResourceStatus) {
 	s.Status = val
 }
 
-// SetInstanceId sets the value of InstanceId.
-func (s *TaskResource) SetInstanceId(val string) {
-	s.InstanceId = val
+// SetTrigger sets the value of Trigger.
+func (s *TaskResource) SetTrigger(val TaskTrigger) {
+	s.Trigger = val
 }
 
-// SetCommand sets the value of Command.
-func (s *TaskResource) SetCommand(val string) {
-	s.Command = val
+// SetAction sets the value of Action.
+func (s *TaskResource) SetAction(val TaskAction) {
+	s.Action = val
 }
 
-// SetTimeoutSeconds sets the value of TimeoutSeconds.
-func (s *TaskResource) SetTimeoutSeconds(val int64) {
-	s.TimeoutSeconds = val
+// SetNextRunAt sets the value of NextRunAt.
+func (s *TaskResource) SetNextRunAt(val NilDateTime) {
+	s.NextRunAt = val
 }
 
-// SetProcessStatus sets the value of ProcessStatus.
-func (s *TaskResource) SetProcessStatus(val string) {
-	s.ProcessStatus = val
-}
-
-// SetExitCode sets the value of ExitCode.
-func (s *TaskResource) SetExitCode(val NilInt64) {
-	s.ExitCode = val
-}
-
-// SetOutput sets the value of Output.
-func (s *TaskResource) SetOutput(val string) {
-	s.Output = val
-}
-
-// Ref: #/components/schemas/ThreadListResponseBody
-type ThreadListResponseBody struct {
-	// Pass this back as `cursor` for the next page. Null means this was the last one — it is only set
-	// when there is genuinely more, so an empty final page never happens.
-	NextCursor NilString                    `json:"nextCursor"`
-	Threads    []ThreadSummaryResource      `json:"threads"`
-	Counts     ThreadListResponseBodyCounts `json:"counts"`
-}
-
-// GetNextCursor returns the value of NextCursor.
-func (s *ThreadListResponseBody) GetNextCursor() NilString {
-	return s.NextCursor
-}
-
-// GetThreads returns the value of Threads.
-func (s *ThreadListResponseBody) GetThreads() []ThreadSummaryResource {
-	return s.Threads
-}
-
-// GetCounts returns the value of Counts.
-func (s *ThreadListResponseBody) GetCounts() ThreadListResponseBodyCounts {
-	return s.Counts
-}
-
-// SetNextCursor sets the value of NextCursor.
-func (s *ThreadListResponseBody) SetNextCursor(val NilString) {
-	s.NextCursor = val
-}
-
-// SetThreads sets the value of Threads.
-func (s *ThreadListResponseBody) SetThreads(val []ThreadSummaryResource) {
-	s.Threads = val
-}
-
-// SetCounts sets the value of Counts.
-func (s *ThreadListResponseBody) SetCounts(val ThreadListResponseBodyCounts) {
-	s.Counts = val
-}
-
-type ThreadListResponseBodyCounts struct {
-	Total   int64 `json:"total"`
-	Waiting int64 `json:"waiting"`
-	Running int64 `json:"running"`
-	Unread  int64 `json:"unread"`
-}
-
-// GetTotal returns the value of Total.
-func (s *ThreadListResponseBodyCounts) GetTotal() int64 {
-	return s.Total
-}
-
-// GetWaiting returns the value of Waiting.
-func (s *ThreadListResponseBodyCounts) GetWaiting() int64 {
-	return s.Waiting
-}
-
-// GetRunning returns the value of Running.
-func (s *ThreadListResponseBodyCounts) GetRunning() int64 {
-	return s.Running
-}
-
-// GetUnread returns the value of Unread.
-func (s *ThreadListResponseBodyCounts) GetUnread() int64 {
-	return s.Unread
-}
-
-// SetTotal sets the value of Total.
-func (s *ThreadListResponseBodyCounts) SetTotal(val int64) {
-	s.Total = val
-}
-
-// SetWaiting sets the value of Waiting.
-func (s *ThreadListResponseBodyCounts) SetWaiting(val int64) {
-	s.Waiting = val
-}
-
-// SetRunning sets the value of Running.
-func (s *ThreadListResponseBodyCounts) SetRunning(val int64) {
-	s.Running = val
-}
-
-// SetUnread sets the value of Unread.
-func (s *ThreadListResponseBodyCounts) SetUnread(val int64) {
-	s.Unread = val
-}
-
-// Ref: #/components/schemas/ThreadSummaryResource
-type ThreadSummaryResource struct {
-	ExecutionState OptString                         `json:"executionState"`
-	ParentThreadId OptString                         `json:"parentThreadId"`
-	AgentName      OptString                         `json:"agentName"`
-	ApprovalMode   ThreadSummaryResourceApprovalMode `json:"approvalMode"`
-	Archived       bool                              `json:"archived"`
-	CreatedAt      time.Time                         `json:"createdAt"`
-	// The folder this conversation is filed under, or null when it is in none.
-	FolderId NilString `json:"folderId"`
-	ID       string    `json:"id"`
-	// The Canopy model id most recently captured by this conversation. Null before model selection. The
-	// next turn may select another model according to current policy.
-	Model NilString `json:"model"`
-	// The saved preferred Canopy model id, independent of the model actually used. Null follows the
-	// platform default. Kept when selection is disabled, the model is removed, or a request falls back.
-	PreferredModelId NilString                `json:"preferredModelId"`
-	Title            NilString                `json:"title"`
-	Unread           bool                     `json:"unread"`
-	UpdatedAt        time.Time                `json:"updatedAt"`
-	ReasoningEffort  NilString                `json:"reasoningEffort"`
-	Execution        ExecutionSummaryResource `json:"execution"`
-	Usage            UsageResource            `json:"usage"`
-	OrderVersion     int64                    `json:"orderVersion"`
-}
-
-// GetExecutionState returns the value of ExecutionState.
-func (s *ThreadSummaryResource) GetExecutionState() OptString {
-	return s.ExecutionState
-}
-
-// GetParentThreadId returns the value of ParentThreadId.
-func (s *ThreadSummaryResource) GetParentThreadId() OptString {
-	return s.ParentThreadId
-}
-
-// GetAgentName returns the value of AgentName.
-func (s *ThreadSummaryResource) GetAgentName() OptString {
-	return s.AgentName
-}
-
-// GetApprovalMode returns the value of ApprovalMode.
-func (s *ThreadSummaryResource) GetApprovalMode() ThreadSummaryResourceApprovalMode {
-	return s.ApprovalMode
-}
-
-// GetArchived returns the value of Archived.
-func (s *ThreadSummaryResource) GetArchived() bool {
-	return s.Archived
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *ThreadSummaryResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetFolderId returns the value of FolderId.
-func (s *ThreadSummaryResource) GetFolderId() NilString {
-	return s.FolderId
-}
-
-// GetID returns the value of ID.
-func (s *ThreadSummaryResource) GetID() string {
-	return s.ID
-}
-
-// GetModel returns the value of Model.
-func (s *ThreadSummaryResource) GetModel() NilString {
-	return s.Model
-}
-
-// GetPreferredModelId returns the value of PreferredModelId.
-func (s *ThreadSummaryResource) GetPreferredModelId() NilString {
-	return s.PreferredModelId
-}
-
-// GetTitle returns the value of Title.
-func (s *ThreadSummaryResource) GetTitle() NilString {
-	return s.Title
-}
-
-// GetUnread returns the value of Unread.
-func (s *ThreadSummaryResource) GetUnread() bool {
-	return s.Unread
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *ThreadSummaryResource) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
-}
-
-// GetReasoningEffort returns the value of ReasoningEffort.
-func (s *ThreadSummaryResource) GetReasoningEffort() NilString {
-	return s.ReasoningEffort
-}
-
-// GetExecution returns the value of Execution.
-func (s *ThreadSummaryResource) GetExecution() ExecutionSummaryResource {
-	return s.Execution
-}
-
-// GetUsage returns the value of Usage.
-func (s *ThreadSummaryResource) GetUsage() UsageResource {
-	return s.Usage
-}
-
-// GetOrderVersion returns the value of OrderVersion.
-func (s *ThreadSummaryResource) GetOrderVersion() int64 {
-	return s.OrderVersion
-}
-
-// SetExecutionState sets the value of ExecutionState.
-func (s *ThreadSummaryResource) SetExecutionState(val OptString) {
-	s.ExecutionState = val
-}
-
-// SetParentThreadId sets the value of ParentThreadId.
-func (s *ThreadSummaryResource) SetParentThreadId(val OptString) {
-	s.ParentThreadId = val
-}
-
-// SetAgentName sets the value of AgentName.
-func (s *ThreadSummaryResource) SetAgentName(val OptString) {
-	s.AgentName = val
-}
-
-// SetApprovalMode sets the value of ApprovalMode.
-func (s *ThreadSummaryResource) SetApprovalMode(val ThreadSummaryResourceApprovalMode) {
-	s.ApprovalMode = val
-}
-
-// SetArchived sets the value of Archived.
-func (s *ThreadSummaryResource) SetArchived(val bool) {
-	s.Archived = val
+// SetLastRun sets the value of LastRun.
+func (s *TaskResource) SetLastRun(val NilTaskRunResource) {
+	s.LastRun = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
-func (s *ThreadSummaryResource) SetCreatedAt(val time.Time) {
+func (s *TaskResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// SetFolderId sets the value of FolderId.
-func (s *ThreadSummaryResource) SetFolderId(val NilString) {
-	s.FolderId = val
-}
-
-// SetID sets the value of ID.
-func (s *ThreadSummaryResource) SetID(val string) {
-	s.ID = val
-}
-
-// SetModel sets the value of Model.
-func (s *ThreadSummaryResource) SetModel(val NilString) {
-	s.Model = val
-}
-
-// SetPreferredModelId sets the value of PreferredModelId.
-func (s *ThreadSummaryResource) SetPreferredModelId(val NilString) {
-	s.PreferredModelId = val
-}
-
-// SetTitle sets the value of Title.
-func (s *ThreadSummaryResource) SetTitle(val NilString) {
-	s.Title = val
-}
-
-// SetUnread sets the value of Unread.
-func (s *ThreadSummaryResource) SetUnread(val bool) {
-	s.Unread = val
-}
-
 // SetUpdatedAt sets the value of UpdatedAt.
-func (s *ThreadSummaryResource) SetUpdatedAt(val time.Time) {
+func (s *TaskResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
-// SetReasoningEffort sets the value of ReasoningEffort.
-func (s *ThreadSummaryResource) SetReasoningEffort(val NilString) {
-	s.ReasoningEffort = val
-}
-
-// SetExecution sets the value of Execution.
-func (s *ThreadSummaryResource) SetExecution(val ExecutionSummaryResource) {
-	s.Execution = val
-}
-
-// SetUsage sets the value of Usage.
-func (s *ThreadSummaryResource) SetUsage(val UsageResource) {
-	s.Usage = val
-}
-
-// SetOrderVersion sets the value of OrderVersion.
-func (s *ThreadSummaryResource) SetOrderVersion(val int64) {
-	s.OrderVersion = val
-}
-
-type ThreadSummaryResourceApprovalMode string
+// `completed` is a one-time task whose run has ended.
+type TaskResourceStatus string
 
 const (
-	ThreadSummaryResourceApprovalModeGuardian ThreadSummaryResourceApprovalMode = "guardian"
-	ThreadSummaryResourceApprovalModeManual   ThreadSummaryResourceApprovalMode = "manual"
-	ThreadSummaryResourceApprovalModeYolo     ThreadSummaryResourceApprovalMode = "yolo"
+	TaskResourceStatusActive    TaskResourceStatus = "active"
+	TaskResourceStatusPaused    TaskResourceStatus = "paused"
+	TaskResourceStatusCompleted TaskResourceStatus = "completed"
+	TaskResourceStatusCancelled TaskResourceStatus = "cancelled"
 )
 
-// AllValues returns all ThreadSummaryResourceApprovalMode values.
-func (ThreadSummaryResourceApprovalMode) AllValues() []ThreadSummaryResourceApprovalMode {
-	return []ThreadSummaryResourceApprovalMode{
-		ThreadSummaryResourceApprovalModeGuardian,
-		ThreadSummaryResourceApprovalModeManual,
-		ThreadSummaryResourceApprovalModeYolo,
+// AllValues returns all TaskResourceStatus values.
+func (TaskResourceStatus) AllValues() []TaskResourceStatus {
+	return []TaskResourceStatus{
+		TaskResourceStatusActive,
+		TaskResourceStatusPaused,
+		TaskResourceStatusCompleted,
+		TaskResourceStatusCancelled,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ThreadSummaryResourceApprovalMode) MarshalText() ([]byte, error) {
+func (s TaskResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case ThreadSummaryResourceApprovalModeGuardian:
+	case TaskResourceStatusActive:
 		return []byte(s), nil
-	case ThreadSummaryResourceApprovalModeManual:
+	case TaskResourceStatusPaused:
 		return []byte(s), nil
-	case ThreadSummaryResourceApprovalModeYolo:
+	case TaskResourceStatusCompleted:
+		return []byte(s), nil
+	case TaskResourceStatusCancelled:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -8126,36 +8503,1676 @@ func (s ThreadSummaryResourceApprovalMode) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ThreadSummaryResourceApprovalMode) UnmarshalText(data []byte) error {
-	switch ThreadSummaryResourceApprovalMode(data) {
-	case ThreadSummaryResourceApprovalModeGuardian:
-		*s = ThreadSummaryResourceApprovalModeGuardian
+func (s *TaskResourceStatus) UnmarshalText(data []byte) error {
+	switch TaskResourceStatus(data) {
+	case TaskResourceStatusActive:
+		*s = TaskResourceStatusActive
 		return nil
-	case ThreadSummaryResourceApprovalModeManual:
-		*s = ThreadSummaryResourceApprovalModeManual
+	case TaskResourceStatusPaused:
+		*s = TaskResourceStatusPaused
 		return nil
-	case ThreadSummaryResourceApprovalModeYolo:
-		*s = ThreadSummaryResourceApprovalModeYolo
+	case TaskResourceStatusCompleted:
+		*s = TaskResourceStatusCompleted
+		return nil
+	case TaskResourceStatusCancelled:
+		*s = TaskResourceStatusCancelled
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Ref: #/components/schemas/TodoResource
-type TodoResource struct {
-	// The same step phrased as happening now — "Installing nginx". Show this one while the item is in
-	// progress.
-	ActiveForm string `json:"activeForm"`
-	// The step as an instruction — "Install nginx".
-	Content string `json:"content"`
-	// Where this step stands. At most one item is in_progress at any time.
-	Status TodoResourceStatus `json:"status"`
+// Ref: #/components/schemas/TaskRunListResponseBody
+type TaskRunListResponseBody struct {
+	Runs       []TaskRunResource `json:"runs"`
+	NextCursor NilString         `json:"nextCursor"`
 }
 
-// GetActiveForm returns the value of ActiveForm.
-func (s *TodoResource) GetActiveForm() string {
-	return s.ActiveForm
+// GetRuns returns the value of Runs.
+func (s *TaskRunListResponseBody) GetRuns() []TaskRunResource {
+	return s.Runs
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *TaskRunListResponseBody) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// SetRuns sets the value of Runs.
+func (s *TaskRunListResponseBody) SetRuns(val []TaskRunResource) {
+	s.Runs = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *TaskRunListResponseBody) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
+// Ref: #/components/schemas/TaskRunResource
+type TaskRunResource struct {
+	ID         string                `json:"id"`
+	TaskId     string                `json:"taskId"`
+	Status     TaskRunResourceStatus `json:"status"`
+	StartedAt  NilDateTime           `json:"startedAt"`
+	FinishedAt NilDateTime           `json:"finishedAt"`
+	// For commands. Null until the command exits.
+	ExitCode NilInt64 `json:"exitCode"`
+	// The end of a command's output. Empty for prompts.
+	Output string `json:"output"`
+	// Why the run failed. Null unless status is failed.
+	ErrorCode NilString `json:"errorCode"`
+}
+
+// GetID returns the value of ID.
+func (s *TaskRunResource) GetID() string {
+	return s.ID
+}
+
+// GetTaskId returns the value of TaskId.
+func (s *TaskRunResource) GetTaskId() string {
+	return s.TaskId
+}
+
+// GetStatus returns the value of Status.
+func (s *TaskRunResource) GetStatus() TaskRunResourceStatus {
+	return s.Status
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *TaskRunResource) GetStartedAt() NilDateTime {
+	return s.StartedAt
+}
+
+// GetFinishedAt returns the value of FinishedAt.
+func (s *TaskRunResource) GetFinishedAt() NilDateTime {
+	return s.FinishedAt
+}
+
+// GetExitCode returns the value of ExitCode.
+func (s *TaskRunResource) GetExitCode() NilInt64 {
+	return s.ExitCode
+}
+
+// GetOutput returns the value of Output.
+func (s *TaskRunResource) GetOutput() string {
+	return s.Output
+}
+
+// GetErrorCode returns the value of ErrorCode.
+func (s *TaskRunResource) GetErrorCode() NilString {
+	return s.ErrorCode
+}
+
+// SetID sets the value of ID.
+func (s *TaskRunResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetTaskId sets the value of TaskId.
+func (s *TaskRunResource) SetTaskId(val string) {
+	s.TaskId = val
+}
+
+// SetStatus sets the value of Status.
+func (s *TaskRunResource) SetStatus(val TaskRunResourceStatus) {
+	s.Status = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *TaskRunResource) SetStartedAt(val NilDateTime) {
+	s.StartedAt = val
+}
+
+// SetFinishedAt sets the value of FinishedAt.
+func (s *TaskRunResource) SetFinishedAt(val NilDateTime) {
+	s.FinishedAt = val
+}
+
+// SetExitCode sets the value of ExitCode.
+func (s *TaskRunResource) SetExitCode(val NilInt64) {
+	s.ExitCode = val
+}
+
+// SetOutput sets the value of Output.
+func (s *TaskRunResource) SetOutput(val string) {
+	s.Output = val
+}
+
+// SetErrorCode sets the value of ErrorCode.
+func (s *TaskRunResource) SetErrorCode(val NilString) {
+	s.ErrorCode = val
+}
+
+type TaskRunResourceStatus string
+
+const (
+	TaskRunResourceStatusQueued    TaskRunResourceStatus = "queued"
+	TaskRunResourceStatusRunning   TaskRunResourceStatus = "running"
+	TaskRunResourceStatusCompleted TaskRunResourceStatus = "completed"
+	TaskRunResourceStatusFailed    TaskRunResourceStatus = "failed"
+	TaskRunResourceStatusCancelled TaskRunResourceStatus = "cancelled"
+	TaskRunResourceStatusTimedOut  TaskRunResourceStatus = "timed_out"
+)
+
+// AllValues returns all TaskRunResourceStatus values.
+func (TaskRunResourceStatus) AllValues() []TaskRunResourceStatus {
+	return []TaskRunResourceStatus{
+		TaskRunResourceStatusQueued,
+		TaskRunResourceStatusRunning,
+		TaskRunResourceStatusCompleted,
+		TaskRunResourceStatusFailed,
+		TaskRunResourceStatusCancelled,
+		TaskRunResourceStatusTimedOut,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskRunResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskRunResourceStatusQueued:
+		return []byte(s), nil
+	case TaskRunResourceStatusRunning:
+		return []byte(s), nil
+	case TaskRunResourceStatusCompleted:
+		return []byte(s), nil
+	case TaskRunResourceStatusFailed:
+		return []byte(s), nil
+	case TaskRunResourceStatusCancelled:
+		return []byte(s), nil
+	case TaskRunResourceStatusTimedOut:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskRunResourceStatus) UnmarshalText(data []byte) error {
+	switch TaskRunResourceStatus(data) {
+	case TaskRunResourceStatusQueued:
+		*s = TaskRunResourceStatusQueued
+		return nil
+	case TaskRunResourceStatusRunning:
+		*s = TaskRunResourceStatusRunning
+		return nil
+	case TaskRunResourceStatusCompleted:
+		*s = TaskRunResourceStatusCompleted
+		return nil
+	case TaskRunResourceStatusFailed:
+		*s = TaskRunResourceStatusFailed
+		return nil
+	case TaskRunResourceStatusCancelled:
+		*s = TaskRunResourceStatusCancelled
+		return nil
+	case TaskRunResourceStatusTimedOut:
+		*s = TaskRunResourceStatusTimedOut
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// When the task runs. `type` determines which fields apply.
+// Ref: #/components/schemas/TaskTrigger
+type TaskTrigger struct {
+	Type TaskTriggerType `json:"type"`
+	// For `at`.
+	RunAt OptNilDateTime `json:"runAt"`
+	// For `interval`.
+	IntervalSeconds OptNilInt64 `json:"intervalSeconds"`
+	// For `interval`. Runs fall on anchorAt plus whole intervals. Defaults to the creation time.
+	AnchorAt OptNilDateTime `json:"anchorAt"`
+	// For `cron`. A cron expression evaluated in `timezone`, for example `0 9 * * 1-5`.
+	Cron OptNilString `json:"cron"`
+	// An IANA time zone for `cron`.
+	Timezone OptString `json:"timezone"`
+	// What happens when a run is due while the previous one is still going.
+	OverlapPolicy OptTaskTriggerOverlapPolicy `json:"overlapPolicy"`
+	// How late a missed run may still start, for example after a pause or an outage.
+	CatchupSeconds OptInt64 `json:"catchupSeconds"`
+}
+
+// GetType returns the value of Type.
+func (s *TaskTrigger) GetType() TaskTriggerType {
+	return s.Type
+}
+
+// GetRunAt returns the value of RunAt.
+func (s *TaskTrigger) GetRunAt() OptNilDateTime {
+	return s.RunAt
+}
+
+// GetIntervalSeconds returns the value of IntervalSeconds.
+func (s *TaskTrigger) GetIntervalSeconds() OptNilInt64 {
+	return s.IntervalSeconds
+}
+
+// GetAnchorAt returns the value of AnchorAt.
+func (s *TaskTrigger) GetAnchorAt() OptNilDateTime {
+	return s.AnchorAt
+}
+
+// GetCron returns the value of Cron.
+func (s *TaskTrigger) GetCron() OptNilString {
+	return s.Cron
+}
+
+// GetTimezone returns the value of Timezone.
+func (s *TaskTrigger) GetTimezone() OptString {
+	return s.Timezone
+}
+
+// GetOverlapPolicy returns the value of OverlapPolicy.
+func (s *TaskTrigger) GetOverlapPolicy() OptTaskTriggerOverlapPolicy {
+	return s.OverlapPolicy
+}
+
+// GetCatchupSeconds returns the value of CatchupSeconds.
+func (s *TaskTrigger) GetCatchupSeconds() OptInt64 {
+	return s.CatchupSeconds
+}
+
+// SetType sets the value of Type.
+func (s *TaskTrigger) SetType(val TaskTriggerType) {
+	s.Type = val
+}
+
+// SetRunAt sets the value of RunAt.
+func (s *TaskTrigger) SetRunAt(val OptNilDateTime) {
+	s.RunAt = val
+}
+
+// SetIntervalSeconds sets the value of IntervalSeconds.
+func (s *TaskTrigger) SetIntervalSeconds(val OptNilInt64) {
+	s.IntervalSeconds = val
+}
+
+// SetAnchorAt sets the value of AnchorAt.
+func (s *TaskTrigger) SetAnchorAt(val OptNilDateTime) {
+	s.AnchorAt = val
+}
+
+// SetCron sets the value of Cron.
+func (s *TaskTrigger) SetCron(val OptNilString) {
+	s.Cron = val
+}
+
+// SetTimezone sets the value of Timezone.
+func (s *TaskTrigger) SetTimezone(val OptString) {
+	s.Timezone = val
+}
+
+// SetOverlapPolicy sets the value of OverlapPolicy.
+func (s *TaskTrigger) SetOverlapPolicy(val OptTaskTriggerOverlapPolicy) {
+	s.OverlapPolicy = val
+}
+
+// SetCatchupSeconds sets the value of CatchupSeconds.
+func (s *TaskTrigger) SetCatchupSeconds(val OptInt64) {
+	s.CatchupSeconds = val
+}
+
+// What happens when a run is due while the previous one is still going.
+type TaskTriggerOverlapPolicy string
+
+const (
+	TaskTriggerOverlapPolicySkip      TaskTriggerOverlapPolicy = "skip"
+	TaskTriggerOverlapPolicyBufferOne TaskTriggerOverlapPolicy = "buffer_one"
+)
+
+// AllValues returns all TaskTriggerOverlapPolicy values.
+func (TaskTriggerOverlapPolicy) AllValues() []TaskTriggerOverlapPolicy {
+	return []TaskTriggerOverlapPolicy{
+		TaskTriggerOverlapPolicySkip,
+		TaskTriggerOverlapPolicyBufferOne,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskTriggerOverlapPolicy) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskTriggerOverlapPolicySkip:
+		return []byte(s), nil
+	case TaskTriggerOverlapPolicyBufferOne:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskTriggerOverlapPolicy) UnmarshalText(data []byte) error {
+	switch TaskTriggerOverlapPolicy(data) {
+	case TaskTriggerOverlapPolicySkip:
+		*s = TaskTriggerOverlapPolicySkip
+		return nil
+	case TaskTriggerOverlapPolicyBufferOne:
+		*s = TaskTriggerOverlapPolicyBufferOne
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type TaskTriggerType string
+
+const (
+	TaskTriggerTypeNow      TaskTriggerType = "now"
+	TaskTriggerTypeAt       TaskTriggerType = "at"
+	TaskTriggerTypeInterval TaskTriggerType = "interval"
+	TaskTriggerTypeCron     TaskTriggerType = "cron"
+)
+
+// AllValues returns all TaskTriggerType values.
+func (TaskTriggerType) AllValues() []TaskTriggerType {
+	return []TaskTriggerType{
+		TaskTriggerTypeNow,
+		TaskTriggerTypeAt,
+		TaskTriggerTypeInterval,
+		TaskTriggerTypeCron,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskTriggerType) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskTriggerTypeNow:
+		return []byte(s), nil
+	case TaskTriggerTypeAt:
+		return []byte(s), nil
+	case TaskTriggerTypeInterval:
+		return []byte(s), nil
+	case TaskTriggerTypeCron:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskTriggerType) UnmarshalText(data []byte) error {
+	switch TaskTriggerType(data) {
+	case TaskTriggerTypeNow:
+		*s = TaskTriggerTypeNow
+		return nil
+	case TaskTriggerTypeAt:
+		*s = TaskTriggerTypeAt
+		return nil
+	case TaskTriggerTypeInterval:
+		*s = TaskTriggerTypeInterval
+		return nil
+	case TaskTriggerTypeCron:
+		*s = TaskTriggerTypeCron
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Counts over everything the criteria match, not only this page. `state`, `q` and the cursor are
+// ignored.
+// Ref: #/components/schemas/ThreadCountsResource
+type ThreadCountsResource struct {
+	Total       int64 `json:"total"`
+	NeedsAction int64 `json:"needsAction"`
+	Running     int64 `json:"running"`
+	Unread      int64 `json:"unread"`
+}
+
+// GetTotal returns the value of Total.
+func (s *ThreadCountsResource) GetTotal() int64 {
+	return s.Total
+}
+
+// GetNeedsAction returns the value of NeedsAction.
+func (s *ThreadCountsResource) GetNeedsAction() int64 {
+	return s.NeedsAction
+}
+
+// GetRunning returns the value of Running.
+func (s *ThreadCountsResource) GetRunning() int64 {
+	return s.Running
+}
+
+// GetUnread returns the value of Unread.
+func (s *ThreadCountsResource) GetUnread() int64 {
+	return s.Unread
+}
+
+// SetTotal sets the value of Total.
+func (s *ThreadCountsResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// SetNeedsAction sets the value of NeedsAction.
+func (s *ThreadCountsResource) SetNeedsAction(val int64) {
+	s.NeedsAction = val
+}
+
+// SetRunning sets the value of Running.
+func (s *ThreadCountsResource) SetRunning(val int64) {
+	s.Running = val
+}
+
+// SetUnread sets the value of Unread.
+func (s *ThreadCountsResource) SetUnread(val int64) {
+	s.Unread = val
+}
+
+// Ref: #/components/schemas/ThreadItemListResponseBody
+type ThreadItemListResponseBody struct {
+	// Oldest first.
+	Items []ThreadItemResource `json:"items"`
+	// Pass as `before` to read the page above. Null at the top.
+	Earlier NilInt64 `json:"earlier"`
+	// Subscribe to the conversation on /api/v1/realtime from this cursor to receive what is written after
+	// this page.
+	StreamCursor NilString `json:"streamCursor"`
+}
+
+// GetItems returns the value of Items.
+func (s *ThreadItemListResponseBody) GetItems() []ThreadItemResource {
+	return s.Items
+}
+
+// GetEarlier returns the value of Earlier.
+func (s *ThreadItemListResponseBody) GetEarlier() NilInt64 {
+	return s.Earlier
+}
+
+// GetStreamCursor returns the value of StreamCursor.
+func (s *ThreadItemListResponseBody) GetStreamCursor() NilString {
+	return s.StreamCursor
+}
+
+// SetItems sets the value of Items.
+func (s *ThreadItemListResponseBody) SetItems(val []ThreadItemResource) {
+	s.Items = val
+}
+
+// SetEarlier sets the value of Earlier.
+func (s *ThreadItemListResponseBody) SetEarlier(val NilInt64) {
+	s.Earlier = val
+}
+
+// SetStreamCursor sets the value of StreamCursor.
+func (s *ThreadItemListResponseBody) SetStreamCursor(val NilString) {
+	s.StreamCursor = val
+}
+
+// One entry of the transcript. `type` determines which fields it carries.
+// Ref: #/components/schemas/ThreadItemResource
+type ThreadItemResource struct {
+	ID string `json:"id"`
+	// The position in the transcript. Never renumbered.
+	Ordinal int64 `json:"ordinal"`
+	// The turn that wrote this item. Null for messages waiting in the queue.
+	TurnId NilString              `json:"turnId"`
+	Type   ThreadItemResourceType `json:"type"`
+	// `queued` is a message sent while the assistant was busy that it has not read yet.
+	Status ThreadItemResourceStatus `json:"status"`
+	// Left out of model requests since a revert. Shown, but marked.
+	Reverted bool `json:"reverted"`
+	// Who wrote an `external_message`: `subagent` for a subagent reporting to its parent, `task` for a
+	// task, `channel` for a chat app.
+	SourceType NilThreadItemResourceSourceType `json:"sourceType"`
+	// The subagent conversation, task or channel the message came from.
+	SourceId NilString `json:"sourceId"`
+	// The Canopy model that produced this item. Null for messages a person or another source sent.
+	ModelId NilString `json:"modelId"`
+	// The content, in the order it was written. Text arrives as `append` frames on the realtime stream. An
+	// attachment belongs where it was written, so render parts in order.
+	Parts       []PartResource       `json:"parts"`
+	Attachments []AttachmentResource `json:"attachments"`
+	// The `data-*` blocks the client attached to a user message. They are not part of what the person
+	// wrote; render the message from `parts` and leave these out of the bubble.
+	ClientContext []ClientContextPart `json:"clientContext"`
+	// The tool's group, for example `instance`, `platform`, `agent` or `client`.
+	Namespace NilString `json:"namespace"`
+	Tool      NilString `json:"tool"`
+	// The tool call's arguments as JSON text.
+	Arguments NilString `json:"arguments"`
+	// What the tool call acts on, for display, such as a file path or an instance name.
+	Target NilString `json:"target"`
+	// A one-line description of what the tool call did.
+	Detail       NilString               `json:"detail"`
+	Presentation NilPresentationResource `json:"presentation"`
+	DurationMs   NilInt64                `json:"durationMs"`
+	// Whether the tool call needed a decision before it ran. Null for tool calls that need none.
+	// `auto_approved` was approved by the automatic reviewer.
+	ApprovalStatus NilThreadItemResourceApprovalStatus `json:"approvalStatus"`
+	ApprovalReason NilString                           `json:"approvalReason"`
+	// The questions of an `ask` tool call. Null for other items.
+	Questions []QuestionResource `json:"questions"`
+	// How long an `ask` tool call waits before it continues with its default answers. Null when it waits
+	// indefinitely.
+	AutoAnswerMs NilInt64  `json:"autoAnswerMs"`
+	CreatedAt    time.Time `json:"createdAt"`
+}
+
+// GetID returns the value of ID.
+func (s *ThreadItemResource) GetID() string {
+	return s.ID
+}
+
+// GetOrdinal returns the value of Ordinal.
+func (s *ThreadItemResource) GetOrdinal() int64 {
+	return s.Ordinal
+}
+
+// GetTurnId returns the value of TurnId.
+func (s *ThreadItemResource) GetTurnId() NilString {
+	return s.TurnId
+}
+
+// GetType returns the value of Type.
+func (s *ThreadItemResource) GetType() ThreadItemResourceType {
+	return s.Type
+}
+
+// GetStatus returns the value of Status.
+func (s *ThreadItemResource) GetStatus() ThreadItemResourceStatus {
+	return s.Status
+}
+
+// GetReverted returns the value of Reverted.
+func (s *ThreadItemResource) GetReverted() bool {
+	return s.Reverted
+}
+
+// GetSourceType returns the value of SourceType.
+func (s *ThreadItemResource) GetSourceType() NilThreadItemResourceSourceType {
+	return s.SourceType
+}
+
+// GetSourceId returns the value of SourceId.
+func (s *ThreadItemResource) GetSourceId() NilString {
+	return s.SourceId
+}
+
+// GetModelId returns the value of ModelId.
+func (s *ThreadItemResource) GetModelId() NilString {
+	return s.ModelId
+}
+
+// GetParts returns the value of Parts.
+func (s *ThreadItemResource) GetParts() []PartResource {
+	return s.Parts
+}
+
+// GetAttachments returns the value of Attachments.
+func (s *ThreadItemResource) GetAttachments() []AttachmentResource {
+	return s.Attachments
+}
+
+// GetClientContext returns the value of ClientContext.
+func (s *ThreadItemResource) GetClientContext() []ClientContextPart {
+	return s.ClientContext
+}
+
+// GetNamespace returns the value of Namespace.
+func (s *ThreadItemResource) GetNamespace() NilString {
+	return s.Namespace
+}
+
+// GetTool returns the value of Tool.
+func (s *ThreadItemResource) GetTool() NilString {
+	return s.Tool
+}
+
+// GetArguments returns the value of Arguments.
+func (s *ThreadItemResource) GetArguments() NilString {
+	return s.Arguments
+}
+
+// GetTarget returns the value of Target.
+func (s *ThreadItemResource) GetTarget() NilString {
+	return s.Target
+}
+
+// GetDetail returns the value of Detail.
+func (s *ThreadItemResource) GetDetail() NilString {
+	return s.Detail
+}
+
+// GetPresentation returns the value of Presentation.
+func (s *ThreadItemResource) GetPresentation() NilPresentationResource {
+	return s.Presentation
+}
+
+// GetDurationMs returns the value of DurationMs.
+func (s *ThreadItemResource) GetDurationMs() NilInt64 {
+	return s.DurationMs
+}
+
+// GetApprovalStatus returns the value of ApprovalStatus.
+func (s *ThreadItemResource) GetApprovalStatus() NilThreadItemResourceApprovalStatus {
+	return s.ApprovalStatus
+}
+
+// GetApprovalReason returns the value of ApprovalReason.
+func (s *ThreadItemResource) GetApprovalReason() NilString {
+	return s.ApprovalReason
+}
+
+// GetQuestions returns the value of Questions.
+func (s *ThreadItemResource) GetQuestions() []QuestionResource {
+	return s.Questions
+}
+
+// GetAutoAnswerMs returns the value of AutoAnswerMs.
+func (s *ThreadItemResource) GetAutoAnswerMs() NilInt64 {
+	return s.AutoAnswerMs
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ThreadItemResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *ThreadItemResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetOrdinal sets the value of Ordinal.
+func (s *ThreadItemResource) SetOrdinal(val int64) {
+	s.Ordinal = val
+}
+
+// SetTurnId sets the value of TurnId.
+func (s *ThreadItemResource) SetTurnId(val NilString) {
+	s.TurnId = val
+}
+
+// SetType sets the value of Type.
+func (s *ThreadItemResource) SetType(val ThreadItemResourceType) {
+	s.Type = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ThreadItemResource) SetStatus(val ThreadItemResourceStatus) {
+	s.Status = val
+}
+
+// SetReverted sets the value of Reverted.
+func (s *ThreadItemResource) SetReverted(val bool) {
+	s.Reverted = val
+}
+
+// SetSourceType sets the value of SourceType.
+func (s *ThreadItemResource) SetSourceType(val NilThreadItemResourceSourceType) {
+	s.SourceType = val
+}
+
+// SetSourceId sets the value of SourceId.
+func (s *ThreadItemResource) SetSourceId(val NilString) {
+	s.SourceId = val
+}
+
+// SetModelId sets the value of ModelId.
+func (s *ThreadItemResource) SetModelId(val NilString) {
+	s.ModelId = val
+}
+
+// SetParts sets the value of Parts.
+func (s *ThreadItemResource) SetParts(val []PartResource) {
+	s.Parts = val
+}
+
+// SetAttachments sets the value of Attachments.
+func (s *ThreadItemResource) SetAttachments(val []AttachmentResource) {
+	s.Attachments = val
+}
+
+// SetClientContext sets the value of ClientContext.
+func (s *ThreadItemResource) SetClientContext(val []ClientContextPart) {
+	s.ClientContext = val
+}
+
+// SetNamespace sets the value of Namespace.
+func (s *ThreadItemResource) SetNamespace(val NilString) {
+	s.Namespace = val
+}
+
+// SetTool sets the value of Tool.
+func (s *ThreadItemResource) SetTool(val NilString) {
+	s.Tool = val
+}
+
+// SetArguments sets the value of Arguments.
+func (s *ThreadItemResource) SetArguments(val NilString) {
+	s.Arguments = val
+}
+
+// SetTarget sets the value of Target.
+func (s *ThreadItemResource) SetTarget(val NilString) {
+	s.Target = val
+}
+
+// SetDetail sets the value of Detail.
+func (s *ThreadItemResource) SetDetail(val NilString) {
+	s.Detail = val
+}
+
+// SetPresentation sets the value of Presentation.
+func (s *ThreadItemResource) SetPresentation(val NilPresentationResource) {
+	s.Presentation = val
+}
+
+// SetDurationMs sets the value of DurationMs.
+func (s *ThreadItemResource) SetDurationMs(val NilInt64) {
+	s.DurationMs = val
+}
+
+// SetApprovalStatus sets the value of ApprovalStatus.
+func (s *ThreadItemResource) SetApprovalStatus(val NilThreadItemResourceApprovalStatus) {
+	s.ApprovalStatus = val
+}
+
+// SetApprovalReason sets the value of ApprovalReason.
+func (s *ThreadItemResource) SetApprovalReason(val NilString) {
+	s.ApprovalReason = val
+}
+
+// SetQuestions sets the value of Questions.
+func (s *ThreadItemResource) SetQuestions(val []QuestionResource) {
+	s.Questions = val
+}
+
+// SetAutoAnswerMs sets the value of AutoAnswerMs.
+func (s *ThreadItemResource) SetAutoAnswerMs(val NilInt64) {
+	s.AutoAnswerMs = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ThreadItemResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Whether the tool call needed a decision before it ran. Null for tool calls that need none.
+// `auto_approved` was approved by the automatic reviewer.
+type ThreadItemResourceApprovalStatus string
+
+const (
+	ThreadItemResourceApprovalStatusPending      ThreadItemResourceApprovalStatus = "pending"
+	ThreadItemResourceApprovalStatusApproved     ThreadItemResourceApprovalStatus = "approved"
+	ThreadItemResourceApprovalStatusDeclined     ThreadItemResourceApprovalStatus = "declined"
+	ThreadItemResourceApprovalStatusAutoApproved ThreadItemResourceApprovalStatus = "auto_approved"
+)
+
+// AllValues returns all ThreadItemResourceApprovalStatus values.
+func (ThreadItemResourceApprovalStatus) AllValues() []ThreadItemResourceApprovalStatus {
+	return []ThreadItemResourceApprovalStatus{
+		ThreadItemResourceApprovalStatusPending,
+		ThreadItemResourceApprovalStatusApproved,
+		ThreadItemResourceApprovalStatusDeclined,
+		ThreadItemResourceApprovalStatusAutoApproved,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ThreadItemResourceApprovalStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ThreadItemResourceApprovalStatusPending:
+		return []byte(s), nil
+	case ThreadItemResourceApprovalStatusApproved:
+		return []byte(s), nil
+	case ThreadItemResourceApprovalStatusDeclined:
+		return []byte(s), nil
+	case ThreadItemResourceApprovalStatusAutoApproved:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ThreadItemResourceApprovalStatus) UnmarshalText(data []byte) error {
+	switch ThreadItemResourceApprovalStatus(data) {
+	case ThreadItemResourceApprovalStatusPending:
+		*s = ThreadItemResourceApprovalStatusPending
+		return nil
+	case ThreadItemResourceApprovalStatusApproved:
+		*s = ThreadItemResourceApprovalStatusApproved
+		return nil
+	case ThreadItemResourceApprovalStatusDeclined:
+		*s = ThreadItemResourceApprovalStatusDeclined
+		return nil
+	case ThreadItemResourceApprovalStatusAutoApproved:
+		*s = ThreadItemResourceApprovalStatusAutoApproved
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Who wrote an `external_message`: `subagent` for a subagent reporting to its parent, `task` for a
+// task, `channel` for a chat app.
+type ThreadItemResourceSourceType string
+
+const (
+	ThreadItemResourceSourceTypeSubagent ThreadItemResourceSourceType = "subagent"
+	ThreadItemResourceSourceTypeTask     ThreadItemResourceSourceType = "task"
+	ThreadItemResourceSourceTypeChannel  ThreadItemResourceSourceType = "channel"
+)
+
+// AllValues returns all ThreadItemResourceSourceType values.
+func (ThreadItemResourceSourceType) AllValues() []ThreadItemResourceSourceType {
+	return []ThreadItemResourceSourceType{
+		ThreadItemResourceSourceTypeSubagent,
+		ThreadItemResourceSourceTypeTask,
+		ThreadItemResourceSourceTypeChannel,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ThreadItemResourceSourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ThreadItemResourceSourceTypeSubagent:
+		return []byte(s), nil
+	case ThreadItemResourceSourceTypeTask:
+		return []byte(s), nil
+	case ThreadItemResourceSourceTypeChannel:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ThreadItemResourceSourceType) UnmarshalText(data []byte) error {
+	switch ThreadItemResourceSourceType(data) {
+	case ThreadItemResourceSourceTypeSubagent:
+		*s = ThreadItemResourceSourceTypeSubagent
+		return nil
+	case ThreadItemResourceSourceTypeTask:
+		*s = ThreadItemResourceSourceTypeTask
+		return nil
+	case ThreadItemResourceSourceTypeChannel:
+		*s = ThreadItemResourceSourceTypeChannel
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `queued` is a message sent while the assistant was busy that it has not read yet.
+type ThreadItemResourceStatus string
+
+const (
+	ThreadItemResourceStatusQueued     ThreadItemResourceStatus = "queued"
+	ThreadItemResourceStatusPending    ThreadItemResourceStatus = "pending"
+	ThreadItemResourceStatusInProgress ThreadItemResourceStatus = "in_progress"
+	ThreadItemResourceStatusCompleted  ThreadItemResourceStatus = "completed"
+	ThreadItemResourceStatusFailed     ThreadItemResourceStatus = "failed"
+	ThreadItemResourceStatusDeclined   ThreadItemResourceStatus = "declined"
+	ThreadItemResourceStatusCancelled  ThreadItemResourceStatus = "cancelled"
+)
+
+// AllValues returns all ThreadItemResourceStatus values.
+func (ThreadItemResourceStatus) AllValues() []ThreadItemResourceStatus {
+	return []ThreadItemResourceStatus{
+		ThreadItemResourceStatusQueued,
+		ThreadItemResourceStatusPending,
+		ThreadItemResourceStatusInProgress,
+		ThreadItemResourceStatusCompleted,
+		ThreadItemResourceStatusFailed,
+		ThreadItemResourceStatusDeclined,
+		ThreadItemResourceStatusCancelled,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ThreadItemResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ThreadItemResourceStatusQueued:
+		return []byte(s), nil
+	case ThreadItemResourceStatusPending:
+		return []byte(s), nil
+	case ThreadItemResourceStatusInProgress:
+		return []byte(s), nil
+	case ThreadItemResourceStatusCompleted:
+		return []byte(s), nil
+	case ThreadItemResourceStatusFailed:
+		return []byte(s), nil
+	case ThreadItemResourceStatusDeclined:
+		return []byte(s), nil
+	case ThreadItemResourceStatusCancelled:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ThreadItemResourceStatus) UnmarshalText(data []byte) error {
+	switch ThreadItemResourceStatus(data) {
+	case ThreadItemResourceStatusQueued:
+		*s = ThreadItemResourceStatusQueued
+		return nil
+	case ThreadItemResourceStatusPending:
+		*s = ThreadItemResourceStatusPending
+		return nil
+	case ThreadItemResourceStatusInProgress:
+		*s = ThreadItemResourceStatusInProgress
+		return nil
+	case ThreadItemResourceStatusCompleted:
+		*s = ThreadItemResourceStatusCompleted
+		return nil
+	case ThreadItemResourceStatusFailed:
+		*s = ThreadItemResourceStatusFailed
+		return nil
+	case ThreadItemResourceStatusDeclined:
+		*s = ThreadItemResourceStatusDeclined
+		return nil
+	case ThreadItemResourceStatusCancelled:
+		*s = ThreadItemResourceStatusCancelled
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ThreadItemResourceType string
+
+const (
+	ThreadItemResourceTypeUserMessage         ThreadItemResourceType = "user_message"
+	ThreadItemResourceTypeExternalMessage     ThreadItemResourceType = "external_message"
+	ThreadItemResourceTypeAgentMessage        ThreadItemResourceType = "agent_message"
+	ThreadItemResourceTypeReasoning           ThreadItemResourceType = "reasoning"
+	ThreadItemResourceTypeToolCall            ThreadItemResourceType = "tool_call"
+	ThreadItemResourceTypeCompaction          ThreadItemResourceType = "compaction"
+	ThreadItemResourceTypeTokenBudgetReminder ThreadItemResourceType = "token_budget_reminder"
+	ThreadItemResourceTypeTurnFailure         ThreadItemResourceType = "turn_failure"
+)
+
+// AllValues returns all ThreadItemResourceType values.
+func (ThreadItemResourceType) AllValues() []ThreadItemResourceType {
+	return []ThreadItemResourceType{
+		ThreadItemResourceTypeUserMessage,
+		ThreadItemResourceTypeExternalMessage,
+		ThreadItemResourceTypeAgentMessage,
+		ThreadItemResourceTypeReasoning,
+		ThreadItemResourceTypeToolCall,
+		ThreadItemResourceTypeCompaction,
+		ThreadItemResourceTypeTokenBudgetReminder,
+		ThreadItemResourceTypeTurnFailure,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ThreadItemResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ThreadItemResourceTypeUserMessage:
+		return []byte(s), nil
+	case ThreadItemResourceTypeExternalMessage:
+		return []byte(s), nil
+	case ThreadItemResourceTypeAgentMessage:
+		return []byte(s), nil
+	case ThreadItemResourceTypeReasoning:
+		return []byte(s), nil
+	case ThreadItemResourceTypeToolCall:
+		return []byte(s), nil
+	case ThreadItemResourceTypeCompaction:
+		return []byte(s), nil
+	case ThreadItemResourceTypeTokenBudgetReminder:
+		return []byte(s), nil
+	case ThreadItemResourceTypeTurnFailure:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ThreadItemResourceType) UnmarshalText(data []byte) error {
+	switch ThreadItemResourceType(data) {
+	case ThreadItemResourceTypeUserMessage:
+		*s = ThreadItemResourceTypeUserMessage
+		return nil
+	case ThreadItemResourceTypeExternalMessage:
+		*s = ThreadItemResourceTypeExternalMessage
+		return nil
+	case ThreadItemResourceTypeAgentMessage:
+		*s = ThreadItemResourceTypeAgentMessage
+		return nil
+	case ThreadItemResourceTypeReasoning:
+		*s = ThreadItemResourceTypeReasoning
+		return nil
+	case ThreadItemResourceTypeToolCall:
+		*s = ThreadItemResourceTypeToolCall
+		return nil
+	case ThreadItemResourceTypeCompaction:
+		*s = ThreadItemResourceTypeCompaction
+		return nil
+	case ThreadItemResourceTypeTokenBudgetReminder:
+		*s = ThreadItemResourceTypeTokenBudgetReminder
+		return nil
+	case ThreadItemResourceTypeTurnFailure:
+		*s = ThreadItemResourceTypeTurnFailure
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ThreadListResponseBody
+type ThreadListResponseBody struct {
+	Threads []ThreadResource `json:"threads"`
+	// Null on the last page.
+	NextCursor NilString            `json:"nextCursor"`
+	Counts     ThreadCountsResource `json:"counts"`
+}
+
+// GetThreads returns the value of Threads.
+func (s *ThreadListResponseBody) GetThreads() []ThreadResource {
+	return s.Threads
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *ThreadListResponseBody) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// GetCounts returns the value of Counts.
+func (s *ThreadListResponseBody) GetCounts() ThreadCountsResource {
+	return s.Counts
+}
+
+// SetThreads sets the value of Threads.
+func (s *ThreadListResponseBody) SetThreads(val []ThreadResource) {
+	s.Threads = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *ThreadListResponseBody) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
+// SetCounts sets the value of Counts.
+func (s *ThreadListResponseBody) SetCounts(val ThreadCountsResource) {
+	s.Counts = val
+}
+
+// A conversation with an agent. The main conversation and its subagents have the same shape; `role`
+// tells them apart.
+// Ref: #/components/schemas/ThreadResource
+type ThreadResource struct {
+	ID string `json:"id"`
+	// `main` for a conversation with a person, `subagent` for one started by another agent.
+	Role ThreadResourceRole `json:"role"`
+	// The conversation that started this subagent. Null for main conversations.
+	ParentId NilString `json:"parentId"`
+	// The subagent's name, unique among the subagents of its parent. Null for main conversations.
+	AgentName NilString `json:"agentName"`
+	// Null until the conversation has a name.
+	Title NilString `json:"title"`
+	// The folder that holds this conversation. Null for subagents, which are not filed.
+	FolderId NilString `json:"folderId"`
+	// The version of this conversation's place in its folder. Pass it as `expectedVersion` when moving it.
+	OrderVersion int64 `json:"orderVersion"`
+	// The Canopy model the next model request uses.
+	ModelId string `json:"modelId"`
+	// Null when the model does not reason.
+	ReasoningEffort NilReasoningEffort `json:"reasoningEffort"`
+	ApprovalMode    ApprovalMode       `json:"approvalMode"`
+	Status          ThreadStatus       `json:"status"`
+	// What the assistant is doing right now, for example "Reading nginx.conf". Null when idle.
+	Activity NilString `json:"activity"`
+	// The beginning of the assistant's latest message.
+	RecentMessage NilString `json:"recentMessage"`
+	// The assistant's current plan, in order. Empty when it has none.
+	Todos []TodoResource `json:"todos"`
+	// What this conversation is waiting for from a person. It may belong to one of its subagents.
+	PendingAction NilPendingActionResource `json:"pendingAction"`
+	Subagents     SubagentCountResource    `json:"subagents"`
+	// The most recent turn. Null before the first message.
+	LastTurn NilLastTurnResource  `json:"lastTurn"`
+	Context  ContextUsageResource `json:"context"`
+	// Token usage over the whole conversation. For a main conversation this includes its subagents.
+	Usage Usage `json:"usage"`
+	// The assistant replied after the conversation was last marked read.
+	Unread    bool      `json:"unread"`
+	Archived  bool      `json:"archived"`
+	CreatedAt time.Time `json:"createdAt"`
+	// The last activity. Renaming or moving the conversation does not change it.
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetID returns the value of ID.
+func (s *ThreadResource) GetID() string {
+	return s.ID
+}
+
+// GetRole returns the value of Role.
+func (s *ThreadResource) GetRole() ThreadResourceRole {
+	return s.Role
+}
+
+// GetParentId returns the value of ParentId.
+func (s *ThreadResource) GetParentId() NilString {
+	return s.ParentId
+}
+
+// GetAgentName returns the value of AgentName.
+func (s *ThreadResource) GetAgentName() NilString {
+	return s.AgentName
+}
+
+// GetTitle returns the value of Title.
+func (s *ThreadResource) GetTitle() NilString {
+	return s.Title
+}
+
+// GetFolderId returns the value of FolderId.
+func (s *ThreadResource) GetFolderId() NilString {
+	return s.FolderId
+}
+
+// GetOrderVersion returns the value of OrderVersion.
+func (s *ThreadResource) GetOrderVersion() int64 {
+	return s.OrderVersion
+}
+
+// GetModelId returns the value of ModelId.
+func (s *ThreadResource) GetModelId() string {
+	return s.ModelId
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *ThreadResource) GetReasoningEffort() NilReasoningEffort {
+	return s.ReasoningEffort
+}
+
+// GetApprovalMode returns the value of ApprovalMode.
+func (s *ThreadResource) GetApprovalMode() ApprovalMode {
+	return s.ApprovalMode
+}
+
+// GetStatus returns the value of Status.
+func (s *ThreadResource) GetStatus() ThreadStatus {
+	return s.Status
+}
+
+// GetActivity returns the value of Activity.
+func (s *ThreadResource) GetActivity() NilString {
+	return s.Activity
+}
+
+// GetRecentMessage returns the value of RecentMessage.
+func (s *ThreadResource) GetRecentMessage() NilString {
+	return s.RecentMessage
+}
+
+// GetTodos returns the value of Todos.
+func (s *ThreadResource) GetTodos() []TodoResource {
+	return s.Todos
+}
+
+// GetPendingAction returns the value of PendingAction.
+func (s *ThreadResource) GetPendingAction() NilPendingActionResource {
+	return s.PendingAction
+}
+
+// GetSubagents returns the value of Subagents.
+func (s *ThreadResource) GetSubagents() SubagentCountResource {
+	return s.Subagents
+}
+
+// GetLastTurn returns the value of LastTurn.
+func (s *ThreadResource) GetLastTurn() NilLastTurnResource {
+	return s.LastTurn
+}
+
+// GetContext returns the value of Context.
+func (s *ThreadResource) GetContext() ContextUsageResource {
+	return s.Context
+}
+
+// GetUsage returns the value of Usage.
+func (s *ThreadResource) GetUsage() Usage {
+	return s.Usage
+}
+
+// GetUnread returns the value of Unread.
+func (s *ThreadResource) GetUnread() bool {
+	return s.Unread
+}
+
+// GetArchived returns the value of Archived.
+func (s *ThreadResource) GetArchived() bool {
+	return s.Archived
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ThreadResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *ThreadResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *ThreadResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetRole sets the value of Role.
+func (s *ThreadResource) SetRole(val ThreadResourceRole) {
+	s.Role = val
+}
+
+// SetParentId sets the value of ParentId.
+func (s *ThreadResource) SetParentId(val NilString) {
+	s.ParentId = val
+}
+
+// SetAgentName sets the value of AgentName.
+func (s *ThreadResource) SetAgentName(val NilString) {
+	s.AgentName = val
+}
+
+// SetTitle sets the value of Title.
+func (s *ThreadResource) SetTitle(val NilString) {
+	s.Title = val
+}
+
+// SetFolderId sets the value of FolderId.
+func (s *ThreadResource) SetFolderId(val NilString) {
+	s.FolderId = val
+}
+
+// SetOrderVersion sets the value of OrderVersion.
+func (s *ThreadResource) SetOrderVersion(val int64) {
+	s.OrderVersion = val
+}
+
+// SetModelId sets the value of ModelId.
+func (s *ThreadResource) SetModelId(val string) {
+	s.ModelId = val
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *ThreadResource) SetReasoningEffort(val NilReasoningEffort) {
+	s.ReasoningEffort = val
+}
+
+// SetApprovalMode sets the value of ApprovalMode.
+func (s *ThreadResource) SetApprovalMode(val ApprovalMode) {
+	s.ApprovalMode = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ThreadResource) SetStatus(val ThreadStatus) {
+	s.Status = val
+}
+
+// SetActivity sets the value of Activity.
+func (s *ThreadResource) SetActivity(val NilString) {
+	s.Activity = val
+}
+
+// SetRecentMessage sets the value of RecentMessage.
+func (s *ThreadResource) SetRecentMessage(val NilString) {
+	s.RecentMessage = val
+}
+
+// SetTodos sets the value of Todos.
+func (s *ThreadResource) SetTodos(val []TodoResource) {
+	s.Todos = val
+}
+
+// SetPendingAction sets the value of PendingAction.
+func (s *ThreadResource) SetPendingAction(val NilPendingActionResource) {
+	s.PendingAction = val
+}
+
+// SetSubagents sets the value of Subagents.
+func (s *ThreadResource) SetSubagents(val SubagentCountResource) {
+	s.Subagents = val
+}
+
+// SetLastTurn sets the value of LastTurn.
+func (s *ThreadResource) SetLastTurn(val NilLastTurnResource) {
+	s.LastTurn = val
+}
+
+// SetContext sets the value of Context.
+func (s *ThreadResource) SetContext(val ContextUsageResource) {
+	s.Context = val
+}
+
+// SetUsage sets the value of Usage.
+func (s *ThreadResource) SetUsage(val Usage) {
+	s.Usage = val
+}
+
+// SetUnread sets the value of Unread.
+func (s *ThreadResource) SetUnread(val bool) {
+	s.Unread = val
+}
+
+// SetArchived sets the value of Archived.
+func (s *ThreadResource) SetArchived(val bool) {
+	s.Archived = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ThreadResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *ThreadResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// `main` for a conversation with a person, `subagent` for one started by another agent.
+type ThreadResourceRole string
+
+const (
+	ThreadResourceRoleMain     ThreadResourceRole = "main"
+	ThreadResourceRoleSubagent ThreadResourceRole = "subagent"
+)
+
+// AllValues returns all ThreadResourceRole values.
+func (ThreadResourceRole) AllValues() []ThreadResourceRole {
+	return []ThreadResourceRole{
+		ThreadResourceRoleMain,
+		ThreadResourceRoleSubagent,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ThreadResourceRole) MarshalText() ([]byte, error) {
+	switch s {
+	case ThreadResourceRoleMain:
+		return []byte(s), nil
+	case ThreadResourceRoleSubagent:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ThreadResourceRole) UnmarshalText(data []byte) error {
+	switch ThreadResourceRole(data) {
+	case ThreadResourceRoleMain:
+		*s = ThreadResourceRoleMain
+		return nil
+	case ThreadResourceRoleSubagent:
+		*s = ThreadResourceRoleSubagent
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What the thread is doing. `waiting` is waiting for subagents or tasks it started;
+// `awaiting_approval` and `awaiting_input` wait for a person.
+// Ref: #/components/schemas/ThreadStatus
+type ThreadStatus string
+
+const (
+	ThreadStatusIdle             ThreadStatus = "idle"
+	ThreadStatusStarting         ThreadStatus = "starting"
+	ThreadStatusRunning          ThreadStatus = "running"
+	ThreadStatusWaiting          ThreadStatus = "waiting"
+	ThreadStatusAwaitingApproval ThreadStatus = "awaiting_approval"
+	ThreadStatusAwaitingInput    ThreadStatus = "awaiting_input"
+)
+
+// AllValues returns all ThreadStatus values.
+func (ThreadStatus) AllValues() []ThreadStatus {
+	return []ThreadStatus{
+		ThreadStatusIdle,
+		ThreadStatusStarting,
+		ThreadStatusRunning,
+		ThreadStatusWaiting,
+		ThreadStatusAwaitingApproval,
+		ThreadStatusAwaitingInput,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ThreadStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ThreadStatusIdle:
+		return []byte(s), nil
+	case ThreadStatusStarting:
+		return []byte(s), nil
+	case ThreadStatusRunning:
+		return []byte(s), nil
+	case ThreadStatusWaiting:
+		return []byte(s), nil
+	case ThreadStatusAwaitingApproval:
+		return []byte(s), nil
+	case ThreadStatusAwaitingInput:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ThreadStatus) UnmarshalText(data []byte) error {
+	switch ThreadStatus(data) {
+	case ThreadStatusIdle:
+		*s = ThreadStatusIdle
+		return nil
+	case ThreadStatusStarting:
+		*s = ThreadStatusStarting
+		return nil
+	case ThreadStatusRunning:
+		*s = ThreadStatusRunning
+		return nil
+	case ThreadStatusWaiting:
+		*s = ThreadStatusWaiting
+		return nil
+	case ThreadStatusAwaitingApproval:
+		*s = ThreadStatusAwaitingApproval
+		return nil
+	case ThreadStatusAwaitingInput:
+		*s = ThreadStatusAwaitingInput
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ThreadTurnListResponseBody
+type ThreadTurnListResponseBody struct {
+	// Newest first.
+	Turns      []ThreadTurnResource `json:"turns"`
+	NextCursor NilString            `json:"nextCursor"`
+}
+
+// GetTurns returns the value of Turns.
+func (s *ThreadTurnListResponseBody) GetTurns() []ThreadTurnResource {
+	return s.Turns
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *ThreadTurnListResponseBody) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// SetTurns sets the value of Turns.
+func (s *ThreadTurnListResponseBody) SetTurns(val []ThreadTurnResource) {
+	s.Turns = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *ThreadTurnListResponseBody) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
+// One run of the agent, from the message that started it until it stopped.
+// Ref: #/components/schemas/ThreadTurnResource
+type ThreadTurnResource struct {
+	ID              string             `json:"id"`
+	ThreadId        string             `json:"threadId"`
+	Type            TurnType           `json:"type"`
+	Status          TurnStatus         `json:"status"`
+	ModelId         string             `json:"modelId"`
+	ReasoningEffort NilReasoningEffort `json:"reasoningEffort"`
+	ApprovalMode    ApprovalMode       `json:"approvalMode"`
+	// Why the turn failed. Null unless status is failed.
+	FailureCode NilString `json:"failureCode"`
+	// How many tools the turn called.
+	ToolCalls int64 `json:"toolCalls"`
+	// Tokens used by every model request of this turn, including title generation, review and compaction.
+	Usage     Usage     `json:"usage"`
+	StartedAt time.Time `json:"startedAt"`
+	// When the first output token arrived. Null until then.
+	FirstTokenAt NilDateTime `json:"firstTokenAt"`
+	// Null while the turn is running.
+	CompletedAt NilDateTime `json:"completedAt"`
+}
+
+// GetID returns the value of ID.
+func (s *ThreadTurnResource) GetID() string {
+	return s.ID
+}
+
+// GetThreadId returns the value of ThreadId.
+func (s *ThreadTurnResource) GetThreadId() string {
+	return s.ThreadId
+}
+
+// GetType returns the value of Type.
+func (s *ThreadTurnResource) GetType() TurnType {
+	return s.Type
+}
+
+// GetStatus returns the value of Status.
+func (s *ThreadTurnResource) GetStatus() TurnStatus {
+	return s.Status
+}
+
+// GetModelId returns the value of ModelId.
+func (s *ThreadTurnResource) GetModelId() string {
+	return s.ModelId
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *ThreadTurnResource) GetReasoningEffort() NilReasoningEffort {
+	return s.ReasoningEffort
+}
+
+// GetApprovalMode returns the value of ApprovalMode.
+func (s *ThreadTurnResource) GetApprovalMode() ApprovalMode {
+	return s.ApprovalMode
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *ThreadTurnResource) GetFailureCode() NilString {
+	return s.FailureCode
+}
+
+// GetToolCalls returns the value of ToolCalls.
+func (s *ThreadTurnResource) GetToolCalls() int64 {
+	return s.ToolCalls
+}
+
+// GetUsage returns the value of Usage.
+func (s *ThreadTurnResource) GetUsage() Usage {
+	return s.Usage
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *ThreadTurnResource) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetFirstTokenAt returns the value of FirstTokenAt.
+func (s *ThreadTurnResource) GetFirstTokenAt() NilDateTime {
+	return s.FirstTokenAt
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *ThreadTurnResource) GetCompletedAt() NilDateTime {
+	return s.CompletedAt
+}
+
+// SetID sets the value of ID.
+func (s *ThreadTurnResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetThreadId sets the value of ThreadId.
+func (s *ThreadTurnResource) SetThreadId(val string) {
+	s.ThreadId = val
+}
+
+// SetType sets the value of Type.
+func (s *ThreadTurnResource) SetType(val TurnType) {
+	s.Type = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ThreadTurnResource) SetStatus(val TurnStatus) {
+	s.Status = val
+}
+
+// SetModelId sets the value of ModelId.
+func (s *ThreadTurnResource) SetModelId(val string) {
+	s.ModelId = val
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *ThreadTurnResource) SetReasoningEffort(val NilReasoningEffort) {
+	s.ReasoningEffort = val
+}
+
+// SetApprovalMode sets the value of ApprovalMode.
+func (s *ThreadTurnResource) SetApprovalMode(val ApprovalMode) {
+	s.ApprovalMode = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *ThreadTurnResource) SetFailureCode(val NilString) {
+	s.FailureCode = val
+}
+
+// SetToolCalls sets the value of ToolCalls.
+func (s *ThreadTurnResource) SetToolCalls(val int64) {
+	s.ToolCalls = val
+}
+
+// SetUsage sets the value of Usage.
+func (s *ThreadTurnResource) SetUsage(val Usage) {
+	s.Usage = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *ThreadTurnResource) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetFirstTokenAt sets the value of FirstTokenAt.
+func (s *ThreadTurnResource) SetFirstTokenAt(val NilDateTime) {
+	s.FirstTokenAt = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *ThreadTurnResource) SetCompletedAt(val NilDateTime) {
+	s.CompletedAt = val
+}
+
+// Ref: #/components/schemas/TodoResource
+type TodoResource struct {
+	// The step as an instruction — "Install nginx".
+	Content string `json:"content"`
+	// The same step phrased as happening now — "Installing nginx". Show this one while the step is in
+	// progress.
+	ActiveForm string `json:"activeForm"`
+	// Where this step stands. At most one step is in_progress at any time.
+	Status TodoResourceStatus `json:"status"`
 }
 
 // GetContent returns the value of Content.
@@ -8163,14 +10180,14 @@ func (s *TodoResource) GetContent() string {
 	return s.Content
 }
 
+// GetActiveForm returns the value of ActiveForm.
+func (s *TodoResource) GetActiveForm() string {
+	return s.ActiveForm
+}
+
 // GetStatus returns the value of Status.
 func (s *TodoResource) GetStatus() TodoResourceStatus {
 	return s.Status
-}
-
-// SetActiveForm sets the value of ActiveForm.
-func (s *TodoResource) SetActiveForm(val string) {
-	s.ActiveForm = val
 }
 
 // SetContent sets the value of Content.
@@ -8178,12 +10195,17 @@ func (s *TodoResource) SetContent(val string) {
 	s.Content = val
 }
 
+// SetActiveForm sets the value of ActiveForm.
+func (s *TodoResource) SetActiveForm(val string) {
+	s.ActiveForm = val
+}
+
 // SetStatus sets the value of Status.
 func (s *TodoResource) SetStatus(val TodoResourceStatus) {
 	s.Status = val
 }
 
-// Where this step stands. At most one item is in_progress at any time.
+// Where this step stands. At most one step is in_progress at any time.
 type TodoResourceStatus string
 
 const (
@@ -8232,91 +10254,119 @@ func (s *TodoResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// TriggerScheduleOK is response for TriggerSchedule operation.
-type TriggerScheduleOK struct{}
+// Ref: #/components/schemas/ToolResultRequestBody
+type ToolResultRequestBody struct {
+	// The client that declared the action. A result from another client is refused.
+	ClientId string `json:"clientId"`
+	Ok       bool   `json:"ok"`
+	// What the action produced. At most 64 KiB; use `nextCursor` for more.
+	Output OptString `json:"output"`
+	// Why it failed, when `ok` is false. Written for the assistant, which cannot see the screen.
+	Error OptString `json:"error"`
+	// Pass when there is more to read; the assistant calls again with it.
+	NextCursor OptString `json:"nextCursor"`
+}
 
-// Ref: #/components/schemas/TurnIDResponseBody
-type TurnIDResponseBody struct {
-	// True when the assistant was already busy and this message was put in line instead of starting a
-	// turn. It is read at the next step of the turn already running, so there is nothing further to do —
-	// and turnId is empty in this case.
-	Queued bool `json:"queued"`
-	// How many messages were already waiting ahead of this one. Only meaningful when queued is true.
-	QueuedAhead OptInt64 `json:"queuedAhead"`
-	// The turn this message started. Empty when the message was queued instead.
+// GetClientId returns the value of ClientId.
+func (s *ToolResultRequestBody) GetClientId() string {
+	return s.ClientId
+}
+
+// GetOk returns the value of Ok.
+func (s *ToolResultRequestBody) GetOk() bool {
+	return s.Ok
+}
+
+// GetOutput returns the value of Output.
+func (s *ToolResultRequestBody) GetOutput() OptString {
+	return s.Output
+}
+
+// GetError returns the value of Error.
+func (s *ToolResultRequestBody) GetError() OptString {
+	return s.Error
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *ToolResultRequestBody) GetNextCursor() OptString {
+	return s.NextCursor
+}
+
+// SetClientId sets the value of ClientId.
+func (s *ToolResultRequestBody) SetClientId(val string) {
+	s.ClientId = val
+}
+
+// SetOk sets the value of Ok.
+func (s *ToolResultRequestBody) SetOk(val bool) {
+	s.Ok = val
+}
+
+// SetOutput sets the value of Output.
+func (s *ToolResultRequestBody) SetOutput(val OptString) {
+	s.Output = val
+}
+
+// SetError sets the value of Error.
+func (s *ToolResultRequestBody) SetError(val OptString) {
+	s.Error = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *ToolResultRequestBody) SetNextCursor(val OptString) {
+	s.NextCursor = val
+}
+
+// Ref: #/components/schemas/TurnStartedResponseBody
+type TurnStartedResponseBody struct {
 	TurnId string `json:"turnId"`
 }
 
-// GetQueued returns the value of Queued.
-func (s *TurnIDResponseBody) GetQueued() bool {
-	return s.Queued
-}
-
-// GetQueuedAhead returns the value of QueuedAhead.
-func (s *TurnIDResponseBody) GetQueuedAhead() OptInt64 {
-	return s.QueuedAhead
-}
-
 // GetTurnId returns the value of TurnId.
-func (s *TurnIDResponseBody) GetTurnId() string {
+func (s *TurnStartedResponseBody) GetTurnId() string {
 	return s.TurnId
 }
 
-// SetQueued sets the value of Queued.
-func (s *TurnIDResponseBody) SetQueued(val bool) {
-	s.Queued = val
-}
-
-// SetQueuedAhead sets the value of QueuedAhead.
-func (s *TurnIDResponseBody) SetQueuedAhead(val OptInt64) {
-	s.QueuedAhead = val
-}
-
 // SetTurnId sets the value of TurnId.
-func (s *TurnIDResponseBody) SetTurnId(val string) {
+func (s *TurnStartedResponseBody) SetTurnId(val string) {
 	s.TurnId = val
 }
 
-// Ref: #/components/schemas/TurnResource
-type TurnResource struct {
-	ApprovalMode TurnResourceApprovalMode `json:"approvalMode"`
-}
-
-// GetApprovalMode returns the value of ApprovalMode.
-func (s *TurnResource) GetApprovalMode() TurnResourceApprovalMode {
-	return s.ApprovalMode
-}
-
-// SetApprovalMode sets the value of ApprovalMode.
-func (s *TurnResource) SetApprovalMode(val TurnResourceApprovalMode) {
-	s.ApprovalMode = val
-}
-
-type TurnResourceApprovalMode string
+// `declined` ended because a person declined a tool call; `cancelled` was stopped.
+// Ref: #/components/schemas/TurnStatus
+type TurnStatus string
 
 const (
-	TurnResourceApprovalModeGuardian TurnResourceApprovalMode = "guardian"
-	TurnResourceApprovalModeManual   TurnResourceApprovalMode = "manual"
-	TurnResourceApprovalModeYolo     TurnResourceApprovalMode = "yolo"
+	TurnStatusRunning   TurnStatus = "running"
+	TurnStatusCompleted TurnStatus = "completed"
+	TurnStatusFailed    TurnStatus = "failed"
+	TurnStatusDeclined  TurnStatus = "declined"
+	TurnStatusCancelled TurnStatus = "cancelled"
 )
 
-// AllValues returns all TurnResourceApprovalMode values.
-func (TurnResourceApprovalMode) AllValues() []TurnResourceApprovalMode {
-	return []TurnResourceApprovalMode{
-		TurnResourceApprovalModeGuardian,
-		TurnResourceApprovalModeManual,
-		TurnResourceApprovalModeYolo,
+// AllValues returns all TurnStatus values.
+func (TurnStatus) AllValues() []TurnStatus {
+	return []TurnStatus{
+		TurnStatusRunning,
+		TurnStatusCompleted,
+		TurnStatusFailed,
+		TurnStatusDeclined,
+		TurnStatusCancelled,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s TurnResourceApprovalMode) MarshalText() ([]byte, error) {
+func (s TurnStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case TurnResourceApprovalModeGuardian:
+	case TurnStatusRunning:
 		return []byte(s), nil
-	case TurnResourceApprovalModeManual:
+	case TurnStatusCompleted:
 		return []byte(s), nil
-	case TurnResourceApprovalModeYolo:
+	case TurnStatusFailed:
+		return []byte(s), nil
+	case TurnStatusDeclined:
+		return []byte(s), nil
+	case TurnStatusCancelled:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -8324,46 +10374,69 @@ func (s TurnResourceApprovalMode) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *TurnResourceApprovalMode) UnmarshalText(data []byte) error {
-	switch TurnResourceApprovalMode(data) {
-	case TurnResourceApprovalModeGuardian:
-		*s = TurnResourceApprovalModeGuardian
+func (s *TurnStatus) UnmarshalText(data []byte) error {
+	switch TurnStatus(data) {
+	case TurnStatusRunning:
+		*s = TurnStatusRunning
 		return nil
-	case TurnResourceApprovalModeManual:
-		*s = TurnResourceApprovalModeManual
+	case TurnStatusCompleted:
+		*s = TurnStatusCompleted
 		return nil
-	case TurnResourceApprovalModeYolo:
-		*s = TurnResourceApprovalModeYolo
+	case TurnStatusFailed:
+		*s = TurnStatusFailed
+		return nil
+	case TurnStatusDeclined:
+		*s = TurnStatusDeclined
+		return nil
+	case TurnStatusCancelled:
+		*s = TurnStatusCancelled
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Ref: #/components/schemas/TurnUsageResource
-type TurnUsageResource struct {
-	TurnId string        `json:"turnId"`
-	Usage  UsageResource `json:"usage"`
+// `message` answers messages; `compaction` summarizes the history to free the context window.
+// Ref: #/components/schemas/TurnType
+type TurnType string
+
+const (
+	TurnTypeMessage    TurnType = "message"
+	TurnTypeCompaction TurnType = "compaction"
+)
+
+// AllValues returns all TurnType values.
+func (TurnType) AllValues() []TurnType {
+	return []TurnType{
+		TurnTypeMessage,
+		TurnTypeCompaction,
+	}
 }
 
-// GetTurnId returns the value of TurnId.
-func (s *TurnUsageResource) GetTurnId() string {
-	return s.TurnId
+// MarshalText implements encoding.TextMarshaler.
+func (s TurnType) MarshalText() ([]byte, error) {
+	switch s {
+	case TurnTypeMessage:
+		return []byte(s), nil
+	case TurnTypeCompaction:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetUsage returns the value of Usage.
-func (s *TurnUsageResource) GetUsage() UsageResource {
-	return s.Usage
-}
-
-// SetTurnId sets the value of TurnId.
-func (s *TurnUsageResource) SetTurnId(val string) {
-	s.TurnId = val
-}
-
-// SetUsage sets the value of Usage.
-func (s *TurnUsageResource) SetUsage(val UsageResource) {
-	s.Usage = val
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TurnType) UnmarshalText(data []byte) error {
+	switch TurnType(data) {
+	case TurnTypeMessage:
+		*s = TurnTypeMessage
+		return nil
+	case TurnTypeCompaction:
+		*s = TurnTypeCompaction
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/UpdateChannelRequestBody
@@ -8497,281 +10570,95 @@ func (s *UpdateFolderRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/UpdateScheduleRequestBody
-type UpdateScheduleRequestBody struct {
-	Name            string                                    `json:"name"`
-	Prompt          string                                    `json:"prompt"`
-	Kind            UpdateScheduleRequestBodyKind             `json:"kind"`
-	RunAt           OptDateTime                               `json:"runAt"`
-	IntervalSeconds OptInt64                                  `json:"intervalSeconds"`
-	AnchorAt        OptDateTime                               `json:"anchorAt"`
-	Calendar        OptString                                 `json:"calendar"`
-	Timezone        OptString                                 `json:"timezone"`
-	OverlapPolicy   OptUpdateScheduleRequestBodyOverlapPolicy `json:"overlapPolicy"`
-	CatchupSeconds  OptInt64                                  `json:"catchupSeconds"`
+// Ref: #/components/schemas/UpdateSettingsRequestBody
+type UpdateSettingsRequestBody struct {
+	DefaultModelId         OptNilString          `json:"defaultModelId"`
+	DefaultReasoningEffort OptNilReasoningEffort `json:"defaultReasoningEffort"`
 }
 
-// GetName returns the value of Name.
-func (s *UpdateScheduleRequestBody) GetName() string {
-	return s.Name
+// GetDefaultModelId returns the value of DefaultModelId.
+func (s *UpdateSettingsRequestBody) GetDefaultModelId() OptNilString {
+	return s.DefaultModelId
 }
 
-// GetPrompt returns the value of Prompt.
-func (s *UpdateScheduleRequestBody) GetPrompt() string {
-	return s.Prompt
+// GetDefaultReasoningEffort returns the value of DefaultReasoningEffort.
+func (s *UpdateSettingsRequestBody) GetDefaultReasoningEffort() OptNilReasoningEffort {
+	return s.DefaultReasoningEffort
 }
 
-// GetKind returns the value of Kind.
-func (s *UpdateScheduleRequestBody) GetKind() UpdateScheduleRequestBodyKind {
-	return s.Kind
+// SetDefaultModelId sets the value of DefaultModelId.
+func (s *UpdateSettingsRequestBody) SetDefaultModelId(val OptNilString) {
+	s.DefaultModelId = val
 }
 
-// GetRunAt returns the value of RunAt.
-func (s *UpdateScheduleRequestBody) GetRunAt() OptDateTime {
-	return s.RunAt
-}
-
-// GetIntervalSeconds returns the value of IntervalSeconds.
-func (s *UpdateScheduleRequestBody) GetIntervalSeconds() OptInt64 {
-	return s.IntervalSeconds
-}
-
-// GetAnchorAt returns the value of AnchorAt.
-func (s *UpdateScheduleRequestBody) GetAnchorAt() OptDateTime {
-	return s.AnchorAt
-}
-
-// GetCalendar returns the value of Calendar.
-func (s *UpdateScheduleRequestBody) GetCalendar() OptString {
-	return s.Calendar
-}
-
-// GetTimezone returns the value of Timezone.
-func (s *UpdateScheduleRequestBody) GetTimezone() OptString {
-	return s.Timezone
-}
-
-// GetOverlapPolicy returns the value of OverlapPolicy.
-func (s *UpdateScheduleRequestBody) GetOverlapPolicy() OptUpdateScheduleRequestBodyOverlapPolicy {
-	return s.OverlapPolicy
-}
-
-// GetCatchupSeconds returns the value of CatchupSeconds.
-func (s *UpdateScheduleRequestBody) GetCatchupSeconds() OptInt64 {
-	return s.CatchupSeconds
-}
-
-// SetName sets the value of Name.
-func (s *UpdateScheduleRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetPrompt sets the value of Prompt.
-func (s *UpdateScheduleRequestBody) SetPrompt(val string) {
-	s.Prompt = val
-}
-
-// SetKind sets the value of Kind.
-func (s *UpdateScheduleRequestBody) SetKind(val UpdateScheduleRequestBodyKind) {
-	s.Kind = val
-}
-
-// SetRunAt sets the value of RunAt.
-func (s *UpdateScheduleRequestBody) SetRunAt(val OptDateTime) {
-	s.RunAt = val
-}
-
-// SetIntervalSeconds sets the value of IntervalSeconds.
-func (s *UpdateScheduleRequestBody) SetIntervalSeconds(val OptInt64) {
-	s.IntervalSeconds = val
-}
-
-// SetAnchorAt sets the value of AnchorAt.
-func (s *UpdateScheduleRequestBody) SetAnchorAt(val OptDateTime) {
-	s.AnchorAt = val
-}
-
-// SetCalendar sets the value of Calendar.
-func (s *UpdateScheduleRequestBody) SetCalendar(val OptString) {
-	s.Calendar = val
-}
-
-// SetTimezone sets the value of Timezone.
-func (s *UpdateScheduleRequestBody) SetTimezone(val OptString) {
-	s.Timezone = val
-}
-
-// SetOverlapPolicy sets the value of OverlapPolicy.
-func (s *UpdateScheduleRequestBody) SetOverlapPolicy(val OptUpdateScheduleRequestBodyOverlapPolicy) {
-	s.OverlapPolicy = val
-}
-
-// SetCatchupSeconds sets the value of CatchupSeconds.
-func (s *UpdateScheduleRequestBody) SetCatchupSeconds(val OptInt64) {
-	s.CatchupSeconds = val
-}
-
-type UpdateScheduleRequestBodyKind string
-
-const (
-	UpdateScheduleRequestBodyKindOnce     UpdateScheduleRequestBodyKind = "once"
-	UpdateScheduleRequestBodyKindInterval UpdateScheduleRequestBodyKind = "interval"
-	UpdateScheduleRequestBodyKindCalendar UpdateScheduleRequestBodyKind = "calendar"
-)
-
-// AllValues returns all UpdateScheduleRequestBodyKind values.
-func (UpdateScheduleRequestBodyKind) AllValues() []UpdateScheduleRequestBodyKind {
-	return []UpdateScheduleRequestBodyKind{
-		UpdateScheduleRequestBodyKindOnce,
-		UpdateScheduleRequestBodyKindInterval,
-		UpdateScheduleRequestBodyKindCalendar,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateScheduleRequestBodyKind) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateScheduleRequestBodyKindOnce:
-		return []byte(s), nil
-	case UpdateScheduleRequestBodyKindInterval:
-		return []byte(s), nil
-	case UpdateScheduleRequestBodyKindCalendar:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateScheduleRequestBodyKind) UnmarshalText(data []byte) error {
-	switch UpdateScheduleRequestBodyKind(data) {
-	case UpdateScheduleRequestBodyKindOnce:
-		*s = UpdateScheduleRequestBodyKindOnce
-		return nil
-	case UpdateScheduleRequestBodyKindInterval:
-		*s = UpdateScheduleRequestBodyKindInterval
-		return nil
-	case UpdateScheduleRequestBodyKindCalendar:
-		*s = UpdateScheduleRequestBodyKindCalendar
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type UpdateScheduleRequestBodyOverlapPolicy string
-
-const (
-	UpdateScheduleRequestBodyOverlapPolicySkip      UpdateScheduleRequestBodyOverlapPolicy = "skip"
-	UpdateScheduleRequestBodyOverlapPolicyBufferOne UpdateScheduleRequestBodyOverlapPolicy = "buffer_one"
-)
-
-// AllValues returns all UpdateScheduleRequestBodyOverlapPolicy values.
-func (UpdateScheduleRequestBodyOverlapPolicy) AllValues() []UpdateScheduleRequestBodyOverlapPolicy {
-	return []UpdateScheduleRequestBodyOverlapPolicy{
-		UpdateScheduleRequestBodyOverlapPolicySkip,
-		UpdateScheduleRequestBodyOverlapPolicyBufferOne,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateScheduleRequestBodyOverlapPolicy) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateScheduleRequestBodyOverlapPolicySkip:
-		return []byte(s), nil
-	case UpdateScheduleRequestBodyOverlapPolicyBufferOne:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateScheduleRequestBodyOverlapPolicy) UnmarshalText(data []byte) error {
-	switch UpdateScheduleRequestBodyOverlapPolicy(data) {
-	case UpdateScheduleRequestBodyOverlapPolicySkip:
-		*s = UpdateScheduleRequestBodyOverlapPolicySkip
-		return nil
-	case UpdateScheduleRequestBodyOverlapPolicyBufferOne:
-		*s = UpdateScheduleRequestBodyOverlapPolicyBufferOne
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/UpdateSubagentRequestBody
-type UpdateSubagentRequestBody struct {
-	Title    OptString `json:"title"`
-	Archived OptBool   `json:"archived"`
-}
-
-// GetTitle returns the value of Title.
-func (s *UpdateSubagentRequestBody) GetTitle() OptString {
-	return s.Title
-}
-
-// GetArchived returns the value of Archived.
-func (s *UpdateSubagentRequestBody) GetArchived() OptBool {
-	return s.Archived
-}
-
-// SetTitle sets the value of Title.
-func (s *UpdateSubagentRequestBody) SetTitle(val OptString) {
-	s.Title = val
-}
-
-// SetArchived sets the value of Archived.
-func (s *UpdateSubagentRequestBody) SetArchived(val OptBool) {
-	s.Archived = val
+// SetDefaultReasoningEffort sets the value of DefaultReasoningEffort.
+func (s *UpdateSettingsRequestBody) SetDefaultReasoningEffort(val OptNilReasoningEffort) {
+	s.DefaultReasoningEffort = val
 }
 
 // Ref: #/components/schemas/UpdateTaskRequestBody
 type UpdateTaskRequestBody struct {
-	Name string `json:"name"`
+	Name    OptString      `json:"name"`
+	Trigger OptTaskTrigger `json:"trigger"`
+	Action  OptTaskAction  `json:"action"`
 }
 
 // GetName returns the value of Name.
-func (s *UpdateTaskRequestBody) GetName() string {
+func (s *UpdateTaskRequestBody) GetName() OptString {
 	return s.Name
 }
 
+// GetTrigger returns the value of Trigger.
+func (s *UpdateTaskRequestBody) GetTrigger() OptTaskTrigger {
+	return s.Trigger
+}
+
+// GetAction returns the value of Action.
+func (s *UpdateTaskRequestBody) GetAction() OptTaskAction {
+	return s.Action
+}
+
 // SetName sets the value of Name.
-func (s *UpdateTaskRequestBody) SetName(val string) {
+func (s *UpdateTaskRequestBody) SetName(val OptString) {
 	s.Name = val
+}
+
+// SetTrigger sets the value of Trigger.
+func (s *UpdateTaskRequestBody) SetTrigger(val OptTaskTrigger) {
+	s.Trigger = val
+}
+
+// SetAction sets the value of Action.
+func (s *UpdateTaskRequestBody) SetAction(val OptTaskAction) {
+	s.Action = val
 }
 
 // Ref: #/components/schemas/UpdateThreadRequestBody
 type UpdateThreadRequestBody struct {
-	// Changes apply at the next relevant request boundary. In-flight model requests and existing approval
-	// batches retain their captured settings.
-	ApprovalMode OptUpdateThreadRequestBodyApprovalMode `json:"approvalMode"`
-	Archived     OptBool                                `json:"archived"`
-	// Changes apply at the next relevant request boundary. In-flight model requests and existing approval
-	// batches retain their captured settings.
-	PreferredModelId OptNilString `json:"preferredModelId"`
-	// File this conversation into a folder, or `null` to take it out of the one it is in. Omit the field
-	// to leave it where it is.
-	//
-	// Filing does not move the conversation in the list. The order answers "which conversation has
-	// something new in it", and putting one away is not that.
-	FolderId OptNilString `json:"folderId"`
-	// Rename this conversation.
-	//
-	// A conversation names itself: the first message gives it a working title, and the assistant replaces
-	// that with a better one once it has answered. Setting this stops both — a name somebody chose is
-	// never overwritten by one that was generated.
-	//
-	// Renaming does not move the conversation in the list. The order answers "which conversation has
-	// something new in it", and editing a title is not that.
-	Title OptString `json:"title"`
-	// Use a non-disabled tier declared by Canopy reasoning_tiers. Null uses the model default. Changes
-	// apply at the next model request boundary, including an active conversation.
-	ReasoningEffort OptNilString `json:"reasoningEffort"`
+	Title           OptString             `json:"title"`
+	ModelId         OptString             `json:"modelId"`
+	ReasoningEffort OptNilReasoningEffort `json:"reasoningEffort"`
+	ApprovalMode    OptApprovalMode       `json:"approvalMode"`
+	Archived        OptBool               `json:"archived"`
+}
+
+// GetTitle returns the value of Title.
+func (s *UpdateThreadRequestBody) GetTitle() OptString {
+	return s.Title
+}
+
+// GetModelId returns the value of ModelId.
+func (s *UpdateThreadRequestBody) GetModelId() OptString {
+	return s.ModelId
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *UpdateThreadRequestBody) GetReasoningEffort() OptNilReasoningEffort {
+	return s.ReasoningEffort
 }
 
 // GetApprovalMode returns the value of ApprovalMode.
-func (s *UpdateThreadRequestBody) GetApprovalMode() OptUpdateThreadRequestBodyApprovalMode {
+func (s *UpdateThreadRequestBody) GetApprovalMode() OptApprovalMode {
 	return s.ApprovalMode
 }
 
@@ -8780,104 +10667,29 @@ func (s *UpdateThreadRequestBody) GetArchived() OptBool {
 	return s.Archived
 }
 
-// GetPreferredModelId returns the value of PreferredModelId.
-func (s *UpdateThreadRequestBody) GetPreferredModelId() OptNilString {
-	return s.PreferredModelId
+// SetTitle sets the value of Title.
+func (s *UpdateThreadRequestBody) SetTitle(val OptString) {
+	s.Title = val
 }
 
-// GetFolderId returns the value of FolderId.
-func (s *UpdateThreadRequestBody) GetFolderId() OptNilString {
-	return s.FolderId
+// SetModelId sets the value of ModelId.
+func (s *UpdateThreadRequestBody) SetModelId(val OptString) {
+	s.ModelId = val
 }
 
-// GetTitle returns the value of Title.
-func (s *UpdateThreadRequestBody) GetTitle() OptString {
-	return s.Title
-}
-
-// GetReasoningEffort returns the value of ReasoningEffort.
-func (s *UpdateThreadRequestBody) GetReasoningEffort() OptNilString {
-	return s.ReasoningEffort
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *UpdateThreadRequestBody) SetReasoningEffort(val OptNilReasoningEffort) {
+	s.ReasoningEffort = val
 }
 
 // SetApprovalMode sets the value of ApprovalMode.
-func (s *UpdateThreadRequestBody) SetApprovalMode(val OptUpdateThreadRequestBodyApprovalMode) {
+func (s *UpdateThreadRequestBody) SetApprovalMode(val OptApprovalMode) {
 	s.ApprovalMode = val
 }
 
 // SetArchived sets the value of Archived.
 func (s *UpdateThreadRequestBody) SetArchived(val OptBool) {
 	s.Archived = val
-}
-
-// SetPreferredModelId sets the value of PreferredModelId.
-func (s *UpdateThreadRequestBody) SetPreferredModelId(val OptNilString) {
-	s.PreferredModelId = val
-}
-
-// SetFolderId sets the value of FolderId.
-func (s *UpdateThreadRequestBody) SetFolderId(val OptNilString) {
-	s.FolderId = val
-}
-
-// SetTitle sets the value of Title.
-func (s *UpdateThreadRequestBody) SetTitle(val OptString) {
-	s.Title = val
-}
-
-// SetReasoningEffort sets the value of ReasoningEffort.
-func (s *UpdateThreadRequestBody) SetReasoningEffort(val OptNilString) {
-	s.ReasoningEffort = val
-}
-
-// Changes apply at the next relevant request boundary. In-flight model requests and existing approval
-// batches retain their captured settings.
-type UpdateThreadRequestBodyApprovalMode string
-
-const (
-	UpdateThreadRequestBodyApprovalModeGuardian UpdateThreadRequestBodyApprovalMode = "guardian"
-	UpdateThreadRequestBodyApprovalModeManual   UpdateThreadRequestBodyApprovalMode = "manual"
-	UpdateThreadRequestBodyApprovalModeYolo     UpdateThreadRequestBodyApprovalMode = "yolo"
-)
-
-// AllValues returns all UpdateThreadRequestBodyApprovalMode values.
-func (UpdateThreadRequestBodyApprovalMode) AllValues() []UpdateThreadRequestBodyApprovalMode {
-	return []UpdateThreadRequestBodyApprovalMode{
-		UpdateThreadRequestBodyApprovalModeGuardian,
-		UpdateThreadRequestBodyApprovalModeManual,
-		UpdateThreadRequestBodyApprovalModeYolo,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdateThreadRequestBodyApprovalMode) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdateThreadRequestBodyApprovalModeGuardian:
-		return []byte(s), nil
-	case UpdateThreadRequestBodyApprovalModeManual:
-		return []byte(s), nil
-	case UpdateThreadRequestBodyApprovalModeYolo:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdateThreadRequestBodyApprovalMode) UnmarshalText(data []byte) error {
-	switch UpdateThreadRequestBodyApprovalMode(data) {
-	case UpdateThreadRequestBodyApprovalModeGuardian:
-		*s = UpdateThreadRequestBodyApprovalModeGuardian
-		return nil
-	case UpdateThreadRequestBodyApprovalModeManual:
-		*s = UpdateThreadRequestBodyApprovalModeManual
-		return nil
-	case UpdateThreadRequestBodyApprovalModeYolo:
-		*s = UpdateThreadRequestBodyApprovalModeYolo
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/UpdateUploadRequestBody
@@ -9174,7 +10986,7 @@ type UploadedResource struct {
 	// is a draft being collected.
 	DraftExpiresAt time.Time `json:"draftExpiresAt"`
 	Filename       string    `json:"filename"`
-	// Null unless kind is image.
+	// Null unless type is image.
 	Height NilInt64 `json:"height"`
 	ID     string   `json:"id"`
 	// How the assistant will see this file.
@@ -9183,8 +10995,8 @@ type UploadedResource struct {
 	//  - `text` — placed inline in the message when small enough, otherwise read on demand
 	//  - `binary` — never read directly; the assistant downloads it onto a cloud instance to work with
 	//    it
-	Kind UploadedResourceKind `json:"kind"`
-	// Null unless kind is image.
+	Type UploadedResourceType `json:"type"`
+	// Null unless type is image.
 	Width NilInt64 `json:"width"`
 }
 
@@ -9213,9 +11025,9 @@ func (s *UploadedResource) GetID() string {
 	return s.ID
 }
 
-// GetKind returns the value of Kind.
-func (s *UploadedResource) GetKind() UploadedResourceKind {
-	return s.Kind
+// GetType returns the value of Type.
+func (s *UploadedResource) GetType() UploadedResourceType {
+	return s.Type
 }
 
 // GetWidth returns the value of Width.
@@ -9248,9 +11060,9 @@ func (s *UploadedResource) SetID(val string) {
 	s.ID = val
 }
 
-// SetKind sets the value of Kind.
-func (s *UploadedResource) SetKind(val UploadedResourceKind) {
-	s.Kind = val
+// SetType sets the value of Type.
+func (s *UploadedResource) SetType(val UploadedResourceType) {
+	s.Type = val
 }
 
 // SetWidth sets the value of Width.
@@ -9264,31 +11076,31 @@ func (s *UploadedResource) SetWidth(val NilInt64) {
 //   - `text` — placed inline in the message when small enough, otherwise read on demand
 //   - `binary` — never read directly; the assistant downloads it onto a cloud instance to work with
 //     it
-type UploadedResourceKind string
+type UploadedResourceType string
 
 const (
-	UploadedResourceKindImage  UploadedResourceKind = "image"
-	UploadedResourceKindText   UploadedResourceKind = "text"
-	UploadedResourceKindBinary UploadedResourceKind = "binary"
+	UploadedResourceTypeImage  UploadedResourceType = "image"
+	UploadedResourceTypeText   UploadedResourceType = "text"
+	UploadedResourceTypeBinary UploadedResourceType = "binary"
 )
 
-// AllValues returns all UploadedResourceKind values.
-func (UploadedResourceKind) AllValues() []UploadedResourceKind {
-	return []UploadedResourceKind{
-		UploadedResourceKindImage,
-		UploadedResourceKindText,
-		UploadedResourceKindBinary,
+// AllValues returns all UploadedResourceType values.
+func (UploadedResourceType) AllValues() []UploadedResourceType {
+	return []UploadedResourceType{
+		UploadedResourceTypeImage,
+		UploadedResourceTypeText,
+		UploadedResourceTypeBinary,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s UploadedResourceKind) MarshalText() ([]byte, error) {
+func (s UploadedResourceType) MarshalText() ([]byte, error) {
 	switch s {
-	case UploadedResourceKindImage:
+	case UploadedResourceTypeImage:
 		return []byte(s), nil
-	case UploadedResourceKindText:
+	case UploadedResourceTypeText:
 		return []byte(s), nil
-	case UploadedResourceKindBinary:
+	case UploadedResourceTypeBinary:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -9296,111 +11108,119 @@ func (s UploadedResourceKind) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UploadedResourceKind) UnmarshalText(data []byte) error {
-	switch UploadedResourceKind(data) {
-	case UploadedResourceKindImage:
-		*s = UploadedResourceKindImage
+func (s *UploadedResourceType) UnmarshalText(data []byte) error {
+	switch UploadedResourceType(data) {
+	case UploadedResourceTypeImage:
+		*s = UploadedResourceTypeImage
 		return nil
-	case UploadedResourceKindText:
-		*s = UploadedResourceKindText
+	case UploadedResourceTypeText:
+		*s = UploadedResourceTypeText
 		return nil
-	case UploadedResourceKindBinary:
-		*s = UploadedResourceKindBinary
+	case UploadedResourceTypeBinary:
+		*s = UploadedResourceTypeBinary
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Ref: #/components/schemas/UsageResource
-type UsageResource struct {
-	InputTokens        int64   `json:"inputTokens"`
-	OutputTokens       int64   `json:"outputTokens"`
-	CachedTokens       int64   `json:"cachedTokens"`
-	ReasoningTokens    int64   `json:"reasoningTokens"`
-	Requests           int64   `json:"requests"`
-	UnreportedRequests int64   `json:"unreportedRequests"`
-	RunningRequests    int64   `json:"runningRequests"`
-	Complete           OptBool `json:"complete"`
+// Tokens reported by Canopy. Cache hit rate is cachedInputTokens / inputTokens.
+// Ref: #/components/schemas/Usage
+type Usage struct {
+	// Prompt tokens, including cached ones.
+	InputTokens int64 `json:"inputTokens"`
+	// Prompt tokens read from the provider's cache.
+	CachedInputTokens int64 `json:"cachedInputTokens"`
+	// Prompt tokens written to the provider's cache. Zero for providers that do not report it.
+	CacheWriteTokens int64 `json:"cacheWriteTokens"`
+	// Output tokens, including reasoning.
+	OutputTokens int64 `json:"outputTokens"`
+	// Output tokens spent on reasoning.
+	ReasoningTokens int64 `json:"reasoningTokens"`
+	TotalTokens     int64 `json:"totalTokens"`
+	// Model requests made.
+	Requests int64 `json:"requests"`
+	// False while a request has not reported its usage yet, so the numbers may still grow.
+	Complete bool `json:"complete"`
 }
 
 // GetInputTokens returns the value of InputTokens.
-func (s *UsageResource) GetInputTokens() int64 {
+func (s *Usage) GetInputTokens() int64 {
 	return s.InputTokens
 }
 
+// GetCachedInputTokens returns the value of CachedInputTokens.
+func (s *Usage) GetCachedInputTokens() int64 {
+	return s.CachedInputTokens
+}
+
+// GetCacheWriteTokens returns the value of CacheWriteTokens.
+func (s *Usage) GetCacheWriteTokens() int64 {
+	return s.CacheWriteTokens
+}
+
 // GetOutputTokens returns the value of OutputTokens.
-func (s *UsageResource) GetOutputTokens() int64 {
+func (s *Usage) GetOutputTokens() int64 {
 	return s.OutputTokens
 }
 
-// GetCachedTokens returns the value of CachedTokens.
-func (s *UsageResource) GetCachedTokens() int64 {
-	return s.CachedTokens
-}
-
 // GetReasoningTokens returns the value of ReasoningTokens.
-func (s *UsageResource) GetReasoningTokens() int64 {
+func (s *Usage) GetReasoningTokens() int64 {
 	return s.ReasoningTokens
 }
 
+// GetTotalTokens returns the value of TotalTokens.
+func (s *Usage) GetTotalTokens() int64 {
+	return s.TotalTokens
+}
+
 // GetRequests returns the value of Requests.
-func (s *UsageResource) GetRequests() int64 {
+func (s *Usage) GetRequests() int64 {
 	return s.Requests
 }
 
-// GetUnreportedRequests returns the value of UnreportedRequests.
-func (s *UsageResource) GetUnreportedRequests() int64 {
-	return s.UnreportedRequests
-}
-
-// GetRunningRequests returns the value of RunningRequests.
-func (s *UsageResource) GetRunningRequests() int64 {
-	return s.RunningRequests
-}
-
 // GetComplete returns the value of Complete.
-func (s *UsageResource) GetComplete() OptBool {
+func (s *Usage) GetComplete() bool {
 	return s.Complete
 }
 
 // SetInputTokens sets the value of InputTokens.
-func (s *UsageResource) SetInputTokens(val int64) {
+func (s *Usage) SetInputTokens(val int64) {
 	s.InputTokens = val
 }
 
+// SetCachedInputTokens sets the value of CachedInputTokens.
+func (s *Usage) SetCachedInputTokens(val int64) {
+	s.CachedInputTokens = val
+}
+
+// SetCacheWriteTokens sets the value of CacheWriteTokens.
+func (s *Usage) SetCacheWriteTokens(val int64) {
+	s.CacheWriteTokens = val
+}
+
 // SetOutputTokens sets the value of OutputTokens.
-func (s *UsageResource) SetOutputTokens(val int64) {
+func (s *Usage) SetOutputTokens(val int64) {
 	s.OutputTokens = val
 }
 
-// SetCachedTokens sets the value of CachedTokens.
-func (s *UsageResource) SetCachedTokens(val int64) {
-	s.CachedTokens = val
-}
-
 // SetReasoningTokens sets the value of ReasoningTokens.
-func (s *UsageResource) SetReasoningTokens(val int64) {
+func (s *Usage) SetReasoningTokens(val int64) {
 	s.ReasoningTokens = val
 }
 
+// SetTotalTokens sets the value of TotalTokens.
+func (s *Usage) SetTotalTokens(val int64) {
+	s.TotalTokens = val
+}
+
 // SetRequests sets the value of Requests.
-func (s *UsageResource) SetRequests(val int64) {
+func (s *Usage) SetRequests(val int64) {
 	s.Requests = val
 }
 
-// SetUnreportedRequests sets the value of UnreportedRequests.
-func (s *UsageResource) SetUnreportedRequests(val int64) {
-	s.UnreportedRequests = val
-}
-
-// SetRunningRequests sets the value of RunningRequests.
-func (s *UsageResource) SetRunningRequests(val int64) {
-	s.RunningRequests = val
-}
-
 // SetComplete sets the value of Complete.
-func (s *UsageResource) SetComplete(val OptBool) {
+func (s *Usage) SetComplete(val bool) {
 	s.Complete = val
 }
 
@@ -9417,128 +11237,6 @@ func (s *VerifyCodeRequestBody) GetCode() string {
 // SetCode sets the value of Code.
 func (s *VerifyCodeRequestBody) SetCode(val string) {
 	s.Code = val
-}
-
-// Ref: #/components/schemas/WaitResource
-type WaitResource struct {
-	AutoResolutionMs OptInt64            `json:"autoResolutionMs"`
-	BatchId          OptString           `json:"batchId"`
-	ItemId           OptString           `json:"itemId"`
-	ItemIds          OptNilStringArray   `json:"itemIds"`
-	Kind             WaitResourceKind    `json:"kind"`
-	Questions        OptNilQuestionArray `json:"questions"`
-	TurnId           string              `json:"turnId"`
-}
-
-// GetAutoResolutionMs returns the value of AutoResolutionMs.
-func (s *WaitResource) GetAutoResolutionMs() OptInt64 {
-	return s.AutoResolutionMs
-}
-
-// GetBatchId returns the value of BatchId.
-func (s *WaitResource) GetBatchId() OptString {
-	return s.BatchId
-}
-
-// GetItemId returns the value of ItemId.
-func (s *WaitResource) GetItemId() OptString {
-	return s.ItemId
-}
-
-// GetItemIds returns the value of ItemIds.
-func (s *WaitResource) GetItemIds() OptNilStringArray {
-	return s.ItemIds
-}
-
-// GetKind returns the value of Kind.
-func (s *WaitResource) GetKind() WaitResourceKind {
-	return s.Kind
-}
-
-// GetQuestions returns the value of Questions.
-func (s *WaitResource) GetQuestions() OptNilQuestionArray {
-	return s.Questions
-}
-
-// GetTurnId returns the value of TurnId.
-func (s *WaitResource) GetTurnId() string {
-	return s.TurnId
-}
-
-// SetAutoResolutionMs sets the value of AutoResolutionMs.
-func (s *WaitResource) SetAutoResolutionMs(val OptInt64) {
-	s.AutoResolutionMs = val
-}
-
-// SetBatchId sets the value of BatchId.
-func (s *WaitResource) SetBatchId(val OptString) {
-	s.BatchId = val
-}
-
-// SetItemId sets the value of ItemId.
-func (s *WaitResource) SetItemId(val OptString) {
-	s.ItemId = val
-}
-
-// SetItemIds sets the value of ItemIds.
-func (s *WaitResource) SetItemIds(val OptNilStringArray) {
-	s.ItemIds = val
-}
-
-// SetKind sets the value of Kind.
-func (s *WaitResource) SetKind(val WaitResourceKind) {
-	s.Kind = val
-}
-
-// SetQuestions sets the value of Questions.
-func (s *WaitResource) SetQuestions(val OptNilQuestionArray) {
-	s.Questions = val
-}
-
-// SetTurnId sets the value of TurnId.
-func (s *WaitResource) SetTurnId(val string) {
-	s.TurnId = val
-}
-
-type WaitResourceKind string
-
-const (
-	WaitResourceKindToolApproval WaitResourceKind = "tool_approval"
-	WaitResourceKindUserInput    WaitResourceKind = "user_input"
-)
-
-// AllValues returns all WaitResourceKind values.
-func (WaitResourceKind) AllValues() []WaitResourceKind {
-	return []WaitResourceKind{
-		WaitResourceKindToolApproval,
-		WaitResourceKindUserInput,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s WaitResourceKind) MarshalText() ([]byte, error) {
-	switch s {
-	case WaitResourceKindToolApproval:
-		return []byte(s), nil
-	case WaitResourceKindUserInput:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *WaitResourceKind) UnmarshalText(data []byte) error {
-	switch WaitResourceKind(data) {
-	case WaitResourceKindToolApproval:
-		*s = WaitResourceKindToolApproval
-		return nil
-	case WaitResourceKindUserInput:
-		*s = WaitResourceKindUserInput
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/WebhookSecretResponseBody

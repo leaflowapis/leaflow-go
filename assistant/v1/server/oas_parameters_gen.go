@@ -17,8 +17,10 @@ import (
 
 // AnswerQuestionParams is parameters of answer-question operation.
 type AnswerQuestionParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
-	Item   string
+	// A transcript item id.
+	Item string
 }
 
 func unpackAnswerQuestionParams(packed middleware.Parameters) (params AnswerQuestionParams) {
@@ -74,6 +76,26 @@ func decodeAnswerQuestionParams(args [2]string, argsEscaped bool, r *http.Reques
 			}(); err != nil {
 				return err
 			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		} else {
 			return validate.ErrFieldRequired
 		}
@@ -115,6 +137,26 @@ func decodeAnswerQuestionParams(args [2]string, argsEscaped bool, r *http.Reques
 				}
 
 				params.Item = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Item)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -198,12 +240,13 @@ func decodeBeginWeixinLoginParams(args [1]string, argsEscaped bool, r *http.Requ
 	return params, nil
 }
 
-// CancelTaskParams is parameters of cancel-task operation.
-type CancelTaskParams struct {
+// CancelTaskRunParams is parameters of cancel-task-run operation.
+type CancelTaskRunParams struct {
+	// A task id.
 	Task string
 }
 
-func unpackCancelTaskParams(packed middleware.Parameters) (params CancelTaskParams) {
+func unpackCancelTaskRunParams(packed middleware.Parameters) (params CancelTaskRunParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "task",
@@ -214,7 +257,7 @@ func unpackCancelTaskParams(packed middleware.Parameters) (params CancelTaskPara
 	return params
 }
 
-func decodeCancelTaskParams(args [1]string, argsEscaped bool, r *http.Request) (params CancelTaskParams, _ error) {
+func decodeCancelTaskRunParams(args [1]string, argsEscaped bool, r *http.Request) (params CancelTaskRunParams, _ error) {
 	// Decode path: task.
 	if err := func() error {
 		param := args[0]
@@ -245,6 +288,26 @@ func decodeCancelTaskParams(args [1]string, argsEscaped bool, r *http.Request) (
 				}
 
 				params.Task = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Task)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -492,6 +555,92 @@ func decodeCheckSenderParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// CompactThreadParams is parameters of compact-thread operation.
+type CompactThreadParams struct {
+	// A thread id. Subagents are threads as well.
+	Thread string
+}
+
+func unpackCompactThreadParams(packed middleware.Parameters) (params CompactThreadParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "path",
+		}
+		params.Thread = packed[key].(string)
+	}
+	return params
+}
+
+func decodeCompactThreadParams(args [1]string, argsEscaped bool, r *http.Request) (params CompactThreadParams, _ error) {
+	// Decode path: thread.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "thread",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CompleteUploadParams is parameters of complete-upload operation.
 type CompleteUploadParams struct {
 	Upload string
@@ -622,12 +771,13 @@ func decodeCreateBindingCodeParams(args [1]string, argsEscaped bool, r *http.Req
 	return params, nil
 }
 
-// CreateScheduleParams is parameters of create-schedule operation.
-type CreateScheduleParams struct {
+// DecideToolCallsParams is parameters of decide-tool-calls operation.
+type DecideToolCallsParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
-func unpackCreateScheduleParams(packed middleware.Parameters) (params CreateScheduleParams) {
+func unpackDecideToolCallsParams(packed middleware.Parameters) (params DecideToolCallsParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "thread",
@@ -638,7 +788,7 @@ func unpackCreateScheduleParams(packed middleware.Parameters) (params CreateSche
 	return params
 }
 
-func decodeCreateScheduleParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateScheduleParams, _ error) {
+func decodeDecideToolCallsParams(args [1]string, argsEscaped bool, r *http.Request) (params DecideToolCallsParams, _ error) {
 	// Decode path: thread.
 	if err := func() error {
 		param := args[0]
@@ -673,67 +823,22 @@ func decodeCreateScheduleParams(args [1]string, argsEscaped bool, r *http.Reques
 			}(); err != nil {
 				return err
 			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// CreateSubagentParams is parameters of create-subagent operation.
-type CreateSubagentParams struct {
-	Thread string
-}
-
-func unpackCreateSubagentParams(packed middleware.Parameters) (params CreateSubagentParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	return params
-}
-
-func decodeCreateSubagentParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateSubagentParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
 			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
 				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
 				return nil
 			}(); err != nil {
 				return err
@@ -745,189 +850,6 @@ func decodeCreateSubagentParams(args [1]string, argsEscaped bool, r *http.Reques
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// CreateTaskParams is parameters of create-task operation.
-type CreateTaskParams struct {
-	Thread string
-}
-
-func unpackCreateTaskParams(packed middleware.Parameters) (params CreateTaskParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	return params
-}
-
-func decodeCreateTaskParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateTaskParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// DecideApprovalParams is parameters of decide-approval operation.
-type DecideApprovalParams struct {
-	Thread string
-	Batch  string
-}
-
-func unpackDecideApprovalParams(packed middleware.Parameters) (params DecideApprovalParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "batch",
-			In:   "path",
-		}
-		params.Batch = packed[key].(string)
-	}
-	return params
-}
-
-func decodeDecideApprovalParams(args [2]string, argsEscaped bool, r *http.Request) (params DecideApprovalParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: batch.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "batch",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Batch = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "batch",
 			In:   "path",
 			Err:  err,
 		}
@@ -1067,6 +989,7 @@ func decodeDeleteChannelParams(args [1]string, argsEscaped bool, r *http.Request
 
 // DeleteFolderParams is parameters of delete-folder operation.
 type DeleteFolderParams struct {
+	// A folder id.
 	Folder string
 }
 
@@ -1112,6 +1035,26 @@ func decodeDeleteFolderParams(args [1]string, argsEscaped bool, r *http.Request)
 				}
 
 				params.Folder = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Folder)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -1195,71 +1138,6 @@ func decodeDeleteMemoryParams(args [1]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
-// DeleteScheduleParams is parameters of delete-schedule operation.
-type DeleteScheduleParams struct {
-	Schedule string
-}
-
-func unpackDeleteScheduleParams(packed middleware.Parameters) (params DeleteScheduleParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "schedule",
-			In:   "path",
-		}
-		params.Schedule = packed[key].(string)
-	}
-	return params
-}
-
-func decodeDeleteScheduleParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteScheduleParams, _ error) {
-	// Decode path: schedule.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "schedule",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Schedule = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "schedule",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // DeleteSkillParams is parameters of delete-skill operation.
 type DeleteSkillParams struct {
 	Skill string
@@ -1325,126 +1203,9 @@ func decodeDeleteSkillParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
-// DeleteSubagentParams is parameters of delete-subagent operation.
-type DeleteSubagentParams struct {
-	Thread   string
-	Subagent string
-}
-
-func unpackDeleteSubagentParams(packed middleware.Parameters) (params DeleteSubagentParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "subagent",
-			In:   "path",
-		}
-		params.Subagent = packed[key].(string)
-	}
-	return params
-}
-
-func decodeDeleteSubagentParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteSubagentParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: subagent.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "subagent",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Subagent = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "subagent",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // DeleteTaskParams is parameters of delete-task operation.
 type DeleteTaskParams struct {
+	// A task id.
 	Task string
 }
 
@@ -1494,6 +1255,26 @@ func decodeDeleteTaskParams(args [1]string, argsEscaped bool, r *http.Request) (
 			}(); err != nil {
 				return err
 			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Task)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		} else {
 			return validate.ErrFieldRequired
 		}
@@ -1510,6 +1291,7 @@ func decodeDeleteTaskParams(args [1]string, argsEscaped bool, r *http.Request) (
 
 // DeleteThreadParams is parameters of delete-thread operation.
 type DeleteThreadParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
@@ -1555,6 +1337,26 @@ func decodeDeleteThreadParams(args [1]string, argsEscaped bool, r *http.Request)
 				}
 
 				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -1835,6 +1637,7 @@ func decodeGetChannelParams(args [1]string, argsEscaped bool, r *http.Request) (
 
 // GetFolderParams is parameters of get-folder operation.
 type GetFolderParams struct {
+	// A folder id.
 	Folder string
 }
 
@@ -1884,67 +1687,22 @@ func decodeGetFolderParams(args [1]string, argsEscaped bool, r *http.Request) (p
 			}(); err != nil {
 				return err
 			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "folder",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// GetScheduleParams is parameters of get-schedule operation.
-type GetScheduleParams struct {
-	Schedule string
-}
-
-func unpackGetScheduleParams(packed middleware.Parameters) (params GetScheduleParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "schedule",
-			In:   "path",
-		}
-		params.Schedule = packed[key].(string)
-	}
-	return params
-}
-
-func decodeGetScheduleParams(args [1]string, argsEscaped bool, r *http.Request) (params GetScheduleParams, _ error) {
-	// Decode path: schedule.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "schedule",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
 			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Folder)); err != nil {
+					return errors.Wrap(err, "string")
 				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Schedule = c
 				return nil
 			}(); err != nil {
 				return err
@@ -1955,7 +1713,7 @@ func decodeGetScheduleParams(args [1]string, argsEscaped bool, r *http.Request) 
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "schedule",
+			Name: "folder",
 			In:   "path",
 			Err:  err,
 		}
@@ -2029,126 +1787,9 @@ func decodeGetSkillParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 	return params, nil
 }
 
-// GetSubagentParams is parameters of get-subagent operation.
-type GetSubagentParams struct {
-	Thread   string
-	Subagent string
-}
-
-func unpackGetSubagentParams(packed middleware.Parameters) (params GetSubagentParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "subagent",
-			In:   "path",
-		}
-		params.Subagent = packed[key].(string)
-	}
-	return params
-}
-
-func decodeGetSubagentParams(args [2]string, argsEscaped bool, r *http.Request) (params GetSubagentParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: subagent.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "subagent",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Subagent = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "subagent",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // GetTaskParams is parameters of get-task operation.
 type GetTaskParams struct {
+	// A task id.
 	Task string
 }
 
@@ -2198,6 +1839,26 @@ func decodeGetTaskParams(args [1]string, argsEscaped bool, r *http.Request) (par
 			}(); err != nil {
 				return err
 			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Task)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		} else {
 			return validate.ErrFieldRequired
 		}
@@ -2214,6 +1875,7 @@ func decodeGetTaskParams(args [1]string, argsEscaped bool, r *http.Request) (par
 
 // GetThreadParams is parameters of get-thread operation.
 type GetThreadParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
@@ -2259,6 +1921,26 @@ func decodeGetThreadParams(args [1]string, argsEscaped bool, r *http.Request) (p
 				}
 
 				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -2407,126 +2089,9 @@ func decodeGetWeixinLoginParams(args [1]string, argsEscaped bool, r *http.Reques
 	return params, nil
 }
 
-// InterruptSubagentParams is parameters of interrupt-subagent operation.
-type InterruptSubagentParams struct {
-	Thread   string
-	Subagent string
-}
-
-func unpackInterruptSubagentParams(packed middleware.Parameters) (params InterruptSubagentParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "subagent",
-			In:   "path",
-		}
-		params.Subagent = packed[key].(string)
-	}
-	return params
-}
-
-func decodeInterruptSubagentParams(args [2]string, argsEscaped bool, r *http.Request) (params InterruptSubagentParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: subagent.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "subagent",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Subagent = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "subagent",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // InterruptThreadParams is parameters of interrupt-thread operation.
 type InterruptThreadParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
@@ -2572,6 +2137,26 @@ func decodeInterruptThreadParams(args [1]string, argsEscaped bool, r *http.Reque
 				}
 
 				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -3348,379 +2933,17 @@ func decodeListChannelsParams(args [0]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
-// ListEarlierItemsParams is parameters of list-earlier-items operation.
-type ListEarlierItemsParams struct {
-	Thread string
-	// From the document's earlier.before; returns entries before this ordinal.
-	Before int64
-}
-
-func unpackListEarlierItemsParams(packed middleware.Parameters) (params ListEarlierItemsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "before",
-			In:   "query",
-		}
-		params.Before = packed[key].(int64)
-	}
-	return params
-}
-
-func decodeListEarlierItemsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListEarlierItemsParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode query: before.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "before",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToInt64(val)
-				if err != nil {
-					return err
-				}
-
-				params.Before = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.Int{
-					MinSet:        true,
-					Min:           0,
-					MaxSet:        false,
-					Max:           0,
-					MinExclusive:  false,
-					MaxExclusive:  false,
-					MultipleOfSet: false,
-					MultipleOf:    0,
-					Pattern:       nil,
-				}).Validate(int64(params.Before)); err != nil {
-					return errors.Wrap(err, "int")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "before",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ListSchedulesParams is parameters of list-schedules operation.
-type ListSchedulesParams struct {
-	Thread string
-}
-
-func unpackListSchedulesParams(packed middleware.Parameters) (params ListSchedulesParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	return params
-}
-
-func decodeListSchedulesParams(args [1]string, argsEscaped bool, r *http.Request) (params ListSchedulesParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ListSubagentsParams is parameters of list-subagents operation.
-type ListSubagentsParams struct {
-	Thread string
-}
-
-func unpackListSubagentsParams(packed middleware.Parameters) (params ListSubagentsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	return params
-}
-
-func decodeListSubagentsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListSubagentsParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ListTasksParams is parameters of list-tasks operation.
-type ListTasksParams struct {
-	Thread string
-}
-
-func unpackListTasksParams(packed middleware.Parameters) (params ListTasksParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	return params
-}
-
-func decodeListTasksParams(args [1]string, argsEscaped bool, r *http.Request) (params ListTasksParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ListThreadsParams is parameters of list-threads operation.
-type ListThreadsParams struct {
-	// Search titles, case-insensitively. Leave it empty for the most recent conversations.
-	Q OptString `json:",omitempty,omitzero"`
-	// When true, returns only archived conversations; otherwise only unarchived ones.
-	Archived OptBool `json:",omitempty,omitzero"`
-	// Narrow the list to one folder. Omitting it returns conversations from every folder and from none; a
-	// folder id returns that folder's; the empty value (`?folder=`) returns the ones that are in no folder
-	// at all. Empty is not the same as omitted, and a sidebar needs both: "chats" is exactly the ungrouped
-	// set, and asking for everything would let filed conversations crowd it out of the limit.
-	Folder OptString `json:",omitempty,omitzero"`
+// ListTaskRunsParams is parameters of list-task-runs operation.
+type ListTaskRunsParams struct {
 	// The next_cursor returned by the previous page. Omit it for the first page.
 	Cursor OptString `json:",omitempty,omitzero"`
 	// Items returned in this page. Defaults to 50; at most 200.
-	Limit OptInt64           `json:",omitempty,omitzero"`
-	Sort  OptListThreadsSort `json:",omitempty,omitzero"`
-	// Batch summaries for owned conversations, including subagents and archived threads. Cursor, folder
-	// and search cannot be combined with ids.
-	Ids []string `json:",omitempty"`
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// A task id.
+	Task string
 }
 
-func unpackListThreadsParams(packed middleware.Parameters) (params ListThreadsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "q",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Q = v.(OptString)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "archived",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Archived = v.(OptBool)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "folder",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Folder = v.(OptString)
-		}
-	}
+func unpackListTaskRunsParams(packed middleware.Parameters) (params ListTaskRunsParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "cursor",
@@ -3741,204 +2964,16 @@ func unpackListThreadsParams(packed middleware.Parameters) (params ListThreadsPa
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "sort",
-			In:   "query",
+			Name: "task",
+			In:   "path",
 		}
-		if v, ok := packed[key]; ok {
-			params.Sort = v.(OptListThreadsSort)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "ids",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Ids = v.([]string)
-		}
+		params.Task = packed[key].(string)
 	}
 	return params
 }
 
-func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListThreadsParams, _ error) {
+func decodeListTaskRunsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListTaskRunsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode query: q.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "q",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotQVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotQVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Q.SetTo(paramsDotQVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Q.Get(); ok {
-					if err := func() error {
-						if err := (validate.String{
-							MinLength:     0,
-							MinLengthSet:  false,
-							MaxLength:     100,
-							MaxLengthSet:  true,
-							Email:         false,
-							Hostname:      false,
-							Regex:         nil,
-							MinNumeric:    0,
-							MinNumericSet: false,
-							MaxNumeric:    0,
-							MaxNumericSet: false,
-						}).Validate(string(value)); err != nil {
-							return errors.Wrap(err, "string")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "q",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Decode query: archived.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "archived",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotArchivedVal bool
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToBool(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotArchivedVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Archived.SetTo(paramsDotArchivedVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "archived",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Decode query: folder.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "folder",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotFolderVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotFolderVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Folder.SetTo(paramsDotFolderVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Folder.Get(); ok {
-					if err := func() error {
-						if err := (validate.String{
-							MinLength:     0,
-							MinLengthSet:  false,
-							MaxLength:     64,
-							MaxLengthSet:  true,
-							Email:         false,
-							Hostname:      false,
-							Regex:         nil,
-							MinNumeric:    0,
-							MinNumericSet: false,
-							MaxNumeric:    0,
-							MaxNumericSet: false,
-						}).Validate(string(value)); err != nil {
-							return errors.Wrap(err, "string")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "folder",
-			In:   "query",
-			Err:  err,
-		}
-	}
 	// Decode query: cursor.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
@@ -4078,48 +3113,172 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
-	// Set default value for query: sort.
-	{
-		val := ListThreadsSort("recent")
-		params.Sort.SetTo(val)
+	// Decode path: task.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "task",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Task = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Task)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "task",
+			In:   "path",
+			Err:  err,
+		}
 	}
-	// Decode query: sort.
+	return params, nil
+}
+
+// ListThreadItemsParams is parameters of list-thread-items operation.
+type ListThreadItemsParams struct {
+	// Return items with a smaller ordinal.
+	Before OptInt64 `json:",omitempty,omitzero"`
+	// Return items with a greater ordinal. Cannot be combined with before.
+	After OptInt64 `json:",omitempty,omitzero"`
+	Limit OptInt   `json:",omitempty,omitzero"`
+	// A thread id. Subagents are threads as well.
+	Thread string
+}
+
+func unpackListThreadItemsParams(packed middleware.Parameters) (params ListThreadItemsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "before",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Before = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "after",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.After = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "path",
+		}
+		params.Thread = packed[key].(string)
+	}
+	return params
+}
+
+func decodeListThreadItemsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListThreadItemsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: before.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "sort",
+			Name:    "before",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotSortVal ListThreadsSort
+				var paramsDotBeforeVal int64
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
 						return err
 					}
 
-					c, err := conv.ToString(val)
+					c, err := conv.ToInt64(val)
 					if err != nil {
 						return err
 					}
 
-					paramsDotSortVal = ListThreadsSort(c)
+					paramsDotBeforeVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.Sort.SetTo(paramsDotSortVal)
+				params.Before.SetTo(paramsDotBeforeVal)
 				return nil
 			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if value, ok := params.Sort.Get(); ok {
+				if value, ok := params.Before.Get(); ok {
 					if err := func() error {
-						if err := value.Validate(); err != nil {
-							return err
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           0,
+							MaxSet:        false,
+							Max:           0,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
 						}
 						return nil
 					}(); err != nil {
@@ -4134,11 +3293,267 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "sort",
+			Name: "before",
 			In:   "query",
 			Err:  err,
 		}
 	}
+	// Decode query: after.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "after",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotAfterVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotAfterVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.After.SetTo(paramsDotAfterVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.After.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           0,
+							MaxSet:        false,
+							Max:           0,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "after",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: limit.
+	{
+		val := int(100)
+		params.Limit.SetTo(val)
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Limit.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode path: thread.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "thread",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListThreadTurnsParams is parameters of list-thread-turns operation.
+type ListThreadTurnsParams struct {
+	Ids []string `json:",omitempty"`
+	// The next_cursor returned by the previous page. Omit it for the first page.
+	Cursor OptString `json:",omitempty,omitzero"`
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// A thread id. Subagents are threads as well.
+	Thread string
+}
+
+func unpackListThreadTurnsParams(packed middleware.Parameters) (params ListThreadTurnsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "ids",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Ids = v.([]string)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cursor",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Cursor = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "path",
+		}
+		params.Thread = packed[key].(string)
+	}
+	return params
+}
+
+func decodeListThreadTurnsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListThreadTurnsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode query: ids.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
@@ -4202,41 +3617,6 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
-	return params, nil
-}
-
-// ListWorkspaceSchedulesParams is parameters of list-workspace-schedules operation.
-type ListWorkspaceSchedulesParams struct {
-	// The next_cursor returned by the previous page. Omit it for the first page.
-	Cursor OptString `json:",omitempty,omitzero"`
-	// Items returned in this page. Defaults to 50; at most 200.
-	Limit OptInt64 `json:",omitempty,omitzero"`
-}
-
-func unpackListWorkspaceSchedulesParams(packed middleware.Parameters) (params ListWorkspaceSchedulesParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "cursor",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Cursor = v.(OptString)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "limit",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Limit = v.(OptInt64)
-		}
-	}
-	return params
-}
-
-func decodeListWorkspaceSchedulesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListWorkspaceSchedulesParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode query: cursor.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
@@ -4376,11 +3756,77 @@ func decodeListWorkspaceSchedulesParams(args [0]string, argsEscaped bool, r *htt
 			Err:  err,
 		}
 	}
+	// Decode path: thread.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "thread",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
+			In:   "path",
+			Err:  err,
+		}
+	}
 	return params, nil
 }
 
 // MarkThreadReadParams is parameters of mark-thread-read operation.
 type MarkThreadReadParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
@@ -4430,6 +3876,26 @@ func decodeMarkThreadReadParams(args [1]string, argsEscaped bool, r *http.Reques
 			}(); err != nil {
 				return err
 			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		} else {
 			return validate.ErrFieldRequired
 		}
@@ -4446,6 +3912,7 @@ func decodeMarkThreadReadParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // MoveFolderParams is parameters of move-folder operation.
 type MoveFolderParams struct {
+	// A folder id.
 	Folder string
 }
 
@@ -4495,6 +3962,26 @@ func decodeMoveFolderParams(args [1]string, argsEscaped bool, r *http.Request) (
 			}(); err != nil {
 				return err
 			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Folder)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		} else {
 			return validate.ErrFieldRequired
 		}
@@ -4509,12 +3996,185 @@ func decodeMoveFolderParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
-// MoveThreadParams is parameters of move-thread operation.
-type MoveThreadParams struct {
+// OpenRealtimeParams is parameters of open-realtime operation.
+type OpenRealtimeParams struct {
+	Ticket string
+}
+
+func unpackOpenRealtimeParams(packed middleware.Parameters) (params OpenRealtimeParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "ticket",
+			In:   "query",
+		}
+		params.Ticket = packed[key].(string)
+	}
+	return params
+}
+
+func decodeOpenRealtimeParams(args [0]string, argsEscaped bool, r *http.Request) (params OpenRealtimeParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: ticket.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "ticket",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Ticket = c
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     4096,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Ticket)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "ticket",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PauseTaskParams is parameters of pause-task operation.
+type PauseTaskParams struct {
+	// A task id.
+	Task string
+}
+
+func unpackPauseTaskParams(packed middleware.Parameters) (params PauseTaskParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "task",
+			In:   "path",
+		}
+		params.Task = packed[key].(string)
+	}
+	return params
+}
+
+func decodePauseTaskParams(args [1]string, argsEscaped bool, r *http.Request) (params PauseTaskParams, _ error) {
+	// Decode path: task.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "task",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Task = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Task)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "task",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PlaceThreadParams is parameters of place-thread operation.
+type PlaceThreadParams struct {
+	// A folder id.
+	Folder string
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
-func unpackMoveThreadParams(packed middleware.Parameters) (params MoveThreadParams) {
+func unpackPlaceThreadParams(packed middleware.Parameters) (params PlaceThreadParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "folder",
+			In:   "path",
+		}
+		params.Folder = packed[key].(string)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "thread",
@@ -4525,12 +4185,77 @@ func unpackMoveThreadParams(packed middleware.Parameters) (params MoveThreadPara
 	return params
 }
 
-func decodeMoveThreadParams(args [1]string, argsEscaped bool, r *http.Request) (params MoveThreadParams, _ error) {
-	// Decode path: thread.
+func decodePlaceThreadParams(args [2]string, argsEscaped bool, r *http.Request) (params PlaceThreadParams, _ error) {
+	// Decode path: folder.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "folder",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Folder = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Folder)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "folder",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: thread.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -4560,67 +4285,22 @@ func decodeMoveThreadParams(args [1]string, argsEscaped bool, r *http.Request) (
 			}(); err != nil {
 				return err
 			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// PauseScheduleParams is parameters of pause-schedule operation.
-type PauseScheduleParams struct {
-	Schedule string
-}
-
-func unpackPauseScheduleParams(packed middleware.Parameters) (params PauseScheduleParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "schedule",
-			In:   "path",
-		}
-		params.Schedule = packed[key].(string)
-	}
-	return params
-}
-
-func decodePauseScheduleParams(args [1]string, argsEscaped bool, r *http.Request) (params PauseScheduleParams, _ error) {
-	// Decode path: schedule.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "schedule",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
 			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
 				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Schedule = c
 				return nil
 			}(); err != nil {
 				return err
@@ -4631,7 +4311,7 @@ func decodePauseScheduleParams(args [1]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "schedule",
+			Name: "thread",
 			In:   "path",
 			Err:  err,
 		}
@@ -4881,24 +4561,25 @@ func decodePutUploadPartParams(args [2]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
-// ResumeScheduleParams is parameters of resume-schedule operation.
-type ResumeScheduleParams struct {
-	Schedule string
+// ResumeTaskParams is parameters of resume-task operation.
+type ResumeTaskParams struct {
+	// A task id.
+	Task string
 }
 
-func unpackResumeScheduleParams(packed middleware.Parameters) (params ResumeScheduleParams) {
+func unpackResumeTaskParams(packed middleware.Parameters) (params ResumeTaskParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "schedule",
+			Name: "task",
 			In:   "path",
 		}
-		params.Schedule = packed[key].(string)
+		params.Task = packed[key].(string)
 	}
 	return params
 }
 
-func decodeResumeScheduleParams(args [1]string, argsEscaped bool, r *http.Request) (params ResumeScheduleParams, _ error) {
-	// Decode path: schedule.
+func decodeResumeTaskParams(args [1]string, argsEscaped bool, r *http.Request) (params ResumeTaskParams, _ error) {
+	// Decode path: task.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -4910,7 +4591,7 @@ func decodeResumeScheduleParams(args [1]string, argsEscaped bool, r *http.Reques
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "schedule",
+				Param:   "task",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -4927,7 +4608,27 @@ func decodeResumeScheduleParams(args [1]string, argsEscaped bool, r *http.Reques
 					return err
 				}
 
-				params.Schedule = c
+				params.Task = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Task)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -4938,7 +4639,93 @@ func decodeResumeScheduleParams(args [1]string, argsEscaped bool, r *http.Reques
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "schedule",
+			Name: "task",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ResumeThreadParams is parameters of resume-thread operation.
+type ResumeThreadParams struct {
+	// A thread id. Subagents are threads as well.
+	Thread string
+}
+
+func unpackResumeThreadParams(packed middleware.Parameters) (params ResumeThreadParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "path",
+		}
+		params.Thread = packed[key].(string)
+	}
+	return params
+}
+
+func decodeResumeThreadParams(args [1]string, argsEscaped bool, r *http.Request) (params ResumeThreadParams, _ error) {
+	// Decode path: thread.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "thread",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
 			In:   "path",
 			Err:  err,
 		}
@@ -4948,6 +4735,7 @@ func decodeResumeScheduleParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // RevertThreadParams is parameters of revert-thread operation.
 type RevertThreadParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
@@ -4993,6 +4781,26 @@ func decodeRevertThreadParams(args [1]string, argsEscaped bool, r *http.Request)
 				}
 
 				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -5076,8 +4884,181 @@ func decodeRotateChannelSecretParams(args [1]string, argsEscaped bool, r *http.R
 	return params, nil
 }
 
+// RunCommandParams is parameters of run-command operation.
+type RunCommandParams struct {
+	// A thread id. Subagents are threads as well.
+	Thread string
+}
+
+func unpackRunCommandParams(packed middleware.Parameters) (params RunCommandParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "path",
+		}
+		params.Thread = packed[key].(string)
+	}
+	return params
+}
+
+func decodeRunCommandParams(args [1]string, argsEscaped bool, r *http.Request) (params RunCommandParams, _ error) {
+	// Decode path: thread.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "thread",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// RunTaskParams is parameters of run-task operation.
+type RunTaskParams struct {
+	// A task id.
+	Task string
+}
+
+func unpackRunTaskParams(packed middleware.Parameters) (params RunTaskParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "task",
+			In:   "path",
+		}
+		params.Task = packed[key].(string)
+	}
+	return params
+}
+
+func decodeRunTaskParams(args [1]string, argsEscaped bool, r *http.Request) (params RunTaskParams, _ error) {
+	// Decode path: task.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "task",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Task = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Task)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "task",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SendMessageParams is parameters of send-message operation.
 type SendMessageParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
@@ -5127,75 +5108,22 @@ func decodeSendMessageParams(args [1]string, argsEscaped bool, r *http.Request) 
 			}(); err != nil {
 				return err
 			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// SendSubagentMessageParams is parameters of send-subagent-message operation.
-type SendSubagentMessageParams struct {
-	Thread   string
-	Subagent string
-}
-
-func unpackSendSubagentMessageParams(packed middleware.Parameters) (params SendSubagentMessageParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "subagent",
-			In:   "path",
-		}
-		params.Subagent = packed[key].(string)
-	}
-	return params
-}
-
-func decodeSendSubagentMessageParams(args [2]string, argsEscaped bool, r *http.Request) (params SendSubagentMessageParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
 			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
 				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
 				return nil
 			}(); err != nil {
 				return err
@@ -5207,51 +5135,6 @@ func decodeSendSubagentMessageParams(args [2]string, argsEscaped bool, r *http.R
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: subagent.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "subagent",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Subagent = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "subagent",
 			In:   "path",
 			Err:  err,
 		}
@@ -5324,24 +5207,34 @@ func decodeSetSkillEnabledParams(args [1]string, argsEscaped bool, r *http.Reque
 	return params, nil
 }
 
-// StartTaskParams is parameters of start-task operation.
-type StartTaskParams struct {
-	Task string
+// SubmitToolResultParams is parameters of submit-tool-result operation.
+type SubmitToolResultParams struct {
+	// A thread id. Subagents are threads as well.
+	Thread string
+	// A transcript item id.
+	Item string
 }
 
-func unpackStartTaskParams(packed middleware.Parameters) (params StartTaskParams) {
+func unpackSubmitToolResultParams(packed middleware.Parameters) (params SubmitToolResultParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "task",
+			Name: "thread",
 			In:   "path",
 		}
-		params.Task = packed[key].(string)
+		params.Thread = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "item",
+			In:   "path",
+		}
+		params.Item = packed[key].(string)
 	}
 	return params
 }
 
-func decodeStartTaskParams(args [1]string, argsEscaped bool, r *http.Request) (params StartTaskParams, _ error) {
-	// Decode path: task.
+func decodeSubmitToolResultParams(args [2]string, argsEscaped bool, r *http.Request) (params SubmitToolResultParams, _ error) {
+	// Decode path: thread.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -5353,7 +5246,7 @@ func decodeStartTaskParams(args [1]string, argsEscaped bool, r *http.Request) (p
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "task",
+				Param:   "thread",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -5370,7 +5263,27 @@ func decodeStartTaskParams(args [1]string, argsEscaped bool, r *http.Request) (p
 					return err
 				}
 
-				params.Task = c
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -5381,37 +5294,16 @@ func decodeStartTaskParams(args [1]string, argsEscaped bool, r *http.Request) (p
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "task",
+			Name: "thread",
 			In:   "path",
 			Err:  err,
 		}
 	}
-	return params, nil
-}
-
-// SubmitDynamicCallResultParams is parameters of submit-dynamic-call-result operation.
-type SubmitDynamicCallResultParams struct {
-	// The id of the tool call entry in the conversation.
-	Call string
-}
-
-func unpackSubmitDynamicCallResultParams(packed middleware.Parameters) (params SubmitDynamicCallResultParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "call",
-			In:   "path",
-		}
-		params.Call = packed[key].(string)
-	}
-	return params
-}
-
-func decodeSubmitDynamicCallResultParams(args [1]string, argsEscaped bool, r *http.Request) (params SubmitDynamicCallResultParams, _ error) {
-	// Decode path: call.
+	// Decode path: item.
 	if err := func() error {
-		param := args[0]
+		param := args[1]
 		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -5419,7 +5311,7 @@ func decodeSubmitDynamicCallResultParams(args [1]string, argsEscaped bool, r *ht
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "call",
+				Param:   "item",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -5436,7 +5328,27 @@ func decodeSubmitDynamicCallResultParams(args [1]string, argsEscaped bool, r *ht
 					return err
 				}
 
-				params.Call = c
+				params.Item = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Item)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -5447,7 +5359,7 @@ func decodeSubmitDynamicCallResultParams(args [1]string, argsEscaped bool, r *ht
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "call",
+			Name: "item",
 			In:   "path",
 			Err:  err,
 		}
@@ -5513,71 +5425,6 @@ func decodeSubmitWeixinVerifyCodeParams(args [1]string, argsEscaped bool, r *htt
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "login",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// TriggerScheduleParams is parameters of trigger-schedule operation.
-type TriggerScheduleParams struct {
-	Schedule string
-}
-
-func unpackTriggerScheduleParams(packed middleware.Parameters) (params TriggerScheduleParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "schedule",
-			In:   "path",
-		}
-		params.Schedule = packed[key].(string)
-	}
-	return params
-}
-
-func decodeTriggerScheduleParams(args [1]string, argsEscaped bool, r *http.Request) (params TriggerScheduleParams, _ error) {
-	// Decode path: schedule.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "schedule",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Schedule = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "schedule",
 			In:   "path",
 			Err:  err,
 		}
@@ -5652,6 +5499,7 @@ func decodeUpdateChannelParams(args [1]string, argsEscaped bool, r *http.Request
 
 // UpdateFolderParams is parameters of update-folder operation.
 type UpdateFolderParams struct {
+	// A folder id.
 	Folder string
 }
 
@@ -5701,6 +5549,26 @@ func decodeUpdateFolderParams(args [1]string, argsEscaped bool, r *http.Request)
 			}(); err != nil {
 				return err
 			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Folder)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		} else {
 			return validate.ErrFieldRequired
 		}
@@ -5715,191 +5583,9 @@ func decodeUpdateFolderParams(args [1]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
-// UpdateScheduleParams is parameters of update-schedule operation.
-type UpdateScheduleParams struct {
-	Schedule string
-}
-
-func unpackUpdateScheduleParams(packed middleware.Parameters) (params UpdateScheduleParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "schedule",
-			In:   "path",
-		}
-		params.Schedule = packed[key].(string)
-	}
-	return params
-}
-
-func decodeUpdateScheduleParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateScheduleParams, _ error) {
-	// Decode path: schedule.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "schedule",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Schedule = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "schedule",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// UpdateSubagentParams is parameters of update-subagent operation.
-type UpdateSubagentParams struct {
-	Thread   string
-	Subagent string
-}
-
-func unpackUpdateSubagentParams(packed middleware.Parameters) (params UpdateSubagentParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "thread",
-			In:   "path",
-		}
-		params.Thread = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "subagent",
-			In:   "path",
-		}
-		params.Subagent = packed[key].(string)
-	}
-	return params
-}
-
-func decodeUpdateSubagentParams(args [2]string, argsEscaped bool, r *http.Request) (params UpdateSubagentParams, _ error) {
-	// Decode path: thread.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "thread",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Thread = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "thread",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: subagent.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "subagent",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Subagent = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "subagent",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // UpdateTaskParams is parameters of update-task operation.
 type UpdateTaskParams struct {
+	// A task id.
 	Task string
 }
 
@@ -5949,6 +5635,26 @@ func decodeUpdateTaskParams(args [1]string, argsEscaped bool, r *http.Request) (
 			}(); err != nil {
 				return err
 			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Task)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		} else {
 			return validate.ErrFieldRequired
 		}
@@ -5965,6 +5671,7 @@ func decodeUpdateTaskParams(args [1]string, argsEscaped bool, r *http.Request) (
 
 // UpdateThreadParams is parameters of update-thread operation.
 type UpdateThreadParams struct {
+	// A thread id. Subagents are threads as well.
 	Thread string
 }
 
@@ -6010,6 +5717,26 @@ func decodeUpdateThreadParams(args [1]string, argsEscaped bool, r *http.Request)
 				}
 
 				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err

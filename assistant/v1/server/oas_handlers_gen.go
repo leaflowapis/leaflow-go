@@ -35,18 +35,18 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 
 // handleAnswerQuestionRequest handles answer-question operation.
 //
-// The question id comes from the conversation document's `wait`. An already-answered question also
-// returns 204 — another tab may have submitted first, or the auto-answer window may have expired,
-// and in both cases the turn has already continued with an answer.
+// Answers an `ask` tool call. Its questions are in the item's `questions`. An item that is already
+// answered also succeeds: another tab may have answered first, or the auto-answer window may have
+// passed, and either way the turn has continued.
 //
-// POST /api/v1/threads/{thread}/questions/{item}
+// POST /api/v1/threads/{thread}/items/{item}/answer
 func (s *Server) handleAnswerQuestionRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("answer-question"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/questions/{item}"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/items/{item}/answer"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -208,7 +208,7 @@ func (s *Server) handleAnswerQuestionRequest(args [2]string, argsEscaped bool, w
 		}
 
 		type (
-			Request  = *AnswerRequestBody
+			Request  = *AnswerQuestionRequestBody
 			Params   = AnswerQuestionParams
 			Response = *AnswerQuestionNoContent
 		)
@@ -456,16 +456,17 @@ func (s *Server) handleBeginWeixinLoginRequest(args [1]string, argsEscaped bool,
 	}
 }
 
-// handleCancelTaskRequest handles cancel-task operation.
+// handleCancelTaskRunRequest handles cancel-task-run operation.
 //
-// Cancel task.
+// Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
+// running.
 //
 // POST /api/v1/tasks/{task}/cancel
-func (s *Server) handleCancelTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleCancelTaskRunRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("cancel-task"),
+		otelogen.OperationID("cancel-task-run"),
 		semconv.HTTPRequestMethodKey.String("POST"),
 		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/cancel"),
 	}
@@ -473,7 +474,7 @@ func (s *Server) handleCancelTaskRequest(args [1]string, argsEscaped bool, w htt
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CancelTaskOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CancelTaskRunOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -528,15 +529,15 @@ func (s *Server) handleCancelTaskRequest(args [1]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: CancelTaskOperation,
-			ID:   "cancel-task",
+			Name: CancelTaskRunOperation,
+			ID:   "cancel-task-run",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CancelTaskOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, CancelTaskRunOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -578,7 +579,7 @@ func (s *Server) handleCancelTaskRequest(args [1]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeCancelTaskParams(args, argsEscaped, r)
+	params, err := decodeCancelTaskRunParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -591,13 +592,13 @@ func (s *Server) handleCancelTaskRequest(args [1]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *CancelTaskOK
+	var response *TaskResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CancelTaskOperation,
-			OperationSummary: "Cancel task",
-			OperationID:      "cancel-task",
+			OperationName:    CancelTaskRunOperation,
+			OperationSummary: "Cancel the running run",
+			OperationID:      "cancel-task-run",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -611,8 +612,8 @@ func (s *Server) handleCancelTaskRequest(args [1]string, argsEscaped bool, w htt
 
 		type (
 			Request  = struct{}
-			Params   = CancelTaskParams
-			Response = *CancelTaskOK
+			Params   = CancelTaskRunParams
+			Response = *TaskResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -621,14 +622,14 @@ func (s *Server) handleCancelTaskRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackCancelTaskParams,
+			unpackCancelTaskRunParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.CancelTask(ctx, params)
+				response, err = s.h.CancelTaskRun(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.CancelTask(ctx, params)
+		response, err = s.h.CancelTaskRun(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -647,7 +648,7 @@ func (s *Server) handleCancelTaskRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeCancelTaskResponse(response, w, span); err != nil {
+	if err := encodeCancelTaskRunResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1059,6 +1060,211 @@ func (s *Server) handleCheckSenderRequest(args [1]string, argsEscaped bool, w ht
 	}
 
 	if err := encodeCheckSenderResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCompactThreadRequest handles compact-thread operation.
+//
+// Starts a compaction turn that summarizes the history before the latest user message, the same way
+// the service does automatically when the context window fills up. The result appears in the
+// transcript as a `compaction` item and the turn reports its own token usage.
+//
+// Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
+// NOTHING_TO_COMPACT when there is no history to summarize.
+//
+// POST /api/v1/threads/{thread}/compact
+func (s *Server) handleCompactThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("compact-thread"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/compact"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CompactThreadOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CompactThreadOperation,
+			ID:   "compact-thread",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CompactThreadOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCompactThreadParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *TurnStartedResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CompactThreadOperation,
+			OperationSummary: "Compact the conversation now",
+			OperationID:      "compact-thread",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "thread",
+					In:   "path",
+				}: params.Thread,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = CompactThreadParams
+			Response = *TurnStartedResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCompactThreadParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CompactThread(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CompactThread(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCompactThreadResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1691,12 +1897,11 @@ func (s *Server) handleCreateChannelRequest(args [0]string, argsEscaped bool, w 
 
 // handleCreateFolderRequest handles create-folder operation.
 //
-// A folder groups conversations in the sidebar and does nothing else. The assistant is never told
-// which folder a conversation is in, and a conversation behaves exactly the same inside one as
-// outside: no shared instructions, no shared files, no shared memory.
+// A folder groups conversations on the board and does nothing else: the assistant is never told which
+// folder a conversation is in. New folders go after the existing ones.
 //
-// Names are unique within an account's folders in this project, because the only way to aim at a
-// folder is to read its name.
+// Names are unique among the caller's folders in this project; a duplicate fails with 409 and code
+// FOLDER_EXISTS.
 //
 // POST /api/v1/folders
 func (s *Server) handleCreateFolderRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1894,24 +2099,34 @@ func (s *Server) handleCreateFolderRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleCreateScheduleRequest handles create-schedule operation.
+// handleCreateRealtimeTicketRequest handles create-realtime-ticket operation.
 //
-// Create schedule.
+// Returns the address and a short-lived ticket for the realtime WebSocket. Open
+// `{url}?ticket={ticket}`; the ticket stands in for the bearer token, which a browser cannot set on a
+// WebSocket. One connection carries every subscription of a client.
 //
-// POST /api/v1/threads/{thread}/schedules
-func (s *Server) handleCreateScheduleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// Messages are JSON text frames. The client sends `RealtimeClientMessage` and receives
+// `RealtimeServerMessage`. Subscribe to `workspace` for every conversation, folder and task of the
+// caller in this project, and to `thread:{id}` for the transcript of one conversation. A transcript
+// subscription takes the `streamCursor` from list-thread-items and replays what was written after it;
+// when the cursor is too old the server sends `resync` and the client reads the items again.
+//
+// Reconnect with a new ticket after the connection closes. Ping at least every 30 seconds.
+//
+// POST /api/v1/realtime/tickets
+func (s *Server) handleCreateRealtimeTicketRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-schedule"),
+		otelogen.OperationID("create-realtime-ticket"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/schedules"),
+		semconv.HTTPRouteKey.String("/api/v1/realtime/tickets"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateScheduleOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateRealtimeTicketOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1966,15 +2181,15 @@ func (s *Server) handleCreateScheduleRequest(args [1]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: CreateScheduleOperation,
-			ID:   "create-schedule",
+			Name: CreateRealtimeTicketOperation,
+			ID:   "create-realtime-ticket",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateScheduleOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateRealtimeTicketOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -2016,56 +2231,26 @@ func (s *Server) handleCreateScheduleRequest(args [1]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeCreateScheduleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateScheduleRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
 
-	var response *ScheduleResource
+	var response *RealtimeTicketResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CreateScheduleOperation,
-			OperationSummary: "Create schedule",
-			OperationID:      "create-schedule",
-			Body:             request,
+			OperationName:    CreateRealtimeTicketOperation,
+			OperationSummary: "Issue a realtime ticket",
+			OperationID:      "create-realtime-ticket",
+			Body:             nil,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
-			Request  = *CreateScheduleRequestBody
-			Params   = CreateScheduleParams
-			Response = *ScheduleResource
+			Request  = struct{}
+			Params   = struct{}
+			Response = *RealtimeTicketResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2074,14 +2259,14 @@ func (s *Server) handleCreateScheduleRequest(args [1]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackCreateScheduleParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateSchedule(ctx, request, params)
+				response, err = s.h.CreateRealtimeTicket(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateSchedule(ctx, request, params)
+		response, err = s.h.CreateRealtimeTicket(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2100,222 +2285,7 @@ func (s *Server) handleCreateScheduleRequest(args [1]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeCreateScheduleResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateSubagentRequest handles create-subagent operation.
-//
-// Create subagent.
-//
-// POST /api/v1/threads/{thread}/subagents
-func (s *Server) handleCreateSubagentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-subagent"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/subagents"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateSubagentOperation,
-			ID:   "create-subagent",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateSubagentOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateSubagentParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateSubagentRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *SubagentResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateSubagentOperation,
-			OperationSummary: "Create subagent",
-			OperationID:      "create-subagent",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *CreateSubagentRequestBody
-			Params   = CreateSubagentParams
-			Response = *SubagentResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateSubagentParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateSubagent(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateSubagent(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateSubagentResponse(response, w, span); err != nil {
+	if err := encodeCreateRealtimeTicketResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -2326,16 +2296,25 @@ func (s *Server) handleCreateSubagentRequest(args [1]string, argsEscaped bool, w
 
 // handleCreateTaskRequest handles create-task operation.
 //
-// Create task.
+// A task does something on a trigger and reports to a conversation. Its action either sends a prompt
+// to the conversation, which starts a turn there, or runs a command on an instance and sends the
+// result to the conversation when it ends.
 //
-// POST /api/v1/threads/{thread}/tasks
-func (s *Server) handleCreateTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// `trigger.type` `now` runs once immediately; `at` runs once at `runAt`; `interval` repeats every
+// `intervalSeconds` from `anchorAt`; `cron` repeats on a cron expression in `timezone`. Each execution
+// is a run, listed under /runs.
+//
+// Fails with 404 when the conversation does not exist and with 409 and code THREAD_ARCHIVED when it is
+// archived.
+//
+// POST /api/v1/tasks
+func (s *Server) handleCreateTaskRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/tasks"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -2446,16 +2425,6 @@ func (s *Server) handleCreateTaskRequest(args [1]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeCreateTaskParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
 	request, rawBody, close, err := s.decodeCreateTaskRequest(r)
@@ -2479,22 +2448,17 @@ func (s *Server) handleCreateTaskRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateTaskOperation,
-			OperationSummary: "Create task",
+			OperationSummary: "Create a task",
 			OperationID:      "create-task",
 			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
 			Request  = *CreateTaskRequestBody
-			Params   = CreateTaskParams
+			Params   = struct{}
 			Response = *TaskResource
 		)
 		response, err = middleware.HookMiddleware[
@@ -2504,14 +2468,14 @@ func (s *Server) handleCreateTaskRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackCreateTaskParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateTask(ctx, request, params)
+				response, err = s.h.CreateTask(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateTask(ctx, request, params)
+		response, err = s.h.CreateTask(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2541,14 +2505,15 @@ func (s *Server) handleCreateTaskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleCreateThreadRequest handles create-thread operation.
 //
-// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is
-// accepted only while model selection is enabled; otherwise the request fails with 403 and code
-// MODEL_SELECTION_DISABLED.
+// Creates a conversation and, when `message` is given, sends it as the first message in the same
+// request, so starting a task is one round trip.
 //
-// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed
-// is retained and uses the default when a turn starts. This also handles a catalogue change between
-// displaying the selector and submitting the choice. Creating a conversation does not contact a model
-// provider and remains possible when generation is unavailable.
+// The model is chosen in this order: `modelId` from the request, the caller's default from
+// /api/v1/settings, then the first model in the Canopy catalogue that can run an agent. Fails with 422
+// and code MODEL_UNAVAILABLE when the chosen model cannot run an agent, and with 422 and code
+// REASONING_UNSUPPORTED when `reasoningEffort` is given for a model without reasoning.
+//
+// Without `message`, creating a conversation does not contact a model provider.
 //
 // POST /api/v1/threads
 func (s *Server) handleCreateThreadRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2686,7 +2651,7 @@ func (s *Server) handleCreateThreadRequest(args [0]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response *ThreadSummaryResource
+	var response *CreateThreadResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -2702,7 +2667,7 @@ func (s *Server) handleCreateThreadRequest(args [0]string, argsEscaped bool, w h
 		type (
 			Request  = *CreateThreadRequestBody
 			Params   = struct{}
-			Response = *ThreadSummaryResource
+			Response = *CreateThreadResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2946,26 +2911,29 @@ func (s *Server) handleCreateUploadRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleDecideApprovalRequest handles decide-approval operation.
+// handleDecideToolCallsRequest handles decide-tool-calls operation.
 //
-// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same
-// batch again neither changes a decision already in effect nor reports an error. Returns 404 when the
-// batch does not belong to that conversation.
+// Decides the tool calls the conversation is waiting on, listed in `pendingAction.itemIds`. One
+// decision applies to the whole batch, so `itemIds` must name exactly the calls awaiting approval.
 //
-// POST /api/v1/threads/{thread}/approvals/{batch}
-func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// Repeating a decision that is already in effect succeeds. Fails with 409 and code APPROVAL_MISMATCH
+// when `itemIds` is not the current batch, for example because another tab decided first and the
+// assistant has moved on.
+//
+// POST /api/v1/threads/{thread}/approvals
+func (s *Server) handleDecideToolCallsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("decide-approval"),
+		otelogen.OperationID("decide-tool-calls"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/approvals/{batch}"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/approvals"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DecideApprovalOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DecideToolCallsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -3020,15 +2988,15 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DecideApprovalOperation,
-			ID:   "decide-approval",
+			Name: DecideToolCallsOperation,
+			ID:   "decide-tool-calls",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DecideApprovalOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, DecideToolCallsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -3070,7 +3038,7 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeDecideApprovalParams(args, argsEscaped, r)
+	params, err := decodeDecideToolCallsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -3082,7 +3050,7 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeDecideApprovalRequest(r)
+	request, rawBody, close, err := s.decodeDecideToolCallsRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -3098,13 +3066,13 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *DecideApprovalNoContent
+	var response *DecideToolCallsNoContent
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DecideApprovalOperation,
-			OperationSummary: "Approve or decline a batch of tool calls",
-			OperationID:      "decide-approval",
+			OperationName:    DecideToolCallsOperation,
+			OperationSummary: "Approve or decline tool calls",
+			OperationID:      "decide-tool-calls",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -3112,18 +3080,14 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 					Name: "thread",
 					In:   "path",
 				}: params.Thread,
-				{
-					Name: "batch",
-					In:   "path",
-				}: params.Batch,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *DecideRequestBody
-			Params   = DecideApprovalParams
-			Response = *DecideApprovalNoContent
+			Request  = *DecideToolCallsRequestBody
+			Params   = DecideToolCallsParams
+			Response = *DecideToolCallsNoContent
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3132,14 +3096,14 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackDecideApprovalParams,
+			unpackDecideToolCallsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DecideApproval(ctx, request, params)
+				err = s.h.DecideToolCalls(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.DecideApproval(ctx, request, params)
+		err = s.h.DecideToolCalls(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -3158,7 +3122,7 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeDecideApprovalResponse(response, w, span); err != nil {
+	if err := encodeDecideToolCallsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -3570,11 +3534,9 @@ func (s *Server) handleDeleteChannelRequest(args [1]string, argsEscaped bool, w 
 
 // handleDeleteFolderRequest handles delete-folder operation.
 //
-// The conversations inside are not deleted. They leave the folder and go back to the ungrouped list,
-// where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and
-// deleting a conversation is a different request.
-//
-// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+// The conversations inside are not deleted; they move to the end of the inbox. The inbox cannot be
+// deleted and fails with 409 and code INBOX_READ_ONLY. Deleting a folder that is already gone
+// succeeds.
 //
 // DELETE /api/v1/folders/{folder}
 func (s *Server) handleDeleteFolderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3973,206 +3935,6 @@ func (s *Server) handleDeleteMemoryRequest(args [1]string, argsEscaped bool, w h
 	}
 }
 
-// handleDeleteScheduleRequest handles delete-schedule operation.
-//
-// Delete schedule.
-//
-// DELETE /api/v1/schedules/{schedule}
-func (s *Server) handleDeleteScheduleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-schedule"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/schedules/{schedule}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteScheduleOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteScheduleOperation,
-			ID:   "delete-schedule",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteScheduleOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeDeleteScheduleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DeleteScheduleOK
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    DeleteScheduleOperation,
-			OperationSummary: "Delete schedule",
-			OperationID:      "delete-schedule",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "schedule",
-					In:   "path",
-				}: params.Schedule,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = DeleteScheduleParams
-			Response = *DeleteScheduleOK
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackDeleteScheduleParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DeleteSchedule(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		err = s.h.DeleteSchedule(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeDeleteScheduleResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleDeleteSkillRequest handles delete-skill operation.
 //
 // A built-in skill of the same name, if there was one, becomes visible again.
@@ -4373,213 +4135,10 @@ func (s *Server) handleDeleteSkillRequest(args [1]string, argsEscaped bool, w ht
 	}
 }
 
-// handleDeleteSubagentRequest handles delete-subagent operation.
-//
-// Delete subagent.
-//
-// DELETE /api/v1/threads/{thread}/subagents/{subagent}
-func (s *Server) handleDeleteSubagentRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-subagent"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/subagents/{subagent}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteSubagentOperation,
-			ID:   "delete-subagent",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteSubagentOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeDeleteSubagentParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DeleteSubagentOK
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    DeleteSubagentOperation,
-			OperationSummary: "Delete subagent",
-			OperationID:      "delete-subagent",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-				{
-					Name: "subagent",
-					In:   "path",
-				}: params.Subagent,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = DeleteSubagentParams
-			Response = *DeleteSubagentOK
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackDeleteSubagentParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DeleteSubagent(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		err = s.h.DeleteSubagent(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeDeleteSubagentResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleDeleteTaskRequest handles delete-task operation.
 //
-// Delete task.
+// Cancels a run in progress and removes the task. Its runs stay readable in the conversation's
+// transcript.
 //
 // DELETE /api/v1/tasks/{task}
 func (s *Server) handleDeleteTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4712,12 +4271,12 @@ func (s *Server) handleDeleteTaskRequest(args [1]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *DeleteTaskOK
+	var response *DeleteTaskNoContent
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteTaskOperation,
-			OperationSummary: "Delete task",
+			OperationSummary: "Delete a task",
 			OperationID:      "delete-task",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4733,7 +4292,7 @@ func (s *Server) handleDeleteTaskRequest(args [1]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = DeleteTaskParams
-			Response = *DeleteTaskOK
+			Response = *DeleteTaskNoContent
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4779,19 +4338,11 @@ func (s *Server) handleDeleteTaskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleDeleteThreadRequest handles delete-thread operation.
 //
-// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer
-// find it either — neither by searching past conversations nor by reading one back.
+// Removes the conversation and its subagents from every list and makes them unreachable by id,
+// including for the assistant. Deleting cannot be undone; archive instead to keep it readable.
 //
-// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived
-// conversation is still there and still readable, it just takes no new input; a deleted one is gone
-// from view. Archiving can be undone; this cannot.
-//
-// What survives is the record itself, because a conversation with this assistant is an account of what
-// was done to real infrastructure — which machine was changed, which disk was removed. That record
-// is kept even though nobody can reach it here.
-//
-// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and
-// changes nothing.
+// Fails with 409 and code THREAD_RUNNING while a turn is running. Deleting an already deleted
+// conversation succeeds.
 //
 // DELETE /api/v1/threads/{thread}
 func (s *Server) handleDeleteThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5195,7 +4746,7 @@ func (s *Server) handleDeleteUploadRequest(args [1]string, argsEscaped bool, w h
 // because the content never changes. Returns 404 when the attachment does not exist or does not belong
 // to the current user.
 //
-// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the
+// Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
 // address of an `<img>`. Everything else is served as `application/octet-stream` with
 // `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
 // its uploader chose, and serving it back inline would run it on this origin.
@@ -5798,9 +5349,7 @@ func (s *Server) handleGetChannelRequest(args [1]string, argsEscaped bool, w htt
 
 // handleGetFolderRequest handles get-folder operation.
 //
-// The list returns every folder at once, so this is for the case the list does not cover: a page
-// opened straight at a folder, holding nothing but the id from the address bar. Its conversations are
-// a separate request — `GET /api/v1/threads?folder=<id>`.
+// Its conversations are read with search-threads and `folderId`.
 //
 // GET /api/v1/folders/{folder}
 func (s *Server) handleGetFolderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5938,7 +5487,7 @@ func (s *Server) handleGetFolderRequest(args [1]string, argsEscaped bool, w http
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetFolderOperation,
-			OperationSummary: "Fetch one folder",
+			OperationSummary: "Get a folder",
 			OperationID:      "get-folder",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5998,24 +5547,26 @@ func (s *Server) handleGetFolderRequest(args [1]string, argsEscaped bool, w http
 	}
 }
 
-// handleGetModelConfigurationRequest handles getModelConfiguration operation.
+// handleGetSettingsRequest handles get-settings operation.
 //
-// Model metadata is provided by Canopy. This endpoint exposes only assistant deployment policy.
+// The caller's assistant settings in this project. `defaultModel` is what a new conversation uses when
+// it names no model: the caller's choice, or the first model in the Canopy catalogue that can run an
+// agent.
 //
-// GET /api/v1/model-configuration
-func (s *Server) handleGetModelConfigurationRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/settings
+func (s *Server) handleGetSettingsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("getModelConfiguration"),
+		otelogen.OperationID("get-settings"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/model-configuration"),
+		semconv.HTTPRouteKey.String("/api/v1/settings"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetModelConfigurationOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetSettingsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -6070,15 +5621,15 @@ func (s *Server) handleGetModelConfigurationRequest(args [0]string, argsEscaped 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetModelConfigurationOperation,
-			ID:   "getModelConfiguration",
+			Name: GetSettingsOperation,
+			ID:   "get-settings",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetModelConfigurationOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetSettingsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -6123,13 +5674,13 @@ func (s *Server) handleGetModelConfigurationRequest(args [0]string, argsEscaped 
 
 	var rawBody []byte
 
-	var response *ModelConfigurationResource
+	var response *SettingsResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetModelConfigurationOperation,
-			OperationSummary: "Read assistant model selection policy",
-			OperationID:      "getModelConfiguration",
+			OperationName:    GetSettingsOperation,
+			OperationSummary: "Get settings",
+			OperationID:      "get-settings",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -6139,7 +5690,7 @@ func (s *Server) handleGetModelConfigurationRequest(args [0]string, argsEscaped 
 		type (
 			Request  = struct{}
 			Params   = struct{}
-			Response = *ModelConfigurationResource
+			Response = *SettingsResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6150,12 +5701,12 @@ func (s *Server) handleGetModelConfigurationRequest(args [0]string, argsEscaped 
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetModelConfiguration(ctx)
+				response, err = s.h.GetSettings(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetModelConfiguration(ctx)
+		response, err = s.h.GetSettings(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -6174,207 +5725,7 @@ func (s *Server) handleGetModelConfigurationRequest(args [0]string, argsEscaped 
 		return
 	}
 
-	if err := encodeGetModelConfigurationResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetScheduleRequest handles get-schedule operation.
-//
-// Get schedule.
-//
-// GET /api/v1/schedules/{schedule}
-func (s *Server) handleGetScheduleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-schedule"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/schedules/{schedule}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetScheduleOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetScheduleOperation,
-			ID:   "get-schedule",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetScheduleOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetScheduleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ScheduleResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetScheduleOperation,
-			OperationSummary: "Get schedule",
-			OperationID:      "get-schedule",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "schedule",
-					In:   "path",
-				}: params.Schedule,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetScheduleParams
-			Response = *ScheduleResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetScheduleParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetSchedule(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetSchedule(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetScheduleResponse(response, w, span); err != nil {
+	if err := encodeGetSettingsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -6583,213 +5934,9 @@ func (s *Server) handleGetSkillRequest(args [1]string, argsEscaped bool, w http.
 	}
 }
 
-// handleGetSubagentRequest handles get-subagent operation.
-//
-// Get subagent.
-//
-// GET /api/v1/threads/{thread}/subagents/{subagent}
-func (s *Server) handleGetSubagentRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-subagent"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/subagents/{subagent}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetSubagentOperation,
-			ID:   "get-subagent",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetSubagentOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetSubagentParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *SubagentResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetSubagentOperation,
-			OperationSummary: "Get subagent",
-			OperationID:      "get-subagent",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-				{
-					Name: "subagent",
-					In:   "path",
-				}: params.Subagent,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetSubagentParams
-			Response = *SubagentResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetSubagentParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetSubagent(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetSubagent(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetSubagentResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleGetTaskRequest handles get-task operation.
 //
-// Get task.
+// Get a task.
 //
 // GET /api/v1/tasks/{task}
 func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6927,7 +6074,7 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetTaskOperation,
-			OperationSummary: "Get task",
+			OperationSummary: "Get a task",
 			OperationID:      "get-task",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6989,9 +6136,9 @@ func (s *Server) handleGetTaskRequest(args [1]string, argsEscaped bool, w http.R
 
 // handleGetThreadRequest handles get-thread operation.
 //
-// The complete current state of a conversation, for the first render. Its `stream` gives the address
-// and admission ticket for live output, and what that stream pushes are incremental edits to this same
-// document, so the same rendering logic applies.
+// The conversation's state: model, reasoning effort, approval mode, what it is doing now, its plan,
+// what it is waiting for, context usage and token usage. The transcript is read separately from
+// /items.
 //
 // GET /api/v1/threads/{thread}
 func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7124,12 +6271,12 @@ func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http
 
 	var rawBody []byte
 
-	var response *DocumentResource
+	var response *ThreadResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetThreadOperation,
-			OperationSummary: "Fetch the conversation document",
+			OperationSummary: "Get a conversation",
 			OperationID:      "get-thread",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7145,7 +6292,7 @@ func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http
 		type (
 			Request  = struct{}
 			Params   = GetThreadParams
-			Response = *DocumentResource
+			Response = *ThreadResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7775,215 +6922,13 @@ func (s *Server) handleGetWeixinLoginRequest(args [1]string, argsEscaped bool, w
 	}
 }
 
-// handleInterruptSubagentRequest handles interrupt-subagent operation.
-//
-// Interrupt subagent.
-//
-// POST /api/v1/threads/{thread}/subagents/{subagent}/interrupt
-func (s *Server) handleInterruptSubagentRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("interrupt-subagent"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/subagents/{subagent}/interrupt"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), InterruptSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: InterruptSubagentOperation,
-			ID:   "interrupt-subagent",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, InterruptSubagentOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeInterruptSubagentParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *InterruptSubagentOK
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    InterruptSubagentOperation,
-			OperationSummary: "Interrupt subagent",
-			OperationID:      "interrupt-subagent",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-				{
-					Name: "subagent",
-					In:   "path",
-				}: params.Subagent,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = InterruptSubagentParams
-			Response = *InterruptSubagentOK
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackInterruptSubagentParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.InterruptSubagent(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		err = s.h.InterruptSubagent(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeInterruptSubagentResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleInterruptThreadRequest handles interrupt-thread operation.
 //
-// Calling this on a conversation with no running turn also returns 204 rather than an error — the
-// user pressing stop races with the turn finishing on its own, and both outcomes are the same. This
-// operation remains available while the project is suspended or being cleaned up.
+// Stops this conversation's running turn and discards its queued messages. Subagents keep running;
+// stop them through their own conversations.
+//
+// Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
+// Available while the project is suspended or being cleaned up.
 //
 // POST /api/v1/threads/{thread}/interrupt
 func (s *Server) handleInterruptThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8121,7 +7066,7 @@ func (s *Server) handleInterruptThreadRequest(args [1]string, argsEscaped bool, 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    InterruptThreadOperation,
-			OperationSummary: "Interrupt a running turn",
+			OperationSummary: "Stop the running turn",
 			OperationID:      "interrupt-thread",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8815,28 +7760,25 @@ func (s *Server) handleListChannelsRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleListEarlierItemsRequest handles list-earlier-items operation.
+// handleListCommandsRequest handles list-commands operation.
 //
-// The first render only carries the latest stretch of a conversation; anything above it is fetched
-// here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the
-// response is the cursor for the stretch above that, and null means the top has been reached. The
-// entries have the same shape and the same order (oldest first) as `items` in the document, so they
-// can be prepended as they are.
+// The slash commands a person can type in a conversation, such as /status or /compact. The same
+// commands work in the console and in chat apps, so a client builds its command menu from this list.
 //
-// GET /api/v1/threads/{thread}/earlier
-func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/commands
+func (s *Server) handleListCommandsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-earlier-items"),
+		otelogen.OperationID("list-commands"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/earlier"),
+		semconv.HTTPRouteKey.String("/api/v1/commands"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListEarlierItemsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListCommandsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -8891,15 +7833,15 @@ func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListEarlierItemsOperation,
-			ID:   "list-earlier-items",
+			Name: ListCommandsOperation,
+			ID:   "list-commands",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListEarlierItemsOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ListCommandsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -8941,45 +7883,26 @@ func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeListEarlierItemsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
 
-	var response *EarlierResponseBody
+	var response *CommandListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListEarlierItemsOperation,
-			OperationSummary: "Fetch earlier parts of a conversation",
-			OperationID:      "list-earlier-items",
+			OperationName:    ListCommandsOperation,
+			OperationSummary: "List commands",
+			OperationID:      "list-commands",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-				{
-					Name: "before",
-					In:   "query",
-				}: params.Before,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ListEarlierItemsParams
-			Response = *EarlierResponseBody
+			Params   = struct{}
+			Response = *CommandListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -8988,14 +7911,14 @@ func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackListEarlierItemsParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListEarlierItems(ctx, params)
+				response, err = s.h.ListCommands(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListEarlierItems(ctx, params)
+		response, err = s.h.ListCommands(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -9014,7 +7937,7 @@ func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeListEarlierItemsResponse(response, w, span); err != nil {
+	if err := encodeListCommandsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -9025,10 +7948,9 @@ func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool,
 
 // handleListFoldersRequest handles list-folders operation.
 //
-// The current account's folders in this project, oldest first. That order is fixed and does not react
-// to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever
-// something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many
-// there can be, and all of them come back at once.
+// The caller's folders in this project in their own order, inbox first. Every conversation is in
+// exactly one folder; the inbox holds the ones nobody filed. Not paginated: the number of folders is
+// capped and all of them come back at once.
 //
 // GET /api/v1/folders
 func (s *Server) handleListFoldersRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9587,206 +8509,6 @@ func (s *Server) handleListPlatformsRequest(args [0]string, argsEscaped bool, w 
 	}
 }
 
-// handleListSchedulesRequest handles list-schedules operation.
-//
-// List schedules.
-//
-// GET /api/v1/threads/{thread}/schedules
-func (s *Server) handleListSchedulesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-schedules"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/schedules"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListSchedulesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListSchedulesOperation,
-			ID:   "list-schedules",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListSchedulesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListSchedulesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ScheduleListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListSchedulesOperation,
-			OperationSummary: "List schedules",
-			OperationID:      "list-schedules",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListSchedulesParams
-			Response = *ScheduleListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListSchedulesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListSchedules(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListSchedules(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListSchedulesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleListSkillsRequest handles list-skills operation.
 //
 // Everything the assistant can reach in this project, including the ones that are turned off — an
@@ -9976,24 +8698,24 @@ func (s *Server) handleListSkillsRequest(args [0]string, argsEscaped bool, w htt
 	}
 }
 
-// handleListSubagentsRequest handles list-subagents operation.
+// handleListTaskRunsRequest handles list-task-runs operation.
 //
-// List subagents.
+// Newest first.
 //
-// GET /api/v1/threads/{thread}/subagents
-func (s *Server) handleListSubagentsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/tasks/{task}/runs
+func (s *Server) handleListTaskRunsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-subagents"),
+		otelogen.OperationID("list-task-runs"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/subagents"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/runs"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListSubagentsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListTaskRunsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -10048,15 +8770,15 @@ func (s *Server) handleListSubagentsRequest(args [1]string, argsEscaped bool, w 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListSubagentsOperation,
-			ID:   "list-subagents",
+			Name: ListTaskRunsOperation,
+			ID:   "list-task-runs",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListSubagentsOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ListTaskRunsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -10098,7 +8820,7 @@ func (s *Server) handleListSubagentsRequest(args [1]string, argsEscaped bool, w 
 			return
 		}
 	}
-	params, err := decodeListSubagentsParams(args, argsEscaped, r)
+	params, err := decodeListTaskRunsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -10111,430 +8833,16 @@ func (s *Server) handleListSubagentsRequest(args [1]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *SubagentListResponseBody
+	var response *TaskRunListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListSubagentsOperation,
-			OperationSummary: "List subagents",
-			OperationID:      "list-subagents",
+			OperationName:    ListTaskRunsOperation,
+			OperationSummary: "List a task's runs",
+			OperationID:      "list-task-runs",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListSubagentsParams
-			Response = *SubagentListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListSubagentsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListSubagents(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListSubagents(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListSubagentsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListTasksRequest handles list-tasks operation.
-//
-// List tasks.
-//
-// GET /api/v1/threads/{thread}/tasks
-func (s *Server) handleListTasksRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-tasks"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/tasks"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListTasksOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListTasksOperation,
-			ID:   "list-tasks",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListTasksOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListTasksParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *TaskListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListTasksOperation,
-			OperationSummary: "List tasks",
-			OperationID:      "list-tasks",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListTasksParams
-			Response = *TaskListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListTasksParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListTasks(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListTasks(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListTasksResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListThreadsRequest handles list-threads operation.
-//
-// Lists root conversations with execution and usage summaries. Sorting is applied before cursor
-// pagination. Keep identical sorting and filters for subsequent pages. ids requests are bounded
-// batches without pagination.
-//
-// GET /api/v1/threads
-func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-threads"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/threads"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListThreadsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListThreadsOperation,
-			ID:   "list-threads",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListThreadsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListThreadsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ThreadListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListThreadsOperation,
-			OperationSummary: "List conversations",
-			OperationID:      "list-threads",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "q",
-					In:   "query",
-				}: params.Q,
-				{
-					Name: "archived",
-					In:   "query",
-				}: params.Archived,
-				{
-					Name: "folder",
-					In:   "query",
-				}: params.Folder,
 				{
 					Name: "cursor",
 					In:   "query",
@@ -10544,21 +8852,17 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 					In:   "query",
 				}: params.Limit,
 				{
-					Name: "sort",
-					In:   "query",
-				}: params.Sort,
-				{
-					Name: "ids",
-					In:   "query",
-				}: params.Ids,
+					Name: "task",
+					In:   "path",
+				}: params.Task,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ListThreadsParams
-			Response = *ThreadListResponseBody
+			Params   = ListTaskRunsParams
+			Response = *TaskRunListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -10567,14 +8871,14 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 		](
 			m,
 			mreq,
-			unpackListThreadsParams,
+			unpackListTaskRunsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListThreads(ctx, params)
+				response, err = s.h.ListTaskRuns(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListThreads(ctx, params)
+		response, err = s.h.ListTaskRuns(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -10593,7 +8897,441 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 		return
 	}
 
-	if err := encodeListThreadsResponse(response, w, span); err != nil {
+	if err := encodeListTaskRunsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListThreadItemsRequest handles list-thread-items operation.
+//
+// The conversation's transcript, oldest first: messages, reasoning, tool calls and compaction markers.
+// Without `before` or `after` the latest page is returned.
+//
+// Pass `earlier` from the response as `before` to read further up; null means the top has been
+// reached. `after` returns what was written after an ordinal, which a client uses to catch up after a
+// reconnect. Subscribe to `thread:{id}` on /api/v1/realtime with `streamCursor` to follow what is
+// written next.
+//
+// GET /api/v1/threads/{thread}/items
+func (s *Server) handleListThreadItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-thread-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/items"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListThreadItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListThreadItemsOperation,
+			ID:   "list-thread-items",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ListThreadItemsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListThreadItemsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ThreadItemListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListThreadItemsOperation,
+			OperationSummary: "List transcript items",
+			OperationID:      "list-thread-items",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "before",
+					In:   "query",
+				}: params.Before,
+				{
+					Name: "after",
+					In:   "query",
+				}: params.After,
+				{
+					Name: "limit",
+					In:   "query",
+				}: params.Limit,
+				{
+					Name: "thread",
+					In:   "path",
+				}: params.Thread,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListThreadItemsParams
+			Response = *ThreadItemListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListThreadItemsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListThreadItems(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListThreadItems(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListThreadItemsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListThreadTurnsRequest handles list-thread-turns operation.
+//
+// The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
+// long it took and the tokens it used. Cache hit rate is `cachedInputTokens / inputTokens`.
+//
+// `ids` reads the turns behind a page of transcript items in one request and cannot be combined with a
+// cursor.
+//
+// GET /api/v1/threads/{thread}/turns
+func (s *Server) handleListThreadTurnsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-thread-turns"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/turns"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListThreadTurnsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListThreadTurnsOperation,
+			ID:   "list-thread-turns",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ListThreadTurnsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListThreadTurnsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ThreadTurnListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListThreadTurnsOperation,
+			OperationSummary: "List turns",
+			OperationID:      "list-thread-turns",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "ids",
+					In:   "query",
+				}: params.Ids,
+				{
+					Name: "cursor",
+					In:   "query",
+				}: params.Cursor,
+				{
+					Name: "limit",
+					In:   "query",
+				}: params.Limit,
+				{
+					Name: "thread",
+					In:   "path",
+				}: params.Thread,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListThreadTurnsParams
+			Response = *ThreadTurnListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListThreadTurnsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListThreadTurns(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListThreadTurns(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListThreadTurnsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -10787,213 +9525,9 @@ func (s *Server) handleListUploadsRequest(args [0]string, argsEscaped bool, w ht
 	}
 }
 
-// handleListWorkspaceSchedulesRequest handles list-workspace-schedules operation.
-//
-// List schedules in the current workspace.
-//
-// GET /api/v1/schedules
-func (s *Server) handleListWorkspaceSchedulesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-workspace-schedules"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/schedules"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListWorkspaceSchedulesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListWorkspaceSchedulesOperation,
-			ID:   "list-workspace-schedules",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListWorkspaceSchedulesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListWorkspaceSchedulesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ScheduleListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListWorkspaceSchedulesOperation,
-			OperationSummary: "List schedules in the current workspace",
-			OperationID:      "list-workspace-schedules",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "cursor",
-					In:   "query",
-				}: params.Cursor,
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListWorkspaceSchedulesParams
-			Response = *ScheduleListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListWorkspaceSchedulesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListWorkspaceSchedules(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListWorkspaceSchedules(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListWorkspaceSchedulesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleMarkThreadReadRequest handles mark-thread-read operation.
 //
-// Mark a conversation as read.
+// Clears `unread` until the assistant replies again.
 //
 // POST /api/v1/threads/{thread}/read
 func (s *Server) handleMarkThreadReadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11193,7 +9727,8 @@ func (s *Server) handleMarkThreadReadRequest(args [1]string, argsEscaped bool, w
 
 // handleMoveFolderRequest handles move-folder operation.
 //
-// Reorder a folder.
+// Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
+// with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 //
 // POST /api/v1/folders/{folder}/move
 func (s *Server) handleMoveFolderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11406,24 +9941,26 @@ func (s *Server) handleMoveFolderRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleMoveThreadRequest handles move-thread operation.
+// handleOpenRealtimeRequest handles open-realtime operation.
 //
-// Move and reorder a conversation.
+// Upgrades to a WebSocket. The ticket from create-realtime-ticket authenticates the connection; a
+// missing, expired or foreign ticket closes it with code 4401. The 200 response documents the message
+// a client receives on the socket; the endpoint never answers with a plain HTTP body.
 //
-// POST /api/v1/threads/{thread}/move
-func (s *Server) handleMoveThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/realtime
+func (s *Server) handleOpenRealtimeRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("move-thread"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/move"),
+		otelogen.OperationID("open-realtime"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/realtime"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), MoveThreadOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), OpenRealtimeOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -11478,15 +10015,169 @@ func (s *Server) handleMoveThreadRequest(args [1]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: MoveThreadOperation,
-			ID:   "move-thread",
+			Name: OpenRealtimeOperation,
+			ID:   "open-realtime",
+		}
+	)
+	params, err := decodeOpenRealtimeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *RealtimeExchange
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    OpenRealtimeOperation,
+			OperationSummary: "Open the realtime WebSocket",
+			OperationID:      "open-realtime",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "ticket",
+					In:   "query",
+				}: params.Ticket,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = OpenRealtimeParams
+			Response = *RealtimeExchange
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackOpenRealtimeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.OpenRealtime(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.OpenRealtime(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeOpenRealtimeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handlePauseTaskRequest handles pause-task operation.
+//
+// Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
+//
+// POST /api/v1/tasks/{task}/pause
+func (s *Server) handlePauseTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("pause-task"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/pause"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PauseTaskOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: PauseTaskOperation,
+			ID:   "pause-task",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, MoveThreadOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, PauseTaskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -11528,7 +10219,7 @@ func (s *Server) handleMoveThreadRequest(args [1]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeMoveThreadParams(args, argsEscaped, r)
+	params, err := decodePauseTaskParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -11540,7 +10231,212 @@ func (s *Server) handleMoveThreadRequest(args [1]string, argsEscaped bool, w htt
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeMoveThreadRequest(r)
+
+	var response *TaskResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    PauseTaskOperation,
+			OperationSummary: "Pause a task",
+			OperationID:      "pause-task",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "task",
+					In:   "path",
+				}: params.Task,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = PauseTaskParams
+			Response = *TaskResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackPauseTaskParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.PauseTask(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.PauseTask(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodePauseTaskResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handlePlaceThreadRequest handles place-thread operation.
+//
+// Puts the conversation into this folder at the given position, moving it out of the folder it was in.
+// Give `beforeThreadId` or `afterThreadId` to place it next to a conversation of this folder; with
+// neither it goes last. Moving does not change the conversation's activity time.
+//
+// Subagents are not filed and fail with 409 and code SUBAGENT_NOT_FILED. Fails with 409 and code
+// ORDER_CHANGED when `expectedVersion` is stale.
+//
+// PUT /api/v1/folders/{folder}/threads/{thread}
+func (s *Server) handlePlaceThreadRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("place-thread"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.HTTPRouteKey.String("/api/v1/folders/{folder}/threads/{thread}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PlaceThreadOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: PlaceThreadOperation,
+			ID:   "place-thread",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, PlaceThreadOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodePlaceThreadParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodePlaceThreadRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -11556,16 +10452,20 @@ func (s *Server) handleMoveThreadRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *ThreadSummaryResource
+	var response *ThreadResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    MoveThreadOperation,
-			OperationSummary: "Move and reorder a conversation",
-			OperationID:      "move-thread",
+			OperationName:    PlaceThreadOperation,
+			OperationSummary: "Place a conversation in a folder",
+			OperationID:      "place-thread",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "folder",
+					In:   "path",
+				}: params.Folder,
 				{
 					Name: "thread",
 					In:   "path",
@@ -11575,9 +10475,9 @@ func (s *Server) handleMoveThreadRequest(args [1]string, argsEscaped bool, w htt
 		}
 
 		type (
-			Request  = *MoveThreadRequestBody
-			Params   = MoveThreadParams
-			Response = *ThreadSummaryResource
+			Request  = *PlaceThreadRequestBody
+			Params   = PlaceThreadParams
+			Response = *ThreadResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -11586,14 +10486,14 @@ func (s *Server) handleMoveThreadRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackMoveThreadParams,
+			unpackPlaceThreadParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.MoveThread(ctx, request, params)
+				response, err = s.h.PlaceThread(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.MoveThread(ctx, request, params)
+		response, err = s.h.PlaceThread(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -11612,207 +10512,7 @@ func (s *Server) handleMoveThreadRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeMoveThreadResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handlePauseScheduleRequest handles pause-schedule operation.
-//
-// Pause schedule.
-//
-// POST /api/v1/schedules/{schedule}/pause
-func (s *Server) handlePauseScheduleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("pause-schedule"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/schedules/{schedule}/pause"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), PauseScheduleOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: PauseScheduleOperation,
-			ID:   "pause-schedule",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, PauseScheduleOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodePauseScheduleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *PauseScheduleOK
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    PauseScheduleOperation,
-			OperationSummary: "Pause schedule",
-			OperationID:      "pause-schedule",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "schedule",
-					In:   "path",
-				}: params.Schedule,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = PauseScheduleParams
-			Response = *PauseScheduleOK
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackPauseScheduleParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.PauseSchedule(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		err = s.h.PauseSchedule(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodePauseScheduleResponse(response, w, span); err != nil {
+	if err := encodePlaceThreadResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -12252,24 +10952,25 @@ func (s *Server) handlePutUploadPartRequest(args [2]string, argsEscaped bool, w 
 	}
 }
 
-// handleResumeScheduleRequest handles resume-schedule operation.
+// handleResumeTaskRequest handles resume-task operation.
 //
-// Resume schedule.
+// Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
+// active task succeeds.
 //
-// POST /api/v1/schedules/{schedule}/resume
-func (s *Server) handleResumeScheduleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/tasks/{task}/resume
+func (s *Server) handleResumeTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("resume-schedule"),
+		otelogen.OperationID("resume-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/schedules/{schedule}/resume"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/resume"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ResumeScheduleOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ResumeTaskOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -12324,15 +11025,15 @@ func (s *Server) handleResumeScheduleRequest(args [1]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ResumeScheduleOperation,
-			ID:   "resume-schedule",
+			Name: ResumeTaskOperation,
+			ID:   "resume-task",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ResumeScheduleOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ResumeTaskOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -12374,7 +11075,7 @@ func (s *Server) handleResumeScheduleRequest(args [1]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeResumeScheduleParams(args, argsEscaped, r)
+	params, err := decodeResumeTaskParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -12387,28 +11088,28 @@ func (s *Server) handleResumeScheduleRequest(args [1]string, argsEscaped bool, w
 
 	var rawBody []byte
 
-	var response *ResumeScheduleOK
+	var response *TaskResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ResumeScheduleOperation,
-			OperationSummary: "Resume schedule",
-			OperationID:      "resume-schedule",
+			OperationName:    ResumeTaskOperation,
+			OperationSummary: "Resume a task",
+			OperationID:      "resume-task",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "schedule",
+					Name: "task",
 					In:   "path",
-				}: params.Schedule,
+				}: params.Task,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ResumeScheduleParams
-			Response = *ResumeScheduleOK
+			Params   = ResumeTaskParams
+			Response = *TaskResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -12417,14 +11118,14 @@ func (s *Server) handleResumeScheduleRequest(args [1]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackResumeScheduleParams,
+			unpackResumeTaskParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.ResumeSchedule(ctx, params)
+				response, err = s.h.ResumeTask(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.ResumeSchedule(ctx, params)
+		response, err = s.h.ResumeTask(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -12443,7 +11144,225 @@ func (s *Server) handleResumeScheduleRequest(args [1]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeResumeScheduleResponse(response, w, span); err != nil {
+	if err := encodeResumeTaskResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleResumeThreadRequest handles resume-thread operation.
+//
+// Starts a new turn that continues from where the conversation stopped, for example after it was
+// interrupted or failed. An optional message is added first.
+//
+// Fails with 409 and code THREAD_RUNNING while a turn is running.
+//
+// POST /api/v1/threads/{thread}/resume
+func (s *Server) handleResumeThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("resume-thread"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/resume"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ResumeThreadOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ResumeThreadOperation,
+			ID:   "resume-thread",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ResumeThreadOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeResumeThreadParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeResumeThreadRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *TurnStartedResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ResumeThreadOperation,
+			OperationSummary: "Resume a stopped conversation",
+			OperationID:      "resume-thread",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "thread",
+					In:   "path",
+				}: params.Thread,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ResumeThreadRequestBody
+			Params   = ResumeThreadParams
+			Response = *TurnStartedResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackResumeThreadParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ResumeThread(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ResumeThread(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeResumeThreadResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -12454,8 +11373,9 @@ func (s *Server) handleResumeScheduleRequest(args [1]string, argsEscaped bool, w
 
 // handleRevertThreadRequest handles revert-thread operation.
 //
-// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript
-// marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
+// Reverts the item at `ordinal` and everything after it. Reverted items stay in the transcript marked
+// `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
+// external changes are not undone. Returns how many items were reverted.
 //
 // POST /api/v1/threads/{thread}/revert
 func (s *Server) handleRevertThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12887,13 +11807,839 @@ func (s *Server) handleRotateChannelSecretRequest(args [1]string, argsEscaped bo
 	}
 }
 
+// handleRunCommandRequest handles run-command operation.
+//
+// Runs a slash command against the conversation. Commands act directly and never reach the model. The
+// result carries a plain-text `message`, which is what a chat app shows, and structured fields for
+// clients that render more, such as `status` for /status.
+//
+// Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with 422 and code
+// COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
+//
+// POST /api/v1/threads/{thread}/commands
+func (s *Server) handleRunCommandRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("run-command"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/commands"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RunCommandOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RunCommandOperation,
+			ID:   "run-command",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, RunCommandOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRunCommandParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRunCommandRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *CommandResultResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RunCommandOperation,
+			OperationSummary: "Run a command",
+			OperationID:      "run-command",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "thread",
+					In:   "path",
+				}: params.Thread,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RunCommandRequestBody
+			Params   = RunCommandParams
+			Response = *CommandResultResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRunCommandParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RunCommand(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RunCommand(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRunCommandResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRunTaskRequest handles run-task operation.
+//
+// Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
+// already in progress and the overlap policy is `skip`.
+//
+// POST /api/v1/tasks/{task}/run
+func (s *Server) handleRunTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("run-task"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/run"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RunTaskOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RunTaskOperation,
+			ID:   "run-task",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, RunTaskOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRunTaskParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *TaskRunResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RunTaskOperation,
+			OperationSummary: "Run a task now",
+			OperationID:      "run-task",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "task",
+					In:   "path",
+				}: params.Task,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = RunTaskParams
+			Response = *TaskRunResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRunTaskParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RunTask(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RunTask(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRunTaskResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleSearchTasksRequest handles search-tasks operation.
+//
+// The caller's tasks in this project, most recently created first.
+//
+// QUERY /api/v1/tasks
+func (s *Server) handleSearchTasksRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-tasks"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SearchTasksOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: SearchTasksOperation,
+			ID:   "search-tasks",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, SearchTasksOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeSearchTasksRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *TaskListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    SearchTasksOperation,
+			OperationSummary: "Search tasks",
+			OperationID:      "search-tasks",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *SearchTasksRequestBody
+			Params   = struct{}
+			Response = *TaskListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.SearchTasks(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.SearchTasks(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeSearchTasksResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleSearchThreadsRequest handles search-threads operation.
+//
+// Lists the caller's conversations in this project with their state, progress and usage. The criteria
+// travel in the request body. Keep the same criteria when following `nextCursor`.
+//
+// Subagents are conversations too. They are excluded unless `parentId` or `role` asks for them. `ids`
+// reads a bounded batch, including subagents and archived conversations, and cannot be combined with a
+// cursor.
+//
+// QUERY /api/v1/threads
+func (s *Server) handleSearchThreadsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-threads"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.HTTPRouteKey.String("/api/v1/threads"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SearchThreadsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: SearchThreadsOperation,
+			ID:   "search-threads",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, SearchThreadsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeSearchThreadsRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *ThreadListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    SearchThreadsOperation,
+			OperationSummary: "Search conversations",
+			OperationID:      "search-threads",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *SearchThreadsRequestBody
+			Params   = struct{}
+			Response = *ThreadListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.SearchThreads(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.SearchThreads(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeSearchThreadsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleSendMessageRequest handles send-message operation.
 //
-// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes.
-// Progress arrives on the live stream the conversation document's `stream` points at, not in this
-// response. Sending while the assistant is still working is allowed: the message is put in line and
-// `queued` comes back true, to be read at the next step of the turn already running — so the editor
-// should stay open rather than blocking on a busy conversation.
+// Starts a turn and returns at once; a turn can run for tens of minutes and its progress arrives on
+// /api/v1/realtime. Sending while the assistant is working is allowed: the message is queued and read
+// at the next step of the running turn, and `queued` is true.
+//
+// Fails with 409 and code THREAD_ARCHIVED for an archived conversation.
 //
 // POST /api/v1/threads/{thread}/messages
 func (s *Server) handleSendMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13041,12 +12787,12 @@ func (s *Server) handleSendMessageRequest(args [1]string, argsEscaped bool, w ht
 		}
 	}()
 
-	var response *TurnIDResponseBody
+	var response *SendMessageResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SendMessageOperation,
-			OperationSummary: "Send a message and start a turn",
+			OperationSummary: "Send a message",
 			OperationID:      "send-message",
 			Body:             request,
 			RawBody:          rawBody,
@@ -13062,7 +12808,7 @@ func (s *Server) handleSendMessageRequest(args [1]string, argsEscaped bool, w ht
 		type (
 			Request  = *SendMessageRequestBody
 			Params   = SendMessageParams
-			Response = *TurnIDResponseBody
+			Response = *SendMessageResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -13098,225 +12844,6 @@ func (s *Server) handleSendMessageRequest(args [1]string, argsEscaped bool, w ht
 	}
 
 	if err := encodeSendMessageResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleSendSubagentMessageRequest handles send-subagent-message operation.
-//
-// Send subagent message.
-//
-// POST /api/v1/threads/{thread}/subagents/{subagent}/messages
-func (s *Server) handleSendSubagentMessageRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("send-subagent-message"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/subagents/{subagent}/messages"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SendSubagentMessageOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: SendSubagentMessageOperation,
-			ID:   "send-subagent-message",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SendSubagentMessageOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeSendSubagentMessageParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeSendSubagentMessageRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *SendSubagentMessageOK
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    SendSubagentMessageOperation,
-			OperationSummary: "Send subagent message",
-			OperationID:      "send-subagent-message",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-				{
-					Name: "subagent",
-					In:   "path",
-				}: params.Subagent,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *SendSubagentRequestBody
-			Params   = SendSubagentMessageParams
-			Response = *SendSubagentMessageOK
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackSendSubagentMessageParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.SendSubagentMessage(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		err = s.h.SendSubagentMessage(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeSendSubagentMessageResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -13544,24 +13071,27 @@ func (s *Server) handleSetSkillEnabledRequest(args [1]string, argsEscaped bool, 
 	}
 }
 
-// handleStartTaskRequest handles start-task operation.
+// handleSubmitToolResultRequest handles submit-tool-result operation.
 //
-// Start task.
+// The assistant asks the client to run one of the actions it declared by writing a tool call with the
+// namespace `client`; the client runs it when the item turns in_progress and reports here.
 //
-// POST /api/v1/tasks/{task}/start
-func (s *Server) handleStartTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// The first result counts. A later one fails with 409 and code RESULT_ALREADY_SUBMITTED.
+//
+// POST /api/v1/threads/{thread}/items/{item}/result
+func (s *Server) handleSubmitToolResultRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-task"),
+		otelogen.OperationID("submit-tool-result"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/start"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/items/{item}/result"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StartTaskOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SubmitToolResultOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -13616,15 +13146,15 @@ func (s *Server) handleStartTaskRequest(args [1]string, argsEscaped bool, w http
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StartTaskOperation,
-			ID:   "start-task",
+			Name: SubmitToolResultOperation,
+			ID:   "submit-tool-result",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, StartTaskOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, SubmitToolResultOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -13666,7 +13196,7 @@ func (s *Server) handleStartTaskRequest(args [1]string, argsEscaped bool, w http
 			return
 		}
 	}
-	params, err := decodeStartTaskParams(args, argsEscaped, r)
+	params, err := decodeSubmitToolResultParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -13678,210 +13208,7 @@ func (s *Server) handleStartTaskRequest(args [1]string, argsEscaped bool, w http
 	}
 
 	var rawBody []byte
-
-	var response *StartTaskOK
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    StartTaskOperation,
-			OperationSummary: "Start task",
-			OperationID:      "start-task",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "task",
-					In:   "path",
-				}: params.Task,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = StartTaskParams
-			Response = *StartTaskOK
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackStartTaskParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.StartTask(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		err = s.h.StartTask(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeStartTaskResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleSubmitDynamicCallResultRequest handles submit-dynamic-call-result operation.
-//
-// The assistant asks the client to run an action by adding a tool call to the conversation with the
-// namespace `dynamic`; the client acts when that entry turns in_progress and reports back here.
-//
-// The first result is the one that counts. A later one is refused rather than replacing it.
-//
-// POST /api/v1/dynamic-calls/{call}/result
-func (s *Server) handleSubmitDynamicCallResultRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("submit-dynamic-call-result"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/dynamic-calls/{call}/result"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SubmitDynamicCallResultOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: SubmitDynamicCallResultOperation,
-			ID:   "submit-dynamic-call-result",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SubmitDynamicCallResultOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeSubmitDynamicCallResultParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeSubmitDynamicCallResultRequest(r)
+	request, rawBody, close, err := s.decodeSubmitToolResultRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -13897,28 +13224,32 @@ func (s *Server) handleSubmitDynamicCallResultRequest(args [1]string, argsEscape
 		}
 	}()
 
-	var response *SubmitDynamicCallResultNoContent
+	var response *SubmitToolResultNoContent
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    SubmitDynamicCallResultOperation,
-			OperationSummary: "Report what an action produced",
-			OperationID:      "submit-dynamic-call-result",
+			OperationName:    SubmitToolResultOperation,
+			OperationSummary: "Report what a client tool produced",
+			OperationID:      "submit-tool-result",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "call",
+					Name: "thread",
 					In:   "path",
-				}: params.Call,
+				}: params.Thread,
+				{
+					Name: "item",
+					In:   "path",
+				}: params.Item,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *DynamicCallResultRequestBody
-			Params   = SubmitDynamicCallResultParams
-			Response = *SubmitDynamicCallResultNoContent
+			Request  = *ToolResultRequestBody
+			Params   = SubmitToolResultParams
+			Response = *SubmitToolResultNoContent
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -13927,14 +13258,14 @@ func (s *Server) handleSubmitDynamicCallResultRequest(args [1]string, argsEscape
 		](
 			m,
 			mreq,
-			unpackSubmitDynamicCallResultParams,
+			unpackSubmitToolResultParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.SubmitDynamicCallResult(ctx, request, params)
+				err = s.h.SubmitToolResult(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.SubmitDynamicCallResult(ctx, request, params)
+		err = s.h.SubmitToolResult(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -13953,7 +13284,7 @@ func (s *Server) handleSubmitDynamicCallResultRequest(args [1]string, argsEscape
 		return
 	}
 
-	if err := encodeSubmitDynamicCallResultResponse(response, w, span); err != nil {
+	if err := encodeSubmitToolResultResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -14170,206 +13501,6 @@ func (s *Server) handleSubmitWeixinVerifyCodeRequest(args [1]string, argsEscaped
 	}
 
 	if err := encodeSubmitWeixinVerifyCodeResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleTriggerScheduleRequest handles trigger-schedule operation.
-//
-// Trigger schedule.
-//
-// POST /api/v1/schedules/{schedule}/trigger
-func (s *Server) handleTriggerScheduleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("trigger-schedule"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/schedules/{schedule}/trigger"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), TriggerScheduleOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: TriggerScheduleOperation,
-			ID:   "trigger-schedule",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, TriggerScheduleOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeTriggerScheduleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *TriggerScheduleOK
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    TriggerScheduleOperation,
-			OperationSummary: "Trigger schedule",
-			OperationID:      "trigger-schedule",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "schedule",
-					In:   "path",
-				}: params.Schedule,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = TriggerScheduleParams
-			Response = *TriggerScheduleOK
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackTriggerScheduleParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.TriggerSchedule(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		err = s.h.TriggerSchedule(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeTriggerScheduleResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -14597,8 +13728,7 @@ func (s *Server) handleUpdateChannelRequest(args [1]string, argsEscaped bool, w 
 
 // handleUpdateFolderRequest handles update-folder operation.
 //
-// The conversations in it are untouched, and none of them move in the list — a folder's name is not
-// part of what any conversation is about.
+// The inbox cannot be renamed and fails with 409 and code INBOX_READ_ONLY.
 //
 // PATCH /api/v1/folders/{folder}
 func (s *Server) handleUpdateFolderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14811,24 +13941,28 @@ func (s *Server) handleUpdateFolderRequest(args [1]string, argsEscaped bool, w h
 	}
 }
 
-// handleUpdateScheduleRequest handles update-schedule operation.
+// handleUpdateSettingsRequest handles update-settings operation.
 //
-// Update schedule.
+// Omitted fields stay as they are; null clears a choice so the catalogue default applies again.
+// Existing conversations keep their models.
 //
-// PATCH /api/v1/schedules/{schedule}
-func (s *Server) handleUpdateScheduleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// Fails with 422 and code MODEL_UNAVAILABLE when the model cannot run an agent, and with 422 and code
+// REASONING_UNSUPPORTED when a reasoning effort is set for a model without reasoning.
+//
+// PATCH /api/v1/settings
+func (s *Server) handleUpdateSettingsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-schedule"),
+		otelogen.OperationID("update-settings"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/schedules/{schedule}"),
+		semconv.HTTPRouteKey.String("/api/v1/settings"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateScheduleOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateSettingsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -14883,15 +14017,15 @@ func (s *Server) handleUpdateScheduleRequest(args [1]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateScheduleOperation,
-			ID:   "update-schedule",
+			Name: UpdateSettingsOperation,
+			ID:   "update-settings",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UpdateScheduleOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, UpdateSettingsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -14933,19 +14067,9 @@ func (s *Server) handleUpdateScheduleRequest(args [1]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeUpdateScheduleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateScheduleRequest(r)
+	request, rawBody, close, err := s.decodeUpdateSettingsRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -14961,28 +14085,23 @@ func (s *Server) handleUpdateScheduleRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *ScheduleResource
+	var response *SettingsResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    UpdateScheduleOperation,
-			OperationSummary: "Update schedule",
-			OperationID:      "update-schedule",
+			OperationName:    UpdateSettingsOperation,
+			OperationSummary: "Update settings",
+			OperationID:      "update-settings",
 			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "schedule",
-					In:   "path",
-				}: params.Schedule,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
-			Request  = *UpdateScheduleRequestBody
-			Params   = UpdateScheduleParams
-			Response = *ScheduleResource
+			Request  = *UpdateSettingsRequestBody
+			Params   = struct{}
+			Response = *SettingsResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14991,14 +14110,14 @@ func (s *Server) handleUpdateScheduleRequest(args [1]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackUpdateScheduleParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateSchedule(ctx, request, params)
+				response, err = s.h.UpdateSettings(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.UpdateSchedule(ctx, request, params)
+		response, err = s.h.UpdateSettings(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -15017,226 +14136,7 @@ func (s *Server) handleUpdateScheduleRequest(args [1]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeUpdateScheduleResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleUpdateSubagentRequest handles update-subagent operation.
-//
-// Update subagent.
-//
-// PATCH /api/v1/threads/{thread}/subagents/{subagent}
-func (s *Server) handleUpdateSubagentRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-subagent"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/subagents/{subagent}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateSubagentOperation,
-			ID:   "update-subagent",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UpdateSubagentOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeUpdateSubagentParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateSubagentRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *SubagentResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UpdateSubagentOperation,
-			OperationSummary: "Update subagent",
-			OperationID:      "update-subagent",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "thread",
-					In:   "path",
-				}: params.Thread,
-				{
-					Name: "subagent",
-					In:   "path",
-				}: params.Subagent,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *UpdateSubagentRequestBody
-			Params   = UpdateSubagentParams
-			Response = *SubagentResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackUpdateSubagentParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateSubagent(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UpdateSubagent(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUpdateSubagentResponse(response, w, span); err != nil {
+	if err := encodeUpdateSettingsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -15247,7 +14147,8 @@ func (s *Server) handleUpdateSubagentRequest(args [2]string, argsEscaped bool, w
 
 // handleUpdateTaskRequest handles update-task operation.
 //
-// Update task.
+// Changes the name, trigger or action. Omitted fields stay as they are; `trigger` and `action` are
+// replaced as a whole. A run already in progress keeps the settings it started with.
 //
 // PATCH /api/v1/tasks/{task}
 func (s *Server) handleUpdateTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15400,7 +14301,7 @@ func (s *Server) handleUpdateTaskRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdateTaskOperation,
-			OperationSummary: "Update task",
+			OperationSummary: "Update a task",
 			OperationID:      "update-task",
 			Body:             request,
 			RawBody:          rawBody,
@@ -15462,31 +14363,15 @@ func (s *Server) handleUpdateTaskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleUpdateThreadRequest handles update-thread operation.
 //
-// Changes the title, folder, approval mode, model preference, and whether the conversation is
-// archived. Approval and model preference changes take effect from the next turn; a turn already
-// running keeps the settings it started with.
+// Changes the title, model, reasoning effort, approval mode, or whether the conversation is archived.
+// Omitted fields stay as they are.
 //
-// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform
-// default. A non-null preference is accepted only while model selection is enabled; otherwise the
-// whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed.
-// Clearing a preference remains allowed while selection is disabled. A well-formed preference for a
-// disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+// Model, reasoning and approval changes apply to the next model request; a request already in flight
+// keeps its settings. A model that cannot run an agent fails with 422 and code MODEL_UNAVAILABLE.
+// Switching to a model without reasoning clears `reasoningEffort`.
 //
-// Model switching is allowed on an existing conversation, including while a turn is generating or
-// waiting for approval or an answer. The response immediately returns the saved preferredModelId,
-// while model continues to identify the running turn's effective model until it finishes. Messages
-// queued into that running turn also keep its captured model choices. The next turn uses the latest
-// saved preference.
-//
-// Changing the preference does not create a new conversation, start a turn, call a model provider,
-// clear the transcript, or rewrite historical model attribution. Before the next turn sends its first
-// request to the selected model, the service checks that model's input capabilities and usable context
-// budget. A switch to a smaller window may require compaction under the compaction policy above;
-// saving the preference alone does not establish that the conversation fits.
-//
-// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and
-// the assistant can still find it when it searches past conversations — it just takes no new input.
-// Unarchive it to continue. Archiving fails while a turn is running; stop it first.
+// Archiving makes the conversation read-only and fails with 409 and code THREAD_RUNNING while a turn
+// is running.
 //
 // PATCH /api/v1/threads/{thread}
 func (s *Server) handleUpdateThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15634,12 +14519,12 @@ func (s *Server) handleUpdateThreadRequest(args [1]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response *ThreadSummaryResource
+	var response *ThreadResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdateThreadOperation,
-			OperationSummary: "Update conversation settings",
+			OperationSummary: "Update a conversation",
 			OperationID:      "update-thread",
 			Body:             request,
 			RawBody:          rawBody,
@@ -15655,7 +14540,7 @@ func (s *Server) handleUpdateThreadRequest(args [1]string, argsEscaped bool, w h
 		type (
 			Request  = *UpdateThreadRequestBody
 			Params   = UpdateThreadParams
-			Response = *ThreadSummaryResource
+			Response = *ThreadResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -15916,14 +14801,14 @@ func (s *Server) handleUpdateUploadRequest(args [1]string, argsEscaped bool, w h
 
 // handleUploadAttachmentRequest handles upload-attachment operation.
 //
-// The body is the file bytes themselves, not multipart, one file per request. The kind is determined
+// The body is the file bytes themselves, not multipart, one file per request. The type is determined
 // from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
 // sending a message.
 //
 // An upload that no message ever references is a draft, and drafts are collected — `draftExpiresAt`
 // in the response says when this one goes. Sending a message with the id makes it permanent.
 //
-// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
+// The returned `type` says how the assistant will see it. An `image` is read directly, and only by
 // models that accept image input. A small `text` file is placed inline in the message. A large `text`
 // file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
 // that usually means downloading it onto one of the project's cloud instances.

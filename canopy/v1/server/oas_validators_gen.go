@@ -996,6 +996,10 @@ func (s ModelEndpoint) Validate() error {
 		return nil
 	case "/v1/embeddings":
 		return nil
+	case "/v1/messages":
+		return nil
+	case "/v1beta/models/{model}:generateContent":
+		return nil
 	case "/v1/images/generations":
 		return nil
 	case "/v1/images/edits":
@@ -1440,49 +1444,6 @@ func (s *ReasoningCapabilitiesBudgetTokens) Validate() error {
 	return nil
 }
 
-func (s *ReasoningDiagnostics) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if value, ok := s.Translation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "translation",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s ReasoningDiagnosticsTranslation) Validate() error {
-	switch s {
-	case "translate":
-		return nil
-	case "passthrough":
-		return nil
-	case "strip":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *RequestResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -1508,24 +1469,6 @@ func (s *RequestResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "usage_source",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Reasoning.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "reasoning",
 			Error: err,
 		})
 	}
@@ -1668,6 +1611,15 @@ func (s ServiceResourceStatus) Validate() error {
 	case "active":
 		return nil
 	case "failed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s StreamGenerateContentAlt) Validate() error {
+	switch s {
+	case "sse":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

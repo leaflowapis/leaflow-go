@@ -31,12 +31,12 @@ func trimTrailingSlashes(u *url.URL) {
 type Invoker interface {
 	// AnswerQuestion invokes answer-question operation.
 	//
-	// The question id comes from the conversation document's `wait`. An already-answered question also
-	// returns 204 — another tab may have submitted first, or the auto-answer window may have expired,
-	// and in both cases the turn has already continued with an answer.
+	// Answers an `ask` tool call. Its questions are in the item's `questions`. An item that is already
+	// answered also succeeds: another tab may have answered first, or the auto-answer window may have
+	// passed, and either way the turn has continued.
 	//
-	// POST /api/v1/threads/{thread}/questions/{item}
-	AnswerQuestion(ctx context.Context, request *AnswerRequestBody, params AnswerQuestionParams) error
+	// POST /api/v1/threads/{thread}/items/{item}/answer
+	AnswerQuestion(ctx context.Context, request *AnswerQuestionRequestBody, params AnswerQuestionParams) error
 	// BeginWeixinLogin invokes begin-weixin-login operation.
 	//
 	// A personal WeChat channel can only send and receive once its owner has signed in by scanning a QR
@@ -45,12 +45,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/channels/{channel}/weixin-logins
 	BeginWeixinLogin(ctx context.Context, params BeginWeixinLoginParams) (*LoginResource, error)
-	// CancelTask invokes cancel-task operation.
+	// CancelTaskRun invokes cancel-task-run operation.
 	//
-	// Cancel task.
+	// Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
+	// running.
 	//
 	// POST /api/v1/tasks/{task}/cancel
-	CancelTask(ctx context.Context, params CancelTaskParams) error
+	CancelTaskRun(ctx context.Context, params CancelTaskRunParams) (*TaskResource, error)
 	// CancelUpload invokes cancel-upload operation.
 	//
 	// Cancel upload.
@@ -66,6 +67,17 @@ type Invoker interface {
 	//
 	// GET /api/v1/channels/{channel}/sender-check
 	CheckSender(ctx context.Context, params CheckSenderParams) (*SenderCheckResource, error)
+	// CompactThread invokes compact-thread operation.
+	//
+	// Starts a compaction turn that summarizes the history before the latest user message, the same way
+	// the service does automatically when the context window fills up. The result appears in the
+	// transcript as a `compaction` item and the turn reports its own token usage.
+	//
+	// Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
+	// NOTHING_TO_COMPACT when there is no history to summarize.
+	//
+	// POST /api/v1/threads/{thread}/compact
+	CompactThread(ctx context.Context, params CompactThreadParams) (*TurnStartedResponseBody, error)
 	// CompleteUpload invokes complete-upload operation.
 	//
 	// Complete upload.
@@ -93,60 +105,76 @@ type Invoker interface {
 	CreateChannel(ctx context.Context, request *CreateChannelRequestBody) (*ChannelWithSecretResponseBody, error)
 	// CreateFolder invokes create-folder operation.
 	//
-	// A folder groups conversations in the sidebar and does nothing else. The assistant is never told
-	// which folder a conversation is in, and a conversation behaves exactly the same inside one as
-	// outside: no shared instructions, no shared files, no shared memory.
+	// A folder groups conversations on the board and does nothing else: the assistant is never told which
+	// folder a conversation is in. New folders go after the existing ones.
 	//
-	// Names are unique within an account's folders in this project, because the only way to aim at a
-	// folder is to read its name.
+	// Names are unique among the caller's folders in this project; a duplicate fails with 409 and code
+	// FOLDER_EXISTS.
 	//
 	// POST /api/v1/folders
 	CreateFolder(ctx context.Context, request *CreateFolderRequestBody) (*FolderResource, error)
-	// CreateSchedule invokes create-schedule operation.
+	// CreateRealtimeTicket invokes create-realtime-ticket operation.
 	//
-	// Create schedule.
+	// Returns the address and a short-lived ticket for the realtime WebSocket. Open
+	// `{url}?ticket={ticket}`; the ticket stands in for the bearer token, which a browser cannot set on a
+	// WebSocket. One connection carries every subscription of a client.
 	//
-	// POST /api/v1/threads/{thread}/schedules
-	CreateSchedule(ctx context.Context, request *CreateScheduleRequestBody, params CreateScheduleParams) (*ScheduleResource, error)
-	// CreateSubagent invokes create-subagent operation.
+	// Messages are JSON text frames. The client sends `RealtimeClientMessage` and receives
+	// `RealtimeServerMessage`. Subscribe to `workspace` for every conversation, folder and task of the
+	// caller in this project, and to `thread:{id}` for the transcript of one conversation. A transcript
+	// subscription takes the `streamCursor` from list-thread-items and replays what was written after it;
+	// when the cursor is too old the server sends `resync` and the client reads the items again.
 	//
-	// Create subagent.
+	// Reconnect with a new ticket after the connection closes. Ping at least every 30 seconds.
 	//
-	// POST /api/v1/threads/{thread}/subagents
-	CreateSubagent(ctx context.Context, request *CreateSubagentRequestBody, params CreateSubagentParams) (*SubagentResource, error)
+	// POST /api/v1/realtime/tickets
+	CreateRealtimeTicket(ctx context.Context) (*RealtimeTicketResource, error)
 	// CreateTask invokes create-task operation.
 	//
-	// Create task.
+	// A task does something on a trigger and reports to a conversation. Its action either sends a prompt
+	// to the conversation, which starts a turn there, or runs a command on an instance and sends the
+	// result to the conversation when it ends.
 	//
-	// POST /api/v1/threads/{thread}/tasks
-	CreateTask(ctx context.Context, request *CreateTaskRequestBody, params CreateTaskParams) (*TaskResource, error)
+	// `trigger.type` `now` runs once immediately; `at` runs once at `runAt`; `interval` repeats every
+	// `intervalSeconds` from `anchorAt`; `cron` repeats on a cron expression in `timezone`. Each execution
+	// is a run, listed under /runs.
+	//
+	// Fails with 404 when the conversation does not exist and with 409 and code THREAD_ARCHIVED when it is
+	// archived.
+	//
+	// POST /api/v1/tasks
+	CreateTask(ctx context.Context, request *CreateTaskRequestBody) (*TaskResource, error)
 	// CreateThread invokes create-thread operation.
 	//
-	// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is
-	// accepted only while model selection is enabled; otherwise the request fails with 403 and code
-	// MODEL_SELECTION_DISABLED.
+	// Creates a conversation and, when `message` is given, sends it as the first message in the same
+	// request, so starting a task is one round trip.
 	//
-	// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed
-	// is retained and uses the default when a turn starts. This also handles a catalogue change between
-	// displaying the selector and submitting the choice. Creating a conversation does not contact a model
-	// provider and remains possible when generation is unavailable.
+	// The model is chosen in this order: `modelId` from the request, the caller's default from
+	// /api/v1/settings, then the first model in the Canopy catalogue that can run an agent. Fails with 422
+	// and code MODEL_UNAVAILABLE when the chosen model cannot run an agent, and with 422 and code
+	// REASONING_UNSUPPORTED when `reasoningEffort` is given for a model without reasoning.
+	//
+	// Without `message`, creating a conversation does not contact a model provider.
 	//
 	// POST /api/v1/threads
-	CreateThread(ctx context.Context, request *CreateThreadRequestBody) (*ThreadSummaryResource, error)
+	CreateThread(ctx context.Context, request *CreateThreadRequestBody) (*CreateThreadResponseBody, error)
 	// CreateUpload invokes create-upload operation.
 	//
 	// Create upload.
 	//
 	// POST /api/v1/uploads
 	CreateUpload(ctx context.Context, request *CreateUploadRequestBody) (*UploadResource, error)
-	// DecideApproval invokes decide-approval operation.
+	// DecideToolCalls invokes decide-tool-calls operation.
 	//
-	// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same
-	// batch again neither changes a decision already in effect nor reports an error. Returns 404 when the
-	// batch does not belong to that conversation.
+	// Decides the tool calls the conversation is waiting on, listed in `pendingAction.itemIds`. One
+	// decision applies to the whole batch, so `itemIds` must name exactly the calls awaiting approval.
 	//
-	// POST /api/v1/threads/{thread}/approvals/{batch}
-	DecideApproval(ctx context.Context, request *DecideRequestBody, params DecideApprovalParams) error
+	// Repeating a decision that is already in effect succeeds. Fails with 409 and code APPROVAL_MISMATCH
+	// when `itemIds` is not the current batch, for example because another tab decided first and the
+	// assistant has moved on.
+	//
+	// POST /api/v1/threads/{thread}/approvals
+	DecideToolCalls(ctx context.Context, request *DecideToolCallsRequestBody, params DecideToolCallsParams) error
 	// DeleteBinding invokes delete-binding operation.
 	//
 	// Remove a binding.
@@ -162,11 +190,9 @@ type Invoker interface {
 	DeleteChannel(ctx context.Context, params DeleteChannelParams) error
 	// DeleteFolder invokes delete-folder operation.
 	//
-	// The conversations inside are not deleted. They leave the folder and go back to the ungrouped list,
-	// where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and
-	// deleting a conversation is a different request.
-	//
-	// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+	// The conversations inside are not deleted; they move to the end of the inbox. The inbox cannot be
+	// deleted and fails with 409 and code INBOX_READ_ONLY. Deleting a folder that is already gone
+	// succeeds.
 	//
 	// DELETE /api/v1/folders/{folder}
 	DeleteFolder(ctx context.Context, params DeleteFolderParams) error
@@ -177,45 +203,26 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/memories/{memory}
 	DeleteMemory(ctx context.Context, params DeleteMemoryParams) error
-	// DeleteSchedule invokes delete-schedule operation.
-	//
-	// Delete schedule.
-	//
-	// DELETE /api/v1/schedules/{schedule}
-	DeleteSchedule(ctx context.Context, params DeleteScheduleParams) error
 	// DeleteSkill invokes delete-skill operation.
 	//
 	// A built-in skill of the same name, if there was one, becomes visible again.
 	//
 	// DELETE /api/v1/skills/{skill}
 	DeleteSkill(ctx context.Context, params DeleteSkillParams) error
-	// DeleteSubagent invokes delete-subagent operation.
-	//
-	// Delete subagent.
-	//
-	// DELETE /api/v1/threads/{thread}/subagents/{subagent}
-	DeleteSubagent(ctx context.Context, params DeleteSubagentParams) error
 	// DeleteTask invokes delete-task operation.
 	//
-	// Delete task.
+	// Cancels a run in progress and removes the task. Its runs stay readable in the conversation's
+	// transcript.
 	//
 	// DELETE /api/v1/tasks/{task}
 	DeleteTask(ctx context.Context, params DeleteTaskParams) error
 	// DeleteThread invokes delete-thread operation.
 	//
-	// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer
-	// find it either — neither by searching past conversations nor by reading one back.
+	// Removes the conversation and its subagents from every list and makes them unreachable by id,
+	// including for the assistant. Deleting cannot be undone; archive instead to keep it readable.
 	//
-	// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived
-	// conversation is still there and still readable, it just takes no new input; a deleted one is gone
-	// from view. Archiving can be undone; this cannot.
-	//
-	// What survives is the record itself, because a conversation with this assistant is an account of what
-	// was done to real infrastructure — which machine was changed, which disk was removed. That record
-	// is kept even though nobody can reach it here.
-	//
-	// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and
-	// changes nothing.
+	// Fails with 409 and code THREAD_RUNNING while a turn is running. Deleting an already deleted
+	// conversation succeeds.
 	//
 	// DELETE /api/v1/threads/{thread}
 	DeleteThread(ctx context.Context, params DeleteThreadParams) error
@@ -231,7 +238,7 @@ type Invoker interface {
 	// because the content never changes. Returns 404 when the attachment does not exist or does not belong
 	// to the current user.
 	//
-	// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the
+	// Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
 	// address of an `<img>`. Everything else is served as `application/octet-stream` with
 	// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
 	// its uploader chose, and serving it back inline would run it on this origin.
@@ -252,50 +259,38 @@ type Invoker interface {
 	GetChannel(ctx context.Context, params GetChannelParams) (*ChannelResource, error)
 	// GetFolder invokes get-folder operation.
 	//
-	// The list returns every folder at once, so this is for the case the list does not cover: a page
-	// opened straight at a folder, holding nothing but the id from the address bar. Its conversations are
-	// a separate request — `GET /api/v1/threads?folder=<id>`.
+	// Its conversations are read with search-threads and `folderId`.
 	//
 	// GET /api/v1/folders/{folder}
 	GetFolder(ctx context.Context, params GetFolderParams) (*FolderResource, error)
-	// GetModelConfiguration invokes getModelConfiguration operation.
+	// GetSettings invokes get-settings operation.
 	//
-	// Model metadata is provided by Canopy. This endpoint exposes only assistant deployment policy.
+	// The caller's assistant settings in this project. `defaultModel` is what a new conversation uses when
+	// it names no model: the caller's choice, or the first model in the Canopy catalogue that can run an
+	// agent.
 	//
-	// GET /api/v1/model-configuration
-	GetModelConfiguration(ctx context.Context) (*ModelConfigurationResource, error)
-	// GetSchedule invokes get-schedule operation.
-	//
-	// Get schedule.
-	//
-	// GET /api/v1/schedules/{schedule}
-	GetSchedule(ctx context.Context, params GetScheduleParams) (*ScheduleResource, error)
+	// GET /api/v1/settings
+	GetSettings(ctx context.Context) (*SettingsResource, error)
 	// GetSkill invokes get-skill operation.
 	//
 	// Works for built-in skills too; they simply cannot be written.
 	//
 	// GET /api/v1/skills/{skill}
 	GetSkill(ctx context.Context, params GetSkillParams) (*SkillResource, error)
-	// GetSubagent invokes get-subagent operation.
-	//
-	// Get subagent.
-	//
-	// GET /api/v1/threads/{thread}/subagents/{subagent}
-	GetSubagent(ctx context.Context, params GetSubagentParams) (*SubagentResource, error)
 	// GetTask invokes get-task operation.
 	//
-	// Get task.
+	// Get a task.
 	//
 	// GET /api/v1/tasks/{task}
 	GetTask(ctx context.Context, params GetTaskParams) (*TaskResource, error)
 	// GetThread invokes get-thread operation.
 	//
-	// The complete current state of a conversation, for the first render. Its `stream` gives the address
-	// and admission ticket for live output, and what that stream pushes are incremental edits to this same
-	// document, so the same rendering logic applies.
+	// The conversation's state: model, reasoning effort, approval mode, what it is doing now, its plan,
+	// what it is waiting for, context usage and token usage. The transcript is read separately from
+	// /items.
 	//
 	// GET /api/v1/threads/{thread}
-	GetThread(ctx context.Context, params GetThreadParams) (*DocumentResource, error)
+	GetThread(ctx context.Context, params GetThreadParams) (*ThreadResource, error)
 	// GetUpload invokes get-upload operation.
 	//
 	// Get upload.
@@ -315,17 +310,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/weixin-logins/{login}
 	GetWeixinLogin(ctx context.Context, params GetWeixinLoginParams) (*LoginResource, error)
-	// InterruptSubagent invokes interrupt-subagent operation.
-	//
-	// Interrupt subagent.
-	//
-	// POST /api/v1/threads/{thread}/subagents/{subagent}/interrupt
-	InterruptSubagent(ctx context.Context, params InterruptSubagentParams) error
 	// InterruptThread invokes interrupt-thread operation.
 	//
-	// Calling this on a conversation with no running turn also returns 204 rather than an error — the
-	// user pressing stop races with the turn finishing on its own, and both outcomes are the same. This
-	// operation remains available while the project is suspended or being cleaned up.
+	// Stops this conversation's running turn and discards its queued messages. Subagents keep running;
+	// stop them through their own conversations.
+	//
+	// Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
+	// Available while the project is suspended or being cleaned up.
 	//
 	// POST /api/v1/threads/{thread}/interrupt
 	InterruptThread(ctx context.Context, params InterruptThreadParams) error
@@ -349,22 +340,18 @@ type Invoker interface {
 	//
 	// GET /api/v1/channels
 	ListChannels(ctx context.Context, params ListChannelsParams) (*LengthAwarePageChannelResource, error)
-	// ListEarlierItems invokes list-earlier-items operation.
+	// ListCommands invokes list-commands operation.
 	//
-	// The first render only carries the latest stretch of a conversation; anything above it is fetched
-	// here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the
-	// response is the cursor for the stretch above that, and null means the top has been reached. The
-	// entries have the same shape and the same order (oldest first) as `items` in the document, so they
-	// can be prepended as they are.
+	// The slash commands a person can type in a conversation, such as /status or /compact. The same
+	// commands work in the console and in chat apps, so a client builds its command menu from this list.
 	//
-	// GET /api/v1/threads/{thread}/earlier
-	ListEarlierItems(ctx context.Context, params ListEarlierItemsParams) (*EarlierResponseBody, error)
+	// GET /api/v1/commands
+	ListCommands(ctx context.Context) (*CommandListResponseBody, error)
 	// ListFolders invokes list-folders operation.
 	//
-	// The current account's folders in this project, oldest first. That order is fixed and does not react
-	// to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever
-	// something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many
-	// there can be, and all of them come back at once.
+	// The caller's folders in this project in their own order, inbox first. Every conversation is in
+	// exactly one folder; the inbox holds the ones nobody filed. Not paginated: the number of folders is
+	// capped and all of them come back at once.
 	//
 	// GET /api/v1/folders
 	ListFolders(ctx context.Context) (*FolderListResponseBody, error)
@@ -386,12 +373,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/platforms
 	ListPlatforms(ctx context.Context) (*PlatformListResponseBody, error)
-	// ListSchedules invokes list-schedules operation.
-	//
-	// List schedules.
-	//
-	// GET /api/v1/threads/{thread}/schedules
-	ListSchedules(ctx context.Context, params ListSchedulesParams) (*ScheduleListResponseBody, error)
 	// ListSkills invokes list-skills operation.
 	//
 	// Everything the assistant can reach in this project, including the ones that are turned off — an
@@ -402,62 +383,78 @@ type Invoker interface {
 	//
 	// GET /api/v1/skills
 	ListSkills(ctx context.Context) (*SkillListResponseBody, error)
-	// ListSubagents invokes list-subagents operation.
+	// ListTaskRuns invokes list-task-runs operation.
 	//
-	// List subagents.
+	// Newest first.
 	//
-	// GET /api/v1/threads/{thread}/subagents
-	ListSubagents(ctx context.Context, params ListSubagentsParams) (*SubagentListResponseBody, error)
-	// ListTasks invokes list-tasks operation.
+	// GET /api/v1/tasks/{task}/runs
+	ListTaskRuns(ctx context.Context, params ListTaskRunsParams) (*TaskRunListResponseBody, error)
+	// ListThreadItems invokes list-thread-items operation.
 	//
-	// List tasks.
+	// The conversation's transcript, oldest first: messages, reasoning, tool calls and compaction markers.
+	// Without `before` or `after` the latest page is returned.
 	//
-	// GET /api/v1/threads/{thread}/tasks
-	ListTasks(ctx context.Context, params ListTasksParams) (*TaskListResponseBody, error)
-	// ListThreads invokes list-threads operation.
+	// Pass `earlier` from the response as `before` to read further up; null means the top has been
+	// reached. `after` returns what was written after an ordinal, which a client uses to catch up after a
+	// reconnect. Subscribe to `thread:{id}` on /api/v1/realtime with `streamCursor` to follow what is
+	// written next.
 	//
-	// Lists root conversations with execution and usage summaries. Sorting is applied before cursor
-	// pagination. Keep identical sorting and filters for subsequent pages. ids requests are bounded
-	// batches without pagination.
+	// GET /api/v1/threads/{thread}/items
+	ListThreadItems(ctx context.Context, params ListThreadItemsParams) (*ThreadItemListResponseBody, error)
+	// ListThreadTurns invokes list-thread-turns operation.
 	//
-	// GET /api/v1/threads
-	ListThreads(ctx context.Context, params ListThreadsParams) (*ThreadListResponseBody, error)
+	// The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
+	// long it took and the tokens it used. Cache hit rate is `cachedInputTokens / inputTokens`.
+	//
+	// `ids` reads the turns behind a page of transcript items in one request and cannot be combined with a
+	// cursor.
+	//
+	// GET /api/v1/threads/{thread}/turns
+	ListThreadTurns(ctx context.Context, params ListThreadTurnsParams) (*ThreadTurnListResponseBody, error)
 	// ListUploads invokes list-uploads operation.
 	//
 	// List uploads.
 	//
 	// GET /api/v1/uploads
 	ListUploads(ctx context.Context) (*UploadListResponseBody, error)
-	// ListWorkspaceSchedules invokes list-workspace-schedules operation.
-	//
-	// List schedules in the current workspace.
-	//
-	// GET /api/v1/schedules
-	ListWorkspaceSchedules(ctx context.Context, params ListWorkspaceSchedulesParams) (*ScheduleListResponseBody, error)
 	// MarkThreadRead invokes mark-thread-read operation.
 	//
-	// Mark a conversation as read.
+	// Clears `unread` until the assistant replies again.
 	//
 	// POST /api/v1/threads/{thread}/read
 	MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error
 	// MoveFolder invokes move-folder operation.
 	//
-	// Reorder a folder.
+	// Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
+	// with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 	//
 	// POST /api/v1/folders/{folder}/move
 	MoveFolder(ctx context.Context, request *MoveFolderRequestBody, params MoveFolderParams) (*FolderResource, error)
-	// MoveThread invokes move-thread operation.
+	// OpenRealtime invokes open-realtime operation.
 	//
-	// Move and reorder a conversation.
+	// Upgrades to a WebSocket. The ticket from create-realtime-ticket authenticates the connection; a
+	// missing, expired or foreign ticket closes it with code 4401. The 200 response documents the message
+	// a client receives on the socket; the endpoint never answers with a plain HTTP body.
 	//
-	// POST /api/v1/threads/{thread}/move
-	MoveThread(ctx context.Context, request *MoveThreadRequestBody, params MoveThreadParams) (*ThreadSummaryResource, error)
-	// PauseSchedule invokes pause-schedule operation.
+	// GET /api/v1/realtime
+	OpenRealtime(ctx context.Context, params OpenRealtimeParams) (*RealtimeExchange, error)
+	// PauseTask invokes pause-task operation.
 	//
-	// Pause schedule.
+	// Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
 	//
-	// POST /api/v1/schedules/{schedule}/pause
-	PauseSchedule(ctx context.Context, params PauseScheduleParams) error
+	// POST /api/v1/tasks/{task}/pause
+	PauseTask(ctx context.Context, params PauseTaskParams) (*TaskResource, error)
+	// PlaceThread invokes place-thread operation.
+	//
+	// Puts the conversation into this folder at the given position, moving it out of the folder it was in.
+	// Give `beforeThreadId` or `afterThreadId` to place it next to a conversation of this folder; with
+	// neither it goes last. Moving does not change the conversation's activity time.
+	//
+	// Subagents are not filed and fail with 409 and code SUBAGENT_NOT_FILED. Fails with 409 and code
+	// ORDER_CHANGED when `expectedVersion` is stale.
+	//
+	// PUT /api/v1/folders/{folder}/threads/{thread}
+	PlaceThread(ctx context.Context, request *PlaceThreadRequestBody, params PlaceThreadParams) (*ThreadResource, error)
 	// PutSkill invokes put-skill operation.
 	//
 	// Creates it, or replaces the project's skill of that name. The whole package goes in each time: files
@@ -474,16 +471,27 @@ type Invoker interface {
 	//
 	// PUT /api/v1/uploads/{upload}/parts/{part}
 	PutUploadPart(ctx context.Context, request PutUploadPartReq, params PutUploadPartParams) (*UploadPartResource, error)
-	// ResumeSchedule invokes resume-schedule operation.
+	// ResumeTask invokes resume-task operation.
 	//
-	// Resume schedule.
+	// Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
+	// active task succeeds.
 	//
-	// POST /api/v1/schedules/{schedule}/resume
-	ResumeSchedule(ctx context.Context, params ResumeScheduleParams) error
+	// POST /api/v1/tasks/{task}/resume
+	ResumeTask(ctx context.Context, params ResumeTaskParams) (*TaskResource, error)
+	// ResumeThread invokes resume-thread operation.
+	//
+	// Starts a new turn that continues from where the conversation stopped, for example after it was
+	// interrupted or failed. An optional message is added first.
+	//
+	// Fails with 409 and code THREAD_RUNNING while a turn is running.
+	//
+	// POST /api/v1/threads/{thread}/resume
+	ResumeThread(ctx context.Context, request *ResumeThreadRequestBody, params ResumeThreadParams) (*TurnStartedResponseBody, error)
 	// RevertThread invokes revert-thread operation.
 	//
-	// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript
-	// marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
+	// Reverts the item at `ordinal` and everything after it. Reverted items stay in the transcript marked
+	// `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
+	// external changes are not undone. Returns how many items were reverted.
 	//
 	// POST /api/v1/threads/{thread}/revert
 	RevertThread(ctx context.Context, request *RevertRequestBody, params RevertThreadParams) (*RevertedCountResponseBody, error)
@@ -497,22 +505,51 @@ type Invoker interface {
 	//
 	// POST /api/v1/channels/{channel}/secret
 	RotateChannelSecret(ctx context.Context, request OptRotateSecretRequestBody, params RotateChannelSecretParams) (*WebhookSecretResponseBody, error)
+	// RunCommand invokes run-command operation.
+	//
+	// Runs a slash command against the conversation. Commands act directly and never reach the model. The
+	// result carries a plain-text `message`, which is what a chat app shows, and structured fields for
+	// clients that render more, such as `status` for /status.
+	//
+	// Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with 422 and code
+	// COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
+	//
+	// POST /api/v1/threads/{thread}/commands
+	RunCommand(ctx context.Context, request *RunCommandRequestBody, params RunCommandParams) (*CommandResultResource, error)
+	// RunTask invokes run-task operation.
+	//
+	// Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
+	// already in progress and the overlap policy is `skip`.
+	//
+	// POST /api/v1/tasks/{task}/run
+	RunTask(ctx context.Context, params RunTaskParams) (*TaskRunResource, error)
+	// SearchTasks invokes search-tasks operation.
+	//
+	// The caller's tasks in this project, most recently created first.
+	//
+	// QUERY /api/v1/tasks
+	SearchTasks(ctx context.Context, request *SearchTasksRequestBody) (*TaskListResponseBody, error)
+	// SearchThreads invokes search-threads operation.
+	//
+	// Lists the caller's conversations in this project with their state, progress and usage. The criteria
+	// travel in the request body. Keep the same criteria when following `nextCursor`.
+	//
+	// Subagents are conversations too. They are excluded unless `parentId` or `role` asks for them. `ids`
+	// reads a bounded batch, including subagents and archived conversations, and cannot be combined with a
+	// cursor.
+	//
+	// QUERY /api/v1/threads
+	SearchThreads(ctx context.Context, request *SearchThreadsRequestBody) (*ThreadListResponseBody, error)
 	// SendMessage invokes send-message operation.
 	//
-	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes.
-	// Progress arrives on the live stream the conversation document's `stream` points at, not in this
-	// response. Sending while the assistant is still working is allowed: the message is put in line and
-	// `queued` comes back true, to be read at the next step of the turn already running — so the editor
-	// should stay open rather than blocking on a busy conversation.
+	// Starts a turn and returns at once; a turn can run for tens of minutes and its progress arrives on
+	// /api/v1/realtime. Sending while the assistant is working is allowed: the message is queued and read
+	// at the next step of the running turn, and `queued` is true.
+	//
+	// Fails with 409 and code THREAD_ARCHIVED for an archived conversation.
 	//
 	// POST /api/v1/threads/{thread}/messages
-	SendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (*TurnIDResponseBody, error)
-	// SendSubagentMessage invokes send-subagent-message operation.
-	//
-	// Send subagent message.
-	//
-	// POST /api/v1/threads/{thread}/subagents/{subagent}/messages
-	SendSubagentMessage(ctx context.Context, request *SendSubagentRequestBody, params SendSubagentMessageParams) error
+	SendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (*SendMessageResponseBody, error)
 	// SetSkillEnabled invokes set-skill-enabled operation.
 	//
 	// Separate from writing it, because this is the frequent one: a skill that is off costs nothing and
@@ -523,21 +560,15 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/skills/{skill}
 	SetSkillEnabled(ctx context.Context, request *SkillEnabledRequestBody, params SetSkillEnabledParams) (*SkillResource, error)
-	// StartTask invokes start-task operation.
+	// SubmitToolResult invokes submit-tool-result operation.
 	//
-	// Start task.
+	// The assistant asks the client to run one of the actions it declared by writing a tool call with the
+	// namespace `client`; the client runs it when the item turns in_progress and reports here.
 	//
-	// POST /api/v1/tasks/{task}/start
-	StartTask(ctx context.Context, params StartTaskParams) error
-	// SubmitDynamicCallResult invokes submit-dynamic-call-result operation.
+	// The first result counts. A later one fails with 409 and code RESULT_ALREADY_SUBMITTED.
 	//
-	// The assistant asks the client to run an action by adding a tool call to the conversation with the
-	// namespace `dynamic`; the client acts when that entry turns in_progress and reports back here.
-	//
-	// The first result is the one that counts. A later one is refused rather than replacing it.
-	//
-	// POST /api/v1/dynamic-calls/{call}/result
-	SubmitDynamicCallResult(ctx context.Context, request *DynamicCallResultRequestBody, params SubmitDynamicCallResultParams) error
+	// POST /api/v1/threads/{thread}/items/{item}/result
+	SubmitToolResult(ctx context.Context, request *ToolResultRequestBody, params SubmitToolResultParams) error
 	// SubmitWeixinVerifyCode invokes submit-weixin-verify-code operation.
 	//
 	// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets
@@ -545,12 +576,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/weixin-logins/{login}/verify-code
 	SubmitWeixinVerifyCode(ctx context.Context, request *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error)
-	// TriggerSchedule invokes trigger-schedule operation.
-	//
-	// Trigger schedule.
-	//
-	// POST /api/v1/schedules/{schedule}/trigger
-	TriggerSchedule(ctx context.Context, params TriggerScheduleParams) error
 	// UpdateChannel invokes update-channel operation.
 	//
 	// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy
@@ -561,59 +586,41 @@ type Invoker interface {
 	UpdateChannel(ctx context.Context, request *UpdateChannelRequestBody, params UpdateChannelParams) (*ChannelResource, error)
 	// UpdateFolder invokes update-folder operation.
 	//
-	// The conversations in it are untouched, and none of them move in the list — a folder's name is not
-	// part of what any conversation is about.
+	// The inbox cannot be renamed and fails with 409 and code INBOX_READ_ONLY.
 	//
 	// PATCH /api/v1/folders/{folder}
 	UpdateFolder(ctx context.Context, request *UpdateFolderRequestBody, params UpdateFolderParams) (*FolderResource, error)
-	// UpdateSchedule invokes update-schedule operation.
+	// UpdateSettings invokes update-settings operation.
 	//
-	// Update schedule.
+	// Omitted fields stay as they are; null clears a choice so the catalogue default applies again.
+	// Existing conversations keep their models.
 	//
-	// PATCH /api/v1/schedules/{schedule}
-	UpdateSchedule(ctx context.Context, request *UpdateScheduleRequestBody, params UpdateScheduleParams) (*ScheduleResource, error)
-	// UpdateSubagent invokes update-subagent operation.
+	// Fails with 422 and code MODEL_UNAVAILABLE when the model cannot run an agent, and with 422 and code
+	// REASONING_UNSUPPORTED when a reasoning effort is set for a model without reasoning.
 	//
-	// Update subagent.
-	//
-	// PATCH /api/v1/threads/{thread}/subagents/{subagent}
-	UpdateSubagent(ctx context.Context, request *UpdateSubagentRequestBody, params UpdateSubagentParams) (*SubagentResource, error)
+	// PATCH /api/v1/settings
+	UpdateSettings(ctx context.Context, request *UpdateSettingsRequestBody) (*SettingsResource, error)
 	// UpdateTask invokes update-task operation.
 	//
-	// Update task.
+	// Changes the name, trigger or action. Omitted fields stay as they are; `trigger` and `action` are
+	// replaced as a whole. A run already in progress keeps the settings it started with.
 	//
 	// PATCH /api/v1/tasks/{task}
 	UpdateTask(ctx context.Context, request *UpdateTaskRequestBody, params UpdateTaskParams) (*TaskResource, error)
 	// UpdateThread invokes update-thread operation.
 	//
-	// Changes the title, folder, approval mode, model preference, and whether the conversation is
-	// archived. Approval and model preference changes take effect from the next turn; a turn already
-	// running keeps the settings it started with.
+	// Changes the title, model, reasoning effort, approval mode, or whether the conversation is archived.
+	// Omitted fields stay as they are.
 	//
-	// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform
-	// default. A non-null preference is accepted only while model selection is enabled; otherwise the
-	// whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed.
-	// Clearing a preference remains allowed while selection is disabled. A well-formed preference for a
-	// disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+	// Model, reasoning and approval changes apply to the next model request; a request already in flight
+	// keeps its settings. A model that cannot run an agent fails with 422 and code MODEL_UNAVAILABLE.
+	// Switching to a model without reasoning clears `reasoningEffort`.
 	//
-	// Model switching is allowed on an existing conversation, including while a turn is generating or
-	// waiting for approval or an answer. The response immediately returns the saved preferredModelId,
-	// while model continues to identify the running turn's effective model until it finishes. Messages
-	// queued into that running turn also keep its captured model choices. The next turn uses the latest
-	// saved preference.
-	//
-	// Changing the preference does not create a new conversation, start a turn, call a model provider,
-	// clear the transcript, or rewrite historical model attribution. Before the next turn sends its first
-	// request to the selected model, the service checks that model's input capabilities and usable context
-	// budget. A switch to a smaller window may require compaction under the compaction policy above;
-	// saving the preference alone does not establish that the conversation fits.
-	//
-	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and
-	// the assistant can still find it when it searches past conversations — it just takes no new input.
-	// Unarchive it to continue. Archiving fails while a turn is running; stop it first.
+	// Archiving makes the conversation read-only and fails with 409 and code THREAD_RUNNING while a turn
+	// is running.
 	//
 	// PATCH /api/v1/threads/{thread}
-	UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error)
+	UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadResource, error)
 	// UpdateUpload invokes update-upload operation.
 	//
 	// Update upload.
@@ -622,14 +629,14 @@ type Invoker interface {
 	UpdateUpload(ctx context.Context, request *UpdateUploadRequestBody, params UpdateUploadParams) (*UploadResource, error)
 	// UploadAttachment invokes upload-attachment operation.
 	//
-	// The body is the file bytes themselves, not multipart, one file per request. The kind is determined
+	// The body is the file bytes themselves, not multipart, one file per request. The type is determined
 	// from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
 	// sending a message.
 	//
 	// An upload that no message ever references is a draft, and drafts are collected — `draftExpiresAt`
 	// in the response says when this one goes. Sending a message with the id makes it permanent.
 	//
-	// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
+	// The returned `type` says how the assistant will see it. An `image` is read directly, and only by
 	// models that accept image input. A small `text` file is placed inline in the message. A large `text`
 	// file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
 	// that usually means downloading it onto one of the project's cloud instances.
@@ -681,21 +688,21 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 
 // AnswerQuestion invokes answer-question operation.
 //
-// The question id comes from the conversation document's `wait`. An already-answered question also
-// returns 204 — another tab may have submitted first, or the auto-answer window may have expired,
-// and in both cases the turn has already continued with an answer.
+// Answers an `ask` tool call. Its questions are in the item's `questions`. An item that is already
+// answered also succeeds: another tab may have answered first, or the auto-answer window may have
+// passed, and either way the turn has continued.
 //
-// POST /api/v1/threads/{thread}/questions/{item}
-func (c *Client) AnswerQuestion(ctx context.Context, request *AnswerRequestBody, params AnswerQuestionParams) error {
+// POST /api/v1/threads/{thread}/items/{item}/answer
+func (c *Client) AnswerQuestion(ctx context.Context, request *AnswerQuestionRequestBody, params AnswerQuestionParams) error {
 	_, err := c.sendAnswerQuestion(ctx, request, params)
 	return err
 }
 
-func (c *Client) sendAnswerQuestion(ctx context.Context, request *AnswerRequestBody, params AnswerQuestionParams) (res *AnswerQuestionNoContent, err error) {
+func (c *Client) sendAnswerQuestion(ctx context.Context, request *AnswerQuestionRequestBody, params AnswerQuestionParams) (res *AnswerQuestionNoContent, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("answer-question"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/questions/{item}"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/items/{item}/answer"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -728,7 +735,7 @@ func (c *Client) sendAnswerQuestion(ctx context.Context, request *AnswerRequestB
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
+	var pathParts [5]string
 	pathParts[0] = "/api/v1/threads/"
 	{
 		// Encode "thread" parameter.
@@ -748,7 +755,7 @@ func (c *Client) sendAnswerQuestion(ctx context.Context, request *AnswerRequestB
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/questions/"
+	pathParts[2] = "/items/"
 	{
 		// Encode "item" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -767,6 +774,7 @@ func (c *Client) sendAnswerQuestion(ctx context.Context, request *AnswerRequestB
 		}
 		pathParts[3] = encoded
 	}
+	pathParts[4] = "/answer"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -968,19 +976,20 @@ func (c *Client) sendBeginWeixinLogin(ctx context.Context, params BeginWeixinLog
 	return result, nil
 }
 
-// CancelTask invokes cancel-task operation.
+// CancelTaskRun invokes cancel-task-run operation.
 //
-// Cancel task.
+// Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
+// running.
 //
 // POST /api/v1/tasks/{task}/cancel
-func (c *Client) CancelTask(ctx context.Context, params CancelTaskParams) error {
-	_, err := c.sendCancelTask(ctx, params)
-	return err
+func (c *Client) CancelTaskRun(ctx context.Context, params CancelTaskRunParams) (*TaskResource, error) {
+	res, err := c.sendCancelTaskRun(ctx, params)
+	return res, err
 }
 
-func (c *Client) sendCancelTask(ctx context.Context, params CancelTaskParams) (res *CancelTaskOK, err error) {
+func (c *Client) sendCancelTaskRun(ctx context.Context, params CancelTaskRunParams) (res *TaskResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("cancel-task"),
+		otelogen.OperationID("cancel-task-run"),
 		semconv.HTTPRequestMethodKey.String("POST"),
 		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/cancel"),
 	}
@@ -998,7 +1007,7 @@ func (c *Client) sendCancelTask(ctx context.Context, params CancelTaskParams) (r
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CancelTaskOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, CancelTaskRunOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1049,7 +1058,7 @@ func (c *Client) sendCancelTask(ctx context.Context, params CancelTaskParams) (r
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CancelTaskOperation, r); {
+			switch err := c.securityBearerAuth(ctx, CancelTaskRunOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -1092,7 +1101,7 @@ func (c *Client) sendCancelTask(ctx context.Context, params CancelTaskParams) (r
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeCancelTaskResponse(resp)
+	result, err := decodeCancelTaskRunResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1395,6 +1404,143 @@ func (c *Client) sendCheckSender(ctx context.Context, params CheckSenderParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeCheckSenderResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CompactThread invokes compact-thread operation.
+//
+// Starts a compaction turn that summarizes the history before the latest user message, the same way
+// the service does automatically when the context window fills up. The result appears in the
+// transcript as a `compaction` item and the turn reports its own token usage.
+//
+// Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
+// NOTHING_TO_COMPACT when there is no history to summarize.
+//
+// POST /api/v1/threads/{thread}/compact
+func (c *Client) CompactThread(ctx context.Context, params CompactThreadParams) (*TurnStartedResponseBody, error) {
+	res, err := c.sendCompactThread(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendCompactThread(ctx context.Context, params CompactThreadParams) (res *TurnStartedResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("compact-thread"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/compact"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CompactThreadOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/compact"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CompactThreadOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCompactThreadResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1803,12 +1949,11 @@ func (c *Client) sendCreateChannel(ctx context.Context, request *CreateChannelRe
 
 // CreateFolder invokes create-folder operation.
 //
-// A folder groups conversations in the sidebar and does nothing else. The assistant is never told
-// which folder a conversation is in, and a conversation behaves exactly the same inside one as
-// outside: no shared instructions, no shared files, no shared memory.
+// A folder groups conversations on the board and does nothing else: the assistant is never told which
+// folder a conversation is in. New folders go after the existing ones.
 //
-// Names are unique within an account's folders in this project, because the only way to aim at a
-// folder is to read its name.
+// Names are unique among the caller's folders in this project; a duplicate fails with 409 and code
+// FOLDER_EXISTS.
 //
 // POST /api/v1/folders
 func (c *Client) CreateFolder(ctx context.Context, request *CreateFolderRequestBody) (*FolderResource, error) {
@@ -1931,30 +2076,31 @@ func (c *Client) sendCreateFolder(ctx context.Context, request *CreateFolderRequ
 	return result, nil
 }
 
-// CreateSchedule invokes create-schedule operation.
+// CreateRealtimeTicket invokes create-realtime-ticket operation.
 //
-// Create schedule.
+// Returns the address and a short-lived ticket for the realtime WebSocket. Open
+// `{url}?ticket={ticket}`; the ticket stands in for the bearer token, which a browser cannot set on a
+// WebSocket. One connection carries every subscription of a client.
 //
-// POST /api/v1/threads/{thread}/schedules
-func (c *Client) CreateSchedule(ctx context.Context, request *CreateScheduleRequestBody, params CreateScheduleParams) (*ScheduleResource, error) {
-	res, err := c.sendCreateSchedule(ctx, request, params)
+// Messages are JSON text frames. The client sends `RealtimeClientMessage` and receives
+// `RealtimeServerMessage`. Subscribe to `workspace` for every conversation, folder and task of the
+// caller in this project, and to `thread:{id}` for the transcript of one conversation. A transcript
+// subscription takes the `streamCursor` from list-thread-items and replays what was written after it;
+// when the cursor is too old the server sends `resync` and the client reads the items again.
+//
+// Reconnect with a new ticket after the connection closes. Ping at least every 30 seconds.
+//
+// POST /api/v1/realtime/tickets
+func (c *Client) CreateRealtimeTicket(ctx context.Context) (*RealtimeTicketResource, error) {
+	res, err := c.sendCreateRealtimeTicket(ctx)
 	return res, err
 }
 
-func (c *Client) sendCreateSchedule(ctx context.Context, request *CreateScheduleRequestBody, params CreateScheduleParams) (res *ScheduleResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
+func (c *Client) sendCreateRealtimeTicket(ctx context.Context) (res *RealtimeTicketResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-schedule"),
+		otelogen.OperationID("create-realtime-ticket"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/schedules"),
+		semconv.URLTemplateKey.String("/api/v1/realtime/tickets"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1970,7 +2116,7 @@ func (c *Client) sendCreateSchedule(ctx context.Context, request *CreateSchedule
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateScheduleOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateRealtimeTicketOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1987,27 +2133,8 @@ func (c *Client) sendCreateSchedule(ctx context.Context, request *CreateSchedule
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/schedules"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/realtime/tickets"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2015,16 +2142,13 @@ func (c *Client) sendCreateSchedule(ctx context.Context, request *CreateSchedule
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeCreateScheduleRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
 
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateScheduleOperation, r); {
+			switch err := c.securityBearerAuth(ctx, CreateRealtimeTicketOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -2067,151 +2191,7 @@ func (c *Client) sendCreateSchedule(ctx context.Context, request *CreateSchedule
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeCreateScheduleResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateSubagent invokes create-subagent operation.
-//
-// Create subagent.
-//
-// POST /api/v1/threads/{thread}/subagents
-func (c *Client) CreateSubagent(ctx context.Context, request *CreateSubagentRequestBody, params CreateSubagentParams) (*SubagentResource, error) {
-	res, err := c.sendCreateSubagent(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateSubagent(ctx context.Context, request *CreateSubagentRequestBody, params CreateSubagentParams) (res *SubagentResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-subagent"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/subagents"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subagents"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateSubagentRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateSubagentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateSubagentResponse(resp)
+	result, err := decodeCreateRealtimeTicketResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2221,15 +2201,24 @@ func (c *Client) sendCreateSubagent(ctx context.Context, request *CreateSubagent
 
 // CreateTask invokes create-task operation.
 //
-// Create task.
+// A task does something on a trigger and reports to a conversation. Its action either sends a prompt
+// to the conversation, which starts a turn there, or runs a command on an instance and sends the
+// result to the conversation when it ends.
 //
-// POST /api/v1/threads/{thread}/tasks
-func (c *Client) CreateTask(ctx context.Context, request *CreateTaskRequestBody, params CreateTaskParams) (*TaskResource, error) {
-	res, err := c.sendCreateTask(ctx, request, params)
+// `trigger.type` `now` runs once immediately; `at` runs once at `runAt`; `interval` repeats every
+// `intervalSeconds` from `anchorAt`; `cron` repeats on a cron expression in `timezone`. Each execution
+// is a run, listed under /runs.
+//
+// Fails with 404 when the conversation does not exist and with 409 and code THREAD_ARCHIVED when it is
+// archived.
+//
+// POST /api/v1/tasks
+func (c *Client) CreateTask(ctx context.Context, request *CreateTaskRequestBody) (*TaskResource, error) {
+	res, err := c.sendCreateTask(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateTask(ctx context.Context, request *CreateTaskRequestBody, params CreateTaskParams) (res *TaskResource, err error) {
+func (c *Client) sendCreateTask(ctx context.Context, request *CreateTaskRequestBody) (res *TaskResource, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2242,7 +2231,7 @@ func (c *Client) sendCreateTask(ctx context.Context, request *CreateTaskRequestB
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/tasks"),
+		semconv.URLTemplateKey.String("/api/v1/tasks"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2275,27 +2264,8 @@ func (c *Client) sendCreateTask(ctx context.Context, request *CreateTaskRequestB
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/tasks"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/tasks"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2365,22 +2335,23 @@ func (c *Client) sendCreateTask(ctx context.Context, request *CreateTaskRequestB
 
 // CreateThread invokes create-thread operation.
 //
-// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is
-// accepted only while model selection is enabled; otherwise the request fails with 403 and code
-// MODEL_SELECTION_DISABLED.
+// Creates a conversation and, when `message` is given, sends it as the first message in the same
+// request, so starting a task is one round trip.
 //
-// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed
-// is retained and uses the default when a turn starts. This also handles a catalogue change between
-// displaying the selector and submitting the choice. Creating a conversation does not contact a model
-// provider and remains possible when generation is unavailable.
+// The model is chosen in this order: `modelId` from the request, the caller's default from
+// /api/v1/settings, then the first model in the Canopy catalogue that can run an agent. Fails with 422
+// and code MODEL_UNAVAILABLE when the chosen model cannot run an agent, and with 422 and code
+// REASONING_UNSUPPORTED when `reasoningEffort` is given for a model without reasoning.
+//
+// Without `message`, creating a conversation does not contact a model provider.
 //
 // POST /api/v1/threads
-func (c *Client) CreateThread(ctx context.Context, request *CreateThreadRequestBody) (*ThreadSummaryResource, error) {
+func (c *Client) CreateThread(ctx context.Context, request *CreateThreadRequestBody) (*CreateThreadResponseBody, error) {
 	res, err := c.sendCreateThread(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateThread(ctx context.Context, request *CreateThreadRequestBody) (res *ThreadSummaryResource, err error) {
+func (c *Client) sendCreateThread(ctx context.Context, request *CreateThreadRequestBody) (res *CreateThreadResponseBody, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2620,23 +2591,35 @@ func (c *Client) sendCreateUpload(ctx context.Context, request *CreateUploadRequ
 	return result, nil
 }
 
-// DecideApproval invokes decide-approval operation.
+// DecideToolCalls invokes decide-tool-calls operation.
 //
-// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same
-// batch again neither changes a decision already in effect nor reports an error. Returns 404 when the
-// batch does not belong to that conversation.
+// Decides the tool calls the conversation is waiting on, listed in `pendingAction.itemIds`. One
+// decision applies to the whole batch, so `itemIds` must name exactly the calls awaiting approval.
 //
-// POST /api/v1/threads/{thread}/approvals/{batch}
-func (c *Client) DecideApproval(ctx context.Context, request *DecideRequestBody, params DecideApprovalParams) error {
-	_, err := c.sendDecideApproval(ctx, request, params)
+// Repeating a decision that is already in effect succeeds. Fails with 409 and code APPROVAL_MISMATCH
+// when `itemIds` is not the current batch, for example because another tab decided first and the
+// assistant has moved on.
+//
+// POST /api/v1/threads/{thread}/approvals
+func (c *Client) DecideToolCalls(ctx context.Context, request *DecideToolCallsRequestBody, params DecideToolCallsParams) error {
+	_, err := c.sendDecideToolCalls(ctx, request, params)
 	return err
 }
 
-func (c *Client) sendDecideApproval(ctx context.Context, request *DecideRequestBody, params DecideApprovalParams) (res *DecideApprovalNoContent, err error) {
+func (c *Client) sendDecideToolCalls(ctx context.Context, request *DecideToolCallsRequestBody, params DecideToolCallsParams) (res *DecideToolCallsNoContent, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("decide-approval"),
+		otelogen.OperationID("decide-tool-calls"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/approvals/{batch}"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/approvals"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2652,7 +2635,7 @@ func (c *Client) sendDecideApproval(ctx context.Context, request *DecideRequestB
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DecideApprovalOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DecideToolCallsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2669,7 +2652,7 @@ func (c *Client) sendDecideApproval(ctx context.Context, request *DecideRequestB
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
+	var pathParts [3]string
 	pathParts[0] = "/api/v1/threads/"
 	{
 		// Encode "thread" parameter.
@@ -2689,25 +2672,7 @@ func (c *Client) sendDecideApproval(ctx context.Context, request *DecideRequestB
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/approvals/"
-	{
-		// Encode "batch" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "batch",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Batch))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
+	pathParts[2] = "/approvals"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2715,7 +2680,7 @@ func (c *Client) sendDecideApproval(ctx context.Context, request *DecideRequestB
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeDecideApprovalRequest(request, r); err != nil {
+	if err := encodeDecideToolCallsRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -2724,7 +2689,7 @@ func (c *Client) sendDecideApproval(ctx context.Context, request *DecideRequestB
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DecideApprovalOperation, r); {
+			switch err := c.securityBearerAuth(ctx, DecideToolCallsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -2767,7 +2732,7 @@ func (c *Client) sendDecideApproval(ctx context.Context, request *DecideRequestB
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDecideApprovalResponse(resp)
+	result, err := decodeDecideToolCallsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3040,11 +3005,9 @@ func (c *Client) sendDeleteChannel(ctx context.Context, params DeleteChannelPara
 
 // DeleteFolder invokes delete-folder operation.
 //
-// The conversations inside are not deleted. They leave the folder and go back to the ungrouped list,
-// where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and
-// deleting a conversation is a different request.
-//
-// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+// The conversations inside are not deleted; they move to the end of the inbox. The inbox cannot be
+// deleted and fails with 409 and code INBOX_READ_ONLY. Deleting a folder that is already gone
+// succeeds.
 //
 // DELETE /api/v1/folders/{folder}
 func (c *Client) DeleteFolder(ctx context.Context, params DeleteFolderParams) error {
@@ -3305,137 +3268,6 @@ func (c *Client) sendDeleteMemory(ctx context.Context, params DeleteMemoryParams
 	return result, nil
 }
 
-// DeleteSchedule invokes delete-schedule operation.
-//
-// Delete schedule.
-//
-// DELETE /api/v1/schedules/{schedule}
-func (c *Client) DeleteSchedule(ctx context.Context, params DeleteScheduleParams) error {
-	_, err := c.sendDeleteSchedule(ctx, params)
-	return err
-}
-
-func (c *Client) sendDeleteSchedule(ctx context.Context, params DeleteScheduleParams) (res *DeleteScheduleOK, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-schedule"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/schedules/{schedule}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteScheduleOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/schedules/"
-	{
-		// Encode "schedule" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "schedule",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Schedule))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteScheduleOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDeleteScheduleResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // DeleteSkill invokes delete-skill operation.
 //
 // A built-in skill of the same name, if there was one, becomes visible again.
@@ -3567,159 +3399,10 @@ func (c *Client) sendDeleteSkill(ctx context.Context, params DeleteSkillParams) 
 	return result, nil
 }
 
-// DeleteSubagent invokes delete-subagent operation.
-//
-// Delete subagent.
-//
-// DELETE /api/v1/threads/{thread}/subagents/{subagent}
-func (c *Client) DeleteSubagent(ctx context.Context, params DeleteSubagentParams) error {
-	_, err := c.sendDeleteSubagent(ctx, params)
-	return err
-}
-
-func (c *Client) sendDeleteSubagent(ctx context.Context, params DeleteSubagentParams) (res *DeleteSubagentOK, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-subagent"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/subagents/{subagent}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subagents/"
-	{
-		// Encode "subagent" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "subagent",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Subagent))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteSubagentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDeleteSubagentResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // DeleteTask invokes delete-task operation.
 //
-// Delete task.
+// Cancels a run in progress and removes the task. Its runs stay readable in the conversation's
+// transcript.
 //
 // DELETE /api/v1/tasks/{task}
 func (c *Client) DeleteTask(ctx context.Context, params DeleteTaskParams) error {
@@ -3727,7 +3410,7 @@ func (c *Client) DeleteTask(ctx context.Context, params DeleteTaskParams) error 
 	return err
 }
 
-func (c *Client) sendDeleteTask(ctx context.Context, params DeleteTaskParams) (res *DeleteTaskOK, err error) {
+func (c *Client) sendDeleteTask(ctx context.Context, params DeleteTaskParams) (res *DeleteTaskNoContent, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-task"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -3850,19 +3533,11 @@ func (c *Client) sendDeleteTask(ctx context.Context, params DeleteTaskParams) (r
 
 // DeleteThread invokes delete-thread operation.
 //
-// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer
-// find it either — neither by searching past conversations nor by reading one back.
+// Removes the conversation and its subagents from every list and makes them unreachable by id,
+// including for the assistant. Deleting cannot be undone; archive instead to keep it readable.
 //
-// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived
-// conversation is still there and still readable, it just takes no new input; a deleted one is gone
-// from view. Archiving can be undone; this cannot.
-//
-// What survives is the record itself, because a conversation with this assistant is an account of what
-// was done to real infrastructure — which machine was changed, which disk was removed. That record
-// is kept even though nobody can reach it here.
-//
-// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and
-// changes nothing.
+// Fails with 409 and code THREAD_RUNNING while a turn is running. Deleting an already deleted
+// conversation succeeds.
 //
 // DELETE /api/v1/threads/{thread}
 func (c *Client) DeleteThread(ctx context.Context, params DeleteThreadParams) error {
@@ -4128,7 +3803,7 @@ func (c *Client) sendDeleteUpload(ctx context.Context, params DeleteUploadParams
 // because the content never changes. Returns 404 when the attachment does not exist or does not belong
 // to the current user.
 //
-// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the
+// Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
 // address of an `<img>`. Everything else is served as `application/octet-stream` with
 // `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
 // its uploader chose, and serving it back inline would run it on this origin.
@@ -4524,9 +4199,7 @@ func (c *Client) sendGetChannel(ctx context.Context, params GetChannelParams) (r
 
 // GetFolder invokes get-folder operation.
 //
-// The list returns every folder at once, so this is for the case the list does not cover: a page
-// opened straight at a folder, holding nothing but the id from the address bar. Its conversations are
-// a separate request — `GET /api/v1/threads?folder=<id>`.
+// Its conversations are read with search-threads and `folderId`.
 //
 // GET /api/v1/folders/{folder}
 func (c *Client) GetFolder(ctx context.Context, params GetFolderParams) (*FolderResource, error) {
@@ -4655,21 +4328,23 @@ func (c *Client) sendGetFolder(ctx context.Context, params GetFolderParams) (res
 	return result, nil
 }
 
-// GetModelConfiguration invokes getModelConfiguration operation.
+// GetSettings invokes get-settings operation.
 //
-// Model metadata is provided by Canopy. This endpoint exposes only assistant deployment policy.
+// The caller's assistant settings in this project. `defaultModel` is what a new conversation uses when
+// it names no model: the caller's choice, or the first model in the Canopy catalogue that can run an
+// agent.
 //
-// GET /api/v1/model-configuration
-func (c *Client) GetModelConfiguration(ctx context.Context) (*ModelConfigurationResource, error) {
-	res, err := c.sendGetModelConfiguration(ctx)
+// GET /api/v1/settings
+func (c *Client) GetSettings(ctx context.Context) (*SettingsResource, error) {
+	res, err := c.sendGetSettings(ctx)
 	return res, err
 }
 
-func (c *Client) sendGetModelConfiguration(ctx context.Context) (res *ModelConfigurationResource, err error) {
+func (c *Client) sendGetSettings(ctx context.Context) (res *SettingsResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("getModelConfiguration"),
+		otelogen.OperationID("get-settings"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/model-configuration"),
+		semconv.URLTemplateKey.String("/api/v1/settings"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4685,7 +4360,7 @@ func (c *Client) sendGetModelConfiguration(ctx context.Context) (res *ModelConfi
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetModelConfigurationOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSettingsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -4703,7 +4378,7 @@ func (c *Client) sendGetModelConfiguration(ctx context.Context) (res *ModelConfi
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/model-configuration"
+	pathParts[0] = "/api/v1/settings"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -4717,7 +4392,7 @@ func (c *Client) sendGetModelConfiguration(ctx context.Context) (res *ModelConfi
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetModelConfigurationOperation, r); {
+			switch err := c.securityBearerAuth(ctx, GetSettingsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -4760,138 +4435,7 @@ func (c *Client) sendGetModelConfiguration(ctx context.Context) (res *ModelConfi
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetModelConfigurationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetSchedule invokes get-schedule operation.
-//
-// Get schedule.
-//
-// GET /api/v1/schedules/{schedule}
-func (c *Client) GetSchedule(ctx context.Context, params GetScheduleParams) (*ScheduleResource, error) {
-	res, err := c.sendGetSchedule(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetSchedule(ctx context.Context, params GetScheduleParams) (res *ScheduleResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-schedule"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/schedules/{schedule}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetScheduleOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/schedules/"
-	{
-		// Encode "schedule" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "schedule",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Schedule))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetScheduleOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetScheduleResponse(resp)
+	result, err := decodeGetSettingsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5030,159 +4574,9 @@ func (c *Client) sendGetSkill(ctx context.Context, params GetSkillParams) (res *
 	return result, nil
 }
 
-// GetSubagent invokes get-subagent operation.
-//
-// Get subagent.
-//
-// GET /api/v1/threads/{thread}/subagents/{subagent}
-func (c *Client) GetSubagent(ctx context.Context, params GetSubagentParams) (*SubagentResource, error) {
-	res, err := c.sendGetSubagent(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetSubagent(ctx context.Context, params GetSubagentParams) (res *SubagentResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-subagent"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/subagents/{subagent}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subagents/"
-	{
-		// Encode "subagent" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "subagent",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Subagent))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetSubagentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetSubagentResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetTask invokes get-task operation.
 //
-// Get task.
+// Get a task.
 //
 // GET /api/v1/tasks/{task}
 func (c *Client) GetTask(ctx context.Context, params GetTaskParams) (*TaskResource, error) {
@@ -5313,17 +4707,17 @@ func (c *Client) sendGetTask(ctx context.Context, params GetTaskParams) (res *Ta
 
 // GetThread invokes get-thread operation.
 //
-// The complete current state of a conversation, for the first render. Its `stream` gives the address
-// and admission ticket for live output, and what that stream pushes are incremental edits to this same
-// document, so the same rendering logic applies.
+// The conversation's state: model, reasoning effort, approval mode, what it is doing now, its plan,
+// what it is waiting for, context usage and token usage. The transcript is read separately from
+// /items.
 //
 // GET /api/v1/threads/{thread}
-func (c *Client) GetThread(ctx context.Context, params GetThreadParams) (*DocumentResource, error) {
+func (c *Client) GetThread(ctx context.Context, params GetThreadParams) (*ThreadResource, error) {
 	res, err := c.sendGetThread(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetThread(ctx context.Context, params GetThreadParams) (res *DocumentResource, err error) {
+func (c *Client) sendGetThread(ctx context.Context, params GetThreadParams) (res *ThreadResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-thread"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -5820,162 +5214,13 @@ func (c *Client) sendGetWeixinLogin(ctx context.Context, params GetWeixinLoginPa
 	return result, nil
 }
 
-// InterruptSubagent invokes interrupt-subagent operation.
-//
-// Interrupt subagent.
-//
-// POST /api/v1/threads/{thread}/subagents/{subagent}/interrupt
-func (c *Client) InterruptSubagent(ctx context.Context, params InterruptSubagentParams) error {
-	_, err := c.sendInterruptSubagent(ctx, params)
-	return err
-}
-
-func (c *Client) sendInterruptSubagent(ctx context.Context, params InterruptSubagentParams) (res *InterruptSubagentOK, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("interrupt-subagent"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/subagents/{subagent}/interrupt"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, InterruptSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subagents/"
-	{
-		// Encode "subagent" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "subagent",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Subagent))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/interrupt"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, InterruptSubagentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeInterruptSubagentResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // InterruptThread invokes interrupt-thread operation.
 //
-// Calling this on a conversation with no running turn also returns 204 rather than an error — the
-// user pressing stop races with the turn finishing on its own, and both outcomes are the same. This
-// operation remains available while the project is suspended or being cleaned up.
+// Stops this conversation's running turn and discards its queued messages. Subagents keep running;
+// stop them through their own conversations.
+//
+// Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
+// Available while the project is suspended or being cleaned up.
 //
 // POST /api/v1/threads/{thread}/interrupt
 func (c *Client) InterruptThread(ctx context.Context, params InterruptThreadParams) error {
@@ -6647,25 +5892,22 @@ func (c *Client) sendListChannels(ctx context.Context, params ListChannelsParams
 	return result, nil
 }
 
-// ListEarlierItems invokes list-earlier-items operation.
+// ListCommands invokes list-commands operation.
 //
-// The first render only carries the latest stretch of a conversation; anything above it is fetched
-// here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the
-// response is the cursor for the stretch above that, and null means the top has been reached. The
-// entries have the same shape and the same order (oldest first) as `items` in the document, so they
-// can be prepended as they are.
+// The slash commands a person can type in a conversation, such as /status or /compact. The same
+// commands work in the console and in chat apps, so a client builds its command menu from this list.
 //
-// GET /api/v1/threads/{thread}/earlier
-func (c *Client) ListEarlierItems(ctx context.Context, params ListEarlierItemsParams) (*EarlierResponseBody, error) {
-	res, err := c.sendListEarlierItems(ctx, params)
+// GET /api/v1/commands
+func (c *Client) ListCommands(ctx context.Context) (*CommandListResponseBody, error) {
+	res, err := c.sendListCommands(ctx)
 	return res, err
 }
 
-func (c *Client) sendListEarlierItems(ctx context.Context, params ListEarlierItemsParams) (res *EarlierResponseBody, err error) {
+func (c *Client) sendListCommands(ctx context.Context) (res *CommandListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-earlier-items"),
+		otelogen.OperationID("list-commands"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/earlier"),
+		semconv.URLTemplateKey.String("/api/v1/commands"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6681,7 +5923,7 @@ func (c *Client) sendListEarlierItems(ctx context.Context, params ListEarlierIte
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListEarlierItemsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCommandsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -6698,46 +5940,9 @@ func (c *Client) sendListEarlierItems(ctx context.Context, params ListEarlierIte
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/earlier"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/commands"
 	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "before" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "before",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.Int64ToString(params.Before))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
@@ -6750,7 +5955,7 @@ func (c *Client) sendListEarlierItems(ctx context.Context, params ListEarlierIte
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListEarlierItemsOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ListCommandsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -6793,7 +5998,7 @@ func (c *Client) sendListEarlierItems(ctx context.Context, params ListEarlierIte
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListEarlierItemsResponse(resp)
+	result, err := decodeListCommandsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6803,10 +6008,9 @@ func (c *Client) sendListEarlierItems(ctx context.Context, params ListEarlierIte
 
 // ListFolders invokes list-folders operation.
 //
-// The current account's folders in this project, oldest first. That order is fixed and does not react
-// to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever
-// something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many
-// there can be, and all of them come back at once.
+// The caller's folders in this project in their own order, inbox first. Every conversation is in
+// exactly one folder; the inbox holds the ones nobody filed. Not paginated: the number of folders is
+// capped and all of them come back at once.
 //
 // GET /api/v1/folders
 func (c *Client) ListFolders(ctx context.Context) (*FolderListResponseBody, error) {
@@ -7149,138 +6353,6 @@ func (c *Client) sendListPlatforms(ctx context.Context) (res *PlatformListRespon
 	return result, nil
 }
 
-// ListSchedules invokes list-schedules operation.
-//
-// List schedules.
-//
-// GET /api/v1/threads/{thread}/schedules
-func (c *Client) ListSchedules(ctx context.Context, params ListSchedulesParams) (*ScheduleListResponseBody, error) {
-	res, err := c.sendListSchedules(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListSchedules(ctx context.Context, params ListSchedulesParams) (res *ScheduleListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-schedules"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/schedules"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListSchedulesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/schedules"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSchedulesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListSchedulesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListSkills invokes list-skills operation.
 //
 // Everything the assistant can reach in this project, including the ones that are turned off — an
@@ -7398,21 +6470,21 @@ func (c *Client) sendListSkills(ctx context.Context) (res *SkillListResponseBody
 	return result, nil
 }
 
-// ListSubagents invokes list-subagents operation.
+// ListTaskRuns invokes list-task-runs operation.
 //
-// List subagents.
+// Newest first.
 //
-// GET /api/v1/threads/{thread}/subagents
-func (c *Client) ListSubagents(ctx context.Context, params ListSubagentsParams) (*SubagentListResponseBody, error) {
-	res, err := c.sendListSubagents(ctx, params)
+// GET /api/v1/tasks/{task}/runs
+func (c *Client) ListTaskRuns(ctx context.Context, params ListTaskRunsParams) (*TaskRunListResponseBody, error) {
+	res, err := c.sendListTaskRuns(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListSubagents(ctx context.Context, params ListSubagentsParams) (res *SubagentListResponseBody, err error) {
+func (c *Client) sendListTaskRuns(ctx context.Context, params ListTaskRunsParams) (res *TaskRunListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-subagents"),
+		otelogen.OperationID("list-task-runs"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/subagents"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/runs"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -7428,7 +6500,7 @@ func (c *Client) sendListSubagents(ctx context.Context, params ListSubagentsPara
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListSubagentsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListTaskRunsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -7446,16 +6518,16 @@ func (c *Client) sendListSubagents(ctx context.Context, params ListSubagentsPara
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
+	pathParts[0] = "/api/v1/tasks/"
 	{
-		// Encode "thread" parameter.
+		// Encode "task" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
+			Param:   "task",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
+			return e.EncodeValue(conv.StringToString(params.Task))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -7465,268 +6537,21 @@ func (c *Client) sendListSubagents(ctx context.Context, params ListSubagentsPara
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/subagents"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSubagentsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListSubagentsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListTasks invokes list-tasks operation.
-//
-// List tasks.
-//
-// GET /api/v1/threads/{thread}/tasks
-func (c *Client) ListTasks(ctx context.Context, params ListTasksParams) (*TaskListResponseBody, error) {
-	res, err := c.sendListTasks(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListTasks(ctx context.Context, params ListTasksParams) (res *TaskListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-tasks"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/tasks"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListTasksOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/tasks"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListTasksOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListTasksResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListThreads invokes list-threads operation.
-//
-// Lists root conversations with execution and usage summaries. Sorting is applied before cursor
-// pagination. Keep identical sorting and filters for subsequent pages. ids requests are bounded
-// batches without pagination.
-//
-// GET /api/v1/threads
-func (c *Client) ListThreads(ctx context.Context, params ListThreadsParams) (*ThreadListResponseBody, error) {
-	res, err := c.sendListThreads(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) (res *ThreadListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-threads"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/threads"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListThreadsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/threads"
+	pathParts[2] = "/runs"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
 	{
-		// Encode "q" parameter.
+		// Encode "cursor" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "q",
+			Name:    "cursor",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Q.Get(); ok {
+			if val, ok := params.Cursor.Get(); ok {
 				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
@@ -7735,16 +6560,175 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 		}
 	}
 	{
-		// Encode "archived" parameter.
+		// Encode "limit" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "archived",
+			Name:    "limit",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Archived.Get(); ok {
-				return e.EncodeValue(conv.BoolToString(val))
+			if val, ok := params.Limit.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListTaskRunsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListTaskRunsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListThreadItems invokes list-thread-items operation.
+//
+// The conversation's transcript, oldest first: messages, reasoning, tool calls and compaction markers.
+// Without `before` or `after` the latest page is returned.
+//
+// Pass `earlier` from the response as `before` to read further up; null means the top has been
+// reached. `after` returns what was written after an ordinal, which a client uses to catch up after a
+// reconnect. Subscribe to `thread:{id}` on /api/v1/realtime with `streamCursor` to follow what is
+// written next.
+//
+// GET /api/v1/threads/{thread}/items
+func (c *Client) ListThreadItems(ctx context.Context, params ListThreadItemsParams) (*ThreadItemListResponseBody, error) {
+	res, err := c.sendListThreadItems(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListThreadItems(ctx context.Context, params ListThreadItemsParams) (res *ThreadItemListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-thread-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/items"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListThreadItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/items"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "before" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "before",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Before.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -7752,16 +6736,199 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 		}
 	}
 	{
-		// Encode "folder" parameter.
+		// Encode "after" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "folder",
+			Name:    "after",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.After.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "limit" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Limit.Get(); ok {
+				return e.EncodeValue(conv.IntToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListThreadItemsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListThreadItemsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListThreadTurns invokes list-thread-turns operation.
+//
+// The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
+// long it took and the tokens it used. Cache hit rate is `cachedInputTokens / inputTokens`.
+//
+// `ids` reads the turns behind a page of transcript items in one request and cannot be combined with a
+// cursor.
+//
+// GET /api/v1/threads/{thread}/turns
+func (c *Client) ListThreadTurns(ctx context.Context, params ListThreadTurnsParams) (*ThreadTurnListResponseBody, error) {
+	res, err := c.sendListThreadTurns(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListThreadTurns(ctx context.Context, params ListThreadTurnsParams) (res *ThreadTurnListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-thread-turns"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/turns"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListThreadTurnsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/turns"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "ids" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "ids",
 			Style:   uri.QueryStyleForm,
 			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Folder.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if params.Ids != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.Ids {
+						if err := func() error {
+							return e.EncodeValue(conv.StringToString(item))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
 			}
 			return nil
 		}); err != nil {
@@ -7802,49 +6969,6 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 			return res, errors.Wrap(err, "encode query")
 		}
 	}
-	{
-		// Encode "sort" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "sort",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Sort.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "ids" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "ids",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if params.Ids != nil {
-				return e.EncodeArray(func(e uri.Encoder) error {
-					for i, item := range params.Ids {
-						if err := func() error {
-							return e.EncodeValue(conv.StringToString(item))
-						}(); err != nil {
-							return errors.Wrapf(err, "[%d]", i)
-						}
-					}
-					return nil
-				})
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
@@ -7858,7 +6982,7 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListThreadsOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ListThreadTurnsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -7901,7 +7025,7 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListThreadsResponse(resp)
+	result, err := decodeListThreadTurnsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -8022,160 +7146,9 @@ func (c *Client) sendListUploads(ctx context.Context) (res *UploadListResponseBo
 	return result, nil
 }
 
-// ListWorkspaceSchedules invokes list-workspace-schedules operation.
-//
-// List schedules in the current workspace.
-//
-// GET /api/v1/schedules
-func (c *Client) ListWorkspaceSchedules(ctx context.Context, params ListWorkspaceSchedulesParams) (*ScheduleListResponseBody, error) {
-	res, err := c.sendListWorkspaceSchedules(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListWorkspaceSchedules(ctx context.Context, params ListWorkspaceSchedulesParams) (res *ScheduleListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-workspace-schedules"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/schedules"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListWorkspaceSchedulesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/schedules"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "cursor" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "cursor",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Cursor.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "limit" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "limit",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Limit.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListWorkspaceSchedulesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListWorkspaceSchedulesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // MarkThreadRead invokes mark-thread-read operation.
 //
-// Mark a conversation as read.
+// Clears `unread` until the assistant replies again.
 //
 // POST /api/v1/threads/{thread}/read
 func (c *Client) MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error {
@@ -8307,7 +7280,8 @@ func (c *Client) sendMarkThreadRead(ctx context.Context, params MarkThreadReadPa
 
 // MoveFolder invokes move-folder operation.
 //
-// Reorder a folder.
+// Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
+// with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 //
 // POST /api/v1/folders/{folder}/move
 func (c *Client) MoveFolder(ctx context.Context, request *MoveFolderRequestBody, params MoveFolderParams) (*FolderResource, error) {
@@ -8449,30 +7423,23 @@ func (c *Client) sendMoveFolder(ctx context.Context, request *MoveFolderRequestB
 	return result, nil
 }
 
-// MoveThread invokes move-thread operation.
+// OpenRealtime invokes open-realtime operation.
 //
-// Move and reorder a conversation.
+// Upgrades to a WebSocket. The ticket from create-realtime-ticket authenticates the connection; a
+// missing, expired or foreign ticket closes it with code 4401. The 200 response documents the message
+// a client receives on the socket; the endpoint never answers with a plain HTTP body.
 //
-// POST /api/v1/threads/{thread}/move
-func (c *Client) MoveThread(ctx context.Context, request *MoveThreadRequestBody, params MoveThreadParams) (*ThreadSummaryResource, error) {
-	res, err := c.sendMoveThread(ctx, request, params)
+// GET /api/v1/realtime
+func (c *Client) OpenRealtime(ctx context.Context, params OpenRealtimeParams) (*RealtimeExchange, error) {
+	res, err := c.sendOpenRealtime(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendMoveThread(ctx context.Context, request *MoveThreadRequestBody, params MoveThreadParams) (res *ThreadSummaryResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
+func (c *Client) sendOpenRealtime(ctx context.Context, params OpenRealtimeParams) (res *RealtimeExchange, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("move-thread"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/move"),
+		otelogen.OperationID("open-realtime"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/realtime"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8488,7 +7455,7 @@ func (c *Client) sendMoveThread(ctx context.Context, request *MoveThreadRequestB
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, MoveThreadOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, OpenRealtimeOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -8505,69 +7472,32 @@ func (c *Client) sendMoveThread(ctx context.Context, request *MoveThreadRequestB
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/move"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/realtime"
 	uri.AddPathParts(u, pathParts[:]...)
 
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "ticket" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "ticket",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.Ticket))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeMoveThreadRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, MoveThreadOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
 	}
 
 	stage = "SendRequest"
@@ -8585,7 +7515,7 @@ func (c *Client) sendMoveThread(ctx context.Context, request *MoveThreadRequestB
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeMoveThreadResponse(resp)
+	result, err := decodeOpenRealtimeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -8593,21 +7523,21 @@ func (c *Client) sendMoveThread(ctx context.Context, request *MoveThreadRequestB
 	return result, nil
 }
 
-// PauseSchedule invokes pause-schedule operation.
+// PauseTask invokes pause-task operation.
 //
-// Pause schedule.
+// Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
 //
-// POST /api/v1/schedules/{schedule}/pause
-func (c *Client) PauseSchedule(ctx context.Context, params PauseScheduleParams) error {
-	_, err := c.sendPauseSchedule(ctx, params)
-	return err
+// POST /api/v1/tasks/{task}/pause
+func (c *Client) PauseTask(ctx context.Context, params PauseTaskParams) (*TaskResource, error) {
+	res, err := c.sendPauseTask(ctx, params)
+	return res, err
 }
 
-func (c *Client) sendPauseSchedule(ctx context.Context, params PauseScheduleParams) (res *PauseScheduleOK, err error) {
+func (c *Client) sendPauseTask(ctx context.Context, params PauseTaskParams) (res *TaskResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("pause-schedule"),
+		otelogen.OperationID("pause-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/schedules/{schedule}/pause"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/pause"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8623,7 +7553,7 @@ func (c *Client) sendPauseSchedule(ctx context.Context, params PauseSchedulePara
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, PauseScheduleOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, PauseTaskOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -8641,16 +7571,16 @@ func (c *Client) sendPauseSchedule(ctx context.Context, params PauseSchedulePara
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v1/schedules/"
+	pathParts[0] = "/api/v1/tasks/"
 	{
-		// Encode "schedule" parameter.
+		// Encode "task" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "schedule",
+			Param:   "task",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Schedule))
+			return e.EncodeValue(conv.StringToString(params.Task))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -8674,7 +7604,7 @@ func (c *Client) sendPauseSchedule(ctx context.Context, params PauseSchedulePara
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, PauseScheduleOperation, r); {
+			switch err := c.securityBearerAuth(ctx, PauseTaskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -8717,7 +7647,174 @@ func (c *Client) sendPauseSchedule(ctx context.Context, params PauseSchedulePara
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodePauseScheduleResponse(resp)
+	result, err := decodePauseTaskResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PlaceThread invokes place-thread operation.
+//
+// Puts the conversation into this folder at the given position, moving it out of the folder it was in.
+// Give `beforeThreadId` or `afterThreadId` to place it next to a conversation of this folder; with
+// neither it goes last. Moving does not change the conversation's activity time.
+//
+// Subagents are not filed and fail with 409 and code SUBAGENT_NOT_FILED. Fails with 409 and code
+// ORDER_CHANGED when `expectedVersion` is stale.
+//
+// PUT /api/v1/folders/{folder}/threads/{thread}
+func (c *Client) PlaceThread(ctx context.Context, request *PlaceThreadRequestBody, params PlaceThreadParams) (*ThreadResource, error) {
+	res, err := c.sendPlaceThread(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendPlaceThread(ctx context.Context, request *PlaceThreadRequestBody, params PlaceThreadParams) (res *ThreadResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("place-thread"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/folders/{folder}/threads/{thread}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PlaceThreadOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/folders/"
+	{
+		// Encode "folder" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "folder",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Folder))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePlaceThreadRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, PlaceThreadOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePlaceThreadResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9039,21 +8136,22 @@ func (c *Client) sendPutUploadPart(ctx context.Context, request PutUploadPartReq
 	return result, nil
 }
 
-// ResumeSchedule invokes resume-schedule operation.
+// ResumeTask invokes resume-task operation.
 //
-// Resume schedule.
+// Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
+// active task succeeds.
 //
-// POST /api/v1/schedules/{schedule}/resume
-func (c *Client) ResumeSchedule(ctx context.Context, params ResumeScheduleParams) error {
-	_, err := c.sendResumeSchedule(ctx, params)
-	return err
+// POST /api/v1/tasks/{task}/resume
+func (c *Client) ResumeTask(ctx context.Context, params ResumeTaskParams) (*TaskResource, error) {
+	res, err := c.sendResumeTask(ctx, params)
+	return res, err
 }
 
-func (c *Client) sendResumeSchedule(ctx context.Context, params ResumeScheduleParams) (res *ResumeScheduleOK, err error) {
+func (c *Client) sendResumeTask(ctx context.Context, params ResumeTaskParams) (res *TaskResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("resume-schedule"),
+		otelogen.OperationID("resume-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/schedules/{schedule}/resume"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/resume"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -9069,7 +8167,7 @@ func (c *Client) sendResumeSchedule(ctx context.Context, params ResumeSchedulePa
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ResumeScheduleOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ResumeTaskOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -9087,16 +8185,16 @@ func (c *Client) sendResumeSchedule(ctx context.Context, params ResumeSchedulePa
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v1/schedules/"
+	pathParts[0] = "/api/v1/tasks/"
 	{
-		// Encode "schedule" parameter.
+		// Encode "task" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "schedule",
+			Param:   "task",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Schedule))
+			return e.EncodeValue(conv.StringToString(params.Task))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -9120,7 +8218,7 @@ func (c *Client) sendResumeSchedule(ctx context.Context, params ResumeSchedulePa
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ResumeScheduleOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ResumeTaskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -9163,7 +8261,154 @@ func (c *Client) sendResumeSchedule(ctx context.Context, params ResumeSchedulePa
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeResumeScheduleResponse(resp)
+	result, err := decodeResumeTaskResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ResumeThread invokes resume-thread operation.
+//
+// Starts a new turn that continues from where the conversation stopped, for example after it was
+// interrupted or failed. An optional message is added first.
+//
+// Fails with 409 and code THREAD_RUNNING while a turn is running.
+//
+// POST /api/v1/threads/{thread}/resume
+func (c *Client) ResumeThread(ctx context.Context, request *ResumeThreadRequestBody, params ResumeThreadParams) (*TurnStartedResponseBody, error) {
+	res, err := c.sendResumeThread(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendResumeThread(ctx context.Context, request *ResumeThreadRequestBody, params ResumeThreadParams) (res *TurnStartedResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("resume-thread"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/resume"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ResumeThreadOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/resume"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeResumeThreadRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ResumeThreadOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeResumeThreadResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9173,8 +8418,9 @@ func (c *Client) sendResumeSchedule(ctx context.Context, params ResumeSchedulePa
 
 // RevertThread invokes revert-thread operation.
 //
-// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript
-// marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
+// Reverts the item at `ordinal` and everything after it. Reverted items stay in the transcript marked
+// `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
+// external changes are not undone. Returns how many items were reverted.
 //
 // POST /api/v1/threads/{thread}/revert
 func (c *Client) RevertThread(ctx context.Context, request *RevertRequestBody, params RevertThreadParams) (*RevertedCountResponseBody, error) {
@@ -9183,6 +8429,15 @@ func (c *Client) RevertThread(ctx context.Context, request *RevertRequestBody, p
 }
 
 func (c *Client) sendRevertThread(ctx context.Context, request *RevertRequestBody, params RevertThreadParams) (res *RevertedCountResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revert-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -9446,21 +8701,558 @@ func (c *Client) sendRotateChannelSecret(ctx context.Context, request OptRotateS
 	return result, nil
 }
 
+// RunCommand invokes run-command operation.
+//
+// Runs a slash command against the conversation. Commands act directly and never reach the model. The
+// result carries a plain-text `message`, which is what a chat app shows, and structured fields for
+// clients that render more, such as `status` for /status.
+//
+// Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with 422 and code
+// COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
+//
+// POST /api/v1/threads/{thread}/commands
+func (c *Client) RunCommand(ctx context.Context, request *RunCommandRequestBody, params RunCommandParams) (*CommandResultResource, error) {
+	res, err := c.sendRunCommand(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRunCommand(ctx context.Context, request *RunCommandRequestBody, params RunCommandParams) (res *CommandResultResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("run-command"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/commands"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RunCommandOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/commands"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRunCommandRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RunCommandOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRunCommandResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RunTask invokes run-task operation.
+//
+// Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
+// already in progress and the overlap policy is `skip`.
+//
+// POST /api/v1/tasks/{task}/run
+func (c *Client) RunTask(ctx context.Context, params RunTaskParams) (*TaskRunResource, error) {
+	res, err := c.sendRunTask(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendRunTask(ctx context.Context, params RunTaskParams) (res *TaskRunResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("run-task"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/run"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RunTaskOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/tasks/"
+	{
+		// Encode "task" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "task",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Task))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/run"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RunTaskOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRunTaskResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SearchTasks invokes search-tasks operation.
+//
+// The caller's tasks in this project, most recently created first.
+//
+// QUERY /api/v1/tasks
+func (c *Client) SearchTasks(ctx context.Context, request *SearchTasksRequestBody) (*TaskListResponseBody, error) {
+	res, err := c.sendSearchTasks(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendSearchTasks(ctx context.Context, request *SearchTasksRequestBody) (res *TaskListResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-tasks"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.URLTemplateKey.String("/api/v1/tasks"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SearchTasksOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/tasks"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "QUERY", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSearchTasksRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SearchTasksOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSearchTasksResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SearchThreads invokes search-threads operation.
+//
+// Lists the caller's conversations in this project with their state, progress and usage. The criteria
+// travel in the request body. Keep the same criteria when following `nextCursor`.
+//
+// Subagents are conversations too. They are excluded unless `parentId` or `role` asks for them. `ids`
+// reads a bounded batch, including subagents and archived conversations, and cannot be combined with a
+// cursor.
+//
+// QUERY /api/v1/threads
+func (c *Client) SearchThreads(ctx context.Context, request *SearchThreadsRequestBody) (*ThreadListResponseBody, error) {
+	res, err := c.sendSearchThreads(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendSearchThreads(ctx context.Context, request *SearchThreadsRequestBody) (res *ThreadListResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-threads"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.URLTemplateKey.String("/api/v1/threads"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SearchThreadsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/threads"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "QUERY", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSearchThreadsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SearchThreadsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSearchThreadsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // SendMessage invokes send-message operation.
 //
-// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes.
-// Progress arrives on the live stream the conversation document's `stream` points at, not in this
-// response. Sending while the assistant is still working is allowed: the message is put in line and
-// `queued` comes back true, to be read at the next step of the turn already running — so the editor
-// should stay open rather than blocking on a busy conversation.
+// Starts a turn and returns at once; a turn can run for tens of minutes and its progress arrives on
+// /api/v1/realtime. Sending while the assistant is working is allowed: the message is queued and read
+// at the next step of the running turn, and `queued` is true.
+//
+// Fails with 409 and code THREAD_ARCHIVED for an archived conversation.
 //
 // POST /api/v1/threads/{thread}/messages
-func (c *Client) SendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (*TurnIDResponseBody, error) {
+func (c *Client) SendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (*SendMessageResponseBody, error) {
 	res, err := c.sendSendMessage(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendSendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (res *TurnIDResponseBody, err error) {
+func (c *Client) sendSendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (res *SendMessageResponseBody, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -9587,169 +9379,6 @@ func (c *Client) sendSendMessage(ctx context.Context, request *SendMessageReques
 
 	stage = "DecodeResponse"
 	result, err := decodeSendMessageResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SendSubagentMessage invokes send-subagent-message operation.
-//
-// Send subagent message.
-//
-// POST /api/v1/threads/{thread}/subagents/{subagent}/messages
-func (c *Client) SendSubagentMessage(ctx context.Context, request *SendSubagentRequestBody, params SendSubagentMessageParams) error {
-	_, err := c.sendSendSubagentMessage(ctx, request, params)
-	return err
-}
-
-func (c *Client) sendSendSubagentMessage(ctx context.Context, request *SendSubagentRequestBody, params SendSubagentMessageParams) (res *SendSubagentMessageOK, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("send-subagent-message"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/subagents/{subagent}/messages"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SendSubagentMessageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subagents/"
-	{
-		// Encode "subagent" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "subagent",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Subagent))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/messages"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSendSubagentMessageRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SendSubagentMessageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSendSubagentMessageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9895,152 +9524,20 @@ func (c *Client) sendSetSkillEnabled(ctx context.Context, request *SkillEnabledR
 	return result, nil
 }
 
-// StartTask invokes start-task operation.
+// SubmitToolResult invokes submit-tool-result operation.
 //
-// Start task.
+// The assistant asks the client to run one of the actions it declared by writing a tool call with the
+// namespace `client`; the client runs it when the item turns in_progress and reports here.
 //
-// POST /api/v1/tasks/{task}/start
-func (c *Client) StartTask(ctx context.Context, params StartTaskParams) error {
-	_, err := c.sendStartTask(ctx, params)
+// The first result counts. A later one fails with 409 and code RESULT_ALREADY_SUBMITTED.
+//
+// POST /api/v1/threads/{thread}/items/{item}/result
+func (c *Client) SubmitToolResult(ctx context.Context, request *ToolResultRequestBody, params SubmitToolResultParams) error {
+	_, err := c.sendSubmitToolResult(ctx, request, params)
 	return err
 }
 
-func (c *Client) sendStartTask(ctx context.Context, params StartTaskParams) (res *StartTaskOK, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-task"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/start"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, StartTaskOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/tasks/"
-	{
-		// Encode "task" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "task",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Task))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/start"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, StartTaskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeStartTaskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SubmitDynamicCallResult invokes submit-dynamic-call-result operation.
-//
-// The assistant asks the client to run an action by adding a tool call to the conversation with the
-// namespace `dynamic`; the client acts when that entry turns in_progress and reports back here.
-//
-// The first result is the one that counts. A later one is refused rather than replacing it.
-//
-// POST /api/v1/dynamic-calls/{call}/result
-func (c *Client) SubmitDynamicCallResult(ctx context.Context, request *DynamicCallResultRequestBody, params SubmitDynamicCallResultParams) error {
-	_, err := c.sendSubmitDynamicCallResult(ctx, request, params)
-	return err
-}
-
-func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *DynamicCallResultRequestBody, params SubmitDynamicCallResultParams) (res *SubmitDynamicCallResultNoContent, err error) {
+func (c *Client) sendSubmitToolResult(ctx context.Context, request *ToolResultRequestBody, params SubmitToolResultParams) (res *SubmitToolResultNoContent, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -10051,9 +9548,9 @@ func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *Dynam
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("submit-dynamic-call-result"),
+		otelogen.OperationID("submit-tool-result"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/dynamic-calls/{call}/result"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/items/{item}/result"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -10069,7 +9566,7 @@ func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *Dynam
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SubmitDynamicCallResultOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, SubmitToolResultOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -10086,17 +9583,17 @@ func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *Dynam
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/dynamic-calls/"
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/threads/"
 	{
-		// Encode "call" parameter.
+		// Encode "thread" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "call",
+			Param:   "thread",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Call))
+			return e.EncodeValue(conv.StringToString(params.Thread))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -10106,7 +9603,26 @@ func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *Dynam
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/result"
+	pathParts[2] = "/items/"
+	{
+		// Encode "item" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "item",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Item))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/result"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -10114,7 +9630,7 @@ func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *Dynam
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeSubmitDynamicCallResultRequest(request, r); err != nil {
+	if err := encodeSubmitToolResultRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -10123,7 +9639,7 @@ func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *Dynam
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SubmitDynamicCallResultOperation, r); {
+			switch err := c.securityBearerAuth(ctx, SubmitToolResultOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -10166,7 +9682,7 @@ func (c *Client) sendSubmitDynamicCallResult(ctx context.Context, request *Dynam
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeSubmitDynamicCallResultResponse(resp)
+	result, err := decodeSubmitToolResultResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -10312,138 +9828,6 @@ func (c *Client) sendSubmitWeixinVerifyCode(ctx context.Context, request *Verify
 
 	stage = "DecodeResponse"
 	result, err := decodeSubmitWeixinVerifyCodeResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// TriggerSchedule invokes trigger-schedule operation.
-//
-// Trigger schedule.
-//
-// POST /api/v1/schedules/{schedule}/trigger
-func (c *Client) TriggerSchedule(ctx context.Context, params TriggerScheduleParams) error {
-	_, err := c.sendTriggerSchedule(ctx, params)
-	return err
-}
-
-func (c *Client) sendTriggerSchedule(ctx context.Context, params TriggerScheduleParams) (res *TriggerScheduleOK, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("trigger-schedule"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/schedules/{schedule}/trigger"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, TriggerScheduleOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/schedules/"
-	{
-		// Encode "schedule" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "schedule",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Schedule))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/trigger"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, TriggerScheduleOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeTriggerScheduleResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -10598,8 +9982,7 @@ func (c *Client) sendUpdateChannel(ctx context.Context, request *UpdateChannelRe
 
 // UpdateFolder invokes update-folder operation.
 //
-// The conversations in it are untouched, and none of them move in the list — a folder's name is not
-// part of what any conversation is about.
+// The inbox cannot be renamed and fails with 409 and code INBOX_READ_ONLY.
 //
 // PATCH /api/v1/folders/{folder}
 func (c *Client) UpdateFolder(ctx context.Context, request *UpdateFolderRequestBody, params UpdateFolderParams) (*FolderResource, error) {
@@ -10740,17 +10123,21 @@ func (c *Client) sendUpdateFolder(ctx context.Context, request *UpdateFolderRequ
 	return result, nil
 }
 
-// UpdateSchedule invokes update-schedule operation.
+// UpdateSettings invokes update-settings operation.
 //
-// Update schedule.
+// Omitted fields stay as they are; null clears a choice so the catalogue default applies again.
+// Existing conversations keep their models.
 //
-// PATCH /api/v1/schedules/{schedule}
-func (c *Client) UpdateSchedule(ctx context.Context, request *UpdateScheduleRequestBody, params UpdateScheduleParams) (*ScheduleResource, error) {
-	res, err := c.sendUpdateSchedule(ctx, request, params)
+// Fails with 422 and code MODEL_UNAVAILABLE when the model cannot run an agent, and with 422 and code
+// REASONING_UNSUPPORTED when a reasoning effort is set for a model without reasoning.
+//
+// PATCH /api/v1/settings
+func (c *Client) UpdateSettings(ctx context.Context, request *UpdateSettingsRequestBody) (*SettingsResource, error) {
+	res, err := c.sendUpdateSettings(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendUpdateSchedule(ctx context.Context, request *UpdateScheduleRequestBody, params UpdateScheduleParams) (res *ScheduleResource, err error) {
+func (c *Client) sendUpdateSettings(ctx context.Context, request *UpdateSettingsRequestBody) (res *SettingsResource, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -10761,9 +10148,9 @@ func (c *Client) sendUpdateSchedule(ctx context.Context, request *UpdateSchedule
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-schedule"),
+		otelogen.OperationID("update-settings"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/schedules/{schedule}"),
+		semconv.URLTemplateKey.String("/api/v1/settings"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -10779,7 +10166,7 @@ func (c *Client) sendUpdateSchedule(ctx context.Context, request *UpdateSchedule
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateScheduleOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateSettingsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -10796,26 +10183,8 @@ func (c *Client) sendUpdateSchedule(ctx context.Context, request *UpdateSchedule
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/schedules/"
-	{
-		// Encode "schedule" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "schedule",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Schedule))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/settings"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -10823,7 +10192,7 @@ func (c *Client) sendUpdateSchedule(ctx context.Context, request *UpdateSchedule
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeUpdateScheduleRequest(request, r); err != nil {
+	if err := encodeUpdateSettingsRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -10832,7 +10201,7 @@ func (c *Client) sendUpdateSchedule(ctx context.Context, request *UpdateSchedule
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, UpdateScheduleOperation, r); {
+			switch err := c.securityBearerAuth(ctx, UpdateSettingsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -10875,160 +10244,7 @@ func (c *Client) sendUpdateSchedule(ctx context.Context, request *UpdateSchedule
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeUpdateScheduleResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UpdateSubagent invokes update-subagent operation.
-//
-// Update subagent.
-//
-// PATCH /api/v1/threads/{thread}/subagents/{subagent}
-func (c *Client) UpdateSubagent(ctx context.Context, request *UpdateSubagentRequestBody, params UpdateSubagentParams) (*SubagentResource, error) {
-	res, err := c.sendUpdateSubagent(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUpdateSubagent(ctx context.Context, request *UpdateSubagentRequestBody, params UpdateSubagentParams) (res *SubagentResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-subagent"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/subagents/{subagent}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateSubagentOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subagents/"
-	{
-		// Encode "subagent" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "subagent",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Subagent))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUpdateSubagentRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, UpdateSubagentOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUpdateSubagentResponse(resp)
+	result, err := decodeUpdateSettingsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -11038,7 +10254,8 @@ func (c *Client) sendUpdateSubagent(ctx context.Context, request *UpdateSubagent
 
 // UpdateTask invokes update-task operation.
 //
-// Update task.
+// Changes the name, trigger or action. Omitted fields stay as they are; `trigger` and `action` are
+// replaced as a whole. A run already in progress keeps the settings it started with.
 //
 // PATCH /api/v1/tasks/{task}
 func (c *Client) UpdateTask(ctx context.Context, request *UpdateTaskRequestBody, params UpdateTaskParams) (*TaskResource, error) {
@@ -11181,39 +10398,23 @@ func (c *Client) sendUpdateTask(ctx context.Context, request *UpdateTaskRequestB
 
 // UpdateThread invokes update-thread operation.
 //
-// Changes the title, folder, approval mode, model preference, and whether the conversation is
-// archived. Approval and model preference changes take effect from the next turn; a turn already
-// running keeps the settings it started with.
+// Changes the title, model, reasoning effort, approval mode, or whether the conversation is archived.
+// Omitted fields stay as they are.
 //
-// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform
-// default. A non-null preference is accepted only while model selection is enabled; otherwise the
-// whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed.
-// Clearing a preference remains allowed while selection is disabled. A well-formed preference for a
-// disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+// Model, reasoning and approval changes apply to the next model request; a request already in flight
+// keeps its settings. A model that cannot run an agent fails with 422 and code MODEL_UNAVAILABLE.
+// Switching to a model without reasoning clears `reasoningEffort`.
 //
-// Model switching is allowed on an existing conversation, including while a turn is generating or
-// waiting for approval or an answer. The response immediately returns the saved preferredModelId,
-// while model continues to identify the running turn's effective model until it finishes. Messages
-// queued into that running turn also keep its captured model choices. The next turn uses the latest
-// saved preference.
-//
-// Changing the preference does not create a new conversation, start a turn, call a model provider,
-// clear the transcript, or rewrite historical model attribution. Before the next turn sends its first
-// request to the selected model, the service checks that model's input capabilities and usable context
-// budget. A switch to a smaller window may require compaction under the compaction policy above;
-// saving the preference alone does not establish that the conversation fits.
-//
-// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and
-// the assistant can still find it when it searches past conversations — it just takes no new input.
-// Unarchive it to continue. Archiving fails while a turn is running; stop it first.
+// Archiving makes the conversation read-only and fails with 409 and code THREAD_RUNNING while a turn
+// is running.
 //
 // PATCH /api/v1/threads/{thread}
-func (c *Client) UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error) {
+func (c *Client) UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadResource, error) {
 	res, err := c.sendUpdateThread(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (res *ThreadSummaryResource, err error) {
+func (c *Client) sendUpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (res *ThreadResource, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -11491,14 +10692,14 @@ func (c *Client) sendUpdateUpload(ctx context.Context, request *UpdateUploadRequ
 
 // UploadAttachment invokes upload-attachment operation.
 //
-// The body is the file bytes themselves, not multipart, one file per request. The kind is determined
+// The body is the file bytes themselves, not multipart, one file per request. The type is determined
 // from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
 // sending a message.
 //
 // An upload that no message ever references is a draft, and drafts are collected — `draftExpiresAt`
 // in the response says when this one goes. Sending a message with the id makes it permanent.
 //
-// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
+// The returned `type` says how the assistant will see it. An `image` is read directly, and only by
 // models that accept image input. A small `text` file is placed inline in the message. A large `text`
 // file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
 // that usually means downloading it onto one of the project's cloud instances.

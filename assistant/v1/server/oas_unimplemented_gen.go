@@ -15,12 +15,12 @@ var _ Handler = UnimplementedHandler{}
 
 // AnswerQuestion implements answer-question operation.
 //
-// The question id comes from the conversation document's `wait`. An already-answered question also
-// returns 204 — another tab may have submitted first, or the auto-answer window may have expired,
-// and in both cases the turn has already continued with an answer.
+// Answers an `ask` tool call. Its questions are in the item's `questions`. An item that is already
+// answered also succeeds: another tab may have answered first, or the auto-answer window may have
+// passed, and either way the turn has continued.
 //
-// POST /api/v1/threads/{thread}/questions/{item}
-func (UnimplementedHandler) AnswerQuestion(ctx context.Context, req *AnswerRequestBody, params AnswerQuestionParams) error {
+// POST /api/v1/threads/{thread}/items/{item}/answer
+func (UnimplementedHandler) AnswerQuestion(ctx context.Context, req *AnswerQuestionRequestBody, params AnswerQuestionParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -35,13 +35,14 @@ func (UnimplementedHandler) BeginWeixinLogin(ctx context.Context, params BeginWe
 	return r, ht.ErrNotImplemented
 }
 
-// CancelTask implements cancel-task operation.
+// CancelTaskRun implements cancel-task-run operation.
 //
-// Cancel task.
+// Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
+// running.
 //
 // POST /api/v1/tasks/{task}/cancel
-func (UnimplementedHandler) CancelTask(ctx context.Context, params CancelTaskParams) error {
-	return ht.ErrNotImplemented
+func (UnimplementedHandler) CancelTaskRun(ctx context.Context, params CancelTaskRunParams) (r *TaskResource, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // CancelUpload implements cancel-upload operation.
@@ -62,6 +63,20 @@ func (UnimplementedHandler) CancelUpload(ctx context.Context, params CancelUploa
 //
 // GET /api/v1/channels/{channel}/sender-check
 func (UnimplementedHandler) CheckSender(ctx context.Context, params CheckSenderParams) (r *SenderCheckResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CompactThread implements compact-thread operation.
+//
+// Starts a compaction turn that summarizes the history before the latest user message, the same way
+// the service does automatically when the context window fills up. The result appears in the
+// transcript as a `compaction` item and the turn reports its own token usage.
+//
+// Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
+// NOTHING_TO_COMPACT when there is no history to summarize.
+//
+// POST /api/v1/threads/{thread}/compact
+func (UnimplementedHandler) CompactThread(ctx context.Context, params CompactThreadParams) (r *TurnStartedResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -101,58 +116,68 @@ func (UnimplementedHandler) CreateChannel(ctx context.Context, req *CreateChanne
 
 // CreateFolder implements create-folder operation.
 //
-// A folder groups conversations in the sidebar and does nothing else. The assistant is never told
-// which folder a conversation is in, and a conversation behaves exactly the same inside one as
-// outside: no shared instructions, no shared files, no shared memory.
+// A folder groups conversations on the board and does nothing else: the assistant is never told which
+// folder a conversation is in. New folders go after the existing ones.
 //
-// Names are unique within an account's folders in this project, because the only way to aim at a
-// folder is to read its name.
+// Names are unique among the caller's folders in this project; a duplicate fails with 409 and code
+// FOLDER_EXISTS.
 //
 // POST /api/v1/folders
 func (UnimplementedHandler) CreateFolder(ctx context.Context, req *CreateFolderRequestBody) (r *FolderResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// CreateSchedule implements create-schedule operation.
+// CreateRealtimeTicket implements create-realtime-ticket operation.
 //
-// Create schedule.
+// Returns the address and a short-lived ticket for the realtime WebSocket. Open
+// `{url}?ticket={ticket}`; the ticket stands in for the bearer token, which a browser cannot set on a
+// WebSocket. One connection carries every subscription of a client.
 //
-// POST /api/v1/threads/{thread}/schedules
-func (UnimplementedHandler) CreateSchedule(ctx context.Context, req *CreateScheduleRequestBody, params CreateScheduleParams) (r *ScheduleResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateSubagent implements create-subagent operation.
+// Messages are JSON text frames. The client sends `RealtimeClientMessage` and receives
+// `RealtimeServerMessage`. Subscribe to `workspace` for every conversation, folder and task of the
+// caller in this project, and to `thread:{id}` for the transcript of one conversation. A transcript
+// subscription takes the `streamCursor` from list-thread-items and replays what was written after it;
+// when the cursor is too old the server sends `resync` and the client reads the items again.
 //
-// Create subagent.
+// Reconnect with a new ticket after the connection closes. Ping at least every 30 seconds.
 //
-// POST /api/v1/threads/{thread}/subagents
-func (UnimplementedHandler) CreateSubagent(ctx context.Context, req *CreateSubagentRequestBody, params CreateSubagentParams) (r *SubagentResource, _ error) {
+// POST /api/v1/realtime/tickets
+func (UnimplementedHandler) CreateRealtimeTicket(ctx context.Context) (r *RealtimeTicketResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // CreateTask implements create-task operation.
 //
-// Create task.
+// A task does something on a trigger and reports to a conversation. Its action either sends a prompt
+// to the conversation, which starts a turn there, or runs a command on an instance and sends the
+// result to the conversation when it ends.
 //
-// POST /api/v1/threads/{thread}/tasks
-func (UnimplementedHandler) CreateTask(ctx context.Context, req *CreateTaskRequestBody, params CreateTaskParams) (r *TaskResource, _ error) {
+// `trigger.type` `now` runs once immediately; `at` runs once at `runAt`; `interval` repeats every
+// `intervalSeconds` from `anchorAt`; `cron` repeats on a cron expression in `timezone`. Each execution
+// is a run, listed under /runs.
+//
+// Fails with 404 when the conversation does not exist and with 409 and code THREAD_ARCHIVED when it is
+// archived.
+//
+// POST /api/v1/tasks
+func (UnimplementedHandler) CreateTask(ctx context.Context, req *CreateTaskRequestBody) (r *TaskResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // CreateThread implements create-thread operation.
 //
-// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is
-// accepted only while model selection is enabled; otherwise the request fails with 403 and code
-// MODEL_SELECTION_DISABLED.
+// Creates a conversation and, when `message` is given, sends it as the first message in the same
+// request, so starting a task is one round trip.
 //
-// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed
-// is retained and uses the default when a turn starts. This also handles a catalogue change between
-// displaying the selector and submitting the choice. Creating a conversation does not contact a model
-// provider and remains possible when generation is unavailable.
+// The model is chosen in this order: `modelId` from the request, the caller's default from
+// /api/v1/settings, then the first model in the Canopy catalogue that can run an agent. Fails with 422
+// and code MODEL_UNAVAILABLE when the chosen model cannot run an agent, and with 422 and code
+// REASONING_UNSUPPORTED when `reasoningEffort` is given for a model without reasoning.
+//
+// Without `message`, creating a conversation does not contact a model provider.
 //
 // POST /api/v1/threads
-func (UnimplementedHandler) CreateThread(ctx context.Context, req *CreateThreadRequestBody) (r *ThreadSummaryResource, _ error) {
+func (UnimplementedHandler) CreateThread(ctx context.Context, req *CreateThreadRequestBody) (r *CreateThreadResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -165,14 +190,17 @@ func (UnimplementedHandler) CreateUpload(ctx context.Context, req *CreateUploadR
 	return r, ht.ErrNotImplemented
 }
 
-// DecideApproval implements decide-approval operation.
+// DecideToolCalls implements decide-tool-calls operation.
 //
-// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same
-// batch again neither changes a decision already in effect nor reports an error. Returns 404 when the
-// batch does not belong to that conversation.
+// Decides the tool calls the conversation is waiting on, listed in `pendingAction.itemIds`. One
+// decision applies to the whole batch, so `itemIds` must name exactly the calls awaiting approval.
 //
-// POST /api/v1/threads/{thread}/approvals/{batch}
-func (UnimplementedHandler) DecideApproval(ctx context.Context, req *DecideRequestBody, params DecideApprovalParams) error {
+// Repeating a decision that is already in effect succeeds. Fails with 409 and code APPROVAL_MISMATCH
+// when `itemIds` is not the current batch, for example because another tab decided first and the
+// assistant has moved on.
+//
+// POST /api/v1/threads/{thread}/approvals
+func (UnimplementedHandler) DecideToolCalls(ctx context.Context, req *DecideToolCallsRequestBody, params DecideToolCallsParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -197,11 +225,9 @@ func (UnimplementedHandler) DeleteChannel(ctx context.Context, params DeleteChan
 
 // DeleteFolder implements delete-folder operation.
 //
-// The conversations inside are not deleted. They leave the folder and go back to the ungrouped list,
-// where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and
-// deleting a conversation is a different request.
-//
-// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+// The conversations inside are not deleted; they move to the end of the inbox. The inbox cannot be
+// deleted and fails with 409 and code INBOX_READ_ONLY. Deleting a folder that is already gone
+// succeeds.
 //
 // DELETE /api/v1/folders/{folder}
 func (UnimplementedHandler) DeleteFolder(ctx context.Context, params DeleteFolderParams) error {
@@ -218,15 +244,6 @@ func (UnimplementedHandler) DeleteMemory(ctx context.Context, params DeleteMemor
 	return ht.ErrNotImplemented
 }
 
-// DeleteSchedule implements delete-schedule operation.
-//
-// Delete schedule.
-//
-// DELETE /api/v1/schedules/{schedule}
-func (UnimplementedHandler) DeleteSchedule(ctx context.Context, params DeleteScheduleParams) error {
-	return ht.ErrNotImplemented
-}
-
 // DeleteSkill implements delete-skill operation.
 //
 // A built-in skill of the same name, if there was one, becomes visible again.
@@ -236,18 +253,10 @@ func (UnimplementedHandler) DeleteSkill(ctx context.Context, params DeleteSkillP
 	return ht.ErrNotImplemented
 }
 
-// DeleteSubagent implements delete-subagent operation.
-//
-// Delete subagent.
-//
-// DELETE /api/v1/threads/{thread}/subagents/{subagent}
-func (UnimplementedHandler) DeleteSubagent(ctx context.Context, params DeleteSubagentParams) error {
-	return ht.ErrNotImplemented
-}
-
 // DeleteTask implements delete-task operation.
 //
-// Delete task.
+// Cancels a run in progress and removes the task. Its runs stay readable in the conversation's
+// transcript.
 //
 // DELETE /api/v1/tasks/{task}
 func (UnimplementedHandler) DeleteTask(ctx context.Context, params DeleteTaskParams) error {
@@ -256,19 +265,11 @@ func (UnimplementedHandler) DeleteTask(ctx context.Context, params DeleteTaskPar
 
 // DeleteThread implements delete-thread operation.
 //
-// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer
-// find it either — neither by searching past conversations nor by reading one back.
+// Removes the conversation and its subagents from every list and makes them unreachable by id,
+// including for the assistant. Deleting cannot be undone; archive instead to keep it readable.
 //
-// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived
-// conversation is still there and still readable, it just takes no new input; a deleted one is gone
-// from view. Archiving can be undone; this cannot.
-//
-// What survives is the record itself, because a conversation with this assistant is an account of what
-// was done to real infrastructure — which machine was changed, which disk was removed. That record
-// is kept even though nobody can reach it here.
-//
-// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and
-// changes nothing.
+// Fails with 409 and code THREAD_RUNNING while a turn is running. Deleting an already deleted
+// conversation succeeds.
 //
 // DELETE /api/v1/threads/{thread}
 func (UnimplementedHandler) DeleteThread(ctx context.Context, params DeleteThreadParams) error {
@@ -290,7 +291,7 @@ func (UnimplementedHandler) DeleteUpload(ctx context.Context, params DeleteUploa
 // because the content never changes. Returns 404 when the attachment does not exist or does not belong
 // to the current user.
 //
-// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the
+// Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
 // address of an `<img>`. Everything else is served as `application/octet-stream` with
 // `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
 // its uploader chose, and serving it back inline would run it on this origin.
@@ -320,30 +321,21 @@ func (UnimplementedHandler) GetChannel(ctx context.Context, params GetChannelPar
 
 // GetFolder implements get-folder operation.
 //
-// The list returns every folder at once, so this is for the case the list does not cover: a page
-// opened straight at a folder, holding nothing but the id from the address bar. Its conversations are
-// a separate request — `GET /api/v1/threads?folder=<id>`.
+// Its conversations are read with search-threads and `folderId`.
 //
 // GET /api/v1/folders/{folder}
 func (UnimplementedHandler) GetFolder(ctx context.Context, params GetFolderParams) (r *FolderResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// GetModelConfiguration implements getModelConfiguration operation.
+// GetSettings implements get-settings operation.
 //
-// Model metadata is provided by Canopy. This endpoint exposes only assistant deployment policy.
+// The caller's assistant settings in this project. `defaultModel` is what a new conversation uses when
+// it names no model: the caller's choice, or the first model in the Canopy catalogue that can run an
+// agent.
 //
-// GET /api/v1/model-configuration
-func (UnimplementedHandler) GetModelConfiguration(ctx context.Context) (r *ModelConfigurationResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetSchedule implements get-schedule operation.
-//
-// Get schedule.
-//
-// GET /api/v1/schedules/{schedule}
-func (UnimplementedHandler) GetSchedule(ctx context.Context, params GetScheduleParams) (r *ScheduleResource, _ error) {
+// GET /api/v1/settings
+func (UnimplementedHandler) GetSettings(ctx context.Context) (r *SettingsResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -356,18 +348,9 @@ func (UnimplementedHandler) GetSkill(ctx context.Context, params GetSkillParams)
 	return r, ht.ErrNotImplemented
 }
 
-// GetSubagent implements get-subagent operation.
-//
-// Get subagent.
-//
-// GET /api/v1/threads/{thread}/subagents/{subagent}
-func (UnimplementedHandler) GetSubagent(ctx context.Context, params GetSubagentParams) (r *SubagentResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // GetTask implements get-task operation.
 //
-// Get task.
+// Get a task.
 //
 // GET /api/v1/tasks/{task}
 func (UnimplementedHandler) GetTask(ctx context.Context, params GetTaskParams) (r *TaskResource, _ error) {
@@ -376,12 +359,12 @@ func (UnimplementedHandler) GetTask(ctx context.Context, params GetTaskParams) (
 
 // GetThread implements get-thread operation.
 //
-// The complete current state of a conversation, for the first render. Its `stream` gives the address
-// and admission ticket for live output, and what that stream pushes are incremental edits to this same
-// document, so the same rendering logic applies.
+// The conversation's state: model, reasoning effort, approval mode, what it is doing now, its plan,
+// what it is waiting for, context usage and token usage. The transcript is read separately from
+// /items.
 //
 // GET /api/v1/threads/{thread}
-func (UnimplementedHandler) GetThread(ctx context.Context, params GetThreadParams) (r *DocumentResource, _ error) {
+func (UnimplementedHandler) GetThread(ctx context.Context, params GetThreadParams) (r *ThreadResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -413,20 +396,13 @@ func (UnimplementedHandler) GetWeixinLogin(ctx context.Context, params GetWeixin
 	return r, ht.ErrNotImplemented
 }
 
-// InterruptSubagent implements interrupt-subagent operation.
-//
-// Interrupt subagent.
-//
-// POST /api/v1/threads/{thread}/subagents/{subagent}/interrupt
-func (UnimplementedHandler) InterruptSubagent(ctx context.Context, params InterruptSubagentParams) error {
-	return ht.ErrNotImplemented
-}
-
 // InterruptThread implements interrupt-thread operation.
 //
-// Calling this on a conversation with no running turn also returns 204 rather than an error — the
-// user pressing stop races with the turn finishing on its own, and both outcomes are the same. This
-// operation remains available while the project is suspended or being cleaned up.
+// Stops this conversation's running turn and discards its queued messages. Subagents keep running;
+// stop them through their own conversations.
+//
+// Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
+// Available while the project is suspended or being cleaned up.
 //
 // POST /api/v1/threads/{thread}/interrupt
 func (UnimplementedHandler) InterruptThread(ctx context.Context, params InterruptThreadParams) error {
@@ -462,25 +438,21 @@ func (UnimplementedHandler) ListChannels(ctx context.Context, params ListChannel
 	return r, ht.ErrNotImplemented
 }
 
-// ListEarlierItems implements list-earlier-items operation.
+// ListCommands implements list-commands operation.
 //
-// The first render only carries the latest stretch of a conversation; anything above it is fetched
-// here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the
-// response is the cursor for the stretch above that, and null means the top has been reached. The
-// entries have the same shape and the same order (oldest first) as `items` in the document, so they
-// can be prepended as they are.
+// The slash commands a person can type in a conversation, such as /status or /compact. The same
+// commands work in the console and in chat apps, so a client builds its command menu from this list.
 //
-// GET /api/v1/threads/{thread}/earlier
-func (UnimplementedHandler) ListEarlierItems(ctx context.Context, params ListEarlierItemsParams) (r *EarlierResponseBody, _ error) {
+// GET /api/v1/commands
+func (UnimplementedHandler) ListCommands(ctx context.Context) (r *CommandListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListFolders implements list-folders operation.
 //
-// The current account's folders in this project, oldest first. That order is fixed and does not react
-// to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever
-// something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many
-// there can be, and all of them come back at once.
+// The caller's folders in this project in their own order, inbox first. Every conversation is in
+// exactly one folder; the inbox holds the ones nobody filed. Not paginated: the number of folders is
+// capped and all of them come back at once.
 //
 // GET /api/v1/folders
 func (UnimplementedHandler) ListFolders(ctx context.Context) (r *FolderListResponseBody, _ error) {
@@ -511,15 +483,6 @@ func (UnimplementedHandler) ListPlatforms(ctx context.Context) (r *PlatformListR
 	return r, ht.ErrNotImplemented
 }
 
-// ListSchedules implements list-schedules operation.
-//
-// List schedules.
-//
-// GET /api/v1/threads/{thread}/schedules
-func (UnimplementedHandler) ListSchedules(ctx context.Context, params ListSchedulesParams) (r *ScheduleListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListSkills implements list-skills operation.
 //
 // Everything the assistant can reach in this project, including the ones that are turned off — an
@@ -533,32 +496,40 @@ func (UnimplementedHandler) ListSkills(ctx context.Context) (r *SkillListRespons
 	return r, ht.ErrNotImplemented
 }
 
-// ListSubagents implements list-subagents operation.
+// ListTaskRuns implements list-task-runs operation.
 //
-// List subagents.
+// Newest first.
 //
-// GET /api/v1/threads/{thread}/subagents
-func (UnimplementedHandler) ListSubagents(ctx context.Context, params ListSubagentsParams) (r *SubagentListResponseBody, _ error) {
+// GET /api/v1/tasks/{task}/runs
+func (UnimplementedHandler) ListTaskRuns(ctx context.Context, params ListTaskRunsParams) (r *TaskRunListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ListTasks implements list-tasks operation.
+// ListThreadItems implements list-thread-items operation.
 //
-// List tasks.
+// The conversation's transcript, oldest first: messages, reasoning, tool calls and compaction markers.
+// Without `before` or `after` the latest page is returned.
 //
-// GET /api/v1/threads/{thread}/tasks
-func (UnimplementedHandler) ListTasks(ctx context.Context, params ListTasksParams) (r *TaskListResponseBody, _ error) {
+// Pass `earlier` from the response as `before` to read further up; null means the top has been
+// reached. `after` returns what was written after an ordinal, which a client uses to catch up after a
+// reconnect. Subscribe to `thread:{id}` on /api/v1/realtime with `streamCursor` to follow what is
+// written next.
+//
+// GET /api/v1/threads/{thread}/items
+func (UnimplementedHandler) ListThreadItems(ctx context.Context, params ListThreadItemsParams) (r *ThreadItemListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ListThreads implements list-threads operation.
+// ListThreadTurns implements list-thread-turns operation.
 //
-// Lists root conversations with execution and usage summaries. Sorting is applied before cursor
-// pagination. Keep identical sorting and filters for subsequent pages. ids requests are bounded
-// batches without pagination.
+// The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
+// long it took and the tokens it used. Cache hit rate is `cachedInputTokens / inputTokens`.
 //
-// GET /api/v1/threads
-func (UnimplementedHandler) ListThreads(ctx context.Context, params ListThreadsParams) (r *ThreadListResponseBody, _ error) {
+// `ids` reads the turns behind a page of transcript items in one request and cannot be combined with a
+// cursor.
+//
+// GET /api/v1/threads/{thread}/turns
+func (UnimplementedHandler) ListThreadTurns(ctx context.Context, params ListThreadTurnsParams) (r *ThreadTurnListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -571,18 +542,9 @@ func (UnimplementedHandler) ListUploads(ctx context.Context) (r *UploadListRespo
 	return r, ht.ErrNotImplemented
 }
 
-// ListWorkspaceSchedules implements list-workspace-schedules operation.
-//
-// List schedules in the current workspace.
-//
-// GET /api/v1/schedules
-func (UnimplementedHandler) ListWorkspaceSchedules(ctx context.Context, params ListWorkspaceSchedulesParams) (r *ScheduleListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // MarkThreadRead implements mark-thread-read operation.
 //
-// Mark a conversation as read.
+// Clears `unread` until the assistant replies again.
 //
 // POST /api/v1/threads/{thread}/read
 func (UnimplementedHandler) MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error {
@@ -591,29 +553,46 @@ func (UnimplementedHandler) MarkThreadRead(ctx context.Context, params MarkThrea
 
 // MoveFolder implements move-folder operation.
 //
-// Reorder a folder.
+// Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
+// with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 //
 // POST /api/v1/folders/{folder}/move
 func (UnimplementedHandler) MoveFolder(ctx context.Context, req *MoveFolderRequestBody, params MoveFolderParams) (r *FolderResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// MoveThread implements move-thread operation.
+// OpenRealtime implements open-realtime operation.
 //
-// Move and reorder a conversation.
+// Upgrades to a WebSocket. The ticket from create-realtime-ticket authenticates the connection; a
+// missing, expired or foreign ticket closes it with code 4401. The 200 response documents the message
+// a client receives on the socket; the endpoint never answers with a plain HTTP body.
 //
-// POST /api/v1/threads/{thread}/move
-func (UnimplementedHandler) MoveThread(ctx context.Context, req *MoveThreadRequestBody, params MoveThreadParams) (r *ThreadSummaryResource, _ error) {
+// GET /api/v1/realtime
+func (UnimplementedHandler) OpenRealtime(ctx context.Context, params OpenRealtimeParams) (r *RealtimeExchange, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// PauseSchedule implements pause-schedule operation.
+// PauseTask implements pause-task operation.
 //
-// Pause schedule.
+// Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
 //
-// POST /api/v1/schedules/{schedule}/pause
-func (UnimplementedHandler) PauseSchedule(ctx context.Context, params PauseScheduleParams) error {
-	return ht.ErrNotImplemented
+// POST /api/v1/tasks/{task}/pause
+func (UnimplementedHandler) PauseTask(ctx context.Context, params PauseTaskParams) (r *TaskResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PlaceThread implements place-thread operation.
+//
+// Puts the conversation into this folder at the given position, moving it out of the folder it was in.
+// Give `beforeThreadId` or `afterThreadId` to place it next to a conversation of this folder; with
+// neither it goes last. Moving does not change the conversation's activity time.
+//
+// Subagents are not filed and fail with 409 and code SUBAGENT_NOT_FILED. Fails with 409 and code
+// ORDER_CHANGED when `expectedVersion` is stale.
+//
+// PUT /api/v1/folders/{folder}/threads/{thread}
+func (UnimplementedHandler) PlaceThread(ctx context.Context, req *PlaceThreadRequestBody, params PlaceThreadParams) (r *ThreadResource, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // PutSkill implements put-skill operation.
@@ -638,19 +617,33 @@ func (UnimplementedHandler) PutUploadPart(ctx context.Context, req PutUploadPart
 	return r, ht.ErrNotImplemented
 }
 
-// ResumeSchedule implements resume-schedule operation.
+// ResumeTask implements resume-task operation.
 //
-// Resume schedule.
+// Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
+// active task succeeds.
 //
-// POST /api/v1/schedules/{schedule}/resume
-func (UnimplementedHandler) ResumeSchedule(ctx context.Context, params ResumeScheduleParams) error {
-	return ht.ErrNotImplemented
+// POST /api/v1/tasks/{task}/resume
+func (UnimplementedHandler) ResumeTask(ctx context.Context, params ResumeTaskParams) (r *TaskResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ResumeThread implements resume-thread operation.
+//
+// Starts a new turn that continues from where the conversation stopped, for example after it was
+// interrupted or failed. An optional message is added first.
+//
+// Fails with 409 and code THREAD_RUNNING while a turn is running.
+//
+// POST /api/v1/threads/{thread}/resume
+func (UnimplementedHandler) ResumeThread(ctx context.Context, req *ResumeThreadRequestBody, params ResumeThreadParams) (r *TurnStartedResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // RevertThread implements revert-thread operation.
 //
-// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript
-// marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
+// Reverts the item at `ordinal` and everything after it. Reverted items stay in the transcript marked
+// `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
+// external changes are not undone. Returns how many items were reverted.
 //
 // POST /api/v1/threads/{thread}/revert
 func (UnimplementedHandler) RevertThread(ctx context.Context, req *RevertRequestBody, params RevertThreadParams) (r *RevertedCountResponseBody, _ error) {
@@ -670,26 +663,64 @@ func (UnimplementedHandler) RotateChannelSecret(ctx context.Context, req OptRota
 	return r, ht.ErrNotImplemented
 }
 
-// SendMessage implements send-message operation.
+// RunCommand implements run-command operation.
 //
-// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes.
-// Progress arrives on the live stream the conversation document's `stream` points at, not in this
-// response. Sending while the assistant is still working is allowed: the message is put in line and
-// `queued` comes back true, to be read at the next step of the turn already running — so the editor
-// should stay open rather than blocking on a busy conversation.
+// Runs a slash command against the conversation. Commands act directly and never reach the model. The
+// result carries a plain-text `message`, which is what a chat app shows, and structured fields for
+// clients that render more, such as `status` for /status.
 //
-// POST /api/v1/threads/{thread}/messages
-func (UnimplementedHandler) SendMessage(ctx context.Context, req *SendMessageRequestBody, params SendMessageParams) (r *TurnIDResponseBody, _ error) {
+// Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with 422 and code
+// COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
+//
+// POST /api/v1/threads/{thread}/commands
+func (UnimplementedHandler) RunCommand(ctx context.Context, req *RunCommandRequestBody, params RunCommandParams) (r *CommandResultResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// SendSubagentMessage implements send-subagent-message operation.
+// RunTask implements run-task operation.
 //
-// Send subagent message.
+// Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
+// already in progress and the overlap policy is `skip`.
 //
-// POST /api/v1/threads/{thread}/subagents/{subagent}/messages
-func (UnimplementedHandler) SendSubagentMessage(ctx context.Context, req *SendSubagentRequestBody, params SendSubagentMessageParams) error {
-	return ht.ErrNotImplemented
+// POST /api/v1/tasks/{task}/run
+func (UnimplementedHandler) RunTask(ctx context.Context, params RunTaskParams) (r *TaskRunResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SearchTasks implements search-tasks operation.
+//
+// The caller's tasks in this project, most recently created first.
+//
+// QUERY /api/v1/tasks
+func (UnimplementedHandler) SearchTasks(ctx context.Context, req *SearchTasksRequestBody) (r *TaskListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SearchThreads implements search-threads operation.
+//
+// Lists the caller's conversations in this project with their state, progress and usage. The criteria
+// travel in the request body. Keep the same criteria when following `nextCursor`.
+//
+// Subagents are conversations too. They are excluded unless `parentId` or `role` asks for them. `ids`
+// reads a bounded batch, including subagents and archived conversations, and cannot be combined with a
+// cursor.
+//
+// QUERY /api/v1/threads
+func (UnimplementedHandler) SearchThreads(ctx context.Context, req *SearchThreadsRequestBody) (r *ThreadListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SendMessage implements send-message operation.
+//
+// Starts a turn and returns at once; a turn can run for tens of minutes and its progress arrives on
+// /api/v1/realtime. Sending while the assistant is working is allowed: the message is queued and read
+// at the next step of the running turn, and `queued` is true.
+//
+// Fails with 409 and code THREAD_ARCHIVED for an archived conversation.
+//
+// POST /api/v1/threads/{thread}/messages
+func (UnimplementedHandler) SendMessage(ctx context.Context, req *SendMessageRequestBody, params SendMessageParams) (r *SendMessageResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // SetSkillEnabled implements set-skill-enabled operation.
@@ -705,24 +736,15 @@ func (UnimplementedHandler) SetSkillEnabled(ctx context.Context, req *SkillEnabl
 	return r, ht.ErrNotImplemented
 }
 
-// StartTask implements start-task operation.
+// SubmitToolResult implements submit-tool-result operation.
 //
-// Start task.
+// The assistant asks the client to run one of the actions it declared by writing a tool call with the
+// namespace `client`; the client runs it when the item turns in_progress and reports here.
 //
-// POST /api/v1/tasks/{task}/start
-func (UnimplementedHandler) StartTask(ctx context.Context, params StartTaskParams) error {
-	return ht.ErrNotImplemented
-}
-
-// SubmitDynamicCallResult implements submit-dynamic-call-result operation.
+// The first result counts. A later one fails with 409 and code RESULT_ALREADY_SUBMITTED.
 //
-// The assistant asks the client to run an action by adding a tool call to the conversation with the
-// namespace `dynamic`; the client acts when that entry turns in_progress and reports back here.
-//
-// The first result is the one that counts. A later one is refused rather than replacing it.
-//
-// POST /api/v1/dynamic-calls/{call}/result
-func (UnimplementedHandler) SubmitDynamicCallResult(ctx context.Context, req *DynamicCallResultRequestBody, params SubmitDynamicCallResultParams) error {
+// POST /api/v1/threads/{thread}/items/{item}/result
+func (UnimplementedHandler) SubmitToolResult(ctx context.Context, req *ToolResultRequestBody, params SubmitToolResultParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -734,15 +756,6 @@ func (UnimplementedHandler) SubmitDynamicCallResult(ctx context.Context, req *Dy
 // POST /api/v1/weixin-logins/{login}/verify-code
 func (UnimplementedHandler) SubmitWeixinVerifyCode(ctx context.Context, req *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (r *LoginResource, _ error) {
 	return r, ht.ErrNotImplemented
-}
-
-// TriggerSchedule implements trigger-schedule operation.
-//
-// Trigger schedule.
-//
-// POST /api/v1/schedules/{schedule}/trigger
-func (UnimplementedHandler) TriggerSchedule(ctx context.Context, params TriggerScheduleParams) error {
-	return ht.ErrNotImplemented
 }
 
 // UpdateChannel implements update-channel operation.
@@ -758,35 +771,30 @@ func (UnimplementedHandler) UpdateChannel(ctx context.Context, req *UpdateChanne
 
 // UpdateFolder implements update-folder operation.
 //
-// The conversations in it are untouched, and none of them move in the list — a folder's name is not
-// part of what any conversation is about.
+// The inbox cannot be renamed and fails with 409 and code INBOX_READ_ONLY.
 //
 // PATCH /api/v1/folders/{folder}
 func (UnimplementedHandler) UpdateFolder(ctx context.Context, req *UpdateFolderRequestBody, params UpdateFolderParams) (r *FolderResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// UpdateSchedule implements update-schedule operation.
+// UpdateSettings implements update-settings operation.
 //
-// Update schedule.
+// Omitted fields stay as they are; null clears a choice so the catalogue default applies again.
+// Existing conversations keep their models.
 //
-// PATCH /api/v1/schedules/{schedule}
-func (UnimplementedHandler) UpdateSchedule(ctx context.Context, req *UpdateScheduleRequestBody, params UpdateScheduleParams) (r *ScheduleResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// UpdateSubagent implements update-subagent operation.
+// Fails with 422 and code MODEL_UNAVAILABLE when the model cannot run an agent, and with 422 and code
+// REASONING_UNSUPPORTED when a reasoning effort is set for a model without reasoning.
 //
-// Update subagent.
-//
-// PATCH /api/v1/threads/{thread}/subagents/{subagent}
-func (UnimplementedHandler) UpdateSubagent(ctx context.Context, req *UpdateSubagentRequestBody, params UpdateSubagentParams) (r *SubagentResource, _ error) {
+// PATCH /api/v1/settings
+func (UnimplementedHandler) UpdateSettings(ctx context.Context, req *UpdateSettingsRequestBody) (r *SettingsResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // UpdateTask implements update-task operation.
 //
-// Update task.
+// Changes the name, trigger or action. Omitted fields stay as they are; `trigger` and `action` are
+// replaced as a whole. A run already in progress keeps the settings it started with.
 //
 // PATCH /api/v1/tasks/{task}
 func (UnimplementedHandler) UpdateTask(ctx context.Context, req *UpdateTaskRequestBody, params UpdateTaskParams) (r *TaskResource, _ error) {
@@ -795,34 +803,18 @@ func (UnimplementedHandler) UpdateTask(ctx context.Context, req *UpdateTaskReque
 
 // UpdateThread implements update-thread operation.
 //
-// Changes the title, folder, approval mode, model preference, and whether the conversation is
-// archived. Approval and model preference changes take effect from the next turn; a turn already
-// running keeps the settings it started with.
+// Changes the title, model, reasoning effort, approval mode, or whether the conversation is archived.
+// Omitted fields stay as they are.
 //
-// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform
-// default. A non-null preference is accepted only while model selection is enabled; otherwise the
-// whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed.
-// Clearing a preference remains allowed while selection is disabled. A well-formed preference for a
-// disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+// Model, reasoning and approval changes apply to the next model request; a request already in flight
+// keeps its settings. A model that cannot run an agent fails with 422 and code MODEL_UNAVAILABLE.
+// Switching to a model without reasoning clears `reasoningEffort`.
 //
-// Model switching is allowed on an existing conversation, including while a turn is generating or
-// waiting for approval or an answer. The response immediately returns the saved preferredModelId,
-// while model continues to identify the running turn's effective model until it finishes. Messages
-// queued into that running turn also keep its captured model choices. The next turn uses the latest
-// saved preference.
-//
-// Changing the preference does not create a new conversation, start a turn, call a model provider,
-// clear the transcript, or rewrite historical model attribution. Before the next turn sends its first
-// request to the selected model, the service checks that model's input capabilities and usable context
-// budget. A switch to a smaller window may require compaction under the compaction policy above;
-// saving the preference alone does not establish that the conversation fits.
-//
-// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and
-// the assistant can still find it when it searches past conversations — it just takes no new input.
-// Unarchive it to continue. Archiving fails while a turn is running; stop it first.
+// Archiving makes the conversation read-only and fails with 409 and code THREAD_RUNNING while a turn
+// is running.
 //
 // PATCH /api/v1/threads/{thread}
-func (UnimplementedHandler) UpdateThread(ctx context.Context, req *UpdateThreadRequestBody, params UpdateThreadParams) (r *ThreadSummaryResource, _ error) {
+func (UnimplementedHandler) UpdateThread(ctx context.Context, req *UpdateThreadRequestBody, params UpdateThreadParams) (r *ThreadResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -837,14 +829,14 @@ func (UnimplementedHandler) UpdateUpload(ctx context.Context, req *UpdateUploadR
 
 // UploadAttachment implements upload-attachment operation.
 //
-// The body is the file bytes themselves, not multipart, one file per request. The kind is determined
+// The body is the file bytes themselves, not multipart, one file per request. The type is determined
 // from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
 // sending a message.
 //
 // An upload that no message ever references is a draft, and drafts are collected — `draftExpiresAt`
 // in the response says when this one goes. Sending a message with the id makes it permanent.
 //
-// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
+// The returned `type` says how the assistant will see it. An `image` is read directly, and only by
 // models that accept image input. A small `text` file is placed inline in the message. A large `text`
 // file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
 // that usually means downloading it onto one of the project's cloud instances.

@@ -34,8 +34,15 @@ func encodeBeginWeixinLoginResponse(response *LoginResource, w http.ResponseWrit
 	return nil
 }
 
-func encodeCancelTaskResponse(response *CancelTaskOK, w http.ResponseWriter, span trace.Span) error {
+func encodeCancelTaskRunResponse(response *TaskResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
@@ -49,6 +56,19 @@ func encodeCancelUploadResponse(response *CancelUploadOK, w http.ResponseWriter,
 func encodeCheckSenderResponse(response *SenderCheckResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCompactThreadResponse(response *TurnStartedResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -111,22 +131,9 @@ func encodeCreateFolderResponse(response *FolderResource, w http.ResponseWriter,
 	return nil
 }
 
-func encodeCreateScheduleResponse(response *ScheduleResource, w http.ResponseWriter, span trace.Span) error {
+func encodeCreateRealtimeTicketResponse(response *RealtimeTicketResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeCreateSubagentResponse(response *SubagentResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
+	w.WriteHeader(201)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -139,7 +146,7 @@ func encodeCreateSubagentResponse(response *SubagentResource, w http.ResponseWri
 
 func encodeCreateTaskResponse(response *TaskResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
+	w.WriteHeader(201)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -150,7 +157,7 @@ func encodeCreateTaskResponse(response *TaskResource, w http.ResponseWriter, spa
 	return nil
 }
 
-func encodeCreateThreadResponse(response *ThreadSummaryResource, w http.ResponseWriter, span trace.Span) error {
+func encodeCreateThreadResponse(response *CreateThreadResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
 
@@ -176,7 +183,7 @@ func encodeCreateUploadResponse(response *UploadResource, w http.ResponseWriter,
 	return nil
 }
 
-func encodeDecideApprovalResponse(response *DecideApprovalNoContent, w http.ResponseWriter, span trace.Span) error {
+func encodeDecideToolCallsResponse(response *DecideToolCallsNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -206,26 +213,14 @@ func encodeDeleteMemoryResponse(response *DeleteMemoryNoContent, w http.Response
 	return nil
 }
 
-func encodeDeleteScheduleResponse(response *DeleteScheduleOK, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(200)
-
-	return nil
-}
-
 func encodeDeleteSkillResponse(response *DeleteSkillNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
 }
 
-func encodeDeleteSubagentResponse(response *DeleteSubagentOK, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(200)
-
-	return nil
-}
-
-func encodeDeleteTaskResponse(response *DeleteTaskOK, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(200)
+func encodeDeleteTaskResponse(response *DeleteTaskNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
 
 	return nil
 }
@@ -342,20 +337,7 @@ func encodeGetFolderResponse(response *FolderResource, w http.ResponseWriter, sp
 	return nil
 }
 
-func encodeGetModelConfigurationResponse(response *ModelConfigurationResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetScheduleResponse(response *ScheduleResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetSettingsResponse(response *SettingsResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -381,19 +363,6 @@ func encodeGetSkillResponse(response *SkillResource, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeGetSubagentResponse(response *SubagentResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeGetTaskResponse(response *TaskResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -407,7 +376,7 @@ func encodeGetTaskResponse(response *TaskResource, w http.ResponseWriter, span t
 	return nil
 }
 
-func encodeGetThreadResponse(response *DocumentResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetThreadResponse(response *ThreadResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -459,12 +428,6 @@ func encodeGetWeixinLoginResponse(response *LoginResource, w http.ResponseWriter
 	return nil
 }
 
-func encodeInterruptSubagentResponse(response *InterruptSubagentOK, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(200)
-
-	return nil
-}
-
 func encodeInterruptThreadResponse(response *InterruptThreadNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
@@ -510,7 +473,7 @@ func encodeListChannelsResponse(response *LengthAwarePageChannelResource, w http
 	return nil
 }
 
-func encodeListEarlierItemsResponse(response *EarlierResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListCommandsResponse(response *CommandListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -562,19 +525,6 @@ func encodeListPlatformsResponse(response *PlatformListResponseBody, w http.Resp
 	return nil
 }
 
-func encodeListSchedulesResponse(response *ScheduleListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeListSkillsResponse(response *SkillListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -588,7 +538,7 @@ func encodeListSkillsResponse(response *SkillListResponseBody, w http.ResponseWr
 	return nil
 }
 
-func encodeListSubagentsResponse(response *SubagentListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListTaskRunsResponse(response *TaskRunListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -601,7 +551,7 @@ func encodeListSubagentsResponse(response *SubagentListResponseBody, w http.Resp
 	return nil
 }
 
-func encodeListTasksResponse(response *TaskListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListThreadItemsResponse(response *ThreadItemListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -614,7 +564,7 @@ func encodeListTasksResponse(response *TaskListResponseBody, w http.ResponseWrit
 	return nil
 }
 
-func encodeListThreadsResponse(response *ThreadListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListThreadTurnsResponse(response *ThreadTurnListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -628,19 +578,6 @@ func encodeListThreadsResponse(response *ThreadListResponseBody, w http.Response
 }
 
 func encodeListUploadsResponse(response *UploadListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListWorkspaceSchedulesResponse(response *ScheduleListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -672,7 +609,7 @@ func encodeMoveFolderResponse(response *FolderResource, w http.ResponseWriter, s
 	return nil
 }
 
-func encodeMoveThreadResponse(response *ThreadSummaryResource, w http.ResponseWriter, span trace.Span) error {
+func encodeOpenRealtimeResponse(response *RealtimeExchange, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -685,8 +622,28 @@ func encodeMoveThreadResponse(response *ThreadSummaryResource, w http.ResponseWr
 	return nil
 }
 
-func encodePauseScheduleResponse(response *PauseScheduleOK, w http.ResponseWriter, span trace.Span) error {
+func encodePauseTaskResponse(response *TaskResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodePlaceThreadResponse(response *ThreadResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
@@ -717,8 +674,28 @@ func encodePutUploadPartResponse(response *UploadPartResource, w http.ResponseWr
 	return nil
 }
 
-func encodeResumeScheduleResponse(response *ResumeScheduleOK, w http.ResponseWriter, span trace.Span) error {
+func encodeResumeTaskResponse(response *TaskResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeResumeThreadResponse(response *TurnStartedResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
@@ -749,7 +726,20 @@ func encodeRotateChannelSecretResponse(response *WebhookSecretResponseBody, w ht
 	return nil
 }
 
-func encodeSendMessageResponse(response *TurnIDResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeRunCommandResponse(response *CommandResultResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeRunTaskResponse(response *TaskRunResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(202)
 
@@ -762,8 +752,41 @@ func encodeSendMessageResponse(response *TurnIDResponseBody, w http.ResponseWrit
 	return nil
 }
 
-func encodeSendSubagentMessageResponse(response *SendSubagentMessageOK, w http.ResponseWriter, span trace.Span) error {
+func encodeSearchTasksResponse(response *TaskListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeSearchThreadsResponse(response *ThreadListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeSendMessageResponse(response *SendMessageResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
@@ -781,13 +804,7 @@ func encodeSetSkillEnabledResponse(response *SkillResource, w http.ResponseWrite
 	return nil
 }
 
-func encodeStartTaskResponse(response *StartTaskOK, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(200)
-
-	return nil
-}
-
-func encodeSubmitDynamicCallResultResponse(response *SubmitDynamicCallResultNoContent, w http.ResponseWriter, span trace.Span) error {
+func encodeSubmitToolResultResponse(response *SubmitToolResultNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -802,12 +819,6 @@ func encodeSubmitWeixinVerifyCodeResponse(response *LoginResource, w http.Respon
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
-
-	return nil
-}
-
-func encodeTriggerScheduleResponse(response *TriggerScheduleOK, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(200)
 
 	return nil
 }
@@ -838,20 +849,7 @@ func encodeUpdateFolderResponse(response *FolderResource, w http.ResponseWriter,
 	return nil
 }
 
-func encodeUpdateScheduleResponse(response *ScheduleResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeUpdateSubagentResponse(response *SubagentResource, w http.ResponseWriter, span trace.Span) error {
+func encodeUpdateSettingsResponse(response *SettingsResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -877,7 +875,7 @@ func encodeUpdateTaskResponse(response *TaskResource, w http.ResponseWriter, spa
 	return nil
 }
 
-func encodeUpdateThreadResponse(response *ThreadSummaryResource, w http.ResponseWriter, span trace.Span) error {
+func encodeUpdateThreadResponse(response *ThreadResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
