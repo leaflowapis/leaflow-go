@@ -49,6 +49,13 @@ func (UnimplementedHandler) AcceptInvitationByToken(ctx context.Context, req *Ac
 // The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and
 // a `member` role carrying no permissions.
 //
+// A custom `slug` may be chosen here; without one the slug is the new project's `id`. A custom slug is
+// refused with:
+//
+//   - 400 `PROJECT_SLUG_INVALID` when it does not follow the format described on `slug`;
+//   - 422 `PROJECT_SLUG_RESERVED` when the name is reserved;
+//   - 409 `PROJECT_SLUG_TAKEN` when another project, including a deleted one, holds it.
+//
 // POST /account/v1/projects
 func (UnimplementedHandler) CreateProject(ctx context.Context, req *CreateProjectRequestBody) (r *ProjectAccessResource, _ error) {
 	return r, ht.ErrNotImplemented
@@ -93,6 +100,49 @@ func (UnimplementedHandler) GetAccount(ctx context.Context) (r *AccountResource,
 //
 // GET /account/v1/me/identity-verification
 func (UnimplementedHandler) GetIdentityVerification(ctx context.Context) (r *IdentityVerificationResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetProject implements get-project operation.
+//
+// Returns a project the caller belongs to. A deleted project is returned, answering that it is gone.
+// Fails with:
+//
+//   - 404 `PROJECT_NOT_FOUND` when no project has the id;
+//   - 403 `PROJECT_MEMBERSHIP_REQUIRED` when the caller is not a member of the project.
+//
+// GET /account/v1/projects/{projectId}
+func (UnimplementedHandler) GetProject(ctx context.Context, params GetProjectParams) (r *ProjectAccessResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetProjectBySlug implements get-project-by-slug operation.
+//
+// Returns a project the caller belongs to, found by an address label: a custom slug is compared
+// exactly, and a label in the form of a project id finds the project with that id, whether or not it
+// has since chosen a custom slug.
+//
+// A deleted project is returned, answering that it is gone. Fails with:
+//
+//   - 400 `PROJECT_SLUG_INVALID` when the value cannot be a slug;
+//   - 404 `PROJECT_NOT_FOUND` when no project holds the slug;
+//   - 403 `PROJECT_MEMBERSHIP_REQUIRED` when the caller is not a member of the project.
+//
+// GET /account/v1/projects/by-slug/{slug}
+func (UnimplementedHandler) GetProjectBySlug(ctx context.Context, params GetProjectBySlugParams) (r *ProjectAccessResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetProjectSlugAvailability implements get-project-slug-availability operation.
+//
+// Reports whether a custom slug can be chosen now. Nothing is reserved by asking: the slug is claimed
+// only by creating a project with it or by setting it, either of which may still fail with 409
+// `PROJECT_SLUG_TAKEN`.
+//
+// Fails with 400 `PROJECT_SLUG_INVALID` when the value does not follow the format of a custom slug.
+//
+// GET /account/v1/project-slugs/{slug}/availability
+func (UnimplementedHandler) GetProjectSlugAvailability(ctx context.Context, params GetProjectSlugAvailabilityParams) (r *ProjectSlugAvailabilityResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

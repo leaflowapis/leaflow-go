@@ -1734,8 +1734,11 @@ type ProjectResource struct {
 	DeletedAt   NilDateTime `json:"deleted_at"`
 	Description string      `json:"description"`
 	ID          uuid.UUID   `json:"id"`
-	Name        string      `json:"name"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	// The label naming the project in its address. It equals `id` until a custom slug is chosen. A custom
+	// slug does not change once set, and stays with the project after deletion.
+	Slug      string    `json:"slug"`
+	Name      string    `json:"name"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GetTraits returns the value of Traits.
@@ -1771,6 +1774,11 @@ func (s *ProjectResource) GetDescription() string {
 // GetID returns the value of ID.
 func (s *ProjectResource) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetSlug returns the value of Slug.
+func (s *ProjectResource) GetSlug() string {
+	return s.Slug
 }
 
 // GetName returns the value of Name.
@@ -1816,6 +1824,11 @@ func (s *ProjectResource) SetDescription(val string) {
 // SetID sets the value of ID.
 func (s *ProjectResource) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// SetSlug sets the value of Slug.
+func (s *ProjectResource) SetSlug(val string) {
+	s.Slug = val
 }
 
 // SetName sets the value of Name.
@@ -2493,6 +2506,23 @@ func (s *SetMemberRolesRequestBody) GetRoles() []string {
 // SetRoles sets the value of Roles.
 func (s *SetMemberRolesRequestBody) SetRoles(val []string) {
 	s.Roles = val
+}
+
+// Ref: #/components/schemas/SetProjectSlugRequestBody
+type SetProjectSlugRequestBody struct {
+	// 6 to 32 characters made of lower-case letters, digits and single hyphens, beginning with a letter
+	// and ending with a letter or digit.
+	Slug string `json:"slug"`
+}
+
+// GetSlug returns the value of Slug.
+func (s *SetProjectSlugRequestBody) GetSlug() string {
+	return s.Slug
+}
+
+// SetSlug sets the value of Slug.
+func (s *SetProjectSlugRequestBody) SetSlug(val string) {
+	s.Slug = val
 }
 
 // Ref: #/components/schemas/TransferOwnershipRequestBody

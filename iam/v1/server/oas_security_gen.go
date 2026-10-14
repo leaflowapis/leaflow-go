@@ -69,6 +69,7 @@ var operationRolesBearerAuth = map[string][]string{
 	RevokeSSHKeyOperation:             []string{},
 	SetMemberPermissionsOperation:     []string{},
 	SetMemberRolesOperation:           []string{},
+	SetProjectSlugOperation:           []string{},
 	TransferProjectOwnershipOperation: []string{},
 	UpdatePolicyOperation:             []string{},
 	UpdateProjectOperation:            []string{},

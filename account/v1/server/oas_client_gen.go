@@ -56,6 +56,13 @@ type Invoker interface {
 	// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and
 	// a `member` role carrying no permissions.
 	//
+	// A custom `slug` may be chosen here; without one the slug is the new project's `id`. A custom slug is
+	// refused with:
+	//
+	//  - 400 `PROJECT_SLUG_INVALID` when it does not follow the format described on `slug`;
+	//  - 422 `PROJECT_SLUG_RESERVED` when the name is reserved;
+	//  - 409 `PROJECT_SLUG_TAKEN` when another project, including a deleted one, holds it.
+	//
 	// POST /account/v1/projects
 	CreateProject(ctx context.Context, request *CreateProjectRequestBody) (*ProjectAccessResource, error)
 	// CreateScopedToken invokes create-scoped-token operation.
@@ -91,6 +98,40 @@ type Invoker interface {
 	//
 	// GET /account/v1/me/identity-verification
 	GetIdentityVerification(ctx context.Context) (*IdentityVerificationResource, error)
+	// GetProject invokes get-project operation.
+	//
+	// Returns a project the caller belongs to. A deleted project is returned, answering that it is gone.
+	// Fails with:
+	//
+	//  - 404 `PROJECT_NOT_FOUND` when no project has the id;
+	//  - 403 `PROJECT_MEMBERSHIP_REQUIRED` when the caller is not a member of the project.
+	//
+	// GET /account/v1/projects/{projectId}
+	GetProject(ctx context.Context, params GetProjectParams) (*ProjectAccessResource, error)
+	// GetProjectBySlug invokes get-project-by-slug operation.
+	//
+	// Returns a project the caller belongs to, found by an address label: a custom slug is compared
+	// exactly, and a label in the form of a project id finds the project with that id, whether or not it
+	// has since chosen a custom slug.
+	//
+	// A deleted project is returned, answering that it is gone. Fails with:
+	//
+	//  - 400 `PROJECT_SLUG_INVALID` when the value cannot be a slug;
+	//  - 404 `PROJECT_NOT_FOUND` when no project holds the slug;
+	//  - 403 `PROJECT_MEMBERSHIP_REQUIRED` when the caller is not a member of the project.
+	//
+	// GET /account/v1/projects/by-slug/{slug}
+	GetProjectBySlug(ctx context.Context, params GetProjectBySlugParams) (*ProjectAccessResource, error)
+	// GetProjectSlugAvailability invokes get-project-slug-availability operation.
+	//
+	// Reports whether a custom slug can be chosen now. Nothing is reserved by asking: the slug is claimed
+	// only by creating a project with it or by setting it, either of which may still fail with 409
+	// `PROJECT_SLUG_TAKEN`.
+	//
+	// Fails with 400 `PROJECT_SLUG_INVALID` when the value does not follow the format of a custom slug.
+	//
+	// GET /account/v1/project-slugs/{slug}/availability
+	GetProjectSlugAvailability(ctx context.Context, params GetProjectSlugAvailabilityParams) (*ProjectSlugAvailabilityResource, error)
 	// GetSettings invokes get-settings operation.
 	//
 	// No token required.
@@ -615,6 +656,13 @@ func (c *Client) sendAcceptInvitationByToken(ctx context.Context, request *Accep
 // The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and
 // a `member` role carrying no permissions.
 //
+// A custom `slug` may be chosen here; without one the slug is the new project's `id`. A custom slug is
+// refused with:
+//
+//   - 400 `PROJECT_SLUG_INVALID` when it does not follow the format described on `slug`;
+//   - 422 `PROJECT_SLUG_RESERVED` when the name is reserved;
+//   - 409 `PROJECT_SLUG_TAKEN` when another project, including a deleted one, holds it.
+//
 // POST /account/v1/projects
 func (c *Client) CreateProject(ctx context.Context, request *CreateProjectRequestBody) (*ProjectAccessResource, error) {
 	res, err := c.sendCreateProject(ctx, request)
@@ -1102,6 +1150,416 @@ func (c *Client) sendGetIdentityVerification(ctx context.Context) (res *Identity
 
 	stage = "DecodeResponse"
 	result, err := decodeGetIdentityVerificationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetProject invokes get-project operation.
+//
+// Returns a project the caller belongs to. A deleted project is returned, answering that it is gone.
+// Fails with:
+//
+//   - 404 `PROJECT_NOT_FOUND` when no project has the id;
+//   - 403 `PROJECT_MEMBERSHIP_REQUIRED` when the caller is not a member of the project.
+//
+// GET /account/v1/projects/{projectId}
+func (c *Client) GetProject(ctx context.Context, params GetProjectParams) (*ProjectAccessResource, error) {
+	res, err := c.sendGetProject(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetProject(ctx context.Context, params GetProjectParams) (res *ProjectAccessResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-project"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetProjectOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetProjectResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetProjectBySlug invokes get-project-by-slug operation.
+//
+// Returns a project the caller belongs to, found by an address label: a custom slug is compared
+// exactly, and a label in the form of a project id finds the project with that id, whether or not it
+// has since chosen a custom slug.
+//
+// A deleted project is returned, answering that it is gone. Fails with:
+//
+//   - 400 `PROJECT_SLUG_INVALID` when the value cannot be a slug;
+//   - 404 `PROJECT_NOT_FOUND` when no project holds the slug;
+//   - 403 `PROJECT_MEMBERSHIP_REQUIRED` when the caller is not a member of the project.
+//
+// GET /account/v1/projects/by-slug/{slug}
+func (c *Client) GetProjectBySlug(ctx context.Context, params GetProjectBySlugParams) (*ProjectAccessResource, error) {
+	res, err := c.sendGetProjectBySlug(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetProjectBySlug(ctx context.Context, params GetProjectBySlugParams) (res *ProjectAccessResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-project-by-slug"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/projects/by-slug/{slug}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectBySlugOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/projects/by-slug/"
+	{
+		// Encode "slug" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "slug",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Slug))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetProjectBySlugOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetProjectBySlugResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetProjectSlugAvailability invokes get-project-slug-availability operation.
+//
+// Reports whether a custom slug can be chosen now. Nothing is reserved by asking: the slug is claimed
+// only by creating a project with it or by setting it, either of which may still fail with 409
+// `PROJECT_SLUG_TAKEN`.
+//
+// Fails with 400 `PROJECT_SLUG_INVALID` when the value does not follow the format of a custom slug.
+//
+// GET /account/v1/project-slugs/{slug}/availability
+func (c *Client) GetProjectSlugAvailability(ctx context.Context, params GetProjectSlugAvailabilityParams) (*ProjectSlugAvailabilityResource, error) {
+	res, err := c.sendGetProjectSlugAvailability(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetProjectSlugAvailability(ctx context.Context, params GetProjectSlugAvailabilityParams) (res *ProjectSlugAvailabilityResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-project-slug-availability"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/project-slugs/{slug}/availability"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectSlugAvailabilityOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/project-slugs/"
+	{
+		// Encode "slug" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "slug",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Slug))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/availability"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetProjectSlugAvailabilityOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetProjectSlugAvailabilityResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

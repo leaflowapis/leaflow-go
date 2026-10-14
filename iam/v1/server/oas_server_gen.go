@@ -197,6 +197,22 @@ type Handler interface {
 	//
 	// PUT /api/v1/members/{userId}/roles
 	SetMemberRoles(ctx context.Context, req *SetMemberRolesRequestBody, params SetMemberRolesParams) (*MemberResource, error)
+	// SetProjectSlug implements set-project-slug operation.
+	//
+	// Replaces the default slug, which is the project's `id`, with a custom one. Only the owner can do
+	// this, and only once: a custom slug cannot be changed or removed afterwards. The address under the
+	// `id` keeps working.
+	//
+	// Setting the slug the project already holds succeeds without change. Fails with:
+	//
+	//  - 400 `PROJECT_SLUG_INVALID` when the slug does not follow the format described on `slug`;
+	//  - 422 `PROJECT_SLUG_RESERVED` when the name is reserved;
+	//  - 409 `PROJECT_SLUG_TAKEN` when another project, including a deleted one, holds it;
+	//  - 412 `PROJECT_SLUG_ALREADY_SET` when the project already holds a different custom slug;
+	//  - 403 `PROJECT_PERMISSION_DENIED` when the caller is not the owner.
+	//
+	// PUT /api/v1/project/slug
+	SetProjectSlug(ctx context.Context, req *SetProjectSlugRequestBody) (*ProjectAccessResource, error)
 	// TransferProjectOwnership implements transfer-project-ownership operation.
 	//
 	// The only way `OWNER` moves, and only the owner can initiate it.
@@ -214,7 +230,7 @@ type Handler interface {
 	UpdatePolicy(ctx context.Context, req *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error)
 	// UpdateProject implements update-project operation.
 	//
-	// Update the name and description of a project.
+	// The slug is not affected; it is set through `PUT /api/v1/project/slug`.
 	//
 	// PATCH /api/v1/project
 	UpdateProject(ctx context.Context, req *UpdateProjectRequestBody) (*ProjectAccessResource, error)

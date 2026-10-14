@@ -636,6 +636,10 @@ func (s *CountryOption) SetName(val string) {
 type CreateProjectRequestBody struct {
 	Description OptString `json:"description"`
 	Name        string    `json:"name"`
+	// A custom slug of 6 to 32 characters made of lower-case letters, digits and single hyphens, beginning
+	// with a letter and ending with a letter or digit. Omitted or empty, the slug is the new project's
+	// `id`, and a custom slug can be set once later.
+	Slug OptString `json:"slug"`
 }
 
 // GetDescription returns the value of Description.
@@ -648,6 +652,11 @@ func (s *CreateProjectRequestBody) GetName() string {
 	return s.Name
 }
 
+// GetSlug returns the value of Slug.
+func (s *CreateProjectRequestBody) GetSlug() OptString {
+	return s.Slug
+}
+
 // SetDescription sets the value of Description.
 func (s *CreateProjectRequestBody) SetDescription(val OptString) {
 	s.Description = val
@@ -656,6 +665,11 @@ func (s *CreateProjectRequestBody) SetDescription(val OptString) {
 // SetName sets the value of Name.
 func (s *CreateProjectRequestBody) SetName(val string) {
 	s.Name = val
+}
+
+// SetSlug sets the value of Slug.
+func (s *CreateProjectRequestBody) SetSlug(val OptString) {
+	s.Slug = val
 }
 
 // Ref: #/components/schemas/Error
@@ -1614,8 +1628,11 @@ type ProjectResource struct {
 	DeletedAt   NilDateTime `json:"deleted_at"`
 	Description string      `json:"description"`
 	ID          uuid.UUID   `json:"id"`
-	Name        string      `json:"name"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	// The label naming the project in its address. It equals `id` until a custom slug is chosen. A custom
+	// slug does not change once set, and stays with the project after deletion.
+	Slug      string    `json:"slug"`
+	Name      string    `json:"name"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GetTraits returns the value of Traits.
@@ -1651,6 +1668,11 @@ func (s *ProjectResource) GetDescription() string {
 // GetID returns the value of ID.
 func (s *ProjectResource) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetSlug returns the value of Slug.
+func (s *ProjectResource) GetSlug() string {
+	return s.Slug
 }
 
 // GetName returns the value of Name.
@@ -1698,6 +1720,11 @@ func (s *ProjectResource) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
+// SetSlug sets the value of Slug.
+func (s *ProjectResource) SetSlug(val string) {
+	s.Slug = val
+}
+
 // SetName sets the value of Name.
 func (s *ProjectResource) SetName(val string) {
 	s.Name = val
@@ -1706,6 +1733,85 @@ func (s *ProjectResource) SetName(val string) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *ProjectResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// Ref: #/components/schemas/ProjectSlugAvailabilityResource
+type ProjectSlugAvailabilityResource struct {
+	// The slug asked about.
+	Slug string `json:"slug"`
+	// `available` when the slug can be chosen now, `reserved` when the name is reserved, and `taken` when
+	// a project, including a deleted one, holds it.
+	Status ProjectSlugAvailabilityResourceStatus `json:"status"`
+}
+
+// GetSlug returns the value of Slug.
+func (s *ProjectSlugAvailabilityResource) GetSlug() string {
+	return s.Slug
+}
+
+// GetStatus returns the value of Status.
+func (s *ProjectSlugAvailabilityResource) GetStatus() ProjectSlugAvailabilityResourceStatus {
+	return s.Status
+}
+
+// SetSlug sets the value of Slug.
+func (s *ProjectSlugAvailabilityResource) SetSlug(val string) {
+	s.Slug = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ProjectSlugAvailabilityResource) SetStatus(val ProjectSlugAvailabilityResourceStatus) {
+	s.Status = val
+}
+
+// `available` when the slug can be chosen now, `reserved` when the name is reserved, and `taken` when
+// a project, including a deleted one, holds it.
+type ProjectSlugAvailabilityResourceStatus string
+
+const (
+	ProjectSlugAvailabilityResourceStatusAvailable ProjectSlugAvailabilityResourceStatus = "available"
+	ProjectSlugAvailabilityResourceStatusReserved  ProjectSlugAvailabilityResourceStatus = "reserved"
+	ProjectSlugAvailabilityResourceStatusTaken     ProjectSlugAvailabilityResourceStatus = "taken"
+)
+
+// AllValues returns all ProjectSlugAvailabilityResourceStatus values.
+func (ProjectSlugAvailabilityResourceStatus) AllValues() []ProjectSlugAvailabilityResourceStatus {
+	return []ProjectSlugAvailabilityResourceStatus{
+		ProjectSlugAvailabilityResourceStatusAvailable,
+		ProjectSlugAvailabilityResourceStatusReserved,
+		ProjectSlugAvailabilityResourceStatusTaken,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProjectSlugAvailabilityResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ProjectSlugAvailabilityResourceStatusAvailable:
+		return []byte(s), nil
+	case ProjectSlugAvailabilityResourceStatusReserved:
+		return []byte(s), nil
+	case ProjectSlugAvailabilityResourceStatusTaken:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProjectSlugAvailabilityResourceStatus) UnmarshalText(data []byte) error {
+	switch ProjectSlugAvailabilityResourceStatus(data) {
+	case ProjectSlugAvailabilityResourceStatusAvailable:
+		*s = ProjectSlugAvailabilityResourceStatusAvailable
+		return nil
+	case ProjectSlugAvailabilityResourceStatusReserved:
+		*s = ProjectSlugAvailabilityResourceStatusReserved
+		return nil
+	case ProjectSlugAvailabilityResourceStatusTaken:
+		*s = ProjectSlugAvailabilityResourceStatusTaken
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/ProjectTraitResource
