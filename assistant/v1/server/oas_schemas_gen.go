@@ -8824,8 +8824,8 @@ type TaskRunResource struct {
 	FinishedAt NilDateTime           `json:"finishedAt"`
 	// For commands. Null until the command exits.
 	ExitCode NilInt64 `json:"exitCode"`
-	// The end of a command's output. Empty for prompts.
-	Output string `json:"output"`
+	// The last 16 KiB of a command's output. Empty for prompts; null in lists, read the run for it.
+	Output NilString `json:"output"`
 	// Why the run failed. Null unless status is failed.
 	ErrorCode NilString `json:"errorCode"`
 }
@@ -8861,7 +8861,7 @@ func (s *TaskRunResource) GetExitCode() NilInt64 {
 }
 
 // GetOutput returns the value of Output.
-func (s *TaskRunResource) GetOutput() string {
+func (s *TaskRunResource) GetOutput() NilString {
 	return s.Output
 }
 
@@ -8901,7 +8901,7 @@ func (s *TaskRunResource) SetExitCode(val NilInt64) {
 }
 
 // SetOutput sets the value of Output.
-func (s *TaskRunResource) SetOutput(val string) {
+func (s *TaskRunResource) SetOutput(val NilString) {
 	s.Output = val
 }
 

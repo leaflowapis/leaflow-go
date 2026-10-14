@@ -357,6 +357,15 @@ func (UnimplementedHandler) GetTask(ctx context.Context, params GetTaskParams) (
 	return r, ht.ErrNotImplemented
 }
 
+// GetTaskRun implements get-task-run operation.
+//
+// One run with the end of its output.
+//
+// GET /api/v1/tasks/{task}/runs/{run}
+func (UnimplementedHandler) GetTaskRun(ctx context.Context, params GetTaskRunParams) (r *TaskRunResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetThread implements get-thread operation.
 //
 // The conversation's state: model, reasoning effort, approval mode, what it is doing now, its plan,
@@ -507,7 +516,7 @@ func (UnimplementedHandler) ListSkills(ctx context.Context) (r *SkillListRespons
 
 // ListTaskRuns implements list-task-runs operation.
 //
-// Newest first.
+// Newest first, without output; read a run with get-task-run for it.
 //
 // GET /api/v1/tasks/{task}/runs
 func (UnimplementedHandler) ListTaskRuns(ctx context.Context, params ListTaskRunsParams) (r *TaskRunListResponseBody, _ error) {

@@ -262,6 +262,12 @@ type Handler interface {
 	//
 	// GET /api/v1/tasks/{task}
 	GetTask(ctx context.Context, params GetTaskParams) (*TaskResource, error)
+	// GetTaskRun implements get-task-run operation.
+	//
+	// One run with the end of its output.
+	//
+	// GET /api/v1/tasks/{task}/runs/{run}
+	GetTaskRun(ctx context.Context, params GetTaskRunParams) (*TaskRunResource, error)
 	// GetThread implements get-thread operation.
 	//
 	// The conversation's state: model, reasoning effort, approval mode, what it is doing now, its plan,
@@ -370,7 +376,7 @@ type Handler interface {
 	ListSkills(ctx context.Context) (*SkillListResponseBody, error)
 	// ListTaskRuns implements list-task-runs operation.
 	//
-	// Newest first.
+	// Newest first, without output; read a run with get-task-run for it.
 	//
 	// GET /api/v1/tasks/{task}/runs
 	ListTaskRuns(ctx context.Context, params ListTaskRunsParams) (*TaskRunListResponseBody, error)

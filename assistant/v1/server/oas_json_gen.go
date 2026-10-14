@@ -15363,7 +15363,7 @@ func (s *TaskRunResource) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("output")
-		e.Str(s.Output)
+		s.Output.Encode(e)
 	}
 	{
 		e.FieldStart("errorCode")
@@ -15458,9 +15458,7 @@ func (s *TaskRunResource) Decode(d *jx.Decoder) error {
 		case "output":
 			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
-				v, err := d.Str()
-				s.Output = string(v)
-				if err != nil {
+				if err := s.Output.Decode(d); err != nil {
 					return err
 				}
 				return nil

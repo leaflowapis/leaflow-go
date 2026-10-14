@@ -74,6 +74,7 @@ var operationRolesBearerAuth = map[string][]string{
 	GetSettingsOperation:            []string{},
 	GetSkillOperation:               []string{},
 	GetTaskOperation:                []string{},
+	GetTaskRunOperation:             []string{},
 	GetThreadOperation:              []string{},
 	GetThreadItemOperation:          []string{},
 	GetUploadOperation:              []string{},

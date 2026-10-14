@@ -36,6 +36,7 @@ const (
 	GetSettingsOperation            OperationName = "GetSettings"
 	GetSkillOperation               OperationName = "GetSkill"
 	GetTaskOperation                OperationName = "GetTask"
+	GetTaskRunOperation             OperationName = "GetTaskRun"
 	GetThreadOperation              OperationName = "GetThread"
 	GetThreadItemOperation          OperationName = "GetThreadItem"
 	GetUploadOperation              OperationName = "GetUpload"

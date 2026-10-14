@@ -283,6 +283,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/tasks/{task}
 	GetTask(ctx context.Context, params GetTaskParams) (*TaskResource, error)
+	// GetTaskRun invokes get-task-run operation.
+	//
+	// One run with the end of its output.
+	//
+	// GET /api/v1/tasks/{task}/runs/{run}
+	GetTaskRun(ctx context.Context, params GetTaskRunParams) (*TaskRunResource, error)
 	// GetThread invokes get-thread operation.
 	//
 	// The conversation's state: model, reasoning effort, approval mode, what it is doing now, its plan,
@@ -391,7 +397,7 @@ type Invoker interface {
 	ListSkills(ctx context.Context) (*SkillListResponseBody, error)
 	// ListTaskRuns invokes list-task-runs operation.
 	//
-	// Newest first.
+	// Newest first, without output; read a run with get-task-run for it.
 	//
 	// GET /api/v1/tasks/{task}/runs
 	ListTaskRuns(ctx context.Context, params ListTaskRunsParams) (*TaskRunListResponseBody, error)
@@ -4726,6 +4732,156 @@ func (c *Client) sendGetTask(ctx context.Context, params GetTaskParams) (res *Ta
 	return result, nil
 }
 
+// GetTaskRun invokes get-task-run operation.
+//
+// One run with the end of its output.
+//
+// GET /api/v1/tasks/{task}/runs/{run}
+func (c *Client) GetTaskRun(ctx context.Context, params GetTaskRunParams) (*TaskRunResource, error) {
+	res, err := c.sendGetTaskRun(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetTaskRun(ctx context.Context, params GetTaskRunParams) (res *TaskRunResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-task-run"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/runs/{run}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetTaskRunOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/tasks/"
+	{
+		// Encode "task" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "task",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Task))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/runs/"
+	{
+		// Encode "run" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "run",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Run))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetTaskRunOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetTaskRunResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetThread invokes get-thread operation.
 //
 // The conversation's state: model, reasoning effort, approval mode, what it is doing now, its plan,
@@ -6643,7 +6799,7 @@ func (c *Client) sendListSkills(ctx context.Context) (res *SkillListResponseBody
 
 // ListTaskRuns invokes list-task-runs operation.
 //
-// Newest first.
+// Newest first, without output; read a run with get-task-run for it.
 //
 // GET /api/v1/tasks/{task}/runs
 func (c *Client) ListTaskRuns(ctx context.Context, params ListTaskRunsParams) (*TaskRunListResponseBody, error) {
