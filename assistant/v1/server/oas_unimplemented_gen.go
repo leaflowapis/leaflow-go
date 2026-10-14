@@ -368,6 +368,15 @@ func (UnimplementedHandler) GetThread(ctx context.Context, params GetThreadParam
 	return r, ht.ErrNotImplemented
 }
 
+// GetThreadItem implements get-thread-item operation.
+//
+// One item in full, including what list-thread-items cut from it.
+//
+// GET /api/v1/threads/{thread}/items/{item}
+func (UnimplementedHandler) GetThreadItem(ctx context.Context, params GetThreadItemParams) (r *ThreadItemResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetUpload implements get-upload operation.
 //
 // Get upload.
@@ -507,12 +516,20 @@ func (UnimplementedHandler) ListTaskRuns(ctx context.Context, params ListTaskRun
 
 // ListThreadItems implements list-thread-items operation.
 //
-// The conversation's transcript, oldest first: messages, reasoning, tool calls and compaction markers.
-// Without `before` or `after` the latest page is returned.
+// A window of the conversation's transcript, oldest first: messages, reasoning, tool calls and
+// compaction markers. A window holds whole turns, so a turn's messages and tool calls arrive together;
+// a single turn larger than the size limit is split across windows.
 //
-// Pass `earlier` from the response as `before` to read further up; null means the top has been
-// reached. `after` returns what was written after an ordinal, which a client uses to catch up after a
-// reconnect. Subscribe to `thread:{id}` on /api/v1/realtime with `streamCursor` to follow what is
+// Without a position the window ends at the latest item. `before` reads the window above an ordinal
+// and `after` the window below it; pass `startOrdinal` and `endOrdinal` from the response. `around`
+// opens a window that contains an ordinal, for jumping to a turn from list-thread-turns or to a search
+// result.
+//
+// Long reasoning, tool arguments and tool output are cut to a preview and marked `truncated`; read the
+// item for all of it. Messages are never cut.
+//
+// When the window reaches the end, `queued` holds the messages waiting for the assistant and
+// `streamCursor` is set: subscribe to `thread:{id}` on /api/v1/realtime from it to follow what is
 // written next.
 //
 // GET /api/v1/threads/{thread}/items
@@ -524,6 +541,9 @@ func (UnimplementedHandler) ListThreadItems(ctx context.Context, params ListThre
 //
 // The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
 // long it took and the tokens it used. Cache hit rate is `cachedInputTokens / inputTokens`.
+//
+// Each turn names the ordinals it wrote and the message that started it, so a client can draw a
+// timeline from this list and open a turn with list-thread-items `around`.
 //
 // `ids` reads the turns behind a page of transcript items in one request and cannot be combined with a
 // cursor.
@@ -669,8 +689,9 @@ func (UnimplementedHandler) RotateChannelSecret(ctx context.Context, req OptRota
 // result carries a plain-text `message`, which is what a chat app shows, and structured fields for
 // clients that render more, such as `status` for /status.
 //
-// Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with 422 and code
-// COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
+// /new is carried out by the client, which opens an empty conversation, and fails here with 422 and
+// code COMMAND_CLIENT_ONLY. Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with
+// 422 and code COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
 //
 // POST /api/v1/threads/{thread}/commands
 func (UnimplementedHandler) RunCommand(ctx context.Context, req *RunCommandRequestBody, params RunCommandParams) (r *CommandResultResource, _ error) {
@@ -704,6 +725,9 @@ func (UnimplementedHandler) SearchTasks(ctx context.Context, req *SearchTasksReq
 // Subagents are conversations too. They are excluded unless `parentId` or `role` asks for them. `ids`
 // reads a bounded batch, including subagents and archived conversations, and cannot be combined with a
 // cursor.
+//
+// Counts over everything the criteria match cost more than the page itself; ask for them with
+// `include: [counts]`, typically on the first page only.
 //
 // QUERY /api/v1/threads
 func (UnimplementedHandler) SearchThreads(ctx context.Context, req *SearchThreadsRequestBody) (r *ThreadListResponseBody, _ error) {

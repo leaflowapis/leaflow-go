@@ -37,6 +37,7 @@ const (
 	GetSkillOperation               OperationName = "GetSkill"
 	GetTaskOperation                OperationName = "GetTask"
 	GetThreadOperation              OperationName = "GetThread"
+	GetThreadItemOperation          OperationName = "GetThreadItem"
 	GetUploadOperation              OperationName = "GetUpload"
 	GetUploadConfigurationOperation OperationName = "GetUploadConfiguration"
 	GetWeixinLoginOperation         OperationName = "GetWeixinLogin"

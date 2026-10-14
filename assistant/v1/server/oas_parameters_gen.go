@@ -1959,6 +1959,166 @@ func decodeGetThreadParams(args [1]string, argsEscaped bool, r *http.Request) (p
 	return params, nil
 }
 
+// GetThreadItemParams is parameters of get-thread-item operation.
+type GetThreadItemParams struct {
+	// A thread id. Subagents are threads as well.
+	Thread string
+	// A transcript item id.
+	Item string
+}
+
+func unpackGetThreadItemParams(packed middleware.Parameters) (params GetThreadItemParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "path",
+		}
+		params.Thread = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "item",
+			In:   "path",
+		}
+		params.Item = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetThreadItemParams(args [2]string, argsEscaped bool, r *http.Request) (params GetThreadItemParams, _ error) {
+	// Decode path: thread.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "thread",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: item.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "item",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Item = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Item)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "item",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetUploadParams is parameters of get-upload operation.
 type GetUploadParams struct {
 	Upload string
@@ -3183,11 +3343,14 @@ func decodeListTaskRunsParams(args [1]string, argsEscaped bool, r *http.Request)
 
 // ListThreadItemsParams is parameters of list-thread-items operation.
 type ListThreadItemsParams struct {
-	// Return items with a smaller ordinal.
+	// Return the window ending just above this ordinal.
 	Before OptInt64 `json:",omitempty,omitzero"`
-	// Return items with a greater ordinal. Cannot be combined with before.
+	// Return the window starting just below this ordinal.
 	After OptInt64 `json:",omitempty,omitzero"`
-	Limit OptInt   `json:",omitempty,omitzero"`
+	// Return a window containing this ordinal. Only one of before, after and around may be given.
+	Around OptInt64 `json:",omitempty,omitzero"`
+	// How many turns a window holds at most.
+	Turns OptInt `json:",omitempty,omitzero"`
 	// A thread id. Subagents are threads as well.
 	Thread string
 }
@@ -3213,11 +3376,20 @@ func unpackListThreadItemsParams(packed middleware.Parameters) (params ListThrea
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "limit",
+			Name: "around",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Limit = v.(OptInt)
+			params.Around = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "turns",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Turns = v.(OptInt)
 		}
 	}
 	{
@@ -3364,51 +3536,46 @@ func decodeListThreadItemsParams(args [1]string, argsEscaped bool, r *http.Reque
 			Err:  err,
 		}
 	}
-	// Set default value for query: limit.
-	{
-		val := int(100)
-		params.Limit.SetTo(val)
-	}
-	// Decode query: limit.
+	// Decode query: around.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "limit",
+			Name:    "around",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotLimitVal int
+				var paramsDotAroundVal int64
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
 						return err
 					}
 
-					c, err := conv.ToInt(val)
+					c, err := conv.ToInt64(val)
 					if err != nil {
 						return err
 					}
 
-					paramsDotLimitVal = c
+					paramsDotAroundVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.Limit.SetTo(paramsDotLimitVal)
+				params.Around.SetTo(paramsDotAroundVal)
 				return nil
 			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if value, ok := params.Limit.Get(); ok {
+				if value, ok := params.Around.Get(); ok {
 					if err := func() error {
 						if err := (validate.Int{
 							MinSet:        true,
-							Min:           1,
-							MaxSet:        true,
-							Max:           200,
+							Min:           0,
+							MaxSet:        false,
+							Max:           0,
 							MinExclusive:  false,
 							MaxExclusive:  false,
 							MultipleOfSet: false,
@@ -3430,7 +3597,78 @@ func decodeListThreadItemsParams(args [1]string, argsEscaped bool, r *http.Reque
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "limit",
+			Name: "around",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: turns.
+	{
+		val := int(10)
+		params.Turns.SetTo(val)
+	}
+	// Decode query: turns.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "turns",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotTurnsVal int
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotTurnsVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Turns.SetTo(paramsDotTurnsVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Turns.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           50,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "turns",
 			In:   "query",
 			Err:  err,
 		}

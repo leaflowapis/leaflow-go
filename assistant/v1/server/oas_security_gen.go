@@ -75,6 +75,7 @@ var operationRolesBearerAuth = map[string][]string{
 	GetSkillOperation:               []string{},
 	GetTaskOperation:                []string{},
 	GetThreadOperation:              []string{},
+	GetThreadItemOperation:          []string{},
 	GetUploadOperation:              []string{},
 	GetUploadConfigurationOperation: []string{},
 	GetWeixinLoginOperation:         []string{},

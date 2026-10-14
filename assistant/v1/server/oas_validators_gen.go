@@ -1513,6 +1513,44 @@ func (s ItemFrameOp) Validate() error {
 	}
 }
 
+func (s *ItemSourceResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s ItemSourceResourceType) Validate() error {
+	switch s {
+	case "subagent":
+		return nil
+	case "thread":
+		return nil
+	case "task":
+		return nil
+	case "channel":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *LastTurnResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -2959,10 +2997,58 @@ func (s *SearchThreadsRequestBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if s.Include == nil {
+			return nil // optional
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: false,
+			MaxLength:    0,
+			MaxLengthSet: false,
+		}).ValidateLength(len(s.Include)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		if err := validate.UniqueItems(s.Include); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Include {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "include",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s SearchThreadsRequestBodyIncludeItem) Validate() error {
+	switch s {
+	case "counts":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s SearchThreadsRequestBodyRole) Validate() error {
@@ -4082,6 +4168,34 @@ func (s *ThreadItemListResponseBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if s.Queued == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Queued {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "queued",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -4117,7 +4231,7 @@ func (s *ThreadItemResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.SourceType.Get(); ok {
+		if value, ok := s.Source.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -4130,7 +4244,7 @@ func (s *ThreadItemResource) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "sourceType",
+			Name:  "source",
 			Error: err,
 		})
 	}
@@ -4202,7 +4316,7 @@ func (s *ThreadItemResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.Presentation.Get(); ok {
+		if value, ok := s.ToolCall.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -4215,50 +4329,7 @@ func (s *ThreadItemResource) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "presentation",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.ApprovalStatus.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "approvalStatus",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		var failures []validate.FieldError
-		for i, elem := range s.Questions {
-			if err := func() error {
-				if err := elem.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				failures = append(failures, validate.FieldError{
-					Name:  fmt.Sprintf("[%d]", i),
-					Error: err,
-				})
-			}
-		}
-		if len(failures) > 0 {
-			return &validate.Error{Fields: failures}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "questions",
+			Name:  "toolCall",
 			Error: err,
 		})
 	}
@@ -4266,34 +4337,6 @@ func (s *ThreadItemResource) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s ThreadItemResourceApprovalStatus) Validate() error {
-	switch s {
-	case "pending":
-		return nil
-	case "approved":
-		return nil
-	case "declined":
-		return nil
-	case "auto_approved":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s ThreadItemResourceSourceType) Validate() error {
-	switch s {
-	case "subagent":
-		return nil
-	case "task":
-		return nil
-	case "channel":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s ThreadItemResourceStatus) Validate() error {
@@ -4375,8 +4418,15 @@ func (s *ThreadListResponseBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Counts.Validate(); err != nil {
-			return err
+		if value, ok := s.Counts.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
@@ -4756,6 +4806,98 @@ func (s TodoResourceStatus) Validate() error {
 	case "in_progress":
 		return nil
 	case "completed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *ToolCallResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.Presentation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "presentation",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.ApprovalStatus.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "approvalStatus",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		var failures []validate.FieldError
+		for i, elem := range s.Questions {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "questions",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s ToolCallResourceApprovalStatus) Validate() error {
+	switch s {
+	case "pending":
+		return nil
+	case "reviewing":
+		return nil
+	case "approved":
+		return nil
+	case "auto_approved":
+		return nil
+	case "declined":
+		return nil
+	case "unreviewed":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

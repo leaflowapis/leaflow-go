@@ -139,6 +139,9 @@ var (
 	rn58AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
+	rn4AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
 	rn5AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
@@ -1553,7 +1556,22 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										elem = elem[idx:]
 
 										if len(elem) == 0 {
-											break
+											switch r.Method {
+											case "GET":
+												s.handleGetThreadItemRequest([2]string{
+													args[0],
+													args[1],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "GET",
+													allowedHeaders: rn4AllowedHeaders,
+													acceptPost:     "",
+													acceptPatch:    "",
+												})
+											}
+
+											return
 										}
 										switch elem[0] {
 										case '/': // Prefix: "/"
@@ -3543,7 +3561,19 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										elem = elem[idx:]
 
 										if len(elem) == 0 {
-											break
+											switch method {
+											case "GET":
+												r.name = GetThreadItemOperation
+												r.summary = "Get a transcript item"
+												r.operationID = "get-thread-item"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/threads/{thread}/items/{item}"
+												r.args = args
+												r.count = 2
+												return r, true
+											default:
+												return
+											}
 										}
 										switch elem[0] {
 										case '/': // Prefix: "/"

@@ -6336,6 +6336,210 @@ func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http
 	}
 }
 
+// handleGetThreadItemRequest handles get-thread-item operation.
+//
+// One item in full, including what list-thread-items cut from it.
+//
+// GET /api/v1/threads/{thread}/items/{item}
+func (s *Server) handleGetThreadItemRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-thread-item"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/items/{item}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetThreadItemOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetThreadItemOperation,
+			ID:   "get-thread-item",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, GetThreadItemOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetThreadItemParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ThreadItemResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetThreadItemOperation,
+			OperationSummary: "Get a transcript item",
+			OperationID:      "get-thread-item",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "thread",
+					In:   "path",
+				}: params.Thread,
+				{
+					Name: "item",
+					In:   "path",
+				}: params.Item,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetThreadItemParams
+			Response = *ThreadItemResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetThreadItemParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetThreadItem(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetThreadItem(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetThreadItemResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleGetUploadRequest handles get-upload operation.
 //
 // Get upload.
@@ -8908,12 +9112,20 @@ func (s *Server) handleListTaskRunsRequest(args [1]string, argsEscaped bool, w h
 
 // handleListThreadItemsRequest handles list-thread-items operation.
 //
-// The conversation's transcript, oldest first: messages, reasoning, tool calls and compaction markers.
-// Without `before` or `after` the latest page is returned.
+// A window of the conversation's transcript, oldest first: messages, reasoning, tool calls and
+// compaction markers. A window holds whole turns, so a turn's messages and tool calls arrive together;
+// a single turn larger than the size limit is split across windows.
 //
-// Pass `earlier` from the response as `before` to read further up; null means the top has been
-// reached. `after` returns what was written after an ordinal, which a client uses to catch up after a
-// reconnect. Subscribe to `thread:{id}` on /api/v1/realtime with `streamCursor` to follow what is
+// Without a position the window ends at the latest item. `before` reads the window above an ordinal
+// and `after` the window below it; pass `startOrdinal` and `endOrdinal` from the response. `around`
+// opens a window that contains an ordinal, for jumping to a turn from list-thread-turns or to a search
+// result.
+//
+// Long reasoning, tool arguments and tool output are cut to a preview and marked `truncated`; read the
+// item for all of it. Messages are never cut.
+//
+// When the window reaches the end, `queued` holds the messages waiting for the assistant and
+// `streamCursor` is set: subscribe to `thread:{id}` on /api/v1/realtime from it to follow what is
 // written next.
 //
 // GET /api/v1/threads/{thread}/items
@@ -9066,9 +9278,13 @@ func (s *Server) handleListThreadItemsRequest(args [1]string, argsEscaped bool, 
 					In:   "query",
 				}: params.After,
 				{
-					Name: "limit",
+					Name: "around",
 					In:   "query",
-				}: params.Limit,
+				}: params.Around,
+				{
+					Name: "turns",
+					In:   "query",
+				}: params.Turns,
 				{
 					Name: "thread",
 					In:   "path",
@@ -9128,6 +9344,9 @@ func (s *Server) handleListThreadItemsRequest(args [1]string, argsEscaped bool, 
 //
 // The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
 // long it took and the tokens it used. Cache hit rate is `cachedInputTokens / inputTokens`.
+//
+// Each turn names the ordinals it wrote and the message that started it, so a client can draw a
+// timeline from this list and open a turn with list-thread-items `around`.
 //
 // `ids` reads the turns behind a page of transcript items in one request and cannot be combined with a
 // cursor.
@@ -11813,8 +12032,9 @@ func (s *Server) handleRotateChannelSecretRequest(args [1]string, argsEscaped bo
 // result carries a plain-text `message`, which is what a chat app shows, and structured fields for
 // clients that render more, such as `status` for /status.
 //
-// Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with 422 and code
-// COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
+// /new is carried out by the client, which opens an empty conversation, and fails here with 422 and
+// code COMMAND_CLIENT_ONLY. Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with
+// 422 and code COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
 //
 // POST /api/v1/threads/{thread}/commands
 func (s *Server) handleRunCommandRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12436,6 +12656,9 @@ func (s *Server) handleSearchTasksRequest(args [0]string, argsEscaped bool, w ht
 // Subagents are conversations too. They are excluded unless `parentId` or `role` asks for them. `ids`
 // reads a bounded batch, including subagents and archived conversations, and cannot be combined with a
 // cursor.
+//
+// Counts over everything the criteria match cost more than the page itself; ask for them with
+// `include: [counts]`, typically on the first page only.
 //
 // QUERY /api/v1/threads
 func (s *Server) handleSearchThreadsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

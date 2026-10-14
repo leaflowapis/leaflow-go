@@ -291,6 +291,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/threads/{thread}
 	GetThread(ctx context.Context, params GetThreadParams) (*ThreadResource, error)
+	// GetThreadItem invokes get-thread-item operation.
+	//
+	// One item in full, including what list-thread-items cut from it.
+	//
+	// GET /api/v1/threads/{thread}/items/{item}
+	GetThreadItem(ctx context.Context, params GetThreadItemParams) (*ThreadItemResource, error)
 	// GetUpload invokes get-upload operation.
 	//
 	// Get upload.
@@ -391,12 +397,20 @@ type Invoker interface {
 	ListTaskRuns(ctx context.Context, params ListTaskRunsParams) (*TaskRunListResponseBody, error)
 	// ListThreadItems invokes list-thread-items operation.
 	//
-	// The conversation's transcript, oldest first: messages, reasoning, tool calls and compaction markers.
-	// Without `before` or `after` the latest page is returned.
+	// A window of the conversation's transcript, oldest first: messages, reasoning, tool calls and
+	// compaction markers. A window holds whole turns, so a turn's messages and tool calls arrive together;
+	// a single turn larger than the size limit is split across windows.
 	//
-	// Pass `earlier` from the response as `before` to read further up; null means the top has been
-	// reached. `after` returns what was written after an ordinal, which a client uses to catch up after a
-	// reconnect. Subscribe to `thread:{id}` on /api/v1/realtime with `streamCursor` to follow what is
+	// Without a position the window ends at the latest item. `before` reads the window above an ordinal
+	// and `after` the window below it; pass `startOrdinal` and `endOrdinal` from the response. `around`
+	// opens a window that contains an ordinal, for jumping to a turn from list-thread-turns or to a search
+	// result.
+	//
+	// Long reasoning, tool arguments and tool output are cut to a preview and marked `truncated`; read the
+	// item for all of it. Messages are never cut.
+	//
+	// When the window reaches the end, `queued` holds the messages waiting for the assistant and
+	// `streamCursor` is set: subscribe to `thread:{id}` on /api/v1/realtime from it to follow what is
 	// written next.
 	//
 	// GET /api/v1/threads/{thread}/items
@@ -405,6 +419,9 @@ type Invoker interface {
 	//
 	// The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
 	// long it took and the tokens it used. Cache hit rate is `cachedInputTokens / inputTokens`.
+	//
+	// Each turn names the ordinals it wrote and the message that started it, so a client can draw a
+	// timeline from this list and open a turn with list-thread-items `around`.
 	//
 	// `ids` reads the turns behind a page of transcript items in one request and cannot be combined with a
 	// cursor.
@@ -511,8 +528,9 @@ type Invoker interface {
 	// result carries a plain-text `message`, which is what a chat app shows, and structured fields for
 	// clients that render more, such as `status` for /status.
 	//
-	// Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with 422 and code
-	// COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
+	// /new is carried out by the client, which opens an empty conversation, and fails here with 422 and
+	// code COMMAND_CLIENT_ONLY. Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with
+	// 422 and code COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
 	//
 	// POST /api/v1/threads/{thread}/commands
 	RunCommand(ctx context.Context, request *RunCommandRequestBody, params RunCommandParams) (*CommandResultResource, error)
@@ -537,6 +555,9 @@ type Invoker interface {
 	// Subagents are conversations too. They are excluded unless `parentId` or `role` asks for them. `ids`
 	// reads a bounded batch, including subagents and archived conversations, and cannot be combined with a
 	// cursor.
+	//
+	// Counts over everything the criteria match cost more than the page itself; ask for them with
+	// `include: [counts]`, typically on the first page only.
 	//
 	// QUERY /api/v1/threads
 	SearchThreads(ctx context.Context, request *SearchThreadsRequestBody) (*ThreadListResponseBody, error)
@@ -4838,6 +4859,156 @@ func (c *Client) sendGetThread(ctx context.Context, params GetThreadParams) (res
 	return result, nil
 }
 
+// GetThreadItem invokes get-thread-item operation.
+//
+// One item in full, including what list-thread-items cut from it.
+//
+// GET /api/v1/threads/{thread}/items/{item}
+func (c *Client) GetThreadItem(ctx context.Context, params GetThreadItemParams) (*ThreadItemResource, error) {
+	res, err := c.sendGetThreadItem(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetThreadItem(ctx context.Context, params GetThreadItemParams) (res *ThreadItemResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-thread-item"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/items/{item}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetThreadItemOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/items/"
+	{
+		// Encode "item" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "item",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Item))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetThreadItemOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetThreadItemResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetUpload invokes get-upload operation.
 //
 // Get upload.
@@ -6642,12 +6813,20 @@ func (c *Client) sendListTaskRuns(ctx context.Context, params ListTaskRunsParams
 
 // ListThreadItems invokes list-thread-items operation.
 //
-// The conversation's transcript, oldest first: messages, reasoning, tool calls and compaction markers.
-// Without `before` or `after` the latest page is returned.
+// A window of the conversation's transcript, oldest first: messages, reasoning, tool calls and
+// compaction markers. A window holds whole turns, so a turn's messages and tool calls arrive together;
+// a single turn larger than the size limit is split across windows.
 //
-// Pass `earlier` from the response as `before` to read further up; null means the top has been
-// reached. `after` returns what was written after an ordinal, which a client uses to catch up after a
-// reconnect. Subscribe to `thread:{id}` on /api/v1/realtime with `streamCursor` to follow what is
+// Without a position the window ends at the latest item. `before` reads the window above an ordinal
+// and `after` the window below it; pass `startOrdinal` and `endOrdinal` from the response. `around`
+// opens a window that contains an ordinal, for jumping to a turn from list-thread-turns or to a search
+// result.
+//
+// Long reasoning, tool arguments and tool output are cut to a preview and marked `truncated`; read the
+// item for all of it. Messages are never cut.
+//
+// When the window reaches the end, `queued` holds the messages waiting for the assistant and
+// `streamCursor` is set: subscribe to `thread:{id}` on /api/v1/realtime from it to follow what is
 // written next.
 //
 // GET /api/v1/threads/{thread}/items
@@ -6753,15 +6932,32 @@ func (c *Client) sendListThreadItems(ctx context.Context, params ListThreadItems
 		}
 	}
 	{
-		// Encode "limit" parameter.
+		// Encode "around" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "limit",
+			Name:    "around",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Limit.Get(); ok {
+			if val, ok := params.Around.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "turns" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "turns",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Turns.Get(); ok {
 				return e.EncodeValue(conv.IntToString(val))
 			}
 			return nil
@@ -6837,6 +7033,9 @@ func (c *Client) sendListThreadItems(ctx context.Context, params ListThreadItems
 //
 // The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
 // long it took and the tokens it used. Cache hit rate is `cachedInputTokens / inputTokens`.
+//
+// Each turn names the ordinals it wrote and the message that started it, so a client can draw a
+// timeline from this list and open a turn with list-thread-items `around`.
 //
 // `ids` reads the turns behind a page of transcript items in one request and cannot be combined with a
 // cursor.
@@ -8707,8 +8906,9 @@ func (c *Client) sendRotateChannelSecret(ctx context.Context, request OptRotateS
 // result carries a plain-text `message`, which is what a chat app shows, and structured fields for
 // clients that render more, such as `status` for /status.
 //
-// Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with 422 and code
-// COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
+// /new is carried out by the client, which opens an empty conversation, and fails here with 422 and
+// code COMMAND_CLIENT_ONLY. Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with
+// 422 and code COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
 //
 // POST /api/v1/threads/{thread}/commands
 func (c *Client) RunCommand(ctx context.Context, request *RunCommandRequestBody, params RunCommandParams) (*CommandResultResource, error) {
@@ -9116,6 +9316,9 @@ func (c *Client) sendSearchTasks(ctx context.Context, request *SearchTasksReques
 // Subagents are conversations too. They are excluded unless `parentId` or `role` asks for them. `ids`
 // reads a bounded batch, including subagents and archived conversations, and cannot be combined with a
 // cursor.
+//
+// Counts over everything the criteria match cost more than the page itself; ask for them with
+// `include: [counts]`, typically on the first page only.
 //
 // QUERY /api/v1/threads
 func (c *Client) SearchThreads(ctx context.Context, request *SearchThreadsRequestBody) (*ThreadListResponseBody, error) {
