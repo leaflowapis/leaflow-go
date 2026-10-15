@@ -135,13 +135,14 @@ type Invoker interface {
 	CreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (*PeeringResource, error)
 	// CreateRoute invokes create-route operation.
 	//
-	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
-	// overrides the default route and takes every elastic IP offline immediately; a destination equal to
-	// the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
-	// gateway of a subnet, which points back at the router itself.
+	// Three forms that would sever connectivity are refused: a destination of `0.0.0.0/0`, which overrides
+	// the default route and takes every elastic IP offline immediately; a destination equal to the CIDR of
+	// a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a
+	// subnet, which points back at the router itself. A destination overlapping a peering's route is
+	// refused with `ROUTE_OVERLAPS_PEERING`.
 	//
-	// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
-	CreateRoute(ctx context.Context, request *CreateRouteRequestBody, params CreateRouteParams) (*RouteResource, error)
+	// POST /api/v1/routes
+	CreateRoute(ctx context.Context, request *CreateRouteRequestBody) (*RouteResource, error)
 	// CreateSecurityGroup invokes create-security-group operation.
 	//
 	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
@@ -172,10 +173,12 @@ type Invoker interface {
 	CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (CreateSnapshotRes, error)
 	// CreateSubnet invokes create-subnet operation.
 	//
-	// Create a subnet.
+	// Creates an IPv4 subnet. The CIDR must fall inside the virtual private cloud's CIDR and must not
+	// overlap another subnet of it. To find a free CIDR, read the virtual private cloud's
+	// `free-subnet-cidr`.
 	//
-	// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
-	CreateSubnet(ctx context.Context, request *CreateSubnetRequestBody, params CreateSubnetParams) (*SubnetResource, error)
+	// POST /api/v1/subnets
+	CreateSubnet(ctx context.Context, request *CreateSubnetRequestBody) (*Subnet, error)
 	// CreateVirtualMachine invokes create-virtual-machine operation.
 	//
 	// Records the requested configuration, creates a deferred Billing order, including for metered terms,
@@ -278,9 +281,10 @@ type Invoker interface {
 	DeletePeering(ctx context.Context, params DeletePeeringParams) (DeletePeeringRes, error)
 	// DeleteRoute invokes delete-route operation.
 	//
-	// Delete a static route.
+	// A route has no update; replace it by creating the new route and deleting the old one. A peering's
+	// route is refused with `ROUTE_HELD_BY_PEERING` and goes away with its peering.
 	//
-	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes/{routeId}
+	// DELETE /api/v1/routes/{routeId}
 	DeleteRoute(ctx context.Context, params DeleteRouteParams) error
 	// DeleteSecurityGroup invokes delete-security-group operation.
 	//
@@ -308,10 +312,10 @@ type Invoker interface {
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
 	// DeleteSubnet invokes delete-subnet operation.
 	//
-	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
-	// next hop inside its CIDR.
+	// Refused while network interfaces remain in the subnet, or while a static route has a next hop inside
+	// its CIDR. An IPv6 subnet is removed by disabling IPv6 on its virtual private cloud.
 	//
-	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
+	// DELETE /api/v1/subnets/{subnetId}
 	DeleteSubnet(ctx context.Context, params DeleteSubnetParams) error
 	// DeleteVirtualMachine invokes delete-virtual-machine operation.
 	//
@@ -336,6 +340,13 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
 	DeleteVirtualPrivateCloud(ctx context.Context, params DeleteVirtualPrivateCloudParams) (DeleteVirtualPrivateCloudRes, error)
+	// DeleteVirtualPrivateCloudIpv6 invokes delete-virtual-private-cloud-ipv6 operation.
+	//
+	// Removes the IPv6 subnet and returns the prefix. Refused while a network interface still holds an
+	// IPv6 address. A returned prefix is never handed out again.
+	//
+	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+	DeleteVirtualPrivateCloudIpv6(ctx context.Context, params DeleteVirtualPrivateCloudIpv6Params) (DeleteVirtualPrivateCloudIpv6Res, error)
 	// DetachDisk invokes detach-disk operation.
 	//
 	// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
@@ -368,23 +379,6 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}
 	DetachVirtualMachineElasticIP(ctx context.Context, params DetachVirtualMachineElasticIPParams) (DetachVirtualMachineElasticIPRes, error)
-	// DisableVirtualPrivateCloudIpv6 invokes disable-virtual-private-cloud-ipv6 operation.
-	//
-	// A released prefix is not re-allocated immediately.
-	//
-	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-	DisableVirtualPrivateCloudIpv6(ctx context.Context, params DisableVirtualPrivateCloudIpv6Params) (DisableVirtualPrivateCloudIpv6Res, error)
-	// EnableVirtualPrivateCloudIpv6 invokes enable-virtual-private-cloud-ipv6 operation.
-	//
-	// Delegates and routes an IPv6 prefix to the virtual private cloud. It requires no elastic IP or NAT
-	// gateway. Addresses are assigned to virtual machines by the network and use its security groups; they
-	// cannot be requested or released individually.
-	//
-	// If the virtual private cloud is not yet connected to the internet, connectivity is established as
-	// part of this call.
-	//
-	// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-	EnableVirtualPrivateCloudIpv6(ctx context.Context, params EnableVirtualPrivateCloudIpv6Params) (EnableVirtualPrivateCloudIpv6Res, error)
 	// GetBackup invokes get-backup operation.
 	//
 	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
@@ -447,6 +441,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/quotas/{resource}
 	GetQuota(ctx context.Context, params GetQuotaParams) (*ProjectQuota, error)
+	// GetRoute invokes get-route operation.
+	//
+	// Get a route.
+	//
+	// GET /api/v1/routes/{routeId}
+	GetRoute(ctx context.Context, params GetRouteParams) (*RouteResource, error)
 	// GetSecurityGroup invokes get-security-group operation.
 	//
 	// Retrieve a security group.
@@ -459,6 +459,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/snapshots/{snapshotId}
 	GetSnapshot(ctx context.Context, params GetSnapshotParams) (*SnapshotResource, error)
+	// GetSubnet invokes get-subnet operation.
+	//
+	// Get a subnet.
+	//
+	// GET /api/v1/subnets/{subnetId}
+	GetSubnet(ctx context.Context, params GetSubnetParams) (*Subnet, error)
 	// GetVirtualMachine invokes get-virtual-machine operation.
 	//
 	// Returns the stored state of the virtual machine; it does not query the cloud. Use it to poll
@@ -472,12 +478,19 @@ type Invoker interface {
 	//
 	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
 	GetVirtualPrivateCloud(ctx context.Context, params GetVirtualPrivateCloudParams) (*VirtualPrivateCloud, error)
+	// GetVirtualPrivateCloudFreeSubnetCidr invokes get-virtual-private-cloud-free-subnet-cidr operation.
+	//
+	// The first CIDR of the given prefix length inside the virtual private cloud that no subnet overlaps.
+	// It is not reserved; creating the subnet checks it again.
+	//
+	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/free-subnet-cidr
+	GetVirtualPrivateCloudFreeSubnetCidr(ctx context.Context, params GetVirtualPrivateCloudFreeSubnetCidrParams) (*FreeSubnetCidr, error)
 	// GetVirtualPrivateCloudIpv6 invokes get-virtual-private-cloud-ipv6 operation.
 	//
-	// Returns the business prefix and enabled state, not backend provisioning or routing diagnostics.
+	// Refused with `VIRTUAL_PRIVATE_CLOUD_IPV6_NOT_ENABLED` while IPv6 is not enabled.
 	//
 	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-	GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (*IPv6ResponseBody, error)
+	GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (*VirtualPrivateCloudIPv6, error)
 	// ListAvailabilityZones invokes list-availability-zones operation.
 	//
 	// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
@@ -586,9 +599,10 @@ type Invoker interface {
 	ListRegions(ctx context.Context, params ListRegionsParams) (*RegionListResponseBody, error)
 	// ListRoutes invokes list-routes operation.
 	//
-	// List static routes.
+	// Static routes of the project's virtual private clouds, including the routes peerings install, which
+	// show `origin` peering.
 	//
-	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
+	// GET /api/v1/routes
 	ListRoutes(ctx context.Context, params ListRoutesParams) (*RouteListResponseBody, error)
 	// ListSecurityGroupRules invokes list-security-group-rules operation.
 	//
@@ -610,10 +624,10 @@ type Invoker interface {
 	ListSnapshots(ctx context.Context, params ListSnapshotsParams) (*SnapshotListResponseBody, error)
 	// ListSubnets invokes list-subnets operation.
 	//
-	// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
-	// deleted individually.
+	// IPv6 subnets are included, with `ip_version` 6. One is created when IPv6 is enabled on its virtual
+	// private cloud and goes away when IPv6 is disabled; it cannot be created or deleted on its own.
 	//
-	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
+	// GET /api/v1/subnets
 	ListSubnets(ctx context.Context, params ListSubnetsParams) (*SubnetListResponseBody, error)
 	// ListVirtualMachineDisks invokes list-virtual-machine-disks operation.
 	//
@@ -648,6 +662,17 @@ type Invoker interface {
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/console
 	OpenVirtualMachineConsole(ctx context.Context, params OpenVirtualMachineConsoleParams) (*ConsoleResponseBody, error)
+	// PutVirtualPrivateCloudIpv6 invokes put-virtual-private-cloud-ipv6 operation.
+	//
+	// Delegates and routes a /64 prefix to the virtual private cloud and creates its IPv6 subnet. It
+	// requires no elastic IP or NAT gateway: IPv6 is routed, not translated. Virtual machines receive an
+	// address from the prefix when their network interface is created; addresses cannot be requested or
+	// released individually, and security groups apply to them as to IPv4.
+	//
+	// Enabling IPv6 that is already enabled returns the current prefix.
+	//
+	// PUT /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+	PutVirtualPrivateCloudIpv6(ctx context.Context, params PutVirtualPrivateCloudIpv6Params) (PutVirtualPrivateCloudIpv6Res, error)
 	// RebootVirtualMachine invokes reboot-virtual-machine operation.
 	//
 	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
@@ -735,12 +760,6 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/virtual-machines/{virtualMachineId}
 	RenameVirtualMachine(ctx context.Context, request *RenameVirtualMachineRequestBody, params RenameVirtualMachineParams) (*VirtualMachine, error)
-	// RenameVirtualPrivateCloud invokes rename-virtual-private-cloud operation.
-	//
-	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
-	//
-	// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
-	RenameVirtualPrivateCloud(ctx context.Context, request *RenameVirtualPrivateCloudRequestBody, params RenameVirtualPrivateCloudParams) (*VirtualPrivateCloud, error)
 	// RescueVirtualMachine invokes rescue-virtual-machine operation.
 	//
 	// Boots a temporary rescue environment while retaining the original system disk. The selected image
@@ -919,13 +938,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/stop
 	StopVirtualMachine(ctx context.Context, request *PowerRequest, params StopVirtualMachineParams) (StopVirtualMachineRes, error)
-	// SuggestSubnetCidr invokes suggest-subnet-cidr operation.
-	//
-	// The returned value is a suggestion and is validated again when the subnet is created. It exists to
-	// avoid errors when computing the next free CIDR by hand.
-	//
-	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/next-free-cidr
-	SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (*NextFreeCidrResponseBody, error)
 	// UnbindElasticIP invokes unbind-elastic-ip operation.
 	//
 	// The address remains held by the project and simply no longer points at any network interface. The
@@ -939,6 +951,20 @@ type Invoker interface {
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
 	UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error)
+	// UpdateSubnet invokes update-subnet operation.
+	//
+	// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
+	// out inside it would fall outside a changed range.
+	//
+	// PATCH /api/v1/subnets/{subnetId}
+	UpdateSubnet(ctx context.Context, request *UpdateSubnetRequestBody, params UpdateSubnetParams) (*Subnet, error)
+	// UpdateVirtualPrivateCloud invokes update-virtual-private-cloud operation.
+	//
+	// Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
+	// inside it was allocated from it.
+	//
+	// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+	UpdateVirtualPrivateCloud(ctx context.Context, request *UpdateVirtualPrivateCloudRequestBody, params UpdateVirtualPrivateCloudParams) (*VirtualPrivateCloud, error)
 }
 
 // Client implements OAS client.
@@ -2495,18 +2521,19 @@ func (c *Client) sendCreatePeering(ctx context.Context, request *CreatePeeringRe
 
 // CreateRoute invokes create-route operation.
 //
-// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
-// overrides the default route and takes every elastic IP offline immediately; a destination equal to
-// the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
-// gateway of a subnet, which points back at the router itself.
+// Three forms that would sever connectivity are refused: a destination of `0.0.0.0/0`, which overrides
+// the default route and takes every elastic IP offline immediately; a destination equal to the CIDR of
+// a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a
+// subnet, which points back at the router itself. A destination overlapping a peering's route is
+// refused with `ROUTE_OVERLAPS_PEERING`.
 //
-// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
-func (c *Client) CreateRoute(ctx context.Context, request *CreateRouteRequestBody, params CreateRouteParams) (*RouteResource, error) {
-	res, err := c.sendCreateRoute(ctx, request, params)
+// POST /api/v1/routes
+func (c *Client) CreateRoute(ctx context.Context, request *CreateRouteRequestBody) (*RouteResource, error) {
+	res, err := c.sendCreateRoute(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteRequestBody, params CreateRouteParams) (res *RouteResource, err error) {
+func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteRequestBody) (res *RouteResource, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2519,7 +2546,7 @@ func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteReques
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-route"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes"),
+		semconv.URLTemplateKey.String("/api/v1/routes"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2552,30 +2579,8 @@ func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteReques
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/routes"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/routes"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -3052,15 +3057,17 @@ func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshot
 
 // CreateSubnet invokes create-subnet operation.
 //
-// Create a subnet.
+// Creates an IPv4 subnet. The CIDR must fall inside the virtual private cloud's CIDR and must not
+// overlap another subnet of it. To find a free CIDR, read the virtual private cloud's
+// `free-subnet-cidr`.
 //
-// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
-func (c *Client) CreateSubnet(ctx context.Context, request *CreateSubnetRequestBody, params CreateSubnetParams) (*SubnetResource, error) {
-	res, err := c.sendCreateSubnet(ctx, request, params)
+// POST /api/v1/subnets
+func (c *Client) CreateSubnet(ctx context.Context, request *CreateSubnetRequestBody) (*Subnet, error) {
+	res, err := c.sendCreateSubnet(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequestBody, params CreateSubnetParams) (res *SubnetResource, err error) {
+func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequestBody) (res *Subnet, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -3073,7 +3080,7 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-subnet"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets"),
+		semconv.URLTemplateKey.String("/api/v1/subnets"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3106,30 +3113,8 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subnets"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/subnets"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -4177,9 +4162,10 @@ func (c *Client) sendDeletePeering(ctx context.Context, params DeletePeeringPara
 
 // DeleteRoute invokes delete-route operation.
 //
-// Delete a static route.
+// A route has no update; replace it by creating the new route and deleting the old one. A peering's
+// route is refused with `ROUTE_HELD_BY_PEERING` and goes away with its peering.
 //
-// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes/{routeId}
+// DELETE /api/v1/routes/{routeId}
 func (c *Client) DeleteRoute(ctx context.Context, params DeleteRouteParams) error {
 	_, err := c.sendDeleteRoute(ctx, params)
 	return err
@@ -4189,7 +4175,7 @@ func (c *Client) sendDeleteRoute(ctx context.Context, params DeleteRouteParams) 
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-route"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes/{routeId}"),
+		semconv.URLTemplateKey.String("/api/v1/routes/{routeId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4222,30 +4208,8 @@ func (c *Client) sendDeleteRoute(ctx context.Context, params DeleteRouteParams) 
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/routes/"
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/routes/"
 	{
 		// Encode "routeId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -4265,7 +4229,7 @@ func (c *Client) sendDeleteRoute(ctx context.Context, params DeleteRouteParams) 
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[3] = encoded
+		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -4763,10 +4727,10 @@ func (c *Client) sendDeleteSnapshot(ctx context.Context, params DeleteSnapshotPa
 
 // DeleteSubnet invokes delete-subnet operation.
 //
-// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
-// next hop inside its CIDR.
+// Refused while network interfaces remain in the subnet, or while a static route has a next hop inside
+// its CIDR. An IPv6 subnet is removed by disabling IPv6 on its virtual private cloud.
 //
-// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
+// DELETE /api/v1/subnets/{subnetId}
 func (c *Client) DeleteSubnet(ctx context.Context, params DeleteSubnetParams) error {
 	_, err := c.sendDeleteSubnet(ctx, params)
 	return err
@@ -4776,7 +4740,7 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-subnet"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}"),
+		semconv.URLTemplateKey.String("/api/v1/subnets/{subnetId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4809,30 +4773,8 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subnets/"
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/subnets/"
 	{
 		// Encode "subnetId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -4852,7 +4794,7 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[3] = encoded
+		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -5190,6 +5132,142 @@ func (c *Client) sendDeleteVirtualPrivateCloud(ctx context.Context, params Delet
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteVirtualPrivateCloudResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteVirtualPrivateCloudIpv6 invokes delete-virtual-private-cloud-ipv6 operation.
+//
+// Removes the IPv6 subnet and returns the prefix. Refused while a network interface still holds an
+// IPv6 address. A returned prefix is never handed out again.
+//
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (c *Client) DeleteVirtualPrivateCloudIpv6(ctx context.Context, params DeleteVirtualPrivateCloudIpv6Params) (DeleteVirtualPrivateCloudIpv6Res, error) {
+	res, err := c.sendDeleteVirtualPrivateCloudIpv6(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteVirtualPrivateCloudIpv6(ctx context.Context, params DeleteVirtualPrivateCloudIpv6Params) (res DeleteVirtualPrivateCloudIpv6Res, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-virtual-private-cloud-ipv6"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteVirtualPrivateCloudIpv6Operation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-private-clouds/"
+	{
+		// Encode "virtualPrivateCloudId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualPrivateCloudId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualPrivateCloudId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/ipv6"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteVirtualPrivateCloudIpv6Operation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteVirtualPrivateCloudIpv6Response(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5672,281 +5750,6 @@ func (c *Client) sendDetachVirtualMachineElasticIP(ctx context.Context, params D
 
 	stage = "DecodeResponse"
 	result, err := decodeDetachVirtualMachineElasticIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// DisableVirtualPrivateCloudIpv6 invokes disable-virtual-private-cloud-ipv6 operation.
-//
-// A released prefix is not re-allocated immediately.
-//
-// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-func (c *Client) DisableVirtualPrivateCloudIpv6(ctx context.Context, params DisableVirtualPrivateCloudIpv6Params) (DisableVirtualPrivateCloudIpv6Res, error) {
-	res, err := c.sendDisableVirtualPrivateCloudIpv6(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendDisableVirtualPrivateCloudIpv6(ctx context.Context, params DisableVirtualPrivateCloudIpv6Params) (res DisableVirtualPrivateCloudIpv6Res, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("disable-virtual-private-cloud-ipv6"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DisableVirtualPrivateCloudIpv6Operation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/ipv6"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DisableVirtualPrivateCloudIpv6Operation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDisableVirtualPrivateCloudIpv6Response(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// EnableVirtualPrivateCloudIpv6 invokes enable-virtual-private-cloud-ipv6 operation.
-//
-// Delegates and routes an IPv6 prefix to the virtual private cloud. It requires no elastic IP or NAT
-// gateway. Addresses are assigned to virtual machines by the network and use its security groups; they
-// cannot be requested or released individually.
-//
-// If the virtual private cloud is not yet connected to the internet, connectivity is established as
-// part of this call.
-//
-// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-func (c *Client) EnableVirtualPrivateCloudIpv6(ctx context.Context, params EnableVirtualPrivateCloudIpv6Params) (EnableVirtualPrivateCloudIpv6Res, error) {
-	res, err := c.sendEnableVirtualPrivateCloudIpv6(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendEnableVirtualPrivateCloudIpv6(ctx context.Context, params EnableVirtualPrivateCloudIpv6Params) (res EnableVirtualPrivateCloudIpv6Res, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("enable-virtual-private-cloud-ipv6"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, EnableVirtualPrivateCloudIpv6Operation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/ipv6"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, EnableVirtualPrivateCloudIpv6Operation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeEnableVirtualPrivateCloudIpv6Response(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7165,6 +6968,140 @@ func (c *Client) sendGetQuota(ctx context.Context, params GetQuotaParams) (res *
 	return result, nil
 }
 
+// GetRoute invokes get-route operation.
+//
+// Get a route.
+//
+// GET /api/v1/routes/{routeId}
+func (c *Client) GetRoute(ctx context.Context, params GetRouteParams) (*RouteResource, error) {
+	res, err := c.sendGetRoute(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetRoute(ctx context.Context, params GetRouteParams) (res *RouteResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-route"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/routes/{routeId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetRouteOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/routes/"
+	{
+		// Encode "routeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "routeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.RouteId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetRouteOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetRouteResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetSecurityGroup invokes get-security-group operation.
 //
 // Retrieve a security group.
@@ -7426,6 +7363,140 @@ func (c *Client) sendGetSnapshot(ctx context.Context, params GetSnapshotParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeGetSnapshotResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetSubnet invokes get-subnet operation.
+//
+// Get a subnet.
+//
+// GET /api/v1/subnets/{subnetId}
+func (c *Client) GetSubnet(ctx context.Context, params GetSubnetParams) (*Subnet, error) {
+	res, err := c.sendGetSubnet(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetSubnet(ctx context.Context, params GetSubnetParams) (res *Subnet, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-subnet"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/subnets/{subnetId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSubnetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/subnets/"
+	{
+		// Encode "subnetId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "subnetId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.SubnetId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetSubnetOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetSubnetResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7702,17 +7773,174 @@ func (c *Client) sendGetVirtualPrivateCloud(ctx context.Context, params GetVirtu
 	return result, nil
 }
 
+// GetVirtualPrivateCloudFreeSubnetCidr invokes get-virtual-private-cloud-free-subnet-cidr operation.
+//
+// The first CIDR of the given prefix length inside the virtual private cloud that no subnet overlaps.
+// It is not reserved; creating the subnet checks it again.
+//
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/free-subnet-cidr
+func (c *Client) GetVirtualPrivateCloudFreeSubnetCidr(ctx context.Context, params GetVirtualPrivateCloudFreeSubnetCidrParams) (*FreeSubnetCidr, error) {
+	res, err := c.sendGetVirtualPrivateCloudFreeSubnetCidr(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetVirtualPrivateCloudFreeSubnetCidr(ctx context.Context, params GetVirtualPrivateCloudFreeSubnetCidrParams) (res *FreeSubnetCidr, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-virtual-private-cloud-free-subnet-cidr"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/free-subnet-cidr"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetVirtualPrivateCloudFreeSubnetCidrOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-private-clouds/"
+	{
+		// Encode "virtualPrivateCloudId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualPrivateCloudId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualPrivateCloudId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/free-subnet-cidr"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "prefix_length" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "prefix_length",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PrefixLength.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetVirtualPrivateCloudFreeSubnetCidrOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetVirtualPrivateCloudFreeSubnetCidrResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetVirtualPrivateCloudIpv6 invokes get-virtual-private-cloud-ipv6 operation.
 //
-// Returns the business prefix and enabled state, not backend provisioning or routing diagnostics.
+// Refused with `VIRTUAL_PRIVATE_CLOUD_IPV6_NOT_ENABLED` while IPv6 is not enabled.
 //
 // GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-func (c *Client) GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (*IPv6ResponseBody, error) {
+func (c *Client) GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (*VirtualPrivateCloudIPv6, error) {
 	res, err := c.sendGetVirtualPrivateCloudIpv6(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (res *IPv6ResponseBody, err error) {
+func (c *Client) sendGetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (res *VirtualPrivateCloudIPv6, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-virtual-private-cloud-ipv6"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -10043,9 +10271,10 @@ func (c *Client) sendListRegions(ctx context.Context, params ListRegionsParams) 
 
 // ListRoutes invokes list-routes operation.
 //
-// List static routes.
+// Static routes of the project's virtual private clouds, including the routes peerings install, which
+// show `origin` peering.
 //
-// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
+// GET /api/v1/routes
 func (c *Client) ListRoutes(ctx context.Context, params ListRoutesParams) (*RouteListResponseBody, error) {
 	res, err := c.sendListRoutes(ctx, params)
 	return res, err
@@ -10055,7 +10284,7 @@ func (c *Client) sendListRoutes(ctx context.Context, params ListRoutesParams) (r
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-routes"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes"),
+		semconv.URLTemplateKey.String("/api/v1/routes"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -10088,34 +10317,32 @@ func (c *Client) sendListRoutes(ctx context.Context, params ListRoutesParams) (r
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/routes"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/routes"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
+	{
+		// Encode "virtual_private_cloud_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "virtual_private_cloud_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.VirtualPrivateCloudID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
@@ -10751,10 +10978,10 @@ func (c *Client) sendListSnapshots(ctx context.Context, params ListSnapshotsPara
 
 // ListSubnets invokes list-subnets operation.
 //
-// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
-// deleted individually.
+// IPv6 subnets are included, with `ip_version` 6. One is created when IPv6 is enabled on its virtual
+// private cloud and goes away when IPv6 is disabled; it cannot be created or deleted on its own.
 //
-// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
+// GET /api/v1/subnets
 func (c *Client) ListSubnets(ctx context.Context, params ListSubnetsParams) (*SubnetListResponseBody, error) {
 	res, err := c.sendListSubnets(ctx, params)
 	return res, err
@@ -10764,7 +10991,7 @@ func (c *Client) sendListSubnets(ctx context.Context, params ListSubnetsParams) 
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-subnets"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets"),
+		semconv.URLTemplateKey.String("/api/v1/subnets"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -10797,34 +11024,32 @@ func (c *Client) sendListSubnets(ctx context.Context, params ListSubnetsParams) 
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subnets"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/subnets"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
+	{
+		// Encode "virtual_private_cloud_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "virtual_private_cloud_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.VirtualPrivateCloudID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
@@ -11739,6 +11964,146 @@ func (c *Client) sendOpenVirtualMachineConsole(ctx context.Context, params OpenV
 
 	stage = "DecodeResponse"
 	result, err := decodeOpenVirtualMachineConsoleResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PutVirtualPrivateCloudIpv6 invokes put-virtual-private-cloud-ipv6 operation.
+//
+// Delegates and routes a /64 prefix to the virtual private cloud and creates its IPv6 subnet. It
+// requires no elastic IP or NAT gateway: IPv6 is routed, not translated. Virtual machines receive an
+// address from the prefix when their network interface is created; addresses cannot be requested or
+// released individually, and security groups apply to them as to IPv4.
+//
+// Enabling IPv6 that is already enabled returns the current prefix.
+//
+// PUT /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (c *Client) PutVirtualPrivateCloudIpv6(ctx context.Context, params PutVirtualPrivateCloudIpv6Params) (PutVirtualPrivateCloudIpv6Res, error) {
+	res, err := c.sendPutVirtualPrivateCloudIpv6(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendPutVirtualPrivateCloudIpv6(ctx context.Context, params PutVirtualPrivateCloudIpv6Params) (res PutVirtualPrivateCloudIpv6Res, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("put-virtual-private-cloud-ipv6"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PutVirtualPrivateCloudIpv6Operation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-private-clouds/"
+	{
+		// Encode "virtualPrivateCloudId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualPrivateCloudId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualPrivateCloudId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/ipv6"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, PutVirtualPrivateCloudIpv6Operation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePutVirtualPrivateCloudIpv6Response(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -13196,152 +13561,6 @@ func (c *Client) sendRenameVirtualMachine(ctx context.Context, request *RenameVi
 
 	stage = "DecodeResponse"
 	result, err := decodeRenameVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenameVirtualPrivateCloud invokes rename-virtual-private-cloud operation.
-//
-// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
-//
-// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
-func (c *Client) RenameVirtualPrivateCloud(ctx context.Context, request *RenameVirtualPrivateCloudRequestBody, params RenameVirtualPrivateCloudParams) (*VirtualPrivateCloud, error) {
-	res, err := c.sendRenameVirtualPrivateCloud(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameVirtualPrivateCloud(ctx context.Context, request *RenameVirtualPrivateCloudRequestBody, params RenameVirtualPrivateCloudParams) (res *VirtualPrivateCloud, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-virtual-private-cloud"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameVirtualPrivateCloudOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenameVirtualPrivateCloudRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RenameVirtualPrivateCloudOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenameVirtualPrivateCloudResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -15398,163 +15617,6 @@ func (c *Client) sendStopVirtualMachine(ctx context.Context, request *PowerReque
 	return result, nil
 }
 
-// SuggestSubnetCidr invokes suggest-subnet-cidr operation.
-//
-// The returned value is a suggestion and is validated again when the subnet is created. It exists to
-// avoid errors when computing the next free CIDR by hand.
-//
-// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/next-free-cidr
-func (c *Client) SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (*NextFreeCidrResponseBody, error) {
-	res, err := c.sendSuggestSubnetCidr(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendSuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (res *NextFreeCidrResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("suggest-subnet-cidr"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/next-free-cidr"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SuggestSubnetCidrOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-private-clouds/"
-	{
-		// Encode "virtualPrivateCloudId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualPrivateCloudId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualPrivateCloudId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subnets/next-free-cidr"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "prefix_length" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "prefix_length",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PrefixLength.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, SuggestSubnetCidrOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSuggestSubnetCidrResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // UnbindElasticIP invokes unbind-elastic-ip operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
@@ -15819,6 +15881,300 @@ func (c *Client) sendUnrescueVirtualMachine(ctx context.Context, params Unrescue
 
 	stage = "DecodeResponse"
 	result, err := decodeUnrescueVirtualMachineResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateSubnet invokes update-subnet operation.
+//
+// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
+// out inside it would fall outside a changed range.
+//
+// PATCH /api/v1/subnets/{subnetId}
+func (c *Client) UpdateSubnet(ctx context.Context, request *UpdateSubnetRequestBody, params UpdateSubnetParams) (*Subnet, error) {
+	res, err := c.sendUpdateSubnet(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateSubnet(ctx context.Context, request *UpdateSubnetRequestBody, params UpdateSubnetParams) (res *Subnet, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-subnet"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/subnets/{subnetId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateSubnetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/subnets/"
+	{
+		// Encode "subnetId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "subnetId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.SubnetId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateSubnetRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateSubnetOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateSubnetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateVirtualPrivateCloud invokes update-virtual-private-cloud operation.
+//
+// Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
+// inside it was allocated from it.
+//
+// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+func (c *Client) UpdateVirtualPrivateCloud(ctx context.Context, request *UpdateVirtualPrivateCloudRequestBody, params UpdateVirtualPrivateCloudParams) (*VirtualPrivateCloud, error) {
+	res, err := c.sendUpdateVirtualPrivateCloud(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateVirtualPrivateCloud(ctx context.Context, request *UpdateVirtualPrivateCloudRequestBody, params UpdateVirtualPrivateCloudParams) (res *VirtualPrivateCloud, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-virtual-private-cloud"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateVirtualPrivateCloudOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/virtual-private-clouds/"
+	{
+		// Encode "virtualPrivateCloudId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualPrivateCloudId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualPrivateCloudId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateVirtualPrivateCloudRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateVirtualPrivateCloudOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateVirtualPrivateCloudResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -73,6 +73,10 @@ type DeleteVirtualMachineRes interface {
 	deleteVirtualMachineRes()
 }
 
+type DeleteVirtualPrivateCloudIpv6Res interface {
+	deleteVirtualPrivateCloudIpv6Res()
+}
+
 type DeleteVirtualPrivateCloudRes interface {
 	deleteVirtualPrivateCloudRes()
 }
@@ -89,12 +93,8 @@ type DetachVirtualMachineElasticIPRes interface {
 	detachVirtualMachineElasticIPRes()
 }
 
-type DisableVirtualPrivateCloudIpv6Res interface {
-	disableVirtualPrivateCloudIpv6Res()
-}
-
-type EnableVirtualPrivateCloudIpv6Res interface {
-	enableVirtualPrivateCloudIpv6Res()
+type PutVirtualPrivateCloudIpv6Res interface {
+	putVirtualPrivateCloudIpv6Res()
 }
 
 type RebootVirtualMachineRes interface {

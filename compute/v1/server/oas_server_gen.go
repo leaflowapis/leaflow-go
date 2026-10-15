@@ -114,13 +114,14 @@ type Handler interface {
 	CreatePeering(ctx context.Context, req *CreatePeeringRequestBody) (*PeeringResource, error)
 	// CreateRoute implements create-route operation.
 	//
-	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
-	// overrides the default route and takes every elastic IP offline immediately; a destination equal to
-	// the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
-	// gateway of a subnet, which points back at the router itself.
+	// Three forms that would sever connectivity are refused: a destination of `0.0.0.0/0`, which overrides
+	// the default route and takes every elastic IP offline immediately; a destination equal to the CIDR of
+	// a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a
+	// subnet, which points back at the router itself. A destination overlapping a peering's route is
+	// refused with `ROUTE_OVERLAPS_PEERING`.
 	//
-	// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
-	CreateRoute(ctx context.Context, req *CreateRouteRequestBody, params CreateRouteParams) (*RouteResource, error)
+	// POST /api/v1/routes
+	CreateRoute(ctx context.Context, req *CreateRouteRequestBody) (*RouteResource, error)
 	// CreateSecurityGroup implements create-security-group operation.
 	//
 	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
@@ -151,10 +152,12 @@ type Handler interface {
 	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (CreateSnapshotRes, error)
 	// CreateSubnet implements create-subnet operation.
 	//
-	// Create a subnet.
+	// Creates an IPv4 subnet. The CIDR must fall inside the virtual private cloud's CIDR and must not
+	// overlap another subnet of it. To find a free CIDR, read the virtual private cloud's
+	// `free-subnet-cidr`.
 	//
-	// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
-	CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody, params CreateSubnetParams) (*SubnetResource, error)
+	// POST /api/v1/subnets
+	CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody) (*Subnet, error)
 	// CreateVirtualMachine implements create-virtual-machine operation.
 	//
 	// Records the requested configuration, creates a deferred Billing order, including for metered terms,
@@ -257,9 +260,10 @@ type Handler interface {
 	DeletePeering(ctx context.Context, params DeletePeeringParams) (DeletePeeringRes, error)
 	// DeleteRoute implements delete-route operation.
 	//
-	// Delete a static route.
+	// A route has no update; replace it by creating the new route and deleting the old one. A peering's
+	// route is refused with `ROUTE_HELD_BY_PEERING` and goes away with its peering.
 	//
-	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes/{routeId}
+	// DELETE /api/v1/routes/{routeId}
 	DeleteRoute(ctx context.Context, params DeleteRouteParams) error
 	// DeleteSecurityGroup implements delete-security-group operation.
 	//
@@ -287,10 +291,10 @@ type Handler interface {
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
 	// DeleteSubnet implements delete-subnet operation.
 	//
-	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
-	// next hop inside its CIDR.
+	// Refused while network interfaces remain in the subnet, or while a static route has a next hop inside
+	// its CIDR. An IPv6 subnet is removed by disabling IPv6 on its virtual private cloud.
 	//
-	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
+	// DELETE /api/v1/subnets/{subnetId}
 	DeleteSubnet(ctx context.Context, params DeleteSubnetParams) error
 	// DeleteVirtualMachine implements delete-virtual-machine operation.
 	//
@@ -315,6 +319,13 @@ type Handler interface {
 	//
 	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
 	DeleteVirtualPrivateCloud(ctx context.Context, params DeleteVirtualPrivateCloudParams) (DeleteVirtualPrivateCloudRes, error)
+	// DeleteVirtualPrivateCloudIpv6 implements delete-virtual-private-cloud-ipv6 operation.
+	//
+	// Removes the IPv6 subnet and returns the prefix. Refused while a network interface still holds an
+	// IPv6 address. A returned prefix is never handed out again.
+	//
+	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+	DeleteVirtualPrivateCloudIpv6(ctx context.Context, params DeleteVirtualPrivateCloudIpv6Params) (DeleteVirtualPrivateCloudIpv6Res, error)
 	// DetachDisk implements detach-disk operation.
 	//
 	// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
@@ -347,23 +358,6 @@ type Handler interface {
 	//
 	// DELETE /api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}
 	DetachVirtualMachineElasticIP(ctx context.Context, params DetachVirtualMachineElasticIPParams) (DetachVirtualMachineElasticIPRes, error)
-	// DisableVirtualPrivateCloudIpv6 implements disable-virtual-private-cloud-ipv6 operation.
-	//
-	// A released prefix is not re-allocated immediately.
-	//
-	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-	DisableVirtualPrivateCloudIpv6(ctx context.Context, params DisableVirtualPrivateCloudIpv6Params) (DisableVirtualPrivateCloudIpv6Res, error)
-	// EnableVirtualPrivateCloudIpv6 implements enable-virtual-private-cloud-ipv6 operation.
-	//
-	// Delegates and routes an IPv6 prefix to the virtual private cloud. It requires no elastic IP or NAT
-	// gateway. Addresses are assigned to virtual machines by the network and use its security groups; they
-	// cannot be requested or released individually.
-	//
-	// If the virtual private cloud is not yet connected to the internet, connectivity is established as
-	// part of this call.
-	//
-	// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-	EnableVirtualPrivateCloudIpv6(ctx context.Context, params EnableVirtualPrivateCloudIpv6Params) (EnableVirtualPrivateCloudIpv6Res, error)
 	// GetBackup implements get-backup operation.
 	//
 	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
@@ -426,6 +420,12 @@ type Handler interface {
 	//
 	// GET /api/v1/quotas/{resource}
 	GetQuota(ctx context.Context, params GetQuotaParams) (*ProjectQuota, error)
+	// GetRoute implements get-route operation.
+	//
+	// Get a route.
+	//
+	// GET /api/v1/routes/{routeId}
+	GetRoute(ctx context.Context, params GetRouteParams) (*RouteResource, error)
 	// GetSecurityGroup implements get-security-group operation.
 	//
 	// Retrieve a security group.
@@ -438,6 +438,12 @@ type Handler interface {
 	//
 	// GET /api/v1/snapshots/{snapshotId}
 	GetSnapshot(ctx context.Context, params GetSnapshotParams) (*SnapshotResource, error)
+	// GetSubnet implements get-subnet operation.
+	//
+	// Get a subnet.
+	//
+	// GET /api/v1/subnets/{subnetId}
+	GetSubnet(ctx context.Context, params GetSubnetParams) (*Subnet, error)
 	// GetVirtualMachine implements get-virtual-machine operation.
 	//
 	// Returns the stored state of the virtual machine; it does not query the cloud. Use it to poll
@@ -451,12 +457,19 @@ type Handler interface {
 	//
 	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
 	GetVirtualPrivateCloud(ctx context.Context, params GetVirtualPrivateCloudParams) (*VirtualPrivateCloud, error)
+	// GetVirtualPrivateCloudFreeSubnetCidr implements get-virtual-private-cloud-free-subnet-cidr operation.
+	//
+	// The first CIDR of the given prefix length inside the virtual private cloud that no subnet overlaps.
+	// It is not reserved; creating the subnet checks it again.
+	//
+	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/free-subnet-cidr
+	GetVirtualPrivateCloudFreeSubnetCidr(ctx context.Context, params GetVirtualPrivateCloudFreeSubnetCidrParams) (*FreeSubnetCidr, error)
 	// GetVirtualPrivateCloudIpv6 implements get-virtual-private-cloud-ipv6 operation.
 	//
-	// Returns the business prefix and enabled state, not backend provisioning or routing diagnostics.
+	// Refused with `VIRTUAL_PRIVATE_CLOUD_IPV6_NOT_ENABLED` while IPv6 is not enabled.
 	//
 	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-	GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (*IPv6ResponseBody, error)
+	GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (*VirtualPrivateCloudIPv6, error)
 	// ListAvailabilityZones implements list-availability-zones operation.
 	//
 	// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
@@ -565,9 +578,10 @@ type Handler interface {
 	ListRegions(ctx context.Context, params ListRegionsParams) (*RegionListResponseBody, error)
 	// ListRoutes implements list-routes operation.
 	//
-	// List static routes.
+	// Static routes of the project's virtual private clouds, including the routes peerings install, which
+	// show `origin` peering.
 	//
-	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
+	// GET /api/v1/routes
 	ListRoutes(ctx context.Context, params ListRoutesParams) (*RouteListResponseBody, error)
 	// ListSecurityGroupRules implements list-security-group-rules operation.
 	//
@@ -589,10 +603,10 @@ type Handler interface {
 	ListSnapshots(ctx context.Context, params ListSnapshotsParams) (*SnapshotListResponseBody, error)
 	// ListSubnets implements list-subnets operation.
 	//
-	// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
-	// deleted individually.
+	// IPv6 subnets are included, with `ip_version` 6. One is created when IPv6 is enabled on its virtual
+	// private cloud and goes away when IPv6 is disabled; it cannot be created or deleted on its own.
 	//
-	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
+	// GET /api/v1/subnets
 	ListSubnets(ctx context.Context, params ListSubnetsParams) (*SubnetListResponseBody, error)
 	// ListVirtualMachineDisks implements list-virtual-machine-disks operation.
 	//
@@ -627,6 +641,17 @@ type Handler interface {
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/console
 	OpenVirtualMachineConsole(ctx context.Context, params OpenVirtualMachineConsoleParams) (*ConsoleResponseBody, error)
+	// PutVirtualPrivateCloudIpv6 implements put-virtual-private-cloud-ipv6 operation.
+	//
+	// Delegates and routes a /64 prefix to the virtual private cloud and creates its IPv6 subnet. It
+	// requires no elastic IP or NAT gateway: IPv6 is routed, not translated. Virtual machines receive an
+	// address from the prefix when their network interface is created; addresses cannot be requested or
+	// released individually, and security groups apply to them as to IPv4.
+	//
+	// Enabling IPv6 that is already enabled returns the current prefix.
+	//
+	// PUT /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+	PutVirtualPrivateCloudIpv6(ctx context.Context, params PutVirtualPrivateCloudIpv6Params) (PutVirtualPrivateCloudIpv6Res, error)
 	// RebootVirtualMachine implements reboot-virtual-machine operation.
 	//
 	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
@@ -714,12 +739,6 @@ type Handler interface {
 	//
 	// PATCH /api/v1/virtual-machines/{virtualMachineId}
 	RenameVirtualMachine(ctx context.Context, req *RenameVirtualMachineRequestBody, params RenameVirtualMachineParams) (*VirtualMachine, error)
-	// RenameVirtualPrivateCloud implements rename-virtual-private-cloud operation.
-	//
-	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
-	//
-	// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
-	RenameVirtualPrivateCloud(ctx context.Context, req *RenameVirtualPrivateCloudRequestBody, params RenameVirtualPrivateCloudParams) (*VirtualPrivateCloud, error)
 	// RescueVirtualMachine implements rescue-virtual-machine operation.
 	//
 	// Boots a temporary rescue environment while retaining the original system disk. The selected image
@@ -898,13 +917,6 @@ type Handler interface {
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/stop
 	StopVirtualMachine(ctx context.Context, req *PowerRequest, params StopVirtualMachineParams) (StopVirtualMachineRes, error)
-	// SuggestSubnetCidr implements suggest-subnet-cidr operation.
-	//
-	// The returned value is a suggestion and is validated again when the subnet is created. It exists to
-	// avoid errors when computing the next free CIDR by hand.
-	//
-	// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/next-free-cidr
-	SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (*NextFreeCidrResponseBody, error)
 	// UnbindElasticIP implements unbind-elastic-ip operation.
 	//
 	// The address remains held by the project and simply no longer points at any network interface. The
@@ -918,6 +930,20 @@ type Handler interface {
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
 	UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error)
+	// UpdateSubnet implements update-subnet operation.
+	//
+	// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
+	// out inside it would fall outside a changed range.
+	//
+	// PATCH /api/v1/subnets/{subnetId}
+	UpdateSubnet(ctx context.Context, req *UpdateSubnetRequestBody, params UpdateSubnetParams) (*Subnet, error)
+	// UpdateVirtualPrivateCloud implements update-virtual-private-cloud operation.
+	//
+	// Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
+	// inside it was allocated from it.
+	//
+	// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+	UpdateVirtualPrivateCloud(ctx context.Context, req *UpdateVirtualPrivateCloudRequestBody, params UpdateVirtualPrivateCloudParams) (*VirtualPrivateCloud, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

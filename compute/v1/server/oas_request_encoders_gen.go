@@ -360,20 +360,6 @@ func encodeRenameVirtualMachineRequest(
 	return nil
 }
 
-func encodeRenameVirtualPrivateCloudRequest(
-	req *RenameVirtualPrivateCloudRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeRescueVirtualMachineRequest(
 	req *RescueVirtualMachineRequestBody,
 	r *http.Request,
@@ -530,6 +516,34 @@ func encodeStartVirtualMachineRequest(
 
 func encodeStopVirtualMachineRequest(
 	req *PowerRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateSubnetRequest(
+	req *UpdateSubnetRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateVirtualPrivateCloudRequest(
+	req *UpdateVirtualPrivateCloudRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
