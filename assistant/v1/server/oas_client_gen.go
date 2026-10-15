@@ -352,13 +352,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/channels
 	ListChannels(ctx context.Context, params ListChannelsParams) (*LengthAwarePageChannelResource, error)
-	// ListCommands invokes list-commands operation.
-	//
-	// The slash commands a person can type in a conversation, such as /status or /compact. The same
-	// commands work in the console and in chat apps, so a client builds its command menu from this list.
-	//
-	// GET /api/v1/commands
-	ListCommands(ctx context.Context) (*CommandListResponseBody, error)
 	// ListFolders invokes list-folders operation.
 	//
 	// The caller's folders in this project in their own order, inbox first. Every conversation is in
@@ -421,6 +414,19 @@ type Invoker interface {
 	//
 	// GET /api/v1/threads/{thread}/items
 	ListThreadItems(ctx context.Context, params ListThreadItemsParams) (*ThreadItemListResponseBody, error)
+	// ListThreadMessages invokes list-thread-messages operation.
+	//
+	// An outline of the messages the person sent in this conversation, from the console or a chat app,
+	// oldest first: what a timeline needs to place and preview every message without reading the
+	// transcript. Replies, tool calls and messages from subagents, tasks or other conversations are not
+	// included, nor are reverted messages or messages waiting in the queue.
+	//
+	// `index` is the message's position, from 1, and matches `messageIndex` on the transcript item. Read
+	// the message N with `offset` N-1. Open it in the transcript with list-thread-items `around` its
+	// `ordinal`. `total` equals the thread's `messageCount`.
+	//
+	// GET /api/v1/threads/{thread}/messages
+	ListThreadMessages(ctx context.Context, params ListThreadMessagesParams) (*ThreadMessageListResponseBody, error)
 	// ListThreadTurns invokes list-thread-turns operation.
 	//
 	// The conversation's turns, newest first, each with the model and reasoning effort it ran with, how
@@ -528,18 +534,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/channels/{channel}/secret
 	RotateChannelSecret(ctx context.Context, request OptRotateSecretRequestBody, params RotateChannelSecretParams) (*WebhookSecretResponseBody, error)
-	// RunCommand invokes run-command operation.
-	//
-	// Runs a slash command against the conversation. Commands act directly and never reach the model. The
-	// result carries a plain-text `message`, which is what a chat app shows, and structured fields for
-	// clients that render more, such as `status` for /status.
-	//
-	// /new is carried out by the client, which opens an empty conversation, and fails here with 422 and
-	// code COMMAND_CLIENT_ONLY. Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with
-	// 422 and code COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
-	//
-	// POST /api/v1/threads/{thread}/commands
-	RunCommand(ctx context.Context, request *RunCommandRequestBody, params RunCommandParams) (*CommandResultResource, error)
 	// RunTask invokes run-task operation.
 	//
 	// Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
@@ -6219,120 +6213,6 @@ func (c *Client) sendListChannels(ctx context.Context, params ListChannelsParams
 	return result, nil
 }
 
-// ListCommands invokes list-commands operation.
-//
-// The slash commands a person can type in a conversation, such as /status or /compact. The same
-// commands work in the console and in chat apps, so a client builds its command menu from this list.
-//
-// GET /api/v1/commands
-func (c *Client) ListCommands(ctx context.Context) (*CommandListResponseBody, error) {
-	res, err := c.sendListCommands(ctx)
-	return res, err
-}
-
-func (c *Client) sendListCommands(ctx context.Context) (res *CommandListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-commands"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/commands"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListCommandsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/commands"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListCommandsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListCommandsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListFolders invokes list-folders operation.
 //
 // The caller's folders in this project in their own order, inbox first. Every conversation is in
@@ -7178,6 +7058,183 @@ func (c *Client) sendListThreadItems(ctx context.Context, params ListThreadItems
 
 	stage = "DecodeResponse"
 	result, err := decodeListThreadItemsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListThreadMessages invokes list-thread-messages operation.
+//
+// An outline of the messages the person sent in this conversation, from the console or a chat app,
+// oldest first: what a timeline needs to place and preview every message without reading the
+// transcript. Replies, tool calls and messages from subagents, tasks or other conversations are not
+// included, nor are reverted messages or messages waiting in the queue.
+//
+// `index` is the message's position, from 1, and matches `messageIndex` on the transcript item. Read
+// the message N with `offset` N-1. Open it in the transcript with list-thread-items `around` its
+// `ordinal`. `total` equals the thread's `messageCount`.
+//
+// GET /api/v1/threads/{thread}/messages
+func (c *Client) ListThreadMessages(ctx context.Context, params ListThreadMessagesParams) (*ThreadMessageListResponseBody, error) {
+	res, err := c.sendListThreadMessages(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListThreadMessages(ctx context.Context, params ListThreadMessagesParams) (res *ThreadMessageListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-thread-messages"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/messages"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListThreadMessagesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/messages"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "offset" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Offset.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "limit" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Limit.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListThreadMessagesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListThreadMessagesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9049,156 +9106,6 @@ func (c *Client) sendRotateChannelSecret(ctx context.Context, request OptRotateS
 
 	stage = "DecodeResponse"
 	result, err := decodeRotateChannelSecretResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RunCommand invokes run-command operation.
-//
-// Runs a slash command against the conversation. Commands act directly and never reach the model. The
-// result carries a plain-text `message`, which is what a chat app shows, and structured fields for
-// clients that render more, such as `status` for /status.
-//
-// /new is carried out by the client, which opens an empty conversation, and fails here with 422 and
-// code COMMAND_CLIENT_ONLY. Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with
-// 422 and code COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
-//
-// POST /api/v1/threads/{thread}/commands
-func (c *Client) RunCommand(ctx context.Context, request *RunCommandRequestBody, params RunCommandParams) (*CommandResultResource, error) {
-	res, err := c.sendRunCommand(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRunCommand(ctx context.Context, request *RunCommandRequestBody, params RunCommandParams) (res *CommandResultResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("run-command"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/commands"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RunCommandOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/threads/"
-	{
-		// Encode "thread" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "thread",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Thread))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/commands"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRunCommandRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RunCommandOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRunCommandResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

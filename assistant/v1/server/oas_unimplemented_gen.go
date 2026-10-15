@@ -456,16 +456,6 @@ func (UnimplementedHandler) ListChannels(ctx context.Context, params ListChannel
 	return r, ht.ErrNotImplemented
 }
 
-// ListCommands implements list-commands operation.
-//
-// The slash commands a person can type in a conversation, such as /status or /compact. The same
-// commands work in the console and in chat apps, so a client builds its command menu from this list.
-//
-// GET /api/v1/commands
-func (UnimplementedHandler) ListCommands(ctx context.Context) (r *CommandListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListFolders implements list-folders operation.
 //
 // The caller's folders in this project in their own order, inbox first. Every conversation is in
@@ -543,6 +533,22 @@ func (UnimplementedHandler) ListTaskRuns(ctx context.Context, params ListTaskRun
 //
 // GET /api/v1/threads/{thread}/items
 func (UnimplementedHandler) ListThreadItems(ctx context.Context, params ListThreadItemsParams) (r *ThreadItemListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListThreadMessages implements list-thread-messages operation.
+//
+// An outline of the messages the person sent in this conversation, from the console or a chat app,
+// oldest first: what a timeline needs to place and preview every message without reading the
+// transcript. Replies, tool calls and messages from subagents, tasks or other conversations are not
+// included, nor are reverted messages or messages waiting in the queue.
+//
+// `index` is the message's position, from 1, and matches `messageIndex` on the transcript item. Read
+// the message N with `offset` N-1. Open it in the transcript with list-thread-items `around` its
+// `ordinal`. `total` equals the thread's `messageCount`.
+//
+// GET /api/v1/threads/{thread}/messages
+func (UnimplementedHandler) ListThreadMessages(ctx context.Context, params ListThreadMessagesParams) (r *ThreadMessageListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -689,21 +695,6 @@ func (UnimplementedHandler) RevertThread(ctx context.Context, req *RevertRequest
 //
 // POST /api/v1/channels/{channel}/secret
 func (UnimplementedHandler) RotateChannelSecret(ctx context.Context, req OptRotateSecretRequestBody, params RotateChannelSecretParams) (r *WebhookSecretResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RunCommand implements run-command operation.
-//
-// Runs a slash command against the conversation. Commands act directly and never reach the model. The
-// result carries a plain-text `message`, which is what a chat app shows, and structured fields for
-// clients that render more, such as `status` for /status.
-//
-// /new is carried out by the client, which opens an empty conversation, and fails here with 422 and
-// code COMMAND_CLIENT_ONLY. Fails with 404 and code COMMAND_NOT_FOUND for an unknown command, and with
-// 422 and code COMMAND_ARGUMENTS_INVALID when the arguments do not fit.
-//
-// POST /api/v1/threads/{thread}/commands
-func (UnimplementedHandler) RunCommand(ctx context.Context, req *RunCommandRequestBody, params RunCommandParams) (r *CommandResultResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

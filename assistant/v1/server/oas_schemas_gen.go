@@ -1407,136 +1407,6 @@ func (s *ClientFunctionRequestParameters) init() ClientFunctionRequestParameters
 	return m
 }
 
-// Ref: #/components/schemas/CommandListResponseBody
-type CommandListResponseBody struct {
-	Commands []CommandResource `json:"commands"`
-}
-
-// GetCommands returns the value of Commands.
-func (s *CommandListResponseBody) GetCommands() []CommandResource {
-	return s.Commands
-}
-
-// SetCommands sets the value of Commands.
-func (s *CommandListResponseBody) SetCommands(val []CommandResource) {
-	s.Commands = val
-}
-
-// Ref: #/components/schemas/CommandResource
-type CommandResource struct {
-	// The command without the slash, for example `status`.
-	Name string `json:"name"`
-	// Other names that run the same command.
-	Aliases     []string `json:"aliases"`
-	Description string   `json:"description"`
-	// How to write the arguments, for example `<model id>`. Empty when the command takes none.
-	ArgumentHint string `json:"argumentHint"`
-}
-
-// GetName returns the value of Name.
-func (s *CommandResource) GetName() string {
-	return s.Name
-}
-
-// GetAliases returns the value of Aliases.
-func (s *CommandResource) GetAliases() []string {
-	return s.Aliases
-}
-
-// GetDescription returns the value of Description.
-func (s *CommandResource) GetDescription() string {
-	return s.Description
-}
-
-// GetArgumentHint returns the value of ArgumentHint.
-func (s *CommandResource) GetArgumentHint() string {
-	return s.ArgumentHint
-}
-
-// SetName sets the value of Name.
-func (s *CommandResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetAliases sets the value of Aliases.
-func (s *CommandResource) SetAliases(val []string) {
-	s.Aliases = val
-}
-
-// SetDescription sets the value of Description.
-func (s *CommandResource) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetArgumentHint sets the value of ArgumentHint.
-func (s *CommandResource) SetArgumentHint(val string) {
-	s.ArgumentHint = val
-}
-
-// Ref: #/components/schemas/CommandResultResource
-type CommandResultResource struct {
-	// The command that ran, after resolving aliases.
-	Name string `json:"name"`
-	// The result as plain text.
-	Message string `json:"message"`
-	// The conversation after the command.
-	Thread NilThreadResource `json:"thread"`
-	// The turn the command started, for example the compaction turn of /compact.
-	TurnId NilString `json:"turnId"`
-	// Set by /status.
-	Status NilStatusReportResource `json:"status"`
-}
-
-// GetName returns the value of Name.
-func (s *CommandResultResource) GetName() string {
-	return s.Name
-}
-
-// GetMessage returns the value of Message.
-func (s *CommandResultResource) GetMessage() string {
-	return s.Message
-}
-
-// GetThread returns the value of Thread.
-func (s *CommandResultResource) GetThread() NilThreadResource {
-	return s.Thread
-}
-
-// GetTurnId returns the value of TurnId.
-func (s *CommandResultResource) GetTurnId() NilString {
-	return s.TurnId
-}
-
-// GetStatus returns the value of Status.
-func (s *CommandResultResource) GetStatus() NilStatusReportResource {
-	return s.Status
-}
-
-// SetName sets the value of Name.
-func (s *CommandResultResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetMessage sets the value of Message.
-func (s *CommandResultResource) SetMessage(val string) {
-	s.Message = val
-}
-
-// SetThread sets the value of Thread.
-func (s *CommandResultResource) SetThread(val NilThreadResource) {
-	s.Thread = val
-}
-
-// SetTurnId sets the value of TurnId.
-func (s *CommandResultResource) SetTurnId(val NilString) {
-	s.TurnId = val
-}
-
-// SetStatus sets the value of Status.
-func (s *CommandResultResource) SetStatus(val NilStatusReportResource) {
-	s.Status = val
-}
-
 // Ref: #/components/schemas/CompleteUploadRequestBody
 type CompleteUploadRequestBody struct {
 	PolicyId string `json:"policyId"`
@@ -3608,51 +3478,6 @@ func (o NilReasoningEffort) Or(d ReasoningEffort) ReasoningEffort {
 	return d
 }
 
-// NewNilStatusReportResource returns new NilStatusReportResource with value set to v.
-func NewNilStatusReportResource(v StatusReportResource) NilStatusReportResource {
-	return NilStatusReportResource{
-		Value: v,
-	}
-}
-
-// NilStatusReportResource is nullable StatusReportResource.
-type NilStatusReportResource struct {
-	Value StatusReportResource
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilStatusReportResource) SetTo(v StatusReportResource) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilStatusReportResource) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilStatusReportResource) SetToNull() {
-	o.Null = true
-	var v StatusReportResource
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilStatusReportResource) Get() (v StatusReportResource, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilStatusReportResource) Or(d StatusReportResource) StatusReportResource {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilString returns new NilString with value set to v.
 func NewNilString(v string) NilString {
 	return NilString{
@@ -3788,96 +3613,6 @@ func (o NilThreadCountsResource) Or(d ThreadCountsResource) ThreadCountsResource
 	return d
 }
 
-// NewNilThreadResource returns new NilThreadResource with value set to v.
-func NewNilThreadResource(v ThreadResource) NilThreadResource {
-	return NilThreadResource{
-		Value: v,
-	}
-}
-
-// NilThreadResource is nullable ThreadResource.
-type NilThreadResource struct {
-	Value ThreadResource
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilThreadResource) SetTo(v ThreadResource) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilThreadResource) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilThreadResource) SetToNull() {
-	o.Null = true
-	var v ThreadResource
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilThreadResource) Get() (v ThreadResource, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilThreadResource) Or(d ThreadResource) ThreadResource {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilThreadTurnResource returns new NilThreadTurnResource with value set to v.
-func NewNilThreadTurnResource(v ThreadTurnResource) NilThreadTurnResource {
-	return NilThreadTurnResource{
-		Value: v,
-	}
-}
-
-// NilThreadTurnResource is nullable ThreadTurnResource.
-type NilThreadTurnResource struct {
-	Value ThreadTurnResource
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilThreadTurnResource) SetTo(v ThreadTurnResource) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilThreadTurnResource) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilThreadTurnResource) SetToNull() {
-	o.Null = true
-	var v ThreadTurnResource
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilThreadTurnResource) Get() (v ThreadTurnResource, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilThreadTurnResource) Or(d ThreadTurnResource) ThreadTurnResource {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilToolCallResource returns new NilToolCallResource with value set to v.
 func NewNilToolCallResource(v ToolCallResource) NilToolCallResource {
 	return NilToolCallResource{
@@ -3962,6 +3697,51 @@ func (o NilToolCallResourceAnswers) Get() (v ToolCallResourceAnswers, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilToolCallResourceAnswers) Or(d ToolCallResourceAnswers) ToolCallResourceAnswers {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilToolCallResourceApprovalSource returns new NilToolCallResourceApprovalSource with value set to v.
+func NewNilToolCallResourceApprovalSource(v ToolCallResourceApprovalSource) NilToolCallResourceApprovalSource {
+	return NilToolCallResourceApprovalSource{
+		Value: v,
+	}
+}
+
+// NilToolCallResourceApprovalSource is nullable ToolCallResourceApprovalSource.
+type NilToolCallResourceApprovalSource struct {
+	Value ToolCallResourceApprovalSource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilToolCallResourceApprovalSource) SetTo(v ToolCallResourceApprovalSource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilToolCallResourceApprovalSource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilToolCallResourceApprovalSource) SetToNull() {
+	o.Null = true
+	var v ToolCallResourceApprovalSource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilToolCallResourceApprovalSource) Get() (v ToolCallResourceApprovalSource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilToolCallResourceApprovalSource) Or(d ToolCallResourceApprovalSource) ToolCallResourceApprovalSource {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7299,34 +7079,6 @@ func (s *RotateSecretRequestBody) SetWebhookSecret(val OptString) {
 	s.WebhookSecret = val
 }
 
-// Ref: #/components/schemas/RunCommandRequestBody
-type RunCommandRequestBody struct {
-	// The command or one of its aliases, without the slash.
-	Name string `json:"name"`
-	// Everything typed after the command name.
-	Arguments OptString `json:"arguments"`
-}
-
-// GetName returns the value of Name.
-func (s *RunCommandRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetArguments returns the value of Arguments.
-func (s *RunCommandRequestBody) GetArguments() OptString {
-	return s.Arguments
-}
-
-// SetName sets the value of Name.
-func (s *RunCommandRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetArguments sets the value of Arguments.
-func (s *RunCommandRequestBody) SetArguments(val OptString) {
-	s.Arguments = val
-}
-
 // Ref: #/components/schemas/SearchTasksRequestBody
 type SearchTasksRequestBody struct {
 	// Only the tasks that report to this conversation.
@@ -8349,113 +8101,6 @@ func (s *SkillResourceOrigin) UnmarshalText(data []byte) error {
 	}
 }
 
-// The conversation's configuration and resource use, as shown by /status.
-// Ref: #/components/schemas/StatusReportResource
-type StatusReportResource struct {
-	ThreadId string `json:"threadId"`
-	ModelId  string `json:"modelId"`
-	// The model's display name in the Canopy catalogue. Falls back to modelId.
-	ModelName       string               `json:"modelName"`
-	ReasoningEffort NilReasoningEffort   `json:"reasoningEffort"`
-	ApprovalMode    ApprovalMode         `json:"approvalMode"`
-	Status          ThreadStatus         `json:"status"`
-	Context         ContextUsageResource `json:"context"`
-	// Token usage over the whole conversation.
-	Usage Usage `json:"usage"`
-	// The most recent turn with its own usage. Null before the first message.
-	LastTurn NilThreadTurnResource `json:"lastTurn"`
-}
-
-// GetThreadId returns the value of ThreadId.
-func (s *StatusReportResource) GetThreadId() string {
-	return s.ThreadId
-}
-
-// GetModelId returns the value of ModelId.
-func (s *StatusReportResource) GetModelId() string {
-	return s.ModelId
-}
-
-// GetModelName returns the value of ModelName.
-func (s *StatusReportResource) GetModelName() string {
-	return s.ModelName
-}
-
-// GetReasoningEffort returns the value of ReasoningEffort.
-func (s *StatusReportResource) GetReasoningEffort() NilReasoningEffort {
-	return s.ReasoningEffort
-}
-
-// GetApprovalMode returns the value of ApprovalMode.
-func (s *StatusReportResource) GetApprovalMode() ApprovalMode {
-	return s.ApprovalMode
-}
-
-// GetStatus returns the value of Status.
-func (s *StatusReportResource) GetStatus() ThreadStatus {
-	return s.Status
-}
-
-// GetContext returns the value of Context.
-func (s *StatusReportResource) GetContext() ContextUsageResource {
-	return s.Context
-}
-
-// GetUsage returns the value of Usage.
-func (s *StatusReportResource) GetUsage() Usage {
-	return s.Usage
-}
-
-// GetLastTurn returns the value of LastTurn.
-func (s *StatusReportResource) GetLastTurn() NilThreadTurnResource {
-	return s.LastTurn
-}
-
-// SetThreadId sets the value of ThreadId.
-func (s *StatusReportResource) SetThreadId(val string) {
-	s.ThreadId = val
-}
-
-// SetModelId sets the value of ModelId.
-func (s *StatusReportResource) SetModelId(val string) {
-	s.ModelId = val
-}
-
-// SetModelName sets the value of ModelName.
-func (s *StatusReportResource) SetModelName(val string) {
-	s.ModelName = val
-}
-
-// SetReasoningEffort sets the value of ReasoningEffort.
-func (s *StatusReportResource) SetReasoningEffort(val NilReasoningEffort) {
-	s.ReasoningEffort = val
-}
-
-// SetApprovalMode sets the value of ApprovalMode.
-func (s *StatusReportResource) SetApprovalMode(val ApprovalMode) {
-	s.ApprovalMode = val
-}
-
-// SetStatus sets the value of Status.
-func (s *StatusReportResource) SetStatus(val ThreadStatus) {
-	s.Status = val
-}
-
-// SetContext sets the value of Context.
-func (s *StatusReportResource) SetContext(val ContextUsageResource) {
-	s.Context = val
-}
-
-// SetUsage sets the value of Usage.
-func (s *StatusReportResource) SetUsage(val Usage) {
-	s.Usage = val
-}
-
-// SetLastTurn sets the value of LastTurn.
-func (s *StatusReportResource) SetLastTurn(val NilThreadTurnResource) {
-	s.LastTurn = val
-}
-
 // Ref: #/components/schemas/SubagentCountResource
 type SubagentCountResource struct {
 	Total   int64 `json:"total"`
@@ -8828,6 +8473,9 @@ type TaskRunResource struct {
 	Output NilString `json:"output"`
 	// Why the run failed. Null unless status is failed.
 	ErrorCode NilString `json:"errorCode"`
+	// How the run started: `schedule` by the task's own trigger, including a task set to run now; `manual`
+	// by a person running it outside its schedule; `assistant` by the assistant.
+	Trigger TaskRunResourceTrigger `json:"trigger"`
 }
 
 // GetID returns the value of ID.
@@ -8870,6 +8518,11 @@ func (s *TaskRunResource) GetErrorCode() NilString {
 	return s.ErrorCode
 }
 
+// GetTrigger returns the value of Trigger.
+func (s *TaskRunResource) GetTrigger() TaskRunResourceTrigger {
+	return s.Trigger
+}
+
 // SetID sets the value of ID.
 func (s *TaskRunResource) SetID(val string) {
 	s.ID = val
@@ -8908,6 +8561,11 @@ func (s *TaskRunResource) SetOutput(val NilString) {
 // SetErrorCode sets the value of ErrorCode.
 func (s *TaskRunResource) SetErrorCode(val NilString) {
 	s.ErrorCode = val
+}
+
+// SetTrigger sets the value of Trigger.
+func (s *TaskRunResource) SetTrigger(val TaskRunResourceTrigger) {
+	s.Trigger = val
 }
 
 type TaskRunResourceStatus string
@@ -8973,6 +8631,56 @@ func (s *TaskRunResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case TaskRunResourceStatusTimedOut:
 		*s = TaskRunResourceStatusTimedOut
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// How the run started: `schedule` by the task's own trigger, including a task set to run now; `manual`
+// by a person running it outside its schedule; `assistant` by the assistant.
+type TaskRunResourceTrigger string
+
+const (
+	TaskRunResourceTriggerSchedule  TaskRunResourceTrigger = "schedule"
+	TaskRunResourceTriggerManual    TaskRunResourceTrigger = "manual"
+	TaskRunResourceTriggerAssistant TaskRunResourceTrigger = "assistant"
+)
+
+// AllValues returns all TaskRunResourceTrigger values.
+func (TaskRunResourceTrigger) AllValues() []TaskRunResourceTrigger {
+	return []TaskRunResourceTrigger{
+		TaskRunResourceTriggerSchedule,
+		TaskRunResourceTriggerManual,
+		TaskRunResourceTriggerAssistant,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskRunResourceTrigger) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskRunResourceTriggerSchedule:
+		return []byte(s), nil
+	case TaskRunResourceTriggerManual:
+		return []byte(s), nil
+	case TaskRunResourceTriggerAssistant:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskRunResourceTrigger) UnmarshalText(data []byte) error {
+	switch TaskRunResourceTrigger(data) {
+	case TaskRunResourceTriggerSchedule:
+		*s = TaskRunResourceTriggerSchedule
+		return nil
+	case TaskRunResourceTriggerManual:
+		*s = TaskRunResourceTriggerManual
+		return nil
+	case TaskRunResourceTriggerAssistant:
+		*s = TaskRunResourceTriggerAssistant
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -9346,8 +9054,11 @@ type ThreadItemResource struct {
 	// wrote; render the message from `parts` and leave these out of the bubble.
 	ClientContext []ClientContextPart `json:"clientContext"`
 	// The call, for a `tool_call` item. Null for other items.
-	ToolCall  NilToolCallResource `json:"toolCall"`
-	CreatedAt time.Time           `json:"createdAt"`
+	ToolCall NilToolCallResource `json:"toolCall"`
+	// The position of a `user_message` among the person's messages, from 1, as in list-thread-messages.
+	// Null for other items, and for messages that are reverted or waiting in the queue.
+	MessageIndex NilInt64  `json:"messageIndex"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 // GetID returns the value of ID.
@@ -9418,6 +9129,11 @@ func (s *ThreadItemResource) GetClientContext() []ClientContextPart {
 // GetToolCall returns the value of ToolCall.
 func (s *ThreadItemResource) GetToolCall() NilToolCallResource {
 	return s.ToolCall
+}
+
+// GetMessageIndex returns the value of MessageIndex.
+func (s *ThreadItemResource) GetMessageIndex() NilInt64 {
+	return s.MessageIndex
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -9493,6 +9209,11 @@ func (s *ThreadItemResource) SetClientContext(val []ClientContextPart) {
 // SetToolCall sets the value of ToolCall.
 func (s *ThreadItemResource) SetToolCall(val NilToolCallResource) {
 	s.ToolCall = val
+}
+
+// SetMessageIndex sets the value of MessageIndex.
+func (s *ThreadItemResource) SetMessageIndex(val NilInt64) {
+	s.MessageIndex = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -9699,6 +9420,121 @@ func (s *ThreadListResponseBody) SetCounts(val NilThreadCountsResource) {
 	s.Counts = val
 }
 
+// Ref: #/components/schemas/ThreadMessageListResponseBody
+type ThreadMessageListResponseBody struct {
+	Messages []ThreadMessageResource `json:"messages"`
+	// How many messages the person has sent in this conversation, the same as the thread's `messageCount`.
+	Total int64 `json:"total"`
+}
+
+// GetMessages returns the value of Messages.
+func (s *ThreadMessageListResponseBody) GetMessages() []ThreadMessageResource {
+	return s.Messages
+}
+
+// GetTotal returns the value of Total.
+func (s *ThreadMessageListResponseBody) GetTotal() int64 {
+	return s.Total
+}
+
+// SetMessages sets the value of Messages.
+func (s *ThreadMessageListResponseBody) SetMessages(val []ThreadMessageResource) {
+	s.Messages = val
+}
+
+// SetTotal sets the value of Total.
+func (s *ThreadMessageListResponseBody) SetTotal(val int64) {
+	s.Total = val
+}
+
+// One message the person sent, as an entry of the conversation's outline.
+// Ref: #/components/schemas/ThreadMessageResource
+type ThreadMessageResource struct {
+	// The transcript item.
+	ID string `json:"id"`
+	// The position among the person's messages, from 1.
+	Index int64 `json:"index"`
+	// The item's position in the transcript, for list-thread-items `around`.
+	Ordinal int64  `json:"ordinal"`
+	TurnId  string `json:"turnId"`
+	// The beginning of the message's text, at most 120 characters. Empty for a message with only
+	// attachments.
+	Preview string `json:"preview"`
+	// How many files the message carries.
+	Attachments int64     `json:"attachments"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+// GetID returns the value of ID.
+func (s *ThreadMessageResource) GetID() string {
+	return s.ID
+}
+
+// GetIndex returns the value of Index.
+func (s *ThreadMessageResource) GetIndex() int64 {
+	return s.Index
+}
+
+// GetOrdinal returns the value of Ordinal.
+func (s *ThreadMessageResource) GetOrdinal() int64 {
+	return s.Ordinal
+}
+
+// GetTurnId returns the value of TurnId.
+func (s *ThreadMessageResource) GetTurnId() string {
+	return s.TurnId
+}
+
+// GetPreview returns the value of Preview.
+func (s *ThreadMessageResource) GetPreview() string {
+	return s.Preview
+}
+
+// GetAttachments returns the value of Attachments.
+func (s *ThreadMessageResource) GetAttachments() int64 {
+	return s.Attachments
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ThreadMessageResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *ThreadMessageResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetIndex sets the value of Index.
+func (s *ThreadMessageResource) SetIndex(val int64) {
+	s.Index = val
+}
+
+// SetOrdinal sets the value of Ordinal.
+func (s *ThreadMessageResource) SetOrdinal(val int64) {
+	s.Ordinal = val
+}
+
+// SetTurnId sets the value of TurnId.
+func (s *ThreadMessageResource) SetTurnId(val string) {
+	s.TurnId = val
+}
+
+// SetPreview sets the value of Preview.
+func (s *ThreadMessageResource) SetPreview(val string) {
+	s.Preview = val
+}
+
+// SetAttachments sets the value of Attachments.
+func (s *ThreadMessageResource) SetAttachments(val int64) {
+	s.Attachments = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ThreadMessageResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
 // A conversation with an agent. The main conversation and its subagents have the same shape; `role`
 // tells them apart.
 // Ref: #/components/schemas/ThreadResource
@@ -9737,9 +9573,11 @@ type ThreadResource struct {
 	// Token usage over the whole conversation. For a main conversation this includes its subagents.
 	Usage Usage `json:"usage"`
 	// The assistant replied after the conversation was last marked read.
-	Unread    bool      `json:"unread"`
-	Archived  bool      `json:"archived"`
-	CreatedAt time.Time `json:"createdAt"`
+	Unread   bool `json:"unread"`
+	Archived bool `json:"archived"`
+	// How many messages the person has sent in this conversation, as listed by list-thread-messages.
+	MessageCount int64     `json:"messageCount"`
+	CreatedAt    time.Time `json:"createdAt"`
 	// The last activity. Renaming or moving the conversation does not change it.
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -9847,6 +9685,11 @@ func (s *ThreadResource) GetUnread() bool {
 // GetArchived returns the value of Archived.
 func (s *ThreadResource) GetArchived() bool {
 	return s.Archived
+}
+
+// GetMessageCount returns the value of MessageCount.
+func (s *ThreadResource) GetMessageCount() int64 {
+	return s.MessageCount
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -9962,6 +9805,11 @@ func (s *ThreadResource) SetUnread(val bool) {
 // SetArchived sets the value of Archived.
 func (s *ThreadResource) SetArchived(val bool) {
 	s.Archived = val
+}
+
+// SetMessageCount sets the value of MessageCount.
+func (s *ThreadResource) SetMessageCount(val int64) {
+	s.MessageCount = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -10137,8 +9985,12 @@ type ThreadTurnResource struct {
 	// How many tools the turn called.
 	ToolCalls int64 `json:"toolCalls"`
 	// Tokens used by every model request of this turn, including title generation, review and compaction.
-	Usage     Usage     `json:"usage"`
-	StartedAt time.Time `json:"startedAt"`
+	Usage Usage `json:"usage"`
+	// An estimate of the output tokens of the model request in progress, which `usage` does not count yet.
+	// It grows about once a second while the model writes and returns to 0 when the request ends and its
+	// exact usage is added. Show `usage.outputTokens` plus this while the turn runs.
+	StreamingOutputTokens int64     `json:"streamingOutputTokens"`
+	StartedAt             time.Time `json:"startedAt"`
 	// When the first output token arrived. Null until then.
 	FirstTokenAt NilDateTime `json:"firstTokenAt"`
 	// Null while the turn is running.
@@ -10208,6 +10060,11 @@ func (s *ThreadTurnResource) GetToolCalls() int64 {
 // GetUsage returns the value of Usage.
 func (s *ThreadTurnResource) GetUsage() Usage {
 	return s.Usage
+}
+
+// GetStreamingOutputTokens returns the value of StreamingOutputTokens.
+func (s *ThreadTurnResource) GetStreamingOutputTokens() int64 {
+	return s.StreamingOutputTokens
 }
 
 // GetStartedAt returns the value of StartedAt.
@@ -10288,6 +10145,11 @@ func (s *ThreadTurnResource) SetToolCalls(val int64) {
 // SetUsage sets the value of Usage.
 func (s *ThreadTurnResource) SetUsage(val Usage) {
 	s.Usage = val
+}
+
+// SetStreamingOutputTokens sets the value of StreamingOutputTokens.
+func (s *ThreadTurnResource) SetStreamingOutputTokens(val int64) {
+	s.StreamingOutputTokens = val
 }
 
 // SetStartedAt sets the value of StartedAt.
@@ -10412,6 +10274,10 @@ type ToolCallResource struct {
 	// approved by the automatic reviewer.
 	ApprovalStatus NilToolCallResourceApprovalStatus `json:"approvalStatus"`
 	ApprovalReason NilString                         `json:"approvalReason"`
+	// Who decided the call. `user` is the person, in the console or a chat app; `auto_review` is the
+	// automatic reviewer; `policy` is the tool itself, which cannot be called this way. Null when nobody
+	// decided, including calls that needed no decision.
+	ApprovalSource NilToolCallResourceApprovalSource `json:"approvalSource"`
 	// When a person or the reviewer decided the call or answered its questions.
 	DecidedAt NilDateTime `json:"decidedAt"`
 	// The questions of an `ask` call. Null for other calls.
@@ -10461,6 +10327,11 @@ func (s *ToolCallResource) GetApprovalStatus() NilToolCallResourceApprovalStatus
 // GetApprovalReason returns the value of ApprovalReason.
 func (s *ToolCallResource) GetApprovalReason() NilString {
 	return s.ApprovalReason
+}
+
+// GetApprovalSource returns the value of ApprovalSource.
+func (s *ToolCallResource) GetApprovalSource() NilToolCallResourceApprovalSource {
+	return s.ApprovalSource
 }
 
 // GetDecidedAt returns the value of DecidedAt.
@@ -10523,6 +10394,11 @@ func (s *ToolCallResource) SetApprovalReason(val NilString) {
 	s.ApprovalReason = val
 }
 
+// SetApprovalSource sets the value of ApprovalSource.
+func (s *ToolCallResource) SetApprovalSource(val NilToolCallResourceApprovalSource) {
+	s.ApprovalSource = val
+}
+
 // SetDecidedAt sets the value of DecidedAt.
 func (s *ToolCallResource) SetDecidedAt(val NilDateTime) {
 	s.DecidedAt = val
@@ -10553,6 +10429,57 @@ func (s *ToolCallResourceAnswers) init() ToolCallResourceAnswers {
 		*s = m
 	}
 	return m
+}
+
+// Who decided the call. `user` is the person, in the console or a chat app; `auto_review` is the
+// automatic reviewer; `policy` is the tool itself, which cannot be called this way. Null when nobody
+// decided, including calls that needed no decision.
+type ToolCallResourceApprovalSource string
+
+const (
+	ToolCallResourceApprovalSourceUser       ToolCallResourceApprovalSource = "user"
+	ToolCallResourceApprovalSourceAutoReview ToolCallResourceApprovalSource = "auto_review"
+	ToolCallResourceApprovalSourcePolicy     ToolCallResourceApprovalSource = "policy"
+)
+
+// AllValues returns all ToolCallResourceApprovalSource values.
+func (ToolCallResourceApprovalSource) AllValues() []ToolCallResourceApprovalSource {
+	return []ToolCallResourceApprovalSource{
+		ToolCallResourceApprovalSourceUser,
+		ToolCallResourceApprovalSourceAutoReview,
+		ToolCallResourceApprovalSourcePolicy,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ToolCallResourceApprovalSource) MarshalText() ([]byte, error) {
+	switch s {
+	case ToolCallResourceApprovalSourceUser:
+		return []byte(s), nil
+	case ToolCallResourceApprovalSourceAutoReview:
+		return []byte(s), nil
+	case ToolCallResourceApprovalSourcePolicy:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ToolCallResourceApprovalSource) UnmarshalText(data []byte) error {
+	switch ToolCallResourceApprovalSource(data) {
+	case ToolCallResourceApprovalSourceUser:
+		*s = ToolCallResourceApprovalSourceUser
+		return nil
+	case ToolCallResourceApprovalSourceAutoReview:
+		*s = ToolCallResourceApprovalSourceAutoReview
+		return nil
+	case ToolCallResourceApprovalSourcePolicy:
+		*s = ToolCallResourceApprovalSourcePolicy
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Whether the call needed a decision before it ran. Null for calls that need none. `auto_approved` was
