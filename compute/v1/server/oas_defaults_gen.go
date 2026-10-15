@@ -3,15 +3,15 @@
 package computev1server
 
 // setDefaults set default value of fields.
-func (s *CheckoutOptions) setDefaults() {
+func (s *CreateElasticIPRequestBody) setDefaults() {
 	{
-		val := CheckoutOptionsMode("automatic")
-		s.Mode.SetTo(val)
+		val := InternetChargeType("bandwidth")
+		s.InternetChargeType.SetTo(val)
 	}
 }
 
 // setDefaults set default value of fields.
-func (s *LaunchInstanceQuoteRequestBody) setDefaults() {
+func (s *CreateVirtualMachineRequestBody) setDefaults() {
 	{
 		val := int64(1)
 		s.Count.SetTo(val)
@@ -19,10 +19,10 @@ func (s *LaunchInstanceQuoteRequestBody) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *LaunchInstanceRequestBody) setDefaults() {
+func (s *ElasticIP) setDefaults() {
 	{
-		val := int64(1)
-		s.Count.SetTo(val)
+		val := InternetChargeType("bandwidth")
+		s.InternetChargeType = val
 	}
 }
 
@@ -30,6 +30,14 @@ func (s *LaunchInstanceRequestBody) setDefaults() {
 func (s *NewBootDisk) setDefaults() {
 	{
 		val := bool(true)
-		s.DeleteWithInstance.SetTo(val)
+		s.DeleteWithVirtualMachine.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *NewElasticIP) setDefaults() {
+	{
+		val := InternetChargeType("bandwidth")
+		s.InternetChargeType.SetTo(val)
 	}
 }

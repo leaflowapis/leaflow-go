@@ -5,88 +5,44 @@ type AcceptPeeringRes interface {
 	acceptPeeringRes()
 }
 
-type AllocateFloatingIPRes interface {
-	allocateFloatingIPRes()
-}
-
 type AttachDiskRes interface {
 	attachDiskRes()
 }
 
-type AttachInstanceFloatingIPRes interface {
-	attachInstanceFloatingIPRes()
+type AttachNetworkInterfaceRes interface {
+	attachNetworkInterfaceRes()
 }
 
-type AttachPortRes interface {
-	attachPortRes()
+type AttachVirtualMachineElasticIPRes interface {
+	attachVirtualMachineElasticIPRes()
 }
 
-type BindFloatingIPRes interface {
-	bindFloatingIPRes()
-}
-
-type CreateBackupCapacityPackQuoteRes interface {
-	createBackupCapacityPackQuoteRes()
-}
-
-type CreateBackupCapacityPackRes interface {
-	createBackupCapacityPackRes()
+type BindElasticIPRes interface {
+	bindElasticIPRes()
 }
 
 type CreateBackupRes interface {
 	createBackupRes()
 }
 
-type CreateBackupRestoreQuoteRes interface {
-	createBackupRestoreQuoteRes()
-}
-
-type CreateBackupServiceQuoteRes interface {
-	createBackupServiceQuoteRes()
-}
-
-type CreateBackupServiceRes interface {
-	createBackupServiceRes()
-}
-
-type CreateDiskQuoteRes interface {
-	createDiskQuoteRes()
-}
-
 type CreateDiskRes interface {
 	createDiskRes()
 }
 
-type CreateDiskResizeQuoteRes interface {
-	createDiskResizeQuoteRes()
-}
-
-type CreateFloatingIPBandwidthQuoteRes interface {
-	createFloatingIPBandwidthQuoteRes()
-}
-
-type CreateFloatingIPQuoteRes interface {
-	createFloatingIPQuoteRes()
-}
-
-type CreateImageQuoteRes interface {
-	createImageQuoteRes()
+type CreateElasticIPRes interface {
+	createElasticIPRes()
 }
 
 type CreateImageRes interface {
 	createImageRes()
 }
 
-type CreateInstanceQuoteRes interface {
-	createInstanceQuoteRes()
+type CreateSnapshotRes interface {
+	createSnapshotRes()
 }
 
-type CreateInstanceResizeQuoteRes interface {
-	createInstanceResizeQuoteRes()
-}
-
-type CreateSnapshotQuotaQuoteRes interface {
-	createSnapshotQuotaQuoteRes()
+type CreateVirtualMachineRes interface {
+	createVirtualMachineRes()
 }
 
 type DeleteBackupRes interface {
@@ -101,72 +57,72 @@ type DeleteImageRes interface {
 	deleteImageRes()
 }
 
-type DeleteInstanceRes interface {
-	deleteInstanceRes()
+type DeleteNetworkInterfaceRes interface {
+	deleteNetworkInterfaceRes()
 }
 
 type DeletePeeringRes interface {
 	deletePeeringRes()
 }
 
-type DeletePortRes interface {
-	deletePortRes()
-}
-
-type DeletePrivateNetworkRes interface {
-	deletePrivateNetworkRes()
-}
-
 type DeleteSnapshotRes interface {
 	deleteSnapshotRes()
+}
+
+type DeleteVirtualMachineRes interface {
+	deleteVirtualMachineRes()
+}
+
+type DeleteVirtualPrivateCloudRes interface {
+	deleteVirtualPrivateCloudRes()
 }
 
 type DetachDiskRes interface {
 	detachDiskRes()
 }
 
-type DetachInstanceFloatingIPRes interface {
-	detachInstanceFloatingIPRes()
+type DetachNetworkInterfaceRes interface {
+	detachNetworkInterfaceRes()
 }
 
-type DetachPortRes interface {
-	detachPortRes()
+type DetachVirtualMachineElasticIPRes interface {
+	detachVirtualMachineElasticIPRes()
 }
 
-type DisablePrivateNetworkIpv6Res interface {
-	disablePrivateNetworkIpv6Res()
+type DisableVirtualPrivateCloudIpv6Res interface {
+	disableVirtualPrivateCloudIpv6Res()
 }
 
-type EnablePrivateNetworkIpv6Res interface {
-	enablePrivateNetworkIpv6Res()
+type EnableVirtualPrivateCloudIpv6Res interface {
+	enableVirtualPrivateCloudIpv6Res()
 }
 
-type LaunchInstanceRes interface {
-	launchInstanceRes()
+type RebootVirtualMachineRes interface {
+	rebootVirtualMachineRes()
 }
 
-type RebootInstanceRes interface {
-	rebootInstanceRes()
+type RebuildVirtualMachineRes interface {
+	rebuildVirtualMachineRes()
 }
 
-type RebuildInstanceRes interface {
-	rebuildInstanceRes()
+type ReleaseElasticIPRes interface {
+	releaseElasticIPRes()
 }
 
-type ReleaseFloatingIPRes interface {
-	releaseFloatingIPRes()
+type RescueVirtualMachineRes interface {
+	rescueVirtualMachineRes()
 }
 
-type ResetInstancePasswordRes interface {
-	resetInstancePasswordRes()
+type ResetVirtualMachinePasswordRes interface {
+	resetVirtualMachinePasswordRes()
 }
 
 type ResizeDiskRes interface {
 	resizeDiskRes()
 }
 
-type ResizeInstanceRes interface {
-	resizeInstanceRes()
+type ResizeVirtualMachineRes interface {
+	resizeVirtualMachineRes()
 }
 
 type RestoreBackupRes interface {
@@ -177,22 +133,22 @@ type RevertDiskRes interface {
 	revertDiskRes()
 }
 
-type SetFloatingIPBandwidthRes interface {
-	setFloatingIPBandwidthRes()
+type SetElasticIPBandwidthRes interface {
+	setElasticIPBandwidthRes()
 }
 
-type SetSnapshotQuotaRes interface {
-	setSnapshotQuotaRes()
+type StartVirtualMachineRes interface {
+	startVirtualMachineRes()
 }
 
-type StartInstanceRes interface {
-	startInstanceRes()
+type StopVirtualMachineRes interface {
+	stopVirtualMachineRes()
 }
 
-type StopInstanceRes interface {
-	stopInstanceRes()
+type UnbindElasticIPRes interface {
+	unbindElasticIPRes()
 }
 
-type UnbindFloatingIPRes interface {
-	unbindFloatingIPRes()
+type UnrescueVirtualMachineRes interface {
+	unrescueVirtualMachineRes()
 }

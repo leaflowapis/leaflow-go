@@ -16,528 +16,52 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
-// The request of `allocate-floating-ip`, without `checkout`.
-// Ref: #/components/schemas/AllocateFloatingIPQuoteRequestBody
-type AllocateFloatingIPQuoteRequestBody struct {
-	// The address to allocate. Allocated by the platform when omitted.
-	Address OptString `json:"address"`
-	// The bandwidth ceiling of this address, in Mbit/s, applied to both directions.
-	//
-	// Required, and there is no "unlimited": an address with no ceiling runs at line rate and is charged
-	// nothing for the traffic, while the address itself bills normally — so the invoice looks correct
-	// and nothing anywhere reports it.
-	//
-	// It is part of this floating IP purchase and is billed as the pool's `bandwidth_pricing` shows, with
-	// the purchase's billing choice. Changing it later updates the same floating IP through its bandwidth
-	// endpoint, not an independent bandwidth resource.
-	BandwidthMbps    int64         `json:"bandwidth_mbps"`
-	PrivateNetworkID uuid.UUID     `json:"private_network_id"`
-	Ipv4PoolID       uuid.UUID     `json:"ipv4_pool_id"`
-	Billing          BillingChoice `json:"billing"`
-}
-
-// GetAddress returns the value of Address.
-func (s *AllocateFloatingIPQuoteRequestBody) GetAddress() OptString {
-	return s.Address
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *AllocateFloatingIPQuoteRequestBody) GetBandwidthMbps() int64 {
-	return s.BandwidthMbps
-}
-
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *AllocateFloatingIPQuoteRequestBody) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
-}
-
-// GetIpv4PoolID returns the value of Ipv4PoolID.
-func (s *AllocateFloatingIPQuoteRequestBody) GetIpv4PoolID() uuid.UUID {
-	return s.Ipv4PoolID
-}
-
-// GetBilling returns the value of Billing.
-func (s *AllocateFloatingIPQuoteRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// SetAddress sets the value of Address.
-func (s *AllocateFloatingIPQuoteRequestBody) SetAddress(val OptString) {
-	s.Address = val
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *AllocateFloatingIPQuoteRequestBody) SetBandwidthMbps(val int64) {
-	s.BandwidthMbps = val
-}
-
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *AllocateFloatingIPQuoteRequestBody) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
-}
-
-// SetIpv4PoolID sets the value of Ipv4PoolID.
-func (s *AllocateFloatingIPQuoteRequestBody) SetIpv4PoolID(val uuid.UUID) {
-	s.Ipv4PoolID = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *AllocateFloatingIPQuoteRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
-// Ref: #/components/schemas/AllocateFloatingIPRequestBody
-type AllocateFloatingIPRequestBody struct {
-	// The address to allocate. Allocated by the platform when omitted.
-	Address OptString `json:"address"`
-	// The bandwidth ceiling of this address, in Mbit/s, applied to both directions.
-	//
-	// Required, and there is no "unlimited": an address with no ceiling runs at line rate and is charged
-	// nothing for the traffic, while the address itself bills normally — so the invoice looks correct
-	// and nothing anywhere reports it.
-	//
-	// It is part of this floating IP purchase and is billed as the pool's `bandwidth_pricing` shows, with
-	// the purchase's billing choice. Changing it later updates the same floating IP through its bandwidth
-	// endpoint, not an independent bandwidth resource.
-	BandwidthMbps    int64              `json:"bandwidth_mbps"`
-	PrivateNetworkID uuid.UUID          `json:"private_network_id"`
-	Ipv4PoolID       uuid.UUID          `json:"ipv4_pool_id"`
-	Billing          BillingChoice      `json:"billing"`
-	Checkout         OptCheckoutOptions `json:"checkout"`
-}
-
-// GetAddress returns the value of Address.
-func (s *AllocateFloatingIPRequestBody) GetAddress() OptString {
-	return s.Address
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *AllocateFloatingIPRequestBody) GetBandwidthMbps() int64 {
-	return s.BandwidthMbps
-}
-
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *AllocateFloatingIPRequestBody) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
-}
-
-// GetIpv4PoolID returns the value of Ipv4PoolID.
-func (s *AllocateFloatingIPRequestBody) GetIpv4PoolID() uuid.UUID {
-	return s.Ipv4PoolID
-}
-
-// GetBilling returns the value of Billing.
-func (s *AllocateFloatingIPRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *AllocateFloatingIPRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetAddress sets the value of Address.
-func (s *AllocateFloatingIPRequestBody) SetAddress(val OptString) {
-	s.Address = val
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *AllocateFloatingIPRequestBody) SetBandwidthMbps(val int64) {
-	s.BandwidthMbps = val
-}
-
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *AllocateFloatingIPRequestBody) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
-}
-
-// SetIpv4PoolID sets the value of Ipv4PoolID.
-func (s *AllocateFloatingIPRequestBody) SetIpv4PoolID(val uuid.UUID) {
-	s.Ipv4PoolID = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *AllocateFloatingIPRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *AllocateFloatingIPRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The new floating IP, `pending` until its order is accepted, and its Checkout Session. `address` is
-// null until the address is allocated.
-// Ref: #/components/schemas/AllocateFloatingIPResponseBody
-type AllocateFloatingIPResponseBody struct {
-	FloatingIP FloatingIPResource `json:"floating_ip"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetFloatingIP returns the value of FloatingIP.
-func (s *AllocateFloatingIPResponseBody) GetFloatingIP() FloatingIPResource {
-	return s.FloatingIP
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *AllocateFloatingIPResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *AllocateFloatingIPResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetFloatingIP sets the value of FloatingIP.
-func (s *AllocateFloatingIPResponseBody) SetFloatingIP(val FloatingIPResource) {
-	s.FloatingIP = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *AllocateFloatingIPResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *AllocateFloatingIPResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*AllocateFloatingIPResponseBody) allocateFloatingIPRes() {}
-
 // Ref: #/components/schemas/AttachDiskRequestBody
 type AttachDiskRequestBody struct {
-	DiskID uuid.UUID `json:"disk_id"`
+	DiskID DiskID `json:"disk_id"`
 }
 
 // GetDiskID returns the value of DiskID.
-func (s *AttachDiskRequestBody) GetDiskID() uuid.UUID {
+func (s *AttachDiskRequestBody) GetDiskID() DiskID {
 	return s.DiskID
 }
 
 // SetDiskID sets the value of DiskID.
-func (s *AttachDiskRequestBody) SetDiskID(val uuid.UUID) {
+func (s *AttachDiskRequestBody) SetDiskID(val DiskID) {
 	s.DiskID = val
 }
 
-// Ref: #/components/schemas/AttachFloatingIPRequestBody
-type AttachFloatingIPRequestBody struct {
-	FloatingIPID uuid.UUID `json:"floating_ip_id"`
+// Ref: #/components/schemas/AttachElasticIPRequestBody
+type AttachElasticIPRequestBody struct {
+	ElasticIPID ElasticIPID `json:"elastic_ip_id"`
 }
 
-// GetFloatingIPID returns the value of FloatingIPID.
-func (s *AttachFloatingIPRequestBody) GetFloatingIPID() uuid.UUID {
-	return s.FloatingIPID
+// GetElasticIPID returns the value of ElasticIPID.
+func (s *AttachElasticIPRequestBody) GetElasticIPID() ElasticIPID {
+	return s.ElasticIPID
 }
 
-// SetFloatingIPID sets the value of FloatingIPID.
-func (s *AttachFloatingIPRequestBody) SetFloatingIPID(val uuid.UUID) {
-	s.FloatingIPID = val
+// SetElasticIPID sets the value of ElasticIPID.
+func (s *AttachElasticIPRequestBody) SetElasticIPID(val ElasticIPID) {
+	s.ElasticIPID = val
 }
 
-// Ref: #/components/schemas/AttachPortRequestBody
-type AttachPortRequestBody struct {
-	PortID uuid.UUID `json:"port_id"`
+// Ref: #/components/schemas/AttachNetworkInterfaceRequestBody
+type AttachNetworkInterfaceRequestBody struct {
+	NetworkInterfaceID NetworkInterfaceID `json:"network_interface_id"`
 }
 
-// GetPortID returns the value of PortID.
-func (s *AttachPortRequestBody) GetPortID() uuid.UUID {
-	return s.PortID
+// GetNetworkInterfaceID returns the value of NetworkInterfaceID.
+func (s *AttachNetworkInterfaceRequestBody) GetNetworkInterfaceID() NetworkInterfaceID {
+	return s.NetworkInterfaceID
 }
 
-// SetPortID sets the value of PortID.
-func (s *AttachPortRequestBody) SetPortID(val uuid.UUID) {
-	s.PortID = val
+// SetNetworkInterfaceID sets the value of NetworkInterfaceID.
+func (s *AttachNetworkInterfaceRequestBody) SetNetworkInterfaceID(val NetworkInterfaceID) {
+	s.NetworkInterfaceID = val
 }
 
-// Backup capacity for one region, sold by Compute and bought for a term through its own Billing
-// subscription. Compute applies its coverage to backup usage; it is not a Billing allowance or credit.
-// Ref: #/components/schemas/BackupCapacityPack
-type BackupCapacityPack struct {
-	ID          uuid.UUID `json:"id"`
-	RegionID    uuid.UUID `json:"region_id"`
-	CapacityGib int64     `json:"capacity_gib"`
-	// `pending` awaits acceptance of its order; `provisioning` is being applied; `active` covers backup
-	// capacity; `ended` no longer does because its subscription has ended; `failed` means the purchase
-	// failed, as `failure_reason` states.
-	Status BackupCapacityPackStatus `json:"status"`
-	// Why the purchase failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means it failed after the order
-	// was accepted, and its charge is refunded.
-	FailureReason NilBackupCapacityPackFailureReason `json:"failure_reason"`
-	// The Billing Checkout Session that bought the pack. Null when the pack was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// Null until the pack's checkout completes.
-	OrderID NilUUID `json:"order_id"`
-	// The pack's Billing subscription, through which it is renewed or canceled.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscription a cancellation through Billing has to cover to release this capacity pack. A
-	// subscription that has ended is not listed, and the list is empty when no subscription pays for the
-	// pack.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	CreatedAt              time.Time   `json:"created_at"`
-}
-
-// GetID returns the value of ID.
-func (s *BackupCapacityPack) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *BackupCapacityPack) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetCapacityGib returns the value of CapacityGib.
-func (s *BackupCapacityPack) GetCapacityGib() int64 {
-	return s.CapacityGib
-}
-
-// GetStatus returns the value of Status.
-func (s *BackupCapacityPack) GetStatus() BackupCapacityPackStatus {
-	return s.Status
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *BackupCapacityPack) GetFailureReason() NilBackupCapacityPackFailureReason {
-	return s.FailureReason
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *BackupCapacityPack) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *BackupCapacityPack) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *BackupCapacityPack) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *BackupCapacityPack) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *BackupCapacityPack) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// SetID sets the value of ID.
-func (s *BackupCapacityPack) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *BackupCapacityPack) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetCapacityGib sets the value of CapacityGib.
-func (s *BackupCapacityPack) SetCapacityGib(val int64) {
-	s.CapacityGib = val
-}
-
-// SetStatus sets the value of Status.
-func (s *BackupCapacityPack) SetStatus(val BackupCapacityPackStatus) {
-	s.Status = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *BackupCapacityPack) SetFailureReason(val NilBackupCapacityPackFailureReason) {
-	s.FailureReason = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *BackupCapacityPack) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *BackupCapacityPack) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *BackupCapacityPack) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *BackupCapacityPack) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *BackupCapacityPack) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// Why the purchase failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means it failed after the order
-// was accepted, and its charge is refunded.
-type BackupCapacityPackFailureReason string
-
-const (
-	BackupCapacityPackFailureReasonCheckoutExpired    BackupCapacityPackFailureReason = "checkout_expired"
-	BackupCapacityPackFailureReasonOrderDeclined      BackupCapacityPackFailureReason = "order_declined"
-	BackupCapacityPackFailureReasonOrderCanceled      BackupCapacityPackFailureReason = "order_canceled"
-	BackupCapacityPackFailureReasonOrderExpired       BackupCapacityPackFailureReason = "order_expired"
-	BackupCapacityPackFailureReasonProvisioningFailed BackupCapacityPackFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all BackupCapacityPackFailureReason values.
-func (BackupCapacityPackFailureReason) AllValues() []BackupCapacityPackFailureReason {
-	return []BackupCapacityPackFailureReason{
-		BackupCapacityPackFailureReasonCheckoutExpired,
-		BackupCapacityPackFailureReasonOrderDeclined,
-		BackupCapacityPackFailureReasonOrderCanceled,
-		BackupCapacityPackFailureReasonOrderExpired,
-		BackupCapacityPackFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BackupCapacityPackFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case BackupCapacityPackFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case BackupCapacityPackFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case BackupCapacityPackFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case BackupCapacityPackFailureReasonOrderExpired:
-		return []byte(s), nil
-	case BackupCapacityPackFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BackupCapacityPackFailureReason) UnmarshalText(data []byte) error {
-	switch BackupCapacityPackFailureReason(data) {
-	case BackupCapacityPackFailureReasonCheckoutExpired:
-		*s = BackupCapacityPackFailureReasonCheckoutExpired
-		return nil
-	case BackupCapacityPackFailureReasonOrderDeclined:
-		*s = BackupCapacityPackFailureReasonOrderDeclined
-		return nil
-	case BackupCapacityPackFailureReasonOrderCanceled:
-		*s = BackupCapacityPackFailureReasonOrderCanceled
-		return nil
-	case BackupCapacityPackFailureReasonOrderExpired:
-		*s = BackupCapacityPackFailureReasonOrderExpired
-		return nil
-	case BackupCapacityPackFailureReasonProvisioningFailed:
-		*s = BackupCapacityPackFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/BackupCapacityPackListResponseBody
-type BackupCapacityPackListResponseBody struct {
-	Items      []BackupCapacityPack `json:"items"`
-	Pagination OffsetPagination     `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *BackupCapacityPackListResponseBody) GetItems() []BackupCapacityPack {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *BackupCapacityPackListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *BackupCapacityPackListResponseBody) SetItems(val []BackupCapacityPack) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *BackupCapacityPackListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// `pending` awaits acceptance of its order; `provisioning` is being applied; `active` covers backup
-// capacity; `ended` no longer does because its subscription has ended; `failed` means the purchase
-// failed, as `failure_reason` states.
-type BackupCapacityPackStatus string
-
-const (
-	BackupCapacityPackStatusPending      BackupCapacityPackStatus = "pending"
-	BackupCapacityPackStatusProvisioning BackupCapacityPackStatus = "provisioning"
-	BackupCapacityPackStatusActive       BackupCapacityPackStatus = "active"
-	BackupCapacityPackStatusEnded        BackupCapacityPackStatus = "ended"
-	BackupCapacityPackStatusFailed       BackupCapacityPackStatus = "failed"
-)
-
-// AllValues returns all BackupCapacityPackStatus values.
-func (BackupCapacityPackStatus) AllValues() []BackupCapacityPackStatus {
-	return []BackupCapacityPackStatus{
-		BackupCapacityPackStatusPending,
-		BackupCapacityPackStatusProvisioning,
-		BackupCapacityPackStatusActive,
-		BackupCapacityPackStatusEnded,
-		BackupCapacityPackStatusFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BackupCapacityPackStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case BackupCapacityPackStatusPending:
-		return []byte(s), nil
-	case BackupCapacityPackStatusProvisioning:
-		return []byte(s), nil
-	case BackupCapacityPackStatusActive:
-		return []byte(s), nil
-	case BackupCapacityPackStatusEnded:
-		return []byte(s), nil
-	case BackupCapacityPackStatusFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BackupCapacityPackStatus) UnmarshalText(data []byte) error {
-	switch BackupCapacityPackStatus(data) {
-	case BackupCapacityPackStatusPending:
-		*s = BackupCapacityPackStatusPending
-		return nil
-	case BackupCapacityPackStatusProvisioning:
-		*s = BackupCapacityPackStatusProvisioning
-		return nil
-	case BackupCapacityPackStatusActive:
-		*s = BackupCapacityPackStatusActive
-		return nil
-	case BackupCapacityPackStatusEnded:
-		*s = BackupCapacityPackStatusEnded
-		return nil
-	case BackupCapacityPackStatusFailed:
-		*s = BackupCapacityPackStatusFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
+type AvailabilityZoneID string
 
 // Ref: #/components/schemas/BackupListResponseBody
 type BackupListResponseBody struct {
@@ -643,21 +167,21 @@ func (s *BackupOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
-// A copy of a disk, metered on the backup service of its region by `capacity_gib` for as long as it is
-// retained. It has no order or subscription of its own.
+// A retained copy of a disk, restorable after its source disk is deleted. Compute project quotas
+// constrain its count; retained storage is metered independently.
 // Ref: #/components/schemas/BackupResource
 type BackupResource struct {
-	CreatedAt time.Time `json:"created_at"`
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	RegionID  uuid.UUID `json:"region_id"`
+	CreatedAt time.Time    `json:"created_at"`
+	ID        DiskBackupID `json:"id"`
+	Name      string       `json:"name"`
+	RegionID  RegionID     `json:"region_id"`
 	// Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this.
 	SizeGB int64 `json:"size_gb"`
 	// The capacity metered for this backup, in GiB: the size of the source disk when the backup was taken.
 	// Usage is this capacity multiplied by the time the backup is retained.
 	CapacityGib int64 `json:"capacity_gib"`
 	// The disk this backup was taken from. The backup remains usable after that disk is deleted.
-	SourceDiskID uuid.UUID `json:"source_disk_id"`
+	SourceDiskID DiskID `json:"source_disk_id"`
 	// `provisioning` while the backup is taken, then `available`. `failed` means the backup was not
 	// created. `missing` means the backup no longer exists in the cloud.
 	Status BackupResourceStatus `json:"status"`
@@ -666,7 +190,13 @@ type BackupResource struct {
 	Generation int64              `json:"generation"`
 	ObservedAt NilDateTime        `json:"observed_at"`
 	// Availability zone of the source disk. A restore may target another zone in the same region.
-	SourceAvailabilityZoneID uuid.UUID `json:"source_availability_zone_id"`
+	SourceAvailabilityZoneID AvailabilityZoneID `json:"source_availability_zone_id"`
+	// The Billing order creating this resource.
+	OrderID NilUUID `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The subscription for this resource; its presence alone does not imply delivery.
+	SubscriptionID NilUUID `json:"subscription_id"`
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -675,7 +205,7 @@ func (s *BackupResource) GetCreatedAt() time.Time {
 }
 
 // GetID returns the value of ID.
-func (s *BackupResource) GetID() uuid.UUID {
+func (s *BackupResource) GetID() DiskBackupID {
 	return s.ID
 }
 
@@ -685,7 +215,7 @@ func (s *BackupResource) GetName() string {
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *BackupResource) GetRegionID() uuid.UUID {
+func (s *BackupResource) GetRegionID() RegionID {
 	return s.RegionID
 }
 
@@ -700,7 +230,7 @@ func (s *BackupResource) GetCapacityGib() int64 {
 }
 
 // GetSourceDiskID returns the value of SourceDiskID.
-func (s *BackupResource) GetSourceDiskID() uuid.UUID {
+func (s *BackupResource) GetSourceDiskID() DiskID {
 	return s.SourceDiskID
 }
 
@@ -725,8 +255,23 @@ func (s *BackupResource) GetObservedAt() NilDateTime {
 }
 
 // GetSourceAvailabilityZoneID returns the value of SourceAvailabilityZoneID.
-func (s *BackupResource) GetSourceAvailabilityZoneID() uuid.UUID {
+func (s *BackupResource) GetSourceAvailabilityZoneID() AvailabilityZoneID {
 	return s.SourceAvailabilityZoneID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *BackupResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *BackupResource) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *BackupResource) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -735,7 +280,7 @@ func (s *BackupResource) SetCreatedAt(val time.Time) {
 }
 
 // SetID sets the value of ID.
-func (s *BackupResource) SetID(val uuid.UUID) {
+func (s *BackupResource) SetID(val DiskBackupID) {
 	s.ID = val
 }
 
@@ -745,7 +290,7 @@ func (s *BackupResource) SetName(val string) {
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *BackupResource) SetRegionID(val uuid.UUID) {
+func (s *BackupResource) SetRegionID(val RegionID) {
 	s.RegionID = val
 }
 
@@ -760,7 +305,7 @@ func (s *BackupResource) SetCapacityGib(val int64) {
 }
 
 // SetSourceDiskID sets the value of SourceDiskID.
-func (s *BackupResource) SetSourceDiskID(val uuid.UUID) {
+func (s *BackupResource) SetSourceDiskID(val DiskID) {
 	s.SourceDiskID = val
 }
 
@@ -785,11 +330,25 @@ func (s *BackupResource) SetObservedAt(val NilDateTime) {
 }
 
 // SetSourceAvailabilityZoneID sets the value of SourceAvailabilityZoneID.
-func (s *BackupResource) SetSourceAvailabilityZoneID(val uuid.UUID) {
+func (s *BackupResource) SetSourceAvailabilityZoneID(val AvailabilityZoneID) {
 	s.SourceAvailabilityZoneID = val
 }
 
-func (*BackupResource) createBackupRes() {}
+// SetOrderID sets the value of OrderID.
+func (s *BackupResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *BackupResource) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *BackupResource) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
 func (*BackupResource) deleteBackupRes() {}
 
 // `provisioning` while the backup is taken, then `available`. `failed` means the backup was not
@@ -797,6 +356,7 @@ func (*BackupResource) deleteBackupRes() {}
 type BackupResourceStatus string
 
 const (
+	BackupResourceStatusPending      BackupResourceStatus = "pending"
 	BackupResourceStatusProvisioning BackupResourceStatus = "provisioning"
 	BackupResourceStatusAvailable    BackupResourceStatus = "available"
 	BackupResourceStatusDeleted      BackupResourceStatus = "deleted"
@@ -808,6 +368,7 @@ const (
 // AllValues returns all BackupResourceStatus values.
 func (BackupResourceStatus) AllValues() []BackupResourceStatus {
 	return []BackupResourceStatus{
+		BackupResourceStatusPending,
 		BackupResourceStatusProvisioning,
 		BackupResourceStatusAvailable,
 		BackupResourceStatusDeleted,
@@ -820,6 +381,8 @@ func (BackupResourceStatus) AllValues() []BackupResourceStatus {
 // MarshalText implements encoding.TextMarshaler.
 func (s BackupResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
+	case BackupResourceStatusPending:
+		return []byte(s), nil
 	case BackupResourceStatusProvisioning:
 		return []byte(s), nil
 	case BackupResourceStatusAvailable:
@@ -840,6 +403,9 @@ func (s BackupResourceStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *BackupResourceStatus) UnmarshalText(data []byte) error {
 	switch BackupResourceStatus(data) {
+	case BackupResourceStatusPending:
+		*s = BackupResourceStatusPending
+		return nil
 	case BackupResourceStatusProvisioning:
 		*s = BackupResourceStatusProvisioning
 		return nil
@@ -863,292 +429,9 @@ func (s *BackupResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// The backup service of a project in one region. Retained backup capacity beyond what active capacity
-// packs cover is metered on it.
-// Ref: #/components/schemas/BackupService
-type BackupService struct {
-	RegionID uuid.UUID `json:"region_id"`
-	// `inactive` has never been activated or its subscription has ended; `pending` awaits acceptance of
-	// its order; `provisioning` is being activated; `active` accepts new backups; `suspended` refuses new
-	// backups and keeps existing ones; `failed` means the activation failed, as `failure_reason` states.
-	Status BackupServiceStatus `json:"status"`
-	// Why the purchase failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means it failed after the order
-	// was accepted, and its charge is refunded.
-	FailureReason NilBackupServiceFailureReason `json:"failure_reason"`
-	// The Checkout Session of the activation; null before an activation is requested.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The order that activated the service; null until the activation's checkout completes.
-	OrderID NilUUID `json:"order_id"`
-	// The Billing subscription that backup usage is billed under; null until the activation's checkout
-	// completes.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscription a cancellation through Billing has to cover to release this backup service. A
-	// subscription that has ended is not listed, and the list is empty when no subscription pays for the
-	// service.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// The total `capacity_gib` of the backups retained in this region.
-	RetainedCapacityGib int64 `json:"retained_capacity_gib"`
-	// The total `capacity_gib` of the active capacity packs in this region; this much retained capacity is
-	// covered each hour.
-	PackCapacityGib int64 `json:"pack_capacity_gib"`
-	// The metered usage price of backups in this region. Null when the project has no billing account.
-	Pricing NilPricing `json:"pricing"`
-	// The licensed options of capacity packs in this region, per GiB. Null when the project has no billing
-	// account.
-	CapacityPackPricing NilPricing `json:"capacity_pack_pricing"`
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *BackupService) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetStatus returns the value of Status.
-func (s *BackupService) GetStatus() BackupServiceStatus {
-	return s.Status
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *BackupService) GetFailureReason() NilBackupServiceFailureReason {
-	return s.FailureReason
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *BackupService) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *BackupService) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *BackupService) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *BackupService) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
-// GetRetainedCapacityGib returns the value of RetainedCapacityGib.
-func (s *BackupService) GetRetainedCapacityGib() int64 {
-	return s.RetainedCapacityGib
-}
-
-// GetPackCapacityGib returns the value of PackCapacityGib.
-func (s *BackupService) GetPackCapacityGib() int64 {
-	return s.PackCapacityGib
-}
-
-// GetPricing returns the value of Pricing.
-func (s *BackupService) GetPricing() NilPricing {
-	return s.Pricing
-}
-
-// GetCapacityPackPricing returns the value of CapacityPackPricing.
-func (s *BackupService) GetCapacityPackPricing() NilPricing {
-	return s.CapacityPackPricing
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *BackupService) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *BackupService) SetStatus(val BackupServiceStatus) {
-	s.Status = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *BackupService) SetFailureReason(val NilBackupServiceFailureReason) {
-	s.FailureReason = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *BackupService) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *BackupService) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *BackupService) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *BackupService) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
-// SetRetainedCapacityGib sets the value of RetainedCapacityGib.
-func (s *BackupService) SetRetainedCapacityGib(val int64) {
-	s.RetainedCapacityGib = val
-}
-
-// SetPackCapacityGib sets the value of PackCapacityGib.
-func (s *BackupService) SetPackCapacityGib(val int64) {
-	s.PackCapacityGib = val
-}
-
-// SetPricing sets the value of Pricing.
-func (s *BackupService) SetPricing(val NilPricing) {
-	s.Pricing = val
-}
-
-// SetCapacityPackPricing sets the value of CapacityPackPricing.
-func (s *BackupService) SetCapacityPackPricing(val NilPricing) {
-	s.CapacityPackPricing = val
-}
-
-// Why the purchase failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means it failed after the order
-// was accepted, and its charge is refunded.
-type BackupServiceFailureReason string
-
-const (
-	BackupServiceFailureReasonCheckoutExpired    BackupServiceFailureReason = "checkout_expired"
-	BackupServiceFailureReasonOrderDeclined      BackupServiceFailureReason = "order_declined"
-	BackupServiceFailureReasonOrderCanceled      BackupServiceFailureReason = "order_canceled"
-	BackupServiceFailureReasonOrderExpired       BackupServiceFailureReason = "order_expired"
-	BackupServiceFailureReasonProvisioningFailed BackupServiceFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all BackupServiceFailureReason values.
-func (BackupServiceFailureReason) AllValues() []BackupServiceFailureReason {
-	return []BackupServiceFailureReason{
-		BackupServiceFailureReasonCheckoutExpired,
-		BackupServiceFailureReasonOrderDeclined,
-		BackupServiceFailureReasonOrderCanceled,
-		BackupServiceFailureReasonOrderExpired,
-		BackupServiceFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BackupServiceFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case BackupServiceFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case BackupServiceFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case BackupServiceFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case BackupServiceFailureReasonOrderExpired:
-		return []byte(s), nil
-	case BackupServiceFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BackupServiceFailureReason) UnmarshalText(data []byte) error {
-	switch BackupServiceFailureReason(data) {
-	case BackupServiceFailureReasonCheckoutExpired:
-		*s = BackupServiceFailureReasonCheckoutExpired
-		return nil
-	case BackupServiceFailureReasonOrderDeclined:
-		*s = BackupServiceFailureReasonOrderDeclined
-		return nil
-	case BackupServiceFailureReasonOrderCanceled:
-		*s = BackupServiceFailureReasonOrderCanceled
-		return nil
-	case BackupServiceFailureReasonOrderExpired:
-		*s = BackupServiceFailureReasonOrderExpired
-		return nil
-	case BackupServiceFailureReasonProvisioningFailed:
-		*s = BackupServiceFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `inactive` has never been activated or its subscription has ended; `pending` awaits acceptance of
-// its order; `provisioning` is being activated; `active` accepts new backups; `suspended` refuses new
-// backups and keeps existing ones; `failed` means the activation failed, as `failure_reason` states.
-type BackupServiceStatus string
-
-const (
-	BackupServiceStatusInactive     BackupServiceStatus = "inactive"
-	BackupServiceStatusPending      BackupServiceStatus = "pending"
-	BackupServiceStatusProvisioning BackupServiceStatus = "provisioning"
-	BackupServiceStatusActive       BackupServiceStatus = "active"
-	BackupServiceStatusSuspended    BackupServiceStatus = "suspended"
-	BackupServiceStatusFailed       BackupServiceStatus = "failed"
-)
-
-// AllValues returns all BackupServiceStatus values.
-func (BackupServiceStatus) AllValues() []BackupServiceStatus {
-	return []BackupServiceStatus{
-		BackupServiceStatusInactive,
-		BackupServiceStatusPending,
-		BackupServiceStatusProvisioning,
-		BackupServiceStatusActive,
-		BackupServiceStatusSuspended,
-		BackupServiceStatusFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BackupServiceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case BackupServiceStatusInactive:
-		return []byte(s), nil
-	case BackupServiceStatusPending:
-		return []byte(s), nil
-	case BackupServiceStatusProvisioning:
-		return []byte(s), nil
-	case BackupServiceStatusActive:
-		return []byte(s), nil
-	case BackupServiceStatusSuspended:
-		return []byte(s), nil
-	case BackupServiceStatusFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BackupServiceStatus) UnmarshalText(data []byte) error {
-	switch BackupServiceStatus(data) {
-	case BackupServiceStatusInactive:
-		*s = BackupServiceStatusInactive
-		return nil
-	case BackupServiceStatusPending:
-		*s = BackupServiceStatusPending
-		return nil
-	case BackupServiceStatusProvisioning:
-		*s = BackupServiceStatusProvisioning
-		return nil
-	case BackupServiceStatusActive:
-		*s = BackupServiceStatusActive
-		return nil
-	case BackupServiceStatusSuspended:
-		*s = BackupServiceStatusSuspended
-		return nil
-	case BackupServiceStatusFailed:
-		*s = BackupServiceStatusFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// The commercial terms for one newly purchased component. Licensed requires period and
-// termination_policy; metered refuses both. Components in one instance order must use the same usage
-// type and period, while their termination policies may differ.
+// The commercial terms for one newly created component. Prepaid requires period and
+// termination_policy; postpaid refuses both. Components in one virtual machine order must use the same
+// mode and period, while their termination policies may differ.
 // Ref: #/components/schemas/BillingChoice
 type BillingChoice struct {
 	// `licensed` pays for a period in advance; `metered` bills usage until canceled.
@@ -1296,23 +579,25 @@ func (s *BillingPeriodUnit) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/BindFloatingIPRequestBody
-type BindFloatingIPRequestBody struct {
-	PortAddressID uuid.UUID `json:"port_address_id"`
+// Ref: #/components/schemas/BindElasticIPRequestBody
+type BindElasticIPRequestBody struct {
+	// An assigned, unreleased IPv4 address on a network interface in this project and region. IPv6
+	// addresses are rejected.
+	NetworkInterfaceAddressID NetworkInterfaceAddressID `json:"network_interface_address_id"`
 }
 
-// GetPortAddressID returns the value of PortAddressID.
-func (s *BindFloatingIPRequestBody) GetPortAddressID() uuid.UUID {
-	return s.PortAddressID
+// GetNetworkInterfaceAddressID returns the value of NetworkInterfaceAddressID.
+func (s *BindElasticIPRequestBody) GetNetworkInterfaceAddressID() NetworkInterfaceAddressID {
+	return s.NetworkInterfaceAddressID
 }
 
-// SetPortAddressID sets the value of PortAddressID.
-func (s *BindFloatingIPRequestBody) SetPortAddressID(val uuid.UUID) {
-	s.PortAddressID = val
+// SetNetworkInterfaceAddressID sets the value of NetworkInterfaceAddressID.
+func (s *BindElasticIPRequestBody) SetNetworkInterfaceAddressID(val NetworkInterfaceAddressID) {
+	s.NetworkInterfaceAddressID = val
 }
 
 // Create a boot disk from an image, or use a prepared disk already held by this project. Using an
-// existing disk does not buy it again and always keeps it when the instance is released.
+// existing disk does not buy it again and always keeps it when the virtual machine is released.
 // Ref: #/components/schemas/BootDisk
 // BootDisk represents sum type.
 type BootDisk struct {
@@ -1379,97 +664,6 @@ func NewExistingBootDiskBootDisk(v ExistingBootDisk) BootDisk {
 	return s
 }
 
-// Shared checkout choices for a product purchase. The service may set them or forward its client's
-// choices unchanged; it does not need to read them, and Billing validates them. Omitting this object
-// or mode selects automatic checkout. Each purchase creates its own Checkout Session. Promotion codes
-// are supplied only to Billing. A service may retain a failed creation record when Billing refuses a
-// purchase; no infrastructure is created for that refusal.
-// Ref: #/components/schemas/CheckoutOptions
-type CheckoutOptions struct {
-	Mode OptCheckoutOptionsMode `json:"mode"`
-	// Expected invoice total after discounts and tax, before applying credit grants or balance. A
-	// different total fails with BILLING_AMOUNT_CHANGED without charging or reserving a discount. Accepted
-	// only in automatic mode; with deferred it is refused with HTTP 400. For deferred checkout, give the
-	// expected amount when completing it through Billing.
-	ExpectedAmount OptString `json:"expected_amount"`
-	// Where the client goes after the customer finishes a deferred checkout. Any absolute URI with a
-	// scheme, including mobile and desktop application schemes. Billing stores it without checking the
-	// target; each client validates its own.
-	ReturnURL OptURI `json:"return_url"`
-}
-
-// GetMode returns the value of Mode.
-func (s *CheckoutOptions) GetMode() OptCheckoutOptionsMode {
-	return s.Mode
-}
-
-// GetExpectedAmount returns the value of ExpectedAmount.
-func (s *CheckoutOptions) GetExpectedAmount() OptString {
-	return s.ExpectedAmount
-}
-
-// GetReturnURL returns the value of ReturnURL.
-func (s *CheckoutOptions) GetReturnURL() OptURI {
-	return s.ReturnURL
-}
-
-// SetMode sets the value of Mode.
-func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
-	s.Mode = val
-}
-
-// SetExpectedAmount sets the value of ExpectedAmount.
-func (s *CheckoutOptions) SetExpectedAmount(val OptString) {
-	s.ExpectedAmount = val
-}
-
-// SetReturnURL sets the value of ReturnURL.
-func (s *CheckoutOptions) SetReturnURL(val OptURI) {
-	s.ReturnURL = val
-}
-
-// Merged schema.
-type CheckoutOptionsMode string
-
-const (
-	CheckoutOptionsModeAutomatic CheckoutOptionsMode = "automatic"
-	CheckoutOptionsModeDeferred  CheckoutOptionsMode = "deferred"
-)
-
-// AllValues returns all CheckoutOptionsMode values.
-func (CheckoutOptionsMode) AllValues() []CheckoutOptionsMode {
-	return []CheckoutOptionsMode{
-		CheckoutOptionsModeAutomatic,
-		CheckoutOptionsModeDeferred,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CheckoutOptionsMode) MarshalText() ([]byte, error) {
-	switch s {
-	case CheckoutOptionsModeAutomatic:
-		return []byte(s), nil
-	case CheckoutOptionsModeDeferred:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CheckoutOptionsMode) UnmarshalText(data []byte) error {
-	switch CheckoutOptionsMode(data) {
-	case CheckoutOptionsModeAutomatic:
-		*s = CheckoutOptionsModeAutomatic
-		return nil
-	case CheckoutOptionsModeDeferred:
-		*s = CheckoutOptionsModeDeferred
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/CommandResultResponseBody
 type CommandResultResponseBody struct {
 	// What the command exited with, 0 being success. Any other value is the command's own verdict and
@@ -1534,22 +728,6 @@ func (s *CommandResultResponseBody) SetTruncated(val bool) {
 	s.Truncated = val
 }
 
-// Ref: #/components/schemas/ConsoleOutputResponseBody
-type ConsoleOutputResponseBody struct {
-	// Raw text of the console output, in the same line order as inside the instance.
-	Output string `json:"output"`
-}
-
-// GetOutput returns the value of Output.
-func (s *ConsoleOutputResponseBody) GetOutput() string {
-	return s.Output
-}
-
-// SetOutput sets the value of Output.
-func (s *ConsoleOutputResponseBody) SetOutput(val string) {
-	s.Output = val
-}
-
 // Ref: #/components/schemas/ConsoleResponseBody
 type ConsoleResponseBody struct {
 	// Connection address of the remote console; single-use and expires within minutes.
@@ -1566,120 +744,14 @@ func (s *ConsoleResponseBody) SetConsoleURL(val string) {
 	s.ConsoleURL = val
 }
 
-// The request of `create-backup-capacity-pack`, without `checkout`.
-// Ref: #/components/schemas/CreateBackupCapacityPackQuoteRequestBody
-type CreateBackupCapacityPackQuoteRequestBody struct {
-	CapacityGib int64         `json:"capacity_gib"`
-	Billing     BillingChoice `json:"billing"`
-}
-
-// GetCapacityGib returns the value of CapacityGib.
-func (s *CreateBackupCapacityPackQuoteRequestBody) GetCapacityGib() int64 {
-	return s.CapacityGib
-}
-
-// GetBilling returns the value of Billing.
-func (s *CreateBackupCapacityPackQuoteRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// SetCapacityGib sets the value of CapacityGib.
-func (s *CreateBackupCapacityPackQuoteRequestBody) SetCapacityGib(val int64) {
-	s.CapacityGib = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *CreateBackupCapacityPackQuoteRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
-// Ref: #/components/schemas/CreateBackupCapacityPackRequestBody
-type CreateBackupCapacityPackRequestBody struct {
-	CapacityGib int64              `json:"capacity_gib"`
-	Billing     BillingChoice      `json:"billing"`
-	Checkout    OptCheckoutOptions `json:"checkout"`
-}
-
-// GetCapacityGib returns the value of CapacityGib.
-func (s *CreateBackupCapacityPackRequestBody) GetCapacityGib() int64 {
-	return s.CapacityGib
-}
-
-// GetBilling returns the value of Billing.
-func (s *CreateBackupCapacityPackRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *CreateBackupCapacityPackRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetCapacityGib sets the value of CapacityGib.
-func (s *CreateBackupCapacityPackRequestBody) SetCapacityGib(val int64) {
-	s.CapacityGib = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *CreateBackupCapacityPackRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *CreateBackupCapacityPackRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// Ref: #/components/schemas/CreateBackupCapacityPackResponseBody
-type CreateBackupCapacityPackResponseBody struct {
-	BackupCapacityPack BackupCapacityPack `json:"backup_capacity_pack"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetBackupCapacityPack returns the value of BackupCapacityPack.
-func (s *CreateBackupCapacityPackResponseBody) GetBackupCapacityPack() BackupCapacityPack {
-	return s.BackupCapacityPack
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *CreateBackupCapacityPackResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *CreateBackupCapacityPackResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetBackupCapacityPack sets the value of BackupCapacityPack.
-func (s *CreateBackupCapacityPackResponseBody) SetBackupCapacityPack(val BackupCapacityPack) {
-	s.BackupCapacityPack = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *CreateBackupCapacityPackResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *CreateBackupCapacityPackResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*CreateBackupCapacityPackResponseBody) createBackupCapacityPackRes() {}
-
 // Ref: #/components/schemas/CreateBackupRequestBody
 type CreateBackupRequestBody struct {
-	DiskID uuid.UUID `json:"disk_id"`
-	Name   string    `json:"name"`
+	DiskID DiskID `json:"disk_id"`
+	Name   string `json:"name"`
 }
 
 // GetDiskID returns the value of DiskID.
-func (s *CreateBackupRequestBody) GetDiskID() uuid.UUID {
+func (s *CreateBackupRequestBody) GetDiskID() DiskID {
 	return s.DiskID
 }
 
@@ -1689,7 +761,7 @@ func (s *CreateBackupRequestBody) GetName() string {
 }
 
 // SetDiskID sets the value of DiskID.
-func (s *CreateBackupRequestBody) SetDiskID(val uuid.UUID) {
+func (s *CreateBackupRequestBody) SetDiskID(val DiskID) {
 	s.DiskID = val
 }
 
@@ -1698,141 +770,50 @@ func (s *CreateBackupRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/CreateBackupServiceRequestBody
-type CreateBackupServiceRequestBody struct {
-	Checkout OptCheckoutOptions `json:"checkout"`
+// The pending resource and its deferred Billing order. Confirm the order through Billing;
+// infrastructure is allocated only after verified acceptance.
+// Ref: #/components/schemas/CreateBackupResponseBody
+type CreateBackupResponseBody struct {
+	Backup BackupResource `json:"backup"`
+	Order  PlacedOrder    `json:"order"`
 }
 
-// GetCheckout returns the value of Checkout.
-func (s *CreateBackupServiceRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
+// GetBackup returns the value of Backup.
+func (s *CreateBackupResponseBody) GetBackup() BackupResource {
+	return s.Backup
 }
 
-// SetCheckout sets the value of Checkout.
-func (s *CreateBackupServiceRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
+// GetOrder returns the value of Order.
+func (s *CreateBackupResponseBody) GetOrder() PlacedOrder {
+	return s.Order
 }
 
-// Ref: #/components/schemas/CreateBackupServiceResponseBody
-type CreateBackupServiceResponseBody struct {
-	BackupService BackupService `json:"backup_service"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
+// SetBackup sets the value of Backup.
+func (s *CreateBackupResponseBody) SetBackup(val BackupResource) {
+	s.Backup = val
 }
 
-// GetBackupService returns the value of BackupService.
-func (s *CreateBackupServiceResponseBody) GetBackupService() BackupService {
-	return s.BackupService
+// SetOrder sets the value of Order.
+func (s *CreateBackupResponseBody) SetOrder(val PlacedOrder) {
+	s.Order = val
 }
 
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *CreateBackupServiceResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *CreateBackupServiceResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetBackupService sets the value of BackupService.
-func (s *CreateBackupServiceResponseBody) SetBackupService(val BackupService) {
-	s.BackupService = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *CreateBackupServiceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *CreateBackupServiceResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*CreateBackupServiceResponseBody) createBackupServiceRes() {}
-
-// The request of `create-disk`, without `checkout`.
-// Ref: #/components/schemas/CreateDiskQuoteRequestBody
-type CreateDiskQuoteRequestBody struct {
-	// A data disk type currently on sale, one whose `purpose` is `data`. A withdrawn one is rejected even
-	// though its identifier still resolves.
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	Name       string    `json:"name"`
-	SizeGB     int64     `json:"size_gb"`
-	// Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot.
-	SnapshotID OptUUID       `json:"snapshot_id"`
-	Billing    BillingChoice `json:"billing"`
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *CreateDiskQuoteRequestBody) GetDiskTypeID() uuid.UUID {
-	return s.DiskTypeID
-}
-
-// GetName returns the value of Name.
-func (s *CreateDiskQuoteRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *CreateDiskQuoteRequestBody) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetSnapshotID returns the value of SnapshotID.
-func (s *CreateDiskQuoteRequestBody) GetSnapshotID() OptUUID {
-	return s.SnapshotID
-}
-
-// GetBilling returns the value of Billing.
-func (s *CreateDiskQuoteRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *CreateDiskQuoteRequestBody) SetDiskTypeID(val uuid.UUID) {
-	s.DiskTypeID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateDiskQuoteRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *CreateDiskQuoteRequestBody) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetSnapshotID sets the value of SnapshotID.
-func (s *CreateDiskQuoteRequestBody) SetSnapshotID(val OptUUID) {
-	s.SnapshotID = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *CreateDiskQuoteRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
+func (*CreateBackupResponseBody) createBackupRes() {}
 
 // Ref: #/components/schemas/CreateDiskRequestBody
 type CreateDiskRequestBody struct {
 	// A data disk type currently on sale, one whose `purpose` is `data`. A withdrawn one is rejected even
 	// though its identifier still resolves.
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	Name       string    `json:"name"`
-	SizeGB     int64     `json:"size_gb"`
+	DiskTypeID DiskTypeID `json:"disk_type_id"`
+	Name       string     `json:"name"`
+	SizeGB     int64      `json:"size_gb"`
 	// Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot.
-	SnapshotID OptUUID            `json:"snapshot_id"`
-	Billing    BillingChoice      `json:"billing"`
-	Checkout   OptCheckoutOptions `json:"checkout"`
+	SnapshotID OptSnapshotID `json:"snapshot_id"`
+	Billing    BillingChoice `json:"billing"`
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
-func (s *CreateDiskRequestBody) GetDiskTypeID() uuid.UUID {
+func (s *CreateDiskRequestBody) GetDiskTypeID() DiskTypeID {
 	return s.DiskTypeID
 }
 
@@ -1847,7 +828,7 @@ func (s *CreateDiskRequestBody) GetSizeGB() int64 {
 }
 
 // GetSnapshotID returns the value of SnapshotID.
-func (s *CreateDiskRequestBody) GetSnapshotID() OptUUID {
+func (s *CreateDiskRequestBody) GetSnapshotID() OptSnapshotID {
 	return s.SnapshotID
 }
 
@@ -1856,13 +837,8 @@ func (s *CreateDiskRequestBody) GetBilling() BillingChoice {
 	return s.Billing
 }
 
-// GetCheckout returns the value of Checkout.
-func (s *CreateDiskRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
 // SetDiskTypeID sets the value of DiskTypeID.
-func (s *CreateDiskRequestBody) SetDiskTypeID(val uuid.UUID) {
+func (s *CreateDiskRequestBody) SetDiskTypeID(val DiskTypeID) {
 	s.DiskTypeID = val
 }
 
@@ -1877,7 +853,7 @@ func (s *CreateDiskRequestBody) SetSizeGB(val int64) {
 }
 
 // SetSnapshotID sets the value of SnapshotID.
-func (s *CreateDiskRequestBody) SetSnapshotID(val OptUUID) {
+func (s *CreateDiskRequestBody) SetSnapshotID(val OptSnapshotID) {
 	s.SnapshotID = val
 }
 
@@ -1886,13 +862,8 @@ func (s *CreateDiskRequestBody) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
-// SetCheckout sets the value of Checkout.
-func (s *CreateDiskRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The new disk, `pending` until its order is accepted, and its Checkout Session. Also returned for a
-// disk restored from a backup.
+// The new disk, `pending` until its order is accepted, and the order. Also returned for a disk
+// restored from a backup.
 // Ref: #/components/schemas/CreateDiskResponseBody
 type CreateDiskResponseBody struct {
 	Disk DiskResource `json:"disk"`
@@ -1936,46 +907,117 @@ func (s *CreateDiskResponseBody) SetOrderID(val NilUUID) {
 func (*CreateDiskResponseBody) createDiskRes()    {}
 func (*CreateDiskResponseBody) restoreBackupRes() {}
 
-// The fields of `CreateImageRequestBody` that decide the price.
-// Ref: #/components/schemas/CreateImageQuoteRequestBody
-type CreateImageQuoteRequestBody struct {
-	// The instance whose system disk would be captured.
-	InstanceID uuid.UUID     `json:"instance_id"`
-	Billing    BillingChoice `json:"billing"`
+// Ref: #/components/schemas/CreateElasticIPRequestBody
+type CreateElasticIPRequestBody struct {
+	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
+	// The IPv4 address to allocate. Selected by the platform when omitted.
+	Address OptIPv4HostAddress `json:"address"`
+	// The bandwidth ceiling of this address, in Mbit/s, applied to both directions.
+	//
+	// Required, and there is no "unlimited": an address with no ceiling runs at line rate and is charged
+	// nothing for the traffic, while the address itself bills normally — so the invoice looks correct
+	// and nothing anywhere reports it.
+	//
+	// It is part of this elastic IP resource and uses the same commercial terms, selected from Billing's
+	// catalog. Changing it later updates the same elastic IP through its bandwidth endpoint, not an
+	// independent bandwidth resource.
+	BandwidthMbps int64           `json:"bandwidth_mbps"`
+	TypeID        ElasticIPTypeID `json:"type_id"`
+	Billing       BillingChoice   `json:"billing"`
 }
 
-// GetInstanceID returns the value of InstanceID.
-func (s *CreateImageQuoteRequestBody) GetInstanceID() uuid.UUID {
-	return s.InstanceID
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *CreateElasticIPRequestBody) GetInternetChargeType() OptInternetChargeType {
+	return s.InternetChargeType
+}
+
+// GetAddress returns the value of Address.
+func (s *CreateElasticIPRequestBody) GetAddress() OptIPv4HostAddress {
+	return s.Address
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *CreateElasticIPRequestBody) GetBandwidthMbps() int64 {
+	return s.BandwidthMbps
+}
+
+// GetTypeID returns the value of TypeID.
+func (s *CreateElasticIPRequestBody) GetTypeID() ElasticIPTypeID {
+	return s.TypeID
 }
 
 // GetBilling returns the value of Billing.
-func (s *CreateImageQuoteRequestBody) GetBilling() BillingChoice {
+func (s *CreateElasticIPRequestBody) GetBilling() BillingChoice {
 	return s.Billing
 }
 
-// SetInstanceID sets the value of InstanceID.
-func (s *CreateImageQuoteRequestBody) SetInstanceID(val uuid.UUID) {
-	s.InstanceID = val
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *CreateElasticIPRequestBody) SetInternetChargeType(val OptInternetChargeType) {
+	s.InternetChargeType = val
+}
+
+// SetAddress sets the value of Address.
+func (s *CreateElasticIPRequestBody) SetAddress(val OptIPv4HostAddress) {
+	s.Address = val
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *CreateElasticIPRequestBody) SetBandwidthMbps(val int64) {
+	s.BandwidthMbps = val
+}
+
+// SetTypeID sets the value of TypeID.
+func (s *CreateElasticIPRequestBody) SetTypeID(val ElasticIPTypeID) {
+	s.TypeID = val
 }
 
 // SetBilling sets the value of Billing.
-func (s *CreateImageQuoteRequestBody) SetBilling(val BillingChoice) {
+func (s *CreateElasticIPRequestBody) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
-// Ref: #/components/schemas/CreateImageRequestBody
-type CreateImageRequestBody struct {
-	// Captured from the system disk of this instance; data disks are not included.
-	InstanceID uuid.UUID          `json:"instance_id"`
-	Name       string             `json:"name"`
-	Billing    BillingChoice      `json:"billing"`
-	Checkout   OptCheckoutOptions `json:"checkout"`
+// The new elastic IP, `pending` until its order is accepted, and the order. `address` is null until
+// the address is allocated.
+// Ref: #/components/schemas/CreateElasticIPResponseBody
+type CreateElasticIPResponseBody struct {
+	ElasticIP ElasticIP   `json:"elastic_ip"`
+	Order     PlacedOrder `json:"order"`
 }
 
-// GetInstanceID returns the value of InstanceID.
-func (s *CreateImageRequestBody) GetInstanceID() uuid.UUID {
-	return s.InstanceID
+// GetElasticIP returns the value of ElasticIP.
+func (s *CreateElasticIPResponseBody) GetElasticIP() ElasticIP {
+	return s.ElasticIP
+}
+
+// GetOrder returns the value of Order.
+func (s *CreateElasticIPResponseBody) GetOrder() PlacedOrder {
+	return s.Order
+}
+
+// SetElasticIP sets the value of ElasticIP.
+func (s *CreateElasticIPResponseBody) SetElasticIP(val ElasticIP) {
+	s.ElasticIP = val
+}
+
+// SetOrder sets the value of Order.
+func (s *CreateElasticIPResponseBody) SetOrder(val PlacedOrder) {
+	s.Order = val
+}
+
+func (*CreateElasticIPResponseBody) createElasticIPRes() {}
+
+// Creation configuration for this resource. Compute project quotas and Billing authorization are
+// checked independently.
+// Ref: #/components/schemas/CreateImageRequestBody
+type CreateImageRequestBody struct {
+	// Captured from the system disk of this virtual machine; data disks are not included.
+	VirtualMachineID VirtualMachineID `json:"virtual_machine_id"`
+	Name             string           `json:"name"`
+}
+
+// GetVirtualMachineID returns the value of VirtualMachineID.
+func (s *CreateImageRequestBody) GetVirtualMachineID() VirtualMachineID {
+	return s.VirtualMachineID
 }
 
 // GetName returns the value of Name.
@@ -1983,19 +1025,9 @@ func (s *CreateImageRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetBilling returns the value of Billing.
-func (s *CreateImageRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *CreateImageRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetInstanceID sets the value of InstanceID.
-func (s *CreateImageRequestBody) SetInstanceID(val uuid.UUID) {
-	s.InstanceID = val
+// SetVirtualMachineID sets the value of VirtualMachineID.
+func (s *CreateImageRequestBody) SetVirtualMachineID(val VirtualMachineID) {
+	s.VirtualMachineID = val
 }
 
 // SetName sets the value of Name.
@@ -2003,17 +1035,8 @@ func (s *CreateImageRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetBilling sets the value of Billing.
-func (s *CreateImageRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *CreateImageRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The new private image, `pending` until its order is accepted, and its Checkout Session.
+// The pending resource and its deferred Billing order. Confirm the order through Billing;
+// infrastructure is allocated only after verified acceptance.
 // Ref: #/components/schemas/CreateImageResponseBody
 type CreateImageResponseBody struct {
 	Image ImageResource `json:"image"`
@@ -2056,12 +1079,62 @@ func (s *CreateImageResponseBody) SetOrderID(val NilUUID) {
 
 func (*CreateImageResponseBody) createImageRes() {}
 
+// Ref: #/components/schemas/CreateNetworkInterfaceRequestBody
+type CreateNetworkInterfaceRequestBody struct {
+	Name OptString `json:"name"`
+	// At least one, and all must belong to the same virtual private cloud.
+	SecurityGroupIds []SecurityGroupID `json:"security_group_ids"`
+	SubnetID         SubnetID          `json:"subnet_id"`
+	// The private address to assign. Allocated automatically when omitted.
+	Address OptString `json:"address"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateNetworkInterfaceRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// GetSecurityGroupIds returns the value of SecurityGroupIds.
+func (s *CreateNetworkInterfaceRequestBody) GetSecurityGroupIds() []SecurityGroupID {
+	return s.SecurityGroupIds
+}
+
+// GetSubnetID returns the value of SubnetID.
+func (s *CreateNetworkInterfaceRequestBody) GetSubnetID() SubnetID {
+	return s.SubnetID
+}
+
+// GetAddress returns the value of Address.
+func (s *CreateNetworkInterfaceRequestBody) GetAddress() OptString {
+	return s.Address
+}
+
+// SetName sets the value of Name.
+func (s *CreateNetworkInterfaceRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetSecurityGroupIds sets the value of SecurityGroupIds.
+func (s *CreateNetworkInterfaceRequestBody) SetSecurityGroupIds(val []SecurityGroupID) {
+	s.SecurityGroupIds = val
+}
+
+// SetSubnetID sets the value of SubnetID.
+func (s *CreateNetworkInterfaceRequestBody) SetSubnetID(val SubnetID) {
+	s.SubnetID = val
+}
+
+// SetAddress sets the value of Address.
+func (s *CreateNetworkInterfaceRequestBody) SetAddress(val OptString) {
+	s.Address = val
+}
+
 // Ref: #/components/schemas/CreatePeeringRequestBody
 type CreatePeeringRequestBody struct {
-	Name               string    `json:"name"`
-	RequesterNetworkID uuid.UUID `json:"requester_network_id"`
-	AccepterProjectID  uuid.UUID `json:"accepter_project_id"`
-	AccepterNetworkID  uuid.UUID `json:"accepter_network_id"`
+	Name               string                `json:"name"`
+	RequesterNetworkID VirtualPrivateCloudID `json:"requester_network_id"`
+	AccepterProjectID  uuid.UUID             `json:"accepter_project_id"`
+	AccepterNetworkID  VirtualPrivateCloudID `json:"accepter_network_id"`
 }
 
 // GetName returns the value of Name.
@@ -2070,7 +1143,7 @@ func (s *CreatePeeringRequestBody) GetName() string {
 }
 
 // GetRequesterNetworkID returns the value of RequesterNetworkID.
-func (s *CreatePeeringRequestBody) GetRequesterNetworkID() uuid.UUID {
+func (s *CreatePeeringRequestBody) GetRequesterNetworkID() VirtualPrivateCloudID {
 	return s.RequesterNetworkID
 }
 
@@ -2080,7 +1153,7 @@ func (s *CreatePeeringRequestBody) GetAccepterProjectID() uuid.UUID {
 }
 
 // GetAccepterNetworkID returns the value of AccepterNetworkID.
-func (s *CreatePeeringRequestBody) GetAccepterNetworkID() uuid.UUID {
+func (s *CreatePeeringRequestBody) GetAccepterNetworkID() VirtualPrivateCloudID {
 	return s.AccepterNetworkID
 }
 
@@ -2090,7 +1163,7 @@ func (s *CreatePeeringRequestBody) SetName(val string) {
 }
 
 // SetRequesterNetworkID sets the value of RequesterNetworkID.
-func (s *CreatePeeringRequestBody) SetRequesterNetworkID(val uuid.UUID) {
+func (s *CreatePeeringRequestBody) SetRequesterNetworkID(val VirtualPrivateCloudID) {
 	s.RequesterNetworkID = val
 }
 
@@ -2100,96 +1173,8 @@ func (s *CreatePeeringRequestBody) SetAccepterProjectID(val uuid.UUID) {
 }
 
 // SetAccepterNetworkID sets the value of AccepterNetworkID.
-func (s *CreatePeeringRequestBody) SetAccepterNetworkID(val uuid.UUID) {
+func (s *CreatePeeringRequestBody) SetAccepterNetworkID(val VirtualPrivateCloudID) {
 	s.AccepterNetworkID = val
-}
-
-// Ref: #/components/schemas/CreatePortRequestBody
-type CreatePortRequestBody struct {
-	Name OptString `json:"name"`
-	// At least one, and all must belong to the same private network.
-	SecurityGroupIds []uuid.UUID `json:"security_group_ids"`
-	SubnetID         uuid.UUID   `json:"subnet_id"`
-	// The private address to assign. Allocated automatically when omitted.
-	Address OptString `json:"address"`
-}
-
-// GetName returns the value of Name.
-func (s *CreatePortRequestBody) GetName() OptString {
-	return s.Name
-}
-
-// GetSecurityGroupIds returns the value of SecurityGroupIds.
-func (s *CreatePortRequestBody) GetSecurityGroupIds() []uuid.UUID {
-	return s.SecurityGroupIds
-}
-
-// GetSubnetID returns the value of SubnetID.
-func (s *CreatePortRequestBody) GetSubnetID() uuid.UUID {
-	return s.SubnetID
-}
-
-// GetAddress returns the value of Address.
-func (s *CreatePortRequestBody) GetAddress() OptString {
-	return s.Address
-}
-
-// SetName sets the value of Name.
-func (s *CreatePortRequestBody) SetName(val OptString) {
-	s.Name = val
-}
-
-// SetSecurityGroupIds sets the value of SecurityGroupIds.
-func (s *CreatePortRequestBody) SetSecurityGroupIds(val []uuid.UUID) {
-	s.SecurityGroupIds = val
-}
-
-// SetSubnetID sets the value of SubnetID.
-func (s *CreatePortRequestBody) SetSubnetID(val uuid.UUID) {
-	s.SubnetID = val
-}
-
-// SetAddress sets the value of Address.
-func (s *CreatePortRequestBody) SetAddress(val OptString) {
-	s.Address = val
-}
-
-// Ref: #/components/schemas/CreatePrivateNetworkRequestBody
-type CreatePrivateNetworkRequestBody struct {
-	// Must be an RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`.
-	Cidr     string    `json:"cidr"`
-	Name     string    `json:"name"`
-	RegionID uuid.UUID `json:"region_id"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *CreatePrivateNetworkRequestBody) GetCidr() string {
-	return s.Cidr
-}
-
-// GetName returns the value of Name.
-func (s *CreatePrivateNetworkRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *CreatePrivateNetworkRequestBody) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// SetCidr sets the value of Cidr.
-func (s *CreatePrivateNetworkRequestBody) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetName sets the value of Name.
-func (s *CreatePrivateNetworkRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *CreatePrivateNetworkRequestBody) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
 }
 
 // Ref: #/components/schemas/CreateRouteRequestBody
@@ -2197,7 +1182,7 @@ type CreateRouteRequestBody struct {
 	Description OptString `json:"description"`
 	// Destination CIDR. It cannot be `0.0.0.0/0`, nor the CIDR of a subnet of this network.
 	Destination string `json:"destination"`
-	// Private address of an instance; must fall inside a subnet of this private network.
+	// Private address of a virtual machine; must fall inside a subnet of this virtual private cloud.
 	Nexthop string `json:"nexthop"`
 }
 
@@ -2233,9 +1218,9 @@ func (s *CreateRouteRequestBody) SetNexthop(val string) {
 
 // Ref: #/components/schemas/CreateSecurityGroupRequestBody
 type CreateSecurityGroupRequestBody struct {
-	Description      OptString `json:"description"`
-	Name             string    `json:"name"`
-	PrivateNetworkID uuid.UUID `json:"private_network_id"`
+	Description           OptString             `json:"description"`
+	Name                  string                `json:"name"`
+	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
 }
 
 // GetDescription returns the value of Description.
@@ -2248,9 +1233,9 @@ func (s *CreateSecurityGroupRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *CreateSecurityGroupRequestBody) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *CreateSecurityGroupRequestBody) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
 }
 
 // SetDescription sets the value of Description.
@@ -2263,9 +1248,9 @@ func (s *CreateSecurityGroupRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *CreateSecurityGroupRequestBody) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *CreateSecurityGroupRequestBody) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
 }
 
 // Ref: #/components/schemas/CreateSecurityRuleRequestBody
@@ -2435,16 +1420,16 @@ func (s *CreateSecurityRuleRequestBodyEthertype) UnmarshalText(data []byte) erro
 	}
 }
 
-// Create one snapshot using existing project-and-region count quota. The region is taken from disk_id.
-// Purchase or adjust quota separately; this request has no checkout or price selection.
+// Creation configuration for this resource. Compute project quotas and Billing authorization are
+// checked independently.
 // Ref: #/components/schemas/CreateSnapshotRequestBody
 type CreateSnapshotRequestBody struct {
-	DiskID uuid.UUID `json:"disk_id"`
-	Name   string    `json:"name"`
+	DiskID DiskID `json:"disk_id"`
+	Name   string `json:"name"`
 }
 
 // GetDiskID returns the value of DiskID.
-func (s *CreateSnapshotRequestBody) GetDiskID() uuid.UUID {
+func (s *CreateSnapshotRequestBody) GetDiskID() DiskID {
 	return s.DiskID
 }
 
@@ -2454,7 +1439,7 @@ func (s *CreateSnapshotRequestBody) GetName() string {
 }
 
 // SetDiskID sets the value of DiskID.
-func (s *CreateSnapshotRequestBody) SetDiskID(val uuid.UUID) {
+func (s *CreateSnapshotRequestBody) SetDiskID(val DiskID) {
 	s.DiskID = val
 }
 
@@ -2463,9 +1448,39 @@ func (s *CreateSnapshotRequestBody) SetName(val string) {
 	s.Name = val
 }
 
+// The pending resource and its deferred Billing order. Confirm the order through Billing;
+// infrastructure is allocated only after verified acceptance.
+// Ref: #/components/schemas/CreateSnapshotResponseBody
+type CreateSnapshotResponseBody struct {
+	Snapshot SnapshotResource `json:"snapshot"`
+	Order    PlacedOrder      `json:"order"`
+}
+
+// GetSnapshot returns the value of Snapshot.
+func (s *CreateSnapshotResponseBody) GetSnapshot() SnapshotResource {
+	return s.Snapshot
+}
+
+// GetOrder returns the value of Order.
+func (s *CreateSnapshotResponseBody) GetOrder() PlacedOrder {
+	return s.Order
+}
+
+// SetSnapshot sets the value of Snapshot.
+func (s *CreateSnapshotResponseBody) SetSnapshot(val SnapshotResource) {
+	s.Snapshot = val
+}
+
+// SetOrder sets the value of Order.
+func (s *CreateSnapshotResponseBody) SetOrder(val PlacedOrder) {
+	s.Order = val
+}
+
+func (*CreateSnapshotResponseBody) createSnapshotRes() {}
+
 // Ref: #/components/schemas/CreateSubnetRequestBody
 type CreateSubnetRequestBody struct {
-	// Must fall inside the CIDR of the private network and must not overlap an existing subnet.
+	// Must fall inside the CIDR of the virtual private cloud and must not overlap an existing subnet.
 	Cidr string `json:"cidr"`
 	Name string `json:"name"`
 }
@@ -2490,6 +1505,233 @@ func (s *CreateSubnetRequestBody) SetName(val string) {
 	s.Name = val
 }
 
+// Ref: #/components/schemas/CreateVirtualMachineRequestBody
+type CreateVirtualMachineRequestBody struct {
+	// Bind an elastic IP you already hold, instead of allocating a new one. It must be idle and in the
+	// same region.
+	//
+	// Mutually exclusive with `bandwidth_mbps`: an address you already hold has its own bandwidth ceiling,
+	// set when it was allocated, and changing it is a separate operation.
+	//
+	// Like `bandwidth_mbps`, this happens inside the creation: if binding fails, no virtual machine is
+	// created. Binding afterwards is still possible from the virtual machine page, but then it is two
+	// operations and a failure in between leaves a virtual machine you cannot reach.
+	//
+	// Only one virtual machine can be created when it is used — one address binds to one interface.
+	ElasticIPID OptElasticIPID `json:"elastic_ip_id"`
+	// Number of virtual machines to create; 1 when omitted. Names are numbered automatically for several.
+	Count OptInt64 `json:"count"`
+	// Have the platform generate a random password, returned only in this response.
+	GeneratePassword OptBool    `json:"generate_password"`
+	Compute          NewCompute `json:"compute"`
+	Name             string     `json:"name"`
+	// The password to set, on the login account and on root. Only the SSH public keys of the project are
+	// used when omitted.
+	Password OptString `json:"password"`
+	// Use an existing network interface, which may already have an elastic IP bound. Exactly one of this
+	// and `subnet_id`; only one virtual machine can be created when it is used.
+	NetworkInterfaceID OptNetworkInterfaceID `json:"network_interface_id"`
+	// Required when a primary network interface is created, at least one; the default security group is
+	// not applied automatically. Ignored together with `network_interface_id`, as the security groups of
+	// that interface were fixed when it was created.
+	SecurityGroupIds OptNilSecurityGroupIDArray `json:"security_group_ids"`
+	// Create the primary network interface in this subnet. Exactly one of this and `network_interface_id`.
+	SubnetID  OptSubnetID     `json:"subnet_id"`
+	BootDisk  BootDisk        `json:"boot_disk"`
+	ElasticIP OptNewElasticIP `json:"elastic_ip"`
+}
+
+// GetElasticIPID returns the value of ElasticIPID.
+func (s *CreateVirtualMachineRequestBody) GetElasticIPID() OptElasticIPID {
+	return s.ElasticIPID
+}
+
+// GetCount returns the value of Count.
+func (s *CreateVirtualMachineRequestBody) GetCount() OptInt64 {
+	return s.Count
+}
+
+// GetGeneratePassword returns the value of GeneratePassword.
+func (s *CreateVirtualMachineRequestBody) GetGeneratePassword() OptBool {
+	return s.GeneratePassword
+}
+
+// GetCompute returns the value of Compute.
+func (s *CreateVirtualMachineRequestBody) GetCompute() NewCompute {
+	return s.Compute
+}
+
+// GetName returns the value of Name.
+func (s *CreateVirtualMachineRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetPassword returns the value of Password.
+func (s *CreateVirtualMachineRequestBody) GetPassword() OptString {
+	return s.Password
+}
+
+// GetNetworkInterfaceID returns the value of NetworkInterfaceID.
+func (s *CreateVirtualMachineRequestBody) GetNetworkInterfaceID() OptNetworkInterfaceID {
+	return s.NetworkInterfaceID
+}
+
+// GetSecurityGroupIds returns the value of SecurityGroupIds.
+func (s *CreateVirtualMachineRequestBody) GetSecurityGroupIds() OptNilSecurityGroupIDArray {
+	return s.SecurityGroupIds
+}
+
+// GetSubnetID returns the value of SubnetID.
+func (s *CreateVirtualMachineRequestBody) GetSubnetID() OptSubnetID {
+	return s.SubnetID
+}
+
+// GetBootDisk returns the value of BootDisk.
+func (s *CreateVirtualMachineRequestBody) GetBootDisk() BootDisk {
+	return s.BootDisk
+}
+
+// GetElasticIP returns the value of ElasticIP.
+func (s *CreateVirtualMachineRequestBody) GetElasticIP() OptNewElasticIP {
+	return s.ElasticIP
+}
+
+// SetElasticIPID sets the value of ElasticIPID.
+func (s *CreateVirtualMachineRequestBody) SetElasticIPID(val OptElasticIPID) {
+	s.ElasticIPID = val
+}
+
+// SetCount sets the value of Count.
+func (s *CreateVirtualMachineRequestBody) SetCount(val OptInt64) {
+	s.Count = val
+}
+
+// SetGeneratePassword sets the value of GeneratePassword.
+func (s *CreateVirtualMachineRequestBody) SetGeneratePassword(val OptBool) {
+	s.GeneratePassword = val
+}
+
+// SetCompute sets the value of Compute.
+func (s *CreateVirtualMachineRequestBody) SetCompute(val NewCompute) {
+	s.Compute = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateVirtualMachineRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetPassword sets the value of Password.
+func (s *CreateVirtualMachineRequestBody) SetPassword(val OptString) {
+	s.Password = val
+}
+
+// SetNetworkInterfaceID sets the value of NetworkInterfaceID.
+func (s *CreateVirtualMachineRequestBody) SetNetworkInterfaceID(val OptNetworkInterfaceID) {
+	s.NetworkInterfaceID = val
+}
+
+// SetSecurityGroupIds sets the value of SecurityGroupIds.
+func (s *CreateVirtualMachineRequestBody) SetSecurityGroupIds(val OptNilSecurityGroupIDArray) {
+	s.SecurityGroupIds = val
+}
+
+// SetSubnetID sets the value of SubnetID.
+func (s *CreateVirtualMachineRequestBody) SetSubnetID(val OptSubnetID) {
+	s.SubnetID = val
+}
+
+// SetBootDisk sets the value of BootDisk.
+func (s *CreateVirtualMachineRequestBody) SetBootDisk(val BootDisk) {
+	s.BootDisk = val
+}
+
+// SetElasticIP sets the value of ElasticIP.
+func (s *CreateVirtualMachineRequestBody) SetElasticIP(val OptNewElasticIP) {
+	s.ElasticIP = val
+}
+
+// The new virtual machines, `pending` until their order is accepted, and the order they share.
+// Ref: #/components/schemas/CreateVirtualMachineResponseBody
+type CreateVirtualMachineResponseBody struct {
+	// One virtual machine per requested virtual machine, in request order. Their IDs stay the same through
+	// checkout and creation.
+	VirtualMachines []VirtualMachine `json:"virtual_machines"`
+	Order           PlacedOrder      `json:"order"`
+	// Generated login password, returned only by this response. Null when no password was generated.
+	Password NilString `json:"password"`
+}
+
+// GetVirtualMachines returns the value of VirtualMachines.
+func (s *CreateVirtualMachineResponseBody) GetVirtualMachines() []VirtualMachine {
+	return s.VirtualMachines
+}
+
+// GetOrder returns the value of Order.
+func (s *CreateVirtualMachineResponseBody) GetOrder() PlacedOrder {
+	return s.Order
+}
+
+// GetPassword returns the value of Password.
+func (s *CreateVirtualMachineResponseBody) GetPassword() NilString {
+	return s.Password
+}
+
+// SetVirtualMachines sets the value of VirtualMachines.
+func (s *CreateVirtualMachineResponseBody) SetVirtualMachines(val []VirtualMachine) {
+	s.VirtualMachines = val
+}
+
+// SetOrder sets the value of Order.
+func (s *CreateVirtualMachineResponseBody) SetOrder(val PlacedOrder) {
+	s.Order = val
+}
+
+// SetPassword sets the value of Password.
+func (s *CreateVirtualMachineResponseBody) SetPassword(val NilString) {
+	s.Password = val
+}
+
+func (*CreateVirtualMachineResponseBody) createVirtualMachineRes() {}
+
+// Ref: #/components/schemas/CreateVirtualPrivateCloudRequestBody
+type CreateVirtualPrivateCloudRequestBody struct {
+	// Must be an RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`.
+	Cidr     string   `json:"cidr"`
+	Name     string   `json:"name"`
+	RegionID RegionID `json:"region_id"`
+}
+
+// GetCidr returns the value of Cidr.
+func (s *CreateVirtualPrivateCloudRequestBody) GetCidr() string {
+	return s.Cidr
+}
+
+// GetName returns the value of Name.
+func (s *CreateVirtualPrivateCloudRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *CreateVirtualPrivateCloudRequestBody) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// SetCidr sets the value of Cidr.
+func (s *CreateVirtualPrivateCloudRequestBody) SetCidr(val string) {
+	s.Cidr = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateVirtualPrivateCloudRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *CreateVirtualPrivateCloudRequestBody) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
 // DeleteRouteNoContent is response for DeleteRoute operation.
 type DeleteRouteNoContent struct{}
 
@@ -2504,30 +1746,30 @@ type DeleteSubnetNoContent struct{}
 
 // Ref: #/components/schemas/DiskAttachment
 type DiskAttachment struct {
-	ID                 uuid.UUID           `json:"id"`
-	InstanceID         uuid.UUID           `json:"instance_id"`
-	DiskID             uuid.UUID           `json:"disk_id"`
-	Role               DiskAttachmentRole  `json:"role"`
-	DeleteWithInstance bool                `json:"delete_with_instance"`
-	State              DiskAttachmentState `json:"state"`
-	AttachedAt         NilDateTime         `json:"attached_at"`
-	DetachedAt         NilDateTime         `json:"detached_at"`
-	ReleasedAt         NilDateTime         `json:"released_at"`
-	Device             NilString           `json:"device"`
+	ID                       VirtualMachineDiskID `json:"id"`
+	VirtualMachineID         VirtualMachineID     `json:"virtual_machine_id"`
+	DiskID                   DiskID               `json:"disk_id"`
+	Role                     DiskAttachmentRole   `json:"role"`
+	DeleteWithVirtualMachine bool                 `json:"delete_with_virtual_machine"`
+	State                    DiskAttachmentState  `json:"state"`
+	AttachedAt               NilDateTime          `json:"attached_at"`
+	DetachedAt               NilDateTime          `json:"detached_at"`
+	ReleasedAt               NilDateTime          `json:"released_at"`
+	Device                   NilString            `json:"device"`
 }
 
 // GetID returns the value of ID.
-func (s *DiskAttachment) GetID() uuid.UUID {
+func (s *DiskAttachment) GetID() VirtualMachineDiskID {
 	return s.ID
 }
 
-// GetInstanceID returns the value of InstanceID.
-func (s *DiskAttachment) GetInstanceID() uuid.UUID {
-	return s.InstanceID
+// GetVirtualMachineID returns the value of VirtualMachineID.
+func (s *DiskAttachment) GetVirtualMachineID() VirtualMachineID {
+	return s.VirtualMachineID
 }
 
 // GetDiskID returns the value of DiskID.
-func (s *DiskAttachment) GetDiskID() uuid.UUID {
+func (s *DiskAttachment) GetDiskID() DiskID {
 	return s.DiskID
 }
 
@@ -2536,9 +1778,9 @@ func (s *DiskAttachment) GetRole() DiskAttachmentRole {
 	return s.Role
 }
 
-// GetDeleteWithInstance returns the value of DeleteWithInstance.
-func (s *DiskAttachment) GetDeleteWithInstance() bool {
-	return s.DeleteWithInstance
+// GetDeleteWithVirtualMachine returns the value of DeleteWithVirtualMachine.
+func (s *DiskAttachment) GetDeleteWithVirtualMachine() bool {
+	return s.DeleteWithVirtualMachine
 }
 
 // GetState returns the value of State.
@@ -2567,17 +1809,17 @@ func (s *DiskAttachment) GetDevice() NilString {
 }
 
 // SetID sets the value of ID.
-func (s *DiskAttachment) SetID(val uuid.UUID) {
+func (s *DiskAttachment) SetID(val VirtualMachineDiskID) {
 	s.ID = val
 }
 
-// SetInstanceID sets the value of InstanceID.
-func (s *DiskAttachment) SetInstanceID(val uuid.UUID) {
-	s.InstanceID = val
+// SetVirtualMachineID sets the value of VirtualMachineID.
+func (s *DiskAttachment) SetVirtualMachineID(val VirtualMachineID) {
+	s.VirtualMachineID = val
 }
 
 // SetDiskID sets the value of DiskID.
-func (s *DiskAttachment) SetDiskID(val uuid.UUID) {
+func (s *DiskAttachment) SetDiskID(val DiskID) {
 	s.DiskID = val
 }
 
@@ -2586,9 +1828,9 @@ func (s *DiskAttachment) SetRole(val DiskAttachmentRole) {
 	s.Role = val
 }
 
-// SetDeleteWithInstance sets the value of DeleteWithInstance.
-func (s *DiskAttachment) SetDeleteWithInstance(val bool) {
-	s.DeleteWithInstance = val
+// SetDeleteWithVirtualMachine sets the value of DeleteWithVirtualMachine.
+func (s *DiskAttachment) SetDeleteWithVirtualMachine(val bool) {
+	s.DeleteWithVirtualMachine = val
 }
 
 // SetState sets the value of State.
@@ -2738,6 +1980,10 @@ func (s *DiskAttachmentState) UnmarshalText(data []byte) error {
 	}
 }
 
+type DiskBackupID string
+
+type DiskID string
+
 // Ref: #/components/schemas/DiskListResponseBody
 type DiskListResponseBody struct {
 	Items      []DiskResource   `json:"items"`
@@ -2768,8 +2014,8 @@ func (s *DiskListResponseBody) SetPagination(val OffsetPagination) {
 // `operation` is null again and the disk shows the result.
 // Ref: #/components/schemas/DiskOperation
 type DiskOperation struct {
-	// `attach` and `detach` accompany the instance's `attach_disk` and `detach_disk`. `delete` includes
-	// release through a Billing cancellation and deletion with an instance.
+	// `attach` and `detach` accompany the virtual machine's `attach_disk` and `detach_disk`. `delete`
+	// includes release through a Billing cancellation and deletion with a virtual machine.
 	Type      DiskOperationType `json:"type"`
 	StartedAt time.Time         `json:"started_at"`
 }
@@ -2794,8 +2040,8 @@ func (s *DiskOperation) SetStartedAt(val time.Time) {
 	s.StartedAt = val
 }
 
-// `attach` and `detach` accompany the instance's `attach_disk` and `detach_disk`. `delete` includes
-// release through a Billing cancellation and deletion with an instance.
+// `attach` and `detach` accompany the virtual machine's `attach_disk` and `detach_disk`. `delete`
+// includes release through a Billing cancellation and deletion with a virtual machine.
 type DiskOperationType string
 
 const (
@@ -2879,16 +2125,91 @@ func (s *DiskOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
+// A resource a release set releases.
+// Ref: #/components/schemas/DiskReleaseResource
+type DiskReleaseResource struct {
+	Type DiskReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID DiskID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *DiskReleaseResource) GetType() DiskReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *DiskReleaseResource) GetID() DiskID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *DiskReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *DiskReleaseResource) SetType(val DiskReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *DiskReleaseResource) SetID(val DiskID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *DiskReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type DiskReleaseResourceType string
+
+const (
+	DiskReleaseResourceTypeDisk DiskReleaseResourceType = "disk"
+)
+
+// AllValues returns all DiskReleaseResourceType values.
+func (DiskReleaseResourceType) AllValues() []DiskReleaseResourceType {
+	return []DiskReleaseResourceType{
+		DiskReleaseResourceTypeDisk,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s DiskReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case DiskReleaseResourceTypeDisk:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *DiskReleaseResourceType) UnmarshalText(data []byte) error {
+	switch DiskReleaseResourceType(data) {
+	case DiskReleaseResourceTypeDisk:
+		*s = DiskReleaseResourceTypeDisk
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/DiskResource
 type DiskResource struct {
-	// Availability zone the disk actually resides in. An instance must be in the same zone to attach it.
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	CreatedAt          time.Time `json:"created_at"`
-	DiskTypeID         uuid.UUID `json:"disk_type_id"`
-	ID                 uuid.UUID `json:"id"`
-	Name               string    `json:"name"`
-	RegionID           uuid.UUID `json:"region_id"`
-	SizeGB             int64     `json:"size_gb"`
+	// Availability zone the disk actually resides in. A virtual machine must be in the same zone to attach
+	// it.
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	CreatedAt          time.Time          `json:"created_at"`
+	DiskTypeID         DiskTypeID         `json:"disk_type_id"`
+	ID                 DiskID             `json:"id"`
+	Name               string             `json:"name"`
+	RegionID           RegionID           `json:"region_id"`
+	SizeGB             int64              `json:"size_gb"`
 	// IOPS this disk is allowed. Null when its type is not rate-limited.
 	//
 	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the note on
@@ -2911,9 +2232,9 @@ type DiskResource struct {
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
 	// The subscriptions a cancellation through Billing has to cover to release this disk: its own.
-	// Snapshots have no individual subscriptions. A system disk is released only with its instance, so for
-	// a system disk the list is that of the instance. Subscriptions that have ended are not listed, and
-	// the list is empty when no subscription pays for any of them.
+	// Snapshots have no individual subscriptions. A system disk is released only with its virtual machine,
+	// so for a system disk the list is that of the virtual machine. Subscriptions that have ended are not
+	// listed, and the list is empty when no subscription pays for any of them.
 	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
 	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
 	// for, so that each line of a cancellation can name what it releases.
@@ -2931,7 +2252,7 @@ type DiskResource struct {
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *DiskResource) GetAvailabilityZoneID() uuid.UUID {
+func (s *DiskResource) GetAvailabilityZoneID() AvailabilityZoneID {
 	return s.AvailabilityZoneID
 }
 
@@ -2941,12 +2262,12 @@ func (s *DiskResource) GetCreatedAt() time.Time {
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
-func (s *DiskResource) GetDiskTypeID() uuid.UUID {
+func (s *DiskResource) GetDiskTypeID() DiskTypeID {
 	return s.DiskTypeID
 }
 
 // GetID returns the value of ID.
-func (s *DiskResource) GetID() uuid.UUID {
+func (s *DiskResource) GetID() DiskID {
 	return s.ID
 }
 
@@ -2956,7 +2277,7 @@ func (s *DiskResource) GetName() string {
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *DiskResource) GetRegionID() uuid.UUID {
+func (s *DiskResource) GetRegionID() RegionID {
 	return s.RegionID
 }
 
@@ -3041,7 +2362,7 @@ func (s *DiskResource) GetObservedAt() NilDateTime {
 }
 
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *DiskResource) SetAvailabilityZoneID(val uuid.UUID) {
+func (s *DiskResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
 }
 
@@ -3051,12 +2372,12 @@ func (s *DiskResource) SetCreatedAt(val time.Time) {
 }
 
 // SetDiskTypeID sets the value of DiskTypeID.
-func (s *DiskResource) SetDiskTypeID(val uuid.UUID) {
+func (s *DiskResource) SetDiskTypeID(val DiskTypeID) {
 	s.DiskTypeID = val
 }
 
 // SetID sets the value of ID.
-func (s *DiskResource) SetID(val uuid.UUID) {
+func (s *DiskResource) SetID(val DiskID) {
 	s.ID = val
 }
 
@@ -3066,7 +2387,7 @@ func (s *DiskResource) SetName(val string) {
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *DiskResource) SetRegionID(val uuid.UUID) {
+func (s *DiskResource) SetRegionID(val RegionID) {
 	s.RegionID = val
 }
 
@@ -3361,6 +2682,8 @@ func (s *DiskResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+type DiskTypeID string
+
 // Ref: #/components/schemas/DiskTypeListResponseBody
 type DiskTypeListResponseBody struct {
 	Items      []DiskTypeResource `json:"items"`
@@ -3387,7 +2710,7 @@ func (s *DiskTypeListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// The intended purchase use of a disk type, not the current boot role or deletion policy of an
+// The intended creation use of a disk type, not the current boot role or deletion policy of an
 // individual disk.
 // Ref: #/components/schemas/DiskTypePurpose
 type DiskTypePurpose string
@@ -3433,9 +2756,9 @@ func (s *DiskTypePurpose) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/DiskTypeResource
 type DiskTypeResource struct {
-	AvailabilityZoneID uuid.UUID       `json:"availability_zone_id"`
-	ID                 uuid.UUID       `json:"id"`
-	Purpose            DiskTypePurpose `json:"purpose"`
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	ID                 DiskTypeID         `json:"id"`
+	Purpose            DiskTypePurpose    `json:"purpose"`
 	// IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
 	//
 	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the range. The
@@ -3447,7 +2770,7 @@ type DiskTypeResource struct {
 	Media         DiskTypeResourceMedia `json:"media"`
 	MinSizeGB     int64                 `json:"min_size_gb"`
 	Name          string                `json:"name"`
-	RegionID      uuid.UUID             `json:"region_id"`
+	RegionID      RegionID              `json:"region_id"`
 	StepGB        int64                 `json:"step_gb"`
 	// Throughput a disk of `min_size_gb` gets, in bytes per second. Null when this type is not
 	// rate-limited.
@@ -3458,17 +2781,18 @@ type DiskTypeResource struct {
 	// Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not
 	// rate-limited.
 	ThroughputAtMaxSize NilInt64 `json:"throughput_at_max_size"`
-	// How a disk of this type can be bought, per GiB. Null when the project has no billing account.
-	Pricing NilPricing `json:"pricing"`
+	// The actual Billing Plan associated with this resource. Read prices and commercial terms directly
+	// from Billing using this identifier.
+	PlanID uuid.UUID `json:"plan_id"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *DiskTypeResource) GetAvailabilityZoneID() uuid.UUID {
+func (s *DiskTypeResource) GetAvailabilityZoneID() AvailabilityZoneID {
 	return s.AvailabilityZoneID
 }
 
 // GetID returns the value of ID.
-func (s *DiskTypeResource) GetID() uuid.UUID {
+func (s *DiskTypeResource) GetID() DiskTypeID {
 	return s.ID
 }
 
@@ -3508,7 +2832,7 @@ func (s *DiskTypeResource) GetName() string {
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *DiskTypeResource) GetRegionID() uuid.UUID {
+func (s *DiskTypeResource) GetRegionID() RegionID {
 	return s.RegionID
 }
 
@@ -3527,18 +2851,18 @@ func (s *DiskTypeResource) GetThroughputAtMaxSize() NilInt64 {
 	return s.ThroughputAtMaxSize
 }
 
-// GetPricing returns the value of Pricing.
-func (s *DiskTypeResource) GetPricing() NilPricing {
-	return s.Pricing
+// GetPlanID returns the value of PlanID.
+func (s *DiskTypeResource) GetPlanID() uuid.UUID {
+	return s.PlanID
 }
 
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *DiskTypeResource) SetAvailabilityZoneID(val uuid.UUID) {
+func (s *DiskTypeResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
 }
 
 // SetID sets the value of ID.
-func (s *DiskTypeResource) SetID(val uuid.UUID) {
+func (s *DiskTypeResource) SetID(val DiskTypeID) {
 	s.ID = val
 }
 
@@ -3578,7 +2902,7 @@ func (s *DiskTypeResource) SetName(val string) {
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *DiskTypeResource) SetRegionID(val uuid.UUID) {
+func (s *DiskTypeResource) SetRegionID(val RegionID) {
 	s.RegionID = val
 }
 
@@ -3597,9 +2921,9 @@ func (s *DiskTypeResource) SetThroughputAtMaxSize(val NilInt64) {
 	s.ThroughputAtMaxSize = val
 }
 
-// SetPricing sets the value of Pricing.
-func (s *DiskTypeResource) SetPricing(val NilPricing) {
-	s.Pricing = val
+// SetPlanID sets the value of PlanID.
+func (s *DiskTypeResource) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
 }
 
 type DiskTypeResourceMedia string
@@ -3644,6 +2968,844 @@ func (s *DiskTypeResourceMedia) UnmarshalText(data []byte) error {
 		return nil
 	case DiskTypeResourceMediaNvme:
 		*s = DiskTypeResourceMediaNvme
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One public IP resource, including its bandwidth configuration. Bandwidth has no separate Compute
+// resource ID; one subscription pays for the address and its bandwidth. Changing bandwidth updates
+// this same resource, not another allocation.
+// Ref: #/components/schemas/ElasticIP
+type ElasticIP struct {
+	InternetChargeType InternetChargeType `json:"internet_charge_type"`
+	// The held IPv4 address; null before actual claim. Holding identity is not exposed.
+	Address NilIPv4HostAddress `json:"address"`
+	// The actual address holding start time; null before actual claim.
+	AllocatedAt NilDateTime `json:"allocated_at"`
+	// The confirmed holding release time; null while held or before actual claim.
+	ReleasedAt    NilDateTime     `json:"released_at"`
+	BandwidthMbps NilInt64        `json:"bandwidth_mbps"`
+	CreatedAt     time.Time       `json:"created_at"`
+	ID            ElasticIPID     `json:"id"`
+	TypeID        ElasticIPTypeID `json:"type_id"`
+	RegionID      RegionID        `json:"region_id"`
+	// `pending` until the order is accepted, with no address allocated; `provisioning` while the address
+	// is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states
+	// why. `missing` means the address no longer exists in the cloud.
+	Status  ElasticIPStatus `json:"status"`
+	OrderID NilUUID         `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The Billing subscription associated with this resource. It may still be pending; its presence does
+	// not imply delivery or metering. Null when no subscription is associated.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// The subscription a cancellation through Billing has to cover to release this elastic IP. A
+	// subscription that has ended is not listed, and the list is empty when no subscription pays for the
+	// elastic IP.
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet  []ReleaseSetItem        `json:"release_set"`
+	AccessState NilElasticIPAccessState `json:"access_state"`
+	// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
+	// after the order was accepted, and the charge for this elastic IP is refunded.
+	FailureReason NilElasticIPFailureReason `json:"failure_reason"`
+	// The operation in progress on this elastic IP, or null when none is.
+	Operation NilElasticIPOperation `json:"operation"`
+	Binding   NilIPv4Binding        `json:"binding"`
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *ElasticIP) GetInternetChargeType() InternetChargeType {
+	return s.InternetChargeType
+}
+
+// GetAddress returns the value of Address.
+func (s *ElasticIP) GetAddress() NilIPv4HostAddress {
+	return s.Address
+}
+
+// GetAllocatedAt returns the value of AllocatedAt.
+func (s *ElasticIP) GetAllocatedAt() NilDateTime {
+	return s.AllocatedAt
+}
+
+// GetReleasedAt returns the value of ReleasedAt.
+func (s *ElasticIP) GetReleasedAt() NilDateTime {
+	return s.ReleasedAt
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *ElasticIP) GetBandwidthMbps() NilInt64 {
+	return s.BandwidthMbps
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ElasticIP) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetID returns the value of ID.
+func (s *ElasticIP) GetID() ElasticIPID {
+	return s.ID
+}
+
+// GetTypeID returns the value of TypeID.
+func (s *ElasticIP) GetTypeID() ElasticIPTypeID {
+	return s.TypeID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *ElasticIP) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetStatus returns the value of Status.
+func (s *ElasticIP) GetStatus() ElasticIPStatus {
+	return s.Status
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *ElasticIP) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *ElasticIP) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *ElasticIP) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
+func (s *ElasticIP) GetReleaseSubscriptionIds() []uuid.UUID {
+	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *ElasticIP) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
+// GetAccessState returns the value of AccessState.
+func (s *ElasticIP) GetAccessState() NilElasticIPAccessState {
+	return s.AccessState
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *ElasticIP) GetFailureReason() NilElasticIPFailureReason {
+	return s.FailureReason
+}
+
+// GetOperation returns the value of Operation.
+func (s *ElasticIP) GetOperation() NilElasticIPOperation {
+	return s.Operation
+}
+
+// GetBinding returns the value of Binding.
+func (s *ElasticIP) GetBinding() NilIPv4Binding {
+	return s.Binding
+}
+
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *ElasticIP) SetInternetChargeType(val InternetChargeType) {
+	s.InternetChargeType = val
+}
+
+// SetAddress sets the value of Address.
+func (s *ElasticIP) SetAddress(val NilIPv4HostAddress) {
+	s.Address = val
+}
+
+// SetAllocatedAt sets the value of AllocatedAt.
+func (s *ElasticIP) SetAllocatedAt(val NilDateTime) {
+	s.AllocatedAt = val
+}
+
+// SetReleasedAt sets the value of ReleasedAt.
+func (s *ElasticIP) SetReleasedAt(val NilDateTime) {
+	s.ReleasedAt = val
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *ElasticIP) SetBandwidthMbps(val NilInt64) {
+	s.BandwidthMbps = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ElasticIP) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetID sets the value of ID.
+func (s *ElasticIP) SetID(val ElasticIPID) {
+	s.ID = val
+}
+
+// SetTypeID sets the value of TypeID.
+func (s *ElasticIP) SetTypeID(val ElasticIPTypeID) {
+	s.TypeID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *ElasticIP) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ElasticIP) SetStatus(val ElasticIPStatus) {
+	s.Status = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *ElasticIP) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *ElasticIP) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *ElasticIP) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
+func (s *ElasticIP) SetReleaseSubscriptionIds(val []uuid.UUID) {
+	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *ElasticIP) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
+}
+
+// SetAccessState sets the value of AccessState.
+func (s *ElasticIP) SetAccessState(val NilElasticIPAccessState) {
+	s.AccessState = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *ElasticIP) SetFailureReason(val NilElasticIPFailureReason) {
+	s.FailureReason = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *ElasticIP) SetOperation(val NilElasticIPOperation) {
+	s.Operation = val
+}
+
+// SetBinding sets the value of Binding.
+func (s *ElasticIP) SetBinding(val NilIPv4Binding) {
+	s.Binding = val
+}
+
+func (*ElasticIP) attachVirtualMachineElasticIPRes() {}
+func (*ElasticIP) bindElasticIPRes()                 {}
+func (*ElasticIP) detachVirtualMachineElasticIPRes() {}
+func (*ElasticIP) releaseElasticIPRes()              {}
+func (*ElasticIP) unbindElasticIPRes()               {}
+
+type ElasticIPAccessState string
+
+const (
+	ElasticIPAccessStatePending   ElasticIPAccessState = "pending"
+	ElasticIPAccessStateEnabled   ElasticIPAccessState = "enabled"
+	ElasticIPAccessStateSuspended ElasticIPAccessState = "suspended"
+	ElasticIPAccessStateReclaimed ElasticIPAccessState = "reclaimed"
+)
+
+// AllValues returns all ElasticIPAccessState values.
+func (ElasticIPAccessState) AllValues() []ElasticIPAccessState {
+	return []ElasticIPAccessState{
+		ElasticIPAccessStatePending,
+		ElasticIPAccessStateEnabled,
+		ElasticIPAccessStateSuspended,
+		ElasticIPAccessStateReclaimed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPAccessState) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPAccessStatePending:
+		return []byte(s), nil
+	case ElasticIPAccessStateEnabled:
+		return []byte(s), nil
+	case ElasticIPAccessStateSuspended:
+		return []byte(s), nil
+	case ElasticIPAccessStateReclaimed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPAccessState) UnmarshalText(data []byte) error {
+	switch ElasticIPAccessState(data) {
+	case ElasticIPAccessStatePending:
+		*s = ElasticIPAccessStatePending
+		return nil
+	case ElasticIPAccessStateEnabled:
+		*s = ElasticIPAccessStateEnabled
+		return nil
+	case ElasticIPAccessStateSuspended:
+		*s = ElasticIPAccessStateSuspended
+		return nil
+	case ElasticIPAccessStateReclaimed:
+		*s = ElasticIPAccessStateReclaimed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ElasticIPAssociationID string
+
+// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
+// after the order was accepted, and the charge for this elastic IP is refunded.
+type ElasticIPFailureReason string
+
+const (
+	ElasticIPFailureReasonOrderDeclined      ElasticIPFailureReason = "order_declined"
+	ElasticIPFailureReasonOrderCanceled      ElasticIPFailureReason = "order_canceled"
+	ElasticIPFailureReasonOrderExpired       ElasticIPFailureReason = "order_expired"
+	ElasticIPFailureReasonProvisioningFailed ElasticIPFailureReason = "provisioning_failed"
+)
+
+// AllValues returns all ElasticIPFailureReason values.
+func (ElasticIPFailureReason) AllValues() []ElasticIPFailureReason {
+	return []ElasticIPFailureReason{
+		ElasticIPFailureReasonOrderDeclined,
+		ElasticIPFailureReasonOrderCanceled,
+		ElasticIPFailureReasonOrderExpired,
+		ElasticIPFailureReasonProvisioningFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPFailureReason) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPFailureReasonOrderDeclined:
+		return []byte(s), nil
+	case ElasticIPFailureReasonOrderCanceled:
+		return []byte(s), nil
+	case ElasticIPFailureReasonOrderExpired:
+		return []byte(s), nil
+	case ElasticIPFailureReasonProvisioningFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPFailureReason) UnmarshalText(data []byte) error {
+	switch ElasticIPFailureReason(data) {
+	case ElasticIPFailureReasonOrderDeclined:
+		*s = ElasticIPFailureReasonOrderDeclined
+		return nil
+	case ElasticIPFailureReasonOrderCanceled:
+		*s = ElasticIPFailureReasonOrderCanceled
+		return nil
+	case ElasticIPFailureReasonOrderExpired:
+		*s = ElasticIPFailureReasonOrderExpired
+		return nil
+	case ElasticIPFailureReasonProvisioningFailed:
+		*s = ElasticIPFailureReasonProvisioningFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ElasticIPID string
+
+// Ref: #/components/schemas/ElasticIPListResponseBody
+type ElasticIPListResponseBody struct {
+	Items      []ElasticIP      `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *ElasticIPListResponseBody) GetItems() []ElasticIP {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *ElasticIPListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *ElasticIPListResponseBody) SetItems(val []ElasticIP) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *ElasticIPListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// An operation still running on this elastic IP. It is not a separate resource; once it finishes, the
+// elastic IP's `operation` is null again and the elastic IP shows the result.
+// Ref: #/components/schemas/ElasticIPOperation
+type ElasticIPOperation struct {
+	Type      ElasticIPOperationType `json:"type"`
+	StartedAt time.Time              `json:"started_at"`
+}
+
+// GetType returns the value of Type.
+func (s *ElasticIPOperation) GetType() ElasticIPOperationType {
+	return s.Type
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *ElasticIPOperation) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// SetType sets the value of Type.
+func (s *ElasticIPOperation) SetType(val ElasticIPOperationType) {
+	s.Type = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *ElasticIPOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+type ElasticIPOperationType string
+
+const (
+	ElasticIPOperationTypeCreate       ElasticIPOperationType = "create"
+	ElasticIPOperationTypeBind         ElasticIPOperationType = "bind"
+	ElasticIPOperationTypeUnbind       ElasticIPOperationType = "unbind"
+	ElasticIPOperationTypeSetBandwidth ElasticIPOperationType = "set_bandwidth"
+	ElasticIPOperationTypeSuspend      ElasticIPOperationType = "suspend"
+	ElasticIPOperationTypeResume       ElasticIPOperationType = "resume"
+	ElasticIPOperationTypeDelete       ElasticIPOperationType = "delete"
+)
+
+// AllValues returns all ElasticIPOperationType values.
+func (ElasticIPOperationType) AllValues() []ElasticIPOperationType {
+	return []ElasticIPOperationType{
+		ElasticIPOperationTypeCreate,
+		ElasticIPOperationTypeBind,
+		ElasticIPOperationTypeUnbind,
+		ElasticIPOperationTypeSetBandwidth,
+		ElasticIPOperationTypeSuspend,
+		ElasticIPOperationTypeResume,
+		ElasticIPOperationTypeDelete,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPOperationTypeCreate:
+		return []byte(s), nil
+	case ElasticIPOperationTypeBind:
+		return []byte(s), nil
+	case ElasticIPOperationTypeUnbind:
+		return []byte(s), nil
+	case ElasticIPOperationTypeSetBandwidth:
+		return []byte(s), nil
+	case ElasticIPOperationTypeSuspend:
+		return []byte(s), nil
+	case ElasticIPOperationTypeResume:
+		return []byte(s), nil
+	case ElasticIPOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPOperationType) UnmarshalText(data []byte) error {
+	switch ElasticIPOperationType(data) {
+	case ElasticIPOperationTypeCreate:
+		*s = ElasticIPOperationTypeCreate
+		return nil
+	case ElasticIPOperationTypeBind:
+		*s = ElasticIPOperationTypeBind
+		return nil
+	case ElasticIPOperationTypeUnbind:
+		*s = ElasticIPOperationTypeUnbind
+		return nil
+	case ElasticIPOperationTypeSetBandwidth:
+		*s = ElasticIPOperationTypeSetBandwidth
+		return nil
+	case ElasticIPOperationTypeSuspend:
+		*s = ElasticIPOperationTypeSuspend
+		return nil
+	case ElasticIPOperationTypeResume:
+		*s = ElasticIPOperationTypeResume
+		return nil
+	case ElasticIPOperationTypeDelete:
+		*s = ElasticIPOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `pending` until the order is accepted, with no address allocated; `provisioning` while the address
+// is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states
+// why. `missing` means the address no longer exists in the cloud.
+type ElasticIPStatus string
+
+const (
+	ElasticIPStatusPending      ElasticIPStatus = "pending"
+	ElasticIPStatusProvisioning ElasticIPStatus = "provisioning"
+	ElasticIPStatusAvailable    ElasticIPStatus = "available"
+	ElasticIPStatusDeleted      ElasticIPStatus = "deleted"
+	ElasticIPStatusFailed       ElasticIPStatus = "failed"
+	ElasticIPStatusError        ElasticIPStatus = "error"
+	ElasticIPStatusUnknown      ElasticIPStatus = "unknown"
+	ElasticIPStatusMissing      ElasticIPStatus = "missing"
+)
+
+// AllValues returns all ElasticIPStatus values.
+func (ElasticIPStatus) AllValues() []ElasticIPStatus {
+	return []ElasticIPStatus{
+		ElasticIPStatusPending,
+		ElasticIPStatusProvisioning,
+		ElasticIPStatusAvailable,
+		ElasticIPStatusDeleted,
+		ElasticIPStatusFailed,
+		ElasticIPStatusError,
+		ElasticIPStatusUnknown,
+		ElasticIPStatusMissing,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPStatusPending:
+		return []byte(s), nil
+	case ElasticIPStatusProvisioning:
+		return []byte(s), nil
+	case ElasticIPStatusAvailable:
+		return []byte(s), nil
+	case ElasticIPStatusDeleted:
+		return []byte(s), nil
+	case ElasticIPStatusFailed:
+		return []byte(s), nil
+	case ElasticIPStatusError:
+		return []byte(s), nil
+	case ElasticIPStatusUnknown:
+		return []byte(s), nil
+	case ElasticIPStatusMissing:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPStatus) UnmarshalText(data []byte) error {
+	switch ElasticIPStatus(data) {
+	case ElasticIPStatusPending:
+		*s = ElasticIPStatusPending
+		return nil
+	case ElasticIPStatusProvisioning:
+		*s = ElasticIPStatusProvisioning
+		return nil
+	case ElasticIPStatusAvailable:
+		*s = ElasticIPStatusAvailable
+		return nil
+	case ElasticIPStatusDeleted:
+		*s = ElasticIPStatusDeleted
+		return nil
+	case ElasticIPStatusFailed:
+		*s = ElasticIPStatusFailed
+		return nil
+	case ElasticIPStatusError:
+		*s = ElasticIPStatusError
+		return nil
+	case ElasticIPStatusUnknown:
+		*s = ElasticIPStatusUnknown
+		return nil
+	case ElasticIPStatusMissing:
+		*s = ElasticIPStatusMissing
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The IPv4 public network product and its Billing Plan references. Contains no supply ranges, gateways
+// or backend execution state.
+// Ref: #/components/schemas/ElasticIPType
+type ElasticIPType struct {
+	ID          ElasticIPTypeID `json:"id"`
+	RegionID    RegionID        `json:"region_id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	PlanID      uuid.UUID       `json:"plan_id"`
+	// The traffic Billing Plan, when configured. Traffic billing is not currently available for creation.
+	TrafficPlanID   OptUUID             `json:"traffic_plan_id"`
+	Status          ElasticIPTypeStatus `json:"status"`
+	CatalogRevision int64               `json:"catalog_revision"`
+	CreatedAt       time.Time           `json:"created_at"`
+	UpdatedAt       time.Time           `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *ElasticIPType) GetID() ElasticIPTypeID {
+	return s.ID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *ElasticIPType) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetName returns the value of Name.
+func (s *ElasticIPType) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *ElasticIPType) GetDescription() string {
+	return s.Description
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *ElasticIPType) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetTrafficPlanID returns the value of TrafficPlanID.
+func (s *ElasticIPType) GetTrafficPlanID() OptUUID {
+	return s.TrafficPlanID
+}
+
+// GetStatus returns the value of Status.
+func (s *ElasticIPType) GetStatus() ElasticIPTypeStatus {
+	return s.Status
+}
+
+// GetCatalogRevision returns the value of CatalogRevision.
+func (s *ElasticIPType) GetCatalogRevision() int64 {
+	return s.CatalogRevision
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ElasticIPType) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *ElasticIPType) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *ElasticIPType) SetID(val ElasticIPTypeID) {
+	s.ID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *ElasticIPType) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetName sets the value of Name.
+func (s *ElasticIPType) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *ElasticIPType) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *ElasticIPType) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetTrafficPlanID sets the value of TrafficPlanID.
+func (s *ElasticIPType) SetTrafficPlanID(val OptUUID) {
+	s.TrafficPlanID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ElasticIPType) SetStatus(val ElasticIPTypeStatus) {
+	s.Status = val
+}
+
+// SetCatalogRevision sets the value of CatalogRevision.
+func (s *ElasticIPType) SetCatalogRevision(val int64) {
+	s.CatalogRevision = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ElasticIPType) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *ElasticIPType) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+type ElasticIPTypeID string
+
+// Ref: #/components/schemas/ElasticIPTypeListResponseBody
+type ElasticIPTypeListResponseBody struct {
+	Items      []ElasticIPType  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *ElasticIPTypeListResponseBody) GetItems() []ElasticIPType {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *ElasticIPTypeListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *ElasticIPTypeListResponseBody) SetItems(val []ElasticIPType) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *ElasticIPTypeListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type ElasticIPTypeStatus string
+
+const (
+	ElasticIPTypeStatusOnSale  ElasticIPTypeStatus = "on_sale"
+	ElasticIPTypeStatusOffSale ElasticIPTypeStatus = "off_sale"
+	ElasticIPTypeStatusRetired ElasticIPTypeStatus = "retired"
+)
+
+// AllValues returns all ElasticIPTypeStatus values.
+func (ElasticIPTypeStatus) AllValues() []ElasticIPTypeStatus {
+	return []ElasticIPTypeStatus{
+		ElasticIPTypeStatusOnSale,
+		ElasticIPTypeStatusOffSale,
+		ElasticIPTypeStatusRetired,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPTypeStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPTypeStatusOnSale:
+		return []byte(s), nil
+	case ElasticIPTypeStatusOffSale:
+		return []byte(s), nil
+	case ElasticIPTypeStatusRetired:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPTypeStatus) UnmarshalText(data []byte) error {
+	switch ElasticIPTypeStatus(data) {
+	case ElasticIPTypeStatusOnSale:
+		*s = ElasticIPTypeStatusOnSale
+		return nil
+	case ElasticIPTypeStatusOffSale:
+		*s = ElasticIPTypeStatusOffSale
+		return nil
+	case ElasticIPTypeStatusRetired:
+		*s = ElasticIPTypeStatusRetired
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A resource a release set releases.
+// Ref: #/components/schemas/ElasticIpReleaseResource
+type ElasticIpReleaseResource struct {
+	Type ElasticIpReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID ElasticIPID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *ElasticIpReleaseResource) GetType() ElasticIpReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *ElasticIpReleaseResource) GetID() ElasticIPID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ElasticIpReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *ElasticIpReleaseResource) SetType(val ElasticIpReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *ElasticIpReleaseResource) SetID(val ElasticIPID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ElasticIpReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type ElasticIpReleaseResourceType string
+
+const (
+	ElasticIpReleaseResourceTypeElasticIP ElasticIpReleaseResourceType = "elastic_ip"
+)
+
+// AllValues returns all ElasticIpReleaseResourceType values.
+func (ElasticIpReleaseResourceType) AllValues() []ElasticIpReleaseResourceType {
+	return []ElasticIpReleaseResourceType{
+		ElasticIpReleaseResourceTypeElasticIP,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIpReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIpReleaseResourceTypeElasticIP:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIpReleaseResourceType) UnmarshalText(data []byte) error {
+	switch ElasticIpReleaseResourceType(data) {
+	case ElasticIpReleaseResourceTypeElasticIP:
+		*s = ElasticIpReleaseResourceTypeElasticIP
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3701,54 +3863,43 @@ func (s *Error) SetStatus(val int64) {
 }
 
 func (*Error) acceptPeeringRes()                  {}
-func (*Error) allocateFloatingIPRes()             {}
 func (*Error) attachDiskRes()                     {}
-func (*Error) attachInstanceFloatingIPRes()       {}
-func (*Error) attachPortRes()                     {}
-func (*Error) bindFloatingIPRes()                 {}
-func (*Error) createBackupCapacityPackQuoteRes()  {}
-func (*Error) createBackupCapacityPackRes()       {}
+func (*Error) attachNetworkInterfaceRes()         {}
+func (*Error) attachVirtualMachineElasticIPRes()  {}
+func (*Error) bindElasticIPRes()                  {}
 func (*Error) createBackupRes()                   {}
-func (*Error) createBackupRestoreQuoteRes()       {}
-func (*Error) createBackupServiceQuoteRes()       {}
-func (*Error) createBackupServiceRes()            {}
-func (*Error) createDiskQuoteRes()                {}
 func (*Error) createDiskRes()                     {}
-func (*Error) createDiskResizeQuoteRes()          {}
-func (*Error) createFloatingIPBandwidthQuoteRes() {}
-func (*Error) createFloatingIPQuoteRes()          {}
-func (*Error) createImageQuoteRes()               {}
+func (*Error) createElasticIPRes()                {}
 func (*Error) createImageRes()                    {}
-func (*Error) createInstanceQuoteRes()            {}
-func (*Error) createInstanceResizeQuoteRes()      {}
-func (*Error) createSnapshotQuotaQuoteRes()       {}
+func (*Error) createSnapshotRes()                 {}
+func (*Error) createVirtualMachineRes()           {}
 func (*Error) deleteBackupRes()                   {}
 func (*Error) deleteDiskRes()                     {}
 func (*Error) deleteImageRes()                    {}
-func (*Error) deleteInstanceRes()                 {}
+func (*Error) deleteNetworkInterfaceRes()         {}
 func (*Error) deletePeeringRes()                  {}
-func (*Error) deletePortRes()                     {}
-func (*Error) deletePrivateNetworkRes()           {}
 func (*Error) deleteSnapshotRes()                 {}
+func (*Error) deleteVirtualMachineRes()           {}
+func (*Error) deleteVirtualPrivateCloudRes()      {}
 func (*Error) detachDiskRes()                     {}
-func (*Error) detachInstanceFloatingIPRes()       {}
-func (*Error) detachPortRes()                     {}
-func (*Error) disablePrivateNetworkIpv6Res()      {}
-func (*Error) enablePrivateNetworkIpv6Res()       {}
-func (*Error) launchInstanceRes()                 {}
-func (*Error) rebootInstanceRes()                 {}
-func (*Error) rebuildInstanceRes()                {}
-func (*Error) releaseFloatingIPRes()              {}
-func (*Error) resetInstancePasswordRes()          {}
+func (*Error) detachNetworkInterfaceRes()         {}
+func (*Error) detachVirtualMachineElasticIPRes()  {}
+func (*Error) disableVirtualPrivateCloudIpv6Res() {}
+func (*Error) enableVirtualPrivateCloudIpv6Res()  {}
+func (*Error) rebootVirtualMachineRes()           {}
+func (*Error) rebuildVirtualMachineRes()          {}
+func (*Error) releaseElasticIPRes()               {}
+func (*Error) rescueVirtualMachineRes()           {}
+func (*Error) resetVirtualMachinePasswordRes()    {}
 func (*Error) resizeDiskRes()                     {}
-func (*Error) resizeInstanceRes()                 {}
+func (*Error) resizeVirtualMachineRes()           {}
 func (*Error) restoreBackupRes()                  {}
 func (*Error) revertDiskRes()                     {}
-func (*Error) setFloatingIPBandwidthRes()         {}
-func (*Error) setSnapshotQuotaRes()               {}
-func (*Error) startInstanceRes()                  {}
-func (*Error) stopInstanceRes()                   {}
-func (*Error) unbindFloatingIPRes()               {}
+func (*Error) setElasticIPBandwidthRes()          {}
+func (*Error) startVirtualMachineRes()            {}
+func (*Error) stopVirtualMachineRes()             {}
+func (*Error) unbindElasticIPRes()                {}
+func (*Error) unrescueVirtualMachineRes()         {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
@@ -3793,8 +3944,8 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 type ExistingBootDisk struct {
 	Type ExistingBootDiskType `json:"type"`
 	// A prepared boot disk owned by this project, available and unattached in the same availability zone
-	// as the instance type. Only one instance may be created when used.
-	DiskID uuid.UUID `json:"disk_id"`
+	// as the machine type. Only one virtual machine may be created when used.
+	DiskID DiskID `json:"disk_id"`
 	// The existing account used to log in to this disk's operating system.
 	LoginUsername string `json:"login_username"`
 }
@@ -3805,7 +3956,7 @@ func (s *ExistingBootDisk) GetType() ExistingBootDiskType {
 }
 
 // GetDiskID returns the value of DiskID.
-func (s *ExistingBootDisk) GetDiskID() uuid.UUID {
+func (s *ExistingBootDisk) GetDiskID() DiskID {
 	return s.DiskID
 }
 
@@ -3820,7 +3971,7 @@ func (s *ExistingBootDisk) SetType(val ExistingBootDiskType) {
 }
 
 // SetDiskID sets the value of DiskID.
-func (s *ExistingBootDisk) SetDiskID(val uuid.UUID) {
+func (s *ExistingBootDisk) SetDiskID(val DiskID) {
 	s.DiskID = val
 }
 
@@ -3863,689 +4014,42 @@ func (s *ExistingBootDiskType) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/FloatingIPListResponseBody
-type FloatingIPListResponseBody struct {
-	Items      []FloatingIPResource `json:"items"`
-	Pagination OffsetPagination     `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *FloatingIPListResponseBody) GetItems() []FloatingIPResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *FloatingIPListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *FloatingIPListResponseBody) SetItems(val []FloatingIPResource) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *FloatingIPListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// An operation still running on this floating IP. It is not a separate resource; once it finishes, the
-// floating IP's `operation` is null again and the floating IP shows the result.
-// Ref: #/components/schemas/FloatingIPOperation
-type FloatingIPOperation struct {
-	Type      FloatingIPOperationType `json:"type"`
-	StartedAt time.Time               `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *FloatingIPOperation) GetType() FloatingIPOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *FloatingIPOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *FloatingIPOperation) SetType(val FloatingIPOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *FloatingIPOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-type FloatingIPOperationType string
-
-const (
-	FloatingIPOperationTypeCreate       FloatingIPOperationType = "create"
-	FloatingIPOperationTypeBind         FloatingIPOperationType = "bind"
-	FloatingIPOperationTypeUnbind       FloatingIPOperationType = "unbind"
-	FloatingIPOperationTypeSetBandwidth FloatingIPOperationType = "set_bandwidth"
-	FloatingIPOperationTypeSuspend      FloatingIPOperationType = "suspend"
-	FloatingIPOperationTypeResume       FloatingIPOperationType = "resume"
-	FloatingIPOperationTypeDelete       FloatingIPOperationType = "delete"
-)
-
-// AllValues returns all FloatingIPOperationType values.
-func (FloatingIPOperationType) AllValues() []FloatingIPOperationType {
-	return []FloatingIPOperationType{
-		FloatingIPOperationTypeCreate,
-		FloatingIPOperationTypeBind,
-		FloatingIPOperationTypeUnbind,
-		FloatingIPOperationTypeSetBandwidth,
-		FloatingIPOperationTypeSuspend,
-		FloatingIPOperationTypeResume,
-		FloatingIPOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s FloatingIPOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case FloatingIPOperationTypeCreate:
-		return []byte(s), nil
-	case FloatingIPOperationTypeBind:
-		return []byte(s), nil
-	case FloatingIPOperationTypeUnbind:
-		return []byte(s), nil
-	case FloatingIPOperationTypeSetBandwidth:
-		return []byte(s), nil
-	case FloatingIPOperationTypeSuspend:
-		return []byte(s), nil
-	case FloatingIPOperationTypeResume:
-		return []byte(s), nil
-	case FloatingIPOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *FloatingIPOperationType) UnmarshalText(data []byte) error {
-	switch FloatingIPOperationType(data) {
-	case FloatingIPOperationTypeCreate:
-		*s = FloatingIPOperationTypeCreate
-		return nil
-	case FloatingIPOperationTypeBind:
-		*s = FloatingIPOperationTypeBind
-		return nil
-	case FloatingIPOperationTypeUnbind:
-		*s = FloatingIPOperationTypeUnbind
-		return nil
-	case FloatingIPOperationTypeSetBandwidth:
-		*s = FloatingIPOperationTypeSetBandwidth
-		return nil
-	case FloatingIPOperationTypeSuspend:
-		*s = FloatingIPOperationTypeSuspend
-		return nil
-	case FloatingIPOperationTypeResume:
-		*s = FloatingIPOperationTypeResume
-		return nil
-	case FloatingIPOperationTypeDelete:
-		*s = FloatingIPOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// One purchased public IP resource, including its bandwidth configuration. Bandwidth has no separate
-// Compute resource ID; one subscription pays for the address and its bandwidth. Changing bandwidth
-// updates this same resource, not another allocation.
-// Ref: #/components/schemas/FloatingIPResource
-type FloatingIPResource struct {
-	// The allocated public address. Null until the address is allocated.
-	Address       NilString `json:"address"`
-	BandwidthMbps NilInt64  `json:"bandwidth_mbps"`
-	CreatedAt     time.Time `json:"created_at"`
-	ID            uuid.UUID `json:"id"`
-	RegionID      uuid.UUID `json:"region_id"`
-	// `pending` until the order is accepted, with no address allocated; `provisioning` while the address
-	// is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states
-	// why. `missing` means the address no longer exists in the cloud.
-	Status  FloatingIPResourceStatus `json:"status"`
-	OrderID NilUUID                  `json:"order_id"`
-	// The Billing order item for this resource.
-	OrderItemID NilUUID `json:"order_item_id"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
-	// until its checkout completes. Null when the resource was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The Billing subscription associated with this resource. It may still be pending; its presence does
-	// not imply delivery or metering. Null when no subscription is associated.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscription a cancellation through Billing has to cover to release this floating IP. A
-	// subscription that has ended is not listed, and the list is empty when no subscription pays for the
-	// floating IP.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
-	// for, so that each line of a cancellation can name what it releases.
-	ReleaseSet  []ReleaseSetItem                 `json:"release_set"`
-	AccessState NilFloatingIPResourceAccessState `json:"access_state"`
-	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-	// order was accepted, and the charge for this floating IP is refunded.
-	FailureReason NilFloatingIPResourceFailureReason `json:"failure_reason"`
-	// The operation in progress on this floating IP, or null when none is.
-	Operation  NilFloatingIPOperation `json:"operation"`
-	Generation int64                  `json:"generation"`
-	ObservedAt NilDateTime            `json:"observed_at"`
-	Binding    NilIPv4Binding         `json:"binding"`
-}
-
-// GetAddress returns the value of Address.
-func (s *FloatingIPResource) GetAddress() NilString {
-	return s.Address
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *FloatingIPResource) GetBandwidthMbps() NilInt64 {
-	return s.BandwidthMbps
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *FloatingIPResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetID returns the value of ID.
-func (s *FloatingIPResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *FloatingIPResource) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetStatus returns the value of Status.
-func (s *FloatingIPResource) GetStatus() FloatingIPResourceStatus {
-	return s.Status
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *FloatingIPResource) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetOrderItemID returns the value of OrderItemID.
-func (s *FloatingIPResource) GetOrderItemID() NilUUID {
-	return s.OrderItemID
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *FloatingIPResource) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *FloatingIPResource) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *FloatingIPResource) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
-// GetReleaseSet returns the value of ReleaseSet.
-func (s *FloatingIPResource) GetReleaseSet() []ReleaseSetItem {
-	return s.ReleaseSet
-}
-
-// GetAccessState returns the value of AccessState.
-func (s *FloatingIPResource) GetAccessState() NilFloatingIPResourceAccessState {
-	return s.AccessState
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *FloatingIPResource) GetFailureReason() NilFloatingIPResourceFailureReason {
-	return s.FailureReason
-}
-
-// GetOperation returns the value of Operation.
-func (s *FloatingIPResource) GetOperation() NilFloatingIPOperation {
-	return s.Operation
-}
-
-// GetGeneration returns the value of Generation.
-func (s *FloatingIPResource) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *FloatingIPResource) GetObservedAt() NilDateTime {
-	return s.ObservedAt
-}
-
-// GetBinding returns the value of Binding.
-func (s *FloatingIPResource) GetBinding() NilIPv4Binding {
-	return s.Binding
-}
-
-// SetAddress sets the value of Address.
-func (s *FloatingIPResource) SetAddress(val NilString) {
-	s.Address = val
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *FloatingIPResource) SetBandwidthMbps(val NilInt64) {
-	s.BandwidthMbps = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *FloatingIPResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetID sets the value of ID.
-func (s *FloatingIPResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *FloatingIPResource) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *FloatingIPResource) SetStatus(val FloatingIPResourceStatus) {
-	s.Status = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *FloatingIPResource) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetOrderItemID sets the value of OrderItemID.
-func (s *FloatingIPResource) SetOrderItemID(val NilUUID) {
-	s.OrderItemID = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *FloatingIPResource) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *FloatingIPResource) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *FloatingIPResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
-// SetReleaseSet sets the value of ReleaseSet.
-func (s *FloatingIPResource) SetReleaseSet(val []ReleaseSetItem) {
-	s.ReleaseSet = val
-}
-
-// SetAccessState sets the value of AccessState.
-func (s *FloatingIPResource) SetAccessState(val NilFloatingIPResourceAccessState) {
-	s.AccessState = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *FloatingIPResource) SetFailureReason(val NilFloatingIPResourceFailureReason) {
-	s.FailureReason = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *FloatingIPResource) SetOperation(val NilFloatingIPOperation) {
-	s.Operation = val
-}
-
-// SetGeneration sets the value of Generation.
-func (s *FloatingIPResource) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *FloatingIPResource) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
-}
-
-// SetBinding sets the value of Binding.
-func (s *FloatingIPResource) SetBinding(val NilIPv4Binding) {
-	s.Binding = val
-}
-
-func (*FloatingIPResource) attachInstanceFloatingIPRes() {}
-func (*FloatingIPResource) bindFloatingIPRes()           {}
-func (*FloatingIPResource) detachInstanceFloatingIPRes() {}
-func (*FloatingIPResource) releaseFloatingIPRes()        {}
-func (*FloatingIPResource) unbindFloatingIPRes()         {}
-
-type FloatingIPResourceAccessState string
-
-const (
-	FloatingIPResourceAccessStatePending   FloatingIPResourceAccessState = "pending"
-	FloatingIPResourceAccessStateEnabled   FloatingIPResourceAccessState = "enabled"
-	FloatingIPResourceAccessStateSuspended FloatingIPResourceAccessState = "suspended"
-	FloatingIPResourceAccessStateReclaimed FloatingIPResourceAccessState = "reclaimed"
-)
-
-// AllValues returns all FloatingIPResourceAccessState values.
-func (FloatingIPResourceAccessState) AllValues() []FloatingIPResourceAccessState {
-	return []FloatingIPResourceAccessState{
-		FloatingIPResourceAccessStatePending,
-		FloatingIPResourceAccessStateEnabled,
-		FloatingIPResourceAccessStateSuspended,
-		FloatingIPResourceAccessStateReclaimed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s FloatingIPResourceAccessState) MarshalText() ([]byte, error) {
-	switch s {
-	case FloatingIPResourceAccessStatePending:
-		return []byte(s), nil
-	case FloatingIPResourceAccessStateEnabled:
-		return []byte(s), nil
-	case FloatingIPResourceAccessStateSuspended:
-		return []byte(s), nil
-	case FloatingIPResourceAccessStateReclaimed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *FloatingIPResourceAccessState) UnmarshalText(data []byte) error {
-	switch FloatingIPResourceAccessState(data) {
-	case FloatingIPResourceAccessStatePending:
-		*s = FloatingIPResourceAccessStatePending
-		return nil
-	case FloatingIPResourceAccessStateEnabled:
-		*s = FloatingIPResourceAccessStateEnabled
-		return nil
-	case FloatingIPResourceAccessStateSuspended:
-		*s = FloatingIPResourceAccessStateSuspended
-		return nil
-	case FloatingIPResourceAccessStateReclaimed:
-		*s = FloatingIPResourceAccessStateReclaimed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-// order was accepted, and the charge for this floating IP is refunded.
-type FloatingIPResourceFailureReason string
-
-const (
-	FloatingIPResourceFailureReasonCheckoutExpired    FloatingIPResourceFailureReason = "checkout_expired"
-	FloatingIPResourceFailureReasonOrderDeclined      FloatingIPResourceFailureReason = "order_declined"
-	FloatingIPResourceFailureReasonOrderCanceled      FloatingIPResourceFailureReason = "order_canceled"
-	FloatingIPResourceFailureReasonOrderExpired       FloatingIPResourceFailureReason = "order_expired"
-	FloatingIPResourceFailureReasonProvisioningFailed FloatingIPResourceFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all FloatingIPResourceFailureReason values.
-func (FloatingIPResourceFailureReason) AllValues() []FloatingIPResourceFailureReason {
-	return []FloatingIPResourceFailureReason{
-		FloatingIPResourceFailureReasonCheckoutExpired,
-		FloatingIPResourceFailureReasonOrderDeclined,
-		FloatingIPResourceFailureReasonOrderCanceled,
-		FloatingIPResourceFailureReasonOrderExpired,
-		FloatingIPResourceFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s FloatingIPResourceFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case FloatingIPResourceFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case FloatingIPResourceFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case FloatingIPResourceFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case FloatingIPResourceFailureReasonOrderExpired:
-		return []byte(s), nil
-	case FloatingIPResourceFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *FloatingIPResourceFailureReason) UnmarshalText(data []byte) error {
-	switch FloatingIPResourceFailureReason(data) {
-	case FloatingIPResourceFailureReasonCheckoutExpired:
-		*s = FloatingIPResourceFailureReasonCheckoutExpired
-		return nil
-	case FloatingIPResourceFailureReasonOrderDeclined:
-		*s = FloatingIPResourceFailureReasonOrderDeclined
-		return nil
-	case FloatingIPResourceFailureReasonOrderCanceled:
-		*s = FloatingIPResourceFailureReasonOrderCanceled
-		return nil
-	case FloatingIPResourceFailureReasonOrderExpired:
-		*s = FloatingIPResourceFailureReasonOrderExpired
-		return nil
-	case FloatingIPResourceFailureReasonProvisioningFailed:
-		*s = FloatingIPResourceFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `pending` until the order is accepted, with no address allocated; `provisioning` while the address
-// is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states
-// why. `missing` means the address no longer exists in the cloud.
-type FloatingIPResourceStatus string
-
-const (
-	FloatingIPResourceStatusPending      FloatingIPResourceStatus = "pending"
-	FloatingIPResourceStatusProvisioning FloatingIPResourceStatus = "provisioning"
-	FloatingIPResourceStatusAvailable    FloatingIPResourceStatus = "available"
-	FloatingIPResourceStatusDeleted      FloatingIPResourceStatus = "deleted"
-	FloatingIPResourceStatusFailed       FloatingIPResourceStatus = "failed"
-	FloatingIPResourceStatusError        FloatingIPResourceStatus = "error"
-	FloatingIPResourceStatusUnknown      FloatingIPResourceStatus = "unknown"
-	FloatingIPResourceStatusMissing      FloatingIPResourceStatus = "missing"
-)
-
-// AllValues returns all FloatingIPResourceStatus values.
-func (FloatingIPResourceStatus) AllValues() []FloatingIPResourceStatus {
-	return []FloatingIPResourceStatus{
-		FloatingIPResourceStatusPending,
-		FloatingIPResourceStatusProvisioning,
-		FloatingIPResourceStatusAvailable,
-		FloatingIPResourceStatusDeleted,
-		FloatingIPResourceStatusFailed,
-		FloatingIPResourceStatusError,
-		FloatingIPResourceStatusUnknown,
-		FloatingIPResourceStatusMissing,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s FloatingIPResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case FloatingIPResourceStatusPending:
-		return []byte(s), nil
-	case FloatingIPResourceStatusProvisioning:
-		return []byte(s), nil
-	case FloatingIPResourceStatusAvailable:
-		return []byte(s), nil
-	case FloatingIPResourceStatusDeleted:
-		return []byte(s), nil
-	case FloatingIPResourceStatusFailed:
-		return []byte(s), nil
-	case FloatingIPResourceStatusError:
-		return []byte(s), nil
-	case FloatingIPResourceStatusUnknown:
-		return []byte(s), nil
-	case FloatingIPResourceStatusMissing:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *FloatingIPResourceStatus) UnmarshalText(data []byte) error {
-	switch FloatingIPResourceStatus(data) {
-	case FloatingIPResourceStatusPending:
-		*s = FloatingIPResourceStatusPending
-		return nil
-	case FloatingIPResourceStatusProvisioning:
-		*s = FloatingIPResourceStatusProvisioning
-		return nil
-	case FloatingIPResourceStatusAvailable:
-		*s = FloatingIPResourceStatusAvailable
-		return nil
-	case FloatingIPResourceStatusDeleted:
-		*s = FloatingIPResourceStatusDeleted
-		return nil
-	case FloatingIPResourceStatusFailed:
-		*s = FloatingIPResourceStatusFailed
-		return nil
-	case FloatingIPResourceStatusError:
-		*s = FloatingIPResourceStatusError
-		return nil
-	case FloatingIPResourceStatusUnknown:
-		*s = FloatingIPResourceStatusUnknown
-		return nil
-	case FloatingIPResourceStatusMissing:
-		*s = FloatingIPResourceStatusMissing
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Account funding for this purchase, calculated by Billing. Amounts use the enclosing response
-// currency. Credit eligibility and all purchase requirements are already evaluated. Nothing is charged
-// or reserved. A licensed purchase may instead be paid with an online payment method.
-// Ref: #/components/schemas/Funds
-type Funds struct {
-	// Spendable balance after pending returns.
-	AvailableBalanceAmount Money `json:"available_balance_amount"`
-	// Currently effective credits eligible for the quoted purchases or metered usage. Each grant is
-	// counted once.
-	UsableCreditAmount Money `json:"usable_credit_amount"`
-	// Currently effective credits that cannot fund any quoted purchase or metered target. Unused eligible
-	// credits are not restricted.
-	RestrictedCreditAmount Money `json:"restricted_credit_amount"`
-	// Minimum spendable balance needed after eligible credits, covering immediate charges and every new
-	// metered purchase's admission requirement.
-	RequiredBalanceAmount Money `json:"required_balance_amount"`
-	// Additional balance needed now. Zero means account funds satisfy this quote. No funds are reserved.
-	BalanceShortfallAmount Money `json:"balance_shortfall_amount"`
-	// Minimum recharge that covers the shortfall, respecting the currency minimum recharge and currency
-	// precision. Zero when no additional balance is needed.
-	RequiredTopUpAmount Money `json:"required_top_up_amount"`
-}
-
-// GetAvailableBalanceAmount returns the value of AvailableBalanceAmount.
-func (s *Funds) GetAvailableBalanceAmount() Money {
-	return s.AvailableBalanceAmount
-}
-
-// GetUsableCreditAmount returns the value of UsableCreditAmount.
-func (s *Funds) GetUsableCreditAmount() Money {
-	return s.UsableCreditAmount
-}
-
-// GetRestrictedCreditAmount returns the value of RestrictedCreditAmount.
-func (s *Funds) GetRestrictedCreditAmount() Money {
-	return s.RestrictedCreditAmount
-}
-
-// GetRequiredBalanceAmount returns the value of RequiredBalanceAmount.
-func (s *Funds) GetRequiredBalanceAmount() Money {
-	return s.RequiredBalanceAmount
-}
-
-// GetBalanceShortfallAmount returns the value of BalanceShortfallAmount.
-func (s *Funds) GetBalanceShortfallAmount() Money {
-	return s.BalanceShortfallAmount
-}
-
-// GetRequiredTopUpAmount returns the value of RequiredTopUpAmount.
-func (s *Funds) GetRequiredTopUpAmount() Money {
-	return s.RequiredTopUpAmount
-}
-
-// SetAvailableBalanceAmount sets the value of AvailableBalanceAmount.
-func (s *Funds) SetAvailableBalanceAmount(val Money) {
-	s.AvailableBalanceAmount = val
-}
-
-// SetUsableCreditAmount sets the value of UsableCreditAmount.
-func (s *Funds) SetUsableCreditAmount(val Money) {
-	s.UsableCreditAmount = val
-}
-
-// SetRestrictedCreditAmount sets the value of RestrictedCreditAmount.
-func (s *Funds) SetRestrictedCreditAmount(val Money) {
-	s.RestrictedCreditAmount = val
-}
-
-// SetRequiredBalanceAmount sets the value of RequiredBalanceAmount.
-func (s *Funds) SetRequiredBalanceAmount(val Money) {
-	s.RequiredBalanceAmount = val
-}
-
-// SetBalanceShortfallAmount sets the value of BalanceShortfallAmount.
-func (s *Funds) SetBalanceShortfallAmount(val Money) {
-	s.BalanceShortfallAmount = val
-}
-
-// SetRequiredTopUpAmount sets the value of RequiredTopUpAmount.
-func (s *Funds) SetRequiredTopUpAmount(val Money) {
-	s.RequiredTopUpAmount = val
-}
-
 // Ref: #/components/schemas/IPv4Binding
 type IPv4Binding struct {
-	ID               uuid.UUID        `json:"id"`
-	Ipv4AllocationID uuid.UUID        `json:"ipv4_allocation_id"`
-	PortAddressID    uuid.UUID        `json:"port_address_id"`
-	Address          string           `json:"address"`
-	FixedIP          string           `json:"fixed_ip"`
-	State            IPv4BindingState `json:"state"`
-	BoundAt          NilDateTime      `json:"bound_at"`
-	UnboundAt        NilDateTime      `json:"unbound_at"`
-	ReleasedAt       NilDateTime      `json:"released_at"`
+	ID ElasticIPAssociationID `json:"id"`
+	// The commercial ElasticIP identity. This is not an internal holding ID.
+	ElasticIPID               ElasticIPID               `json:"elastic_ip_id"`
+	NetworkInterfaceAddressID NetworkInterfaceAddressID `json:"network_interface_address_id"`
+	Address                   IPv4HostAddress           `json:"address"`
+	FixedIP                   IPv4HostAddress           `json:"fixed_ip"`
+	State                     IPv4BindingState          `json:"state"`
+	BoundAt                   NilDateTime               `json:"bound_at"`
+	UnboundAt                 NilDateTime               `json:"unbound_at"`
+	ReleasedAt                NilDateTime               `json:"released_at"`
 }
 
 // GetID returns the value of ID.
-func (s *IPv4Binding) GetID() uuid.UUID {
+func (s *IPv4Binding) GetID() ElasticIPAssociationID {
 	return s.ID
 }
 
-// GetIpv4AllocationID returns the value of Ipv4AllocationID.
-func (s *IPv4Binding) GetIpv4AllocationID() uuid.UUID {
-	return s.Ipv4AllocationID
+// GetElasticIPID returns the value of ElasticIPID.
+func (s *IPv4Binding) GetElasticIPID() ElasticIPID {
+	return s.ElasticIPID
 }
 
-// GetPortAddressID returns the value of PortAddressID.
-func (s *IPv4Binding) GetPortAddressID() uuid.UUID {
-	return s.PortAddressID
+// GetNetworkInterfaceAddressID returns the value of NetworkInterfaceAddressID.
+func (s *IPv4Binding) GetNetworkInterfaceAddressID() NetworkInterfaceAddressID {
+	return s.NetworkInterfaceAddressID
 }
 
 // GetAddress returns the value of Address.
-func (s *IPv4Binding) GetAddress() string {
+func (s *IPv4Binding) GetAddress() IPv4HostAddress {
 	return s.Address
 }
 
 // GetFixedIP returns the value of FixedIP.
-func (s *IPv4Binding) GetFixedIP() string {
+func (s *IPv4Binding) GetFixedIP() IPv4HostAddress {
 	return s.FixedIP
 }
 
@@ -4570,27 +4074,27 @@ func (s *IPv4Binding) GetReleasedAt() NilDateTime {
 }
 
 // SetID sets the value of ID.
-func (s *IPv4Binding) SetID(val uuid.UUID) {
+func (s *IPv4Binding) SetID(val ElasticIPAssociationID) {
 	s.ID = val
 }
 
-// SetIpv4AllocationID sets the value of Ipv4AllocationID.
-func (s *IPv4Binding) SetIpv4AllocationID(val uuid.UUID) {
-	s.Ipv4AllocationID = val
+// SetElasticIPID sets the value of ElasticIPID.
+func (s *IPv4Binding) SetElasticIPID(val ElasticIPID) {
+	s.ElasticIPID = val
 }
 
-// SetPortAddressID sets the value of PortAddressID.
-func (s *IPv4Binding) SetPortAddressID(val uuid.UUID) {
-	s.PortAddressID = val
+// SetNetworkInterfaceAddressID sets the value of NetworkInterfaceAddressID.
+func (s *IPv4Binding) SetNetworkInterfaceAddressID(val NetworkInterfaceAddressID) {
+	s.NetworkInterfaceAddressID = val
 }
 
 // SetAddress sets the value of Address.
-func (s *IPv4Binding) SetAddress(val string) {
+func (s *IPv4Binding) SetAddress(val IPv4HostAddress) {
 	s.Address = val
 }
 
 // SetFixedIP sets the value of FixedIP.
-func (s *IPv4Binding) SetFixedIP(val string) {
+func (s *IPv4Binding) SetFixedIP(val IPv4HostAddress) {
 	s.FixedIP = val
 }
 
@@ -4662,102 +4166,13 @@ func (s *IPv4BindingState) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/IPv4PoolListResponseBody
-type IPv4PoolListResponseBody struct {
-	Items      []IPv4PoolResource `json:"items"`
-	Pagination OffsetPagination   `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *IPv4PoolListResponseBody) GetItems() []IPv4PoolResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *IPv4PoolListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *IPv4PoolListResponseBody) SetItems(val []IPv4PoolResource) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *IPv4PoolListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// Ref: #/components/schemas/IPv4PoolResource
-type IPv4PoolResource struct {
-	ID       uuid.UUID `json:"id"`
-	RegionID uuid.UUID `json:"region_id"`
-	Name     string    `json:"name"`
-	// How an address from this pool can be bought, per address. Null when the project has no billing
-	// account.
-	Pricing NilPricing `json:"pricing"`
-	// How the bandwidth of an address from this pool is billed, per Mbit/s. It is bought in the same
-	// purchase as the address, with the same billing choice. Null when the project has no billing account.
-	BandwidthPricing NilPricing `json:"bandwidth_pricing"`
-}
-
-// GetID returns the value of ID.
-func (s *IPv4PoolResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *IPv4PoolResource) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetName returns the value of Name.
-func (s *IPv4PoolResource) GetName() string {
-	return s.Name
-}
-
-// GetPricing returns the value of Pricing.
-func (s *IPv4PoolResource) GetPricing() NilPricing {
-	return s.Pricing
-}
-
-// GetBandwidthPricing returns the value of BandwidthPricing.
-func (s *IPv4PoolResource) GetBandwidthPricing() NilPricing {
-	return s.BandwidthPricing
-}
-
-// SetID sets the value of ID.
-func (s *IPv4PoolResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *IPv4PoolResource) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetName sets the value of Name.
-func (s *IPv4PoolResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetPricing sets the value of Pricing.
-func (s *IPv4PoolResource) SetPricing(val NilPricing) {
-	s.Pricing = val
-}
-
-// SetBandwidthPricing sets the value of BandwidthPricing.
-func (s *IPv4PoolResource) SetBandwidthPricing(val NilPricing) {
-	s.BandwidthPricing = val
-}
+type IPv4HostAddress string
 
 // Ref: #/components/schemas/IPv6ResponseBody
 type IPv6ResponseBody struct {
 	// The allocated /64 prefix; empty while IPv6 is disabled.
 	Cidr    string `json:"cidr"`
 	Enabled bool   `json:"enabled"`
-	// `active` means IPv6 is fully available.
-	Status IPv6ResponseBodyStatus `json:"status"`
 }
 
 // GetCidr returns the value of Cidr.
@@ -4770,11 +4185,6 @@ func (s *IPv6ResponseBody) GetEnabled() bool {
 	return s.Enabled
 }
 
-// GetStatus returns the value of Status.
-func (s *IPv6ResponseBody) GetStatus() IPv6ResponseBodyStatus {
-	return s.Status
-}
-
 // SetCidr sets the value of Cidr.
 func (s *IPv6ResponseBody) SetCidr(val string) {
 	s.Cidr = val
@@ -4785,62 +4195,10 @@ func (s *IPv6ResponseBody) SetEnabled(val bool) {
 	s.Enabled = val
 }
 
-// SetStatus sets the value of Status.
-func (s *IPv6ResponseBody) SetStatus(val IPv6ResponseBodyStatus) {
-	s.Status = val
-}
+func (*IPv6ResponseBody) disableVirtualPrivateCloudIpv6Res() {}
+func (*IPv6ResponseBody) enableVirtualPrivateCloudIpv6Res()  {}
 
-func (*IPv6ResponseBody) disablePrivateNetworkIpv6Res() {}
-func (*IPv6ResponseBody) enablePrivateNetworkIpv6Res()  {}
-
-// `active` means IPv6 is fully available.
-type IPv6ResponseBodyStatus string
-
-const (
-	IPv6ResponseBodyStatusPending  IPv6ResponseBodyStatus = "pending"
-	IPv6ResponseBodyStatusActive   IPv6ResponseBodyStatus = "active"
-	IPv6ResponseBodyStatusDraining IPv6ResponseBodyStatus = "draining"
-)
-
-// AllValues returns all IPv6ResponseBodyStatus values.
-func (IPv6ResponseBodyStatus) AllValues() []IPv6ResponseBodyStatus {
-	return []IPv6ResponseBodyStatus{
-		IPv6ResponseBodyStatusPending,
-		IPv6ResponseBodyStatusActive,
-		IPv6ResponseBodyStatusDraining,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s IPv6ResponseBodyStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case IPv6ResponseBodyStatusPending:
-		return []byte(s), nil
-	case IPv6ResponseBodyStatusActive:
-		return []byte(s), nil
-	case IPv6ResponseBodyStatusDraining:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *IPv6ResponseBodyStatus) UnmarshalText(data []byte) error {
-	switch IPv6ResponseBodyStatus(data) {
-	case IPv6ResponseBodyStatusPending:
-		*s = IPv6ResponseBodyStatusPending
-		return nil
-	case IPv6ResponseBodyStatusActive:
-		*s = IPv6ResponseBodyStatusActive
-		return nil
-	case IPv6ResponseBodyStatusDraining:
-		*s = IPv6ResponseBodyStatusDraining
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
+type ImageID string
 
 // Ref: #/components/schemas/ImageListResponseBody
 type ImageListResponseBody struct {
@@ -4953,12 +4311,12 @@ func (s *ImageOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
-// An image that installs the system of an instance. Fields that describe a capture or its billing
-// apply only to private images and are null, zero or empty for public ones.
+// An image used to install a virtual machine. Platform and project images retain their respective
+// visibility and ownership rules. Project image storage is billed only to its owner.
 // Ref: #/components/schemas/ImageResource
 type ImageResource struct {
-	ID           uuid.UUID       `json:"id"`
-	RegionID     uuid.UUID       `json:"region_id"`
+	ID           ImageID         `json:"id"`
+	RegionID     RegionID        `json:"region_id"`
 	Visibility   ImageVisibility `json:"visibility"`
 	Name         string          `json:"name"`
 	OsFamily     string          `json:"os_family"`
@@ -4966,60 +4324,44 @@ type ImageResource struct {
 	Architecture string          `json:"architecture"`
 	// The account this image lets you log in as. The password set at creation belongs to this account.
 	LoginUsername string `json:"login_username"`
-	// The system disk of an instance created from this image cannot be smaller than this.
+	// The system disk of a virtual machine created from this image cannot be smaller than this.
 	MinDiskGB int64 `json:"min_disk_gb"`
-	// The instance type of an instance created from this image must have at least this much memory.
+	// The machine type of a virtual machine created from this image must have at least this much memory.
 	MinRAMMB int64 `json:"min_ram_mb"`
-	// False means a new password can only be set by rebuilding an instance created from this image.
+	// False means a new password can only be set by rebuilding a virtual machine created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
-	// Only `available` images can install instances. A public image is always `available`; a private image
-	// is `pending` until its order is accepted, then goes through `provisioning` and `uploading` while it
-	// is captured. `failed` means the capture produced no image; `failure_reason` states why. `missing`
-	// means a private image no longer exists in the cloud.
+	// Only available images can install virtual machines. A public image is available; a private capture
+	// starts pending, then provisioning and uploading before available. Failed means no usable image was
+	// produced; failure describes the outcome. Missing means a private image is absent from the
+	// infrastructure.
 	Status ImageResourceStatus `json:"status"`
 	// Details of why the capture failed; non-empty only when `status` is `failed`.
 	Failure NilString `json:"failure"`
-	// Storage occupied by a private image, which is what it is billed for; 0 until its capture completes,
-	// and 0 for public images.
+	// Storage occupied by the project image, in bytes. Zero until the capture reports its size.
 	SizeBytes int64 `json:"size_bytes"`
-	// The instance a private image was captured from. The image remains usable after that instance is
-	// released. Null for public images.
-	SourceInstanceID NilUUID   `json:"source_instance_id"`
-	CreatedAt        time.Time `json:"created_at"`
-	OrderID          NilUUID   `json:"order_id"`
-	// The Billing order item for this resource.
-	OrderItemID NilUUID `json:"order_item_id"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
-	// until its checkout completes. Null when the resource was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The Billing subscription associated with this resource. It may still be pending; its presence does
-	// not imply delivery or metering. Null when no subscription is associated.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscriptions a cancellation through Billing has to cover to release this private image: its
-	// own. Subscriptions that have ended are not listed, and the list is empty when no subscription pays
-	// for it, and for public images.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
-	// for, so that each line of a cancellation can name what it releases.
-	ReleaseSet  []ReleaseSetItem            `json:"release_set"`
-	AccessState NilImageResourceAccessState `json:"access_state"`
-	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-	// order was accepted, and the charge for this image is refunded.
-	FailureReason NilImageResourceFailureReason `json:"failure_reason"`
+	// The virtual machine a private image was captured from. The image remains usable after that virtual
+	// machine is released. Null for public images.
+	SourceVirtualMachineID NilVirtualMachineID `json:"source_virtual_machine_id"`
+	CreatedAt              time.Time           `json:"created_at"`
 	// The operation in progress on this image, or null when none is.
 	Operation  NilImageOperation `json:"operation"`
 	Generation int64             `json:"generation"`
 	ObservedAt NilDateTime       `json:"observed_at"`
+	// The Billing order creating this resource.
+	OrderID NilUUID `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The subscription for this resource; its presence alone does not imply delivery.
+	SubscriptionID NilUUID `json:"subscription_id"`
 }
 
 // GetID returns the value of ID.
-func (s *ImageResource) GetID() uuid.UUID {
+func (s *ImageResource) GetID() ImageID {
 	return s.ID
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *ImageResource) GetRegionID() uuid.UUID {
+func (s *ImageResource) GetRegionID() RegionID {
 	return s.RegionID
 }
 
@@ -5083,54 +4425,14 @@ func (s *ImageResource) GetSizeBytes() int64 {
 	return s.SizeBytes
 }
 
-// GetSourceInstanceID returns the value of SourceInstanceID.
-func (s *ImageResource) GetSourceInstanceID() NilUUID {
-	return s.SourceInstanceID
+// GetSourceVirtualMachineID returns the value of SourceVirtualMachineID.
+func (s *ImageResource) GetSourceVirtualMachineID() NilVirtualMachineID {
+	return s.SourceVirtualMachineID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
 func (s *ImageResource) GetCreatedAt() time.Time {
 	return s.CreatedAt
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *ImageResource) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetOrderItemID returns the value of OrderItemID.
-func (s *ImageResource) GetOrderItemID() NilUUID {
-	return s.OrderItemID
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *ImageResource) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *ImageResource) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *ImageResource) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
-// GetReleaseSet returns the value of ReleaseSet.
-func (s *ImageResource) GetReleaseSet() []ReleaseSetItem {
-	return s.ReleaseSet
-}
-
-// GetAccessState returns the value of AccessState.
-func (s *ImageResource) GetAccessState() NilImageResourceAccessState {
-	return s.AccessState
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *ImageResource) GetFailureReason() NilImageResourceFailureReason {
-	return s.FailureReason
 }
 
 // GetOperation returns the value of Operation.
@@ -5148,13 +4450,28 @@ func (s *ImageResource) GetObservedAt() NilDateTime {
 	return s.ObservedAt
 }
 
+// GetOrderID returns the value of OrderID.
+func (s *ImageResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *ImageResource) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *ImageResource) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
 // SetID sets the value of ID.
-func (s *ImageResource) SetID(val uuid.UUID) {
+func (s *ImageResource) SetID(val ImageID) {
 	s.ID = val
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *ImageResource) SetRegionID(val uuid.UUID) {
+func (s *ImageResource) SetRegionID(val RegionID) {
 	s.RegionID = val
 }
 
@@ -5218,54 +4535,14 @@ func (s *ImageResource) SetSizeBytes(val int64) {
 	s.SizeBytes = val
 }
 
-// SetSourceInstanceID sets the value of SourceInstanceID.
-func (s *ImageResource) SetSourceInstanceID(val NilUUID) {
-	s.SourceInstanceID = val
+// SetSourceVirtualMachineID sets the value of SourceVirtualMachineID.
+func (s *ImageResource) SetSourceVirtualMachineID(val NilVirtualMachineID) {
+	s.SourceVirtualMachineID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
 func (s *ImageResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *ImageResource) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetOrderItemID sets the value of OrderItemID.
-func (s *ImageResource) SetOrderItemID(val NilUUID) {
-	s.OrderItemID = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *ImageResource) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *ImageResource) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *ImageResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
-// SetReleaseSet sets the value of ReleaseSet.
-func (s *ImageResource) SetReleaseSet(val []ReleaseSetItem) {
-	s.ReleaseSet = val
-}
-
-// SetAccessState sets the value of AccessState.
-func (s *ImageResource) SetAccessState(val NilImageResourceAccessState) {
-	s.AccessState = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *ImageResource) SetFailureReason(val NilImageResourceFailureReason) {
-	s.FailureReason = val
 }
 
 // SetOperation sets the value of Operation.
@@ -5283,132 +4560,27 @@ func (s *ImageResource) SetObservedAt(val NilDateTime) {
 	s.ObservedAt = val
 }
 
+// SetOrderID sets the value of OrderID.
+func (s *ImageResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *ImageResource) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *ImageResource) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
 func (*ImageResource) deleteImageRes() {}
 
-type ImageResourceAccessState string
-
-const (
-	ImageResourceAccessStatePending   ImageResourceAccessState = "pending"
-	ImageResourceAccessStateEnabled   ImageResourceAccessState = "enabled"
-	ImageResourceAccessStateSuspended ImageResourceAccessState = "suspended"
-	ImageResourceAccessStateReclaimed ImageResourceAccessState = "reclaimed"
-)
-
-// AllValues returns all ImageResourceAccessState values.
-func (ImageResourceAccessState) AllValues() []ImageResourceAccessState {
-	return []ImageResourceAccessState{
-		ImageResourceAccessStatePending,
-		ImageResourceAccessStateEnabled,
-		ImageResourceAccessStateSuspended,
-		ImageResourceAccessStateReclaimed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ImageResourceAccessState) MarshalText() ([]byte, error) {
-	switch s {
-	case ImageResourceAccessStatePending:
-		return []byte(s), nil
-	case ImageResourceAccessStateEnabled:
-		return []byte(s), nil
-	case ImageResourceAccessStateSuspended:
-		return []byte(s), nil
-	case ImageResourceAccessStateReclaimed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ImageResourceAccessState) UnmarshalText(data []byte) error {
-	switch ImageResourceAccessState(data) {
-	case ImageResourceAccessStatePending:
-		*s = ImageResourceAccessStatePending
-		return nil
-	case ImageResourceAccessStateEnabled:
-		*s = ImageResourceAccessStateEnabled
-		return nil
-	case ImageResourceAccessStateSuspended:
-		*s = ImageResourceAccessStateSuspended
-		return nil
-	case ImageResourceAccessStateReclaimed:
-		*s = ImageResourceAccessStateReclaimed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-// order was accepted, and the charge for this image is refunded.
-type ImageResourceFailureReason string
-
-const (
-	ImageResourceFailureReasonCheckoutExpired    ImageResourceFailureReason = "checkout_expired"
-	ImageResourceFailureReasonOrderDeclined      ImageResourceFailureReason = "order_declined"
-	ImageResourceFailureReasonOrderCanceled      ImageResourceFailureReason = "order_canceled"
-	ImageResourceFailureReasonOrderExpired       ImageResourceFailureReason = "order_expired"
-	ImageResourceFailureReasonProvisioningFailed ImageResourceFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all ImageResourceFailureReason values.
-func (ImageResourceFailureReason) AllValues() []ImageResourceFailureReason {
-	return []ImageResourceFailureReason{
-		ImageResourceFailureReasonCheckoutExpired,
-		ImageResourceFailureReasonOrderDeclined,
-		ImageResourceFailureReasonOrderCanceled,
-		ImageResourceFailureReasonOrderExpired,
-		ImageResourceFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ImageResourceFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case ImageResourceFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case ImageResourceFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case ImageResourceFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case ImageResourceFailureReasonOrderExpired:
-		return []byte(s), nil
-	case ImageResourceFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ImageResourceFailureReason) UnmarshalText(data []byte) error {
-	switch ImageResourceFailureReason(data) {
-	case ImageResourceFailureReasonCheckoutExpired:
-		*s = ImageResourceFailureReasonCheckoutExpired
-		return nil
-	case ImageResourceFailureReasonOrderDeclined:
-		*s = ImageResourceFailureReasonOrderDeclined
-		return nil
-	case ImageResourceFailureReasonOrderCanceled:
-		*s = ImageResourceFailureReasonOrderCanceled
-		return nil
-	case ImageResourceFailureReasonOrderExpired:
-		*s = ImageResourceFailureReasonOrderExpired
-		return nil
-	case ImageResourceFailureReasonProvisioningFailed:
-		*s = ImageResourceFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Only `available` images can install instances. A public image is always `available`; a private image
-// is `pending` until its order is accepted, then goes through `provisioning` and `uploading` while it
-// is captured. `failed` means the capture produced no image; `failure_reason` states why. `missing`
-// means a private image no longer exists in the cloud.
+// Only available images can install virtual machines. A public image is available; a private capture
+// starts pending, then provisioning and uploading before available. Failed means no usable image was
+// produced; failure describes the outcome. Missing means a private image is absent from the
+// infrastructure.
 type ImageResourceStatus string
 
 const (
@@ -5536,143 +4708,30 @@ func (s *ImageVisibility) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/InstanceListResponseBody
-type InstanceListResponseBody struct {
-	Items      []InstanceResource `json:"items"`
-	Pagination OffsetPagination   `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *InstanceListResponseBody) GetItems() []InstanceResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *InstanceListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *InstanceListResponseBody) SetItems(val []InstanceResource) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *InstanceListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// An operation still running on this instance. It is not a separate resource; once it finishes, the
-// instance's `operation` is null again and the instance shows the result.
-// Ref: #/components/schemas/InstanceOperation
-type InstanceOperation struct {
-	// `create` runs from acceptance of the order until the instance is `active` or `failed`. `suspend` and
-	// `resume` impose and lift a suspension by the platform or for non-payment. `delete` includes release
-	// through a Billing cancellation.
-	Type      InstanceOperationType `json:"type"`
-	StartedAt time.Time             `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *InstanceOperation) GetType() InstanceOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *InstanceOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *InstanceOperation) SetType(val InstanceOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *InstanceOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `create` runs from acceptance of the order until the instance is `active` or `failed`. `suspend` and
-// `resume` impose and lift a suspension by the platform or for non-payment. `delete` includes release
-// through a Billing cancellation.
-type InstanceOperationType string
+// Bandwidth billing is available. Traffic billing is reserved and cannot currently be selected for
+// creation.
+// Ref: #/components/schemas/InternetChargeType
+type InternetChargeType string
 
 const (
-	InstanceOperationTypeCreate           InstanceOperationType = "create"
-	InstanceOperationTypeStart            InstanceOperationType = "start"
-	InstanceOperationTypeStop             InstanceOperationType = "stop"
-	InstanceOperationTypeReboot           InstanceOperationType = "reboot"
-	InstanceOperationTypeRebuild          InstanceOperationType = "rebuild"
-	InstanceOperationTypeResize           InstanceOperationType = "resize"
-	InstanceOperationTypeResetPassword    InstanceOperationType = "reset_password"
-	InstanceOperationTypeAttachDisk       InstanceOperationType = "attach_disk"
-	InstanceOperationTypeDetachDisk       InstanceOperationType = "detach_disk"
-	InstanceOperationTypeAttachPort       InstanceOperationType = "attach_port"
-	InstanceOperationTypeDetachPort       InstanceOperationType = "detach_port"
-	InstanceOperationTypeBindFloatingIP   InstanceOperationType = "bind_floating_ip"
-	InstanceOperationTypeUnbindFloatingIP InstanceOperationType = "unbind_floating_ip"
-	InstanceOperationTypeSuspend          InstanceOperationType = "suspend"
-	InstanceOperationTypeResume           InstanceOperationType = "resume"
-	InstanceOperationTypeDelete           InstanceOperationType = "delete"
+	InternetChargeTypeBandwidth InternetChargeType = "bandwidth"
+	InternetChargeTypeTraffic   InternetChargeType = "traffic"
 )
 
-// AllValues returns all InstanceOperationType values.
-func (InstanceOperationType) AllValues() []InstanceOperationType {
-	return []InstanceOperationType{
-		InstanceOperationTypeCreate,
-		InstanceOperationTypeStart,
-		InstanceOperationTypeStop,
-		InstanceOperationTypeReboot,
-		InstanceOperationTypeRebuild,
-		InstanceOperationTypeResize,
-		InstanceOperationTypeResetPassword,
-		InstanceOperationTypeAttachDisk,
-		InstanceOperationTypeDetachDisk,
-		InstanceOperationTypeAttachPort,
-		InstanceOperationTypeDetachPort,
-		InstanceOperationTypeBindFloatingIP,
-		InstanceOperationTypeUnbindFloatingIP,
-		InstanceOperationTypeSuspend,
-		InstanceOperationTypeResume,
-		InstanceOperationTypeDelete,
+// AllValues returns all InternetChargeType values.
+func (InternetChargeType) AllValues() []InternetChargeType {
+	return []InternetChargeType{
+		InternetChargeTypeBandwidth,
+		InternetChargeTypeTraffic,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s InstanceOperationType) MarshalText() ([]byte, error) {
+func (s InternetChargeType) MarshalText() ([]byte, error) {
 	switch s {
-	case InstanceOperationTypeCreate:
+	case InternetChargeTypeBandwidth:
 		return []byte(s), nil
-	case InstanceOperationTypeStart:
-		return []byte(s), nil
-	case InstanceOperationTypeStop:
-		return []byte(s), nil
-	case InstanceOperationTypeReboot:
-		return []byte(s), nil
-	case InstanceOperationTypeRebuild:
-		return []byte(s), nil
-	case InstanceOperationTypeResize:
-		return []byte(s), nil
-	case InstanceOperationTypeResetPassword:
-		return []byte(s), nil
-	case InstanceOperationTypeAttachDisk:
-		return []byte(s), nil
-	case InstanceOperationTypeDetachDisk:
-		return []byte(s), nil
-	case InstanceOperationTypeAttachPort:
-		return []byte(s), nil
-	case InstanceOperationTypeDetachPort:
-		return []byte(s), nil
-	case InstanceOperationTypeBindFloatingIP:
-		return []byte(s), nil
-	case InstanceOperationTypeUnbindFloatingIP:
-		return []byte(s), nil
-	case InstanceOperationTypeSuspend:
-		return []byte(s), nil
-	case InstanceOperationTypeResume:
-		return []byte(s), nil
-	case InstanceOperationTypeDelete:
+	case InternetChargeTypeTraffic:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5680,843 +4739,23 @@ func (s InstanceOperationType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InstanceOperationType) UnmarshalText(data []byte) error {
-	switch InstanceOperationType(data) {
-	case InstanceOperationTypeCreate:
-		*s = InstanceOperationTypeCreate
+func (s *InternetChargeType) UnmarshalText(data []byte) error {
+	switch InternetChargeType(data) {
+	case InternetChargeTypeBandwidth:
+		*s = InternetChargeTypeBandwidth
 		return nil
-	case InstanceOperationTypeStart:
-		*s = InstanceOperationTypeStart
-		return nil
-	case InstanceOperationTypeStop:
-		*s = InstanceOperationTypeStop
-		return nil
-	case InstanceOperationTypeReboot:
-		*s = InstanceOperationTypeReboot
-		return nil
-	case InstanceOperationTypeRebuild:
-		*s = InstanceOperationTypeRebuild
-		return nil
-	case InstanceOperationTypeResize:
-		*s = InstanceOperationTypeResize
-		return nil
-	case InstanceOperationTypeResetPassword:
-		*s = InstanceOperationTypeResetPassword
-		return nil
-	case InstanceOperationTypeAttachDisk:
-		*s = InstanceOperationTypeAttachDisk
-		return nil
-	case InstanceOperationTypeDetachDisk:
-		*s = InstanceOperationTypeDetachDisk
-		return nil
-	case InstanceOperationTypeAttachPort:
-		*s = InstanceOperationTypeAttachPort
-		return nil
-	case InstanceOperationTypeDetachPort:
-		*s = InstanceOperationTypeDetachPort
-		return nil
-	case InstanceOperationTypeBindFloatingIP:
-		*s = InstanceOperationTypeBindFloatingIP
-		return nil
-	case InstanceOperationTypeUnbindFloatingIP:
-		*s = InstanceOperationTypeUnbindFloatingIP
-		return nil
-	case InstanceOperationTypeSuspend:
-		*s = InstanceOperationTypeSuspend
-		return nil
-	case InstanceOperationTypeResume:
-		*s = InstanceOperationTypeResume
-		return nil
-	case InstanceOperationTypeDelete:
-		*s = InstanceOperationTypeDelete
+	case InternetChargeTypeTraffic:
+		*s = InternetChargeTypeTraffic
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Ref: #/components/schemas/InstanceResource
-type InstanceResource struct {
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	CreatedAt          time.Time `json:"created_at"`
-	// Hostname inside the instance; equals the instance id.
-	Hostname string    `json:"hostname"`
-	ID       uuid.UUID `json:"id"`
-	// Non-empty when the instance was created from an image, public or private.
-	ImageID NilUUID `json:"image_id"`
-	// The instance type in effect, and the basis for billing.
-	InstanceTypeID uuid.UUID `json:"instance_type_id"`
-	// IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the
-	// private network.
-	Ipv6Address NilString `json:"ipv6_address"`
-	// Your own classification of this instance, as key-value pairs. Empty when never set.
-	Labels InstanceResourceLabels `json:"labels"`
-	// The account to log in as over SSH. The password set at creation belongs to this account.
-	LoginUsername string `json:"login_username"`
-	Name          string `json:"name"`
-	// A free-text note about this instance. Empty when never set.
-	Notes string `json:"notes"`
-	// Private address of the instance.
-	PrivateIP        NilString `json:"private_ip"`
-	PrivateNetworkID NilUUID   `json:"private_network_id"`
-	// Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound.
-	PublicIps []string  `json:"public_ips"`
-	RegionID  uuid.UUID `json:"region_id"`
-	// `pending` until the order is accepted: no virtual machine exists and addresses are null.
-	// `provisioning` while the instance is created, then `active`. `failed` means the instance was not
-	// created; `failure_reason` states why. `missing` means the virtual machine no longer exists in the
-	// cloud. The other values are the state last observed in the cloud; an operation in progress appears
-	// in `operation`, not here.
-	Status       InstanceResourceStatus `json:"status"`
-	SubnetID     NilUUID                `json:"subnet_id"`
-	UpdatedAt    time.Time              `json:"updated_at"`
-	Generation   int64                  `json:"generation"`
-	ObservedAt   NilDateTime            `json:"observed_at"`
-	Restrictions []InstanceRestriction  `json:"restrictions"`
-	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-	// order was accepted, and the charge for this instance is refunded.
-	FailureReason NilInstanceResourceFailureReason `json:"failure_reason"`
-	// The operation in progress on this instance, or null when none is.
-	Operation NilInstanceOperation `json:"operation"`
-	OrderID   NilUUID              `json:"order_id"`
-	// The Billing order item for this resource.
-	OrderItemID NilUUID `json:"order_item_id"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
-	// until its checkout completes. Null when the resource was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The Billing subscription associated with this resource. It may still be pending; its presence does
-	// not imply delivery or metering. Null when no subscription is associated.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscriptions a cancellation through Billing has to cover to release this instance: its own and
-	// those of the disks deleted with it. Snapshots are cleaned up with their source disk without
-	// canceling the project's snapshot quota. Subscriptions that have ended are not listed, and the list
-	// is empty when no subscription pays for any of them.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
-	// for, so that each line of a cancellation can name what it releases.
-	ReleaseSet  []ReleaseSetItem               `json:"release_set"`
-	AccessState NilInstanceResourceAccessState `json:"access_state"`
-	// Non-empty when the instance was created from a disk you already had, instead of from an image.
-	SourceDiskID NilUUID `json:"source_disk_id"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *InstanceResource) GetAvailabilityZoneID() uuid.UUID {
-	return s.AvailabilityZoneID
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *InstanceResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetHostname returns the value of Hostname.
-func (s *InstanceResource) GetHostname() string {
-	return s.Hostname
-}
-
-// GetID returns the value of ID.
-func (s *InstanceResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetImageID returns the value of ImageID.
-func (s *InstanceResource) GetImageID() NilUUID {
-	return s.ImageID
-}
-
-// GetInstanceTypeID returns the value of InstanceTypeID.
-func (s *InstanceResource) GetInstanceTypeID() uuid.UUID {
-	return s.InstanceTypeID
-}
-
-// GetIpv6Address returns the value of Ipv6Address.
-func (s *InstanceResource) GetIpv6Address() NilString {
-	return s.Ipv6Address
-}
-
-// GetLabels returns the value of Labels.
-func (s *InstanceResource) GetLabels() InstanceResourceLabels {
-	return s.Labels
-}
-
-// GetLoginUsername returns the value of LoginUsername.
-func (s *InstanceResource) GetLoginUsername() string {
-	return s.LoginUsername
-}
-
-// GetName returns the value of Name.
-func (s *InstanceResource) GetName() string {
-	return s.Name
-}
-
-// GetNotes returns the value of Notes.
-func (s *InstanceResource) GetNotes() string {
-	return s.Notes
-}
-
-// GetPrivateIP returns the value of PrivateIP.
-func (s *InstanceResource) GetPrivateIP() NilString {
-	return s.PrivateIP
-}
-
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *InstanceResource) GetPrivateNetworkID() NilUUID {
-	return s.PrivateNetworkID
-}
-
-// GetPublicIps returns the value of PublicIps.
-func (s *InstanceResource) GetPublicIps() []string {
-	return s.PublicIps
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *InstanceResource) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetStatus returns the value of Status.
-func (s *InstanceResource) GetStatus() InstanceResourceStatus {
-	return s.Status
-}
-
-// GetSubnetID returns the value of SubnetID.
-func (s *InstanceResource) GetSubnetID() NilUUID {
-	return s.SubnetID
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *InstanceResource) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
-}
-
-// GetGeneration returns the value of Generation.
-func (s *InstanceResource) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *InstanceResource) GetObservedAt() NilDateTime {
-	return s.ObservedAt
-}
-
-// GetRestrictions returns the value of Restrictions.
-func (s *InstanceResource) GetRestrictions() []InstanceRestriction {
-	return s.Restrictions
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *InstanceResource) GetFailureReason() NilInstanceResourceFailureReason {
-	return s.FailureReason
-}
-
-// GetOperation returns the value of Operation.
-func (s *InstanceResource) GetOperation() NilInstanceOperation {
-	return s.Operation
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *InstanceResource) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetOrderItemID returns the value of OrderItemID.
-func (s *InstanceResource) GetOrderItemID() NilUUID {
-	return s.OrderItemID
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *InstanceResource) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *InstanceResource) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *InstanceResource) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
-// GetReleaseSet returns the value of ReleaseSet.
-func (s *InstanceResource) GetReleaseSet() []ReleaseSetItem {
-	return s.ReleaseSet
-}
-
-// GetAccessState returns the value of AccessState.
-func (s *InstanceResource) GetAccessState() NilInstanceResourceAccessState {
-	return s.AccessState
-}
-
-// GetSourceDiskID returns the value of SourceDiskID.
-func (s *InstanceResource) GetSourceDiskID() NilUUID {
-	return s.SourceDiskID
-}
-
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *InstanceResource) SetAvailabilityZoneID(val uuid.UUID) {
-	s.AvailabilityZoneID = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *InstanceResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetHostname sets the value of Hostname.
-func (s *InstanceResource) SetHostname(val string) {
-	s.Hostname = val
-}
-
-// SetID sets the value of ID.
-func (s *InstanceResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetImageID sets the value of ImageID.
-func (s *InstanceResource) SetImageID(val NilUUID) {
-	s.ImageID = val
-}
-
-// SetInstanceTypeID sets the value of InstanceTypeID.
-func (s *InstanceResource) SetInstanceTypeID(val uuid.UUID) {
-	s.InstanceTypeID = val
-}
-
-// SetIpv6Address sets the value of Ipv6Address.
-func (s *InstanceResource) SetIpv6Address(val NilString) {
-	s.Ipv6Address = val
-}
-
-// SetLabels sets the value of Labels.
-func (s *InstanceResource) SetLabels(val InstanceResourceLabels) {
-	s.Labels = val
-}
-
-// SetLoginUsername sets the value of LoginUsername.
-func (s *InstanceResource) SetLoginUsername(val string) {
-	s.LoginUsername = val
-}
-
-// SetName sets the value of Name.
-func (s *InstanceResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetNotes sets the value of Notes.
-func (s *InstanceResource) SetNotes(val string) {
-	s.Notes = val
-}
-
-// SetPrivateIP sets the value of PrivateIP.
-func (s *InstanceResource) SetPrivateIP(val NilString) {
-	s.PrivateIP = val
-}
-
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *InstanceResource) SetPrivateNetworkID(val NilUUID) {
-	s.PrivateNetworkID = val
-}
-
-// SetPublicIps sets the value of PublicIps.
-func (s *InstanceResource) SetPublicIps(val []string) {
-	s.PublicIps = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *InstanceResource) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *InstanceResource) SetStatus(val InstanceResourceStatus) {
-	s.Status = val
-}
-
-// SetSubnetID sets the value of SubnetID.
-func (s *InstanceResource) SetSubnetID(val NilUUID) {
-	s.SubnetID = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *InstanceResource) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
-}
-
-// SetGeneration sets the value of Generation.
-func (s *InstanceResource) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *InstanceResource) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
-}
-
-// SetRestrictions sets the value of Restrictions.
-func (s *InstanceResource) SetRestrictions(val []InstanceRestriction) {
-	s.Restrictions = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *InstanceResource) SetFailureReason(val NilInstanceResourceFailureReason) {
-	s.FailureReason = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *InstanceResource) SetOperation(val NilInstanceOperation) {
-	s.Operation = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *InstanceResource) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetOrderItemID sets the value of OrderItemID.
-func (s *InstanceResource) SetOrderItemID(val NilUUID) {
-	s.OrderItemID = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *InstanceResource) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *InstanceResource) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *InstanceResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
-// SetReleaseSet sets the value of ReleaseSet.
-func (s *InstanceResource) SetReleaseSet(val []ReleaseSetItem) {
-	s.ReleaseSet = val
-}
-
-// SetAccessState sets the value of AccessState.
-func (s *InstanceResource) SetAccessState(val NilInstanceResourceAccessState) {
-	s.AccessState = val
-}
-
-// SetSourceDiskID sets the value of SourceDiskID.
-func (s *InstanceResource) SetSourceDiskID(val NilUUID) {
-	s.SourceDiskID = val
-}
-
-func (*InstanceResource) deleteInstanceRes() {}
-func (*InstanceResource) rebootInstanceRes() {}
-func (*InstanceResource) startInstanceRes()  {}
-func (*InstanceResource) stopInstanceRes()   {}
-
-type InstanceResourceAccessState string
-
-const (
-	InstanceResourceAccessStatePending   InstanceResourceAccessState = "pending"
-	InstanceResourceAccessStateEnabled   InstanceResourceAccessState = "enabled"
-	InstanceResourceAccessStateSuspended InstanceResourceAccessState = "suspended"
-	InstanceResourceAccessStateReclaimed InstanceResourceAccessState = "reclaimed"
-)
-
-// AllValues returns all InstanceResourceAccessState values.
-func (InstanceResourceAccessState) AllValues() []InstanceResourceAccessState {
-	return []InstanceResourceAccessState{
-		InstanceResourceAccessStatePending,
-		InstanceResourceAccessStateEnabled,
-		InstanceResourceAccessStateSuspended,
-		InstanceResourceAccessStateReclaimed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s InstanceResourceAccessState) MarshalText() ([]byte, error) {
-	switch s {
-	case InstanceResourceAccessStatePending:
-		return []byte(s), nil
-	case InstanceResourceAccessStateEnabled:
-		return []byte(s), nil
-	case InstanceResourceAccessStateSuspended:
-		return []byte(s), nil
-	case InstanceResourceAccessStateReclaimed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InstanceResourceAccessState) UnmarshalText(data []byte) error {
-	switch InstanceResourceAccessState(data) {
-	case InstanceResourceAccessStatePending:
-		*s = InstanceResourceAccessStatePending
-		return nil
-	case InstanceResourceAccessStateEnabled:
-		*s = InstanceResourceAccessStateEnabled
-		return nil
-	case InstanceResourceAccessStateSuspended:
-		*s = InstanceResourceAccessStateSuspended
-		return nil
-	case InstanceResourceAccessStateReclaimed:
-		*s = InstanceResourceAccessStateReclaimed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-// order was accepted, and the charge for this instance is refunded.
-type InstanceResourceFailureReason string
-
-const (
-	InstanceResourceFailureReasonCheckoutExpired    InstanceResourceFailureReason = "checkout_expired"
-	InstanceResourceFailureReasonOrderDeclined      InstanceResourceFailureReason = "order_declined"
-	InstanceResourceFailureReasonOrderCanceled      InstanceResourceFailureReason = "order_canceled"
-	InstanceResourceFailureReasonOrderExpired       InstanceResourceFailureReason = "order_expired"
-	InstanceResourceFailureReasonProvisioningFailed InstanceResourceFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all InstanceResourceFailureReason values.
-func (InstanceResourceFailureReason) AllValues() []InstanceResourceFailureReason {
-	return []InstanceResourceFailureReason{
-		InstanceResourceFailureReasonCheckoutExpired,
-		InstanceResourceFailureReasonOrderDeclined,
-		InstanceResourceFailureReasonOrderCanceled,
-		InstanceResourceFailureReasonOrderExpired,
-		InstanceResourceFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s InstanceResourceFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case InstanceResourceFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case InstanceResourceFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case InstanceResourceFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case InstanceResourceFailureReasonOrderExpired:
-		return []byte(s), nil
-	case InstanceResourceFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InstanceResourceFailureReason) UnmarshalText(data []byte) error {
-	switch InstanceResourceFailureReason(data) {
-	case InstanceResourceFailureReasonCheckoutExpired:
-		*s = InstanceResourceFailureReasonCheckoutExpired
-		return nil
-	case InstanceResourceFailureReasonOrderDeclined:
-		*s = InstanceResourceFailureReasonOrderDeclined
-		return nil
-	case InstanceResourceFailureReasonOrderCanceled:
-		*s = InstanceResourceFailureReasonOrderCanceled
-		return nil
-	case InstanceResourceFailureReasonOrderExpired:
-		*s = InstanceResourceFailureReasonOrderExpired
-		return nil
-	case InstanceResourceFailureReasonProvisioningFailed:
-		*s = InstanceResourceFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Your own classification of this instance, as key-value pairs. Empty when never set.
-type InstanceResourceLabels map[string]string
-
-func (s *InstanceResourceLabels) init() InstanceResourceLabels {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
-// `pending` until the order is accepted: no virtual machine exists and addresses are null.
-// `provisioning` while the instance is created, then `active`. `failed` means the instance was not
-// created; `failure_reason` states why. `missing` means the virtual machine no longer exists in the
-// cloud. The other values are the state last observed in the cloud; an operation in progress appears
-// in `operation`, not here.
-type InstanceResourceStatus string
-
-const (
-	InstanceResourceStatusPending          InstanceResourceStatus = "pending"
-	InstanceResourceStatusProvisioning     InstanceResourceStatus = "provisioning"
-	InstanceResourceStatusActive           InstanceResourceStatus = "active"
-	InstanceResourceStatusStopped          InstanceResourceStatus = "stopped"
-	InstanceResourceStatusPaused           InstanceResourceStatus = "paused"
-	InstanceResourceStatusSuspended        InstanceResourceStatus = "suspended"
-	InstanceResourceStatusShelved          InstanceResourceStatus = "shelved"
-	InstanceResourceStatusShelvedOffloaded InstanceResourceStatus = "shelved_offloaded"
-	InstanceResourceStatusRescued          InstanceResourceStatus = "rescued"
-	InstanceResourceStatusDeleted          InstanceResourceStatus = "deleted"
-	InstanceResourceStatusFailed           InstanceResourceStatus = "failed"
-	InstanceResourceStatusError            InstanceResourceStatus = "error"
-	InstanceResourceStatusUnknown          InstanceResourceStatus = "unknown"
-	InstanceResourceStatusMissing          InstanceResourceStatus = "missing"
-)
-
-// AllValues returns all InstanceResourceStatus values.
-func (InstanceResourceStatus) AllValues() []InstanceResourceStatus {
-	return []InstanceResourceStatus{
-		InstanceResourceStatusPending,
-		InstanceResourceStatusProvisioning,
-		InstanceResourceStatusActive,
-		InstanceResourceStatusStopped,
-		InstanceResourceStatusPaused,
-		InstanceResourceStatusSuspended,
-		InstanceResourceStatusShelved,
-		InstanceResourceStatusShelvedOffloaded,
-		InstanceResourceStatusRescued,
-		InstanceResourceStatusDeleted,
-		InstanceResourceStatusFailed,
-		InstanceResourceStatusError,
-		InstanceResourceStatusUnknown,
-		InstanceResourceStatusMissing,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s InstanceResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case InstanceResourceStatusPending:
-		return []byte(s), nil
-	case InstanceResourceStatusProvisioning:
-		return []byte(s), nil
-	case InstanceResourceStatusActive:
-		return []byte(s), nil
-	case InstanceResourceStatusStopped:
-		return []byte(s), nil
-	case InstanceResourceStatusPaused:
-		return []byte(s), nil
-	case InstanceResourceStatusSuspended:
-		return []byte(s), nil
-	case InstanceResourceStatusShelved:
-		return []byte(s), nil
-	case InstanceResourceStatusShelvedOffloaded:
-		return []byte(s), nil
-	case InstanceResourceStatusRescued:
-		return []byte(s), nil
-	case InstanceResourceStatusDeleted:
-		return []byte(s), nil
-	case InstanceResourceStatusFailed:
-		return []byte(s), nil
-	case InstanceResourceStatusError:
-		return []byte(s), nil
-	case InstanceResourceStatusUnknown:
-		return []byte(s), nil
-	case InstanceResourceStatusMissing:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InstanceResourceStatus) UnmarshalText(data []byte) error {
-	switch InstanceResourceStatus(data) {
-	case InstanceResourceStatusPending:
-		*s = InstanceResourceStatusPending
-		return nil
-	case InstanceResourceStatusProvisioning:
-		*s = InstanceResourceStatusProvisioning
-		return nil
-	case InstanceResourceStatusActive:
-		*s = InstanceResourceStatusActive
-		return nil
-	case InstanceResourceStatusStopped:
-		*s = InstanceResourceStatusStopped
-		return nil
-	case InstanceResourceStatusPaused:
-		*s = InstanceResourceStatusPaused
-		return nil
-	case InstanceResourceStatusSuspended:
-		*s = InstanceResourceStatusSuspended
-		return nil
-	case InstanceResourceStatusShelved:
-		*s = InstanceResourceStatusShelved
-		return nil
-	case InstanceResourceStatusShelvedOffloaded:
-		*s = InstanceResourceStatusShelvedOffloaded
-		return nil
-	case InstanceResourceStatusRescued:
-		*s = InstanceResourceStatusRescued
-		return nil
-	case InstanceResourceStatusDeleted:
-		*s = InstanceResourceStatusDeleted
-		return nil
-	case InstanceResourceStatusFailed:
-		*s = InstanceResourceStatusFailed
-		return nil
-	case InstanceResourceStatusError:
-		*s = InstanceResourceStatusError
-		return nil
-	case InstanceResourceStatusUnknown:
-		*s = InstanceResourceStatusUnknown
-		return nil
-	case InstanceResourceStatusMissing:
-		*s = InstanceResourceStatusMissing
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// An independent restriction on use. Removing one restriction never removes another source’s
-// restriction, and never starts an instance its user stopped.
-// Ref: #/components/schemas/InstanceRestriction
-type InstanceRestriction struct {
-	ID         uuid.UUID                 `json:"id"`
-	Source     InstanceRestrictionSource `json:"source"`
-	SourceID   string                    `json:"source_id"`
-	ReasonCode string                    `json:"reason_code"`
-	CreatedAt  time.Time                 `json:"created_at"`
-}
-
-// GetID returns the value of ID.
-func (s *InstanceRestriction) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetSource returns the value of Source.
-func (s *InstanceRestriction) GetSource() InstanceRestrictionSource {
-	return s.Source
-}
-
-// GetSourceID returns the value of SourceID.
-func (s *InstanceRestriction) GetSourceID() string {
-	return s.SourceID
-}
-
-// GetReasonCode returns the value of ReasonCode.
-func (s *InstanceRestriction) GetReasonCode() string {
-	return s.ReasonCode
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *InstanceRestriction) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// SetID sets the value of ID.
-func (s *InstanceRestriction) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetSource sets the value of Source.
-func (s *InstanceRestriction) SetSource(val InstanceRestrictionSource) {
-	s.Source = val
-}
-
-// SetSourceID sets the value of SourceID.
-func (s *InstanceRestriction) SetSourceID(val string) {
-	s.SourceID = val
-}
-
-// SetReasonCode sets the value of ReasonCode.
-func (s *InstanceRestriction) SetReasonCode(val string) {
-	s.ReasonCode = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *InstanceRestriction) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-type InstanceRestrictionSource string
-
-const (
-	InstanceRestrictionSourceBilling  InstanceRestrictionSource = "billing"
-	InstanceRestrictionSourceIam      InstanceRestrictionSource = "iam"
-	InstanceRestrictionSourceOperator InstanceRestrictionSource = "operator"
-)
-
-// AllValues returns all InstanceRestrictionSource values.
-func (InstanceRestrictionSource) AllValues() []InstanceRestrictionSource {
-	return []InstanceRestrictionSource{
-		InstanceRestrictionSourceBilling,
-		InstanceRestrictionSourceIam,
-		InstanceRestrictionSourceOperator,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s InstanceRestrictionSource) MarshalText() ([]byte, error) {
-	switch s {
-	case InstanceRestrictionSourceBilling:
-		return []byte(s), nil
-	case InstanceRestrictionSourceIam:
-		return []byte(s), nil
-	case InstanceRestrictionSourceOperator:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InstanceRestrictionSource) UnmarshalText(data []byte) error {
-	switch InstanceRestrictionSource(data) {
-	case InstanceRestrictionSourceBilling:
-		*s = InstanceRestrictionSourceBilling
-		return nil
-	case InstanceRestrictionSourceIam:
-		*s = InstanceRestrictionSourceIam
-		return nil
-	case InstanceRestrictionSourceOperator:
-		*s = InstanceRestrictionSourceOperator
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/InstanceTypeListResponseBody
-type InstanceTypeListResponseBody struct {
-	Items      []InstanceTypeResource `json:"items"`
-	Pagination OffsetPagination       `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *InstanceTypeListResponseBody) GetItems() []InstanceTypeResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *InstanceTypeListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *InstanceTypeListResponseBody) SetItems(val []InstanceTypeResource) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *InstanceTypeListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// Ref: #/components/schemas/InstanceTypeResource
-type InstanceTypeResource struct {
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	ID                 uuid.UUID `json:"id"`
+// Ref: #/components/schemas/MachineType
+type MachineType struct {
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	ID                 MachineTypeID      `json:"id"`
 	// The most public bandwidth a machine of this type may be given, in Mbps. Asking for more when
 	// creating a machine, or raising a bound address past it, is refused.
 	//
@@ -6526,516 +4765,852 @@ type InstanceTypeResource struct {
 	// Outbound ceiling of each network interface, in kbps. Null when this type is not rate-limited.
 	//
 	// Per interface rather than per machine: a machine with two interfaces has this ceiling on each of
-	// them, not shared between them. `max_ports` says how many it may have.
+	// them, not shared between them. `max_network_interfaces` says how many it may have.
 	NetworkEgressKbps NilInt64 `json:"network_egress_kbps"`
 	// Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited.
-	NetworkIngressKbps NilInt64  `json:"network_ingress_kbps"`
-	MaxFloatingIps     int64     `json:"max_floating_ips"`
-	MaxPorts           int64     `json:"max_ports"`
-	Name               string    `json:"name"`
-	RAMMB              int64     `json:"ram_mb"`
-	RegionID           uuid.UUID `json:"region_id"`
-	Vcpus              int64     `json:"vcpus"`
-	// How an instance of this type can be bought, per instance. Null when the project has no billing
-	// account.
-	Pricing NilPricing `json:"pricing"`
+	NetworkIngressKbps   NilInt64 `json:"network_ingress_kbps"`
+	MaxElasticIps        int64    `json:"max_elastic_ips"`
+	MaxNetworkInterfaces int64    `json:"max_network_interfaces"`
+	Name                 string   `json:"name"`
+	RAMMB                int64    `json:"ram_mb"`
+	RegionID             RegionID `json:"region_id"`
+	Vcpus                int64    `json:"vcpus"`
+	// The actual Billing Plan associated with this resource. Read prices and commercial terms directly
+	// from Billing using this identifier.
+	PlanID uuid.UUID `json:"plan_id"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *InstanceTypeResource) GetAvailabilityZoneID() uuid.UUID {
+func (s *MachineType) GetAvailabilityZoneID() AvailabilityZoneID {
 	return s.AvailabilityZoneID
 }
 
 // GetID returns the value of ID.
-func (s *InstanceTypeResource) GetID() uuid.UUID {
+func (s *MachineType) GetID() MachineTypeID {
 	return s.ID
 }
 
 // GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
-func (s *InstanceTypeResource) GetMaxBandwidthMbps() int64 {
+func (s *MachineType) GetMaxBandwidthMbps() int64 {
 	return s.MaxBandwidthMbps
 }
 
 // GetNetworkEgressKbps returns the value of NetworkEgressKbps.
-func (s *InstanceTypeResource) GetNetworkEgressKbps() NilInt64 {
+func (s *MachineType) GetNetworkEgressKbps() NilInt64 {
 	return s.NetworkEgressKbps
 }
 
 // GetNetworkIngressKbps returns the value of NetworkIngressKbps.
-func (s *InstanceTypeResource) GetNetworkIngressKbps() NilInt64 {
+func (s *MachineType) GetNetworkIngressKbps() NilInt64 {
 	return s.NetworkIngressKbps
 }
 
-// GetMaxFloatingIps returns the value of MaxFloatingIps.
-func (s *InstanceTypeResource) GetMaxFloatingIps() int64 {
-	return s.MaxFloatingIps
+// GetMaxElasticIps returns the value of MaxElasticIps.
+func (s *MachineType) GetMaxElasticIps() int64 {
+	return s.MaxElasticIps
 }
 
-// GetMaxPorts returns the value of MaxPorts.
-func (s *InstanceTypeResource) GetMaxPorts() int64 {
-	return s.MaxPorts
+// GetMaxNetworkInterfaces returns the value of MaxNetworkInterfaces.
+func (s *MachineType) GetMaxNetworkInterfaces() int64 {
+	return s.MaxNetworkInterfaces
 }
 
 // GetName returns the value of Name.
-func (s *InstanceTypeResource) GetName() string {
+func (s *MachineType) GetName() string {
 	return s.Name
 }
 
 // GetRAMMB returns the value of RAMMB.
-func (s *InstanceTypeResource) GetRAMMB() int64 {
+func (s *MachineType) GetRAMMB() int64 {
 	return s.RAMMB
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *InstanceTypeResource) GetRegionID() uuid.UUID {
+func (s *MachineType) GetRegionID() RegionID {
 	return s.RegionID
 }
 
 // GetVcpus returns the value of Vcpus.
-func (s *InstanceTypeResource) GetVcpus() int64 {
+func (s *MachineType) GetVcpus() int64 {
 	return s.Vcpus
 }
 
-// GetPricing returns the value of Pricing.
-func (s *InstanceTypeResource) GetPricing() NilPricing {
-	return s.Pricing
+// GetPlanID returns the value of PlanID.
+func (s *MachineType) GetPlanID() uuid.UUID {
+	return s.PlanID
 }
 
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *InstanceTypeResource) SetAvailabilityZoneID(val uuid.UUID) {
+func (s *MachineType) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
 }
 
 // SetID sets the value of ID.
-func (s *InstanceTypeResource) SetID(val uuid.UUID) {
+func (s *MachineType) SetID(val MachineTypeID) {
 	s.ID = val
 }
 
 // SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
-func (s *InstanceTypeResource) SetMaxBandwidthMbps(val int64) {
+func (s *MachineType) SetMaxBandwidthMbps(val int64) {
 	s.MaxBandwidthMbps = val
 }
 
 // SetNetworkEgressKbps sets the value of NetworkEgressKbps.
-func (s *InstanceTypeResource) SetNetworkEgressKbps(val NilInt64) {
+func (s *MachineType) SetNetworkEgressKbps(val NilInt64) {
 	s.NetworkEgressKbps = val
 }
 
 // SetNetworkIngressKbps sets the value of NetworkIngressKbps.
-func (s *InstanceTypeResource) SetNetworkIngressKbps(val NilInt64) {
+func (s *MachineType) SetNetworkIngressKbps(val NilInt64) {
 	s.NetworkIngressKbps = val
 }
 
-// SetMaxFloatingIps sets the value of MaxFloatingIps.
-func (s *InstanceTypeResource) SetMaxFloatingIps(val int64) {
-	s.MaxFloatingIps = val
+// SetMaxElasticIps sets the value of MaxElasticIps.
+func (s *MachineType) SetMaxElasticIps(val int64) {
+	s.MaxElasticIps = val
 }
 
-// SetMaxPorts sets the value of MaxPorts.
-func (s *InstanceTypeResource) SetMaxPorts(val int64) {
-	s.MaxPorts = val
+// SetMaxNetworkInterfaces sets the value of MaxNetworkInterfaces.
+func (s *MachineType) SetMaxNetworkInterfaces(val int64) {
+	s.MaxNetworkInterfaces = val
 }
 
 // SetName sets the value of Name.
-func (s *InstanceTypeResource) SetName(val string) {
+func (s *MachineType) SetName(val string) {
 	s.Name = val
 }
 
 // SetRAMMB sets the value of RAMMB.
-func (s *InstanceTypeResource) SetRAMMB(val int64) {
+func (s *MachineType) SetRAMMB(val int64) {
 	s.RAMMB = val
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *InstanceTypeResource) SetRegionID(val uuid.UUID) {
+func (s *MachineType) SetRegionID(val RegionID) {
 	s.RegionID = val
 }
 
 // SetVcpus sets the value of Vcpus.
-func (s *InstanceTypeResource) SetVcpus(val int64) {
+func (s *MachineType) SetVcpus(val int64) {
 	s.Vcpus = val
 }
 
-// SetPricing sets the value of Pricing.
-func (s *InstanceTypeResource) SetPricing(val NilPricing) {
-	s.Pricing = val
+// SetPlanID sets the value of PlanID.
+func (s *MachineType) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
 }
 
-// The request of `launch-instance`, without `checkout`.
-// Ref: #/components/schemas/LaunchInstanceQuoteRequestBody
-type LaunchInstanceQuoteRequestBody struct {
-	// Bind a floating IP you already hold, instead of allocating a new one. It must be idle and in the
-	// same region.
-	//
-	// Mutually exclusive with `bandwidth_mbps`: an address you already hold has its own bandwidth ceiling,
-	// set when it was allocated, and changing it is a separate operation.
-	//
-	// Like `bandwidth_mbps`, this happens inside the creation: if binding fails, no instance is created.
-	// Binding afterwards is still possible from the instance page, but then it is two operations and a
-	// failure in between leaves an instance you cannot reach.
-	//
-	// Only one instance can be created when it is used — one address binds to one interface.
-	FloatingIPID OptUUID `json:"floating_ip_id"`
-	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
-	Count OptInt64 `json:"count"`
-	// Have the platform generate a random password, returned only in this response.
-	GeneratePassword OptBool    `json:"generate_password"`
-	Compute          NewCompute `json:"compute"`
-	Name             string     `json:"name"`
-	// The password to set, on the login account and on root. Only the SSH public keys of the project are
-	// used when omitted.
-	Password OptString `json:"password"`
-	// Use an existing network interface, which may already have a floating IP bound. Exactly one of this
-	// and `subnet_id`; only one instance can be created when it is used.
-	PortID OptUUID `json:"port_id"`
-	// Required when a primary network interface is created, at least one; the default security group is
-	// not applied automatically. Ignored together with `port_id`, as the security groups of that interface
-	// were fixed when it was created.
-	SecurityGroupIds OptNilUUIDArray `json:"security_group_ids"`
-	// Create the primary network interface in this subnet. Exactly one of this and `port_id`.
-	SubnetID   OptUUID          `json:"subnet_id"`
-	BootDisk   BootDisk         `json:"boot_disk"`
-	FloatingIP OptNewFloatingIP `json:"floating_ip"`
+type MachineTypeID string
+
+// Ref: #/components/schemas/MachineTypeListResponseBody
+type MachineTypeListResponseBody struct {
+	Items      []MachineType    `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
-// GetFloatingIPID returns the value of FloatingIPID.
-func (s *LaunchInstanceQuoteRequestBody) GetFloatingIPID() OptUUID {
-	return s.FloatingIPID
+// GetItems returns the value of Items.
+func (s *MachineTypeListResponseBody) GetItems() []MachineType {
+	return s.Items
 }
 
-// GetCount returns the value of Count.
-func (s *LaunchInstanceQuoteRequestBody) GetCount() OptInt64 {
-	return s.Count
+// GetPagination returns the value of Pagination.
+func (s *MachineTypeListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
-// GetGeneratePassword returns the value of GeneratePassword.
-func (s *LaunchInstanceQuoteRequestBody) GetGeneratePassword() OptBool {
-	return s.GeneratePassword
+// SetItems sets the value of Items.
+func (s *MachineTypeListResponseBody) SetItems(val []MachineType) {
+	s.Items = val
 }
 
-// GetCompute returns the value of Compute.
-func (s *LaunchInstanceQuoteRequestBody) GetCompute() NewCompute {
-	return s.Compute
+// SetPagination sets the value of Pagination.
+func (s *MachineTypeListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
-// GetName returns the value of Name.
-func (s *LaunchInstanceQuoteRequestBody) GetName() string {
-	return s.Name
+// Ref: #/components/schemas/NetworkInterface
+type NetworkInterface struct {
+	ID                    NetworkInterfaceID    `json:"id"`
+	MAC                   NilString             `json:"mac"`
+	Name                  string                `json:"name"`
+	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
+	// Floating IPv4 addresses bound to this network interface; an empty array when none are bound.
+	PublicIps  []string                         `json:"public_ips"`
+	Addresses  []NetworkInterfaceAddress        `json:"addresses"`
+	Attachment OptNilNetworkInterfaceAttachment `json:"attachment"`
+	// `missing` means the interface no longer exists in the cloud.
+	Status     NetworkInterfaceStatus `json:"status"`
+	Generation int64                  `json:"generation"`
+	ObservedAt NilDateTime            `json:"observed_at"`
+	// The operation in progress on this network interface, or null when none is.
+	Operation NilNetworkInterfaceOperation `json:"operation"`
 }
 
-// GetPassword returns the value of Password.
-func (s *LaunchInstanceQuoteRequestBody) GetPassword() OptString {
-	return s.Password
+// GetID returns the value of ID.
+func (s *NetworkInterface) GetID() NetworkInterfaceID {
+	return s.ID
 }
 
-// GetPortID returns the value of PortID.
-func (s *LaunchInstanceQuoteRequestBody) GetPortID() OptUUID {
-	return s.PortID
-}
-
-// GetSecurityGroupIds returns the value of SecurityGroupIds.
-func (s *LaunchInstanceQuoteRequestBody) GetSecurityGroupIds() OptNilUUIDArray {
-	return s.SecurityGroupIds
-}
-
-// GetSubnetID returns the value of SubnetID.
-func (s *LaunchInstanceQuoteRequestBody) GetSubnetID() OptUUID {
-	return s.SubnetID
-}
-
-// GetBootDisk returns the value of BootDisk.
-func (s *LaunchInstanceQuoteRequestBody) GetBootDisk() BootDisk {
-	return s.BootDisk
-}
-
-// GetFloatingIP returns the value of FloatingIP.
-func (s *LaunchInstanceQuoteRequestBody) GetFloatingIP() OptNewFloatingIP {
-	return s.FloatingIP
-}
-
-// SetFloatingIPID sets the value of FloatingIPID.
-func (s *LaunchInstanceQuoteRequestBody) SetFloatingIPID(val OptUUID) {
-	s.FloatingIPID = val
-}
-
-// SetCount sets the value of Count.
-func (s *LaunchInstanceQuoteRequestBody) SetCount(val OptInt64) {
-	s.Count = val
-}
-
-// SetGeneratePassword sets the value of GeneratePassword.
-func (s *LaunchInstanceQuoteRequestBody) SetGeneratePassword(val OptBool) {
-	s.GeneratePassword = val
-}
-
-// SetCompute sets the value of Compute.
-func (s *LaunchInstanceQuoteRequestBody) SetCompute(val NewCompute) {
-	s.Compute = val
-}
-
-// SetName sets the value of Name.
-func (s *LaunchInstanceQuoteRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetPassword sets the value of Password.
-func (s *LaunchInstanceQuoteRequestBody) SetPassword(val OptString) {
-	s.Password = val
-}
-
-// SetPortID sets the value of PortID.
-func (s *LaunchInstanceQuoteRequestBody) SetPortID(val OptUUID) {
-	s.PortID = val
-}
-
-// SetSecurityGroupIds sets the value of SecurityGroupIds.
-func (s *LaunchInstanceQuoteRequestBody) SetSecurityGroupIds(val OptNilUUIDArray) {
-	s.SecurityGroupIds = val
-}
-
-// SetSubnetID sets the value of SubnetID.
-func (s *LaunchInstanceQuoteRequestBody) SetSubnetID(val OptUUID) {
-	s.SubnetID = val
-}
-
-// SetBootDisk sets the value of BootDisk.
-func (s *LaunchInstanceQuoteRequestBody) SetBootDisk(val BootDisk) {
-	s.BootDisk = val
-}
-
-// SetFloatingIP sets the value of FloatingIP.
-func (s *LaunchInstanceQuoteRequestBody) SetFloatingIP(val OptNewFloatingIP) {
-	s.FloatingIP = val
-}
-
-// Ref: #/components/schemas/LaunchInstanceRequestBody
-type LaunchInstanceRequestBody struct {
-	// Bind a floating IP you already hold, instead of allocating a new one. It must be idle and in the
-	// same region.
-	//
-	// Mutually exclusive with `bandwidth_mbps`: an address you already hold has its own bandwidth ceiling,
-	// set when it was allocated, and changing it is a separate operation.
-	//
-	// Like `bandwidth_mbps`, this happens inside the creation: if binding fails, no instance is created.
-	// Binding afterwards is still possible from the instance page, but then it is two operations and a
-	// failure in between leaves an instance you cannot reach.
-	//
-	// Only one instance can be created when it is used — one address binds to one interface.
-	FloatingIPID OptUUID `json:"floating_ip_id"`
-	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
-	Count OptInt64 `json:"count"`
-	// Have the platform generate a random password, returned only in this response.
-	GeneratePassword OptBool    `json:"generate_password"`
-	Compute          NewCompute `json:"compute"`
-	Name             string     `json:"name"`
-	// The password to set, on the login account and on root. Only the SSH public keys of the project are
-	// used when omitted.
-	Password OptString `json:"password"`
-	// Use an existing network interface, which may already have a floating IP bound. Exactly one of this
-	// and `subnet_id`; only one instance can be created when it is used.
-	PortID OptUUID `json:"port_id"`
-	// Required when a primary network interface is created, at least one; the default security group is
-	// not applied automatically. Ignored together with `port_id`, as the security groups of that interface
-	// were fixed when it was created.
-	SecurityGroupIds OptNilUUIDArray `json:"security_group_ids"`
-	// Create the primary network interface in this subnet. Exactly one of this and `port_id`.
-	SubnetID   OptUUID            `json:"subnet_id"`
-	Checkout   OptCheckoutOptions `json:"checkout"`
-	BootDisk   BootDisk           `json:"boot_disk"`
-	FloatingIP OptNewFloatingIP   `json:"floating_ip"`
-}
-
-// GetFloatingIPID returns the value of FloatingIPID.
-func (s *LaunchInstanceRequestBody) GetFloatingIPID() OptUUID {
-	return s.FloatingIPID
-}
-
-// GetCount returns the value of Count.
-func (s *LaunchInstanceRequestBody) GetCount() OptInt64 {
-	return s.Count
-}
-
-// GetGeneratePassword returns the value of GeneratePassword.
-func (s *LaunchInstanceRequestBody) GetGeneratePassword() OptBool {
-	return s.GeneratePassword
-}
-
-// GetCompute returns the value of Compute.
-func (s *LaunchInstanceRequestBody) GetCompute() NewCompute {
-	return s.Compute
+// GetMAC returns the value of MAC.
+func (s *NetworkInterface) GetMAC() NilString {
+	return s.MAC
 }
 
 // GetName returns the value of Name.
-func (s *LaunchInstanceRequestBody) GetName() string {
+func (s *NetworkInterface) GetName() string {
 	return s.Name
 }
 
-// GetPassword returns the value of Password.
-func (s *LaunchInstanceRequestBody) GetPassword() OptString {
-	return s.Password
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *NetworkInterface) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
 }
 
-// GetPortID returns the value of PortID.
-func (s *LaunchInstanceRequestBody) GetPortID() OptUUID {
-	return s.PortID
+// GetPublicIps returns the value of PublicIps.
+func (s *NetworkInterface) GetPublicIps() []string {
+	return s.PublicIps
 }
 
-// GetSecurityGroupIds returns the value of SecurityGroupIds.
-func (s *LaunchInstanceRequestBody) GetSecurityGroupIds() OptNilUUIDArray {
-	return s.SecurityGroupIds
+// GetAddresses returns the value of Addresses.
+func (s *NetworkInterface) GetAddresses() []NetworkInterfaceAddress {
+	return s.Addresses
 }
 
-// GetSubnetID returns the value of SubnetID.
-func (s *LaunchInstanceRequestBody) GetSubnetID() OptUUID {
-	return s.SubnetID
+// GetAttachment returns the value of Attachment.
+func (s *NetworkInterface) GetAttachment() OptNilNetworkInterfaceAttachment {
+	return s.Attachment
 }
 
-// GetCheckout returns the value of Checkout.
-func (s *LaunchInstanceRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
+// GetStatus returns the value of Status.
+func (s *NetworkInterface) GetStatus() NetworkInterfaceStatus {
+	return s.Status
 }
 
-// GetBootDisk returns the value of BootDisk.
-func (s *LaunchInstanceRequestBody) GetBootDisk() BootDisk {
-	return s.BootDisk
+// GetGeneration returns the value of Generation.
+func (s *NetworkInterface) GetGeneration() int64 {
+	return s.Generation
 }
 
-// GetFloatingIP returns the value of FloatingIP.
-func (s *LaunchInstanceRequestBody) GetFloatingIP() OptNewFloatingIP {
-	return s.FloatingIP
+// GetObservedAt returns the value of ObservedAt.
+func (s *NetworkInterface) GetObservedAt() NilDateTime {
+	return s.ObservedAt
 }
 
-// SetFloatingIPID sets the value of FloatingIPID.
-func (s *LaunchInstanceRequestBody) SetFloatingIPID(val OptUUID) {
-	s.FloatingIPID = val
+// GetOperation returns the value of Operation.
+func (s *NetworkInterface) GetOperation() NilNetworkInterfaceOperation {
+	return s.Operation
 }
 
-// SetCount sets the value of Count.
-func (s *LaunchInstanceRequestBody) SetCount(val OptInt64) {
-	s.Count = val
+// SetID sets the value of ID.
+func (s *NetworkInterface) SetID(val NetworkInterfaceID) {
+	s.ID = val
 }
 
-// SetGeneratePassword sets the value of GeneratePassword.
-func (s *LaunchInstanceRequestBody) SetGeneratePassword(val OptBool) {
-	s.GeneratePassword = val
-}
-
-// SetCompute sets the value of Compute.
-func (s *LaunchInstanceRequestBody) SetCompute(val NewCompute) {
-	s.Compute = val
+// SetMAC sets the value of MAC.
+func (s *NetworkInterface) SetMAC(val NilString) {
+	s.MAC = val
 }
 
 // SetName sets the value of Name.
-func (s *LaunchInstanceRequestBody) SetName(val string) {
+func (s *NetworkInterface) SetName(val string) {
 	s.Name = val
 }
 
-// SetPassword sets the value of Password.
-func (s *LaunchInstanceRequestBody) SetPassword(val OptString) {
-	s.Password = val
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *NetworkInterface) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
 }
 
-// SetPortID sets the value of PortID.
-func (s *LaunchInstanceRequestBody) SetPortID(val OptUUID) {
-	s.PortID = val
+// SetPublicIps sets the value of PublicIps.
+func (s *NetworkInterface) SetPublicIps(val []string) {
+	s.PublicIps = val
 }
 
-// SetSecurityGroupIds sets the value of SecurityGroupIds.
-func (s *LaunchInstanceRequestBody) SetSecurityGroupIds(val OptNilUUIDArray) {
-	s.SecurityGroupIds = val
+// SetAddresses sets the value of Addresses.
+func (s *NetworkInterface) SetAddresses(val []NetworkInterfaceAddress) {
+	s.Addresses = val
+}
+
+// SetAttachment sets the value of Attachment.
+func (s *NetworkInterface) SetAttachment(val OptNilNetworkInterfaceAttachment) {
+	s.Attachment = val
+}
+
+// SetStatus sets the value of Status.
+func (s *NetworkInterface) SetStatus(val NetworkInterfaceStatus) {
+	s.Status = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *NetworkInterface) SetGeneration(val int64) {
+	s.Generation = val
+}
+
+// SetObservedAt sets the value of ObservedAt.
+func (s *NetworkInterface) SetObservedAt(val NilDateTime) {
+	s.ObservedAt = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *NetworkInterface) SetOperation(val NilNetworkInterfaceOperation) {
+	s.Operation = val
+}
+
+func (*NetworkInterface) attachNetworkInterfaceRes() {}
+func (*NetworkInterface) deleteNetworkInterfaceRes() {}
+func (*NetworkInterface) detachNetworkInterfaceRes() {}
+
+// Ref: #/components/schemas/NetworkInterfaceAddress
+type NetworkInterfaceAddress struct {
+	ID         NetworkInterfaceAddressID    `json:"id"`
+	SubnetID   SubnetID                     `json:"subnet_id"`
+	Address    string                       `json:"address"`
+	IsPrimary  bool                         `json:"is_primary"`
+	State      NetworkInterfaceAddressState `json:"state"`
+	AssignedAt NilDateTime                  `json:"assigned_at"`
+	ReleasedAt NilDateTime                  `json:"released_at"`
+}
+
+// GetID returns the value of ID.
+func (s *NetworkInterfaceAddress) GetID() NetworkInterfaceAddressID {
+	return s.ID
+}
+
+// GetSubnetID returns the value of SubnetID.
+func (s *NetworkInterfaceAddress) GetSubnetID() SubnetID {
+	return s.SubnetID
+}
+
+// GetAddress returns the value of Address.
+func (s *NetworkInterfaceAddress) GetAddress() string {
+	return s.Address
+}
+
+// GetIsPrimary returns the value of IsPrimary.
+func (s *NetworkInterfaceAddress) GetIsPrimary() bool {
+	return s.IsPrimary
+}
+
+// GetState returns the value of State.
+func (s *NetworkInterfaceAddress) GetState() NetworkInterfaceAddressState {
+	return s.State
+}
+
+// GetAssignedAt returns the value of AssignedAt.
+func (s *NetworkInterfaceAddress) GetAssignedAt() NilDateTime {
+	return s.AssignedAt
+}
+
+// GetReleasedAt returns the value of ReleasedAt.
+func (s *NetworkInterfaceAddress) GetReleasedAt() NilDateTime {
+	return s.ReleasedAt
+}
+
+// SetID sets the value of ID.
+func (s *NetworkInterfaceAddress) SetID(val NetworkInterfaceAddressID) {
+	s.ID = val
 }
 
 // SetSubnetID sets the value of SubnetID.
-func (s *LaunchInstanceRequestBody) SetSubnetID(val OptUUID) {
+func (s *NetworkInterfaceAddress) SetSubnetID(val SubnetID) {
 	s.SubnetID = val
 }
 
-// SetCheckout sets the value of Checkout.
-func (s *LaunchInstanceRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
+// SetAddress sets the value of Address.
+func (s *NetworkInterfaceAddress) SetAddress(val string) {
+	s.Address = val
 }
 
-// SetBootDisk sets the value of BootDisk.
-func (s *LaunchInstanceRequestBody) SetBootDisk(val BootDisk) {
-	s.BootDisk = val
+// SetIsPrimary sets the value of IsPrimary.
+func (s *NetworkInterfaceAddress) SetIsPrimary(val bool) {
+	s.IsPrimary = val
 }
 
-// SetFloatingIP sets the value of FloatingIP.
-func (s *LaunchInstanceRequestBody) SetFloatingIP(val OptNewFloatingIP) {
-	s.FloatingIP = val
+// SetState sets the value of State.
+func (s *NetworkInterfaceAddress) SetState(val NetworkInterfaceAddressState) {
+	s.State = val
 }
 
-// The new instances, `pending` until their order is accepted, and the Checkout Session they share.
-// Ref: #/components/schemas/LaunchInstanceResponseBody
-type LaunchInstanceResponseBody struct {
-	// One instance per requested instance, in request order. Their IDs stay the same through checkout and
-	// creation.
-	Instances []InstanceResource `json:"instances"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-	// Generated login password, returned only by this response. Null when no password was generated.
-	Password NilString `json:"password"`
+// SetAssignedAt sets the value of AssignedAt.
+func (s *NetworkInterfaceAddress) SetAssignedAt(val NilDateTime) {
+	s.AssignedAt = val
 }
 
-// GetInstances returns the value of Instances.
-func (s *LaunchInstanceResponseBody) GetInstances() []InstanceResource {
-	return s.Instances
+// SetReleasedAt sets the value of ReleasedAt.
+func (s *NetworkInterfaceAddress) SetReleasedAt(val NilDateTime) {
+	s.ReleasedAt = val
 }
 
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *LaunchInstanceResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
+type NetworkInterfaceAddressID string
+
+type NetworkInterfaceAddressState string
+
+const (
+	NetworkInterfaceAddressStateReserved NetworkInterfaceAddressState = "reserved"
+	NetworkInterfaceAddressStateAssigned NetworkInterfaceAddressState = "assigned"
+	NetworkInterfaceAddressStateReleased NetworkInterfaceAddressState = "released"
+	NetworkInterfaceAddressStateUnknown  NetworkInterfaceAddressState = "unknown"
+)
+
+// AllValues returns all NetworkInterfaceAddressState values.
+func (NetworkInterfaceAddressState) AllValues() []NetworkInterfaceAddressState {
+	return []NetworkInterfaceAddressState{
+		NetworkInterfaceAddressStateReserved,
+		NetworkInterfaceAddressStateAssigned,
+		NetworkInterfaceAddressStateReleased,
+		NetworkInterfaceAddressStateUnknown,
+	}
 }
 
-// GetOrderID returns the value of OrderID.
-func (s *LaunchInstanceResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
+// MarshalText implements encoding.TextMarshaler.
+func (s NetworkInterfaceAddressState) MarshalText() ([]byte, error) {
+	switch s {
+	case NetworkInterfaceAddressStateReserved:
+		return []byte(s), nil
+	case NetworkInterfaceAddressStateAssigned:
+		return []byte(s), nil
+	case NetworkInterfaceAddressStateReleased:
+		return []byte(s), nil
+	case NetworkInterfaceAddressStateUnknown:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetPassword returns the value of Password.
-func (s *LaunchInstanceResponseBody) GetPassword() NilString {
-	return s.Password
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NetworkInterfaceAddressState) UnmarshalText(data []byte) error {
+	switch NetworkInterfaceAddressState(data) {
+	case NetworkInterfaceAddressStateReserved:
+		*s = NetworkInterfaceAddressStateReserved
+		return nil
+	case NetworkInterfaceAddressStateAssigned:
+		*s = NetworkInterfaceAddressStateAssigned
+		return nil
+	case NetworkInterfaceAddressStateReleased:
+		*s = NetworkInterfaceAddressStateReleased
+		return nil
+	case NetworkInterfaceAddressStateUnknown:
+		*s = NetworkInterfaceAddressStateUnknown
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// SetInstances sets the value of Instances.
-func (s *LaunchInstanceResponseBody) SetInstances(val []InstanceResource) {
-	s.Instances = val
+// Ref: #/components/schemas/NetworkInterfaceAttachment
+type NetworkInterfaceAttachment struct {
+	ID                       VirtualMachineNetworkInterfaceID `json:"id"`
+	VirtualMachineID         VirtualMachineID                 `json:"virtual_machine_id"`
+	NetworkInterfaceID       NetworkInterfaceID               `json:"network_interface_id"`
+	Role                     NetworkInterfaceAttachmentRole   `json:"role"`
+	DeleteWithVirtualMachine bool                             `json:"delete_with_virtual_machine"`
+	State                    NetworkInterfaceAttachmentState  `json:"state"`
+	AttachedAt               NilDateTime                      `json:"attached_at"`
+	DetachedAt               NilDateTime                      `json:"detached_at"`
+	ReleasedAt               NilDateTime                      `json:"released_at"`
 }
 
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *LaunchInstanceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
+// GetID returns the value of ID.
+func (s *NetworkInterfaceAttachment) GetID() VirtualMachineNetworkInterfaceID {
+	return s.ID
 }
 
-// SetOrderID sets the value of OrderID.
-func (s *LaunchInstanceResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
+// GetVirtualMachineID returns the value of VirtualMachineID.
+func (s *NetworkInterfaceAttachment) GetVirtualMachineID() VirtualMachineID {
+	return s.VirtualMachineID
 }
 
-// SetPassword sets the value of Password.
-func (s *LaunchInstanceResponseBody) SetPassword(val NilString) {
-	s.Password = val
+// GetNetworkInterfaceID returns the value of NetworkInterfaceID.
+func (s *NetworkInterfaceAttachment) GetNetworkInterfaceID() NetworkInterfaceID {
+	return s.NetworkInterfaceID
 }
 
-func (*LaunchInstanceResponseBody) launchInstanceRes() {}
+// GetRole returns the value of Role.
+func (s *NetworkInterfaceAttachment) GetRole() NetworkInterfaceAttachmentRole {
+	return s.Role
+}
 
-type Money string
+// GetDeleteWithVirtualMachine returns the value of DeleteWithVirtualMachine.
+func (s *NetworkInterfaceAttachment) GetDeleteWithVirtualMachine() bool {
+	return s.DeleteWithVirtualMachine
+}
 
-// A system disk created from an image and purchased in the instance order. Its commercial terms are
-// explicit and its release policy does not override them.
+// GetState returns the value of State.
+func (s *NetworkInterfaceAttachment) GetState() NetworkInterfaceAttachmentState {
+	return s.State
+}
+
+// GetAttachedAt returns the value of AttachedAt.
+func (s *NetworkInterfaceAttachment) GetAttachedAt() NilDateTime {
+	return s.AttachedAt
+}
+
+// GetDetachedAt returns the value of DetachedAt.
+func (s *NetworkInterfaceAttachment) GetDetachedAt() NilDateTime {
+	return s.DetachedAt
+}
+
+// GetReleasedAt returns the value of ReleasedAt.
+func (s *NetworkInterfaceAttachment) GetReleasedAt() NilDateTime {
+	return s.ReleasedAt
+}
+
+// SetID sets the value of ID.
+func (s *NetworkInterfaceAttachment) SetID(val VirtualMachineNetworkInterfaceID) {
+	s.ID = val
+}
+
+// SetVirtualMachineID sets the value of VirtualMachineID.
+func (s *NetworkInterfaceAttachment) SetVirtualMachineID(val VirtualMachineID) {
+	s.VirtualMachineID = val
+}
+
+// SetNetworkInterfaceID sets the value of NetworkInterfaceID.
+func (s *NetworkInterfaceAttachment) SetNetworkInterfaceID(val NetworkInterfaceID) {
+	s.NetworkInterfaceID = val
+}
+
+// SetRole sets the value of Role.
+func (s *NetworkInterfaceAttachment) SetRole(val NetworkInterfaceAttachmentRole) {
+	s.Role = val
+}
+
+// SetDeleteWithVirtualMachine sets the value of DeleteWithVirtualMachine.
+func (s *NetworkInterfaceAttachment) SetDeleteWithVirtualMachine(val bool) {
+	s.DeleteWithVirtualMachine = val
+}
+
+// SetState sets the value of State.
+func (s *NetworkInterfaceAttachment) SetState(val NetworkInterfaceAttachmentState) {
+	s.State = val
+}
+
+// SetAttachedAt sets the value of AttachedAt.
+func (s *NetworkInterfaceAttachment) SetAttachedAt(val NilDateTime) {
+	s.AttachedAt = val
+}
+
+// SetDetachedAt sets the value of DetachedAt.
+func (s *NetworkInterfaceAttachment) SetDetachedAt(val NilDateTime) {
+	s.DetachedAt = val
+}
+
+// SetReleasedAt sets the value of ReleasedAt.
+func (s *NetworkInterfaceAttachment) SetReleasedAt(val NilDateTime) {
+	s.ReleasedAt = val
+}
+
+// Ref: #/components/schemas/NetworkInterfaceAttachmentList
+type NetworkInterfaceAttachmentList struct {
+	Items      []NetworkInterfaceAttachment `json:"items"`
+	Pagination OffsetPagination             `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *NetworkInterfaceAttachmentList) GetItems() []NetworkInterfaceAttachment {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *NetworkInterfaceAttachmentList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *NetworkInterfaceAttachmentList) SetItems(val []NetworkInterfaceAttachment) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *NetworkInterfaceAttachmentList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type NetworkInterfaceAttachmentRole string
+
+const (
+	NetworkInterfaceAttachmentRolePrimary    NetworkInterfaceAttachmentRole = "primary"
+	NetworkInterfaceAttachmentRoleAdditional NetworkInterfaceAttachmentRole = "additional"
+)
+
+// AllValues returns all NetworkInterfaceAttachmentRole values.
+func (NetworkInterfaceAttachmentRole) AllValues() []NetworkInterfaceAttachmentRole {
+	return []NetworkInterfaceAttachmentRole{
+		NetworkInterfaceAttachmentRolePrimary,
+		NetworkInterfaceAttachmentRoleAdditional,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NetworkInterfaceAttachmentRole) MarshalText() ([]byte, error) {
+	switch s {
+	case NetworkInterfaceAttachmentRolePrimary:
+		return []byte(s), nil
+	case NetworkInterfaceAttachmentRoleAdditional:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NetworkInterfaceAttachmentRole) UnmarshalText(data []byte) error {
+	switch NetworkInterfaceAttachmentRole(data) {
+	case NetworkInterfaceAttachmentRolePrimary:
+		*s = NetworkInterfaceAttachmentRolePrimary
+		return nil
+	case NetworkInterfaceAttachmentRoleAdditional:
+		*s = NetworkInterfaceAttachmentRoleAdditional
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type NetworkInterfaceAttachmentState string
+
+const (
+	NetworkInterfaceAttachmentStateReserved NetworkInterfaceAttachmentState = "reserved"
+	NetworkInterfaceAttachmentStateAttached NetworkInterfaceAttachmentState = "attached"
+	NetworkInterfaceAttachmentStateReleased NetworkInterfaceAttachmentState = "released"
+	NetworkInterfaceAttachmentStateUnknown  NetworkInterfaceAttachmentState = "unknown"
+)
+
+// AllValues returns all NetworkInterfaceAttachmentState values.
+func (NetworkInterfaceAttachmentState) AllValues() []NetworkInterfaceAttachmentState {
+	return []NetworkInterfaceAttachmentState{
+		NetworkInterfaceAttachmentStateReserved,
+		NetworkInterfaceAttachmentStateAttached,
+		NetworkInterfaceAttachmentStateReleased,
+		NetworkInterfaceAttachmentStateUnknown,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NetworkInterfaceAttachmentState) MarshalText() ([]byte, error) {
+	switch s {
+	case NetworkInterfaceAttachmentStateReserved:
+		return []byte(s), nil
+	case NetworkInterfaceAttachmentStateAttached:
+		return []byte(s), nil
+	case NetworkInterfaceAttachmentStateReleased:
+		return []byte(s), nil
+	case NetworkInterfaceAttachmentStateUnknown:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NetworkInterfaceAttachmentState) UnmarshalText(data []byte) error {
+	switch NetworkInterfaceAttachmentState(data) {
+	case NetworkInterfaceAttachmentStateReserved:
+		*s = NetworkInterfaceAttachmentStateReserved
+		return nil
+	case NetworkInterfaceAttachmentStateAttached:
+		*s = NetworkInterfaceAttachmentStateAttached
+		return nil
+	case NetworkInterfaceAttachmentStateReleased:
+		*s = NetworkInterfaceAttachmentStateReleased
+		return nil
+	case NetworkInterfaceAttachmentStateUnknown:
+		*s = NetworkInterfaceAttachmentStateUnknown
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type NetworkInterfaceID string
+
+// Ref: #/components/schemas/NetworkInterfaceListResponseBody
+type NetworkInterfaceListResponseBody struct {
+	Items      []NetworkInterface `json:"items"`
+	Pagination OffsetPagination   `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *NetworkInterfaceListResponseBody) GetItems() []NetworkInterface {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *NetworkInterfaceListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *NetworkInterfaceListResponseBody) SetItems(val []NetworkInterface) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *NetworkInterfaceListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// An operation still running on this network interface. It is not a separate resource; once it
+// finishes, the network interface's `operation` is null again and the network interface shows the
+// result.
+// Ref: #/components/schemas/NetworkInterfaceOperation
+type NetworkInterfaceOperation struct {
+	Type      NetworkInterfaceOperationType `json:"type"`
+	StartedAt time.Time                     `json:"started_at"`
+}
+
+// GetType returns the value of Type.
+func (s *NetworkInterfaceOperation) GetType() NetworkInterfaceOperationType {
+	return s.Type
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *NetworkInterfaceOperation) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// SetType sets the value of Type.
+func (s *NetworkInterfaceOperation) SetType(val NetworkInterfaceOperationType) {
+	s.Type = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *NetworkInterfaceOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+type NetworkInterfaceOperationType string
+
+const (
+	NetworkInterfaceOperationTypeCreate NetworkInterfaceOperationType = "create"
+	NetworkInterfaceOperationTypeAttach NetworkInterfaceOperationType = "attach"
+	NetworkInterfaceOperationTypeDetach NetworkInterfaceOperationType = "detach"
+	NetworkInterfaceOperationTypeDelete NetworkInterfaceOperationType = "delete"
+)
+
+// AllValues returns all NetworkInterfaceOperationType values.
+func (NetworkInterfaceOperationType) AllValues() []NetworkInterfaceOperationType {
+	return []NetworkInterfaceOperationType{
+		NetworkInterfaceOperationTypeCreate,
+		NetworkInterfaceOperationTypeAttach,
+		NetworkInterfaceOperationTypeDetach,
+		NetworkInterfaceOperationTypeDelete,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NetworkInterfaceOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case NetworkInterfaceOperationTypeCreate:
+		return []byte(s), nil
+	case NetworkInterfaceOperationTypeAttach:
+		return []byte(s), nil
+	case NetworkInterfaceOperationTypeDetach:
+		return []byte(s), nil
+	case NetworkInterfaceOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NetworkInterfaceOperationType) UnmarshalText(data []byte) error {
+	switch NetworkInterfaceOperationType(data) {
+	case NetworkInterfaceOperationTypeCreate:
+		*s = NetworkInterfaceOperationTypeCreate
+		return nil
+	case NetworkInterfaceOperationTypeAttach:
+		*s = NetworkInterfaceOperationTypeAttach
+		return nil
+	case NetworkInterfaceOperationTypeDetach:
+		*s = NetworkInterfaceOperationTypeDetach
+		return nil
+	case NetworkInterfaceOperationTypeDelete:
+		*s = NetworkInterfaceOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `missing` means the interface no longer exists in the cloud.
+type NetworkInterfaceStatus string
+
+const (
+	NetworkInterfaceStatusPending   NetworkInterfaceStatus = "pending"
+	NetworkInterfaceStatusAvailable NetworkInterfaceStatus = "available"
+	NetworkInterfaceStatusError     NetworkInterfaceStatus = "error"
+	NetworkInterfaceStatusUnknown   NetworkInterfaceStatus = "unknown"
+	NetworkInterfaceStatusMissing   NetworkInterfaceStatus = "missing"
+)
+
+// AllValues returns all NetworkInterfaceStatus values.
+func (NetworkInterfaceStatus) AllValues() []NetworkInterfaceStatus {
+	return []NetworkInterfaceStatus{
+		NetworkInterfaceStatusPending,
+		NetworkInterfaceStatusAvailable,
+		NetworkInterfaceStatusError,
+		NetworkInterfaceStatusUnknown,
+		NetworkInterfaceStatusMissing,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NetworkInterfaceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case NetworkInterfaceStatusPending:
+		return []byte(s), nil
+	case NetworkInterfaceStatusAvailable:
+		return []byte(s), nil
+	case NetworkInterfaceStatusError:
+		return []byte(s), nil
+	case NetworkInterfaceStatusUnknown:
+		return []byte(s), nil
+	case NetworkInterfaceStatusMissing:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NetworkInterfaceStatus) UnmarshalText(data []byte) error {
+	switch NetworkInterfaceStatus(data) {
+	case NetworkInterfaceStatusPending:
+		*s = NetworkInterfaceStatusPending
+		return nil
+	case NetworkInterfaceStatusAvailable:
+		*s = NetworkInterfaceStatusAvailable
+		return nil
+	case NetworkInterfaceStatusError:
+		*s = NetworkInterfaceStatusError
+		return nil
+	case NetworkInterfaceStatusUnknown:
+		*s = NetworkInterfaceStatusUnknown
+		return nil
+	case NetworkInterfaceStatusMissing:
+		*s = NetworkInterfaceStatusMissing
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A system disk created from an image and recorded in the virtual machine order. Its commercial terms
+// are explicit and its release policy does not override them.
 // Ref: #/components/schemas/NewBootDisk
 type NewBootDisk struct {
 	Type NewBootDiskType `json:"type"`
 	// A public image on sale, or an available private image of this project.
-	ImageID uuid.UUID `json:"image_id"`
-	// A system disk type on sale in the availability zone of the instance, one whose `purpose` is `system`.
-	DiskTypeID         uuid.UUID     `json:"disk_type_id"`
-	SizeGB             int64         `json:"size_gb"`
-	DeleteWithInstance OptBool       `json:"delete_with_instance"`
-	Billing            BillingChoice `json:"billing"`
+	ImageID ImageID `json:"image_id"`
+	// A system disk type on sale in the availability zone of the virtual machine, one whose `purpose` is
+	// `system`.
+	DiskTypeID               DiskTypeID    `json:"disk_type_id"`
+	SizeGB                   int64         `json:"size_gb"`
+	DeleteWithVirtualMachine OptBool       `json:"delete_with_virtual_machine"`
+	Billing                  BillingChoice `json:"billing"`
 }
 
 // GetType returns the value of Type.
@@ -7044,12 +5619,12 @@ func (s *NewBootDisk) GetType() NewBootDiskType {
 }
 
 // GetImageID returns the value of ImageID.
-func (s *NewBootDisk) GetImageID() uuid.UUID {
+func (s *NewBootDisk) GetImageID() ImageID {
 	return s.ImageID
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
-func (s *NewBootDisk) GetDiskTypeID() uuid.UUID {
+func (s *NewBootDisk) GetDiskTypeID() DiskTypeID {
 	return s.DiskTypeID
 }
 
@@ -7058,9 +5633,9 @@ func (s *NewBootDisk) GetSizeGB() int64 {
 	return s.SizeGB
 }
 
-// GetDeleteWithInstance returns the value of DeleteWithInstance.
-func (s *NewBootDisk) GetDeleteWithInstance() OptBool {
-	return s.DeleteWithInstance
+// GetDeleteWithVirtualMachine returns the value of DeleteWithVirtualMachine.
+func (s *NewBootDisk) GetDeleteWithVirtualMachine() OptBool {
+	return s.DeleteWithVirtualMachine
 }
 
 // GetBilling returns the value of Billing.
@@ -7074,12 +5649,12 @@ func (s *NewBootDisk) SetType(val NewBootDiskType) {
 }
 
 // SetImageID sets the value of ImageID.
-func (s *NewBootDisk) SetImageID(val uuid.UUID) {
+func (s *NewBootDisk) SetImageID(val ImageID) {
 	s.ImageID = val
 }
 
 // SetDiskTypeID sets the value of DiskTypeID.
-func (s *NewBootDisk) SetDiskTypeID(val uuid.UUID) {
+func (s *NewBootDisk) SetDiskTypeID(val DiskTypeID) {
 	s.DiskTypeID = val
 }
 
@@ -7088,9 +5663,9 @@ func (s *NewBootDisk) SetSizeGB(val int64) {
 	s.SizeGB = val
 }
 
-// SetDeleteWithInstance sets the value of DeleteWithInstance.
-func (s *NewBootDisk) SetDeleteWithInstance(val OptBool) {
-	s.DeleteWithInstance = val
+// SetDeleteWithVirtualMachine sets the value of DeleteWithVirtualMachine.
+func (s *NewBootDisk) SetDeleteWithVirtualMachine(val OptBool) {
+	s.DeleteWithVirtualMachine = val
 }
 
 // SetBilling sets the value of Billing.
@@ -7132,17 +5707,17 @@ func (s *NewBootDiskType) UnmarshalText(data []byte) error {
 	}
 }
 
-// The compute capacity purchased for each instance in this order.
+// The compute capacity requested for each virtual machine in this order.
 // Ref: #/components/schemas/NewCompute
 type NewCompute struct {
-	// An instance type currently on sale.
-	InstanceTypeID uuid.UUID     `json:"instance_type_id"`
-	Billing        BillingChoice `json:"billing"`
+	// A machine type currently on sale.
+	MachineTypeID MachineTypeID `json:"machine_type_id"`
+	Billing       BillingChoice `json:"billing"`
 }
 
-// GetInstanceTypeID returns the value of InstanceTypeID.
-func (s *NewCompute) GetInstanceTypeID() uuid.UUID {
-	return s.InstanceTypeID
+// GetMachineTypeID returns the value of MachineTypeID.
+func (s *NewCompute) GetMachineTypeID() MachineTypeID {
+	return s.MachineTypeID
 }
 
 // GetBilling returns the value of Billing.
@@ -7150,9 +5725,9 @@ func (s *NewCompute) GetBilling() BillingChoice {
 	return s.Billing
 }
 
-// SetInstanceTypeID sets the value of InstanceTypeID.
-func (s *NewCompute) SetInstanceTypeID(val uuid.UUID) {
-	s.InstanceTypeID = val
+// SetMachineTypeID sets the value of MachineTypeID.
+func (s *NewCompute) SetMachineTypeID(val MachineTypeID) {
+	s.MachineTypeID = val
 }
 
 // SetBilling sets the value of Billing.
@@ -7160,48 +5735,59 @@ func (s *NewCompute) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
-// One floating IP purchased with this bandwidth configuration in the instance's order. Mutually
-// exclusive with floating_ip_id.
-// Ref: #/components/schemas/NewFloatingIP
-type NewFloatingIP struct {
-	BandwidthMbps int64         `json:"bandwidth_mbps"`
-	Ipv4PoolID    uuid.UUID     `json:"ipv4_pool_id"`
-	Billing       BillingChoice `json:"billing"`
+// One IPv4 elastic IP created with this bandwidth configuration in the virtual machine's order.
+// Mutually exclusive with elastic_ip_id.
+// Ref: #/components/schemas/NewElasticIP
+type NewElasticIP struct {
+	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
+	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
+	TypeID             ElasticIPTypeID       `json:"type_id"`
+	Billing            BillingChoice         `json:"billing"`
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *NewElasticIP) GetInternetChargeType() OptInternetChargeType {
+	return s.InternetChargeType
 }
 
 // GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *NewFloatingIP) GetBandwidthMbps() int64 {
+func (s *NewElasticIP) GetBandwidthMbps() int64 {
 	return s.BandwidthMbps
 }
 
-// GetIpv4PoolID returns the value of Ipv4PoolID.
-func (s *NewFloatingIP) GetIpv4PoolID() uuid.UUID {
-	return s.Ipv4PoolID
+// GetTypeID returns the value of TypeID.
+func (s *NewElasticIP) GetTypeID() ElasticIPTypeID {
+	return s.TypeID
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewFloatingIP) GetBilling() BillingChoice {
+func (s *NewElasticIP) GetBilling() BillingChoice {
 	return s.Billing
 }
 
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *NewElasticIP) SetInternetChargeType(val OptInternetChargeType) {
+	s.InternetChargeType = val
+}
+
 // SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *NewFloatingIP) SetBandwidthMbps(val int64) {
+func (s *NewElasticIP) SetBandwidthMbps(val int64) {
 	s.BandwidthMbps = val
 }
 
-// SetIpv4PoolID sets the value of Ipv4PoolID.
-func (s *NewFloatingIP) SetIpv4PoolID(val uuid.UUID) {
-	s.Ipv4PoolID = val
+// SetTypeID sets the value of TypeID.
+func (s *NewElasticIP) SetTypeID(val ElasticIPTypeID) {
+	s.TypeID = val
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewFloatingIP) SetBilling(val BillingChoice) {
+func (s *NewElasticIP) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
 // Ref: #/components/schemas/NextFreeCidrResponseBody
 type NextFreeCidrResponseBody struct {
-	// Empty when the private network has no free CIDR left for that prefix length.
+	// Empty when the virtual private cloud has no free CIDR left for that prefix length.
 	Cidr string `json:"cidr"`
 }
 
@@ -7213,51 +5799,6 @@ func (s *NextFreeCidrResponseBody) GetCidr() string {
 // SetCidr sets the value of Cidr.
 func (s *NextFreeCidrResponseBody) SetCidr(val string) {
 	s.Cidr = val
-}
-
-// NewNilBackupCapacityPackFailureReason returns new NilBackupCapacityPackFailureReason with value set to v.
-func NewNilBackupCapacityPackFailureReason(v BackupCapacityPackFailureReason) NilBackupCapacityPackFailureReason {
-	return NilBackupCapacityPackFailureReason{
-		Value: v,
-	}
-}
-
-// NilBackupCapacityPackFailureReason is nullable BackupCapacityPackFailureReason.
-type NilBackupCapacityPackFailureReason struct {
-	Value BackupCapacityPackFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilBackupCapacityPackFailureReason) SetTo(v BackupCapacityPackFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilBackupCapacityPackFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilBackupCapacityPackFailureReason) SetToNull() {
-	o.Null = true
-	var v BackupCapacityPackFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilBackupCapacityPackFailureReason) Get() (v BackupCapacityPackFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilBackupCapacityPackFailureReason) Or(d BackupCapacityPackFailureReason) BackupCapacityPackFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
 }
 
 // NewNilBackupOperation returns new NilBackupOperation with value set to v.
@@ -7305,141 +5846,6 @@ func (o NilBackupOperation) Or(d BackupOperation) BackupOperation {
 	return d
 }
 
-// NewNilBackupServiceFailureReason returns new NilBackupServiceFailureReason with value set to v.
-func NewNilBackupServiceFailureReason(v BackupServiceFailureReason) NilBackupServiceFailureReason {
-	return NilBackupServiceFailureReason{
-		Value: v,
-	}
-}
-
-// NilBackupServiceFailureReason is nullable BackupServiceFailureReason.
-type NilBackupServiceFailureReason struct {
-	Value BackupServiceFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilBackupServiceFailureReason) SetTo(v BackupServiceFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilBackupServiceFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilBackupServiceFailureReason) SetToNull() {
-	o.Null = true
-	var v BackupServiceFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilBackupServiceFailureReason) Get() (v BackupServiceFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilBackupServiceFailureReason) Or(d BackupServiceFailureReason) BackupServiceFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilBillingChoice returns new NilBillingChoice with value set to v.
-func NewNilBillingChoice(v BillingChoice) NilBillingChoice {
-	return NilBillingChoice{
-		Value: v,
-	}
-}
-
-// NilBillingChoice is nullable BillingChoice.
-type NilBillingChoice struct {
-	Value BillingChoice
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilBillingChoice) SetTo(v BillingChoice) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilBillingChoice) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilBillingChoice) SetToNull() {
-	o.Null = true
-	var v BillingChoice
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilBillingChoice) Get() (v BillingChoice, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilBillingChoice) Or(d BillingChoice) BillingChoice {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilBillingPeriod returns new NilBillingPeriod with value set to v.
-func NewNilBillingPeriod(v BillingPeriod) NilBillingPeriod {
-	return NilBillingPeriod{
-		Value: v,
-	}
-}
-
-// NilBillingPeriod is nullable BillingPeriod.
-type NilBillingPeriod struct {
-	Value BillingPeriod
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilBillingPeriod) SetTo(v BillingPeriod) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilBillingPeriod) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilBillingPeriod) SetToNull() {
-	o.Null = true
-	var v BillingPeriod
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilBillingPeriod) Get() (v BillingPeriod, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilBillingPeriod) Or(d BillingPeriod) BillingPeriod {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilDateTime returns new NilDateTime with value set to v.
 func NewNilDateTime(v time.Time) NilDateTime {
 	return NilDateTime{
@@ -7479,6 +5885,51 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilDiskID returns new NilDiskID with value set to v.
+func NewNilDiskID(v DiskID) NilDiskID {
+	return NilDiskID{
+		Value: v,
+	}
+}
+
+// NilDiskID is nullable DiskID.
+type NilDiskID struct {
+	Value DiskID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilDiskID) SetTo(v DiskID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilDiskID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilDiskID) SetToNull() {
+	o.Null = true
+	var v DiskID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilDiskID) Get() (v DiskID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilDiskID) Or(d DiskID) DiskID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7620,37 +6071,37 @@ func (o NilDiskResourceFailureReason) Or(d DiskResourceFailureReason) DiskResour
 	return d
 }
 
-// NewNilFloatingIPOperation returns new NilFloatingIPOperation with value set to v.
-func NewNilFloatingIPOperation(v FloatingIPOperation) NilFloatingIPOperation {
-	return NilFloatingIPOperation{
+// NewNilElasticIPAccessState returns new NilElasticIPAccessState with value set to v.
+func NewNilElasticIPAccessState(v ElasticIPAccessState) NilElasticIPAccessState {
+	return NilElasticIPAccessState{
 		Value: v,
 	}
 }
 
-// NilFloatingIPOperation is nullable FloatingIPOperation.
-type NilFloatingIPOperation struct {
-	Value FloatingIPOperation
+// NilElasticIPAccessState is nullable ElasticIPAccessState.
+type NilElasticIPAccessState struct {
+	Value ElasticIPAccessState
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilFloatingIPOperation) SetTo(v FloatingIPOperation) {
+func (o *NilElasticIPAccessState) SetTo(v ElasticIPAccessState) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilFloatingIPOperation) IsNull() bool { return o.Null }
+func (o NilElasticIPAccessState) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilFloatingIPOperation) SetToNull() {
+func (o *NilElasticIPAccessState) SetToNull() {
 	o.Null = true
-	var v FloatingIPOperation
+	var v ElasticIPAccessState
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilFloatingIPOperation) Get() (v FloatingIPOperation, ok bool) {
+func (o NilElasticIPAccessState) Get() (v ElasticIPAccessState, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -7658,44 +6109,44 @@ func (o NilFloatingIPOperation) Get() (v FloatingIPOperation, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilFloatingIPOperation) Or(d FloatingIPOperation) FloatingIPOperation {
+func (o NilElasticIPAccessState) Or(d ElasticIPAccessState) ElasticIPAccessState {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewNilFloatingIPResourceAccessState returns new NilFloatingIPResourceAccessState with value set to v.
-func NewNilFloatingIPResourceAccessState(v FloatingIPResourceAccessState) NilFloatingIPResourceAccessState {
-	return NilFloatingIPResourceAccessState{
+// NewNilElasticIPFailureReason returns new NilElasticIPFailureReason with value set to v.
+func NewNilElasticIPFailureReason(v ElasticIPFailureReason) NilElasticIPFailureReason {
+	return NilElasticIPFailureReason{
 		Value: v,
 	}
 }
 
-// NilFloatingIPResourceAccessState is nullable FloatingIPResourceAccessState.
-type NilFloatingIPResourceAccessState struct {
-	Value FloatingIPResourceAccessState
+// NilElasticIPFailureReason is nullable ElasticIPFailureReason.
+type NilElasticIPFailureReason struct {
+	Value ElasticIPFailureReason
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilFloatingIPResourceAccessState) SetTo(v FloatingIPResourceAccessState) {
+func (o *NilElasticIPFailureReason) SetTo(v ElasticIPFailureReason) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilFloatingIPResourceAccessState) IsNull() bool { return o.Null }
+func (o NilElasticIPFailureReason) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilFloatingIPResourceAccessState) SetToNull() {
+func (o *NilElasticIPFailureReason) SetToNull() {
 	o.Null = true
-	var v FloatingIPResourceAccessState
+	var v ElasticIPFailureReason
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilFloatingIPResourceAccessState) Get() (v FloatingIPResourceAccessState, ok bool) {
+func (o NilElasticIPFailureReason) Get() (v ElasticIPFailureReason, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -7703,44 +6154,44 @@ func (o NilFloatingIPResourceAccessState) Get() (v FloatingIPResourceAccessState
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilFloatingIPResourceAccessState) Or(d FloatingIPResourceAccessState) FloatingIPResourceAccessState {
+func (o NilElasticIPFailureReason) Or(d ElasticIPFailureReason) ElasticIPFailureReason {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewNilFloatingIPResourceFailureReason returns new NilFloatingIPResourceFailureReason with value set to v.
-func NewNilFloatingIPResourceFailureReason(v FloatingIPResourceFailureReason) NilFloatingIPResourceFailureReason {
-	return NilFloatingIPResourceFailureReason{
+// NewNilElasticIPOperation returns new NilElasticIPOperation with value set to v.
+func NewNilElasticIPOperation(v ElasticIPOperation) NilElasticIPOperation {
+	return NilElasticIPOperation{
 		Value: v,
 	}
 }
 
-// NilFloatingIPResourceFailureReason is nullable FloatingIPResourceFailureReason.
-type NilFloatingIPResourceFailureReason struct {
-	Value FloatingIPResourceFailureReason
+// NilElasticIPOperation is nullable ElasticIPOperation.
+type NilElasticIPOperation struct {
+	Value ElasticIPOperation
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilFloatingIPResourceFailureReason) SetTo(v FloatingIPResourceFailureReason) {
+func (o *NilElasticIPOperation) SetTo(v ElasticIPOperation) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilFloatingIPResourceFailureReason) IsNull() bool { return o.Null }
+func (o NilElasticIPOperation) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilFloatingIPResourceFailureReason) SetToNull() {
+func (o *NilElasticIPOperation) SetToNull() {
 	o.Null = true
-	var v FloatingIPResourceFailureReason
+	var v ElasticIPOperation
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilFloatingIPResourceFailureReason) Get() (v FloatingIPResourceFailureReason, ok bool) {
+func (o NilElasticIPOperation) Get() (v ElasticIPOperation, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -7748,7 +6199,7 @@ func (o NilFloatingIPResourceFailureReason) Get() (v FloatingIPResourceFailureRe
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilFloatingIPResourceFailureReason) Or(d FloatingIPResourceFailureReason) FloatingIPResourceFailureReason {
+func (o NilElasticIPOperation) Or(d ElasticIPOperation) ElasticIPOperation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7845,6 +6296,96 @@ func (o NilIPv4Binding) Or(d IPv4Binding) IPv4Binding {
 	return d
 }
 
+// NewNilIPv4HostAddress returns new NilIPv4HostAddress with value set to v.
+func NewNilIPv4HostAddress(v IPv4HostAddress) NilIPv4HostAddress {
+	return NilIPv4HostAddress{
+		Value: v,
+	}
+}
+
+// NilIPv4HostAddress is nullable IPv4HostAddress.
+type NilIPv4HostAddress struct {
+	Value IPv4HostAddress
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilIPv4HostAddress) SetTo(v IPv4HostAddress) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilIPv4HostAddress) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilIPv4HostAddress) SetToNull() {
+	o.Null = true
+	var v IPv4HostAddress
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilIPv4HostAddress) Get() (v IPv4HostAddress, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilIPv4HostAddress) Or(d IPv4HostAddress) IPv4HostAddress {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilImageID returns new NilImageID with value set to v.
+func NewNilImageID(v ImageID) NilImageID {
+	return NilImageID{
+		Value: v,
+	}
+}
+
+// NilImageID is nullable ImageID.
+type NilImageID struct {
+	Value ImageID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilImageID) SetTo(v ImageID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilImageID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilImageID) SetToNull() {
+	o.Null = true
+	var v ImageID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilImageID) Get() (v ImageID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilImageID) Or(d ImageID) ImageID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilImageOperation returns new NilImageOperation with value set to v.
 func NewNilImageOperation(v ImageOperation) NilImageOperation {
 	return NilImageOperation{
@@ -7884,276 +6425,6 @@ func (o NilImageOperation) Get() (v ImageOperation, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilImageOperation) Or(d ImageOperation) ImageOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilImageResourceAccessState returns new NilImageResourceAccessState with value set to v.
-func NewNilImageResourceAccessState(v ImageResourceAccessState) NilImageResourceAccessState {
-	return NilImageResourceAccessState{
-		Value: v,
-	}
-}
-
-// NilImageResourceAccessState is nullable ImageResourceAccessState.
-type NilImageResourceAccessState struct {
-	Value ImageResourceAccessState
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilImageResourceAccessState) SetTo(v ImageResourceAccessState) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilImageResourceAccessState) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilImageResourceAccessState) SetToNull() {
-	o.Null = true
-	var v ImageResourceAccessState
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilImageResourceAccessState) Get() (v ImageResourceAccessState, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilImageResourceAccessState) Or(d ImageResourceAccessState) ImageResourceAccessState {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilImageResourceFailureReason returns new NilImageResourceFailureReason with value set to v.
-func NewNilImageResourceFailureReason(v ImageResourceFailureReason) NilImageResourceFailureReason {
-	return NilImageResourceFailureReason{
-		Value: v,
-	}
-}
-
-// NilImageResourceFailureReason is nullable ImageResourceFailureReason.
-type NilImageResourceFailureReason struct {
-	Value ImageResourceFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilImageResourceFailureReason) SetTo(v ImageResourceFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilImageResourceFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilImageResourceFailureReason) SetToNull() {
-	o.Null = true
-	var v ImageResourceFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilImageResourceFailureReason) Get() (v ImageResourceFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilImageResourceFailureReason) Or(d ImageResourceFailureReason) ImageResourceFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilInstanceOperation returns new NilInstanceOperation with value set to v.
-func NewNilInstanceOperation(v InstanceOperation) NilInstanceOperation {
-	return NilInstanceOperation{
-		Value: v,
-	}
-}
-
-// NilInstanceOperation is nullable InstanceOperation.
-type NilInstanceOperation struct {
-	Value InstanceOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilInstanceOperation) SetTo(v InstanceOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilInstanceOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilInstanceOperation) SetToNull() {
-	o.Null = true
-	var v InstanceOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilInstanceOperation) Get() (v InstanceOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilInstanceOperation) Or(d InstanceOperation) InstanceOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilInstanceResourceAccessState returns new NilInstanceResourceAccessState with value set to v.
-func NewNilInstanceResourceAccessState(v InstanceResourceAccessState) NilInstanceResourceAccessState {
-	return NilInstanceResourceAccessState{
-		Value: v,
-	}
-}
-
-// NilInstanceResourceAccessState is nullable InstanceResourceAccessState.
-type NilInstanceResourceAccessState struct {
-	Value InstanceResourceAccessState
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilInstanceResourceAccessState) SetTo(v InstanceResourceAccessState) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilInstanceResourceAccessState) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilInstanceResourceAccessState) SetToNull() {
-	o.Null = true
-	var v InstanceResourceAccessState
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilInstanceResourceAccessState) Get() (v InstanceResourceAccessState, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilInstanceResourceAccessState) Or(d InstanceResourceAccessState) InstanceResourceAccessState {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilInstanceResourceFailureReason returns new NilInstanceResourceFailureReason with value set to v.
-func NewNilInstanceResourceFailureReason(v InstanceResourceFailureReason) NilInstanceResourceFailureReason {
-	return NilInstanceResourceFailureReason{
-		Value: v,
-	}
-}
-
-// NilInstanceResourceFailureReason is nullable InstanceResourceFailureReason.
-type NilInstanceResourceFailureReason struct {
-	Value InstanceResourceFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilInstanceResourceFailureReason) SetTo(v InstanceResourceFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilInstanceResourceFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilInstanceResourceFailureReason) SetToNull() {
-	o.Null = true
-	var v InstanceResourceFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilInstanceResourceFailureReason) Get() (v InstanceResourceFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilInstanceResourceFailureReason) Or(d InstanceResourceFailureReason) InstanceResourceFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilInt returns new NilInt with value set to v.
-func NewNilInt(v int) NilInt {
-	return NilInt{
-		Value: v,
-	}
-}
-
-// NilInt is nullable int.
-type NilInt struct {
-	Value int
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilInt) SetTo(v int) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilInt) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilInt) SetToNull() {
-	o.Null = true
-	var v int
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilInt) Get() (v int, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilInt) Or(d int) int {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8205,37 +6476,37 @@ func (o NilInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewNilMoney returns new NilMoney with value set to v.
-func NewNilMoney(v Money) NilMoney {
-	return NilMoney{
+// NewNilNetworkInterfaceOperation returns new NilNetworkInterfaceOperation with value set to v.
+func NewNilNetworkInterfaceOperation(v NetworkInterfaceOperation) NilNetworkInterfaceOperation {
+	return NilNetworkInterfaceOperation{
 		Value: v,
 	}
 }
 
-// NilMoney is nullable Money.
-type NilMoney struct {
-	Value Money
+// NilNetworkInterfaceOperation is nullable NetworkInterfaceOperation.
+type NilNetworkInterfaceOperation struct {
+	Value NetworkInterfaceOperation
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilMoney) SetTo(v Money) {
+func (o *NilNetworkInterfaceOperation) SetTo(v NetworkInterfaceOperation) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilMoney) IsNull() bool { return o.Null }
+func (o NilNetworkInterfaceOperation) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilMoney) SetToNull() {
+func (o *NilNetworkInterfaceOperation) SetToNull() {
 	o.Null = true
-	var v Money
+	var v NetworkInterfaceOperation
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilMoney) Get() (v Money, ok bool) {
+func (o NilNetworkInterfaceOperation) Get() (v NetworkInterfaceOperation, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -8243,7 +6514,7 @@ func (o NilMoney) Get() (v Money, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilMoney) Or(d Money) Money {
+func (o NilNetworkInterfaceOperation) Or(d NetworkInterfaceOperation) NetworkInterfaceOperation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8295,37 +6566,37 @@ func (o NilPeeringOperation) Or(d PeeringOperation) PeeringOperation {
 	return d
 }
 
-// NewNilPortOperation returns new NilPortOperation with value set to v.
-func NewNilPortOperation(v PortOperation) NilPortOperation {
-	return NilPortOperation{
+// NewNilRegionID returns new NilRegionID with value set to v.
+func NewNilRegionID(v RegionID) NilRegionID {
+	return NilRegionID{
 		Value: v,
 	}
 }
 
-// NilPortOperation is nullable PortOperation.
-type NilPortOperation struct {
-	Value PortOperation
+// NilRegionID is nullable RegionID.
+type NilRegionID struct {
+	Value RegionID
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilPortOperation) SetTo(v PortOperation) {
+func (o *NilRegionID) SetTo(v RegionID) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilPortOperation) IsNull() bool { return o.Null }
+func (o NilRegionID) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilPortOperation) SetToNull() {
+func (o *NilRegionID) SetToNull() {
 	o.Null = true
-	var v PortOperation
+	var v RegionID
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilPortOperation) Get() (v PortOperation, ok bool) {
+func (o NilRegionID) Get() (v RegionID, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -8333,142 +6604,7 @@ func (o NilPortOperation) Get() (v PortOperation, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilPortOperation) Or(d PortOperation) PortOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilPricing returns new NilPricing with value set to v.
-func NewNilPricing(v Pricing) NilPricing {
-	return NilPricing{
-		Value: v,
-	}
-}
-
-// NilPricing is nullable Pricing.
-type NilPricing struct {
-	Value Pricing
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilPricing) SetTo(v Pricing) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilPricing) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilPricing) SetToNull() {
-	o.Null = true
-	var v Pricing
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilPricing) Get() (v Pricing, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilPricing) Or(d Pricing) Pricing {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilPricingOptionTerminationPolicy returns new NilPricingOptionTerminationPolicy with value set to v.
-func NewNilPricingOptionTerminationPolicy(v PricingOptionTerminationPolicy) NilPricingOptionTerminationPolicy {
-	return NilPricingOptionTerminationPolicy{
-		Value: v,
-	}
-}
-
-// NilPricingOptionTerminationPolicy is nullable PricingOptionTerminationPolicy.
-type NilPricingOptionTerminationPolicy struct {
-	Value PricingOptionTerminationPolicy
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilPricingOptionTerminationPolicy) SetTo(v PricingOptionTerminationPolicy) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilPricingOptionTerminationPolicy) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilPricingOptionTerminationPolicy) SetToNull() {
-	o.Null = true
-	var v PricingOptionTerminationPolicy
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilPricingOptionTerminationPolicy) Get() (v PricingOptionTerminationPolicy, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilPricingOptionTerminationPolicy) Or(d PricingOptionTerminationPolicy) PricingOptionTerminationPolicy {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilPricingOptionUnit returns new NilPricingOptionUnit with value set to v.
-func NewNilPricingOptionUnit(v PricingOptionUnit) NilPricingOptionUnit {
-	return NilPricingOptionUnit{
-		Value: v,
-	}
-}
-
-// NilPricingOptionUnit is nullable PricingOptionUnit.
-type NilPricingOptionUnit struct {
-	Value PricingOptionUnit
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilPricingOptionUnit) SetTo(v PricingOptionUnit) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilPricingOptionUnit) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilPricingOptionUnit) SetToNull() {
-	o.Null = true
-	var v PricingOptionUnit
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilPricingOptionUnit) Get() (v PricingOptionUnit, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilPricingOptionUnit) Or(d PricingOptionUnit) PricingOptionUnit {
+func (o NilRegionID) Or(d RegionID) RegionID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8520,51 +6656,6 @@ func (o NilSnapshotOperation) Or(d SnapshotOperation) SnapshotOperation {
 	return d
 }
 
-// NewNilSnapshotQuotaFailureReason returns new NilSnapshotQuotaFailureReason with value set to v.
-func NewNilSnapshotQuotaFailureReason(v SnapshotQuotaFailureReason) NilSnapshotQuotaFailureReason {
-	return NilSnapshotQuotaFailureReason{
-		Value: v,
-	}
-}
-
-// NilSnapshotQuotaFailureReason is nullable SnapshotQuotaFailureReason.
-type NilSnapshotQuotaFailureReason struct {
-	Value SnapshotQuotaFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilSnapshotQuotaFailureReason) SetTo(v SnapshotQuotaFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilSnapshotQuotaFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilSnapshotQuotaFailureReason) SetToNull() {
-	o.Null = true
-	var v SnapshotQuotaFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilSnapshotQuotaFailureReason) Get() (v SnapshotQuotaFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilSnapshotQuotaFailureReason) Or(d SnapshotQuotaFailureReason) SnapshotQuotaFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilString returns new NilString with value set to v.
 func NewNilString(v string) NilString {
 	return NilString{
@@ -8604,6 +6695,51 @@ func (o NilString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilSubnetID returns new NilSubnetID with value set to v.
+func NewNilSubnetID(v SubnetID) NilSubnetID {
+	return NilSubnetID{
+		Value: v,
+	}
+}
+
+// NilSubnetID is nullable SubnetID.
+type NilSubnetID struct {
+	Value SubnetID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilSubnetID) SetTo(v SubnetID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilSubnetID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilSubnetID) SetToNull() {
+	o.Null = true
+	var v SubnetID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilSubnetID) Get() (v SubnetID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilSubnetID) Or(d SubnetID) SubnetID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8655,6 +6791,231 @@ func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// NewNilVirtualMachineAccessState returns new NilVirtualMachineAccessState with value set to v.
+func NewNilVirtualMachineAccessState(v VirtualMachineAccessState) NilVirtualMachineAccessState {
+	return NilVirtualMachineAccessState{
+		Value: v,
+	}
+}
+
+// NilVirtualMachineAccessState is nullable VirtualMachineAccessState.
+type NilVirtualMachineAccessState struct {
+	Value VirtualMachineAccessState
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVirtualMachineAccessState) SetTo(v VirtualMachineAccessState) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVirtualMachineAccessState) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVirtualMachineAccessState) SetToNull() {
+	o.Null = true
+	var v VirtualMachineAccessState
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVirtualMachineAccessState) Get() (v VirtualMachineAccessState, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVirtualMachineAccessState) Or(d VirtualMachineAccessState) VirtualMachineAccessState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVirtualMachineFailureReason returns new NilVirtualMachineFailureReason with value set to v.
+func NewNilVirtualMachineFailureReason(v VirtualMachineFailureReason) NilVirtualMachineFailureReason {
+	return NilVirtualMachineFailureReason{
+		Value: v,
+	}
+}
+
+// NilVirtualMachineFailureReason is nullable VirtualMachineFailureReason.
+type NilVirtualMachineFailureReason struct {
+	Value VirtualMachineFailureReason
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVirtualMachineFailureReason) SetTo(v VirtualMachineFailureReason) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVirtualMachineFailureReason) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVirtualMachineFailureReason) SetToNull() {
+	o.Null = true
+	var v VirtualMachineFailureReason
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVirtualMachineFailureReason) Get() (v VirtualMachineFailureReason, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVirtualMachineFailureReason) Or(d VirtualMachineFailureReason) VirtualMachineFailureReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVirtualMachineID returns new NilVirtualMachineID with value set to v.
+func NewNilVirtualMachineID(v VirtualMachineID) NilVirtualMachineID {
+	return NilVirtualMachineID{
+		Value: v,
+	}
+}
+
+// NilVirtualMachineID is nullable VirtualMachineID.
+type NilVirtualMachineID struct {
+	Value VirtualMachineID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVirtualMachineID) SetTo(v VirtualMachineID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVirtualMachineID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVirtualMachineID) SetToNull() {
+	o.Null = true
+	var v VirtualMachineID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVirtualMachineID) Get() (v VirtualMachineID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVirtualMachineID) Or(d VirtualMachineID) VirtualMachineID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVirtualMachineOperation returns new NilVirtualMachineOperation with value set to v.
+func NewNilVirtualMachineOperation(v VirtualMachineOperation) NilVirtualMachineOperation {
+	return NilVirtualMachineOperation{
+		Value: v,
+	}
+}
+
+// NilVirtualMachineOperation is nullable VirtualMachineOperation.
+type NilVirtualMachineOperation struct {
+	Value VirtualMachineOperation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVirtualMachineOperation) SetTo(v VirtualMachineOperation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVirtualMachineOperation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVirtualMachineOperation) SetToNull() {
+	o.Null = true
+	var v VirtualMachineOperation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVirtualMachineOperation) Get() (v VirtualMachineOperation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVirtualMachineOperation) Or(d VirtualMachineOperation) VirtualMachineOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVirtualPrivateCloudID returns new NilVirtualPrivateCloudID with value set to v.
+func NewNilVirtualPrivateCloudID(v VirtualPrivateCloudID) NilVirtualPrivateCloudID {
+	return NilVirtualPrivateCloudID{
+		Value: v,
+	}
+}
+
+// NilVirtualPrivateCloudID is nullable VirtualPrivateCloudID.
+type NilVirtualPrivateCloudID struct {
+	Value VirtualPrivateCloudID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVirtualPrivateCloudID) SetTo(v VirtualPrivateCloudID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVirtualPrivateCloudID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVirtualPrivateCloudID) SetToNull() {
+	o.Null = true
+	var v VirtualPrivateCloudID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVirtualPrivateCloudID) Get() (v VirtualPrivateCloudID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVirtualPrivateCloudID) Or(d VirtualPrivateCloudID) VirtualPrivateCloudID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // Pagination metadata for stable numbered pages. total_count is returned only when the operation can
 // determine it without an unbounded scan.
 // Ref: #/components/schemas/OffsetPagination
@@ -8693,6 +7054,8 @@ func (s *OffsetPagination) SetPageSize(val int64) {
 func (s *OffsetPagination) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
+
+type OperationLogID string
 
 // Ref: #/components/schemas/OperationLogListResponseBody
 type OperationLogListResponseBody struct {
@@ -8737,11 +7100,11 @@ type OperationLogResource struct {
 	ByPlatform bool      `json:"by_platform"`
 	CreatedAt  time.Time `json:"created_at"`
 	// Brief reason for the failure.
-	Failure NilString `json:"failure"`
-	ID      uuid.UUID `json:"id"`
+	Failure NilString      `json:"failure"`
+	ID      OperationLogID `json:"id"`
 	// Path and query parameters of the request. Fields such as passwords are redacted.
 	Payload  OperationLogResourcePayload `json:"payload"`
-	RegionID NilUUID                     `json:"region_id"`
+	RegionID NilRegionID                 `json:"region_id"`
 	// Empty for create operations: the id of the new resource is in the response, not in the request path.
 	SubjectID   string `json:"subject_id"`
 	SubjectType string `json:"subject_type"`
@@ -8779,7 +7142,7 @@ func (s *OperationLogResource) GetFailure() NilString {
 }
 
 // GetID returns the value of ID.
-func (s *OperationLogResource) GetID() uuid.UUID {
+func (s *OperationLogResource) GetID() OperationLogID {
 	return s.ID
 }
 
@@ -8789,7 +7152,7 @@ func (s *OperationLogResource) GetPayload() OperationLogResourcePayload {
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *OperationLogResource) GetRegionID() NilUUID {
+func (s *OperationLogResource) GetRegionID() NilRegionID {
 	return s.RegionID
 }
 
@@ -8839,7 +7202,7 @@ func (s *OperationLogResource) SetFailure(val NilString) {
 }
 
 // SetID sets the value of ID.
-func (s *OperationLogResource) SetID(val uuid.UUID) {
+func (s *OperationLogResource) SetID(val OperationLogID) {
 	s.ID = val
 }
 
@@ -8849,7 +7212,7 @@ func (s *OperationLogResource) SetPayload(val OperationLogResourcePayload) {
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *OperationLogResource) SetRegionID(val NilUUID) {
+func (s *OperationLogResource) SetRegionID(val NilRegionID) {
 	s.RegionID = val
 }
 
@@ -8878,6 +7241,52 @@ func (s *OperationLogResourcePayload) init() OperationLogResourcePayload {
 		*s = m
 	}
 	return m
+}
+
+// NewOptAvailabilityZoneID returns new OptAvailabilityZoneID with value set to v.
+func NewOptAvailabilityZoneID(v AvailabilityZoneID) OptAvailabilityZoneID {
+	return OptAvailabilityZoneID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAvailabilityZoneID is optional AvailabilityZoneID.
+type OptAvailabilityZoneID struct {
+	Value AvailabilityZoneID
+	Set   bool
+}
+
+// IsSet returns true if OptAvailabilityZoneID was set.
+func (o OptAvailabilityZoneID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAvailabilityZoneID) Reset() {
+	var v AvailabilityZoneID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAvailabilityZoneID) SetTo(v AvailabilityZoneID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAvailabilityZoneID) Get() (v AvailabilityZoneID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAvailabilityZoneID) Or(d AvailabilityZoneID) AvailabilityZoneID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewOptBillingPeriod returns new OptBillingPeriod with value set to v.
@@ -8972,98 +7381,6 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
-// NewOptCheckoutOptions returns new OptCheckoutOptions with value set to v.
-func NewOptCheckoutOptions(v CheckoutOptions) OptCheckoutOptions {
-	return OptCheckoutOptions{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCheckoutOptions is optional CheckoutOptions.
-type OptCheckoutOptions struct {
-	Value CheckoutOptions
-	Set   bool
-}
-
-// IsSet returns true if OptCheckoutOptions was set.
-func (o OptCheckoutOptions) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCheckoutOptions) Reset() {
-	var v CheckoutOptions
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCheckoutOptions) SetTo(v CheckoutOptions) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCheckoutOptions) Get() (v CheckoutOptions, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCheckoutOptions) Or(d CheckoutOptions) CheckoutOptions {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptCheckoutOptionsMode returns new OptCheckoutOptionsMode with value set to v.
-func NewOptCheckoutOptionsMode(v CheckoutOptionsMode) OptCheckoutOptionsMode {
-	return OptCheckoutOptionsMode{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCheckoutOptionsMode is optional CheckoutOptionsMode.
-type OptCheckoutOptionsMode struct {
-	Value CheckoutOptionsMode
-	Set   bool
-}
-
-// IsSet returns true if OptCheckoutOptionsMode was set.
-func (o OptCheckoutOptionsMode) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCheckoutOptionsMode) Reset() {
-	var v CheckoutOptionsMode
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCheckoutOptionsMode) SetTo(v CheckoutOptionsMode) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCheckoutOptionsMode) Get() (v CheckoutOptionsMode, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCheckoutOptionsMode) Or(d CheckoutOptionsMode) CheckoutOptionsMode {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptDateTime returns new OptDateTime with value set to v.
 func NewOptDateTime(v time.Time) OptDateTime {
 	return OptDateTime{
@@ -9104,6 +7421,52 @@ func (o OptDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptDiskID returns new OptDiskID with value set to v.
+func NewOptDiskID(v DiskID) OptDiskID {
+	return OptDiskID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDiskID is optional DiskID.
+type OptDiskID struct {
+	Value DiskID
+	Set   bool
+}
+
+// IsSet returns true if OptDiskID was set.
+func (o OptDiskID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDiskID) Reset() {
+	var v DiskID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDiskID) SetTo(v DiskID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDiskID) Get() (v DiskID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDiskID) Or(d DiskID) DiskID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9156,6 +7519,52 @@ func (o OptDiskTypePurpose) Or(d DiskTypePurpose) DiskTypePurpose {
 	return d
 }
 
+// NewOptElasticIPID returns new OptElasticIPID with value set to v.
+func NewOptElasticIPID(v ElasticIPID) OptElasticIPID {
+	return OptElasticIPID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptElasticIPID is optional ElasticIPID.
+type OptElasticIPID struct {
+	Value ElasticIPID
+	Set   bool
+}
+
+// IsSet returns true if OptElasticIPID was set.
+func (o OptElasticIPID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptElasticIPID) Reset() {
+	var v ElasticIPID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptElasticIPID) SetTo(v ElasticIPID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptElasticIPID) Get() (v ElasticIPID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptElasticIPID) Or(d ElasticIPID) ElasticIPID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptErrorMeta returns new OptErrorMeta with value set to v.
 func NewOptErrorMeta(v ErrorMeta) OptErrorMeta {
 	return OptErrorMeta{
@@ -9196,6 +7605,98 @@ func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptIPv4HostAddress returns new OptIPv4HostAddress with value set to v.
+func NewOptIPv4HostAddress(v IPv4HostAddress) OptIPv4HostAddress {
+	return OptIPv4HostAddress{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptIPv4HostAddress is optional IPv4HostAddress.
+type OptIPv4HostAddress struct {
+	Value IPv4HostAddress
+	Set   bool
+}
+
+// IsSet returns true if OptIPv4HostAddress was set.
+func (o OptIPv4HostAddress) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptIPv4HostAddress) Reset() {
+	var v IPv4HostAddress
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptIPv4HostAddress) SetTo(v IPv4HostAddress) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptIPv4HostAddress) Get() (v IPv4HostAddress, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptIPv4HostAddress) Or(d IPv4HostAddress) IPv4HostAddress {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptImageID returns new OptImageID with value set to v.
+func NewOptImageID(v ImageID) OptImageID {
+	return OptImageID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptImageID is optional ImageID.
+type OptImageID struct {
+	Value ImageID
+	Set   bool
+}
+
+// IsSet returns true if OptImageID was set.
+func (o OptImageID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptImageID) Reset() {
+	var v ImageID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptImageID) SetTo(v ImageID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptImageID) Get() (v ImageID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptImageID) Or(d ImageID) ImageID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9294,38 +7795,38 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewOptNewFloatingIP returns new OptNewFloatingIP with value set to v.
-func NewOptNewFloatingIP(v NewFloatingIP) OptNewFloatingIP {
-	return OptNewFloatingIP{
+// NewOptInternetChargeType returns new OptInternetChargeType with value set to v.
+func NewOptInternetChargeType(v InternetChargeType) OptInternetChargeType {
+	return OptInternetChargeType{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNewFloatingIP is optional NewFloatingIP.
-type OptNewFloatingIP struct {
-	Value NewFloatingIP
+// OptInternetChargeType is optional InternetChargeType.
+type OptInternetChargeType struct {
+	Value InternetChargeType
 	Set   bool
 }
 
-// IsSet returns true if OptNewFloatingIP was set.
-func (o OptNewFloatingIP) IsSet() bool { return o.Set }
+// IsSet returns true if OptInternetChargeType was set.
+func (o OptInternetChargeType) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNewFloatingIP) Reset() {
-	var v NewFloatingIP
+func (o *OptInternetChargeType) Reset() {
+	var v InternetChargeType
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptNewFloatingIP) SetTo(v NewFloatingIP) {
+func (o *OptInternetChargeType) SetTo(v InternetChargeType) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNewFloatingIP) Get() (v NewFloatingIP, ok bool) {
+func (o OptInternetChargeType) Get() (v InternetChargeType, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -9333,7 +7834,99 @@ func (o OptNewFloatingIP) Get() (v NewFloatingIP, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNewFloatingIP) Or(d NewFloatingIP) NewFloatingIP {
+func (o OptInternetChargeType) Or(d InternetChargeType) InternetChargeType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNetworkInterfaceID returns new OptNetworkInterfaceID with value set to v.
+func NewOptNetworkInterfaceID(v NetworkInterfaceID) OptNetworkInterfaceID {
+	return OptNetworkInterfaceID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNetworkInterfaceID is optional NetworkInterfaceID.
+type OptNetworkInterfaceID struct {
+	Value NetworkInterfaceID
+	Set   bool
+}
+
+// IsSet returns true if OptNetworkInterfaceID was set.
+func (o OptNetworkInterfaceID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNetworkInterfaceID) Reset() {
+	var v NetworkInterfaceID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNetworkInterfaceID) SetTo(v NetworkInterfaceID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNetworkInterfaceID) Get() (v NetworkInterfaceID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNetworkInterfaceID) Or(d NetworkInterfaceID) NetworkInterfaceID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNewElasticIP returns new OptNewElasticIP with value set to v.
+func NewOptNewElasticIP(v NewElasticIP) OptNewElasticIP {
+	return OptNewElasticIP{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNewElasticIP is optional NewElasticIP.
+type OptNewElasticIP struct {
+	Value NewElasticIP
+	Set   bool
+}
+
+// IsSet returns true if OptNewElasticIP was set.
+func (o OptNewElasticIP) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNewElasticIP) Reset() {
+	var v NewElasticIP
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNewElasticIP) SetTo(v NewElasticIP) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNewElasticIP) Get() (v NewElasticIP, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNewElasticIP) Or(d NewElasticIP) NewElasticIP {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9476,57 +8069,57 @@ func (o OptNilInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewOptNilPortAttachment returns new OptNilPortAttachment with value set to v.
-func NewOptNilPortAttachment(v PortAttachment) OptNilPortAttachment {
-	return OptNilPortAttachment{
+// NewOptNilNetworkInterfaceAttachment returns new OptNilNetworkInterfaceAttachment with value set to v.
+func NewOptNilNetworkInterfaceAttachment(v NetworkInterfaceAttachment) OptNilNetworkInterfaceAttachment {
+	return OptNilNetworkInterfaceAttachment{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNilPortAttachment is optional nullable PortAttachment.
-type OptNilPortAttachment struct {
-	Value PortAttachment
+// OptNilNetworkInterfaceAttachment is optional nullable NetworkInterfaceAttachment.
+type OptNilNetworkInterfaceAttachment struct {
+	Value NetworkInterfaceAttachment
 	Set   bool
 	Null  bool
 }
 
-// IsSet returns true if OptNilPortAttachment was set.
-func (o OptNilPortAttachment) IsSet() bool { return o.Set }
+// IsSet returns true if OptNilNetworkInterfaceAttachment was set.
+func (o OptNilNetworkInterfaceAttachment) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNilPortAttachment) Reset() {
-	var v PortAttachment
+func (o *OptNilNetworkInterfaceAttachment) Reset() {
+	var v NetworkInterfaceAttachment
 	o.Value = v
 	o.Set = false
 	o.Null = false
 }
 
 // SetTo sets value to v.
-func (o *OptNilPortAttachment) SetTo(v PortAttachment) {
+func (o *OptNilNetworkInterfaceAttachment) SetTo(v NetworkInterfaceAttachment) {
 	o.Set = true
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o OptNilPortAttachment) IsNull() bool { return o.Null }
+func (o OptNilNetworkInterfaceAttachment) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *OptNilPortAttachment) SetToNull() {
+func (o *OptNilNetworkInterfaceAttachment) SetToNull() {
 	o.Set = true
 	o.Null = true
-	var v PortAttachment
+	var v NetworkInterfaceAttachment
 	o.Value = v
 }
 
 // IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilPortAttachment) IsEmpty() bool {
+func (o OptNilNetworkInterfaceAttachment) IsEmpty() bool {
 	return !o.Set && !o.Null
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNilPortAttachment) Get() (v PortAttachment, ok bool) {
+func (o OptNilNetworkInterfaceAttachment) Get() (v NetworkInterfaceAttachment, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -9537,64 +8130,64 @@ func (o OptNilPortAttachment) Get() (v PortAttachment, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNilPortAttachment) Or(d PortAttachment) PortAttachment {
+func (o OptNilNetworkInterfaceAttachment) Or(d NetworkInterfaceAttachment) NetworkInterfaceAttachment {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptNilUUIDArray returns new OptNilUUIDArray with value set to v.
-func NewOptNilUUIDArray(v []uuid.UUID) OptNilUUIDArray {
-	return OptNilUUIDArray{
+// NewOptNilSecurityGroupIDArray returns new OptNilSecurityGroupIDArray with value set to v.
+func NewOptNilSecurityGroupIDArray(v []SecurityGroupID) OptNilSecurityGroupIDArray {
+	return OptNilSecurityGroupIDArray{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNilUUIDArray is optional nullable []uuid.UUID.
-type OptNilUUIDArray struct {
-	Value []uuid.UUID
+// OptNilSecurityGroupIDArray is optional nullable []SecurityGroupID.
+type OptNilSecurityGroupIDArray struct {
+	Value []SecurityGroupID
 	Set   bool
 	Null  bool
 }
 
-// IsSet returns true if OptNilUUIDArray was set.
-func (o OptNilUUIDArray) IsSet() bool { return o.Set }
+// IsSet returns true if OptNilSecurityGroupIDArray was set.
+func (o OptNilSecurityGroupIDArray) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNilUUIDArray) Reset() {
-	var v []uuid.UUID
+func (o *OptNilSecurityGroupIDArray) Reset() {
+	var v []SecurityGroupID
 	o.Value = v
 	o.Set = false
 	o.Null = false
 }
 
 // SetTo sets value to v.
-func (o *OptNilUUIDArray) SetTo(v []uuid.UUID) {
+func (o *OptNilSecurityGroupIDArray) SetTo(v []SecurityGroupID) {
 	o.Set = true
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o OptNilUUIDArray) IsNull() bool { return o.Null }
+func (o OptNilSecurityGroupIDArray) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *OptNilUUIDArray) SetToNull() {
+func (o *OptNilSecurityGroupIDArray) SetToNull() {
 	o.Set = true
 	o.Null = true
-	var v []uuid.UUID
+	var v []SecurityGroupID
 	o.Value = v
 }
 
 // IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilUUIDArray) IsEmpty() bool {
+func (o OptNilSecurityGroupIDArray) IsEmpty() bool {
 	return !o.Set && !o.Null
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNilUUIDArray) Get() (v []uuid.UUID, ok bool) {
+func (o OptNilSecurityGroupIDArray) Get() (v []SecurityGroupID, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -9605,7 +8198,145 @@ func (o OptNilUUIDArray) Get() (v []uuid.UUID, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNilUUIDArray) Or(d []uuid.UUID) []uuid.UUID {
+func (o OptNilSecurityGroupIDArray) Or(d []SecurityGroupID) []SecurityGroupID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPeeringID returns new OptPeeringID with value set to v.
+func NewOptPeeringID(v PeeringID) OptPeeringID {
+	return OptPeeringID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPeeringID is optional PeeringID.
+type OptPeeringID struct {
+	Value PeeringID
+	Set   bool
+}
+
+// IsSet returns true if OptPeeringID was set.
+func (o OptPeeringID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPeeringID) Reset() {
+	var v PeeringID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPeeringID) SetTo(v PeeringID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPeeringID) Get() (v PeeringID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPeeringID) Or(d PeeringID) PeeringID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptRegionID returns new OptRegionID with value set to v.
+func NewOptRegionID(v RegionID) OptRegionID {
+	return OptRegionID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptRegionID is optional RegionID.
+type OptRegionID struct {
+	Value RegionID
+	Set   bool
+}
+
+// IsSet returns true if OptRegionID was set.
+func (o OptRegionID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptRegionID) Reset() {
+	var v RegionID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptRegionID) SetTo(v RegionID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptRegionID) Get() (v RegionID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptRegionID) Or(d RegionID) RegionID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSnapshotID returns new OptSnapshotID with value set to v.
+func NewOptSnapshotID(v SnapshotID) OptSnapshotID {
+	return OptSnapshotID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSnapshotID is optional SnapshotID.
+type OptSnapshotID struct {
+	Value SnapshotID
+	Set   bool
+}
+
+// IsSet returns true if OptSnapshotID was set.
+func (o OptSnapshotID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSnapshotID) Reset() {
+	var v SnapshotID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSnapshotID) SetTo(v SnapshotID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSnapshotID) Get() (v SnapshotID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSnapshotID) Or(d SnapshotID) SnapshotID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9652,6 +8383,52 @@ func (o OptString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSubnetID returns new OptSubnetID with value set to v.
+func NewOptSubnetID(v SubnetID) OptSubnetID {
+	return OptSubnetID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSubnetID is optional SubnetID.
+type OptSubnetID struct {
+	Value SubnetID
+	Set   bool
+}
+
+// IsSet returns true if OptSubnetID was set.
+func (o OptSubnetID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSubnetID) Reset() {
+	var v SubnetID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSubnetID) SetTo(v SubnetID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSubnetID) Get() (v SubnetID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSubnetID) Or(d SubnetID) SubnetID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9796,6 +8573,54 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// NewOptVirtualPrivateCloudID returns new OptVirtualPrivateCloudID with value set to v.
+func NewOptVirtualPrivateCloudID(v VirtualPrivateCloudID) OptVirtualPrivateCloudID {
+	return OptVirtualPrivateCloudID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVirtualPrivateCloudID is optional VirtualPrivateCloudID.
+type OptVirtualPrivateCloudID struct {
+	Value VirtualPrivateCloudID
+	Set   bool
+}
+
+// IsSet returns true if OptVirtualPrivateCloudID was set.
+func (o OptVirtualPrivateCloudID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVirtualPrivateCloudID) Reset() {
+	var v VirtualPrivateCloudID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVirtualPrivateCloudID) SetTo(v VirtualPrivateCloudID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVirtualPrivateCloudID) Get() (v VirtualPrivateCloudID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVirtualPrivateCloudID) Or(d VirtualPrivateCloudID) VirtualPrivateCloudID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+type PeeringID string
+
 // Ref: #/components/schemas/PeeringListResponseBody
 type PeeringListResponseBody struct {
 	Items      []PeeringResource `json:"items"`
@@ -9895,13 +8720,13 @@ func (s *PeeringOperationType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/PeeringResource
 type PeeringResource struct {
-	ID                 uuid.UUID             `json:"id"`
+	ID                 PeeringID             `json:"id"`
 	Name               string                `json:"name"`
-	RegionID           uuid.UUID             `json:"region_id"`
+	RegionID           RegionID              `json:"region_id"`
 	RequesterProjectID uuid.UUID             `json:"requester_project_id"`
 	AccepterProjectID  uuid.UUID             `json:"accepter_project_id"`
-	RequesterNetworkID uuid.UUID             `json:"requester_network_id"`
-	AccepterNetworkID  uuid.UUID             `json:"accepter_network_id"`
+	RequesterNetworkID VirtualPrivateCloudID `json:"requester_network_id"`
+	AccepterNetworkID  VirtualPrivateCloudID `json:"accepter_network_id"`
 	Status             PeeringResourceStatus `json:"status"`
 	CreatedAt          time.Time             `json:"created_at"`
 	FailureCode        OptString             `json:"failure_code"`
@@ -9910,7 +8735,7 @@ type PeeringResource struct {
 }
 
 // GetID returns the value of ID.
-func (s *PeeringResource) GetID() uuid.UUID {
+func (s *PeeringResource) GetID() PeeringID {
 	return s.ID
 }
 
@@ -9920,7 +8745,7 @@ func (s *PeeringResource) GetName() string {
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *PeeringResource) GetRegionID() uuid.UUID {
+func (s *PeeringResource) GetRegionID() RegionID {
 	return s.RegionID
 }
 
@@ -9935,12 +8760,12 @@ func (s *PeeringResource) GetAccepterProjectID() uuid.UUID {
 }
 
 // GetRequesterNetworkID returns the value of RequesterNetworkID.
-func (s *PeeringResource) GetRequesterNetworkID() uuid.UUID {
+func (s *PeeringResource) GetRequesterNetworkID() VirtualPrivateCloudID {
 	return s.RequesterNetworkID
 }
 
 // GetAccepterNetworkID returns the value of AccepterNetworkID.
-func (s *PeeringResource) GetAccepterNetworkID() uuid.UUID {
+func (s *PeeringResource) GetAccepterNetworkID() VirtualPrivateCloudID {
 	return s.AccepterNetworkID
 }
 
@@ -9965,7 +8790,7 @@ func (s *PeeringResource) GetOperation() NilPeeringOperation {
 }
 
 // SetID sets the value of ID.
-func (s *PeeringResource) SetID(val uuid.UUID) {
+func (s *PeeringResource) SetID(val PeeringID) {
 	s.ID = val
 }
 
@@ -9975,7 +8800,7 @@ func (s *PeeringResource) SetName(val string) {
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *PeeringResource) SetRegionID(val uuid.UUID) {
+func (s *PeeringResource) SetRegionID(val RegionID) {
 	s.RegionID = val
 }
 
@@ -9990,12 +8815,12 @@ func (s *PeeringResource) SetAccepterProjectID(val uuid.UUID) {
 }
 
 // SetRequesterNetworkID sets the value of RequesterNetworkID.
-func (s *PeeringResource) SetRequesterNetworkID(val uuid.UUID) {
+func (s *PeeringResource) SetRequesterNetworkID(val VirtualPrivateCloudID) {
 	s.RequesterNetworkID = val
 }
 
 // SetAccepterNetworkID sets the value of AccepterNetworkID.
-func (s *PeeringResource) SetAccepterNetworkID(val uuid.UUID) {
+func (s *PeeringResource) SetAccepterNetworkID(val VirtualPrivateCloudID) {
 	s.AccepterNetworkID = val
 }
 
@@ -10091,670 +8916,33 @@ func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/PortAddress
-type PortAddress struct {
-	ID         uuid.UUID        `json:"id"`
-	SubnetID   uuid.UUID        `json:"subnet_id"`
-	Address    string           `json:"address"`
-	IsPrimary  bool             `json:"is_primary"`
-	State      PortAddressState `json:"state"`
-	AssignedAt NilDateTime      `json:"assigned_at"`
-	ReleasedAt NilDateTime      `json:"released_at"`
+// The Billing order created for this request. Continue checkout in Billing; payment and resource
+// delivery are separate steps.
+// Ref: #/components/schemas/PlacedOrder
+type PlacedOrder struct {
+	OrderID uuid.UUID `json:"order_id"`
+	// Null until Billing creates an invoice for this order.
+	InvoiceID NilUUID `json:"invoice_id"`
 }
 
-// GetID returns the value of ID.
-func (s *PortAddress) GetID() uuid.UUID {
-	return s.ID
+// GetOrderID returns the value of OrderID.
+func (s *PlacedOrder) GetOrderID() uuid.UUID {
+	return s.OrderID
 }
 
-// GetSubnetID returns the value of SubnetID.
-func (s *PortAddress) GetSubnetID() uuid.UUID {
-	return s.SubnetID
+// GetInvoiceID returns the value of InvoiceID.
+func (s *PlacedOrder) GetInvoiceID() NilUUID {
+	return s.InvoiceID
 }
 
-// GetAddress returns the value of Address.
-func (s *PortAddress) GetAddress() string {
-	return s.Address
+// SetOrderID sets the value of OrderID.
+func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
+	s.OrderID = val
 }
 
-// GetIsPrimary returns the value of IsPrimary.
-func (s *PortAddress) GetIsPrimary() bool {
-	return s.IsPrimary
-}
-
-// GetState returns the value of State.
-func (s *PortAddress) GetState() PortAddressState {
-	return s.State
-}
-
-// GetAssignedAt returns the value of AssignedAt.
-func (s *PortAddress) GetAssignedAt() NilDateTime {
-	return s.AssignedAt
-}
-
-// GetReleasedAt returns the value of ReleasedAt.
-func (s *PortAddress) GetReleasedAt() NilDateTime {
-	return s.ReleasedAt
-}
-
-// SetID sets the value of ID.
-func (s *PortAddress) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetSubnetID sets the value of SubnetID.
-func (s *PortAddress) SetSubnetID(val uuid.UUID) {
-	s.SubnetID = val
-}
-
-// SetAddress sets the value of Address.
-func (s *PortAddress) SetAddress(val string) {
-	s.Address = val
-}
-
-// SetIsPrimary sets the value of IsPrimary.
-func (s *PortAddress) SetIsPrimary(val bool) {
-	s.IsPrimary = val
-}
-
-// SetState sets the value of State.
-func (s *PortAddress) SetState(val PortAddressState) {
-	s.State = val
-}
-
-// SetAssignedAt sets the value of AssignedAt.
-func (s *PortAddress) SetAssignedAt(val NilDateTime) {
-	s.AssignedAt = val
-}
-
-// SetReleasedAt sets the value of ReleasedAt.
-func (s *PortAddress) SetReleasedAt(val NilDateTime) {
-	s.ReleasedAt = val
-}
-
-type PortAddressState string
-
-const (
-	PortAddressStateReserved PortAddressState = "reserved"
-	PortAddressStateAssigned PortAddressState = "assigned"
-	PortAddressStateReleased PortAddressState = "released"
-	PortAddressStateUnknown  PortAddressState = "unknown"
-)
-
-// AllValues returns all PortAddressState values.
-func (PortAddressState) AllValues() []PortAddressState {
-	return []PortAddressState{
-		PortAddressStateReserved,
-		PortAddressStateAssigned,
-		PortAddressStateReleased,
-		PortAddressStateUnknown,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PortAddressState) MarshalText() ([]byte, error) {
-	switch s {
-	case PortAddressStateReserved:
-		return []byte(s), nil
-	case PortAddressStateAssigned:
-		return []byte(s), nil
-	case PortAddressStateReleased:
-		return []byte(s), nil
-	case PortAddressStateUnknown:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PortAddressState) UnmarshalText(data []byte) error {
-	switch PortAddressState(data) {
-	case PortAddressStateReserved:
-		*s = PortAddressStateReserved
-		return nil
-	case PortAddressStateAssigned:
-		*s = PortAddressStateAssigned
-		return nil
-	case PortAddressStateReleased:
-		*s = PortAddressStateReleased
-		return nil
-	case PortAddressStateUnknown:
-		*s = PortAddressStateUnknown
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/PortAttachment
-type PortAttachment struct {
-	ID                 uuid.UUID           `json:"id"`
-	InstanceID         uuid.UUID           `json:"instance_id"`
-	PortID             uuid.UUID           `json:"port_id"`
-	Role               PortAttachmentRole  `json:"role"`
-	DeleteWithInstance bool                `json:"delete_with_instance"`
-	State              PortAttachmentState `json:"state"`
-	AttachedAt         NilDateTime         `json:"attached_at"`
-	DetachedAt         NilDateTime         `json:"detached_at"`
-	ReleasedAt         NilDateTime         `json:"released_at"`
-}
-
-// GetID returns the value of ID.
-func (s *PortAttachment) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetInstanceID returns the value of InstanceID.
-func (s *PortAttachment) GetInstanceID() uuid.UUID {
-	return s.InstanceID
-}
-
-// GetPortID returns the value of PortID.
-func (s *PortAttachment) GetPortID() uuid.UUID {
-	return s.PortID
-}
-
-// GetRole returns the value of Role.
-func (s *PortAttachment) GetRole() PortAttachmentRole {
-	return s.Role
-}
-
-// GetDeleteWithInstance returns the value of DeleteWithInstance.
-func (s *PortAttachment) GetDeleteWithInstance() bool {
-	return s.DeleteWithInstance
-}
-
-// GetState returns the value of State.
-func (s *PortAttachment) GetState() PortAttachmentState {
-	return s.State
-}
-
-// GetAttachedAt returns the value of AttachedAt.
-func (s *PortAttachment) GetAttachedAt() NilDateTime {
-	return s.AttachedAt
-}
-
-// GetDetachedAt returns the value of DetachedAt.
-func (s *PortAttachment) GetDetachedAt() NilDateTime {
-	return s.DetachedAt
-}
-
-// GetReleasedAt returns the value of ReleasedAt.
-func (s *PortAttachment) GetReleasedAt() NilDateTime {
-	return s.ReleasedAt
-}
-
-// SetID sets the value of ID.
-func (s *PortAttachment) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetInstanceID sets the value of InstanceID.
-func (s *PortAttachment) SetInstanceID(val uuid.UUID) {
-	s.InstanceID = val
-}
-
-// SetPortID sets the value of PortID.
-func (s *PortAttachment) SetPortID(val uuid.UUID) {
-	s.PortID = val
-}
-
-// SetRole sets the value of Role.
-func (s *PortAttachment) SetRole(val PortAttachmentRole) {
-	s.Role = val
-}
-
-// SetDeleteWithInstance sets the value of DeleteWithInstance.
-func (s *PortAttachment) SetDeleteWithInstance(val bool) {
-	s.DeleteWithInstance = val
-}
-
-// SetState sets the value of State.
-func (s *PortAttachment) SetState(val PortAttachmentState) {
-	s.State = val
-}
-
-// SetAttachedAt sets the value of AttachedAt.
-func (s *PortAttachment) SetAttachedAt(val NilDateTime) {
-	s.AttachedAt = val
-}
-
-// SetDetachedAt sets the value of DetachedAt.
-func (s *PortAttachment) SetDetachedAt(val NilDateTime) {
-	s.DetachedAt = val
-}
-
-// SetReleasedAt sets the value of ReleasedAt.
-func (s *PortAttachment) SetReleasedAt(val NilDateTime) {
-	s.ReleasedAt = val
-}
-
-// Ref: #/components/schemas/PortAttachmentList
-type PortAttachmentList struct {
-	Items      []PortAttachment `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *PortAttachmentList) GetItems() []PortAttachment {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *PortAttachmentList) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *PortAttachmentList) SetItems(val []PortAttachment) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *PortAttachmentList) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-type PortAttachmentRole string
-
-const (
-	PortAttachmentRolePrimary    PortAttachmentRole = "primary"
-	PortAttachmentRoleAdditional PortAttachmentRole = "additional"
-)
-
-// AllValues returns all PortAttachmentRole values.
-func (PortAttachmentRole) AllValues() []PortAttachmentRole {
-	return []PortAttachmentRole{
-		PortAttachmentRolePrimary,
-		PortAttachmentRoleAdditional,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PortAttachmentRole) MarshalText() ([]byte, error) {
-	switch s {
-	case PortAttachmentRolePrimary:
-		return []byte(s), nil
-	case PortAttachmentRoleAdditional:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PortAttachmentRole) UnmarshalText(data []byte) error {
-	switch PortAttachmentRole(data) {
-	case PortAttachmentRolePrimary:
-		*s = PortAttachmentRolePrimary
-		return nil
-	case PortAttachmentRoleAdditional:
-		*s = PortAttachmentRoleAdditional
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type PortAttachmentState string
-
-const (
-	PortAttachmentStateReserved PortAttachmentState = "reserved"
-	PortAttachmentStateAttached PortAttachmentState = "attached"
-	PortAttachmentStateReleased PortAttachmentState = "released"
-	PortAttachmentStateUnknown  PortAttachmentState = "unknown"
-)
-
-// AllValues returns all PortAttachmentState values.
-func (PortAttachmentState) AllValues() []PortAttachmentState {
-	return []PortAttachmentState{
-		PortAttachmentStateReserved,
-		PortAttachmentStateAttached,
-		PortAttachmentStateReleased,
-		PortAttachmentStateUnknown,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PortAttachmentState) MarshalText() ([]byte, error) {
-	switch s {
-	case PortAttachmentStateReserved:
-		return []byte(s), nil
-	case PortAttachmentStateAttached:
-		return []byte(s), nil
-	case PortAttachmentStateReleased:
-		return []byte(s), nil
-	case PortAttachmentStateUnknown:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PortAttachmentState) UnmarshalText(data []byte) error {
-	switch PortAttachmentState(data) {
-	case PortAttachmentStateReserved:
-		*s = PortAttachmentStateReserved
-		return nil
-	case PortAttachmentStateAttached:
-		*s = PortAttachmentStateAttached
-		return nil
-	case PortAttachmentStateReleased:
-		*s = PortAttachmentStateReleased
-		return nil
-	case PortAttachmentStateUnknown:
-		*s = PortAttachmentStateUnknown
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/PortListResponseBody
-type PortListResponseBody struct {
-	Items      []PortResource   `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *PortListResponseBody) GetItems() []PortResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *PortListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *PortListResponseBody) SetItems(val []PortResource) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *PortListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// An operation still running on this network interface. It is not a separate resource; once it
-// finishes, the network interface's `operation` is null again and the network interface shows the
-// result.
-// Ref: #/components/schemas/PortOperation
-type PortOperation struct {
-	Type      PortOperationType `json:"type"`
-	StartedAt time.Time         `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *PortOperation) GetType() PortOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *PortOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *PortOperation) SetType(val PortOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *PortOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-type PortOperationType string
-
-const (
-	PortOperationTypeCreate PortOperationType = "create"
-	PortOperationTypeAttach PortOperationType = "attach"
-	PortOperationTypeDetach PortOperationType = "detach"
-	PortOperationTypeDelete PortOperationType = "delete"
-)
-
-// AllValues returns all PortOperationType values.
-func (PortOperationType) AllValues() []PortOperationType {
-	return []PortOperationType{
-		PortOperationTypeCreate,
-		PortOperationTypeAttach,
-		PortOperationTypeDetach,
-		PortOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PortOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case PortOperationTypeCreate:
-		return []byte(s), nil
-	case PortOperationTypeAttach:
-		return []byte(s), nil
-	case PortOperationTypeDetach:
-		return []byte(s), nil
-	case PortOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PortOperationType) UnmarshalText(data []byte) error {
-	switch PortOperationType(data) {
-	case PortOperationTypeCreate:
-		*s = PortOperationTypeCreate
-		return nil
-	case PortOperationTypeAttach:
-		*s = PortOperationTypeAttach
-		return nil
-	case PortOperationTypeDetach:
-		*s = PortOperationTypeDetach
-		return nil
-	case PortOperationTypeDelete:
-		*s = PortOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/PortResource
-type PortResource struct {
-	ID               uuid.UUID `json:"id"`
-	MAC              NilString `json:"mac"`
-	Name             string    `json:"name"`
-	PrivateNetworkID uuid.UUID `json:"private_network_id"`
-	// Floating IPv4 addresses bound to this network interface; an empty array when none are bound.
-	PublicIps  []string             `json:"public_ips"`
-	Addresses  []PortAddress        `json:"addresses"`
-	Attachment OptNilPortAttachment `json:"attachment"`
-	// `missing` means the interface no longer exists in the cloud.
-	Status     PortResourceStatus `json:"status"`
-	Generation int64              `json:"generation"`
-	ObservedAt NilDateTime        `json:"observed_at"`
-	// The operation in progress on this network interface, or null when none is.
-	Operation NilPortOperation `json:"operation"`
-}
-
-// GetID returns the value of ID.
-func (s *PortResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetMAC returns the value of MAC.
-func (s *PortResource) GetMAC() NilString {
-	return s.MAC
-}
-
-// GetName returns the value of Name.
-func (s *PortResource) GetName() string {
-	return s.Name
-}
-
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *PortResource) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
-}
-
-// GetPublicIps returns the value of PublicIps.
-func (s *PortResource) GetPublicIps() []string {
-	return s.PublicIps
-}
-
-// GetAddresses returns the value of Addresses.
-func (s *PortResource) GetAddresses() []PortAddress {
-	return s.Addresses
-}
-
-// GetAttachment returns the value of Attachment.
-func (s *PortResource) GetAttachment() OptNilPortAttachment {
-	return s.Attachment
-}
-
-// GetStatus returns the value of Status.
-func (s *PortResource) GetStatus() PortResourceStatus {
-	return s.Status
-}
-
-// GetGeneration returns the value of Generation.
-func (s *PortResource) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *PortResource) GetObservedAt() NilDateTime {
-	return s.ObservedAt
-}
-
-// GetOperation returns the value of Operation.
-func (s *PortResource) GetOperation() NilPortOperation {
-	return s.Operation
-}
-
-// SetID sets the value of ID.
-func (s *PortResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetMAC sets the value of MAC.
-func (s *PortResource) SetMAC(val NilString) {
-	s.MAC = val
-}
-
-// SetName sets the value of Name.
-func (s *PortResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *PortResource) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
-}
-
-// SetPublicIps sets the value of PublicIps.
-func (s *PortResource) SetPublicIps(val []string) {
-	s.PublicIps = val
-}
-
-// SetAddresses sets the value of Addresses.
-func (s *PortResource) SetAddresses(val []PortAddress) {
-	s.Addresses = val
-}
-
-// SetAttachment sets the value of Attachment.
-func (s *PortResource) SetAttachment(val OptNilPortAttachment) {
-	s.Attachment = val
-}
-
-// SetStatus sets the value of Status.
-func (s *PortResource) SetStatus(val PortResourceStatus) {
-	s.Status = val
-}
-
-// SetGeneration sets the value of Generation.
-func (s *PortResource) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *PortResource) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *PortResource) SetOperation(val NilPortOperation) {
-	s.Operation = val
-}
-
-func (*PortResource) attachPortRes() {}
-func (*PortResource) deletePortRes() {}
-func (*PortResource) detachPortRes() {}
-
-// `missing` means the interface no longer exists in the cloud.
-type PortResourceStatus string
-
-const (
-	PortResourceStatusPending   PortResourceStatus = "pending"
-	PortResourceStatusAvailable PortResourceStatus = "available"
-	PortResourceStatusError     PortResourceStatus = "error"
-	PortResourceStatusUnknown   PortResourceStatus = "unknown"
-	PortResourceStatusMissing   PortResourceStatus = "missing"
-)
-
-// AllValues returns all PortResourceStatus values.
-func (PortResourceStatus) AllValues() []PortResourceStatus {
-	return []PortResourceStatus{
-		PortResourceStatusPending,
-		PortResourceStatusAvailable,
-		PortResourceStatusError,
-		PortResourceStatusUnknown,
-		PortResourceStatusMissing,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PortResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case PortResourceStatusPending:
-		return []byte(s), nil
-	case PortResourceStatusAvailable:
-		return []byte(s), nil
-	case PortResourceStatusError:
-		return []byte(s), nil
-	case PortResourceStatusUnknown:
-		return []byte(s), nil
-	case PortResourceStatusMissing:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PortResourceStatus) UnmarshalText(data []byte) error {
-	switch PortResourceStatus(data) {
-	case PortResourceStatusPending:
-		*s = PortResourceStatusPending
-		return nil
-	case PortResourceStatusAvailable:
-		*s = PortResourceStatusAvailable
-		return nil
-	case PortResourceStatusError:
-		*s = PortResourceStatusError
-		return nil
-	case PortResourceStatusUnknown:
-		*s = PortResourceStatusUnknown
-		return nil
-	case PortResourceStatusMissing:
-		*s = PortResourceStatusMissing
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+// SetInvoiceID sets the value of InvoiceID.
+func (s *PlacedOrder) SetInvoiceID(val NilUUID) {
+	s.InvoiceID = val
 }
 
 // Ref: #/components/schemas/PowerRequest
@@ -10772,883 +8960,150 @@ func (s *PowerRequest) SetExpectedGeneration(val OptInt64) {
 	s.ExpectedGeneration = val
 }
 
-// How a catalog item can be bought, calculated by Billing in the currency of the project's current
-// billing account. These are list amounts before promotion codes, not a checkout guarantee; quote a
-// purchase for its exact total.
-// Ref: #/components/schemas/Pricing
-type Pricing struct {
-	Currency string `json:"currency"`
-	// One entry per way the item can be bought. Empty when it cannot be bought in this currency.
-	Options []PricingOption `json:"options"`
+// The effective limit for one IAM platform project and resource. Includes the default when no project
+// override exists. This representation contains no aggregated usage counter.
+// Ref: #/components/schemas/ProjectQuota
+type ProjectQuota struct {
+	ProjectID uuid.UUID            `json:"project_id"`
+	Resource  ProjectQuotaResource `json:"resource"`
+	Limit     int64                `json:"limit"`
 }
 
-// GetCurrency returns the value of Currency.
-func (s *Pricing) GetCurrency() string {
-	return s.Currency
+// GetProjectID returns the value of ProjectID.
+func (s *ProjectQuota) GetProjectID() uuid.UUID {
+	return s.ProjectID
 }
 
-// GetOptions returns the value of Options.
-func (s *Pricing) GetOptions() []PricingOption {
-	return s.Options
+// GetResource returns the value of Resource.
+func (s *ProjectQuota) GetResource() ProjectQuotaResource {
+	return s.Resource
 }
 
-// SetCurrency sets the value of Currency.
-func (s *Pricing) SetCurrency(val string) {
-	s.Currency = val
+// GetLimit returns the value of Limit.
+func (s *ProjectQuota) GetLimit() int64 {
+	return s.Limit
 }
 
-// SetOptions sets the value of Options.
-func (s *Pricing) SetOptions(val []PricingOption) {
-	s.Options = val
+// SetProjectID sets the value of ProjectID.
+func (s *ProjectQuota) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
 }
 
-// One way to buy an item. Choose it by giving its usage_type, period and termination_policy as
-// billing.
-// Ref: #/components/schemas/PricingOption
-type PricingOption struct {
-	// `licensed` pays for a period in advance; `metered` bills usage until canceled.
-	UsageType PricingOptionUsageType `json:"usage_type"`
-	// The term of a licensed option; null for metered.
-	Period NilBillingPeriod `json:"period"`
-	// What the amounts are for: one `item`, such as an instance or an address; one `gib` of size or
-	// capacity; one `mbps` of bandwidth; or one `snapshot` slot.
-	QuantityUnit PricingOptionQuantityUnit `json:"quantity_unit"`
-	// Licensed only; null for metered. The amount for one period, per quantity unit.
-	Amount NilString `json:"amount"`
-	// Licensed only; null for metered. `amount` spread over the months of the period.
-	MonthlyAmount NilString `json:"monthly_amount"`
-	// Licensed only. How much lower `monthly_amount` is than that of the shortest licensed period of the
-	// same item, as a decimal percentage. Null for that shortest period and for metered.
-	SavingPercent NilString `json:"saving_percent"`
-	// Metered only; null for licensed. The amount for one `unit` of time, per quantity unit.
-	UnitAmount NilString `json:"unit_amount"`
-	// Metered only; null for licensed. The time unit of `unit_amount`.
-	Unit NilPricingOptionUnit `json:"unit"`
-	// What canceling does under this option: `immediate` ends the service at once, with any refund
-	// following the option's terms; `period_end` ends it at the end of the paid period. Null means no
-	// explicit policy was recorded; it must not be interpreted as immediate.
-	TerminationPolicy NilPricingOptionTerminationPolicy `json:"termination_policy"`
+// SetResource sets the value of Resource.
+func (s *ProjectQuota) SetResource(val ProjectQuotaResource) {
+	s.Resource = val
 }
 
-// GetUsageType returns the value of UsageType.
-func (s *PricingOption) GetUsageType() PricingOptionUsageType {
-	return s.UsageType
+// SetLimit sets the value of Limit.
+func (s *ProjectQuota) SetLimit(val int64) {
+	s.Limit = val
 }
 
-// GetPeriod returns the value of Period.
-func (s *PricingOption) GetPeriod() NilBillingPeriod {
-	return s.Period
-}
-
-// GetQuantityUnit returns the value of QuantityUnit.
-func (s *PricingOption) GetQuantityUnit() PricingOptionQuantityUnit {
-	return s.QuantityUnit
-}
-
-// GetAmount returns the value of Amount.
-func (s *PricingOption) GetAmount() NilString {
-	return s.Amount
-}
-
-// GetMonthlyAmount returns the value of MonthlyAmount.
-func (s *PricingOption) GetMonthlyAmount() NilString {
-	return s.MonthlyAmount
-}
-
-// GetSavingPercent returns the value of SavingPercent.
-func (s *PricingOption) GetSavingPercent() NilString {
-	return s.SavingPercent
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *PricingOption) GetUnitAmount() NilString {
-	return s.UnitAmount
-}
-
-// GetUnit returns the value of Unit.
-func (s *PricingOption) GetUnit() NilPricingOptionUnit {
-	return s.Unit
-}
-
-// GetTerminationPolicy returns the value of TerminationPolicy.
-func (s *PricingOption) GetTerminationPolicy() NilPricingOptionTerminationPolicy {
-	return s.TerminationPolicy
-}
-
-// SetUsageType sets the value of UsageType.
-func (s *PricingOption) SetUsageType(val PricingOptionUsageType) {
-	s.UsageType = val
-}
-
-// SetPeriod sets the value of Period.
-func (s *PricingOption) SetPeriod(val NilBillingPeriod) {
-	s.Period = val
-}
-
-// SetQuantityUnit sets the value of QuantityUnit.
-func (s *PricingOption) SetQuantityUnit(val PricingOptionQuantityUnit) {
-	s.QuantityUnit = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *PricingOption) SetAmount(val NilString) {
-	s.Amount = val
-}
-
-// SetMonthlyAmount sets the value of MonthlyAmount.
-func (s *PricingOption) SetMonthlyAmount(val NilString) {
-	s.MonthlyAmount = val
-}
-
-// SetSavingPercent sets the value of SavingPercent.
-func (s *PricingOption) SetSavingPercent(val NilString) {
-	s.SavingPercent = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *PricingOption) SetUnitAmount(val NilString) {
-	s.UnitAmount = val
-}
-
-// SetUnit sets the value of Unit.
-func (s *PricingOption) SetUnit(val NilPricingOptionUnit) {
-	s.Unit = val
-}
-
-// SetTerminationPolicy sets the value of TerminationPolicy.
-func (s *PricingOption) SetTerminationPolicy(val NilPricingOptionTerminationPolicy) {
-	s.TerminationPolicy = val
-}
-
-// What the amounts are for: one `item`, such as an instance or an address; one `gib` of size or
-// capacity; one `mbps` of bandwidth; or one `snapshot` slot.
-type PricingOptionQuantityUnit string
-
-const (
-	PricingOptionQuantityUnitItem     PricingOptionQuantityUnit = "item"
-	PricingOptionQuantityUnitGib      PricingOptionQuantityUnit = "gib"
-	PricingOptionQuantityUnitMbps     PricingOptionQuantityUnit = "mbps"
-	PricingOptionQuantityUnitSnapshot PricingOptionQuantityUnit = "snapshot"
-)
-
-// AllValues returns all PricingOptionQuantityUnit values.
-func (PricingOptionQuantityUnit) AllValues() []PricingOptionQuantityUnit {
-	return []PricingOptionQuantityUnit{
-		PricingOptionQuantityUnitItem,
-		PricingOptionQuantityUnitGib,
-		PricingOptionQuantityUnitMbps,
-		PricingOptionQuantityUnitSnapshot,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PricingOptionQuantityUnit) MarshalText() ([]byte, error) {
-	switch s {
-	case PricingOptionQuantityUnitItem:
-		return []byte(s), nil
-	case PricingOptionQuantityUnitGib:
-		return []byte(s), nil
-	case PricingOptionQuantityUnitMbps:
-		return []byte(s), nil
-	case PricingOptionQuantityUnitSnapshot:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PricingOptionQuantityUnit) UnmarshalText(data []byte) error {
-	switch PricingOptionQuantityUnit(data) {
-	case PricingOptionQuantityUnitItem:
-		*s = PricingOptionQuantityUnitItem
-		return nil
-	case PricingOptionQuantityUnitGib:
-		*s = PricingOptionQuantityUnitGib
-		return nil
-	case PricingOptionQuantityUnitMbps:
-		*s = PricingOptionQuantityUnitMbps
-		return nil
-	case PricingOptionQuantityUnitSnapshot:
-		*s = PricingOptionQuantityUnitSnapshot
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// What canceling does under this option: `immediate` ends the service at once, with any refund
-// following the option's terms; `period_end` ends it at the end of the paid period. Null means no
-// explicit policy was recorded; it must not be interpreted as immediate.
-type PricingOptionTerminationPolicy string
-
-const (
-	PricingOptionTerminationPolicyImmediate PricingOptionTerminationPolicy = "immediate"
-	PricingOptionTerminationPolicyPeriodEnd PricingOptionTerminationPolicy = "period_end"
-)
-
-// AllValues returns all PricingOptionTerminationPolicy values.
-func (PricingOptionTerminationPolicy) AllValues() []PricingOptionTerminationPolicy {
-	return []PricingOptionTerminationPolicy{
-		PricingOptionTerminationPolicyImmediate,
-		PricingOptionTerminationPolicyPeriodEnd,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PricingOptionTerminationPolicy) MarshalText() ([]byte, error) {
-	switch s {
-	case PricingOptionTerminationPolicyImmediate:
-		return []byte(s), nil
-	case PricingOptionTerminationPolicyPeriodEnd:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PricingOptionTerminationPolicy) UnmarshalText(data []byte) error {
-	switch PricingOptionTerminationPolicy(data) {
-	case PricingOptionTerminationPolicyImmediate:
-		*s = PricingOptionTerminationPolicyImmediate
-		return nil
-	case PricingOptionTerminationPolicyPeriodEnd:
-		*s = PricingOptionTerminationPolicyPeriodEnd
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Metered only; null for licensed. The time unit of `unit_amount`.
-type PricingOptionUnit string
-
-const (
-	PricingOptionUnitHour PricingOptionUnit = "hour"
-)
-
-// AllValues returns all PricingOptionUnit values.
-func (PricingOptionUnit) AllValues() []PricingOptionUnit {
-	return []PricingOptionUnit{
-		PricingOptionUnitHour,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PricingOptionUnit) MarshalText() ([]byte, error) {
-	switch s {
-	case PricingOptionUnitHour:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PricingOptionUnit) UnmarshalText(data []byte) error {
-	switch PricingOptionUnit(data) {
-	case PricingOptionUnitHour:
-		*s = PricingOptionUnitHour
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `licensed` pays for a period in advance; `metered` bills usage until canceled.
-type PricingOptionUsageType string
-
-const (
-	PricingOptionUsageTypeLicensed PricingOptionUsageType = "licensed"
-	PricingOptionUsageTypeMetered  PricingOptionUsageType = "metered"
-)
-
-// AllValues returns all PricingOptionUsageType values.
-func (PricingOptionUsageType) AllValues() []PricingOptionUsageType {
-	return []PricingOptionUsageType{
-		PricingOptionUsageTypeLicensed,
-		PricingOptionUsageTypeMetered,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PricingOptionUsageType) MarshalText() ([]byte, error) {
-	switch s {
-	case PricingOptionUsageTypeLicensed:
-		return []byte(s), nil
-	case PricingOptionUsageTypeMetered:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PricingOptionUsageType) UnmarshalText(data []byte) error {
-	switch PricingOptionUsageType(data) {
-	case PricingOptionUsageTypeLicensed:
-		*s = PricingOptionUsageTypeLicensed
-		return nil
-	case PricingOptionUsageTypeMetered:
-		*s = PricingOptionUsageTypeMetered
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/PrivateNetworkListResponseBody
-type PrivateNetworkListResponseBody struct {
-	Items      []PrivateNetworkResource `json:"items"`
-	Pagination OffsetPagination         `json:"pagination"`
+// Ref: #/components/schemas/ProjectQuotaListResponseBody
+type ProjectQuotaListResponseBody struct {
+	Items      []ProjectQuota   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
-func (s *PrivateNetworkListResponseBody) GetItems() []PrivateNetworkResource {
+func (s *ProjectQuotaListResponseBody) GetItems() []ProjectQuota {
 	return s.Items
 }
 
 // GetPagination returns the value of Pagination.
-func (s *PrivateNetworkListResponseBody) GetPagination() OffsetPagination {
+func (s *ProjectQuotaListResponseBody) GetPagination() OffsetPagination {
 	return s.Pagination
 }
 
 // SetItems sets the value of Items.
-func (s *PrivateNetworkListResponseBody) SetItems(val []PrivateNetworkResource) {
+func (s *ProjectQuotaListResponseBody) SetItems(val []ProjectQuota) {
 	s.Items = val
 }
 
 // SetPagination sets the value of Pagination.
-func (s *PrivateNetworkListResponseBody) SetPagination(val OffsetPagination) {
+func (s *ProjectQuotaListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Ref: #/components/schemas/PrivateNetworkResource
-type PrivateNetworkResource struct {
-	Cidr      string    `json:"cidr"`
-	CreatedAt time.Time `json:"created_at"`
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	RegionID  uuid.UUID `json:"region_id"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *PrivateNetworkResource) GetCidr() string {
-	return s.Cidr
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *PrivateNetworkResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetID returns the value of ID.
-func (s *PrivateNetworkResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *PrivateNetworkResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *PrivateNetworkResource) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *PrivateNetworkResource) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
-}
-
-// SetCidr sets the value of Cidr.
-func (s *PrivateNetworkResource) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *PrivateNetworkResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetID sets the value of ID.
-func (s *PrivateNetworkResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *PrivateNetworkResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *PrivateNetworkResource) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *PrivateNetworkResource) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
-}
-
-func (*PrivateNetworkResource) deletePrivateNetworkRes() {}
-
-// A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
-// charged or reserved, and no discount redemption is consumed. Account discounts and tax are evaluated
-// as for automatic checkout. Promotion codes are evaluated by Billing at checkout, not here. All
-// amounts use currency. This preview does not lock prices or guarantee discount availability. Success
-// includes complete checkout amounts and every requested usage estimate. If any item or requested
-// usage estimate cannot be calculated, the operation returns its existing structured error response;
-// it never returns a partial quote with HTTP 200. A quote without a billing account has no funds and
-// no account discount, and leaves out tax that would be added.
-// Ref: #/components/schemas/Quote
-type Quote struct {
-	// Null for a quote without a billing account.
-	Funds NilFunds `json:"funds"`
-	// `complete`: tax is calculated for the billing account's invoice contact. `requires_location_inputs`:
-	// a quote without a billing account, which leaves out tax that would be added; tax already contained
-	// in a price is included.
-	TaxStatus QuoteTaxStatus `json:"tax_status"`
-	// One line for each item the purchase would order, in the order it would order them.
-	Items []QuoteItem `json:"items"`
-	// Sum of line amounts before discounts, less tax already included in the discounted line amounts, as
-	// on an invoice.
-	Subtotal Money `json:"subtotal"`
-	// Sum of line discounts.
-	DiscountAmount Money `json:"discount_amount"`
-	// Sum of tax on the discounted line amounts.
-	TaxAmount Money `json:"tax_amount"`
-	// Subtotal minus discount_amount plus tax_amount: what checkout collects, before applying credit
-	// grants or balance. Equals the sum of line totals and excludes estimated_usage_amount.
-	Total Money `json:"total"`
-	// Sum of the lines' estimated_usage_amount. A projection, not part of total and not collected at
-	// checkout. Null when no usage estimate is requested.
-	EstimatedUsageAmount NilMoney `json:"estimated_usage_amount"`
-	Currency             string   `json:"currency"`
-	// Changes only; null otherwise. The instant the change is priced from. Pass it with the change so the
-	// order is priced from the same instant.
-	ProrationDate NilDateTime `json:"proration_date"`
-	// Changes that lower the price only; null otherwise. What the change would return to the original
-	// payment sources, including the tax paid on it. total is zero for such a change.
-	RefundableAmount NilMoney `json:"refundable_amount"`
-}
-
-// GetFunds returns the value of Funds.
-func (s *Quote) GetFunds() NilFunds {
-	return s.Funds
-}
-
-// GetTaxStatus returns the value of TaxStatus.
-func (s *Quote) GetTaxStatus() QuoteTaxStatus {
-	return s.TaxStatus
-}
-
-// GetItems returns the value of Items.
-func (s *Quote) GetItems() []QuoteItem {
-	return s.Items
-}
-
-// GetSubtotal returns the value of Subtotal.
-func (s *Quote) GetSubtotal() Money {
-	return s.Subtotal
-}
-
-// GetDiscountAmount returns the value of DiscountAmount.
-func (s *Quote) GetDiscountAmount() Money {
-	return s.DiscountAmount
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *Quote) GetTaxAmount() Money {
-	return s.TaxAmount
-}
-
-// GetTotal returns the value of Total.
-func (s *Quote) GetTotal() Money {
-	return s.Total
-}
-
-// GetEstimatedUsageAmount returns the value of EstimatedUsageAmount.
-func (s *Quote) GetEstimatedUsageAmount() NilMoney {
-	return s.EstimatedUsageAmount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *Quote) GetCurrency() string {
-	return s.Currency
-}
-
-// GetProrationDate returns the value of ProrationDate.
-func (s *Quote) GetProrationDate() NilDateTime {
-	return s.ProrationDate
-}
-
-// GetRefundableAmount returns the value of RefundableAmount.
-func (s *Quote) GetRefundableAmount() NilMoney {
-	return s.RefundableAmount
-}
-
-// SetFunds sets the value of Funds.
-func (s *Quote) SetFunds(val NilFunds) {
-	s.Funds = val
-}
-
-// SetTaxStatus sets the value of TaxStatus.
-func (s *Quote) SetTaxStatus(val QuoteTaxStatus) {
-	s.TaxStatus = val
-}
-
-// SetItems sets the value of Items.
-func (s *Quote) SetItems(val []QuoteItem) {
-	s.Items = val
-}
-
-// SetSubtotal sets the value of Subtotal.
-func (s *Quote) SetSubtotal(val Money) {
-	s.Subtotal = val
-}
-
-// SetDiscountAmount sets the value of DiscountAmount.
-func (s *Quote) SetDiscountAmount(val Money) {
-	s.DiscountAmount = val
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *Quote) SetTaxAmount(val Money) {
-	s.TaxAmount = val
-}
-
-// SetTotal sets the value of Total.
-func (s *Quote) SetTotal(val Money) {
-	s.Total = val
-}
-
-// SetEstimatedUsageAmount sets the value of EstimatedUsageAmount.
-func (s *Quote) SetEstimatedUsageAmount(val NilMoney) {
-	s.EstimatedUsageAmount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *Quote) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetProrationDate sets the value of ProrationDate.
-func (s *Quote) SetProrationDate(val NilDateTime) {
-	s.ProrationDate = val
-}
-
-// SetRefundableAmount sets the value of RefundableAmount.
-func (s *Quote) SetRefundableAmount(val NilMoney) {
-	s.RefundableAmount = val
-}
-
-func (*Quote) createBackupCapacityPackQuoteRes()  {}
-func (*Quote) createBackupRestoreQuoteRes()       {}
-func (*Quote) createBackupServiceQuoteRes()       {}
-func (*Quote) createDiskQuoteRes()                {}
-func (*Quote) createDiskResizeQuoteRes()          {}
-func (*Quote) createFloatingIPBandwidthQuoteRes() {}
-func (*Quote) createFloatingIPQuoteRes()          {}
-func (*Quote) createImageQuoteRes()               {}
-func (*Quote) createInstanceQuoteRes()            {}
-func (*Quote) createInstanceResizeQuoteRes()      {}
-func (*Quote) createSnapshotQuotaQuoteRes()       {}
-
-// One calculated purchase line. Fixed purchase amounts are rounded as checkout rounds them. A line
-// without an immediate charge has zero checkout amounts. unit_amount remains null when no single unit
-// price applies; an unrequested usage estimate remains null.
-// Ref: #/components/schemas/QuoteItem
-type QuoteItem struct {
-	ProductID string    `json:"product_id"`
-	PlanID    uuid.UUID `json:"plan_id"`
-	PlanName  string    `json:"plan_name"`
-	// The price the line is priced at, including one Billing selected. With quantity and dimensions it
-	// prices the same line in Billing's own quote, for example with a promotion code.
-	PriceID uuid.UUID `json:"price_id"`
-	// The dimension values the line is priced at, such as region and instance type.
-	Dimensions QuoteItemDimensions `json:"dimensions"`
-	// One_time or recurring.
-	Type QuoteItemType `json:"type"`
-	// Licensed or metered.
-	UsageType QuoteItemUsageType `json:"usage_type"`
-	// The billing period of a recurring licensed line; `none` otherwise.
-	Interval QuoteItemInterval `json:"interval"`
-	// Periods per billing cycle of a recurring licensed line; null otherwise.
-	IntervalCount NilInt `json:"interval_count"`
-	// The setup charge already included in amount; null when none applies.
-	SetupAmount NilMoney `json:"setup_amount"`
-	// Recurring licensed lines only; null otherwise. What each later period renews at, before discounts
-	// and tax, which differs from amount when the first period is priced differently.
-	RecurringAmount NilMoney `json:"recurring_amount"`
-	// Unit price before discounts, with tax included only where the price includes it. Null when no single
-	// unit price applies, such as tiered or multiple-rate pricing or an immediate change.
-	UnitAmount NilMoney `json:"unit_amount"`
-	// The quantity priced.
-	Quantity string `json:"quantity"`
-	// Before discounts, including any setup charges. Contains tax only where the price includes it. Zero
-	// for an item with no immediate charge.
-	Amount Money `json:"amount"`
-	// Total reduction on this line, including any committed recurring discount.
-	DiscountAmount Money `json:"discount_amount"`
-	// Tax on the discounted amount, including any tax already contained in that amount.
-	TaxAmount Money `json:"tax_amount"`
-	// The part of tax_amount already contained in amount minus discount_amount.
-	TaxIncludedAmount Money `json:"tax_included_amount"`
-	// Amount minus discount_amount plus tax_amount minus tax_included_amount.
-	Total Money `json:"total"`
-	// Projected charge for this line's future usage over the period stated by the quoting operation, at
-	// current rates, before discounts and tax and not rounded. Not part of amount or total and not
-	// collected at checkout. Null when no usage estimate is requested for this line.
-	EstimatedUsageAmount NilMoney `json:"estimated_usage_amount"`
-	Currency             string   `json:"currency"`
-}
-
-// GetProductID returns the value of ProductID.
-func (s *QuoteItem) GetProductID() string {
-	return s.ProductID
-}
-
-// GetPlanID returns the value of PlanID.
-func (s *QuoteItem) GetPlanID() uuid.UUID {
-	return s.PlanID
-}
-
-// GetPlanName returns the value of PlanName.
-func (s *QuoteItem) GetPlanName() string {
-	return s.PlanName
-}
-
-// GetPriceID returns the value of PriceID.
-func (s *QuoteItem) GetPriceID() uuid.UUID {
-	return s.PriceID
-}
-
-// GetDimensions returns the value of Dimensions.
-func (s *QuoteItem) GetDimensions() QuoteItemDimensions {
-	return s.Dimensions
-}
-
-// GetType returns the value of Type.
-func (s *QuoteItem) GetType() QuoteItemType {
-	return s.Type
-}
-
-// GetUsageType returns the value of UsageType.
-func (s *QuoteItem) GetUsageType() QuoteItemUsageType {
-	return s.UsageType
-}
-
-// GetInterval returns the value of Interval.
-func (s *QuoteItem) GetInterval() QuoteItemInterval {
-	return s.Interval
-}
-
-// GetIntervalCount returns the value of IntervalCount.
-func (s *QuoteItem) GetIntervalCount() NilInt {
-	return s.IntervalCount
-}
-
-// GetSetupAmount returns the value of SetupAmount.
-func (s *QuoteItem) GetSetupAmount() NilMoney {
-	return s.SetupAmount
-}
-
-// GetRecurringAmount returns the value of RecurringAmount.
-func (s *QuoteItem) GetRecurringAmount() NilMoney {
-	return s.RecurringAmount
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *QuoteItem) GetUnitAmount() NilMoney {
-	return s.UnitAmount
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *QuoteItem) GetQuantity() string {
-	return s.Quantity
-}
-
-// GetAmount returns the value of Amount.
-func (s *QuoteItem) GetAmount() Money {
-	return s.Amount
-}
-
-// GetDiscountAmount returns the value of DiscountAmount.
-func (s *QuoteItem) GetDiscountAmount() Money {
-	return s.DiscountAmount
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *QuoteItem) GetTaxAmount() Money {
-	return s.TaxAmount
-}
-
-// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
-func (s *QuoteItem) GetTaxIncludedAmount() Money {
-	return s.TaxIncludedAmount
-}
-
-// GetTotal returns the value of Total.
-func (s *QuoteItem) GetTotal() Money {
-	return s.Total
-}
-
-// GetEstimatedUsageAmount returns the value of EstimatedUsageAmount.
-func (s *QuoteItem) GetEstimatedUsageAmount() NilMoney {
-	return s.EstimatedUsageAmount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *QuoteItem) GetCurrency() string {
-	return s.Currency
-}
-
-// SetProductID sets the value of ProductID.
-func (s *QuoteItem) SetProductID(val string) {
-	s.ProductID = val
-}
-
-// SetPlanID sets the value of PlanID.
-func (s *QuoteItem) SetPlanID(val uuid.UUID) {
-	s.PlanID = val
-}
-
-// SetPlanName sets the value of PlanName.
-func (s *QuoteItem) SetPlanName(val string) {
-	s.PlanName = val
-}
-
-// SetPriceID sets the value of PriceID.
-func (s *QuoteItem) SetPriceID(val uuid.UUID) {
-	s.PriceID = val
-}
-
-// SetDimensions sets the value of Dimensions.
-func (s *QuoteItem) SetDimensions(val QuoteItemDimensions) {
-	s.Dimensions = val
-}
-
-// SetType sets the value of Type.
-func (s *QuoteItem) SetType(val QuoteItemType) {
-	s.Type = val
-}
-
-// SetUsageType sets the value of UsageType.
-func (s *QuoteItem) SetUsageType(val QuoteItemUsageType) {
-	s.UsageType = val
-}
-
-// SetInterval sets the value of Interval.
-func (s *QuoteItem) SetInterval(val QuoteItemInterval) {
-	s.Interval = val
-}
-
-// SetIntervalCount sets the value of IntervalCount.
-func (s *QuoteItem) SetIntervalCount(val NilInt) {
-	s.IntervalCount = val
-}
-
-// SetSetupAmount sets the value of SetupAmount.
-func (s *QuoteItem) SetSetupAmount(val NilMoney) {
-	s.SetupAmount = val
-}
-
-// SetRecurringAmount sets the value of RecurringAmount.
-func (s *QuoteItem) SetRecurringAmount(val NilMoney) {
-	s.RecurringAmount = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *QuoteItem) SetUnitAmount(val NilMoney) {
-	s.UnitAmount = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *QuoteItem) SetQuantity(val string) {
-	s.Quantity = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *QuoteItem) SetAmount(val Money) {
-	s.Amount = val
-}
-
-// SetDiscountAmount sets the value of DiscountAmount.
-func (s *QuoteItem) SetDiscountAmount(val Money) {
-	s.DiscountAmount = val
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *QuoteItem) SetTaxAmount(val Money) {
-	s.TaxAmount = val
-}
-
-// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
-func (s *QuoteItem) SetTaxIncludedAmount(val Money) {
-	s.TaxIncludedAmount = val
-}
-
-// SetTotal sets the value of Total.
-func (s *QuoteItem) SetTotal(val Money) {
-	s.Total = val
-}
-
-// SetEstimatedUsageAmount sets the value of EstimatedUsageAmount.
-func (s *QuoteItem) SetEstimatedUsageAmount(val NilMoney) {
-	s.EstimatedUsageAmount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *QuoteItem) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// The dimension values the line is priced at, such as region and instance type.
-type QuoteItemDimensions map[string]string
-
-func (s *QuoteItemDimensions) init() QuoteItemDimensions {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
-// The billing period of a recurring licensed line; `none` otherwise.
-type QuoteItemInterval string
+// The resource or capacity constrained by a project quota. Defaults when no override exists:
+// virtual_machines=5; vcpus=16; memory_mib=32768; disks=20; disk_gib=500; virtual_private_clouds=3;
+// subnets=20; network_interfaces=20; elastic_ips=3; nat_gateways=1; security_groups=10;
+// security_group_rules=100; snapshots=20; backups=20; private_images=10. memory_mib is measured in MiB
+// and disk_gib in GiB. A zero limit permits no additional capacity; it is not unlimited.
+// Ref: #/components/schemas/ProjectQuotaResource
+type ProjectQuotaResource string
 
 const (
-	QuoteItemIntervalNone  QuoteItemInterval = "none"
-	QuoteItemIntervalDay   QuoteItemInterval = "day"
-	QuoteItemIntervalMonth QuoteItemInterval = "month"
-	QuoteItemIntervalYear  QuoteItemInterval = "year"
+	ProjectQuotaResourceVirtualMachines      ProjectQuotaResource = "virtual_machines"
+	ProjectQuotaResourceVcpus                ProjectQuotaResource = "vcpus"
+	ProjectQuotaResourceMemoryMib            ProjectQuotaResource = "memory_mib"
+	ProjectQuotaResourceDisks                ProjectQuotaResource = "disks"
+	ProjectQuotaResourceDiskGib              ProjectQuotaResource = "disk_gib"
+	ProjectQuotaResourceVirtualPrivateClouds ProjectQuotaResource = "virtual_private_clouds"
+	ProjectQuotaResourceSubnets              ProjectQuotaResource = "subnets"
+	ProjectQuotaResourceNetworkInterfaces    ProjectQuotaResource = "network_interfaces"
+	ProjectQuotaResourceElasticIps           ProjectQuotaResource = "elastic_ips"
+	ProjectQuotaResourceNatGateways          ProjectQuotaResource = "nat_gateways"
+	ProjectQuotaResourceSecurityGroups       ProjectQuotaResource = "security_groups"
+	ProjectQuotaResourceSecurityGroupRules   ProjectQuotaResource = "security_group_rules"
+	ProjectQuotaResourceSnapshots            ProjectQuotaResource = "snapshots"
+	ProjectQuotaResourceBackups              ProjectQuotaResource = "backups"
+	ProjectQuotaResourcePrivateImages        ProjectQuotaResource = "private_images"
 )
 
-// AllValues returns all QuoteItemInterval values.
-func (QuoteItemInterval) AllValues() []QuoteItemInterval {
-	return []QuoteItemInterval{
-		QuoteItemIntervalNone,
-		QuoteItemIntervalDay,
-		QuoteItemIntervalMonth,
-		QuoteItemIntervalYear,
+// AllValues returns all ProjectQuotaResource values.
+func (ProjectQuotaResource) AllValues() []ProjectQuotaResource {
+	return []ProjectQuotaResource{
+		ProjectQuotaResourceVirtualMachines,
+		ProjectQuotaResourceVcpus,
+		ProjectQuotaResourceMemoryMib,
+		ProjectQuotaResourceDisks,
+		ProjectQuotaResourceDiskGib,
+		ProjectQuotaResourceVirtualPrivateClouds,
+		ProjectQuotaResourceSubnets,
+		ProjectQuotaResourceNetworkInterfaces,
+		ProjectQuotaResourceElasticIps,
+		ProjectQuotaResourceNatGateways,
+		ProjectQuotaResourceSecurityGroups,
+		ProjectQuotaResourceSecurityGroupRules,
+		ProjectQuotaResourceSnapshots,
+		ProjectQuotaResourceBackups,
+		ProjectQuotaResourcePrivateImages,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s QuoteItemInterval) MarshalText() ([]byte, error) {
+func (s ProjectQuotaResource) MarshalText() ([]byte, error) {
 	switch s {
-	case QuoteItemIntervalNone:
+	case ProjectQuotaResourceVirtualMachines:
 		return []byte(s), nil
-	case QuoteItemIntervalDay:
+	case ProjectQuotaResourceVcpus:
 		return []byte(s), nil
-	case QuoteItemIntervalMonth:
+	case ProjectQuotaResourceMemoryMib:
 		return []byte(s), nil
-	case QuoteItemIntervalYear:
+	case ProjectQuotaResourceDisks:
+		return []byte(s), nil
+	case ProjectQuotaResourceDiskGib:
+		return []byte(s), nil
+	case ProjectQuotaResourceVirtualPrivateClouds:
+		return []byte(s), nil
+	case ProjectQuotaResourceSubnets:
+		return []byte(s), nil
+	case ProjectQuotaResourceNetworkInterfaces:
+		return []byte(s), nil
+	case ProjectQuotaResourceElasticIps:
+		return []byte(s), nil
+	case ProjectQuotaResourceNatGateways:
+		return []byte(s), nil
+	case ProjectQuotaResourceSecurityGroups:
+		return []byte(s), nil
+	case ProjectQuotaResourceSecurityGroupRules:
+		return []byte(s), nil
+	case ProjectQuotaResourceSnapshots:
+		return []byte(s), nil
+	case ProjectQuotaResourceBackups:
+		return []byte(s), nil
+	case ProjectQuotaResourcePrivateImages:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -11656,237 +9111,144 @@ func (s QuoteItemInterval) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *QuoteItemInterval) UnmarshalText(data []byte) error {
-	switch QuoteItemInterval(data) {
-	case QuoteItemIntervalNone:
-		*s = QuoteItemIntervalNone
+func (s *ProjectQuotaResource) UnmarshalText(data []byte) error {
+	switch ProjectQuotaResource(data) {
+	case ProjectQuotaResourceVirtualMachines:
+		*s = ProjectQuotaResourceVirtualMachines
 		return nil
-	case QuoteItemIntervalDay:
-		*s = QuoteItemIntervalDay
+	case ProjectQuotaResourceVcpus:
+		*s = ProjectQuotaResourceVcpus
 		return nil
-	case QuoteItemIntervalMonth:
-		*s = QuoteItemIntervalMonth
+	case ProjectQuotaResourceMemoryMib:
+		*s = ProjectQuotaResourceMemoryMib
 		return nil
-	case QuoteItemIntervalYear:
-		*s = QuoteItemIntervalYear
+	case ProjectQuotaResourceDisks:
+		*s = ProjectQuotaResourceDisks
 		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// One_time or recurring.
-type QuoteItemType string
-
-const (
-	QuoteItemTypeOneTime   QuoteItemType = "one_time"
-	QuoteItemTypeRecurring QuoteItemType = "recurring"
-)
-
-// AllValues returns all QuoteItemType values.
-func (QuoteItemType) AllValues() []QuoteItemType {
-	return []QuoteItemType{
-		QuoteItemTypeOneTime,
-		QuoteItemTypeRecurring,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s QuoteItemType) MarshalText() ([]byte, error) {
-	switch s {
-	case QuoteItemTypeOneTime:
-		return []byte(s), nil
-	case QuoteItemTypeRecurring:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *QuoteItemType) UnmarshalText(data []byte) error {
-	switch QuoteItemType(data) {
-	case QuoteItemTypeOneTime:
-		*s = QuoteItemTypeOneTime
+	case ProjectQuotaResourceDiskGib:
+		*s = ProjectQuotaResourceDiskGib
 		return nil
-	case QuoteItemTypeRecurring:
-		*s = QuoteItemTypeRecurring
+	case ProjectQuotaResourceVirtualPrivateClouds:
+		*s = ProjectQuotaResourceVirtualPrivateClouds
+		return nil
+	case ProjectQuotaResourceSubnets:
+		*s = ProjectQuotaResourceSubnets
+		return nil
+	case ProjectQuotaResourceNetworkInterfaces:
+		*s = ProjectQuotaResourceNetworkInterfaces
+		return nil
+	case ProjectQuotaResourceElasticIps:
+		*s = ProjectQuotaResourceElasticIps
+		return nil
+	case ProjectQuotaResourceNatGateways:
+		*s = ProjectQuotaResourceNatGateways
+		return nil
+	case ProjectQuotaResourceSecurityGroups:
+		*s = ProjectQuotaResourceSecurityGroups
+		return nil
+	case ProjectQuotaResourceSecurityGroupRules:
+		*s = ProjectQuotaResourceSecurityGroupRules
+		return nil
+	case ProjectQuotaResourceSnapshots:
+		*s = ProjectQuotaResourceSnapshots
+		return nil
+	case ProjectQuotaResourceBackups:
+		*s = ProjectQuotaResourceBackups
+		return nil
+	case ProjectQuotaResourcePrivateImages:
+		*s = ProjectQuotaResourcePrivateImages
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Licensed or metered.
-type QuoteItemUsageType string
-
-const (
-	QuoteItemUsageTypeLicensed QuoteItemUsageType = "licensed"
-	QuoteItemUsageTypeMetered  QuoteItemUsageType = "metered"
-)
-
-// AllValues returns all QuoteItemUsageType values.
-func (QuoteItemUsageType) AllValues() []QuoteItemUsageType {
-	return []QuoteItemUsageType{
-		QuoteItemUsageTypeLicensed,
-		QuoteItemUsageTypeMetered,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s QuoteItemUsageType) MarshalText() ([]byte, error) {
-	switch s {
-	case QuoteItemUsageTypeLicensed:
-		return []byte(s), nil
-	case QuoteItemUsageTypeMetered:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *QuoteItemUsageType) UnmarshalText(data []byte) error {
-	switch QuoteItemUsageType(data) {
-	case QuoteItemUsageTypeLicensed:
-		*s = QuoteItemUsageTypeLicensed
-		return nil
-	case QuoteItemUsageTypeMetered:
-		*s = QuoteItemUsageTypeMetered
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `complete`: tax is calculated for the billing account's invoice contact. `requires_location_inputs`:
-// a quote without a billing account, which leaves out tax that would be added; tax already contained
-// in a price is included.
-type QuoteTaxStatus string
-
-const (
-	QuoteTaxStatusComplete               QuoteTaxStatus = "complete"
-	QuoteTaxStatusRequiresLocationInputs QuoteTaxStatus = "requires_location_inputs"
-)
-
-// AllValues returns all QuoteTaxStatus values.
-func (QuoteTaxStatus) AllValues() []QuoteTaxStatus {
-	return []QuoteTaxStatus{
-		QuoteTaxStatusComplete,
-		QuoteTaxStatusRequiresLocationInputs,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s QuoteTaxStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case QuoteTaxStatusComplete:
-		return []byte(s), nil
-	case QuoteTaxStatusRequiresLocationInputs:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *QuoteTaxStatus) UnmarshalText(data []byte) error {
-	switch QuoteTaxStatus(data) {
-	case QuoteTaxStatusComplete:
-		*s = QuoteTaxStatusComplete
-		return nil
-	case QuoteTaxStatusRequiresLocationInputs:
-		*s = QuoteTaxStatusRequiresLocationInputs
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/RebootInstanceRequestBody
-type RebootInstanceRequestBody struct {
+// Ref: #/components/schemas/RebootVirtualMachineRequestBody
+type RebootVirtualMachineRequestBody struct {
 	// A forced reboot does not wait for the operating system to shut down and unwritten data is lost; use
 	// it when the system is unresponsive. False when omitted.
 	Force OptBool `json:"force"`
 }
 
 // GetForce returns the value of Force.
-func (s *RebootInstanceRequestBody) GetForce() OptBool {
+func (s *RebootVirtualMachineRequestBody) GetForce() OptBool {
 	return s.Force
 }
 
 // SetForce sets the value of Force.
-func (s *RebootInstanceRequestBody) SetForce(val OptBool) {
+func (s *RebootVirtualMachineRequestBody) SetForce(val OptBool) {
 	s.Force = val
 }
 
-// Ref: #/components/schemas/RebuildInstanceRequestBody
-type RebuildInstanceRequestBody struct {
+// Ref: #/components/schemas/RebuildVirtualMachineRequestBody
+type RebuildVirtualMachineRequestBody struct {
 	GeneratePassword OptBool `json:"generate_password"`
-	// A public image, which must be on sale unless it is the one this instance already runs, or an
+	// A public image, which must be on sale unless it is the one this virtual machine already runs, or an
 	// available private image of this project.
-	ImageID  uuid.UUID `json:"image_id"`
+	ImageID  ImageID   `json:"image_id"`
 	Password OptString `json:"password"`
 }
 
 // GetGeneratePassword returns the value of GeneratePassword.
-func (s *RebuildInstanceRequestBody) GetGeneratePassword() OptBool {
+func (s *RebuildVirtualMachineRequestBody) GetGeneratePassword() OptBool {
 	return s.GeneratePassword
 }
 
 // GetImageID returns the value of ImageID.
-func (s *RebuildInstanceRequestBody) GetImageID() uuid.UUID {
+func (s *RebuildVirtualMachineRequestBody) GetImageID() ImageID {
 	return s.ImageID
 }
 
 // GetPassword returns the value of Password.
-func (s *RebuildInstanceRequestBody) GetPassword() OptString {
+func (s *RebuildVirtualMachineRequestBody) GetPassword() OptString {
 	return s.Password
 }
 
 // SetGeneratePassword sets the value of GeneratePassword.
-func (s *RebuildInstanceRequestBody) SetGeneratePassword(val OptBool) {
+func (s *RebuildVirtualMachineRequestBody) SetGeneratePassword(val OptBool) {
 	s.GeneratePassword = val
 }
 
 // SetImageID sets the value of ImageID.
-func (s *RebuildInstanceRequestBody) SetImageID(val uuid.UUID) {
+func (s *RebuildVirtualMachineRequestBody) SetImageID(val ImageID) {
 	s.ImageID = val
 }
 
 // SetPassword sets the value of Password.
-func (s *RebuildInstanceRequestBody) SetPassword(val OptString) {
+func (s *RebuildVirtualMachineRequestBody) SetPassword(val OptString) {
 	s.Password = val
 }
 
-// Ref: #/components/schemas/RebuildInstanceResponseBody
-type RebuildInstanceResponseBody struct {
-	Instance InstanceResource `json:"instance"`
+// Ref: #/components/schemas/RebuildVirtualMachineResponseBody
+type RebuildVirtualMachineResponseBody struct {
+	VirtualMachine VirtualMachine `json:"virtual_machine"`
 	// Returned only in this response; store it immediately.
 	Password string `json:"password"`
 }
 
-// GetInstance returns the value of Instance.
-func (s *RebuildInstanceResponseBody) GetInstance() InstanceResource {
-	return s.Instance
+// GetVirtualMachine returns the value of VirtualMachine.
+func (s *RebuildVirtualMachineResponseBody) GetVirtualMachine() VirtualMachine {
+	return s.VirtualMachine
 }
 
 // GetPassword returns the value of Password.
-func (s *RebuildInstanceResponseBody) GetPassword() string {
+func (s *RebuildVirtualMachineResponseBody) GetPassword() string {
 	return s.Password
 }
 
-// SetInstance sets the value of Instance.
-func (s *RebuildInstanceResponseBody) SetInstance(val InstanceResource) {
-	s.Instance = val
+// SetVirtualMachine sets the value of VirtualMachine.
+func (s *RebuildVirtualMachineResponseBody) SetVirtualMachine(val VirtualMachine) {
+	s.VirtualMachine = val
 }
 
 // SetPassword sets the value of Password.
-func (s *RebuildInstanceResponseBody) SetPassword(val string) {
+func (s *RebuildVirtualMachineResponseBody) SetPassword(val string) {
 	s.Password = val
 }
 
-func (*RebuildInstanceResponseBody) rebuildInstanceRes() {}
+func (*RebuildVirtualMachineResponseBody) rebuildVirtualMachineRes() {}
+
+type RegionID string
 
 // Ref: #/components/schemas/RegionListResponseBody
 type RegionListResponseBody struct {
@@ -11922,11 +9284,8 @@ type RegionResource struct {
 	Name string `json:"name"`
 	// The region's code, the way the outside world names this place (hk-1). Stable and human-written;
 	// addressing is by id.
-	Code string    `json:"code"`
-	ID   uuid.UUID `json:"id"`
-	// How private image storage in this region is billed, per GiB. Null when the project has no billing
-	// account.
-	PrivateImagePricing NilPricing `json:"private_image_pricing"`
+	Code string   `json:"code"`
+	ID   RegionID `json:"id"`
 }
 
 // GetCountryCode returns the value of CountryCode.
@@ -11945,13 +9304,8 @@ func (s *RegionResource) GetCode() string {
 }
 
 // GetID returns the value of ID.
-func (s *RegionResource) GetID() uuid.UUID {
+func (s *RegionResource) GetID() RegionID {
 	return s.ID
-}
-
-// GetPrivateImagePricing returns the value of PrivateImagePricing.
-func (s *RegionResource) GetPrivateImagePricing() NilPricing {
-	return s.PrivateImagePricing
 }
 
 // SetCountryCode sets the value of CountryCode.
@@ -11970,130 +9324,107 @@ func (s *RegionResource) SetCode(val string) {
 }
 
 // SetID sets the value of ID.
-func (s *RegionResource) SetID(val uuid.UUID) {
+func (s *RegionResource) SetID(val RegionID) {
 	s.ID = val
-}
-
-// SetPrivateImagePricing sets the value of PrivateImagePricing.
-func (s *RegionResource) SetPrivateImagePricing(val NilPricing) {
-	s.PrivateImagePricing = val
 }
 
 // A resource a release set releases.
 // Ref: #/components/schemas/ReleaseResource
+// ReleaseResource represents sum type.
 type ReleaseResource struct {
-	Type ReleaseResourceType `json:"type"`
-	// The resource's ID; for `backup_service` and `snapshot_quota`, the ID of their region.
-	ID uuid.UUID `json:"id"`
-	// The resource's name. A floating IP is named by its address, a backup service or snapshot quota by
-	// its region, and a capacity pack by its capacity, such as 100 GiB.
-	Name string `json:"name"`
+	// Type selects the active sum variant, switch on this field.
+	Type                          ReleaseResourceType
+	VirtualMachineReleaseResource VirtualMachineReleaseResource
+	DiskReleaseResource           DiskReleaseResource
+	ElasticIpReleaseResource      ElasticIpReleaseResource
 }
 
-// GetType returns the value of Type.
-func (s *ReleaseResource) GetType() ReleaseResourceType {
-	return s.Type
-}
-
-// GetID returns the value of ID.
-func (s *ReleaseResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *ReleaseResource) GetName() string {
-	return s.Name
-}
-
-// SetType sets the value of Type.
-func (s *ReleaseResource) SetType(val ReleaseResourceType) {
-	s.Type = val
-}
-
-// SetID sets the value of ID.
-func (s *ReleaseResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *ReleaseResource) SetName(val string) {
-	s.Name = val
-}
-
+// ReleaseResourceType is oneOf type of ReleaseResource.
 type ReleaseResourceType string
 
+// Possible values for ReleaseResourceType.
 const (
-	ReleaseResourceTypeInstance           ReleaseResourceType = "instance"
-	ReleaseResourceTypeDisk               ReleaseResourceType = "disk"
-	ReleaseResourceTypeImage              ReleaseResourceType = "image"
-	ReleaseResourceTypeFloatingIP         ReleaseResourceType = "floating_ip"
-	ReleaseResourceTypeBackupService      ReleaseResourceType = "backup_service"
-	ReleaseResourceTypeSnapshotQuota      ReleaseResourceType = "snapshot_quota"
-	ReleaseResourceTypeBackupCapacityPack ReleaseResourceType = "backup_capacity_pack"
+	VirtualMachineReleaseResourceReleaseResource ReleaseResourceType = "virtual_machine"
+	DiskReleaseResourceReleaseResource           ReleaseResourceType = "disk"
+	ElasticIpReleaseResourceReleaseResource      ReleaseResourceType = "elastic_ip"
 )
 
-// AllValues returns all ReleaseResourceType values.
-func (ReleaseResourceType) AllValues() []ReleaseResourceType {
-	return []ReleaseResourceType{
-		ReleaseResourceTypeInstance,
-		ReleaseResourceTypeDisk,
-		ReleaseResourceTypeImage,
-		ReleaseResourceTypeFloatingIP,
-		ReleaseResourceTypeBackupService,
-		ReleaseResourceTypeSnapshotQuota,
-		ReleaseResourceTypeBackupCapacityPack,
-	}
+// IsVirtualMachineReleaseResource reports whether ReleaseResource is VirtualMachineReleaseResource.
+func (s ReleaseResource) IsVirtualMachineReleaseResource() bool {
+	return s.Type == VirtualMachineReleaseResourceReleaseResource
 }
 
-// MarshalText implements encoding.TextMarshaler.
-func (s ReleaseResourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case ReleaseResourceTypeInstance:
-		return []byte(s), nil
-	case ReleaseResourceTypeDisk:
-		return []byte(s), nil
-	case ReleaseResourceTypeImage:
-		return []byte(s), nil
-	case ReleaseResourceTypeFloatingIP:
-		return []byte(s), nil
-	case ReleaseResourceTypeBackupService:
-		return []byte(s), nil
-	case ReleaseResourceTypeSnapshotQuota:
-		return []byte(s), nil
-	case ReleaseResourceTypeBackupCapacityPack:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
+// IsDiskReleaseResource reports whether ReleaseResource is DiskReleaseResource.
+func (s ReleaseResource) IsDiskReleaseResource() bool {
+	return s.Type == DiskReleaseResourceReleaseResource
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ReleaseResourceType) UnmarshalText(data []byte) error {
-	switch ReleaseResourceType(data) {
-	case ReleaseResourceTypeInstance:
-		*s = ReleaseResourceTypeInstance
-		return nil
-	case ReleaseResourceTypeDisk:
-		*s = ReleaseResourceTypeDisk
-		return nil
-	case ReleaseResourceTypeImage:
-		*s = ReleaseResourceTypeImage
-		return nil
-	case ReleaseResourceTypeFloatingIP:
-		*s = ReleaseResourceTypeFloatingIP
-		return nil
-	case ReleaseResourceTypeBackupService:
-		*s = ReleaseResourceTypeBackupService
-		return nil
-	case ReleaseResourceTypeSnapshotQuota:
-		*s = ReleaseResourceTypeSnapshotQuota
-		return nil
-	case ReleaseResourceTypeBackupCapacityPack:
-		*s = ReleaseResourceTypeBackupCapacityPack
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
+// IsElasticIpReleaseResource reports whether ReleaseResource is ElasticIpReleaseResource.
+func (s ReleaseResource) IsElasticIpReleaseResource() bool {
+	return s.Type == ElasticIpReleaseResourceReleaseResource
+}
+
+// SetVirtualMachineReleaseResource sets ReleaseResource to VirtualMachineReleaseResource.
+func (s *ReleaseResource) SetVirtualMachineReleaseResource(v VirtualMachineReleaseResource) {
+	s.Type = VirtualMachineReleaseResourceReleaseResource
+	s.VirtualMachineReleaseResource = v
+}
+
+// GetVirtualMachineReleaseResource returns VirtualMachineReleaseResource and true boolean if ReleaseResource is VirtualMachineReleaseResource.
+func (s ReleaseResource) GetVirtualMachineReleaseResource() (v VirtualMachineReleaseResource, ok bool) {
+	if !s.IsVirtualMachineReleaseResource() {
+		return v, false
 	}
+	return s.VirtualMachineReleaseResource, true
+}
+
+// NewVirtualMachineReleaseResourceReleaseResource returns new ReleaseResource from VirtualMachineReleaseResource.
+func NewVirtualMachineReleaseResourceReleaseResource(v VirtualMachineReleaseResource) ReleaseResource {
+	var s ReleaseResource
+	s.SetVirtualMachineReleaseResource(v)
+	return s
+}
+
+// SetDiskReleaseResource sets ReleaseResource to DiskReleaseResource.
+func (s *ReleaseResource) SetDiskReleaseResource(v DiskReleaseResource) {
+	s.Type = DiskReleaseResourceReleaseResource
+	s.DiskReleaseResource = v
+}
+
+// GetDiskReleaseResource returns DiskReleaseResource and true boolean if ReleaseResource is DiskReleaseResource.
+func (s ReleaseResource) GetDiskReleaseResource() (v DiskReleaseResource, ok bool) {
+	if !s.IsDiskReleaseResource() {
+		return v, false
+	}
+	return s.DiskReleaseResource, true
+}
+
+// NewDiskReleaseResourceReleaseResource returns new ReleaseResource from DiskReleaseResource.
+func NewDiskReleaseResourceReleaseResource(v DiskReleaseResource) ReleaseResource {
+	var s ReleaseResource
+	s.SetDiskReleaseResource(v)
+	return s
+}
+
+// SetElasticIpReleaseResource sets ReleaseResource to ElasticIpReleaseResource.
+func (s *ReleaseResource) SetElasticIpReleaseResource(v ElasticIpReleaseResource) {
+	s.Type = ElasticIpReleaseResourceReleaseResource
+	s.ElasticIpReleaseResource = v
+}
+
+// GetElasticIpReleaseResource returns ElasticIpReleaseResource and true boolean if ReleaseResource is ElasticIpReleaseResource.
+func (s ReleaseResource) GetElasticIpReleaseResource() (v ElasticIpReleaseResource, ok bool) {
+	if !s.IsElasticIpReleaseResource() {
+		return v, false
+	}
+	return s.ElasticIpReleaseResource, true
+}
+
+// NewElasticIpReleaseResourceReleaseResource returns new ReleaseResource from ElasticIpReleaseResource.
+func NewElasticIpReleaseResourceReleaseResource(v ElasticIpReleaseResource) ReleaseResource {
+	var s ReleaseResource
+	s.SetElasticIpReleaseResource(v)
+	return s
 }
 
 // One subscription of a release set and the resource it pays for.
@@ -12168,36 +9499,6 @@ func (s *RenameImageRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/RenameInstanceRequestBody
-type RenameInstanceRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameInstanceRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameInstanceRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/RenamePrivateNetworkRequestBody
-type RenamePrivateNetworkRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenamePrivateNetworkRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenamePrivateNetworkRequestBody) SetName(val string) {
-	s.Name = val
-}
-
 // Ref: #/components/schemas/RenameSecurityGroupRequestBody
 type RenameSecurityGroupRequestBody struct {
 	Name string `json:"name"`
@@ -12227,6 +9528,93 @@ func (s *RenameSnapshotRequestBody) GetName() string {
 func (s *RenameSnapshotRequestBody) SetName(val string) {
 	s.Name = val
 }
+
+// Ref: #/components/schemas/RenameVirtualMachineRequestBody
+type RenameVirtualMachineRequestBody struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *RenameVirtualMachineRequestBody) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *RenameVirtualMachineRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// Ref: #/components/schemas/RenameVirtualPrivateCloudRequestBody
+type RenameVirtualPrivateCloudRequestBody struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *RenameVirtualPrivateCloudRequestBody) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *RenameVirtualPrivateCloudRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// Ref: #/components/schemas/RescueVirtualMachineRequestBody
+type RescueVirtualMachineRequestBody struct {
+	// Platform rescue image. Omit to use the regional default.
+	ImageID OptImageID `json:"image_id"`
+	// Password for the rescue environment. Generate and retain a strong password before calling.
+	Password string `json:"password"`
+}
+
+// GetImageID returns the value of ImageID.
+func (s *RescueVirtualMachineRequestBody) GetImageID() OptImageID {
+	return s.ImageID
+}
+
+// GetPassword returns the value of Password.
+func (s *RescueVirtualMachineRequestBody) GetPassword() string {
+	return s.Password
+}
+
+// SetImageID sets the value of ImageID.
+func (s *RescueVirtualMachineRequestBody) SetImageID(val OptImageID) {
+	s.ImageID = val
+}
+
+// SetPassword sets the value of Password.
+func (s *RescueVirtualMachineRequestBody) SetPassword(val string) {
+	s.Password = val
+}
+
+// Ref: #/components/schemas/RescueVirtualMachineResponseBody
+type RescueVirtualMachineResponseBody struct {
+	// Login account in the temporary rescue environment.
+	LoginUsername  string         `json:"login_username"`
+	VirtualMachine VirtualMachine `json:"virtual_machine"`
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *RescueVirtualMachineResponseBody) GetLoginUsername() string {
+	return s.LoginUsername
+}
+
+// GetVirtualMachine returns the value of VirtualMachine.
+func (s *RescueVirtualMachineResponseBody) GetVirtualMachine() VirtualMachine {
+	return s.VirtualMachine
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *RescueVirtualMachineResponseBody) SetLoginUsername(val string) {
+	s.LoginUsername = val
+}
+
+// SetVirtualMachine sets the value of VirtualMachine.
+func (s *RescueVirtualMachineResponseBody) SetVirtualMachine(val VirtualMachine) {
+	s.VirtualMachine = val
+}
+
+func (*RescueVirtualMachineResponseBody) rescueVirtualMachineRes() {}
 
 // Ref: #/components/schemas/ResetPasswordRequestBody
 type ResetPasswordRequestBody struct {
@@ -12273,45 +9661,21 @@ func (s *ResetPasswordResponseBody) SetPassword(val string) {
 	s.Password = val
 }
 
-func (*ResetPasswordResponseBody) resetInstancePasswordRes() {}
-
-// The request of `resize-disk`, without `checkout` and `proration_date`.
-// Ref: #/components/schemas/ResizeDiskQuoteRequestBody
-type ResizeDiskQuoteRequestBody struct {
-	// Must be larger than the current capacity.
-	SizeGB int64 `json:"size_gb"`
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *ResizeDiskQuoteRequestBody) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *ResizeDiskQuoteRequestBody) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
+func (*ResetPasswordResponseBody) resetVirtualMachinePasswordRes() {}
 
 // Ref: #/components/schemas/ResizeDiskRequestBody
 type ResizeDiskRequestBody struct {
 	// Must be larger than the current capacity.
-	SizeGB   int64              `json:"size_gb"`
-	Checkout OptCheckoutOptions `json:"checkout"`
-	// The `proration_date` of this change's quote, so that the order is priced from the same instant. Only
-	// for automatic checkout; deferred checkout is priced when the customer completes it. Defaults to the
-	// time of the request; it must be a whole second, not in the future and at most 10 minutes old,
-	// otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	SizeGB int64 `json:"size_gb"`
+	// The instant used to price the change order. Defaults to the time of the request; it must be a whole
+	// second, not in the future and at most 10 minutes old, otherwise the request is refused with
+	// `BILLING_CHANGE_INVALID`. Preview the recorded order through Billing using its `order_id`.
 	ProrationDate OptDateTime `json:"proration_date"`
 }
 
 // GetSizeGB returns the value of SizeGB.
 func (s *ResizeDiskRequestBody) GetSizeGB() int64 {
 	return s.SizeGB
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *ResizeDiskRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
 }
 
 // GetProrationDate returns the value of ProrationDate.
@@ -12322,11 +9686,6 @@ func (s *ResizeDiskRequestBody) GetProrationDate() OptDateTime {
 // SetSizeGB sets the value of SizeGB.
 func (s *ResizeDiskRequestBody) SetSizeGB(val int64) {
 	s.SizeGB = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *ResizeDiskRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
 }
 
 // SetProrationDate sets the value of ProrationDate.
@@ -12377,177 +9736,80 @@ func (s *ResizeDiskResponseBody) SetOrderID(val NilUUID) {
 
 func (*ResizeDiskResponseBody) resizeDiskRes() {}
 
-// The request of `resize-instance`, without `checkout` and `proration_date`.
-// Ref: #/components/schemas/ResizeInstanceQuoteRequestBody
-type ResizeInstanceQuoteRequestBody struct {
-	// Must be in the same region and availability zone as the current instance type.
-	InstanceTypeID uuid.UUID `json:"instance_type_id"`
-}
-
-// GetInstanceTypeID returns the value of InstanceTypeID.
-func (s *ResizeInstanceQuoteRequestBody) GetInstanceTypeID() uuid.UUID {
-	return s.InstanceTypeID
-}
-
-// SetInstanceTypeID sets the value of InstanceTypeID.
-func (s *ResizeInstanceQuoteRequestBody) SetInstanceTypeID(val uuid.UUID) {
-	s.InstanceTypeID = val
-}
-
-// Ref: #/components/schemas/ResizeInstanceRequestBody
-type ResizeInstanceRequestBody struct {
-	// Must be in the same region and availability zone as the current instance type.
-	InstanceTypeID uuid.UUID          `json:"instance_type_id"`
-	Checkout       OptCheckoutOptions `json:"checkout"`
-	// The `proration_date` of this change's quote, so that the order is priced from the same instant. Only
-	// for automatic checkout; deferred checkout is priced when the customer completes it. Defaults to the
-	// time of the request; it must be a whole second, not in the future and at most 10 minutes old,
-	// otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+// Ref: #/components/schemas/ResizeVirtualMachineRequestBody
+type ResizeVirtualMachineRequestBody struct {
+	// Must be in the same region and availability zone as the current machine type.
+	MachineTypeID MachineTypeID `json:"machine_type_id"`
+	// The instant used to price the change order. Defaults to the time of the request; it must be a whole
+	// second, not in the future and at most 10 minutes old, otherwise the request is refused with
+	// `BILLING_CHANGE_INVALID`. Preview the recorded order through Billing using its `order_id`.
 	ProrationDate OptDateTime `json:"proration_date"`
 }
 
-// GetInstanceTypeID returns the value of InstanceTypeID.
-func (s *ResizeInstanceRequestBody) GetInstanceTypeID() uuid.UUID {
-	return s.InstanceTypeID
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *ResizeInstanceRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
+// GetMachineTypeID returns the value of MachineTypeID.
+func (s *ResizeVirtualMachineRequestBody) GetMachineTypeID() MachineTypeID {
+	return s.MachineTypeID
 }
 
 // GetProrationDate returns the value of ProrationDate.
-func (s *ResizeInstanceRequestBody) GetProrationDate() OptDateTime {
+func (s *ResizeVirtualMachineRequestBody) GetProrationDate() OptDateTime {
 	return s.ProrationDate
 }
 
-// SetInstanceTypeID sets the value of InstanceTypeID.
-func (s *ResizeInstanceRequestBody) SetInstanceTypeID(val uuid.UUID) {
-	s.InstanceTypeID = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *ResizeInstanceRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
+// SetMachineTypeID sets the value of MachineTypeID.
+func (s *ResizeVirtualMachineRequestBody) SetMachineTypeID(val MachineTypeID) {
+	s.MachineTypeID = val
 }
 
 // SetProrationDate sets the value of ProrationDate.
-func (s *ResizeInstanceRequestBody) SetProrationDate(val OptDateTime) {
+func (s *ResizeVirtualMachineRequestBody) SetProrationDate(val OptDateTime) {
 	s.ProrationDate = val
 }
 
-// The instance, still on its current type, and the Checkout Session for the resize. The instance keeps
-// its ID, and its current subscription remains in force until the resize is applied.
-// Ref: #/components/schemas/ResizeInstanceResponseBody
-type ResizeInstanceResponseBody struct {
-	Instance InstanceResource `json:"instance"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
+// The virtual machine, still on its current type, and the order for the resize. The virtual machine
+// keeps its ID, and its current subscription remains in force until the resize is applied.
+// Ref: #/components/schemas/ResizeVirtualMachineResponseBody
+type ResizeVirtualMachineResponseBody struct {
+	VirtualMachine VirtualMachine `json:"virtual_machine"`
+	Order          PlacedOrder    `json:"order"`
 }
 
-// GetInstance returns the value of Instance.
-func (s *ResizeInstanceResponseBody) GetInstance() InstanceResource {
-	return s.Instance
+// GetVirtualMachine returns the value of VirtualMachine.
+func (s *ResizeVirtualMachineResponseBody) GetVirtualMachine() VirtualMachine {
+	return s.VirtualMachine
 }
 
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *ResizeInstanceResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
+// GetOrder returns the value of Order.
+func (s *ResizeVirtualMachineResponseBody) GetOrder() PlacedOrder {
+	return s.Order
 }
 
-// GetOrderID returns the value of OrderID.
-func (s *ResizeInstanceResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
+// SetVirtualMachine sets the value of VirtualMachine.
+func (s *ResizeVirtualMachineResponseBody) SetVirtualMachine(val VirtualMachine) {
+	s.VirtualMachine = val
 }
 
-// SetInstance sets the value of Instance.
-func (s *ResizeInstanceResponseBody) SetInstance(val InstanceResource) {
-	s.Instance = val
+// SetOrder sets the value of Order.
+func (s *ResizeVirtualMachineResponseBody) SetOrder(val PlacedOrder) {
+	s.Order = val
 }
 
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *ResizeInstanceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *ResizeInstanceResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*ResizeInstanceResponseBody) resizeInstanceRes() {}
-
-// The request of `restore-backup`, without `checkout`.
-// Ref: #/components/schemas/RestoreBackupQuoteRequestBody
-type RestoreBackupQuoteRequestBody struct {
-	// May differ from the availability zone of the source disk, but must be in the same region. It has to
-	// be a data disk type on sale — restoring creates a new data disk, so a withdrawn type or a system
-	// disk type is rejected here as well.
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	Name       string    `json:"name"`
-	// Matches the size of the backup when omitted. When given, it must not be smaller than the backup.
-	SizeGB  OptInt64      `json:"size_gb"`
-	Billing BillingChoice `json:"billing"`
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *RestoreBackupQuoteRequestBody) GetDiskTypeID() uuid.UUID {
-	return s.DiskTypeID
-}
-
-// GetName returns the value of Name.
-func (s *RestoreBackupQuoteRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *RestoreBackupQuoteRequestBody) GetSizeGB() OptInt64 {
-	return s.SizeGB
-}
-
-// GetBilling returns the value of Billing.
-func (s *RestoreBackupQuoteRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *RestoreBackupQuoteRequestBody) SetDiskTypeID(val uuid.UUID) {
-	s.DiskTypeID = val
-}
-
-// SetName sets the value of Name.
-func (s *RestoreBackupQuoteRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *RestoreBackupQuoteRequestBody) SetSizeGB(val OptInt64) {
-	s.SizeGB = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *RestoreBackupQuoteRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
+func (*ResizeVirtualMachineResponseBody) resizeVirtualMachineRes() {}
 
 // Ref: #/components/schemas/RestoreBackupRequestBody
 type RestoreBackupRequestBody struct {
 	// May differ from the availability zone of the source disk, but must be in the same region. It has to
 	// be a data disk type on sale — restoring creates a new data disk, so a withdrawn type or a system
 	// disk type is rejected here as well.
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	Name       string    `json:"name"`
+	DiskTypeID DiskTypeID `json:"disk_type_id"`
+	Name       string     `json:"name"`
 	// Matches the size of the backup when omitted. When given, it must not be smaller than the backup.
-	SizeGB   OptInt64           `json:"size_gb"`
-	Billing  BillingChoice      `json:"billing"`
-	Checkout OptCheckoutOptions `json:"checkout"`
+	SizeGB  OptInt64      `json:"size_gb"`
+	Billing BillingChoice `json:"billing"`
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
-func (s *RestoreBackupRequestBody) GetDiskTypeID() uuid.UUID {
+func (s *RestoreBackupRequestBody) GetDiskTypeID() DiskTypeID {
 	return s.DiskTypeID
 }
 
@@ -12566,13 +9828,8 @@ func (s *RestoreBackupRequestBody) GetBilling() BillingChoice {
 	return s.Billing
 }
 
-// GetCheckout returns the value of Checkout.
-func (s *RestoreBackupRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
 // SetDiskTypeID sets the value of DiskTypeID.
-func (s *RestoreBackupRequestBody) SetDiskTypeID(val uuid.UUID) {
+func (s *RestoreBackupRequestBody) SetDiskTypeID(val DiskTypeID) {
 	s.DiskTypeID = val
 }
 
@@ -12591,26 +9848,23 @@ func (s *RestoreBackupRequestBody) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
-// SetCheckout sets the value of Checkout.
-func (s *RestoreBackupRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
 // Ref: #/components/schemas/RevertDiskRequestBody
 type RevertDiskRequestBody struct {
 	// Must be the most recent snapshot of the disk.
-	SnapshotID uuid.UUID `json:"snapshot_id"`
+	SnapshotID SnapshotID `json:"snapshot_id"`
 }
 
 // GetSnapshotID returns the value of SnapshotID.
-func (s *RevertDiskRequestBody) GetSnapshotID() uuid.UUID {
+func (s *RevertDiskRequestBody) GetSnapshotID() SnapshotID {
 	return s.SnapshotID
 }
 
 // SetSnapshotID sets the value of SnapshotID.
-func (s *RevertDiskRequestBody) SetSnapshotID(val uuid.UUID) {
+func (s *RevertDiskRequestBody) SetSnapshotID(val SnapshotID) {
 	s.SnapshotID = val
 }
+
+type RouteID string
 
 // Ref: #/components/schemas/RouteListResponseBody
 type RouteListResponseBody struct {
@@ -12641,17 +9895,17 @@ func (s *RouteListResponseBody) SetPagination(val OffsetPagination) {
 // Ref: #/components/schemas/RouteResource
 type RouteResource struct {
 	// System-owned peering route. Delete the peering to remove this route.
-	PeeringID   OptUUID   `json:"peering_id"`
-	CreatedAt   time.Time `json:"created_at"`
-	Description string    `json:"description"`
-	Destination string    `json:"destination"`
-	ID          uuid.UUID `json:"id"`
+	PeeringID   OptPeeringID `json:"peering_id"`
+	CreatedAt   time.Time    `json:"created_at"`
+	Description string       `json:"description"`
+	Destination string       `json:"destination"`
+	ID          RouteID      `json:"id"`
 	// Present for custom routes; peering routes expose peering_id instead.
 	Nexthop OptString `json:"nexthop"`
 }
 
 // GetPeeringID returns the value of PeeringID.
-func (s *RouteResource) GetPeeringID() OptUUID {
+func (s *RouteResource) GetPeeringID() OptPeeringID {
 	return s.PeeringID
 }
 
@@ -12671,7 +9925,7 @@ func (s *RouteResource) GetDestination() string {
 }
 
 // GetID returns the value of ID.
-func (s *RouteResource) GetID() uuid.UUID {
+func (s *RouteResource) GetID() RouteID {
 	return s.ID
 }
 
@@ -12681,7 +9935,7 @@ func (s *RouteResource) GetNexthop() OptString {
 }
 
 // SetPeeringID sets the value of PeeringID.
-func (s *RouteResource) SetPeeringID(val OptUUID) {
+func (s *RouteResource) SetPeeringID(val OptPeeringID) {
 	s.PeeringID = val
 }
 
@@ -12701,7 +9955,7 @@ func (s *RouteResource) SetDestination(val string) {
 }
 
 // SetID sets the value of ID.
-func (s *RouteResource) SetID(val uuid.UUID) {
+func (s *RouteResource) SetID(val RouteID) {
 	s.ID = val
 }
 
@@ -12763,6 +10017,8 @@ func (s *ScopedTokenAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
+type SecurityGroupID string
+
 // Ref: #/components/schemas/SecurityGroupListResponseBody
 type SecurityGroupListResponseBody struct {
 	Items      []SecurityGroupResource `json:"items"`
@@ -12791,13 +10047,14 @@ func (s *SecurityGroupListResponseBody) SetPagination(val OffsetPagination) {
 
 // Ref: #/components/schemas/SecurityGroupResource
 type SecurityGroupResource struct {
-	CreatedAt   time.Time `json:"created_at"`
-	Description string    `json:"description"`
-	ID          uuid.UUID `json:"id"`
-	// The default security group is released with its private network and cannot be deleted individually.
-	IsDefault        bool      `json:"is_default"`
-	Name             string    `json:"name"`
-	PrivateNetworkID uuid.UUID `json:"private_network_id"`
+	CreatedAt   time.Time       `json:"created_at"`
+	Description string          `json:"description"`
+	ID          SecurityGroupID `json:"id"`
+	// The default security group is released with its virtual private cloud and cannot be deleted
+	// individually.
+	IsDefault             bool                  `json:"is_default"`
+	Name                  string                `json:"name"`
+	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -12811,7 +10068,7 @@ func (s *SecurityGroupResource) GetDescription() string {
 }
 
 // GetID returns the value of ID.
-func (s *SecurityGroupResource) GetID() uuid.UUID {
+func (s *SecurityGroupResource) GetID() SecurityGroupID {
 	return s.ID
 }
 
@@ -12825,9 +10082,9 @@ func (s *SecurityGroupResource) GetName() string {
 	return s.Name
 }
 
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *SecurityGroupResource) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *SecurityGroupResource) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -12841,7 +10098,7 @@ func (s *SecurityGroupResource) SetDescription(val string) {
 }
 
 // SetID sets the value of ID.
-func (s *SecurityGroupResource) SetID(val uuid.UUID) {
+func (s *SecurityGroupResource) SetID(val SecurityGroupID) {
 	s.ID = val
 }
 
@@ -12855,10 +10112,12 @@ func (s *SecurityGroupResource) SetName(val string) {
 	s.Name = val
 }
 
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *SecurityGroupResource) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *SecurityGroupResource) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
 }
+
+type SecurityGroupRuleID string
 
 // Ref: #/components/schemas/SecurityRuleListResponseBody
 type SecurityRuleListResponseBody struct {
@@ -12892,7 +10151,7 @@ type SecurityRuleResource struct {
 	Description string                        `json:"description"`
 	Direction   SecurityRuleResourceDirection `json:"direction"`
 	Ethertype   SecurityRuleResourceEthertype `json:"ethertype"`
-	ID          uuid.UUID                     `json:"id"`
+	ID          SecurityGroupRuleID           `json:"id"`
 	// Denotes the ICMP code rather than a port when the protocol is ICMP.
 	PortRangeMax NilInt64 `json:"port_range_max"`
 	// Denotes the ICMP type rather than a port when the protocol is ICMP.
@@ -12922,7 +10181,7 @@ func (s *SecurityRuleResource) GetEthertype() SecurityRuleResourceEthertype {
 }
 
 // GetID returns the value of ID.
-func (s *SecurityRuleResource) GetID() uuid.UUID {
+func (s *SecurityRuleResource) GetID() SecurityGroupRuleID {
 	return s.ID
 }
 
@@ -12967,7 +10226,7 @@ func (s *SecurityRuleResource) SetEthertype(val SecurityRuleResourceEthertype) {
 }
 
 // SetID sets the value of ID.
-func (s *SecurityRuleResource) SetID(val uuid.UUID) {
+func (s *SecurityRuleResource) SetID(val SecurityGroupRuleID) {
 	s.ID = val
 }
 
@@ -13073,132 +10332,89 @@ func (s *SecurityRuleResourceEthertype) UnmarshalText(data []byte) error {
 	}
 }
 
-// The request of `set-floating-ip-bandwidth`, without `checkout` and `proration_date`.
-// Ref: #/components/schemas/SetFloatingIPBandwidthQuoteRequestBody
-type SetFloatingIPBandwidthQuoteRequestBody struct {
+// Change bandwidth on the elastic IP identified by the path. This is a configuration change of that
+// resource, not an independent bandwidth resource. Checkout is handled by Billing.
+// Ref: #/components/schemas/SetElasticIPBandwidthRequestBody
+type SetElasticIPBandwidthRequestBody struct {
 	// Applied to both directions.
 	BandwidthMbps int64 `json:"bandwidth_mbps"`
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *SetFloatingIPBandwidthQuoteRequestBody) GetBandwidthMbps() int64 {
-	return s.BandwidthMbps
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *SetFloatingIPBandwidthQuoteRequestBody) SetBandwidthMbps(val int64) {
-	s.BandwidthMbps = val
-}
-
-// Change bandwidth on the floating IP identified by the path. This is a configuration change of that
-// purchase, not an independent bandwidth purchase. Checkout is handled by Billing.
-// Ref: #/components/schemas/SetFloatingIPBandwidthRequestBody
-type SetFloatingIPBandwidthRequestBody struct {
-	// Applied to both directions.
-	BandwidthMbps int64              `json:"bandwidth_mbps"`
-	Checkout      OptCheckoutOptions `json:"checkout"`
-	// The `proration_date` of this change's quote, so that the order is priced from the same instant. Only
-	// for automatic checkout; deferred checkout is priced when the customer completes it. Defaults to the
-	// time of the request; it must be a whole second, not in the future and at most 10 minutes old,
-	// otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// The instant used to price the change order. Defaults to the time of the request; it must be a whole
+	// second, not in the future and at most 10 minutes old, otherwise the request is refused with
+	// `BILLING_CHANGE_INVALID`. Preview the recorded order through Billing using its `order_id`.
 	ProrationDate OptDateTime `json:"proration_date"`
 }
 
 // GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *SetFloatingIPBandwidthRequestBody) GetBandwidthMbps() int64 {
+func (s *SetElasticIPBandwidthRequestBody) GetBandwidthMbps() int64 {
 	return s.BandwidthMbps
 }
 
-// GetCheckout returns the value of Checkout.
-func (s *SetFloatingIPBandwidthRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
 // GetProrationDate returns the value of ProrationDate.
-func (s *SetFloatingIPBandwidthRequestBody) GetProrationDate() OptDateTime {
+func (s *SetElasticIPBandwidthRequestBody) GetProrationDate() OptDateTime {
 	return s.ProrationDate
 }
 
 // SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *SetFloatingIPBandwidthRequestBody) SetBandwidthMbps(val int64) {
+func (s *SetElasticIPBandwidthRequestBody) SetBandwidthMbps(val int64) {
 	s.BandwidthMbps = val
 }
 
-// SetCheckout sets the value of Checkout.
-func (s *SetFloatingIPBandwidthRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
 // SetProrationDate sets the value of ProrationDate.
-func (s *SetFloatingIPBandwidthRequestBody) SetProrationDate(val OptDateTime) {
+func (s *SetElasticIPBandwidthRequestBody) SetProrationDate(val OptDateTime) {
 	s.ProrationDate = val
 }
 
-// The floating IP, still at its current bandwidth, and the Checkout Session for the change.
-// Ref: #/components/schemas/SetFloatingIPBandwidthResponseBody
-type SetFloatingIPBandwidthResponseBody struct {
-	FloatingIP FloatingIPResource `json:"floating_ip"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
+// The elastic IP, still at its current bandwidth, and the order for the change.
+// Ref: #/components/schemas/SetElasticIPBandwidthResponseBody
+type SetElasticIPBandwidthResponseBody struct {
+	ElasticIP ElasticIP   `json:"elastic_ip"`
+	Order     PlacedOrder `json:"order"`
 }
 
-// GetFloatingIP returns the value of FloatingIP.
-func (s *SetFloatingIPBandwidthResponseBody) GetFloatingIP() FloatingIPResource {
-	return s.FloatingIP
+// GetElasticIP returns the value of ElasticIP.
+func (s *SetElasticIPBandwidthResponseBody) GetElasticIP() ElasticIP {
+	return s.ElasticIP
 }
 
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *SetFloatingIPBandwidthResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
+// GetOrder returns the value of Order.
+func (s *SetElasticIPBandwidthResponseBody) GetOrder() PlacedOrder {
+	return s.Order
 }
 
-// GetOrderID returns the value of OrderID.
-func (s *SetFloatingIPBandwidthResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
+// SetElasticIP sets the value of ElasticIP.
+func (s *SetElasticIPBandwidthResponseBody) SetElasticIP(val ElasticIP) {
+	s.ElasticIP = val
 }
 
-// SetFloatingIP sets the value of FloatingIP.
-func (s *SetFloatingIPBandwidthResponseBody) SetFloatingIP(val FloatingIPResource) {
-	s.FloatingIP = val
+// SetOrder sets the value of Order.
+func (s *SetElasticIPBandwidthResponseBody) SetOrder(val PlacedOrder) {
+	s.Order = val
 }
 
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *SetFloatingIPBandwidthResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
+func (*SetElasticIPBandwidthResponseBody) setElasticIPBandwidthRes() {}
 
-// SetOrderID sets the value of OrderID.
-func (s *SetFloatingIPBandwidthResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*SetFloatingIPBandwidthResponseBody) setFloatingIPBandwidthRes() {}
-
-// Ref: #/components/schemas/SetInstanceLabelsRequestBody
-type SetInstanceLabelsRequestBody struct {
+// Ref: #/components/schemas/SetVirtualMachineLabelsRequestBody
+type SetVirtualMachineLabelsRequestBody struct {
 	// The complete set of labels. Whatever is absent here is removed; send an empty object to clear them
 	// all. A key may not contain a colon, whitespace or control characters.
-	Labels SetInstanceLabelsRequestBodyLabels `json:"labels"`
+	Labels SetVirtualMachineLabelsRequestBodyLabels `json:"labels"`
 }
 
 // GetLabels returns the value of Labels.
-func (s *SetInstanceLabelsRequestBody) GetLabels() SetInstanceLabelsRequestBodyLabels {
+func (s *SetVirtualMachineLabelsRequestBody) GetLabels() SetVirtualMachineLabelsRequestBodyLabels {
 	return s.Labels
 }
 
 // SetLabels sets the value of Labels.
-func (s *SetInstanceLabelsRequestBody) SetLabels(val SetInstanceLabelsRequestBodyLabels) {
+func (s *SetVirtualMachineLabelsRequestBody) SetLabels(val SetVirtualMachineLabelsRequestBodyLabels) {
 	s.Labels = val
 }
 
 // The complete set of labels. Whatever is absent here is removed; send an empty object to clear them
 // all. A key may not contain a colon, whitespace or control characters.
-type SetInstanceLabelsRequestBodyLabels map[string]string
+type SetVirtualMachineLabelsRequestBodyLabels map[string]string
 
-func (s *SetInstanceLabelsRequestBodyLabels) init() SetInstanceLabelsRequestBodyLabels {
+func (s *SetVirtualMachineLabelsRequestBodyLabels) init() SetVirtualMachineLabelsRequestBodyLabels {
 	m := *s
 	if m == nil {
 		m = map[string]string{}
@@ -13207,144 +10423,23 @@ func (s *SetInstanceLabelsRequestBodyLabels) init() SetInstanceLabelsRequestBody
 	return m
 }
 
-// Ref: #/components/schemas/SetInstanceNotesRequestBody
-type SetInstanceNotesRequestBody struct {
+// Ref: #/components/schemas/SetVirtualMachineNotesRequestBody
+type SetVirtualMachineNotesRequestBody struct {
 	// The complete note. Send an empty string to clear it.
 	Notes string `json:"notes"`
 }
 
 // GetNotes returns the value of Notes.
-func (s *SetInstanceNotesRequestBody) GetNotes() string {
+func (s *SetVirtualMachineNotesRequestBody) GetNotes() string {
 	return s.Notes
 }
 
 // SetNotes sets the value of Notes.
-func (s *SetInstanceNotesRequestBody) SetNotes(val string) {
+func (s *SetVirtualMachineNotesRequestBody) SetNotes(val string) {
 	s.Notes = val
 }
 
-// The request of `set-snapshot-quota`, without `checkout` and `proration_date`.
-// Ref: #/components/schemas/SetSnapshotQuotaQuoteRequestBody
-type SetSnapshotQuotaQuoteRequestBody struct {
-	// Desired total concurrent snapshot count for this project and region, not additional slots.
-	Limit   int64         `json:"limit"`
-	Billing BillingChoice `json:"billing"`
-}
-
-// GetLimit returns the value of Limit.
-func (s *SetSnapshotQuotaQuoteRequestBody) GetLimit() int64 {
-	return s.Limit
-}
-
-// GetBilling returns the value of Billing.
-func (s *SetSnapshotQuotaQuoteRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// SetLimit sets the value of Limit.
-func (s *SetSnapshotQuotaQuoteRequestBody) SetLimit(val int64) {
-	s.Limit = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *SetSnapshotQuotaQuoteRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
-// Ref: #/components/schemas/SetSnapshotQuotaRequestBody
-type SetSnapshotQuotaRequestBody struct {
-	// Desired total concurrent snapshot count for this project and region, not additional slots.
-	Limit    int64              `json:"limit"`
-	Billing  BillingChoice      `json:"billing"`
-	Checkout OptCheckoutOptions `json:"checkout"`
-	// The `proration_date` of this change's quote, so that the order is priced from the same instant. Only
-	// for automatic checkout; deferred checkout is priced when the customer completes it. Defaults to the
-	// time of the request; it must be a whole second, not in the future and at most 10 minutes old,
-	// otherwise the request is refused with `BILLING_CHANGE_INVALID`.
-	ProrationDate OptDateTime `json:"proration_date"`
-}
-
-// GetLimit returns the value of Limit.
-func (s *SetSnapshotQuotaRequestBody) GetLimit() int64 {
-	return s.Limit
-}
-
-// GetBilling returns the value of Billing.
-func (s *SetSnapshotQuotaRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *SetSnapshotQuotaRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// GetProrationDate returns the value of ProrationDate.
-func (s *SetSnapshotQuotaRequestBody) GetProrationDate() OptDateTime {
-	return s.ProrationDate
-}
-
-// SetLimit sets the value of Limit.
-func (s *SetSnapshotQuotaRequestBody) SetLimit(val int64) {
-	s.Limit = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *SetSnapshotQuotaRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *SetSnapshotQuotaRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// SetProrationDate sets the value of ProrationDate.
-func (s *SetSnapshotQuotaRequestBody) SetProrationDate(val OptDateTime) {
-	s.ProrationDate = val
-}
-
-// Ref: #/components/schemas/SetSnapshotQuotaResponseBody
-type SetSnapshotQuotaResponseBody struct {
-	SnapshotQuota SnapshotQuota `json:"snapshot_quota"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetSnapshotQuota returns the value of SnapshotQuota.
-func (s *SetSnapshotQuotaResponseBody) GetSnapshotQuota() SnapshotQuota {
-	return s.SnapshotQuota
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *SetSnapshotQuotaResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *SetSnapshotQuotaResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetSnapshotQuota sets the value of SnapshotQuota.
-func (s *SetSnapshotQuotaResponseBody) SetSnapshotQuota(val SnapshotQuota) {
-	s.SnapshotQuota = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *SetSnapshotQuotaResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *SetSnapshotQuotaResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*SetSnapshotQuotaResponseBody) setSnapshotQuotaRes() {}
+type SnapshotID string
 
 // Ref: #/components/schemas/SnapshotListResponseBody
 type SnapshotListResponseBody struct {
@@ -13450,340 +10545,17 @@ func (s *SnapshotOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
-// Snapshot count capacity for the authenticated project and one region, projected from its effective
-// quota purchase and Compute's actual holdings. This is not a Billing Allowance: creation occupies
-// capacity and confirmed deletion releases it rather than consuming a grant. Pending purchases never
-// increase effective capacity before commercial acceptance and activation.
-// Ref: #/components/schemas/SnapshotQuota
-type SnapshotQuota struct {
-	RegionID uuid.UUID `json:"region_id"`
-	// Inactive has no purchase; pending is a first purchase whose order has not been accepted;
-	// provisioning is a first purchase being activated; active permits creation within available capacity;
-	// suspended refuses new creation; failed means the first purchase failed, as failure_reason states. A
-	// pending change keeps the current status and limit until it is applied.
-	Status SnapshotQuotaStatus `json:"status"`
-	// Effective maximum concurrent snapshot count. Zero until the first purchase is activated.
-	Limit int64 `json:"limit"`
-	// Held and reserved snapshot slots, including pending creation and unconfirmed cleanup.
-	Used int64 `json:"used"`
-	// Max(limit - used, 0), or zero while creation is not permitted.
-	Available int64 `json:"available"`
-	// The order establishing the currently associated quota purchase, including an initial pending
-	// purchase once its checkout completes.
-	OrderID NilUUID `json:"order_id"`
-	// The quota purchase's Billing subscription, not an individual snapshot subscription. May still be
-	// pending on an initial purchase; an existing subscription remains associated until a replacement
-	// quota is activated. Null when no purchase has been recorded.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The billing choice of the associated quota purchase, as given when it was bought. A change of an
-	// existing purchase has to give the same choice. Null when no purchase has been recorded.
-	Billing NilBillingChoice `json:"billing"`
-	// The subscription a cancellation through Billing has to cover to release this snapshot quota. A
-	// subscription that has ended is not listed, and the list is empty when no subscription pays for the
-	// quota.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// Target count awaiting checkout or activation; null when no purchase is pending.
-	PendingLimit NilInt64 `json:"pending_limit"`
-	// Checkout Session of the pending initial purchase or change; null when none is pending.
-	PendingCheckoutSessionID NilUUID `json:"pending_checkout_session_id"`
-	// Order for the pending initial purchase or change once its checkout completes; null otherwise.
-	PendingOrderID NilUUID `json:"pending_order_id"`
-	// Why the first purchase failed; null unless status is failed. A failed change leaves the current
-	// limit in force and clears pending_limit; its Checkout Session or order shows the outcome.
-	FailureReason NilSnapshotQuotaFailureReason `json:"failure_reason"`
-	// How snapshot quota in this region can be bought, per snapshot slot. Null when the project has no
-	// billing account.
-	Pricing NilPricing `json:"pricing"`
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *SnapshotQuota) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetStatus returns the value of Status.
-func (s *SnapshotQuota) GetStatus() SnapshotQuotaStatus {
-	return s.Status
-}
-
-// GetLimit returns the value of Limit.
-func (s *SnapshotQuota) GetLimit() int64 {
-	return s.Limit
-}
-
-// GetUsed returns the value of Used.
-func (s *SnapshotQuota) GetUsed() int64 {
-	return s.Used
-}
-
-// GetAvailable returns the value of Available.
-func (s *SnapshotQuota) GetAvailable() int64 {
-	return s.Available
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *SnapshotQuota) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *SnapshotQuota) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetBilling returns the value of Billing.
-func (s *SnapshotQuota) GetBilling() NilBillingChoice {
-	return s.Billing
-}
-
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *SnapshotQuota) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
-// GetPendingLimit returns the value of PendingLimit.
-func (s *SnapshotQuota) GetPendingLimit() NilInt64 {
-	return s.PendingLimit
-}
-
-// GetPendingCheckoutSessionID returns the value of PendingCheckoutSessionID.
-func (s *SnapshotQuota) GetPendingCheckoutSessionID() NilUUID {
-	return s.PendingCheckoutSessionID
-}
-
-// GetPendingOrderID returns the value of PendingOrderID.
-func (s *SnapshotQuota) GetPendingOrderID() NilUUID {
-	return s.PendingOrderID
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *SnapshotQuota) GetFailureReason() NilSnapshotQuotaFailureReason {
-	return s.FailureReason
-}
-
-// GetPricing returns the value of Pricing.
-func (s *SnapshotQuota) GetPricing() NilPricing {
-	return s.Pricing
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *SnapshotQuota) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *SnapshotQuota) SetStatus(val SnapshotQuotaStatus) {
-	s.Status = val
-}
-
-// SetLimit sets the value of Limit.
-func (s *SnapshotQuota) SetLimit(val int64) {
-	s.Limit = val
-}
-
-// SetUsed sets the value of Used.
-func (s *SnapshotQuota) SetUsed(val int64) {
-	s.Used = val
-}
-
-// SetAvailable sets the value of Available.
-func (s *SnapshotQuota) SetAvailable(val int64) {
-	s.Available = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *SnapshotQuota) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *SnapshotQuota) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *SnapshotQuota) SetBilling(val NilBillingChoice) {
-	s.Billing = val
-}
-
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *SnapshotQuota) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
-// SetPendingLimit sets the value of PendingLimit.
-func (s *SnapshotQuota) SetPendingLimit(val NilInt64) {
-	s.PendingLimit = val
-}
-
-// SetPendingCheckoutSessionID sets the value of PendingCheckoutSessionID.
-func (s *SnapshotQuota) SetPendingCheckoutSessionID(val NilUUID) {
-	s.PendingCheckoutSessionID = val
-}
-
-// SetPendingOrderID sets the value of PendingOrderID.
-func (s *SnapshotQuota) SetPendingOrderID(val NilUUID) {
-	s.PendingOrderID = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *SnapshotQuota) SetFailureReason(val NilSnapshotQuotaFailureReason) {
-	s.FailureReason = val
-}
-
-// SetPricing sets the value of Pricing.
-func (s *SnapshotQuota) SetPricing(val NilPricing) {
-	s.Pricing = val
-}
-
-// Why the first purchase failed; null unless status is failed. A failed change leaves the current
-// limit in force and clears pending_limit; its Checkout Session or order shows the outcome.
-type SnapshotQuotaFailureReason string
-
-const (
-	SnapshotQuotaFailureReasonCheckoutExpired    SnapshotQuotaFailureReason = "checkout_expired"
-	SnapshotQuotaFailureReasonOrderDeclined      SnapshotQuotaFailureReason = "order_declined"
-	SnapshotQuotaFailureReasonOrderCanceled      SnapshotQuotaFailureReason = "order_canceled"
-	SnapshotQuotaFailureReasonOrderExpired       SnapshotQuotaFailureReason = "order_expired"
-	SnapshotQuotaFailureReasonProvisioningFailed SnapshotQuotaFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all SnapshotQuotaFailureReason values.
-func (SnapshotQuotaFailureReason) AllValues() []SnapshotQuotaFailureReason {
-	return []SnapshotQuotaFailureReason{
-		SnapshotQuotaFailureReasonCheckoutExpired,
-		SnapshotQuotaFailureReasonOrderDeclined,
-		SnapshotQuotaFailureReasonOrderCanceled,
-		SnapshotQuotaFailureReasonOrderExpired,
-		SnapshotQuotaFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SnapshotQuotaFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case SnapshotQuotaFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case SnapshotQuotaFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case SnapshotQuotaFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case SnapshotQuotaFailureReasonOrderExpired:
-		return []byte(s), nil
-	case SnapshotQuotaFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SnapshotQuotaFailureReason) UnmarshalText(data []byte) error {
-	switch SnapshotQuotaFailureReason(data) {
-	case SnapshotQuotaFailureReasonCheckoutExpired:
-		*s = SnapshotQuotaFailureReasonCheckoutExpired
-		return nil
-	case SnapshotQuotaFailureReasonOrderDeclined:
-		*s = SnapshotQuotaFailureReasonOrderDeclined
-		return nil
-	case SnapshotQuotaFailureReasonOrderCanceled:
-		*s = SnapshotQuotaFailureReasonOrderCanceled
-		return nil
-	case SnapshotQuotaFailureReasonOrderExpired:
-		*s = SnapshotQuotaFailureReasonOrderExpired
-		return nil
-	case SnapshotQuotaFailureReasonProvisioningFailed:
-		*s = SnapshotQuotaFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Inactive has no purchase; pending is a first purchase whose order has not been accepted;
-// provisioning is a first purchase being activated; active permits creation within available capacity;
-// suspended refuses new creation; failed means the first purchase failed, as failure_reason states. A
-// pending change keeps the current status and limit until it is applied.
-type SnapshotQuotaStatus string
-
-const (
-	SnapshotQuotaStatusInactive     SnapshotQuotaStatus = "inactive"
-	SnapshotQuotaStatusPending      SnapshotQuotaStatus = "pending"
-	SnapshotQuotaStatusProvisioning SnapshotQuotaStatus = "provisioning"
-	SnapshotQuotaStatusActive       SnapshotQuotaStatus = "active"
-	SnapshotQuotaStatusSuspended    SnapshotQuotaStatus = "suspended"
-	SnapshotQuotaStatusFailed       SnapshotQuotaStatus = "failed"
-)
-
-// AllValues returns all SnapshotQuotaStatus values.
-func (SnapshotQuotaStatus) AllValues() []SnapshotQuotaStatus {
-	return []SnapshotQuotaStatus{
-		SnapshotQuotaStatusInactive,
-		SnapshotQuotaStatusPending,
-		SnapshotQuotaStatusProvisioning,
-		SnapshotQuotaStatusActive,
-		SnapshotQuotaStatusSuspended,
-		SnapshotQuotaStatusFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SnapshotQuotaStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case SnapshotQuotaStatusInactive:
-		return []byte(s), nil
-	case SnapshotQuotaStatusPending:
-		return []byte(s), nil
-	case SnapshotQuotaStatusProvisioning:
-		return []byte(s), nil
-	case SnapshotQuotaStatusActive:
-		return []byte(s), nil
-	case SnapshotQuotaStatusSuspended:
-		return []byte(s), nil
-	case SnapshotQuotaStatusFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SnapshotQuotaStatus) UnmarshalText(data []byte) error {
-	switch SnapshotQuotaStatus(data) {
-	case SnapshotQuotaStatusInactive:
-		*s = SnapshotQuotaStatusInactive
-		return nil
-	case SnapshotQuotaStatusPending:
-		*s = SnapshotQuotaStatusPending
-		return nil
-	case SnapshotQuotaStatusProvisioning:
-		*s = SnapshotQuotaStatusProvisioning
-		return nil
-	case SnapshotQuotaStatusActive:
-		*s = SnapshotQuotaStatusActive
-		return nil
-	case SnapshotQuotaStatusSuspended:
-		*s = SnapshotQuotaStatusSuspended
-		return nil
-	case SnapshotQuotaStatusFailed:
-		*s = SnapshotQuotaStatusFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A snapshot, created within this project's purchased regional snapshot quota. It has no order, price
-// or Billing subscription of its own.
+// A snapshot of a disk. Compute project quotas constrain its count; retained storage is metered
+// independently of that quota.
 // Ref: #/components/schemas/SnapshotResource
 type SnapshotResource struct {
 	// A disk restored from this snapshot must reside in this availability zone.
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	CreatedAt          time.Time `json:"created_at"`
-	DiskID             uuid.UUID `json:"disk_id"`
-	ID                 uuid.UUID `json:"id"`
-	Name               string    `json:"name"`
-	RegionID           uuid.UUID `json:"region_id"`
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	CreatedAt          time.Time          `json:"created_at"`
+	DiskID             DiskID             `json:"disk_id"`
+	ID                 SnapshotID         `json:"id"`
+	Name               string             `json:"name"`
+	RegionID           RegionID           `json:"region_id"`
 	// Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller.
 	SizeGB int64 `json:"size_gb"`
 	// `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then
@@ -13794,10 +10566,16 @@ type SnapshotResource struct {
 	Operation  NilSnapshotOperation `json:"operation"`
 	Generation int64                `json:"generation"`
 	ObservedAt NilDateTime          `json:"observed_at"`
+	// The Billing order creating this resource.
+	OrderID NilUUID `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The subscription for this resource; its presence alone does not imply delivery.
+	SubscriptionID NilUUID `json:"subscription_id"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *SnapshotResource) GetAvailabilityZoneID() uuid.UUID {
+func (s *SnapshotResource) GetAvailabilityZoneID() AvailabilityZoneID {
 	return s.AvailabilityZoneID
 }
 
@@ -13807,12 +10585,12 @@ func (s *SnapshotResource) GetCreatedAt() time.Time {
 }
 
 // GetDiskID returns the value of DiskID.
-func (s *SnapshotResource) GetDiskID() uuid.UUID {
+func (s *SnapshotResource) GetDiskID() DiskID {
 	return s.DiskID
 }
 
 // GetID returns the value of ID.
-func (s *SnapshotResource) GetID() uuid.UUID {
+func (s *SnapshotResource) GetID() SnapshotID {
 	return s.ID
 }
 
@@ -13822,7 +10600,7 @@ func (s *SnapshotResource) GetName() string {
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *SnapshotResource) GetRegionID() uuid.UUID {
+func (s *SnapshotResource) GetRegionID() RegionID {
 	return s.RegionID
 }
 
@@ -13851,8 +10629,23 @@ func (s *SnapshotResource) GetObservedAt() NilDateTime {
 	return s.ObservedAt
 }
 
+// GetOrderID returns the value of OrderID.
+func (s *SnapshotResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *SnapshotResource) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *SnapshotResource) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *SnapshotResource) SetAvailabilityZoneID(val uuid.UUID) {
+func (s *SnapshotResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
 }
 
@@ -13862,12 +10655,12 @@ func (s *SnapshotResource) SetCreatedAt(val time.Time) {
 }
 
 // SetDiskID sets the value of DiskID.
-func (s *SnapshotResource) SetDiskID(val uuid.UUID) {
+func (s *SnapshotResource) SetDiskID(val DiskID) {
 	s.DiskID = val
 }
 
 // SetID sets the value of ID.
-func (s *SnapshotResource) SetID(val uuid.UUID) {
+func (s *SnapshotResource) SetID(val SnapshotID) {
 	s.ID = val
 }
 
@@ -13877,7 +10670,7 @@ func (s *SnapshotResource) SetName(val string) {
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *SnapshotResource) SetRegionID(val uuid.UUID) {
+func (s *SnapshotResource) SetRegionID(val RegionID) {
 	s.RegionID = val
 }
 
@@ -13904,6 +10697,21 @@ func (s *SnapshotResource) SetGeneration(val int64) {
 // SetObservedAt sets the value of ObservedAt.
 func (s *SnapshotResource) SetObservedAt(val NilDateTime) {
 	s.ObservedAt = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *SnapshotResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *SnapshotResource) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *SnapshotResource) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
 }
 
 func (*SnapshotResource) deleteSnapshotRes() {}
@@ -13987,6 +10795,8 @@ func (s *SnapshotResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+type SubnetID string
+
 // Ref: #/components/schemas/SubnetListResponseBody
 type SubnetListResponseBody struct {
 	Items      []SubnetResource `json:"items"`
@@ -14015,12 +10825,12 @@ func (s *SubnetListResponseBody) SetPagination(val OffsetPagination) {
 
 // Ref: #/components/schemas/SubnetResource
 type SubnetResource struct {
-	Cidr             string                  `json:"cidr"`
-	GatewayIP        NilString               `json:"gateway_ip"`
-	ID               uuid.UUID               `json:"id"`
-	IPVersion        SubnetResourceIPVersion `json:"ip_version"`
-	Name             string                  `json:"name"`
-	PrivateNetworkID uuid.UUID               `json:"private_network_id"`
+	Cidr                  string                  `json:"cidr"`
+	GatewayIP             NilString               `json:"gateway_ip"`
+	ID                    SubnetID                `json:"id"`
+	IPVersion             SubnetResourceIPVersion `json:"ip_version"`
+	Name                  string                  `json:"name"`
+	VirtualPrivateCloudID VirtualPrivateCloudID   `json:"virtual_private_cloud_id"`
 }
 
 // GetCidr returns the value of Cidr.
@@ -14034,7 +10844,7 @@ func (s *SubnetResource) GetGatewayIP() NilString {
 }
 
 // GetID returns the value of ID.
-func (s *SubnetResource) GetID() uuid.UUID {
+func (s *SubnetResource) GetID() SubnetID {
 	return s.ID
 }
 
@@ -14048,9 +10858,9 @@ func (s *SubnetResource) GetName() string {
 	return s.Name
 }
 
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *SubnetResource) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *SubnetResource) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
 }
 
 // SetCidr sets the value of Cidr.
@@ -14064,7 +10874,7 @@ func (s *SubnetResource) SetGatewayIP(val NilString) {
 }
 
 // SetID sets the value of ID.
-func (s *SubnetResource) SetID(val uuid.UUID) {
+func (s *SubnetResource) SetID(val SubnetID) {
 	s.ID = val
 }
 
@@ -14078,9 +10888,9 @@ func (s *SubnetResource) SetName(val string) {
 	s.Name = val
 }
 
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *SubnetResource) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *SubnetResource) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
 }
 
 type SubnetResourceIPVersion int64
@@ -14098,8 +10908,8 @@ func (SubnetResourceIPVersion) AllValues() []SubnetResourceIPVersion {
 	}
 }
 
-// Immediate ends service when cancellation takes effect, with refunds governed by the purchased terms.
-// Period-end keeps service until the paid period ends.
+// Immediate ends service when cancellation takes effect, with refunds governed by the selected
+// commercial terms. Period-end keeps service until the paid period ends.
 // Ref: #/components/schemas/TerminationPolicy
 type TerminationPolicy string
 
@@ -14142,6 +10952,1130 @@ func (s *TerminationPolicy) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/VirtualMachine
+type VirtualMachine struct {
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	CreatedAt          time.Time          `json:"created_at"`
+	// Hostname inside the virtual machine; equals the virtual machine id.
+	Hostname string           `json:"hostname"`
+	ID       VirtualMachineID `json:"id"`
+	// Non-empty when the virtual machine was created from an image, public or private.
+	ImageID NilImageID `json:"image_id"`
+	// The machine type in effect, and the basis for billing.
+	MachineTypeID MachineTypeID `json:"machine_type_id"`
+	// IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the
+	// virtual private cloud.
+	Ipv6Address NilString `json:"ipv6_address"`
+	// Your own classification of this virtual machine, as key-value pairs. Empty when never set.
+	Labels VirtualMachineLabels `json:"labels"`
+	// The account to log in as over SSH. The password set at creation belongs to this account.
+	LoginUsername string `json:"login_username"`
+	Name          string `json:"name"`
+	// A free-text note about this virtual machine. Empty when never set.
+	Notes string `json:"notes"`
+	// Private address of the virtual machine.
+	PrivateIP             NilString                `json:"private_ip"`
+	VirtualPrivateCloudID NilVirtualPrivateCloudID `json:"virtual_private_cloud_id"`
+	// Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound.
+	PublicIps []string `json:"public_ips"`
+	RegionID  RegionID `json:"region_id"`
+	// `pending` until the order is accepted: no virtual machine exists and addresses are null.
+	// `provisioning` while the virtual machine is created, then `active`. `failed` means the virtual
+	// machine was not created; `failure_reason` states why. `missing` means the virtual machine no longer
+	// exists in the cloud. The other values are the state last observed in the cloud; an operation in
+	// progress appears in `operation`, not here.
+	Status       VirtualMachineStatus        `json:"status"`
+	SubnetID     NilSubnetID                 `json:"subnet_id"`
+	UpdatedAt    time.Time                   `json:"updated_at"`
+	Generation   int64                       `json:"generation"`
+	ObservedAt   NilDateTime                 `json:"observed_at"`
+	Restrictions []VirtualMachineRestriction `json:"restrictions"`
+	// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
+	// after the order was accepted, and the charge for this virtual machine is refunded.
+	FailureReason NilVirtualMachineFailureReason `json:"failure_reason"`
+	// The operation in progress on this virtual machine, or null when none is.
+	Operation NilVirtualMachineOperation `json:"operation"`
+	OrderID   NilUUID                    `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The Billing subscription associated with this resource. It may still be pending; its presence does
+	// not imply delivery or metering. Null when no subscription is associated.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// Subscriptions required to release this virtual machine and disks deleted with it. Billing determines
+	// cancellation terms. An empty list does not establish refund eligibility.
+	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
+	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
+	// for, so that each line of a cancellation can name what it releases.
+	ReleaseSet  []ReleaseSetItem             `json:"release_set"`
+	AccessState NilVirtualMachineAccessState `json:"access_state"`
+	// Non-empty when the virtual machine was created from a disk you already had, instead of from an image.
+	SourceDiskID NilDiskID `json:"source_disk_id"`
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *VirtualMachine) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *VirtualMachine) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetHostname returns the value of Hostname.
+func (s *VirtualMachine) GetHostname() string {
+	return s.Hostname
+}
+
+// GetID returns the value of ID.
+func (s *VirtualMachine) GetID() VirtualMachineID {
+	return s.ID
+}
+
+// GetImageID returns the value of ImageID.
+func (s *VirtualMachine) GetImageID() NilImageID {
+	return s.ImageID
+}
+
+// GetMachineTypeID returns the value of MachineTypeID.
+func (s *VirtualMachine) GetMachineTypeID() MachineTypeID {
+	return s.MachineTypeID
+}
+
+// GetIpv6Address returns the value of Ipv6Address.
+func (s *VirtualMachine) GetIpv6Address() NilString {
+	return s.Ipv6Address
+}
+
+// GetLabels returns the value of Labels.
+func (s *VirtualMachine) GetLabels() VirtualMachineLabels {
+	return s.Labels
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *VirtualMachine) GetLoginUsername() string {
+	return s.LoginUsername
+}
+
+// GetName returns the value of Name.
+func (s *VirtualMachine) GetName() string {
+	return s.Name
+}
+
+// GetNotes returns the value of Notes.
+func (s *VirtualMachine) GetNotes() string {
+	return s.Notes
+}
+
+// GetPrivateIP returns the value of PrivateIP.
+func (s *VirtualMachine) GetPrivateIP() NilString {
+	return s.PrivateIP
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *VirtualMachine) GetVirtualPrivateCloudID() NilVirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
+}
+
+// GetPublicIps returns the value of PublicIps.
+func (s *VirtualMachine) GetPublicIps() []string {
+	return s.PublicIps
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *VirtualMachine) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetStatus returns the value of Status.
+func (s *VirtualMachine) GetStatus() VirtualMachineStatus {
+	return s.Status
+}
+
+// GetSubnetID returns the value of SubnetID.
+func (s *VirtualMachine) GetSubnetID() NilSubnetID {
+	return s.SubnetID
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *VirtualMachine) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// GetGeneration returns the value of Generation.
+func (s *VirtualMachine) GetGeneration() int64 {
+	return s.Generation
+}
+
+// GetObservedAt returns the value of ObservedAt.
+func (s *VirtualMachine) GetObservedAt() NilDateTime {
+	return s.ObservedAt
+}
+
+// GetRestrictions returns the value of Restrictions.
+func (s *VirtualMachine) GetRestrictions() []VirtualMachineRestriction {
+	return s.Restrictions
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *VirtualMachine) GetFailureReason() NilVirtualMachineFailureReason {
+	return s.FailureReason
+}
+
+// GetOperation returns the value of Operation.
+func (s *VirtualMachine) GetOperation() NilVirtualMachineOperation {
+	return s.Operation
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *VirtualMachine) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *VirtualMachine) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *VirtualMachine) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
+func (s *VirtualMachine) GetReleaseSubscriptionIds() []uuid.UUID {
+	return s.ReleaseSubscriptionIds
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *VirtualMachine) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
+// GetAccessState returns the value of AccessState.
+func (s *VirtualMachine) GetAccessState() NilVirtualMachineAccessState {
+	return s.AccessState
+}
+
+// GetSourceDiskID returns the value of SourceDiskID.
+func (s *VirtualMachine) GetSourceDiskID() NilDiskID {
+	return s.SourceDiskID
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *VirtualMachine) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *VirtualMachine) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetHostname sets the value of Hostname.
+func (s *VirtualMachine) SetHostname(val string) {
+	s.Hostname = val
+}
+
+// SetID sets the value of ID.
+func (s *VirtualMachine) SetID(val VirtualMachineID) {
+	s.ID = val
+}
+
+// SetImageID sets the value of ImageID.
+func (s *VirtualMachine) SetImageID(val NilImageID) {
+	s.ImageID = val
+}
+
+// SetMachineTypeID sets the value of MachineTypeID.
+func (s *VirtualMachine) SetMachineTypeID(val MachineTypeID) {
+	s.MachineTypeID = val
+}
+
+// SetIpv6Address sets the value of Ipv6Address.
+func (s *VirtualMachine) SetIpv6Address(val NilString) {
+	s.Ipv6Address = val
+}
+
+// SetLabels sets the value of Labels.
+func (s *VirtualMachine) SetLabels(val VirtualMachineLabels) {
+	s.Labels = val
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *VirtualMachine) SetLoginUsername(val string) {
+	s.LoginUsername = val
+}
+
+// SetName sets the value of Name.
+func (s *VirtualMachine) SetName(val string) {
+	s.Name = val
+}
+
+// SetNotes sets the value of Notes.
+func (s *VirtualMachine) SetNotes(val string) {
+	s.Notes = val
+}
+
+// SetPrivateIP sets the value of PrivateIP.
+func (s *VirtualMachine) SetPrivateIP(val NilString) {
+	s.PrivateIP = val
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *VirtualMachine) SetVirtualPrivateCloudID(val NilVirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetPublicIps sets the value of PublicIps.
+func (s *VirtualMachine) SetPublicIps(val []string) {
+	s.PublicIps = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *VirtualMachine) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *VirtualMachine) SetStatus(val VirtualMachineStatus) {
+	s.Status = val
+}
+
+// SetSubnetID sets the value of SubnetID.
+func (s *VirtualMachine) SetSubnetID(val NilSubnetID) {
+	s.SubnetID = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *VirtualMachine) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *VirtualMachine) SetGeneration(val int64) {
+	s.Generation = val
+}
+
+// SetObservedAt sets the value of ObservedAt.
+func (s *VirtualMachine) SetObservedAt(val NilDateTime) {
+	s.ObservedAt = val
+}
+
+// SetRestrictions sets the value of Restrictions.
+func (s *VirtualMachine) SetRestrictions(val []VirtualMachineRestriction) {
+	s.Restrictions = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *VirtualMachine) SetFailureReason(val NilVirtualMachineFailureReason) {
+	s.FailureReason = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *VirtualMachine) SetOperation(val NilVirtualMachineOperation) {
+	s.Operation = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *VirtualMachine) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *VirtualMachine) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *VirtualMachine) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
+func (s *VirtualMachine) SetReleaseSubscriptionIds(val []uuid.UUID) {
+	s.ReleaseSubscriptionIds = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *VirtualMachine) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
+}
+
+// SetAccessState sets the value of AccessState.
+func (s *VirtualMachine) SetAccessState(val NilVirtualMachineAccessState) {
+	s.AccessState = val
+}
+
+// SetSourceDiskID sets the value of SourceDiskID.
+func (s *VirtualMachine) SetSourceDiskID(val NilDiskID) {
+	s.SourceDiskID = val
+}
+
+func (*VirtualMachine) deleteVirtualMachineRes()   {}
+func (*VirtualMachine) rebootVirtualMachineRes()   {}
+func (*VirtualMachine) startVirtualMachineRes()    {}
+func (*VirtualMachine) stopVirtualMachineRes()     {}
+func (*VirtualMachine) unrescueVirtualMachineRes() {}
+
+type VirtualMachineAccessState string
+
+const (
+	VirtualMachineAccessStatePending   VirtualMachineAccessState = "pending"
+	VirtualMachineAccessStateEnabled   VirtualMachineAccessState = "enabled"
+	VirtualMachineAccessStateSuspended VirtualMachineAccessState = "suspended"
+	VirtualMachineAccessStateReclaimed VirtualMachineAccessState = "reclaimed"
+)
+
+// AllValues returns all VirtualMachineAccessState values.
+func (VirtualMachineAccessState) AllValues() []VirtualMachineAccessState {
+	return []VirtualMachineAccessState{
+		VirtualMachineAccessStatePending,
+		VirtualMachineAccessStateEnabled,
+		VirtualMachineAccessStateSuspended,
+		VirtualMachineAccessStateReclaimed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VirtualMachineAccessState) MarshalText() ([]byte, error) {
+	switch s {
+	case VirtualMachineAccessStatePending:
+		return []byte(s), nil
+	case VirtualMachineAccessStateEnabled:
+		return []byte(s), nil
+	case VirtualMachineAccessStateSuspended:
+		return []byte(s), nil
+	case VirtualMachineAccessStateReclaimed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VirtualMachineAccessState) UnmarshalText(data []byte) error {
+	switch VirtualMachineAccessState(data) {
+	case VirtualMachineAccessStatePending:
+		*s = VirtualMachineAccessStatePending
+		return nil
+	case VirtualMachineAccessStateEnabled:
+		*s = VirtualMachineAccessStateEnabled
+		return nil
+	case VirtualMachineAccessStateSuspended:
+		*s = VirtualMachineAccessStateSuspended
+		return nil
+	case VirtualMachineAccessStateReclaimed:
+		*s = VirtualMachineAccessStateReclaimed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type VirtualMachineDiskID string
+
+// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
+// after the order was accepted, and the charge for this virtual machine is refunded.
+type VirtualMachineFailureReason string
+
+const (
+	VirtualMachineFailureReasonOrderDeclined      VirtualMachineFailureReason = "order_declined"
+	VirtualMachineFailureReasonOrderCanceled      VirtualMachineFailureReason = "order_canceled"
+	VirtualMachineFailureReasonOrderExpired       VirtualMachineFailureReason = "order_expired"
+	VirtualMachineFailureReasonProvisioningFailed VirtualMachineFailureReason = "provisioning_failed"
+)
+
+// AllValues returns all VirtualMachineFailureReason values.
+func (VirtualMachineFailureReason) AllValues() []VirtualMachineFailureReason {
+	return []VirtualMachineFailureReason{
+		VirtualMachineFailureReasonOrderDeclined,
+		VirtualMachineFailureReasonOrderCanceled,
+		VirtualMachineFailureReasonOrderExpired,
+		VirtualMachineFailureReasonProvisioningFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VirtualMachineFailureReason) MarshalText() ([]byte, error) {
+	switch s {
+	case VirtualMachineFailureReasonOrderDeclined:
+		return []byte(s), nil
+	case VirtualMachineFailureReasonOrderCanceled:
+		return []byte(s), nil
+	case VirtualMachineFailureReasonOrderExpired:
+		return []byte(s), nil
+	case VirtualMachineFailureReasonProvisioningFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VirtualMachineFailureReason) UnmarshalText(data []byte) error {
+	switch VirtualMachineFailureReason(data) {
+	case VirtualMachineFailureReasonOrderDeclined:
+		*s = VirtualMachineFailureReasonOrderDeclined
+		return nil
+	case VirtualMachineFailureReasonOrderCanceled:
+		*s = VirtualMachineFailureReasonOrderCanceled
+		return nil
+	case VirtualMachineFailureReasonOrderExpired:
+		*s = VirtualMachineFailureReasonOrderExpired
+		return nil
+	case VirtualMachineFailureReasonProvisioningFailed:
+		*s = VirtualMachineFailureReasonProvisioningFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type VirtualMachineID string
+
+// Your own classification of this virtual machine, as key-value pairs. Empty when never set.
+type VirtualMachineLabels map[string]string
+
+func (s *VirtualMachineLabels) init() VirtualMachineLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/VirtualMachineListResponseBody
+type VirtualMachineListResponseBody struct {
+	Items      []VirtualMachine `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *VirtualMachineListResponseBody) GetItems() []VirtualMachine {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *VirtualMachineListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *VirtualMachineListResponseBody) SetItems(val []VirtualMachine) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *VirtualMachineListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type VirtualMachineNetworkInterfaceID string
+
+// An operation still running on this virtual machine. It is not a separate resource; once it finishes,
+// the virtual machine's `operation` is null again and the virtual machine shows the result.
+// Ref: #/components/schemas/VirtualMachineOperation
+type VirtualMachineOperation struct {
+	// `create` runs from acceptance of the order until the virtual machine is `active` or `failed`.
+	// `suspend` and `resume` impose and lift a suspension by the platform or for non-payment. `delete`
+	// includes release through a Billing cancellation.
+	Type      VirtualMachineOperationType `json:"type"`
+	StartedAt time.Time                   `json:"started_at"`
+}
+
+// GetType returns the value of Type.
+func (s *VirtualMachineOperation) GetType() VirtualMachineOperationType {
+	return s.Type
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *VirtualMachineOperation) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// SetType sets the value of Type.
+func (s *VirtualMachineOperation) SetType(val VirtualMachineOperationType) {
+	s.Type = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *VirtualMachineOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// `create` runs from acceptance of the order until the virtual machine is `active` or `failed`.
+// `suspend` and `resume` impose and lift a suspension by the platform or for non-payment. `delete`
+// includes release through a Billing cancellation.
+type VirtualMachineOperationType string
+
+const (
+	VirtualMachineOperationTypeCreate                 VirtualMachineOperationType = "create"
+	VirtualMachineOperationTypeStart                  VirtualMachineOperationType = "start"
+	VirtualMachineOperationTypeStop                   VirtualMachineOperationType = "stop"
+	VirtualMachineOperationTypeReboot                 VirtualMachineOperationType = "reboot"
+	VirtualMachineOperationTypeRebuild                VirtualMachineOperationType = "rebuild"
+	VirtualMachineOperationTypeRescue                 VirtualMachineOperationType = "rescue"
+	VirtualMachineOperationTypeUnrescue               VirtualMachineOperationType = "unrescue"
+	VirtualMachineOperationTypeResize                 VirtualMachineOperationType = "resize"
+	VirtualMachineOperationTypeResetPassword          VirtualMachineOperationType = "reset_password"
+	VirtualMachineOperationTypeAttachDisk             VirtualMachineOperationType = "attach_disk"
+	VirtualMachineOperationTypeDetachDisk             VirtualMachineOperationType = "detach_disk"
+	VirtualMachineOperationTypeAttachNetworkInterface VirtualMachineOperationType = "attach_network_interface"
+	VirtualMachineOperationTypeDetachNetworkInterface VirtualMachineOperationType = "detach_network_interface"
+	VirtualMachineOperationTypeBindElasticIP          VirtualMachineOperationType = "bind_elastic_ip"
+	VirtualMachineOperationTypeUnbindElasticIP        VirtualMachineOperationType = "unbind_elastic_ip"
+	VirtualMachineOperationTypeSuspend                VirtualMachineOperationType = "suspend"
+	VirtualMachineOperationTypeResume                 VirtualMachineOperationType = "resume"
+	VirtualMachineOperationTypeDelete                 VirtualMachineOperationType = "delete"
+)
+
+// AllValues returns all VirtualMachineOperationType values.
+func (VirtualMachineOperationType) AllValues() []VirtualMachineOperationType {
+	return []VirtualMachineOperationType{
+		VirtualMachineOperationTypeCreate,
+		VirtualMachineOperationTypeStart,
+		VirtualMachineOperationTypeStop,
+		VirtualMachineOperationTypeReboot,
+		VirtualMachineOperationTypeRebuild,
+		VirtualMachineOperationTypeRescue,
+		VirtualMachineOperationTypeUnrescue,
+		VirtualMachineOperationTypeResize,
+		VirtualMachineOperationTypeResetPassword,
+		VirtualMachineOperationTypeAttachDisk,
+		VirtualMachineOperationTypeDetachDisk,
+		VirtualMachineOperationTypeAttachNetworkInterface,
+		VirtualMachineOperationTypeDetachNetworkInterface,
+		VirtualMachineOperationTypeBindElasticIP,
+		VirtualMachineOperationTypeUnbindElasticIP,
+		VirtualMachineOperationTypeSuspend,
+		VirtualMachineOperationTypeResume,
+		VirtualMachineOperationTypeDelete,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VirtualMachineOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case VirtualMachineOperationTypeCreate:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeStart:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeStop:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeReboot:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeRebuild:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeRescue:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeUnrescue:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeResize:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeResetPassword:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeAttachDisk:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeDetachDisk:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeAttachNetworkInterface:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeDetachNetworkInterface:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeBindElasticIP:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeUnbindElasticIP:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeSuspend:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeResume:
+		return []byte(s), nil
+	case VirtualMachineOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VirtualMachineOperationType) UnmarshalText(data []byte) error {
+	switch VirtualMachineOperationType(data) {
+	case VirtualMachineOperationTypeCreate:
+		*s = VirtualMachineOperationTypeCreate
+		return nil
+	case VirtualMachineOperationTypeStart:
+		*s = VirtualMachineOperationTypeStart
+		return nil
+	case VirtualMachineOperationTypeStop:
+		*s = VirtualMachineOperationTypeStop
+		return nil
+	case VirtualMachineOperationTypeReboot:
+		*s = VirtualMachineOperationTypeReboot
+		return nil
+	case VirtualMachineOperationTypeRebuild:
+		*s = VirtualMachineOperationTypeRebuild
+		return nil
+	case VirtualMachineOperationTypeRescue:
+		*s = VirtualMachineOperationTypeRescue
+		return nil
+	case VirtualMachineOperationTypeUnrescue:
+		*s = VirtualMachineOperationTypeUnrescue
+		return nil
+	case VirtualMachineOperationTypeResize:
+		*s = VirtualMachineOperationTypeResize
+		return nil
+	case VirtualMachineOperationTypeResetPassword:
+		*s = VirtualMachineOperationTypeResetPassword
+		return nil
+	case VirtualMachineOperationTypeAttachDisk:
+		*s = VirtualMachineOperationTypeAttachDisk
+		return nil
+	case VirtualMachineOperationTypeDetachDisk:
+		*s = VirtualMachineOperationTypeDetachDisk
+		return nil
+	case VirtualMachineOperationTypeAttachNetworkInterface:
+		*s = VirtualMachineOperationTypeAttachNetworkInterface
+		return nil
+	case VirtualMachineOperationTypeDetachNetworkInterface:
+		*s = VirtualMachineOperationTypeDetachNetworkInterface
+		return nil
+	case VirtualMachineOperationTypeBindElasticIP:
+		*s = VirtualMachineOperationTypeBindElasticIP
+		return nil
+	case VirtualMachineOperationTypeUnbindElasticIP:
+		*s = VirtualMachineOperationTypeUnbindElasticIP
+		return nil
+	case VirtualMachineOperationTypeSuspend:
+		*s = VirtualMachineOperationTypeSuspend
+		return nil
+	case VirtualMachineOperationTypeResume:
+		*s = VirtualMachineOperationTypeResume
+		return nil
+	case VirtualMachineOperationTypeDelete:
+		*s = VirtualMachineOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A resource a release set releases.
+// Ref: #/components/schemas/VirtualMachineReleaseResource
+type VirtualMachineReleaseResource struct {
+	Type VirtualMachineReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID VirtualMachineID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *VirtualMachineReleaseResource) GetType() VirtualMachineReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *VirtualMachineReleaseResource) GetID() VirtualMachineID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *VirtualMachineReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *VirtualMachineReleaseResource) SetType(val VirtualMachineReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *VirtualMachineReleaseResource) SetID(val VirtualMachineID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *VirtualMachineReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type VirtualMachineReleaseResourceType string
+
+const (
+	VirtualMachineReleaseResourceTypeVirtualMachine VirtualMachineReleaseResourceType = "virtual_machine"
+)
+
+// AllValues returns all VirtualMachineReleaseResourceType values.
+func (VirtualMachineReleaseResourceType) AllValues() []VirtualMachineReleaseResourceType {
+	return []VirtualMachineReleaseResourceType{
+		VirtualMachineReleaseResourceTypeVirtualMachine,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VirtualMachineReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case VirtualMachineReleaseResourceTypeVirtualMachine:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VirtualMachineReleaseResourceType) UnmarshalText(data []byte) error {
+	switch VirtualMachineReleaseResourceType(data) {
+	case VirtualMachineReleaseResourceTypeVirtualMachine:
+		*s = VirtualMachineReleaseResourceTypeVirtualMachine
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// An independent restriction on use. Removing one restriction never removes another source’s
+// restriction, and never starts a virtual machine its user stopped.
+// Ref: #/components/schemas/VirtualMachineRestriction
+type VirtualMachineRestriction struct {
+	ID         VirtualMachineRestrictionID     `json:"id"`
+	Source     VirtualMachineRestrictionSource `json:"source"`
+	SourceID   string                          `json:"source_id"`
+	ReasonCode string                          `json:"reason_code"`
+	CreatedAt  time.Time                       `json:"created_at"`
+}
+
+// GetID returns the value of ID.
+func (s *VirtualMachineRestriction) GetID() VirtualMachineRestrictionID {
+	return s.ID
+}
+
+// GetSource returns the value of Source.
+func (s *VirtualMachineRestriction) GetSource() VirtualMachineRestrictionSource {
+	return s.Source
+}
+
+// GetSourceID returns the value of SourceID.
+func (s *VirtualMachineRestriction) GetSourceID() string {
+	return s.SourceID
+}
+
+// GetReasonCode returns the value of ReasonCode.
+func (s *VirtualMachineRestriction) GetReasonCode() string {
+	return s.ReasonCode
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *VirtualMachineRestriction) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *VirtualMachineRestriction) SetID(val VirtualMachineRestrictionID) {
+	s.ID = val
+}
+
+// SetSource sets the value of Source.
+func (s *VirtualMachineRestriction) SetSource(val VirtualMachineRestrictionSource) {
+	s.Source = val
+}
+
+// SetSourceID sets the value of SourceID.
+func (s *VirtualMachineRestriction) SetSourceID(val string) {
+	s.SourceID = val
+}
+
+// SetReasonCode sets the value of ReasonCode.
+func (s *VirtualMachineRestriction) SetReasonCode(val string) {
+	s.ReasonCode = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *VirtualMachineRestriction) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+type VirtualMachineRestrictionID string
+
+type VirtualMachineRestrictionSource string
+
+const (
+	VirtualMachineRestrictionSourceBilling  VirtualMachineRestrictionSource = "billing"
+	VirtualMachineRestrictionSourceIam      VirtualMachineRestrictionSource = "iam"
+	VirtualMachineRestrictionSourceOperator VirtualMachineRestrictionSource = "operator"
+)
+
+// AllValues returns all VirtualMachineRestrictionSource values.
+func (VirtualMachineRestrictionSource) AllValues() []VirtualMachineRestrictionSource {
+	return []VirtualMachineRestrictionSource{
+		VirtualMachineRestrictionSourceBilling,
+		VirtualMachineRestrictionSourceIam,
+		VirtualMachineRestrictionSourceOperator,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VirtualMachineRestrictionSource) MarshalText() ([]byte, error) {
+	switch s {
+	case VirtualMachineRestrictionSourceBilling:
+		return []byte(s), nil
+	case VirtualMachineRestrictionSourceIam:
+		return []byte(s), nil
+	case VirtualMachineRestrictionSourceOperator:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VirtualMachineRestrictionSource) UnmarshalText(data []byte) error {
+	switch VirtualMachineRestrictionSource(data) {
+	case VirtualMachineRestrictionSourceBilling:
+		*s = VirtualMachineRestrictionSourceBilling
+		return nil
+	case VirtualMachineRestrictionSourceIam:
+		*s = VirtualMachineRestrictionSourceIam
+		return nil
+	case VirtualMachineRestrictionSourceOperator:
+		*s = VirtualMachineRestrictionSourceOperator
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `pending` until the order is accepted: no virtual machine exists and addresses are null.
+// `provisioning` while the virtual machine is created, then `active`. `failed` means the virtual
+// machine was not created; `failure_reason` states why. `missing` means the virtual machine no longer
+// exists in the cloud. The other values are the state last observed in the cloud; an operation in
+// progress appears in `operation`, not here.
+type VirtualMachineStatus string
+
+const (
+	VirtualMachineStatusPending          VirtualMachineStatus = "pending"
+	VirtualMachineStatusProvisioning     VirtualMachineStatus = "provisioning"
+	VirtualMachineStatusActive           VirtualMachineStatus = "active"
+	VirtualMachineStatusStopped          VirtualMachineStatus = "stopped"
+	VirtualMachineStatusPaused           VirtualMachineStatus = "paused"
+	VirtualMachineStatusSuspended        VirtualMachineStatus = "suspended"
+	VirtualMachineStatusShelved          VirtualMachineStatus = "shelved"
+	VirtualMachineStatusShelvedOffloaded VirtualMachineStatus = "shelved_offloaded"
+	VirtualMachineStatusRescued          VirtualMachineStatus = "rescued"
+	VirtualMachineStatusDeleted          VirtualMachineStatus = "deleted"
+	VirtualMachineStatusFailed           VirtualMachineStatus = "failed"
+	VirtualMachineStatusError            VirtualMachineStatus = "error"
+	VirtualMachineStatusUnknown          VirtualMachineStatus = "unknown"
+	VirtualMachineStatusMissing          VirtualMachineStatus = "missing"
+)
+
+// AllValues returns all VirtualMachineStatus values.
+func (VirtualMachineStatus) AllValues() []VirtualMachineStatus {
+	return []VirtualMachineStatus{
+		VirtualMachineStatusPending,
+		VirtualMachineStatusProvisioning,
+		VirtualMachineStatusActive,
+		VirtualMachineStatusStopped,
+		VirtualMachineStatusPaused,
+		VirtualMachineStatusSuspended,
+		VirtualMachineStatusShelved,
+		VirtualMachineStatusShelvedOffloaded,
+		VirtualMachineStatusRescued,
+		VirtualMachineStatusDeleted,
+		VirtualMachineStatusFailed,
+		VirtualMachineStatusError,
+		VirtualMachineStatusUnknown,
+		VirtualMachineStatusMissing,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VirtualMachineStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case VirtualMachineStatusPending:
+		return []byte(s), nil
+	case VirtualMachineStatusProvisioning:
+		return []byte(s), nil
+	case VirtualMachineStatusActive:
+		return []byte(s), nil
+	case VirtualMachineStatusStopped:
+		return []byte(s), nil
+	case VirtualMachineStatusPaused:
+		return []byte(s), nil
+	case VirtualMachineStatusSuspended:
+		return []byte(s), nil
+	case VirtualMachineStatusShelved:
+		return []byte(s), nil
+	case VirtualMachineStatusShelvedOffloaded:
+		return []byte(s), nil
+	case VirtualMachineStatusRescued:
+		return []byte(s), nil
+	case VirtualMachineStatusDeleted:
+		return []byte(s), nil
+	case VirtualMachineStatusFailed:
+		return []byte(s), nil
+	case VirtualMachineStatusError:
+		return []byte(s), nil
+	case VirtualMachineStatusUnknown:
+		return []byte(s), nil
+	case VirtualMachineStatusMissing:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VirtualMachineStatus) UnmarshalText(data []byte) error {
+	switch VirtualMachineStatus(data) {
+	case VirtualMachineStatusPending:
+		*s = VirtualMachineStatusPending
+		return nil
+	case VirtualMachineStatusProvisioning:
+		*s = VirtualMachineStatusProvisioning
+		return nil
+	case VirtualMachineStatusActive:
+		*s = VirtualMachineStatusActive
+		return nil
+	case VirtualMachineStatusStopped:
+		*s = VirtualMachineStatusStopped
+		return nil
+	case VirtualMachineStatusPaused:
+		*s = VirtualMachineStatusPaused
+		return nil
+	case VirtualMachineStatusSuspended:
+		*s = VirtualMachineStatusSuspended
+		return nil
+	case VirtualMachineStatusShelved:
+		*s = VirtualMachineStatusShelved
+		return nil
+	case VirtualMachineStatusShelvedOffloaded:
+		*s = VirtualMachineStatusShelvedOffloaded
+		return nil
+	case VirtualMachineStatusRescued:
+		*s = VirtualMachineStatusRescued
+		return nil
+	case VirtualMachineStatusDeleted:
+		*s = VirtualMachineStatusDeleted
+		return nil
+	case VirtualMachineStatusFailed:
+		*s = VirtualMachineStatusFailed
+		return nil
+	case VirtualMachineStatusError:
+		*s = VirtualMachineStatusError
+		return nil
+	case VirtualMachineStatusUnknown:
+		*s = VirtualMachineStatusUnknown
+		return nil
+	case VirtualMachineStatusMissing:
+		*s = VirtualMachineStatusMissing
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/VirtualPrivateCloud
+type VirtualPrivateCloud struct {
+	Cidr      string                `json:"cidr"`
+	CreatedAt time.Time             `json:"created_at"`
+	ID        VirtualPrivateCloudID `json:"id"`
+	Name      string                `json:"name"`
+	RegionID  RegionID              `json:"region_id"`
+	UpdatedAt time.Time             `json:"updated_at"`
+}
+
+// GetCidr returns the value of Cidr.
+func (s *VirtualPrivateCloud) GetCidr() string {
+	return s.Cidr
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *VirtualPrivateCloud) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetID returns the value of ID.
+func (s *VirtualPrivateCloud) GetID() VirtualPrivateCloudID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *VirtualPrivateCloud) GetName() string {
+	return s.Name
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *VirtualPrivateCloud) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *VirtualPrivateCloud) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetCidr sets the value of Cidr.
+func (s *VirtualPrivateCloud) SetCidr(val string) {
+	s.Cidr = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *VirtualPrivateCloud) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetID sets the value of ID.
+func (s *VirtualPrivateCloud) SetID(val VirtualPrivateCloudID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *VirtualPrivateCloud) SetName(val string) {
+	s.Name = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *VirtualPrivateCloud) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *VirtualPrivateCloud) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+func (*VirtualPrivateCloud) deleteVirtualPrivateCloudRes() {}
+
+type VirtualPrivateCloudID string
+
+// Ref: #/components/schemas/VirtualPrivateCloudListResponseBody
+type VirtualPrivateCloudListResponseBody struct {
+	Items      []VirtualPrivateCloud `json:"items"`
+	Pagination OffsetPagination      `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *VirtualPrivateCloudListResponseBody) GetItems() []VirtualPrivateCloud {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *VirtualPrivateCloudListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *VirtualPrivateCloudListResponseBody) SetItems(val []VirtualPrivateCloud) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *VirtualPrivateCloudListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
 // Ref: #/components/schemas/ZoneListResponseBody
 type ZoneListResponseBody struct {
 	Items      []ZoneResource   `json:"items"`
@@ -14173,8 +12107,8 @@ type ZoneResource struct {
 	// Display name for this zone, shown to tenants (Hong Kong A). The stable handle is code.
 	Name string `json:"name"`
 	// The zone's code within its region (hk-1-a). Stable and human-written; addressing is by id.
-	Code string    `json:"code"`
-	ID   uuid.UUID `json:"id"`
+	Code string             `json:"code"`
+	ID   AvailabilityZoneID `json:"id"`
 }
 
 // GetName returns the value of Name.
@@ -14188,7 +12122,7 @@ func (s *ZoneResource) GetCode() string {
 }
 
 // GetID returns the value of ID.
-func (s *ZoneResource) GetID() uuid.UUID {
+func (s *ZoneResource) GetID() AvailabilityZoneID {
 	return s.ID
 }
 
@@ -14203,6 +12137,6 @@ func (s *ZoneResource) SetCode(val string) {
 }
 
 // SetID sets the value of ID.
-func (s *ZoneResource) SetID(val uuid.UUID) {
+func (s *ZoneResource) SetID(val AvailabilityZoneID) {
 	s.ID = val
 }

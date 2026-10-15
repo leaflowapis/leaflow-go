@@ -22,170 +22,68 @@ func (UnimplementedHandler) AcceptPeering(ctx context.Context, params AcceptPeer
 	return r, ht.ErrNotImplemented
 }
 
-// AllocateFloatingIP implements allocate-floating-ip operation.
-//
-// If the private network is not yet connected to the internet, connectivity is established as part of
-// this call.
-//
-// Returns the floating IP as `pending` with its Checkout Session; `address` is null until the address
-// is allocated after the order is accepted. A requested `address` is not held while pending; if it is
-// no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is
-// refunded.
-//
-// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
-// network; enable IPv6 on that network instead.
-//
-// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any Checkout Session is created, when the private
-// network's `status` is not `available`. `meta.private_network_id` names it.
-//
-// POST /api/v1/floating-ips
-func (UnimplementedHandler) AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (r AllocateFloatingIPRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // AttachDisk implements attach-disk operation.
 //
-// The disk must be in the same region and availability zone as the instance. Returns the disk; the
-// instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment
-// is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
+// The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
+// the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
+// attachment is confirmed. Partition the disk and mount the file system inside the virtual machine
+// once it is attached.
 //
-// POST /api/v1/instances/{instanceId}/disks
+// POST /api/v1/virtual-machines/{virtualMachineId}/disks
 func (UnimplementedHandler) AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (r AttachDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// AttachInstanceFloatingIP implements attach-instance-floating-ip operation.
+// AttachNetworkInterface implements attach-network-interface operation.
 //
-// Changes the public IP binding on the instance's primary network interface. The instance shows the
-// `bind_floating_ip` operation until the binding is confirmed.
+// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
+// and the interface the `attach` operation until the attachment is confirmed.
 //
-// POST /api/v1/instances/{instanceId}/floating-ips
-func (UnimplementedHandler) AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (r AttachInstanceFloatingIPRes, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/network-interfaces
+func (UnimplementedHandler) AttachNetworkInterface(ctx context.Context, req *AttachNetworkInterfaceRequestBody, params AttachNetworkInterfaceParams) (r AttachNetworkInterfaceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// AttachPort implements attach-port operation.
+// AttachVirtualMachineElasticIP implements attach-virtual-machine-elastic-ip operation.
 //
-// Returns the network interface; the instance shows the `attach_port` operation and the interface the
-// `attach` operation until the attachment is confirmed.
+// Changes the public IP binding on the virtual machine's primary network interface. The virtual
+// machine shows the `bind_elastic_ip` operation until the binding is confirmed.
 //
-// POST /api/v1/instances/{instanceId}/ports
-func (UnimplementedHandler) AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (r AttachPortRes, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/elastic-ips
+func (UnimplementedHandler) AttachVirtualMachineElasticIP(ctx context.Context, req *AttachElasticIPRequestBody, params AttachVirtualMachineElasticIPParams) (r AttachVirtualMachineElasticIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// BindFloatingIP implements bind-floating-ip operation.
+// BindElasticIP implements bind-elastic-ip operation.
 //
-// The floating IP shows the `bind` operation until the binding is confirmed.
+// The elastic IP shows the `bind` operation until the binding is confirmed.
 //
-// PUT /api/v1/floating-ips/{floatingIpId}/binding
-func (UnimplementedHandler) BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (r BindFloatingIPRes, _ error) {
+// PUT /api/v1/elastic-ips/{elasticIpId}/binding
+func (UnimplementedHandler) BindElasticIP(ctx context.Context, req *BindElasticIPRequestBody, params BindElasticIPParams) (r BindElasticIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // CreateBackup implements create-backup operation.
 //
-// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
-// source disk is deleted, and can be restored to another availability zone in the same region. A
-// snapshot offers neither capability, as it resides in the same storage as the source disk and
-// prevents that disk from being deleted while it exists.
+// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
+// restored to another availability zone in the same region. A running virtual machine may produce a
+// file-system-inconsistent backup. Pending backups count toward Compute project quotas until cleanup
+// is confirmed.
 //
-// Disks attached to a running instance, including system disks, can be backed up.
-//
-// No order is placed. The backup is metered on the backup service of the disk's region by its
-// `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused
-// with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
-//
-// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup
-// until it is `available` or `failed`.
+// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
+// and Compute project quotas are checked before placement. No storage is allocated until the order is
+// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
+// than treating it as rejected.
 //
 // POST /api/v1/backups
 func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (r CreateBackupRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// CreateBackupCapacityPack implements create-backup-capacity-pack operation.
-//
-// Purchases a capacity pack, backup capacity for this project and region bought in advance by month or
-// year: `billing` must be licensed with a period, as offered in the backup service's
-// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
-// total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
-// excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
-// takes its order and payment and handles its renewal and cancellation through the pack's
-// subscription.
-//
-// Returns the pack as `pending` with its Checkout Session; it applies once the order is accepted.
-// Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service
-// is not active.
-//
-// POST /api/v1/regions/{regionId}/backup-capacity-packs
-func (UnimplementedHandler) CreateBackupCapacityPack(ctx context.Context, req *CreateBackupCapacityPackRequestBody, params CreateBackupCapacityPackParams) (r CreateBackupCapacityPackRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateBackupCapacityPackQuote implements create-backup-capacity-pack-quote operation.
-//
-// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or
-// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
-// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
-// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. `estimated_usage_amount` projects metered usage over one month of 730 hours and is
-// not collected at checkout. A request the purchase would refuse is refused the same way. Prices may
-// change, so quote again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
-func (UnimplementedHandler) CreateBackupCapacityPackQuote(ctx context.Context, req *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (r CreateBackupCapacityPackQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateBackupRestoreQuote implements create-backup-restore-quote operation.
-//
-// Prices what `restore-backup` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/backups/{backupId}/restore/quote
-func (UnimplementedHandler) CreateBackupRestoreQuote(ctx context.Context, req *RestoreBackupQuoteRequestBody, params CreateBackupRestoreQuoteParams) (r CreateBackupRestoreQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateBackupService implements create-backup-service operation.
-//
-// Purchases the backup service for this project and region. The service itself has no charge; backups
-// are metered under it by retained capacity. It takes no billing choice. Returns the service as
-// `pending` with its Checkout Session; it becomes `active` once the order is accepted.
-//
-// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or
-// suspended.
-//
-// POST /api/v1/regions/{regionId}/backup-service
-func (UnimplementedHandler) CreateBackupService(ctx context.Context, req *CreateBackupServiceRequestBody, params CreateBackupServiceParams) (r CreateBackupServiceRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateBackupServiceQuote implements create-backup-service-quote operation.
-//
-// Prices what `create-backup-service` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/backup-service/quote
-func (UnimplementedHandler) CreateBackupServiceQuote(ctx context.Context, params CreateBackupServiceQuoteParams) (r CreateBackupServiceQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateDisk implements create-disk operation.
 //
-// The disk is created in the availability zone of the selected disk type, and an instance must reside
-// in the same zone to attach it. Choosing the disk type therefore determines the zone.
+// The disk is created in the availability zone of the selected disk type, and a virtual machine must
+// reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
 // resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
@@ -196,136 +94,49 @@ func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskReque
 	return r, ht.ErrNotImplemented
 }
 
-// CreateDiskQuote implements create-disk-quote operation.
+// CreateElasticIP implements create-elastic-ip operation.
 //
-// Prices what `create-disk` would order for the same request, without ordering or creating anything;
-// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
-// automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
+// Select a public elastic IP type. Compute records the pending resource and its deferred order before
+// allocating an address; checkout is performed in Billing.
 //
-// POST /api/v1/disks/quote
-func (UnimplementedHandler) CreateDiskQuote(ctx context.Context, req *CreateDiskQuoteRequestBody) (r CreateDiskQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateDiskResizeQuote implements create-disk-resize-quote operation.
+// Returns the elastic IP as `pending` with its order; `address` is null until the address is allocated
+// after the order is accepted. A requested `address` is not held while pending; if it is no longer
+// available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is refunded.
 //
-// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A
-// change that raises the price has the charge for the rest of the paid period as `total`; one that
-// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to virtual machines by the
+// virtual private cloud; enable IPv6 on that network instead.
 //
-// POST /api/v1/disks/{diskId}/resize/quote
-func (UnimplementedHandler) CreateDiskResizeQuote(ctx context.Context, req *ResizeDiskQuoteRequestBody, params CreateDiskResizeQuoteParams) (r CreateDiskResizeQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateFloatingIPBandwidthQuote implements create-floating-ip-bandwidth-quote operation.
+// Allocation does not select or create a virtual private cloud. A later association selects an
+// assigned network-interface address; Compute then establishes the required network connectivity.
 //
-// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing
-// anything. A change that raises the price has the charge for the rest of the paid period as `total`;
-// one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote
-func (UnimplementedHandler) CreateFloatingIPBandwidthQuote(ctx context.Context, req *SetFloatingIPBandwidthQuoteRequestBody, params CreateFloatingIPBandwidthQuoteParams) (r CreateFloatingIPBandwidthQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateFloatingIPQuote implements create-floating-ip-quote operation.
-//
-// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/floating-ips/quote
-func (UnimplementedHandler) CreateFloatingIPQuote(ctx context.Context, req *AllocateFloatingIPQuoteRequestBody) (r CreateFloatingIPQuoteRes, _ error) {
+// POST /api/v1/elastic-ips
+func (UnimplementedHandler) CreateElasticIP(ctx context.Context, req *CreateElasticIPRequestBody) (r CreateElasticIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // CreateImage implements create-image operation.
 //
-// Creates a private image of this project from the system disk of the instance; data disks are not
-// included. The resulting image can create instances and rebuild them, and remains usable after the
-// source instance is released.
+// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
+// machine first for file-system consistency. The virtual machine cannot be released while its source
+// disk is being captured. Compute project quotas are enforced independently of billing.
 //
-// The image reflects the moment the capture started. Later changes to the instance are not included.
-// The image is returned as `pending` with its Checkout Session, and the capture starts only once the
-// order is accepted.
-//
-// The capture then has two phases, reported by the status of the image:
-//
-//   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
-//     remains usable during this phase, although stopping it first is recommended for consistency.
-//   - `uploading` — no longer tied to the system disk. The instance may be started at this point;
-//     there is no need to wait for the capture to finish. The duration of this phase is proportional to
-//     the size of the system disk, roughly 3 minutes for 20 GB.
-//
-// The file system of a running instance may be captured mid-write, in which case the image is
-// equivalent to the disk contents after a power loss. Where consistency matters, stop the instance
-// before starting the capture and start it again once the status becomes `uploading`.
-//
-// The instance can be started, stopped and used normally during the capture, but cannot be released.
-//
-// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows.
-// Obtain a quote with `create-image-quote` first.
+// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
+// and Compute project quotas are checked before placement. No storage is allocated until the order is
+// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
+// than treating it as rejected.
 //
 // POST /api/v1/images
 func (UnimplementedHandler) CreateImage(ctx context.Context, req *CreateImageRequestBody) (r CreateImageRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// CreateImageQuote implements create-image-quote operation.
+// CreateNetworkInterface implements create-network-interface operation.
 //
-// Prices the capture `create-image` would order for the same instance, without ordering anything;
-// nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the
-// most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account
-// discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before
-// credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. Prices may change, so quote again before final confirmation.
+// The new network interface is not attached to any virtual machine. Primary network interfaces are not
+// created here; they are created with the virtual machine.
 //
-// POST /api/v1/images/quote
-func (UnimplementedHandler) CreateImageQuote(ctx context.Context, req *CreateImageQuoteRequestBody) (r CreateImageQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateInstanceQuote implements create-instance-quote operation.
-//
-// Prices what `launch-instance` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/instances/quote
-func (UnimplementedHandler) CreateInstanceQuote(ctx context.Context, req *LaunchInstanceQuoteRequestBody) (r CreateInstanceQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateInstanceResizeQuote implements create-instance-resize-quote operation.
-//
-// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A
-// change that raises the price has the charge for the rest of the paid period as `total`; one that
-// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/instances/{instanceId}/resize/quote
-func (UnimplementedHandler) CreateInstanceResizeQuote(ctx context.Context, req *ResizeInstanceQuoteRequestBody, params CreateInstanceResizeQuoteParams) (r CreateInstanceResizeQuoteRes, _ error) {
+// POST /api/v1/network-interfaces
+func (UnimplementedHandler) CreateNetworkInterface(ctx context.Context, req *CreateNetworkInterfaceRequestBody) (r *NetworkInterface, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -339,34 +150,14 @@ func (UnimplementedHandler) CreatePeering(ctx context.Context, req *CreatePeerin
 	return r, ht.ErrNotImplemented
 }
 
-// CreatePort implements create-port operation.
-//
-// The new network interface is not attached to any instance. Primary network interfaces are not
-// created here; they are created with the instance.
-//
-// POST /api/v1/ports
-func (UnimplementedHandler) CreatePort(ctx context.Context, req *CreatePortRequestBody) (r *PortResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreatePrivateNetwork implements create-private-network operation.
-//
-// Creates a private network definition and its default security group. The default security group
-// denies all inbound traffic and permits all outbound traffic.
-//
-// POST /api/v1/private-networks
-func (UnimplementedHandler) CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody) (r *PrivateNetworkResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateRoute implements create-route operation.
 //
 // Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
-// overrides the default route and takes every floating IP offline immediately; a destination equal to
+// overrides the default route and takes every elastic IP offline immediately; a destination equal to
 // the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
 // gateway of a subnet, which points back at the router itself.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/routes
+// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
 func (UnimplementedHandler) CreateRoute(ctx context.Context, req *CreateRouteRequestBody, params CreateRouteParams) (r *RouteResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -394,42 +185,17 @@ func (UnimplementedHandler) CreateSecurityGroupRule(ctx context.Context, req *Cr
 
 // CreateSnapshot implements create-snapshot operation.
 //
-// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block
-// device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the
-// instance first where the data matters.
+// Creates a snapshot of the disk. A running virtual machine may produce a file-system-inconsistent
+// snapshot; flush pending writes first. A system disk cannot be reverted while attached. Pending
+// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
 //
-// A snapshot of a system disk cannot be used to revert that system disk: reverting requires the disk
-// to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To
-// preserve and restore an entire system, use a private image; for a copy that crosses availability
-// zones and survives deletion of the disk, use a backup.
-//
-// Snapshot slots are purchased separately for this project and the source disk's region. This
-// operation reserves one available slot and returns the snapshot as `pending`; it places no order and
-// charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot
-// exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
-//
-// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and
-// meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot
-// data has been confirmed absent or removed.
+// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
+// and Compute project quotas are checked before placement. No storage is allocated until the order is
+// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
+// than treating it as rejected.
 //
 // POST /api/v1/snapshots
-func (UnimplementedHandler) CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (r *SnapshotResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateSnapshotQuotaQuote implements create-snapshot-quota-quote operation.
-//
-// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now,
-// for the same request, without ordering or creating anything; nothing is reserved or recorded.
-// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
-// automatic checkout would collect before credit grants and balance; give it as
-// `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/snapshot-quota/quote
-func (UnimplementedHandler) CreateSnapshotQuotaQuote(ctx context.Context, req *SetSnapshotQuotaQuoteRequestBody, params CreateSnapshotQuotaQuoteParams) (r CreateSnapshotQuotaQuoteRes, _ error) {
+func (UnimplementedHandler) CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (r CreateSnapshotRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -437,8 +203,57 @@ func (UnimplementedHandler) CreateSnapshotQuotaQuote(ctx context.Context, req *S
 //
 // Create a subnet.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/subnets
+// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
 func (UnimplementedHandler) CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody, params CreateSubnetParams) (r *SubnetResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateVirtualMachine implements create-virtual-machine operation.
+//
+// Records the requested configuration, creates a deferred Billing order, including for metered terms,
+// and returns one `pending` virtual machine per requested virtual machine with the order. Each new
+// component carries its own commercial terms; their billing mode and period must match. A pending
+// virtual machine has no virtual machine, system disk or address, and is not metered.
+//
+// Creation starts only after Compute receives `orderAccepted` and verifies the accepted order with
+// Billing: the virtual machine becomes `provisioning`, then `active`. Preview and confirm checkout
+// through Billing using the returned order reference. A zero-total order still requires verified
+// acceptance; a canceled or expired order leaves the virtual machines `failed` with `order_canceled`
+// or `order_expired`. Do not submit another creation request after paying. After an uncertain
+// response, look the order up before submitting again.
+//
+// Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
+// subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
+// while the virtual machine is pending; if one is no longer usable when the order is accepted, the
+// virtual machine ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing
+// disks retain their own subscription. Virtual machines, disks and public IPs keep their own
+// subscription items on the same order.
+//
+// Virtual machines of one request succeed or fail individually. Each virtual machine, with its system
+// disk, network interface and elastic IP, is created or fails as a whole. Virtual machines that were
+// created are kept; each failed virtual machine ends `failed` with `provisioning_failed`, its part of
+// the order is refunded, and the order then ends `partially_completed`. Each virtual machine is named
+// after this request with a number appended.
+//
+// The network is checked before the order is created, and a request it refuses orders and charges
+// nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the virtual private cloud's `status`
+// is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a
+// security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to
+// another virtual private cloud, and `PORT_UNAVAILABLE` when the port's `status` is not `available`.
+// `meta` names the resource.
+//
+// POST /api/v1/virtual-machines
+func (UnimplementedHandler) CreateVirtualMachine(ctx context.Context, req *CreateVirtualMachineRequestBody) (r CreateVirtualMachineRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateVirtualPrivateCloud implements create-virtual-private-cloud operation.
+//
+// Creates a virtual private cloud definition and its default security group. The default security
+// group denies all inbound traffic and permits all outbound traffic.
+//
+// POST /api/v1/virtual-private-clouds
+func (UnimplementedHandler) CreateVirtualPrivateCloud(ctx context.Context, req *CreateVirtualPrivateCloudRequestBody) (r *VirtualPrivateCloud, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -446,6 +261,13 @@ func (UnimplementedHandler) CreateSubnet(ctx context.Context, req *CreateSubnetR
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
 // the backup ends once it is deleted.
+//
+// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
+// whether its commercial subscription must be canceled first.
+//
+// A resource with a pending order must have that order canceled through Billing first. A subscribed
+// resource is released through its subscription cancellation. Cleanup must be confirmed before
+// metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/backups/{backupId}
 func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBackupParams) (r DeleteBackupRes, _ error) {
@@ -470,38 +292,31 @@ func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskPar
 //
 // Only a private image of this project can be deleted; any other image is reported as not found.
 //
-// Deletion is rejected while instances created from the image still exist, as they need it in order to
-// be rebuilt.
+// Deletion is rejected while virtual machines created from the image still exist, as they need it in
+// order to be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 // operation accepted while the `create` operation is in progress.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
+// whether its commercial subscription must be canceled first.
+//
+// A resource with a pending order must have that order canceled through Billing first. A subscribed
+// resource is released through its subscription cancellation. Cleanup must be confirmed before
+// metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/images/{imageId}
 func (UnimplementedHandler) DeleteImage(ctx context.Context, params DeleteImageParams) (r DeleteImageRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DeleteInstance implements delete-instance operation.
+// DeleteNetworkInterface implements delete-network-interface operation.
 //
-// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
-// with it. Data disks are detached and kept, and their snapshots and backups are unaffected. The
-// primary network interface is released with the instance.
+// The primary network interface cannot be deleted on its own, as it is released with the virtual
+// machine. A network interface still attached to a virtual machine cannot be deleted either.
 //
-// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
-// delete that image first.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
-// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
-// through Billing, the same set as its `release_subscription_ids`.
-//
-// DELETE /api/v1/instances/{instanceId}
-func (UnimplementedHandler) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (r DeleteInstanceRes, _ error) {
+// DELETE /api/v1/network-interfaces/{networkInterfaceId}
+func (UnimplementedHandler) DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (r DeleteNetworkInterfaceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -514,39 +329,19 @@ func (UnimplementedHandler) DeletePeering(ctx context.Context, params DeletePeer
 	return r, ht.ErrNotImplemented
 }
 
-// DeletePort implements delete-port operation.
-//
-// The primary network interface cannot be deleted on its own, as it is released with the instance. A
-// network interface still attached to an instance cannot be deleted either.
-//
-// DELETE /api/v1/ports/{portId}
-func (UnimplementedHandler) DeletePort(ctx context.Context, params DeletePortParams) (r DeletePortRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// DeletePrivateNetwork implements delete-private-network operation.
-//
-// Deletion is rejected while instances or network interfaces remain in the network. Its subnets,
-// routes, security groups and IPv6 configuration are removed with it.
-//
-// DELETE /api/v1/private-networks/{privateNetworkId}
-func (UnimplementedHandler) DeletePrivateNetwork(ctx context.Context, params DeletePrivateNetworkParams) (r DeletePrivateNetworkRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // DeleteRoute implements delete-route operation.
 //
 // Delete a static route.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId}
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes/{routeId}
 func (UnimplementedHandler) DeleteRoute(ctx context.Context, params DeleteRouteParams) error {
 	return ht.ErrNotImplemented
 }
 
 // DeleteSecurityGroup implements delete-security-group operation.
 //
-// The default security group cannot be deleted, as it is released with the private network. A security
-// group still referenced by a network interface cannot be deleted either.
+// The default security group cannot be deleted, as it is released with the virtual private cloud. A
+// security group still referenced by a network interface cannot be deleted either.
 //
 // DELETE /api/v1/security-groups/{securityGroupId}
 func (UnimplementedHandler) DeleteSecurityGroup(ctx context.Context, params DeleteSecurityGroupParams) error {
@@ -564,8 +359,12 @@ func (UnimplementedHandler) DeleteSecurityGroupRule(ctx context.Context, params 
 
 // DeleteSnapshot implements delete-snapshot operation.
 //
-// Deletes this snapshot without canceling the project's snapshot quota purchase. A snapshot has no
-// individual Billing subscription. Its slot stays occupied until the deletion is confirmed.
+// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
+// confirmed.
+//
+// A resource with a pending order must have that order canceled through Billing first. A subscribed
+// resource is released through its subscription cancellation. Cleanup must be confirmed before
+// metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (r DeleteSnapshotRes, _ error) {
@@ -577,69 +376,101 @@ func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSna
 // Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
 // next hop inside its CIDR.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
 func (UnimplementedHandler) DeleteSubnet(ctx context.Context, params DeleteSubnetParams) error {
 	return ht.ErrNotImplemented
 }
 
+// DeleteVirtualMachine implements delete-virtual-machine operation.
+//
+// The system disk is deleted with the virtual machine, and snapshots created from the system disk are
+// deleted with it. Data disks are detached and kept, and their snapshots and backups are unaffected.
+// The primary network interface is released with the virtual machine.
+//
+// A virtual machine being captured as a private image cannot be released. Wait for the capture to
+// finish, or delete that image first.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the virtual machine, or for
+// a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names
+// that resource. The virtual machine is released by canceling the subscriptions listed in
+// `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+//
+// DELETE /api/v1/virtual-machines/{virtualMachineId}
+func (UnimplementedHandler) DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (r DeleteVirtualMachineRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteVirtualPrivateCloud implements delete-virtual-private-cloud operation.
+//
+// Deletion is rejected while virtual machines or network interfaces remain in the network. Its
+// subnets, routes, security groups and IPv6 configuration are removed with it.
+//
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+func (UnimplementedHandler) DeleteVirtualPrivateCloud(ctx context.Context, params DeleteVirtualPrivateCloudParams) (r DeleteVirtualPrivateCloudRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DetachDisk implements detach-disk operation.
 //
-// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
-// system that is being written to corrupts data.
+// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
+// file system that is being written to corrupts data.
 //
-// The disk the instance boots from cannot be detached, whether it is the system disk bought with the
-// instance or a disk supplied as the existing boot_disk at launch. Such a request is refused with
-// `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+// The disk the virtual machine boots from cannot be detached, whether it is the system disk bought
+// with the virtual machine or a disk supplied as the existing boot_disk at launch. Such a request is
+// refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine is what
+// frees that disk.
 //
-// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation
-// until the disk is detached.
+// Returns the disk; the virtual machine shows the `detach_disk` operation and the disk the `detach`
+// operation until the disk is detached.
 //
-// DELETE /api/v1/instances/{instanceId}/disks/{diskId}
+// DELETE /api/v1/virtual-machines/{virtualMachineId}/disks/{diskId}
 func (UnimplementedHandler) DetachDisk(ctx context.Context, params DetachDiskParams) (r DetachDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DetachInstanceFloatingIP implements detach-instance-floating-ip operation.
+// DetachNetworkInterface implements detach-network-interface operation.
 //
-// Changes the public IP binding on the instance's primary network interface. The instance shows the
-// `unbind_floating_ip` operation until the change is confirmed.
+// The primary network interface cannot be detached; the virtual machine would lose its network
+// address.
 //
-// DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-func (UnimplementedHandler) DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (r DetachInstanceFloatingIPRes, _ error) {
+// Returns the network interface; the virtual machine shows the `detach_network_interface` operation
+// and the interface the `detach` operation until it is detached.
+//
+// DELETE /api/v1/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
+func (UnimplementedHandler) DetachNetworkInterface(ctx context.Context, params DetachNetworkInterfaceParams) (r DetachNetworkInterfaceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DetachPort implements detach-port operation.
+// DetachVirtualMachineElasticIP implements detach-virtual-machine-elastic-ip operation.
 //
-// The primary network interface cannot be detached; the instance would lose its network address.
+// Changes the public IP binding on the virtual machine's primary network interface. The virtual
+// machine shows the `unbind_elastic_ip` operation until the change is confirmed.
 //
-// Returns the network interface; the instance shows the `detach_port` operation and the interface the
-// `detach` operation until it is detached.
-//
-// DELETE /api/v1/instances/{instanceId}/ports/{portId}
-func (UnimplementedHandler) DetachPort(ctx context.Context, params DetachPortParams) (r DetachPortRes, _ error) {
+// DELETE /api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}
+func (UnimplementedHandler) DetachVirtualMachineElasticIP(ctx context.Context, params DetachVirtualMachineElasticIPParams) (r DetachVirtualMachineElasticIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DisablePrivateNetworkIpv6 implements disable-private-network-ipv6 operation.
+// DisableVirtualPrivateCloudIpv6 implements disable-virtual-private-cloud-ipv6 operation.
 //
 // A released prefix is not re-allocated immediately.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
-func (UnimplementedHandler) DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) (r DisablePrivateNetworkIpv6Res, _ error) {
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (UnimplementedHandler) DisableVirtualPrivateCloudIpv6(ctx context.Context, params DisableVirtualPrivateCloudIpv6Params) (r DisableVirtualPrivateCloudIpv6Res, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// EnablePrivateNetworkIpv6 implements enable-private-network-ipv6 operation.
+// EnableVirtualPrivateCloudIpv6 implements enable-virtual-private-cloud-ipv6 operation.
 //
-// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network
-// itself, can be neither requested nor released individually, and consume no public IPv4 address.
+// Delegates and routes an IPv6 prefix to the virtual private cloud. It requires no elastic IP or NAT
+// gateway. Addresses are assigned to virtual machines by the network and use its security groups; they
+// cannot be requested or released individually.
 //
-// If the private network is not yet connected to the internet, connectivity is established as part of
-// this call.
+// If the virtual private cloud is not yet connected to the internet, connectivity is established as
+// part of this call.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/ipv6
-func (UnimplementedHandler) EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (r EnablePrivateNetworkIpv6Res, _ error) {
+// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (UnimplementedHandler) EnableVirtualPrivateCloudIpv6(ctx context.Context, params EnableVirtualPrivateCloudIpv6Params) (r EnableVirtualPrivateCloudIpv6Res, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -650,23 +481,6 @@ func (UnimplementedHandler) EnablePrivateNetworkIpv6(ctx context.Context, params
 //
 // GET /api/v1/backups/{backupId}
 func (UnimplementedHandler) GetBackup(ctx context.Context, params GetBackupParams) (r *BackupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetBackupService implements get-backup-service operation.
-//
-// The backup service of the authenticated project in this region. Backups can be created only while it
-// is `active`. Each hour, Compute covers retained backup capacity up to the total `capacity_gib` of
-// the capacity packs active in the region and meters only the excess on this service's subscription,
-// per GiB-hour.
-//
-// Canceling the service's subscription through Billing is refused while any backup is retained in the
-// region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity
-// packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment
-// deletes its backups.
-//
-// GET /api/v1/regions/{regionId}/backup-service
-func (UnimplementedHandler) GetBackupService(ctx context.Context, params GetBackupServiceParams) (r *BackupService, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -689,46 +503,43 @@ func (UnimplementedHandler) GetDiskType(ctx context.Context, params GetDiskTypeP
 	return r, ht.ErrNotImplemented
 }
 
-// GetFloatingIP implements get-floating-ip operation.
+// GetElasticIP implements get-elastic-ip operation.
 //
-// Retrieve a floating IP.
+// Retrieve an elastic IP.
 //
-// GET /api/v1/floating-ips/{floatingIpId}
-func (UnimplementedHandler) GetFloatingIP(ctx context.Context, params GetFloatingIPParams) (r *FloatingIPResource, _ error) {
+// GET /api/v1/elastic-ips/{elasticIpId}
+func (UnimplementedHandler) GetElasticIP(ctx context.Context, params GetElasticIPParams) (r *ElasticIP, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetElasticIPType implements get-elastic-ip-type operation.
+//
+// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
+// facts are returned.
+//
+// GET /api/v1/elastic-ip-types/{elasticIpTypeId}
+func (UnimplementedHandler) GetElasticIPType(ctx context.Context, params GetElasticIPTypeParams) (r *ElasticIPType, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetImage implements get-image operation.
 //
 // Returns a public image, or a private image of this project; any other image is reported as not
-// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure_reason`
-// states why.
+// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure` describes
+// the outcome.
 //
 // GET /api/v1/images/{imageId}
 func (UnimplementedHandler) GetImage(ctx context.Context, params GetImageParams) (r *ImageResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// GetInstance implements get-instance operation.
+// GetMachineType implements get-machine-type operation.
 //
-// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
-// progress.
+// Returns only an on-sale machine type, under the same access rules as listing. Off-sale, retired or
+// absent types return 404.
 //
-// GET /api/v1/instances/{instanceId}
-func (UnimplementedHandler) GetInstance(ctx context.Context, params GetInstanceParams) (r *InstanceResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetInstanceConsoleOutput implements get-instance-console-output operation.
-//
-// The raw text produced by the instance during boot and by the kernel. Consult it first when login
-// fails or the remote console shows no output: it reveals where boot stopped, whether the system disk
-// was mounted, and whether initialisation reported errors.
-//
-// Instances in an error state, and instances suspended by the platform, can be read as well.
-//
-// GET /api/v1/instances/{instanceId}/console-output
-func (UnimplementedHandler) GetInstanceConsoleOutput(ctx context.Context, params GetInstanceConsoleOutputParams) (r *ConsoleOutputResponseBody, _ error) {
+// GET /api/v1/machine-types/{machineTypeId}
+func (UnimplementedHandler) GetMachineType(ctx context.Context, params GetMachineTypeParams) (r *MachineType, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -741,21 +552,14 @@ func (UnimplementedHandler) GetPeering(ctx context.Context, params GetPeeringPar
 	return r, ht.ErrNotImplemented
 }
 
-// GetPrivateNetwork implements get-private-network operation.
+// GetQuota implements get-quota operation.
 //
-// Retrieve a private network.
+// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
+// Returns the effective limit, including its default when no override exists. Unknown resource values
+// are rejected.
 //
-// GET /api/v1/private-networks/{privateNetworkId}
-func (UnimplementedHandler) GetPrivateNetwork(ctx context.Context, params GetPrivateNetworkParams) (r *PrivateNetworkResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetPrivateNetworkIpv6 implements get-private-network-ipv6 operation.
-//
-// Retrieve the IPv6 configuration of a private network.
-//
-// GET /api/v1/private-networks/{privateNetworkId}/ipv6
-func (UnimplementedHandler) GetPrivateNetworkIpv6(ctx context.Context, params GetPrivateNetworkIpv6Params) (r *IPv6ResponseBody, _ error) {
+// GET /api/v1/quotas/{resource}
+func (UnimplementedHandler) GetQuota(ctx context.Context, params GetQuotaParams) (r *ProjectQuota, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -777,81 +581,41 @@ func (UnimplementedHandler) GetSnapshot(ctx context.Context, params GetSnapshotP
 	return r, ht.ErrNotImplemented
 }
 
-// GetSnapshotQuota implements get-snapshot-quota operation.
+// GetVirtualMachine implements get-virtual-machine operation.
 //
-// The snapshot count quota for the authenticated project in this region. Counts simultaneous snapshot
-// holdings, not lifetime create calls or storage bytes. Without an active purchase, limit and
-// available are zero; existing holdings, if any, still appear in used.
+// Returns the stored state of the virtual machine; it does not query the cloud. Use it to poll
+// creation progress.
 //
-// pending and provisioning creations reserve a slot. Snapshots being deleted or whose cleanup is
-// uncertain retain their slots until absence or deletion is confirmed. available is max(limit - used,
-// 0) while active, and zero when creation is not permitted; additional creation is refused while the
-// quota is inactive, suspended or exhausted.
-//
-// Canceling the quota's subscription through Billing is refused while any snapshot exists in the
-// region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment
-// deletes its snapshots, as for other reclaimed resources.
-//
-// GET /api/v1/regions/{regionId}/snapshot-quota
-func (UnimplementedHandler) GetSnapshotQuota(ctx context.Context, params GetSnapshotQuotaParams) (r *SnapshotQuota, _ error) {
+// GET /api/v1/virtual-machines/{virtualMachineId}
+func (UnimplementedHandler) GetVirtualMachine(ctx context.Context, params GetVirtualMachineParams) (r *VirtualMachine, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// LaunchInstance implements launch-instance operation.
+// GetVirtualPrivateCloud implements get-virtual-private-cloud operation.
 //
-// Creates a Billing Checkout Session, including for metered pricing, and returns one `pending`
-// instance per requested instance with it. `billing` applies to the instance, its system disk and its
-// floating IP alike. A pending instance has no virtual machine, system disk or address, and is not
-// metered.
+// Retrieve a virtual private cloud.
 //
-// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`.
-// With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred
-// checkout, the instances stay `pending` until the customer completes checkout in Billing and the
-// order is paid; an expired Checkout Session, or a canceled or expired order, leaves them `failed`
-// with `checkout_expired`, `order_canceled` or `order_expired`. Do not submit another creation request
-// after paying. After an uncertain response, look the Checkout Session up in Billing before submitting
-// again.
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+func (UnimplementedHandler) GetVirtualPrivateCloud(ctx context.Context, params GetVirtualPrivateCloudParams) (r *VirtualPrivateCloud, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetVirtualPrivateCloudIpv6 implements get-virtual-private-cloud-ipv6 operation.
 //
-// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id.
-// Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is
-// pending; if one is no longer usable when the order is accepted, the instance ends `failed` with
-// `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription.
-// Instances, disks and public IPs keep their own subscription items on the same order.
+// Returns the business prefix and enabled state, not backend provisioning or routing diagnostics.
 //
-// Instances of one request succeed or fail individually. Each instance, with its system disk, network
-// interface and floating IP, is created or fails as a whole. Instances that were created are kept;
-// each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded,
-// and the order then ends `partially_completed`. Each instance is named after this request with a
-// number appended.
-//
-// The network is checked before the Checkout Session is created, and a request it refuses orders and
-// charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's
-// `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or
-// a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs
-// to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`.
-// `meta` names the resource.
-//
-// POST /api/v1/instances
-func (UnimplementedHandler) LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (r LaunchInstanceRes, _ error) {
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (UnimplementedHandler) GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (r *IPv6ResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListAvailabilityZones implements list-availability-zones operation.
 //
-// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
-// before creating either.
+// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
+// zone before creating either.
 //
 // GET /api/v1/regions/{regionId}/availability-zones
 func (UnimplementedHandler) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (r *ZoneListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListBackupCapacityPacks implements list-backup-capacity-packs operation.
-//
-// The capacity packs of the authenticated project in this region, newest first, including ended ones.
-//
-// GET /api/v1/regions/{regionId}/backup-capacity-packs
-func (UnimplementedHandler) ListBackupCapacityPacks(ctx context.Context, params ListBackupCapacityPacksParams) (r *BackupCapacityPackListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -877,20 +641,30 @@ func (UnimplementedHandler) ListDiskTypes(ctx context.Context, params ListDiskTy
 
 // ListDisks implements list-disks operation.
 //
-// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance
-// at that location are returned.
+// When both `region_code` and `availability_zone` are supplied, only disks attachable to a virtual
+// machine at that location are returned.
 //
 // GET /api/v1/disks
 func (UnimplementedHandler) ListDisks(ctx context.Context, params ListDisksParams) (r *DiskListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ListFloatingIps implements list-floating-ips operation.
+// ListElasticIPTypes implements list-elastic-ip-types operation.
 //
-// List floating IPs.
+// Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
+// from Billing.
 //
-// GET /api/v1/floating-ips
-func (UnimplementedHandler) ListFloatingIps(ctx context.Context, params ListFloatingIpsParams) (r *FloatingIPListResponseBody, _ error) {
+// GET /api/v1/elastic-ip-types
+func (UnimplementedHandler) ListElasticIPTypes(ctx context.Context, params ListElasticIPTypesParams) (r *ElasticIPTypeListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListElasticIps implements list-elastic-ips operation.
+//
+// List elastic IPs.
+//
+// GET /api/v1/elastic-ips
+func (UnimplementedHandler) ListElasticIps(ctx context.Context, params ListElasticIpsParams) (r *ElasticIPListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -900,63 +674,36 @@ func (UnimplementedHandler) ListFloatingIps(ctx context.Context, params ListFloa
 // narrows the list to one of the two.
 //
 // A public image is offered to every project. Only public images currently on sale are listed: one the
-// platform withdraws disappears from here and can no longer install new instances, while the instances
-// already running it keep running and can still be rebuilt onto it.
+// platform withdraws disappears from here and can no longer install new virtual machines, while the
+// virtual machines already running it keep running and can still be rebuilt onto it.
 //
-// A private image belongs to this project, which captured it from one of its instances, and is listed
-// in every status, including while its capture is in progress and after the capture failed.
+// A private image belongs to this project, which captured it from one of its virtual machines, and is
+// listed in every status, including while its capture is in progress and after the capture failed.
 //
 // An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected instance type cannot boot; filter the options accordingly.
+// memory of the selected machine type cannot boot; filter the options accordingly.
 //
 // GET /api/v1/images
 func (UnimplementedHandler) ListImages(ctx context.Context, params ListImagesParams) (r *ImageListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ListInstanceDisks implements list-instance-disks operation.
+// ListMachineTypes implements list-machine-types operation.
 //
-// List the disks attached to an instance.
+// Only machine types currently on sale are listed. A withdrawn one disappears from here and can no
+// longer be ordered, while the virtual machines already running it keep running.
 //
-// GET /api/v1/instances/{instanceId}/disks
-func (UnimplementedHandler) ListInstanceDisks(ctx context.Context, params ListInstanceDisksParams) (r *DiskAttachmentList, _ error) {
+// GET /api/v1/machine-types
+func (UnimplementedHandler) ListMachineTypes(ctx context.Context, params ListMachineTypesParams) (r *MachineTypeListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ListInstancePorts implements list-instance-ports operation.
+// ListNetworkInterfaces implements list-network-interfaces operation.
 //
-// List the network interfaces of an instance.
+// List network interfaces.
 //
-// GET /api/v1/instances/{instanceId}/ports
-func (UnimplementedHandler) ListInstancePorts(ctx context.Context, params ListInstancePortsParams) (r *PortAttachmentList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListInstanceTypes implements list-instance-types operation.
-//
-// Only instance types currently on sale are listed. A withdrawn one disappears from here and can no
-// longer be ordered, while the instances already running it keep running.
-//
-// GET /api/v1/instance-types
-func (UnimplementedHandler) ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (r *InstanceTypeListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListInstances implements list-instances operation.
-//
-// Every instance in the project, newest first, in their stored state.
-//
-// GET /api/v1/instances
-func (UnimplementedHandler) ListInstances(ctx context.Context, params ListInstancesParams) (r *InstanceListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListIpv4Pools implements list-ipv4-pools operation.
-//
-// Lists the public IP pools available for new allocations in this region.
-//
-// GET /api/v1/ipv4-pools
-func (UnimplementedHandler) ListIpv4Pools(ctx context.Context, params ListIpv4PoolsParams) (r *IPv4PoolListResponseBody, _ error) {
+// GET /api/v1/network-interfaces
+func (UnimplementedHandler) ListNetworkInterfaces(ctx context.Context, params ListNetworkInterfacesParams) (r *NetworkInterfaceListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -967,7 +714,8 @@ func (UnimplementedHandler) ListIpv4Pools(ctx context.Context, params ListIpv4Po
 //
 // Operations performed by the platform are included, but the individual operator is not disclosed and
 // `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
-// an instance was stopped by the platform is needed, whereas the operator is internal information.
+// a virtual machine was stopped by the platform is needed, whereas the operator is internal
+// information.
 //
 // Fields such as passwords are replaced with a placeholder as the record is written and never appear
 // in `payload`.
@@ -986,21 +734,14 @@ func (UnimplementedHandler) ListPeerings(ctx context.Context, params ListPeering
 	return r, ht.ErrNotImplemented
 }
 
-// ListPorts implements list-ports operation.
+// ListQuotas implements list-quotas operation.
 //
-// List network interfaces.
+// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
+// Returns all supported resource limits through shared pagination, including defaults for resources
+// without an override. No cross-domain usage total is returned.
 //
-// GET /api/v1/ports
-func (UnimplementedHandler) ListPorts(ctx context.Context, params ListPortsParams) (r *PortListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListPrivateNetworks implements list-private-networks operation.
-//
-// List private networks.
-//
-// GET /api/v1/private-networks
-func (UnimplementedHandler) ListPrivateNetworks(ctx context.Context, params ListPrivateNetworksParams) (r *PrivateNetworkListResponseBody, _ error) {
+// GET /api/v1/quotas
+func (UnimplementedHandler) ListQuotas(ctx context.Context, params ListQuotasParams) (r *ProjectQuotaListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1017,7 +758,7 @@ func (UnimplementedHandler) ListRegions(ctx context.Context, params ListRegionsP
 //
 // List static routes.
 //
-// GET /api/v1/private-networks/{privateNetworkId}/routes
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
 func (UnimplementedHandler) ListRoutes(ctx context.Context, params ListRoutesParams) (r *RouteListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1054,24 +795,60 @@ func (UnimplementedHandler) ListSnapshots(ctx context.Context, params ListSnapsh
 // IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
 // deleted individually.
 //
-// GET /api/v1/private-networks/{privateNetworkId}/subnets
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
 func (UnimplementedHandler) ListSubnets(ctx context.Context, params ListSubnetsParams) (r *SubnetListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// OpenInstanceConsole implements open-instance-console operation.
+// ListVirtualMachineDisks implements list-virtual-machine-disks operation.
 //
-// Operates the instance directly from a browser and does not require the instance to be reachable over
-// the network, which makes it usable when a network misconfiguration prevents login.
+// List the disks attached to a virtual machine.
 //
-// The returned address is single-use and expires within minutes. Request a new one before each use.
-//
-// POST /api/v1/instances/{instanceId}/console
-func (UnimplementedHandler) OpenInstanceConsole(ctx context.Context, params OpenInstanceConsoleParams) (r *ConsoleResponseBody, _ error) {
+// GET /api/v1/virtual-machines/{virtualMachineId}/disks
+func (UnimplementedHandler) ListVirtualMachineDisks(ctx context.Context, params ListVirtualMachineDisksParams) (r *DiskAttachmentList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// RebootInstance implements reboot-instance operation.
+// ListVirtualMachineNetworkInterfaces implements list-virtual-machine-network-interfaces operation.
+//
+// List the network interfaces of a virtual machine.
+//
+// GET /api/v1/virtual-machines/{virtualMachineId}/network-interfaces
+func (UnimplementedHandler) ListVirtualMachineNetworkInterfaces(ctx context.Context, params ListVirtualMachineNetworkInterfacesParams) (r *NetworkInterfaceAttachmentList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListVirtualMachines implements list-virtual-machines operation.
+//
+// Every virtual machine in the project, newest first, in their stored state.
+//
+// GET /api/v1/virtual-machines
+func (UnimplementedHandler) ListVirtualMachines(ctx context.Context, params ListVirtualMachinesParams) (r *VirtualMachineListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListVirtualPrivateClouds implements list-virtual-private-clouds operation.
+//
+// List virtual private clouds.
+//
+// GET /api/v1/virtual-private-clouds
+func (UnimplementedHandler) ListVirtualPrivateClouds(ctx context.Context, params ListVirtualPrivateCloudsParams) (r *VirtualPrivateCloudListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// OpenVirtualMachineConsole implements open-virtual-machine-console operation.
+//
+// Operates the virtual machine directly from a browser and does not require the virtual machine to be
+// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+//
+// The returned address is single-use and expires within minutes. Request a new one before each use.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/console
+func (UnimplementedHandler) OpenVirtualMachineConsole(ctx context.Context, params OpenVirtualMachineConsoleParams) (r *ConsoleResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RebootVirtualMachine implements reboot-virtual-machine operation.
 //
 // A reboot defaults to soft, in which the operating system shuts down normally before starting again.
 //
@@ -1079,30 +856,31 @@ func (UnimplementedHandler) OpenInstanceConsole(ctx context.Context, params Open
 // forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
 //
 // A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-// reboot the instance never carried out. Any other request for an operation, including a second soft
-// reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+// reboot the virtual machine never carried out. Any other request for an operation, including a second
+// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 //
-// An instance suspended by the platform must be unsuspended first.
+// A virtual machine suspended by the platform must be unsuspended first.
 //
-// The instance shows the `reboot` operation until the reboot has finished.
+// The virtual machine shows the `reboot` operation until the reboot has finished.
 //
-// POST /api/v1/instances/{instanceId}/reboot
-func (UnimplementedHandler) RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (r RebootInstanceRes, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/reboot
+func (UnimplementedHandler) RebootVirtualMachine(ctx context.Context, req *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (r RebootVirtualMachineRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// RebuildInstance implements rebuild-instance operation.
+// RebuildVirtualMachine implements rebuild-virtual-machine operation.
 //
 // All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
 //
-// The image this instance already runs is accepted even after the platform has withdrawn it, since
-// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
-// is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
+// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
+// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
+// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
+// order.
 //
-// The instance shows the `rebuild` operation until the rebuild has finished.
+// The virtual machine shows the `rebuild` operation until the rebuild has finished.
 //
-// POST /api/v1/instances/{instanceId}/rebuild
-func (UnimplementedHandler) RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (r RebuildInstanceRes, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/rebuild
+func (UnimplementedHandler) RebuildVirtualMachine(ctx context.Context, req *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (r RebuildVirtualMachineRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1115,18 +893,19 @@ func (UnimplementedHandler) RejectPeering(ctx context.Context, params RejectPeer
 	return r, ht.ErrNotImplemented
 }
 
-// ReleaseFloatingIP implements release-floating-ip operation.
+// ReleaseElasticIP implements release-elastic-ip operation.
 //
-// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
-// is released.
+// Releases the elastic IP after unbinding it. The elastic IP shows the `delete` operation until
+// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
+// period. Unbinding or moving a binding alone does not release the address.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-// pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling
-// the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
 // `release_subscription_ids`.
 //
-// DELETE /api/v1/floating-ips/{floatingIpId}
-func (UnimplementedHandler) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (r ReleaseFloatingIPRes, _ error) {
+// DELETE /api/v1/elastic-ips/{elasticIpId}
+func (UnimplementedHandler) ReleaseElasticIP(ctx context.Context, params ReleaseElasticIPParams) (r ReleaseElasticIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1158,25 +937,6 @@ func (UnimplementedHandler) RenameImage(ctx context.Context, req *RenameImageReq
 	return r, ht.ErrNotImplemented
 }
 
-// RenameInstance implements rename-instance operation.
-//
-// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
-// id.
-//
-// PATCH /api/v1/instances/{instanceId}
-func (UnimplementedHandler) RenameInstance(ctx context.Context, req *RenameInstanceRequestBody, params RenameInstanceParams) (r *InstanceResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenamePrivateNetwork implements rename-private-network operation.
-//
-// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
-//
-// PATCH /api/v1/private-networks/{privateNetworkId}
-func (UnimplementedHandler) RenamePrivateNetwork(ctx context.Context, req *RenamePrivateNetworkRequestBody, params RenamePrivateNetworkParams) (r *PrivateNetworkResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // RenameSecurityGroup implements rename-security-group operation.
 //
 // Changes the name only. Use the rule endpoints to change rules.
@@ -1195,30 +955,61 @@ func (UnimplementedHandler) RenameSnapshot(ctx context.Context, req *RenameSnaps
 	return r, ht.ErrNotImplemented
 }
 
-// ResetInstancePassword implements reset-instance-password operation.
+// RenameVirtualMachine implements rename-virtual-machine operation.
 //
-// Changes the root password without a reboot. The instance must be running.
+// Changes the display name only. The hostname inside the virtual machine is unchanged; it equals the
+// virtual machine id.
+//
+// PATCH /api/v1/virtual-machines/{virtualMachineId}
+func (UnimplementedHandler) RenameVirtualMachine(ctx context.Context, req *RenameVirtualMachineRequestBody, params RenameVirtualMachineParams) (r *VirtualMachine, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RenameVirtualPrivateCloud implements rename-virtual-private-cloud operation.
+//
+// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
+//
+// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+func (UnimplementedHandler) RenameVirtualPrivateCloud(ctx context.Context, req *RenameVirtualPrivateCloudRequestBody, params RenameVirtualPrivateCloudParams) (r *VirtualPrivateCloud, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RescueVirtualMachine implements rescue-virtual-machine operation.
+//
+// Boots a temporary rescue environment while retaining the original system disk. The selected image
+// must support this virtual machine. Stop, resize, rebuild and password reset are unavailable in
+// rescue mode.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/rescue
+func (UnimplementedHandler) RescueVirtualMachine(ctx context.Context, req *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (r RescueVirtualMachineRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ResetVirtualMachinePassword implements reset-virtual-machine-password operation.
+//
+// Changes the root password without a reboot. The virtual machine must be running.
 //
 // Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-// password can then only be set by rebuilding the instance, which erases all data on the system disk.
+// password can then only be set by rebuilding the virtual machine, which erases all data on the system
+// disk.
 //
 // The request is also rejected when the image is marked as supported but the corresponding component
-// has been removed or stopped inside the instance.
+// has been removed or stopped inside the virtual machine.
 //
-// POST /api/v1/instances/{instanceId}/password
-func (UnimplementedHandler) ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (r ResetInstancePasswordRes, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/password
+func (UnimplementedHandler) ResetVirtualMachinePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetVirtualMachinePasswordParams) (r ResetVirtualMachinePasswordRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ResizeDisk implements resize-disk operation.
 //
-// Capacity can only be increased; shrinking is not supported. Returns the disk with the Checkout
-// Session for the resize, which keeps the disk's usage type and period. The disk shows the `resize`
-// operation until the resize is applied, its Checkout Session expires or its order is canceled, so
-// other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk
-// keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the
-// file system inside the instance. If checkout is not completed, the order is not accepted or the
-// resize fails, the disk keeps its size and Billing shows the outcome.
+// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the
+// resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until
+// the resize is applied or its order is canceled, including while the order awaits checkout, so other
+// operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps
+// its current size until the resize is applied; once `size_gb` shows the new size, extend the file
+// system inside the virtual machine. If the order is not accepted or the resize fails, the disk keeps
+// its size and the order shows the outcome.
 //
 // An attached data disk whose performance scales with its size must be detached before it is resized.
 // The performance of an attached disk does not change until the disk is detached and attached again,
@@ -1238,24 +1029,25 @@ func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskReque
 	return r, ht.ErrNotImplemented
 }
 
-// ResizeInstance implements resize-instance operation.
+// ResizeVirtualMachine implements resize-virtual-machine operation.
 //
-// Creates a Billing Checkout Session for the change, including for metered pricing, and returns the
-// instance with it. The instance keeps its usage type and period, priced with the target type's
-// matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`.
-// Do not submit a new purchase after paying. After an uncertain response, look the Checkout Session up
-// in Billing before submitting again.
+// Records the requested configuration, creates a deferred Billing change order, including for metered
+// terms, and returns the virtual machine with the order. The virtual machine keeps its billing mode
+// and period; Billing resolves the applicable commercial terms and refuses an unavailable option with
+// 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts only after Compute receives `orderAccepted` and
+// verifies the accepted order with Billing. Do not submit the change again after paying. After an
+// uncertain response, look the order up before submitting again.
 //
-// The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
-// or its order is canceled, so other operations and a second resize are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-// type takes effect, and is billed from then on, when `instance_type_id` shows it. If checkout is not
-// completed, the order is not accepted or the resize fails, the instance keeps its current type and
-// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
+// The virtual machine shows the `resize` operation until the resize is applied or its order is
+// canceled, including while the order awaits checkout, so other operations and a second resize are
+// refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is
+// applied; the new type takes effect, and is billed from then on, when `machine_type_id` shows it. If
+// the order is not accepted or the resize fails, the virtual machine keeps its current type and the
+// order shows the outcome. A completed resize is final and cannot be reverted; to return to the
 // previous type, submit another resize.
 //
-// POST /api/v1/instances/{instanceId}/resize
-func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (r ResizeInstanceRes, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/resize
+func (UnimplementedHandler) ResizeVirtualMachine(ctx context.Context, req *ResizeVirtualMachineRequestBody, params ResizeVirtualMachineParams) (r ResizeVirtualMachineRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1278,9 +1070,9 @@ func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBacku
 // moment is lost and cannot be recovered.
 //
 // Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
-// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
-// from the snapshot instead.
+// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
+// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
+// new disk from the snapshot instead.
 //
 // The disk shows the `revert` operation until the revert is complete.
 //
@@ -1289,7 +1081,7 @@ func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskReque
 	return r, ht.ErrNotImplemented
 }
 
-// RunInstanceCommand implements run-instance-command operation.
+// RunVirtualMachineCommand implements run-virtual-machine-command operation.
 //
 // Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
 // standard input and no way to answer a prompt: a command that waits for input produces nothing and is
@@ -1300,116 +1092,102 @@ func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskReque
 // that matches nothing exits 1 and is a perfectly successful call.
 //
 // The status therefore answers a different question — did the command run at all. A non-2xx means it
-// did not, and nothing about the instance was changed by this request: it was suspended, not running
-// or had no floating IP; or it refused the platform key; or the connection could not be opened.
+// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
+// running or had no elastic IP; or it refused the platform key; or the connection could not be opened.
 // Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 //
-// Three conditions must hold; the instance is unreachable otherwise:
+// Three conditions must hold; the virtual machine is unreachable otherwise:
 //
 //   - it is `active`
-//   - a floating IP is bound to it, since this endpoint connects over the public internet
+//   - an elastic IP is bound to it, since this endpoint connects over the public internet
 //   - its security group permits inbound TCP 22
 //
-// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
-// be set up first. The instance must have applied that key at first boot, which images without a full
-// cloud-init do not do.
+// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
+// has to be set up first. The virtual machine must have applied that key at first boot, which images
+// without a full cloud-init do not do.
 //
-// Do not pass secrets in the command. Read them from a file on the instance instead: neither the
-// command nor its output is a confidential channel.
+// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
+// the command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
-// POST /api/v1/instances/{instanceId}/commands
-func (UnimplementedHandler) RunInstanceCommand(ctx context.Context, req *RunCommandRequestBody, params RunInstanceCommandParams) (r *CommandResultResponseBody, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/commands
+func (UnimplementedHandler) RunVirtualMachineCommand(ctx context.Context, req *RunCommandRequestBody, params RunVirtualMachineCommandParams) (r *CommandResultResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// SetFloatingIPBandwidth implements set-floating-ip-bandwidth operation.
+// SearchElasticIPTypes implements search-elastic-ip-types operation.
 //
-// Changes the bandwidth of this floating IP through an order that keeps its usage type and period; no
+// Search on-sale product names and descriptions. Filters use AND; pagination is independent.
+//
+// GET /api/v1/elastic-ip-types/search
+func (UnimplementedHandler) SearchElasticIPTypes(ctx context.Context, params SearchElasticIPTypesParams) (r *ElasticIPTypeListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SetElasticIPBandwidth implements set-elastic-ip-bandwidth operation.
+//
+// Changes the bandwidth of this elastic IP through an order that keeps its billing mode and period; no
 // separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-// floating IP shows the `set_bandwidth` operation until the change is applied, its Checkout Session
-// expires or its order is canceled, so other operations and a second change are refused with
+// elastic IP shows the `set_bandwidth` operation until the change is applied or its order is canceled,
+// including while the order awaits checkout, so other operations and a second change are refused with
 // `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
-// value and Billing shows the outcome.
+// the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows
+// the outcome.
 //
-// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
-// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
-// address that is not bound is checked when the address is bound to an instance.
+// While the address is bound to a virtual machine, the limit must not exceed the `max_bandwidth_mbps`
+// of that virtual machine's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The
+// limit of an address that is not bound is checked when the address is bound to a virtual machine.
 //
-// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-func (UnimplementedHandler) SetFloatingIPBandwidth(ctx context.Context, req *SetFloatingIPBandwidthRequestBody, params SetFloatingIPBandwidthParams) (r SetFloatingIPBandwidthRes, _ error) {
+// PUT /api/v1/elastic-ips/{elasticIpId}/bandwidth
+func (UnimplementedHandler) SetElasticIPBandwidth(ctx context.Context, req *SetElasticIPBandwidthRequestBody, params SetElasticIPBandwidthParams) (r SetElasticIPBandwidthRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// SetInstanceLabels implements set-instance-labels operation.
+// SetVirtualMachineLabels implements set-virtual-machine-labels operation.
 //
-// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
+// Records what this virtual machine is for, as key-value pairs. Nothing on the platform reads them.
 //
 // The whole set is replaced: whatever is absent from the request is removed.
 //
 // Do not put credentials here. Labels are visible to platform operators.
 //
-// PUT /api/v1/instances/{instanceId}/labels
-func (UnimplementedHandler) SetInstanceLabels(ctx context.Context, req *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (r *InstanceResource, _ error) {
+// PUT /api/v1/virtual-machines/{virtualMachineId}/labels
+func (UnimplementedHandler) SetVirtualMachineLabels(ctx context.Context, req *SetVirtualMachineLabelsRequestBody, params SetVirtualMachineLabelsParams) (r *VirtualMachine, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// SetInstanceNotes implements set-instance-notes operation.
+// SetVirtualMachineNotes implements set-virtual-machine-notes operation.
 //
-// A free-text note about this instance — what it runs, and what to be careful about before touching
-// it.
+// A free-text note about this virtual machine — what it runs, and what to be careful about before
+// touching it.
 //
 // The whole note is replaced; send an empty string to clear it.
 //
 // Do not put credentials here. The note is visible to platform operators.
 //
-// PUT /api/v1/instances/{instanceId}/notes
-func (UnimplementedHandler) SetInstanceNotes(ctx context.Context, req *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (r *InstanceResource, _ error) {
+// PUT /api/v1/virtual-machines/{virtualMachineId}/notes
+func (UnimplementedHandler) SetVirtualMachineNotes(ctx context.Context, req *SetVirtualMachineNotesRequestBody, params SetVirtualMachineNotesParams) (r *VirtualMachine, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// SetSnapshotQuota implements set-snapshot-quota operation.
+// StartVirtualMachine implements start-virtual-machine operation.
 //
-// Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
-// the target total, not an additional number of slots or a consumable create allowance. billing
-// chooses one of the quota's pricing options; a change of an existing purchase keeps its usage type
-// and period, and billing must name that option. The purchased quantity is this count.
+// Outstanding restrictions can prevent starting. The virtual machine shows the `start` operation until
+// it is running or the start has failed.
 //
-// Returns the quota with the Checkout Session. pending_limit records the target while the current
-// limit stays in force; the new limit applies once the order is accepted and the quota is activated.
-// Snapshots create no further orders or subscriptions, and deleting one frees a slot without refunding
-// the quota purchase.
-//
-// Repeating the same target and billing choice while its purchase is pending returns the same Checkout
-// Session. A conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already
-// effective identical target and billing choice returns its existing purchase without charging again;
-// renewing its term is a separate Billing renewal operation. A requested limit below used is refused
-// with 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
-//
-// PUT /api/v1/regions/{regionId}/snapshot-quota
-func (UnimplementedHandler) SetSnapshotQuota(ctx context.Context, req *SetSnapshotQuotaRequestBody, params SetSnapshotQuotaParams) (r SetSnapshotQuotaRes, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/start
+func (UnimplementedHandler) StartVirtualMachine(ctx context.Context, req *PowerRequest, params StartVirtualMachineParams) (r StartVirtualMachineRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// StartInstance implements start-instance operation.
+// StopVirtualMachine implements stop-virtual-machine operation.
 //
-// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
-// running or the start has failed.
+// A stopped virtual machine keeps its disks, network attachments and sellable quota. The virtual
+// machine shows the `stop` operation until it is stopped or the stop has failed.
 //
-// POST /api/v1/instances/{instanceId}/start
-func (UnimplementedHandler) StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (r StartInstanceRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// StopInstance implements stop-instance operation.
-//
-// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
-// `stop` operation until it is stopped or the stop has failed.
-//
-// POST /api/v1/instances/{instanceId}/stop
-func (UnimplementedHandler) StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (r StopInstanceRes, _ error) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/stop
+func (UnimplementedHandler) StopVirtualMachine(ctx context.Context, req *PowerRequest, params StopVirtualMachineParams) (r StopVirtualMachineRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1418,18 +1196,27 @@ func (UnimplementedHandler) StopInstance(ctx context.Context, req *PowerRequest,
 // The returned value is a suggestion and is validated again when the subnet is created. It exists to
 // avoid errors when computing the next free CIDR by hand.
 //
-// GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/next-free-cidr
 func (UnimplementedHandler) SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (r *NextFreeCidrResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// UnbindFloatingIP implements unbind-floating-ip operation.
+// UnbindElasticIP implements unbind-elastic-ip operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
-// floating IP shows the `unbind` operation until the change is confirmed.
+// elastic IP shows the `unbind` operation until the change is confirmed.
 //
-// DELETE /api/v1/floating-ips/{floatingIpId}/binding
-func (UnimplementedHandler) UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (r UnbindFloatingIPRes, _ error) {
+// DELETE /api/v1/elastic-ips/{elasticIpId}/binding
+func (UnimplementedHandler) UnbindElasticIP(ctx context.Context, params UnbindElasticIPParams) (r UnbindElasticIPRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UnrescueVirtualMachine implements unrescue-virtual-machine operation.
+//
+// Restores boot from the original system disk. Completion is shown by the virtual machine state.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
+func (UnimplementedHandler) UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (r UnrescueVirtualMachineRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
