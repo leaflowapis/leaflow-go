@@ -152,13 +152,14 @@ func (UnimplementedHandler) CreatePeering(ctx context.Context, req *CreatePeerin
 
 // CreateRoute implements create-route operation.
 //
-// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
-// overrides the default route and takes every elastic IP offline immediately; a destination equal to
-// the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
-// gateway of a subnet, which points back at the router itself.
+// Three forms that would sever connectivity are refused: a destination of `0.0.0.0/0`, which overrides
+// the default route and takes every elastic IP offline immediately; a destination equal to the CIDR of
+// a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a
+// subnet, which points back at the router itself. A destination overlapping a peering's route is
+// refused with `ROUTE_OVERLAPS_PEERING`.
 //
-// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
-func (UnimplementedHandler) CreateRoute(ctx context.Context, req *CreateRouteRequestBody, params CreateRouteParams) (r *RouteResource, _ error) {
+// POST /api/v1/routes
+func (UnimplementedHandler) CreateRoute(ctx context.Context, req *CreateRouteRequestBody) (r *RouteResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -201,10 +202,12 @@ func (UnimplementedHandler) CreateSnapshot(ctx context.Context, req *CreateSnaps
 
 // CreateSubnet implements create-subnet operation.
 //
-// Create a subnet.
+// Creates an IPv4 subnet. The CIDR must fall inside the virtual private cloud's CIDR and must not
+// overlap another subnet of it. To find a free CIDR, read the virtual private cloud's
+// `free-subnet-cidr`.
 //
-// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
-func (UnimplementedHandler) CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody, params CreateSubnetParams) (r *SubnetResource, _ error) {
+// POST /api/v1/subnets
+func (UnimplementedHandler) CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody) (r *Subnet, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -331,9 +334,10 @@ func (UnimplementedHandler) DeletePeering(ctx context.Context, params DeletePeer
 
 // DeleteRoute implements delete-route operation.
 //
-// Delete a static route.
+// A route has no update; replace it by creating the new route and deleting the old one. A peering's
+// route is refused with `ROUTE_HELD_BY_PEERING` and goes away with its peering.
 //
-// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes/{routeId}
+// DELETE /api/v1/routes/{routeId}
 func (UnimplementedHandler) DeleteRoute(ctx context.Context, params DeleteRouteParams) error {
 	return ht.ErrNotImplemented
 }
@@ -373,10 +377,10 @@ func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSna
 
 // DeleteSubnet implements delete-subnet operation.
 //
-// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
-// next hop inside its CIDR.
+// Refused while network interfaces remain in the subnet, or while a static route has a next hop inside
+// its CIDR. An IPv6 subnet is removed by disabling IPv6 on its virtual private cloud.
 //
-// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
+// DELETE /api/v1/subnets/{subnetId}
 func (UnimplementedHandler) DeleteSubnet(ctx context.Context, params DeleteSubnetParams) error {
 	return ht.ErrNotImplemented
 }
@@ -407,6 +411,16 @@ func (UnimplementedHandler) DeleteVirtualMachine(ctx context.Context, params Del
 //
 // DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
 func (UnimplementedHandler) DeleteVirtualPrivateCloud(ctx context.Context, params DeleteVirtualPrivateCloudParams) (r DeleteVirtualPrivateCloudRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteVirtualPrivateCloudIpv6 implements delete-virtual-private-cloud-ipv6 operation.
+//
+// Removes the IPv6 subnet and returns the prefix. Refused while a network interface still holds an
+// IPv6 address. A returned prefix is never handed out again.
+//
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (UnimplementedHandler) DeleteVirtualPrivateCloudIpv6(ctx context.Context, params DeleteVirtualPrivateCloudIpv6Params) (r DeleteVirtualPrivateCloudIpv6Res, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -448,29 +462,6 @@ func (UnimplementedHandler) DetachNetworkInterface(ctx context.Context, params D
 //
 // DELETE /api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}
 func (UnimplementedHandler) DetachVirtualMachineElasticIP(ctx context.Context, params DetachVirtualMachineElasticIPParams) (r DetachVirtualMachineElasticIPRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// DisableVirtualPrivateCloudIpv6 implements disable-virtual-private-cloud-ipv6 operation.
-//
-// A released prefix is not re-allocated immediately.
-//
-// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-func (UnimplementedHandler) DisableVirtualPrivateCloudIpv6(ctx context.Context, params DisableVirtualPrivateCloudIpv6Params) (r DisableVirtualPrivateCloudIpv6Res, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// EnableVirtualPrivateCloudIpv6 implements enable-virtual-private-cloud-ipv6 operation.
-//
-// Delegates and routes an IPv6 prefix to the virtual private cloud. It requires no elastic IP or NAT
-// gateway. Addresses are assigned to virtual machines by the network and use its security groups; they
-// cannot be requested or released individually.
-//
-// If the virtual private cloud is not yet connected to the internet, connectivity is established as
-// part of this call.
-//
-// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-func (UnimplementedHandler) EnableVirtualPrivateCloudIpv6(ctx context.Context, params EnableVirtualPrivateCloudIpv6Params) (r EnableVirtualPrivateCloudIpv6Res, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -563,6 +554,15 @@ func (UnimplementedHandler) GetQuota(ctx context.Context, params GetQuotaParams)
 	return r, ht.ErrNotImplemented
 }
 
+// GetRoute implements get-route operation.
+//
+// Get a route.
+//
+// GET /api/v1/routes/{routeId}
+func (UnimplementedHandler) GetRoute(ctx context.Context, params GetRouteParams) (r *RouteResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetSecurityGroup implements get-security-group operation.
 //
 // Retrieve a security group.
@@ -578,6 +578,15 @@ func (UnimplementedHandler) GetSecurityGroup(ctx context.Context, params GetSecu
 //
 // GET /api/v1/snapshots/{snapshotId}
 func (UnimplementedHandler) GetSnapshot(ctx context.Context, params GetSnapshotParams) (r *SnapshotResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetSubnet implements get-subnet operation.
+//
+// Get a subnet.
+//
+// GET /api/v1/subnets/{subnetId}
+func (UnimplementedHandler) GetSubnet(ctx context.Context, params GetSubnetParams) (r *Subnet, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -600,12 +609,22 @@ func (UnimplementedHandler) GetVirtualPrivateCloud(ctx context.Context, params G
 	return r, ht.ErrNotImplemented
 }
 
+// GetVirtualPrivateCloudFreeSubnetCidr implements get-virtual-private-cloud-free-subnet-cidr operation.
+//
+// The first CIDR of the given prefix length inside the virtual private cloud that no subnet overlaps.
+// It is not reserved; creating the subnet checks it again.
+//
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/free-subnet-cidr
+func (UnimplementedHandler) GetVirtualPrivateCloudFreeSubnetCidr(ctx context.Context, params GetVirtualPrivateCloudFreeSubnetCidrParams) (r *FreeSubnetCidr, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetVirtualPrivateCloudIpv6 implements get-virtual-private-cloud-ipv6 operation.
 //
-// Returns the business prefix and enabled state, not backend provisioning or routing diagnostics.
+// Refused with `VIRTUAL_PRIVATE_CLOUD_IPV6_NOT_ENABLED` while IPv6 is not enabled.
 //
 // GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
-func (UnimplementedHandler) GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (r *IPv6ResponseBody, _ error) {
+func (UnimplementedHandler) GetVirtualPrivateCloudIpv6(ctx context.Context, params GetVirtualPrivateCloudIpv6Params) (r *VirtualPrivateCloudIPv6, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -756,9 +775,10 @@ func (UnimplementedHandler) ListRegions(ctx context.Context, params ListRegionsP
 
 // ListRoutes implements list-routes operation.
 //
-// List static routes.
+// Static routes of the project's virtual private clouds, including the routes peerings install, which
+// show `origin` peering.
 //
-// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
+// GET /api/v1/routes
 func (UnimplementedHandler) ListRoutes(ctx context.Context, params ListRoutesParams) (r *RouteListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -792,10 +812,10 @@ func (UnimplementedHandler) ListSnapshots(ctx context.Context, params ListSnapsh
 
 // ListSubnets implements list-subnets operation.
 //
-// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
-// deleted individually.
+// IPv6 subnets are included, with `ip_version` 6. One is created when IPv6 is enabled on its virtual
+// private cloud and goes away when IPv6 is disabled; it cannot be created or deleted on its own.
 //
-// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
+// GET /api/v1/subnets
 func (UnimplementedHandler) ListSubnets(ctx context.Context, params ListSubnetsParams) (r *SubnetListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -845,6 +865,20 @@ func (UnimplementedHandler) ListVirtualPrivateClouds(ctx context.Context, params
 //
 // POST /api/v1/virtual-machines/{virtualMachineId}/console
 func (UnimplementedHandler) OpenVirtualMachineConsole(ctx context.Context, params OpenVirtualMachineConsoleParams) (r *ConsoleResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PutVirtualPrivateCloudIpv6 implements put-virtual-private-cloud-ipv6 operation.
+//
+// Delegates and routes a /64 prefix to the virtual private cloud and creates its IPv6 subnet. It
+// requires no elastic IP or NAT gateway: IPv6 is routed, not translated. Virtual machines receive an
+// address from the prefix when their network interface is created; addresses cannot be requested or
+// released individually, and security groups apply to them as to IPv4.
+//
+// Enabling IPv6 that is already enabled returns the current prefix.
+//
+// PUT /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (UnimplementedHandler) PutVirtualPrivateCloudIpv6(ctx context.Context, params PutVirtualPrivateCloudIpv6Params) (r PutVirtualPrivateCloudIpv6Res, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -962,15 +996,6 @@ func (UnimplementedHandler) RenameSnapshot(ctx context.Context, req *RenameSnaps
 //
 // PATCH /api/v1/virtual-machines/{virtualMachineId}
 func (UnimplementedHandler) RenameVirtualMachine(ctx context.Context, req *RenameVirtualMachineRequestBody, params RenameVirtualMachineParams) (r *VirtualMachine, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenameVirtualPrivateCloud implements rename-virtual-private-cloud operation.
-//
-// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
-//
-// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
-func (UnimplementedHandler) RenameVirtualPrivateCloud(ctx context.Context, req *RenameVirtualPrivateCloudRequestBody, params RenameVirtualPrivateCloudParams) (r *VirtualPrivateCloud, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1191,16 +1216,6 @@ func (UnimplementedHandler) StopVirtualMachine(ctx context.Context, req *PowerRe
 	return r, ht.ErrNotImplemented
 }
 
-// SuggestSubnetCidr implements suggest-subnet-cidr operation.
-//
-// The returned value is a suggestion and is validated again when the subnet is created. It exists to
-// avoid errors when computing the next free CIDR by hand.
-//
-// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/next-free-cidr
-func (UnimplementedHandler) SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (r *NextFreeCidrResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // UnbindElasticIP implements unbind-elastic-ip operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
@@ -1217,6 +1232,26 @@ func (UnimplementedHandler) UnbindElasticIP(ctx context.Context, params UnbindEl
 //
 // POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
 func (UnimplementedHandler) UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (r UnrescueVirtualMachineRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateSubnet implements update-subnet operation.
+//
+// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
+// out inside it would fall outside a changed range.
+//
+// PATCH /api/v1/subnets/{subnetId}
+func (UnimplementedHandler) UpdateSubnet(ctx context.Context, req *UpdateSubnetRequestBody, params UpdateSubnetParams) (r *Subnet, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateVirtualPrivateCloud implements update-virtual-private-cloud operation.
+//
+// Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
+// inside it was allocated from it.
+//
+// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+func (UnimplementedHandler) UpdateVirtualPrivateCloud(ctx context.Context, req *UpdateVirtualPrivateCloudRequestBody, params UpdateVirtualPrivateCloudParams) (r *VirtualPrivateCloud, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

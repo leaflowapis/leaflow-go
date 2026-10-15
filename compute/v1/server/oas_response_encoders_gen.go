@@ -387,7 +387,7 @@ func encodeCreateSnapshotResponse(response CreateSnapshotRes, w http.ResponseWri
 	}
 }
 
-func encodeCreateSubnetResponse(response *SubnetResource, w http.ResponseWriter, span trace.Span) error {
+func encodeCreateSubnetResponse(response *Subnet, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
 
@@ -716,6 +716,30 @@ func encodeDeleteVirtualPrivateCloudResponse(response DeleteVirtualPrivateCloudR
 	}
 }
 
+func encodeDeleteVirtualPrivateCloudIpv6Response(response DeleteVirtualPrivateCloudIpv6Res, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *DeleteVirtualPrivateCloudIpv6Accepted:
+		w.WriteHeader(202)
+
+		return nil
+
+	case *Error:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(409)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeDetachDiskResponse(response DetachDiskRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *DiskResource:
@@ -781,68 +805,6 @@ func encodeDetachNetworkInterfaceResponse(response DetachNetworkInterfaceRes, w 
 func encodeDetachVirtualMachineElasticIPResponse(response DetachVirtualMachineElasticIPRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *ElasticIP:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
-	}
-}
-
-func encodeDisableVirtualPrivateCloudIpv6Response(response DisableVirtualPrivateCloudIpv6Res, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *IPv6ResponseBody:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
-	}
-}
-
-func encodeEnableVirtualPrivateCloudIpv6Response(response EnableVirtualPrivateCloudIpv6Res, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *IPv6ResponseBody:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(202)
 
@@ -988,6 +950,19 @@ func encodeGetQuotaResponse(response *ProjectQuota, w http.ResponseWriter, span 
 	return nil
 }
 
+func encodeGetRouteResponse(response *RouteResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeGetSecurityGroupResponse(response *SecurityGroupResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -1002,6 +977,19 @@ func encodeGetSecurityGroupResponse(response *SecurityGroupResource, w http.Resp
 }
 
 func encodeGetSnapshotResponse(response *SnapshotResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetSubnetResponse(response *Subnet, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1040,7 +1028,20 @@ func encodeGetVirtualPrivateCloudResponse(response *VirtualPrivateCloud, w http.
 	return nil
 }
 
-func encodeGetVirtualPrivateCloudIpv6Response(response *IPv6ResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeGetVirtualPrivateCloudFreeSubnetCidrResponse(response *FreeSubnetCidr, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetVirtualPrivateCloudIpv6Response(response *VirtualPrivateCloudIPv6, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1352,6 +1353,37 @@ func encodeOpenVirtualMachineConsoleResponse(response *ConsoleResponseBody, w ht
 	return nil
 }
 
+func encodePutVirtualPrivateCloudIpv6Response(response PutVirtualPrivateCloudIpv6Res, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *VirtualPrivateCloudIPv6:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(202)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *Error:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(409)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeRebootVirtualMachineResponse(response RebootVirtualMachineRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *VirtualMachine:
@@ -1524,19 +1556,6 @@ func encodeRenameSnapshotResponse(response *SnapshotResource, w http.ResponseWri
 }
 
 func encodeRenameVirtualMachineResponse(response *VirtualMachine, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeRenameVirtualPrivateCloudResponse(response *VirtualPrivateCloud, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1880,19 +1899,6 @@ func encodeStopVirtualMachineResponse(response StopVirtualMachineRes, w http.Res
 	}
 }
 
-func encodeSuggestSubnetCidrResponse(response *NextFreeCidrResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeUnbindElasticIPResponse(response UnbindElasticIPRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *ElasticIP:
@@ -1953,6 +1959,32 @@ func encodeUnrescueVirtualMachineResponse(response UnrescueVirtualMachineRes, w 
 	default:
 		return errors.Errorf("unexpected response type: %T", response)
 	}
+}
+
+func encodeUpdateSubnetResponse(response *Subnet, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUpdateVirtualPrivateCloudResponse(response *VirtualPrivateCloud, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
 }
 
 func encodeErrorResponse(response *ErrorStatusCode, w http.ResponseWriter, span trace.Span) error {

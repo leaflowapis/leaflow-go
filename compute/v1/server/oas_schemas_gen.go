@@ -1179,16 +1179,17 @@ func (s *CreatePeeringRequestBody) SetAccepterNetworkID(val VirtualPrivateCloudI
 
 // Ref: #/components/schemas/CreateRouteRequestBody
 type CreateRouteRequestBody struct {
-	Description OptString `json:"description"`
-	// Destination CIDR. It cannot be `0.0.0.0/0`, nor the CIDR of a subnet of this network.
+	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
+	// Destination CIDR. It cannot be `0.0.0.0/0`, nor the CIDR of a subnet of the virtual private cloud.
 	Destination string `json:"destination"`
-	// Private address of a virtual machine; must fall inside a subnet of this virtual private cloud.
-	Nexthop string `json:"nexthop"`
+	// Private address of a virtual machine, inside a subnet of the virtual private cloud.
+	Nexthop     string    `json:"nexthop"`
+	Description OptString `json:"description"`
 }
 
-// GetDescription returns the value of Description.
-func (s *CreateRouteRequestBody) GetDescription() OptString {
-	return s.Description
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *CreateRouteRequestBody) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
 }
 
 // GetDestination returns the value of Destination.
@@ -1201,9 +1202,14 @@ func (s *CreateRouteRequestBody) GetNexthop() string {
 	return s.Nexthop
 }
 
-// SetDescription sets the value of Description.
-func (s *CreateRouteRequestBody) SetDescription(val OptString) {
-	s.Description = val
+// GetDescription returns the value of Description.
+func (s *CreateRouteRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *CreateRouteRequestBody) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
 }
 
 // SetDestination sets the value of Destination.
@@ -1214,6 +1220,11 @@ func (s *CreateRouteRequestBody) SetDestination(val string) {
 // SetNexthop sets the value of Nexthop.
 func (s *CreateRouteRequestBody) SetNexthop(val string) {
 	s.Nexthop = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CreateRouteRequestBody) SetDescription(val OptString) {
+	s.Description = val
 }
 
 // Ref: #/components/schemas/CreateSecurityGroupRequestBody
@@ -1480,14 +1491,15 @@ func (*CreateSnapshotResponseBody) createSnapshotRes() {}
 
 // Ref: #/components/schemas/CreateSubnetRequestBody
 type CreateSubnetRequestBody struct {
-	// Must fall inside the CIDR of the virtual private cloud and must not overlap an existing subnet.
+	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
+	Name                  string                `json:"name"`
+	// An IPv4 CIDR inside the virtual private cloud's CIDR, overlapping no other subnet of it.
 	Cidr string `json:"cidr"`
-	Name string `json:"name"`
 }
 
-// GetCidr returns the value of Cidr.
-func (s *CreateSubnetRequestBody) GetCidr() string {
-	return s.Cidr
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *CreateSubnetRequestBody) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
 }
 
 // GetName returns the value of Name.
@@ -1495,14 +1507,24 @@ func (s *CreateSubnetRequestBody) GetName() string {
 	return s.Name
 }
 
-// SetCidr sets the value of Cidr.
-func (s *CreateSubnetRequestBody) SetCidr(val string) {
-	s.Cidr = val
+// GetCidr returns the value of Cidr.
+func (s *CreateSubnetRequestBody) GetCidr() string {
+	return s.Cidr
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *CreateSubnetRequestBody) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
 }
 
 // SetName sets the value of Name.
 func (s *CreateSubnetRequestBody) SetName(val string) {
 	s.Name = val
+}
+
+// SetCidr sets the value of Cidr.
+func (s *CreateSubnetRequestBody) SetCidr(val string) {
+	s.Cidr = val
 }
 
 // Ref: #/components/schemas/CreateVirtualMachineRequestBody
@@ -1696,20 +1718,10 @@ func (*CreateVirtualMachineResponseBody) createVirtualMachineRes() {}
 
 // Ref: #/components/schemas/CreateVirtualPrivateCloudRequestBody
 type CreateVirtualPrivateCloudRequestBody struct {
-	// Must be an RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`.
-	Cidr     string   `json:"cidr"`
-	Name     string   `json:"name"`
 	RegionID RegionID `json:"region_id"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *CreateVirtualPrivateCloudRequestBody) GetCidr() string {
-	return s.Cidr
-}
-
-// GetName returns the value of Name.
-func (s *CreateVirtualPrivateCloudRequestBody) GetName() string {
-	return s.Name
+	Name     string   `json:"name"`
+	// An RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`.
+	Cidr string `json:"cidr"`
 }
 
 // GetRegionID returns the value of RegionID.
@@ -1717,9 +1729,19 @@ func (s *CreateVirtualPrivateCloudRequestBody) GetRegionID() RegionID {
 	return s.RegionID
 }
 
-// SetCidr sets the value of Cidr.
-func (s *CreateVirtualPrivateCloudRequestBody) SetCidr(val string) {
-	s.Cidr = val
+// GetName returns the value of Name.
+func (s *CreateVirtualPrivateCloudRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetCidr returns the value of Cidr.
+func (s *CreateVirtualPrivateCloudRequestBody) GetCidr() string {
+	return s.Cidr
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *CreateVirtualPrivateCloudRequestBody) SetRegionID(val RegionID) {
+	s.RegionID = val
 }
 
 // SetName sets the value of Name.
@@ -1727,9 +1749,9 @@ func (s *CreateVirtualPrivateCloudRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetRegionID sets the value of RegionID.
-func (s *CreateVirtualPrivateCloudRequestBody) SetRegionID(val RegionID) {
-	s.RegionID = val
+// SetCidr sets the value of Cidr.
+func (s *CreateVirtualPrivateCloudRequestBody) SetCidr(val string) {
+	s.Cidr = val
 }
 
 // DeleteRouteNoContent is response for DeleteRoute operation.
@@ -1743,6 +1765,11 @@ type DeleteSecurityGroupRuleNoContent struct{}
 
 // DeleteSubnetNoContent is response for DeleteSubnet operation.
 type DeleteSubnetNoContent struct{}
+
+// DeleteVirtualPrivateCloudIpv6Accepted is response for DeleteVirtualPrivateCloudIpv6 operation.
+type DeleteVirtualPrivateCloudIpv6Accepted struct{}
+
+func (*DeleteVirtualPrivateCloudIpv6Accepted) deleteVirtualPrivateCloudIpv6Res() {}
 
 // Ref: #/components/schemas/DiskAttachment
 type DiskAttachment struct {
@@ -3862,44 +3889,44 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-func (*Error) acceptPeeringRes()                  {}
-func (*Error) attachDiskRes()                     {}
-func (*Error) attachNetworkInterfaceRes()         {}
-func (*Error) attachVirtualMachineElasticIPRes()  {}
-func (*Error) bindElasticIPRes()                  {}
-func (*Error) createBackupRes()                   {}
-func (*Error) createDiskRes()                     {}
-func (*Error) createElasticIPRes()                {}
-func (*Error) createImageRes()                    {}
-func (*Error) createSnapshotRes()                 {}
-func (*Error) createVirtualMachineRes()           {}
-func (*Error) deleteBackupRes()                   {}
-func (*Error) deleteDiskRes()                     {}
-func (*Error) deleteImageRes()                    {}
-func (*Error) deleteNetworkInterfaceRes()         {}
-func (*Error) deletePeeringRes()                  {}
-func (*Error) deleteSnapshotRes()                 {}
-func (*Error) deleteVirtualMachineRes()           {}
-func (*Error) deleteVirtualPrivateCloudRes()      {}
-func (*Error) detachDiskRes()                     {}
-func (*Error) detachNetworkInterfaceRes()         {}
-func (*Error) detachVirtualMachineElasticIPRes()  {}
-func (*Error) disableVirtualPrivateCloudIpv6Res() {}
-func (*Error) enableVirtualPrivateCloudIpv6Res()  {}
-func (*Error) rebootVirtualMachineRes()           {}
-func (*Error) rebuildVirtualMachineRes()          {}
-func (*Error) releaseElasticIPRes()               {}
-func (*Error) rescueVirtualMachineRes()           {}
-func (*Error) resetVirtualMachinePasswordRes()    {}
-func (*Error) resizeDiskRes()                     {}
-func (*Error) resizeVirtualMachineRes()           {}
-func (*Error) restoreBackupRes()                  {}
-func (*Error) revertDiskRes()                     {}
-func (*Error) setElasticIPBandwidthRes()          {}
-func (*Error) startVirtualMachineRes()            {}
-func (*Error) stopVirtualMachineRes()             {}
-func (*Error) unbindElasticIPRes()                {}
-func (*Error) unrescueVirtualMachineRes()         {}
+func (*Error) acceptPeeringRes()                 {}
+func (*Error) attachDiskRes()                    {}
+func (*Error) attachNetworkInterfaceRes()        {}
+func (*Error) attachVirtualMachineElasticIPRes() {}
+func (*Error) bindElasticIPRes()                 {}
+func (*Error) createBackupRes()                  {}
+func (*Error) createDiskRes()                    {}
+func (*Error) createElasticIPRes()               {}
+func (*Error) createImageRes()                   {}
+func (*Error) createSnapshotRes()                {}
+func (*Error) createVirtualMachineRes()          {}
+func (*Error) deleteBackupRes()                  {}
+func (*Error) deleteDiskRes()                    {}
+func (*Error) deleteImageRes()                   {}
+func (*Error) deleteNetworkInterfaceRes()        {}
+func (*Error) deletePeeringRes()                 {}
+func (*Error) deleteSnapshotRes()                {}
+func (*Error) deleteVirtualMachineRes()          {}
+func (*Error) deleteVirtualPrivateCloudIpv6Res() {}
+func (*Error) deleteVirtualPrivateCloudRes()     {}
+func (*Error) detachDiskRes()                    {}
+func (*Error) detachNetworkInterfaceRes()        {}
+func (*Error) detachVirtualMachineElasticIPRes() {}
+func (*Error) putVirtualPrivateCloudIpv6Res()    {}
+func (*Error) rebootVirtualMachineRes()          {}
+func (*Error) rebuildVirtualMachineRes()         {}
+func (*Error) releaseElasticIPRes()              {}
+func (*Error) rescueVirtualMachineRes()          {}
+func (*Error) resetVirtualMachinePasswordRes()   {}
+func (*Error) resizeDiskRes()                    {}
+func (*Error) resizeVirtualMachineRes()          {}
+func (*Error) restoreBackupRes()                 {}
+func (*Error) revertDiskRes()                    {}
+func (*Error) setElasticIPBandwidthRes()         {}
+func (*Error) startVirtualMachineRes()           {}
+func (*Error) stopVirtualMachineRes()            {}
+func (*Error) unbindElasticIPRes()               {}
+func (*Error) unrescueVirtualMachineRes()        {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
@@ -4012,6 +4039,33 @@ func (s *ExistingBootDiskType) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/FreeSubnetCidr
+type FreeSubnetCidr struct {
+	PrefixLength int64 `json:"prefix_length"`
+	// Null when no CIDR of that prefix length is free.
+	Cidr NilString `json:"cidr"`
+}
+
+// GetPrefixLength returns the value of PrefixLength.
+func (s *FreeSubnetCidr) GetPrefixLength() int64 {
+	return s.PrefixLength
+}
+
+// GetCidr returns the value of Cidr.
+func (s *FreeSubnetCidr) GetCidr() NilString {
+	return s.Cidr
+}
+
+// SetPrefixLength sets the value of PrefixLength.
+func (s *FreeSubnetCidr) SetPrefixLength(val int64) {
+	s.PrefixLength = val
+}
+
+// SetCidr sets the value of Cidr.
+func (s *FreeSubnetCidr) SetCidr(val NilString) {
+	s.Cidr = val
 }
 
 // Ref: #/components/schemas/IPv4Binding
@@ -4167,36 +4221,6 @@ func (s *IPv4BindingState) UnmarshalText(data []byte) error {
 }
 
 type IPv4HostAddress string
-
-// Ref: #/components/schemas/IPv6ResponseBody
-type IPv6ResponseBody struct {
-	// The allocated /64 prefix; empty while IPv6 is disabled.
-	Cidr    string `json:"cidr"`
-	Enabled bool   `json:"enabled"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *IPv6ResponseBody) GetCidr() string {
-	return s.Cidr
-}
-
-// GetEnabled returns the value of Enabled.
-func (s *IPv6ResponseBody) GetEnabled() bool {
-	return s.Enabled
-}
-
-// SetCidr sets the value of Cidr.
-func (s *IPv6ResponseBody) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetEnabled sets the value of Enabled.
-func (s *IPv6ResponseBody) SetEnabled(val bool) {
-	s.Enabled = val
-}
-
-func (*IPv6ResponseBody) disableVirtualPrivateCloudIpv6Res() {}
-func (*IPv6ResponseBody) enableVirtualPrivateCloudIpv6Res()  {}
 
 type ImageID string
 
@@ -5785,22 +5809,6 @@ func (s *NewElasticIP) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
-// Ref: #/components/schemas/NextFreeCidrResponseBody
-type NextFreeCidrResponseBody struct {
-	// Empty when the virtual private cloud has no free CIDR left for that prefix length.
-	Cidr string `json:"cidr"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *NextFreeCidrResponseBody) GetCidr() string {
-	return s.Cidr
-}
-
-// SetCidr sets the value of Cidr.
-func (s *NextFreeCidrResponseBody) SetCidr(val string) {
-	s.Cidr = val
-}
-
 // NewNilBackupOperation returns new NilBackupOperation with value set to v.
 func NewNilBackupOperation(v BackupOperation) NilBackupOperation {
 	return NilBackupOperation{
@@ -6515,6 +6523,51 @@ func (o NilNetworkInterfaceOperation) Get() (v NetworkInterfaceOperation, ok boo
 
 // Or returns value if set, or given parameter if does not.
 func (o NilNetworkInterfaceOperation) Or(d NetworkInterfaceOperation) NetworkInterfaceOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilPeeringID returns new NilPeeringID with value set to v.
+func NewNilPeeringID(v PeeringID) NilPeeringID {
+	return NilPeeringID{
+		Value: v,
+	}
+}
+
+// NilPeeringID is nullable PeeringID.
+type NilPeeringID struct {
+	Value PeeringID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilPeeringID) SetTo(v PeeringID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilPeeringID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilPeeringID) SetToNull() {
+	o.Null = true
+	var v PeeringID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilPeeringID) Get() (v PeeringID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilPeeringID) Or(d PeeringID) PeeringID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8205,52 +8258,6 @@ func (o OptNilSecurityGroupIDArray) Or(d []SecurityGroupID) []SecurityGroupID {
 	return d
 }
 
-// NewOptPeeringID returns new OptPeeringID with value set to v.
-func NewOptPeeringID(v PeeringID) OptPeeringID {
-	return OptPeeringID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptPeeringID is optional PeeringID.
-type OptPeeringID struct {
-	Value PeeringID
-	Set   bool
-}
-
-// IsSet returns true if OptPeeringID was set.
-func (o OptPeeringID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptPeeringID) Reset() {
-	var v PeeringID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptPeeringID) SetTo(v PeeringID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptPeeringID) Get() (v PeeringID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptPeeringID) Or(d PeeringID) PeeringID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptRegionID returns new OptRegionID with value set to v.
 func NewOptRegionID(v RegionID) OptRegionID {
 	return OptRegionID{
@@ -9544,21 +9551,6 @@ func (s *RenameVirtualMachineRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/RenameVirtualPrivateCloudRequestBody
-type RenameVirtualPrivateCloudRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameVirtualPrivateCloudRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameVirtualPrivateCloudRequestBody) SetName(val string) {
-	s.Name = val
-}
-
 // Ref: #/components/schemas/RescueVirtualMachineRequestBody
 type RescueVirtualMachineRequestBody struct {
 	// Platform rescue image. Omit to use the regional default.
@@ -9892,36 +9884,63 @@ func (s *RouteListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// Who put the route there. A `tenant` route is created and deleted by the project; a `peering` route
+// is installed by an active peering and removed with it.
+// Ref: #/components/schemas/RouteOrigin
+type RouteOrigin string
+
+const (
+	RouteOriginTenant  RouteOrigin = "tenant"
+	RouteOriginPeering RouteOrigin = "peering"
+)
+
+// AllValues returns all RouteOrigin values.
+func (RouteOrigin) AllValues() []RouteOrigin {
+	return []RouteOrigin{
+		RouteOriginTenant,
+		RouteOriginPeering,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RouteOrigin) MarshalText() ([]byte, error) {
+	switch s {
+	case RouteOriginTenant:
+		return []byte(s), nil
+	case RouteOriginPeering:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RouteOrigin) UnmarshalText(data []byte) error {
+	switch RouteOrigin(data) {
+	case RouteOriginTenant:
+		*s = RouteOriginTenant
+		return nil
+	case RouteOriginPeering:
+		*s = RouteOriginPeering
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/RouteResource
 type RouteResource struct {
-	// System-owned peering route. Delete the peering to remove this route.
-	PeeringID   OptPeeringID `json:"peering_id"`
-	CreatedAt   time.Time    `json:"created_at"`
+	ID                    RouteID               `json:"id"`
+	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
+	Origin                RouteOrigin           `json:"origin"`
+	Destination           string                `json:"destination"`
+	// The private address traffic is sent to. Null for a peering route, whose next hop is the platform's
+	// side of the peering link.
+	Nexthop NilString `json:"nexthop"`
+	// The peering holding the route, null for a tenant route.
+	PeeringID   NilPeeringID `json:"peering_id"`
 	Description string       `json:"description"`
-	Destination string       `json:"destination"`
-	ID          RouteID      `json:"id"`
-	// Present for custom routes; peering routes expose peering_id instead.
-	Nexthop OptString `json:"nexthop"`
-}
-
-// GetPeeringID returns the value of PeeringID.
-func (s *RouteResource) GetPeeringID() OptPeeringID {
-	return s.PeeringID
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *RouteResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDescription returns the value of Description.
-func (s *RouteResource) GetDescription() string {
-	return s.Description
-}
-
-// GetDestination returns the value of Destination.
-func (s *RouteResource) GetDestination() string {
-	return s.Destination
+	CreatedAt   time.Time    `json:"created_at"`
 }
 
 // GetID returns the value of ID.
@@ -9929,29 +9948,39 @@ func (s *RouteResource) GetID() RouteID {
 	return s.ID
 }
 
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *RouteResource) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
+}
+
+// GetOrigin returns the value of Origin.
+func (s *RouteResource) GetOrigin() RouteOrigin {
+	return s.Origin
+}
+
+// GetDestination returns the value of Destination.
+func (s *RouteResource) GetDestination() string {
+	return s.Destination
+}
+
 // GetNexthop returns the value of Nexthop.
-func (s *RouteResource) GetNexthop() OptString {
+func (s *RouteResource) GetNexthop() NilString {
 	return s.Nexthop
 }
 
-// SetPeeringID sets the value of PeeringID.
-func (s *RouteResource) SetPeeringID(val OptPeeringID) {
-	s.PeeringID = val
+// GetPeeringID returns the value of PeeringID.
+func (s *RouteResource) GetPeeringID() NilPeeringID {
+	return s.PeeringID
 }
 
-// SetCreatedAt sets the value of CreatedAt.
-func (s *RouteResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
+// GetDescription returns the value of Description.
+func (s *RouteResource) GetDescription() string {
+	return s.Description
 }
 
-// SetDescription sets the value of Description.
-func (s *RouteResource) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetDestination sets the value of Destination.
-func (s *RouteResource) SetDestination(val string) {
-	s.Destination = val
+// GetCreatedAt returns the value of CreatedAt.
+func (s *RouteResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
 }
 
 // SetID sets the value of ID.
@@ -9959,9 +9988,39 @@ func (s *RouteResource) SetID(val RouteID) {
 	s.ID = val
 }
 
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *RouteResource) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetOrigin sets the value of Origin.
+func (s *RouteResource) SetOrigin(val RouteOrigin) {
+	s.Origin = val
+}
+
+// SetDestination sets the value of Destination.
+func (s *RouteResource) SetDestination(val string) {
+	s.Destination = val
+}
+
 // SetNexthop sets the value of Nexthop.
-func (s *RouteResource) SetNexthop(val OptString) {
+func (s *RouteResource) SetNexthop(val NilString) {
 	s.Nexthop = val
+}
+
+// SetPeeringID sets the value of PeeringID.
+func (s *RouteResource) SetPeeringID(val NilPeeringID) {
+	s.PeeringID = val
+}
+
+// SetDescription sets the value of Description.
+func (s *RouteResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *RouteResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
 }
 
 // Ref: #/components/schemas/RunCommandRequestBody
@@ -10795,16 +10854,124 @@ func (s *SnapshotResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/Subnet
+type Subnet struct {
+	ID                    SubnetID              `json:"id"`
+	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
+	Name                  string                `json:"name"`
+	IPVersion             SubnetIPVersion       `json:"ip_version"`
+	Cidr                  string                `json:"cidr"`
+	// The subnet's gateway address, null for an IPv6 subnet, which is routed rather than gatewayed.
+	GatewayIP NilString `json:"gateway_ip"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *Subnet) GetID() SubnetID {
+	return s.ID
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *Subnet) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
+}
+
+// GetName returns the value of Name.
+func (s *Subnet) GetName() string {
+	return s.Name
+}
+
+// GetIPVersion returns the value of IPVersion.
+func (s *Subnet) GetIPVersion() SubnetIPVersion {
+	return s.IPVersion
+}
+
+// GetCidr returns the value of Cidr.
+func (s *Subnet) GetCidr() string {
+	return s.Cidr
+}
+
+// GetGatewayIP returns the value of GatewayIP.
+func (s *Subnet) GetGatewayIP() NilString {
+	return s.GatewayIP
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Subnet) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *Subnet) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *Subnet) SetID(val SubnetID) {
+	s.ID = val
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *Subnet) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetName sets the value of Name.
+func (s *Subnet) SetName(val string) {
+	s.Name = val
+}
+
+// SetIPVersion sets the value of IPVersion.
+func (s *Subnet) SetIPVersion(val SubnetIPVersion) {
+	s.IPVersion = val
+}
+
+// SetCidr sets the value of Cidr.
+func (s *Subnet) SetCidr(val string) {
+	s.Cidr = val
+}
+
+// SetGatewayIP sets the value of GatewayIP.
+func (s *Subnet) SetGatewayIP(val NilString) {
+	s.GatewayIP = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Subnet) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *Subnet) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
 type SubnetID string
+
+type SubnetIPVersion int64
+
+const (
+	SubnetIPVersion4 SubnetIPVersion = 4
+	SubnetIPVersion6 SubnetIPVersion = 6
+)
+
+// AllValues returns all SubnetIPVersion values.
+func (SubnetIPVersion) AllValues() []SubnetIPVersion {
+	return []SubnetIPVersion{
+		SubnetIPVersion4,
+		SubnetIPVersion6,
+	}
+}
 
 // Ref: #/components/schemas/SubnetListResponseBody
 type SubnetListResponseBody struct {
-	Items      []SubnetResource `json:"items"`
+	Items      []Subnet         `json:"items"`
 	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
-func (s *SubnetListResponseBody) GetItems() []SubnetResource {
+func (s *SubnetListResponseBody) GetItems() []Subnet {
 	return s.Items
 }
 
@@ -10814,98 +10981,13 @@ func (s *SubnetListResponseBody) GetPagination() OffsetPagination {
 }
 
 // SetItems sets the value of Items.
-func (s *SubnetListResponseBody) SetItems(val []SubnetResource) {
+func (s *SubnetListResponseBody) SetItems(val []Subnet) {
 	s.Items = val
 }
 
 // SetPagination sets the value of Pagination.
 func (s *SubnetListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-// Ref: #/components/schemas/SubnetResource
-type SubnetResource struct {
-	Cidr                  string                  `json:"cidr"`
-	GatewayIP             NilString               `json:"gateway_ip"`
-	ID                    SubnetID                `json:"id"`
-	IPVersion             SubnetResourceIPVersion `json:"ip_version"`
-	Name                  string                  `json:"name"`
-	VirtualPrivateCloudID VirtualPrivateCloudID   `json:"virtual_private_cloud_id"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *SubnetResource) GetCidr() string {
-	return s.Cidr
-}
-
-// GetGatewayIP returns the value of GatewayIP.
-func (s *SubnetResource) GetGatewayIP() NilString {
-	return s.GatewayIP
-}
-
-// GetID returns the value of ID.
-func (s *SubnetResource) GetID() SubnetID {
-	return s.ID
-}
-
-// GetIPVersion returns the value of IPVersion.
-func (s *SubnetResource) GetIPVersion() SubnetResourceIPVersion {
-	return s.IPVersion
-}
-
-// GetName returns the value of Name.
-func (s *SubnetResource) GetName() string {
-	return s.Name
-}
-
-// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
-func (s *SubnetResource) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
-	return s.VirtualPrivateCloudID
-}
-
-// SetCidr sets the value of Cidr.
-func (s *SubnetResource) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetGatewayIP sets the value of GatewayIP.
-func (s *SubnetResource) SetGatewayIP(val NilString) {
-	s.GatewayIP = val
-}
-
-// SetID sets the value of ID.
-func (s *SubnetResource) SetID(val SubnetID) {
-	s.ID = val
-}
-
-// SetIPVersion sets the value of IPVersion.
-func (s *SubnetResource) SetIPVersion(val SubnetResourceIPVersion) {
-	s.IPVersion = val
-}
-
-// SetName sets the value of Name.
-func (s *SubnetResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
-func (s *SubnetResource) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
-	s.VirtualPrivateCloudID = val
-}
-
-type SubnetResourceIPVersion int64
-
-const (
-	SubnetResourceIPVersion4 SubnetResourceIPVersion = 4
-	SubnetResourceIPVersion6 SubnetResourceIPVersion = 6
-)
-
-// AllValues returns all SubnetResourceIPVersion values.
-func (SubnetResourceIPVersion) AllValues() []SubnetResourceIPVersion {
-	return []SubnetResourceIPVersion{
-		SubnetResourceIPVersion4,
-		SubnetResourceIPVersion6,
-	}
 }
 
 // Immediate ends service when cancellation takes effect, with refunds governed by the selected
@@ -10950,6 +11032,36 @@ func (s *TerminationPolicy) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/UpdateSubnetRequestBody
+type UpdateSubnetRequestBody struct {
+	Name OptString `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateSubnetRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *UpdateSubnetRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// Ref: #/components/schemas/UpdateVirtualPrivateCloudRequestBody
+type UpdateVirtualPrivateCloudRequestBody struct {
+	Name OptString `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateVirtualPrivateCloudRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *UpdateVirtualPrivateCloudRequestBody) SetName(val OptString) {
+	s.Name = val
 }
 
 // Ref: #/components/schemas/VirtualMachine
@@ -11978,22 +12090,14 @@ func (s *VirtualMachineStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/VirtualPrivateCloud
 type VirtualPrivateCloud struct {
-	Cidr      string                `json:"cidr"`
-	CreatedAt time.Time             `json:"created_at"`
-	ID        VirtualPrivateCloudID `json:"id"`
-	Name      string                `json:"name"`
-	RegionID  RegionID              `json:"region_id"`
-	UpdatedAt time.Time             `json:"updated_at"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *VirtualPrivateCloud) GetCidr() string {
-	return s.Cidr
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *VirtualPrivateCloud) GetCreatedAt() time.Time {
-	return s.CreatedAt
+	ID       VirtualPrivateCloudID `json:"id"`
+	RegionID RegionID              `json:"region_id"`
+	Name     string                `json:"name"`
+	Cidr     string                `json:"cidr"`
+	// The /64 prefix routed to the network, null while IPv6 is not enabled.
+	Ipv6Cidr  NilString `json:"ipv6_cidr"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -12001,14 +12105,29 @@ func (s *VirtualPrivateCloud) GetID() VirtualPrivateCloudID {
 	return s.ID
 }
 
+// GetRegionID returns the value of RegionID.
+func (s *VirtualPrivateCloud) GetRegionID() RegionID {
+	return s.RegionID
+}
+
 // GetName returns the value of Name.
 func (s *VirtualPrivateCloud) GetName() string {
 	return s.Name
 }
 
-// GetRegionID returns the value of RegionID.
-func (s *VirtualPrivateCloud) GetRegionID() RegionID {
-	return s.RegionID
+// GetCidr returns the value of Cidr.
+func (s *VirtualPrivateCloud) GetCidr() string {
+	return s.Cidr
+}
+
+// GetIpv6Cidr returns the value of Ipv6Cidr.
+func (s *VirtualPrivateCloud) GetIpv6Cidr() NilString {
+	return s.Ipv6Cidr
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *VirtualPrivateCloud) GetCreatedAt() time.Time {
+	return s.CreatedAt
 }
 
 // GetUpdatedAt returns the value of UpdatedAt.
@@ -12016,19 +12135,14 @@ func (s *VirtualPrivateCloud) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
 }
 
-// SetCidr sets the value of Cidr.
-func (s *VirtualPrivateCloud) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *VirtualPrivateCloud) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
 // SetID sets the value of ID.
 func (s *VirtualPrivateCloud) SetID(val VirtualPrivateCloudID) {
 	s.ID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *VirtualPrivateCloud) SetRegionID(val RegionID) {
+	s.RegionID = val
 }
 
 // SetName sets the value of Name.
@@ -12036,9 +12150,19 @@ func (s *VirtualPrivateCloud) SetName(val string) {
 	s.Name = val
 }
 
-// SetRegionID sets the value of RegionID.
-func (s *VirtualPrivateCloud) SetRegionID(val RegionID) {
-	s.RegionID = val
+// SetCidr sets the value of Cidr.
+func (s *VirtualPrivateCloud) SetCidr(val string) {
+	s.Cidr = val
+}
+
+// SetIpv6Cidr sets the value of Ipv6Cidr.
+func (s *VirtualPrivateCloud) SetIpv6Cidr(val NilString) {
+	s.Ipv6Cidr = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *VirtualPrivateCloud) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
 }
 
 // SetUpdatedAt sets the value of UpdatedAt.
@@ -12049,6 +12173,36 @@ func (s *VirtualPrivateCloud) SetUpdatedAt(val time.Time) {
 func (*VirtualPrivateCloud) deleteVirtualPrivateCloudRes() {}
 
 type VirtualPrivateCloudID string
+
+// Ref: #/components/schemas/VirtualPrivateCloudIPv6
+type VirtualPrivateCloudIPv6 struct {
+	// The /64 prefix routed to the virtual private cloud.
+	Cidr string `json:"cidr"`
+	// The IPv6 subnet carrying the prefix.
+	SubnetID SubnetID `json:"subnet_id"`
+}
+
+// GetCidr returns the value of Cidr.
+func (s *VirtualPrivateCloudIPv6) GetCidr() string {
+	return s.Cidr
+}
+
+// GetSubnetID returns the value of SubnetID.
+func (s *VirtualPrivateCloudIPv6) GetSubnetID() SubnetID {
+	return s.SubnetID
+}
+
+// SetCidr sets the value of Cidr.
+func (s *VirtualPrivateCloudIPv6) SetCidr(val string) {
+	s.Cidr = val
+}
+
+// SetSubnetID sets the value of SubnetID.
+func (s *VirtualPrivateCloudIPv6) SetSubnetID(val SubnetID) {
+	s.SubnetID = val
+}
+
+func (*VirtualPrivateCloudIPv6) putVirtualPrivateCloudIpv6Res() {}
 
 // Ref: #/components/schemas/VirtualPrivateCloudListResponseBody
 type VirtualPrivateCloudListResponseBody struct {

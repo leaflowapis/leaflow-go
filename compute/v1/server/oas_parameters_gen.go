@@ -414,86 +414,6 @@ func decodeBindElasticIPParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
-// CreateRouteParams is parameters of create-route operation.
-type CreateRouteParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-}
-
-func unpackCreateRouteParams(packed middleware.Parameters) (params CreateRouteParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
-	}
-	return params
-}
-
-func decodeCreateRouteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateRouteParams, _ error) {
-	// Decode path: virtualPrivateCloudId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // CreateSecurityGroupRuleParams is parameters of create-security-group-rule operation.
 type CreateSecurityGroupRuleParams struct {
 	SecurityGroupId SecurityGroupID
@@ -567,86 +487,6 @@ func decodeCreateSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "securityGroupId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// CreateSubnetParams is parameters of create-subnet operation.
-type CreateSubnetParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-}
-
-func unpackCreateSubnetParams(packed middleware.Parameters) (params CreateSubnetParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
-	}
-	return params
-}
-
-func decodeCreateSubnetParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateSubnetParams, _ error) {
-	// Decode path: virtualPrivateCloudId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
 			In:   "path",
 			Err:  err,
 		}
@@ -1056,18 +896,10 @@ func decodeDeletePeeringParams(args [1]string, argsEscaped bool, r *http.Request
 
 // DeleteRouteParams is parameters of delete-route operation.
 type DeleteRouteParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-	RouteId               RouteID
+	RouteId RouteID
 }
 
 func unpackDeleteRouteParams(packed middleware.Parameters) (params DeleteRouteParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
-	}
 	{
 		key := middleware.ParameterKey{
 			Name: "routeId",
@@ -1078,72 +910,12 @@ func unpackDeleteRouteParams(packed middleware.Parameters) (params DeleteRoutePa
 	return params
 }
 
-func decodeDeleteRouteParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteRouteParams, _ error) {
-	// Decode path: virtualPrivateCloudId.
+func decodeDeleteRouteParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteRouteParams, _ error) {
+	// Decode path: routeId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: routeId.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -1512,18 +1284,10 @@ func decodeDeleteSnapshotParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // DeleteSubnetParams is parameters of delete-subnet operation.
 type DeleteSubnetParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-	SubnetId              SubnetID
+	SubnetId SubnetID
 }
 
 func unpackDeleteSubnetParams(packed middleware.Parameters) (params DeleteSubnetParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
-	}
 	{
 		key := middleware.ParameterKey{
 			Name: "subnetId",
@@ -1534,72 +1298,12 @@ func unpackDeleteSubnetParams(packed middleware.Parameters) (params DeleteSubnet
 	return params
 }
 
-func decodeDeleteSubnetParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteSubnetParams, _ error) {
-	// Decode path: virtualPrivateCloudId.
+func decodeDeleteSubnetParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteSubnetParams, _ error) {
+	// Decode path: subnetId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: subnetId.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -1755,6 +1459,86 @@ func unpackDeleteVirtualPrivateCloudParams(packed middleware.Parameters) (params
 }
 
 func decodeDeleteVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteVirtualPrivateCloudParams, _ error) {
+	// Decode path: virtualPrivateCloudId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "virtualPrivateCloudId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVirtualPrivateCloudIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVirtualPrivateCloudIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "virtualPrivateCloudId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteVirtualPrivateCloudIpv6Params is parameters of delete-virtual-private-cloud-ipv6 operation.
+type DeleteVirtualPrivateCloudIpv6Params struct {
+	VirtualPrivateCloudId VirtualPrivateCloudID
+}
+
+func unpackDeleteVirtualPrivateCloudIpv6Params(packed middleware.Parameters) (params DeleteVirtualPrivateCloudIpv6Params) {
+	{
+		key := middleware.ParameterKey{
+			Name: "virtualPrivateCloudId",
+			In:   "path",
+		}
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+	}
+	return params
+}
+
+func decodeDeleteVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool, r *http.Request) (params DeleteVirtualPrivateCloudIpv6Params, _ error) {
 	// Decode path: virtualPrivateCloudId.
 	if err := func() error {
 		param := args[0]
@@ -2255,166 +2039,6 @@ func decodeDetachVirtualMachineElasticIPParams(args [2]string, argsEscaped bool,
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "elasticIpId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// DisableVirtualPrivateCloudIpv6Params is parameters of disable-virtual-private-cloud-ipv6 operation.
-type DisableVirtualPrivateCloudIpv6Params struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-}
-
-func unpackDisableVirtualPrivateCloudIpv6Params(packed middleware.Parameters) (params DisableVirtualPrivateCloudIpv6Params) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
-	}
-	return params
-}
-
-func decodeDisableVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool, r *http.Request) (params DisableVirtualPrivateCloudIpv6Params, _ error) {
-	// Decode path: virtualPrivateCloudId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// EnableVirtualPrivateCloudIpv6Params is parameters of enable-virtual-private-cloud-ipv6 operation.
-type EnableVirtualPrivateCloudIpv6Params struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-}
-
-func unpackEnableVirtualPrivateCloudIpv6Params(packed middleware.Parameters) (params EnableVirtualPrivateCloudIpv6Params) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
-	}
-	return params
-}
-
-func decodeEnableVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool, r *http.Request) (params EnableVirtualPrivateCloudIpv6Params, _ error) {
-	// Decode path: virtualPrivateCloudId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
 			In:   "path",
 			Err:  err,
 		}
@@ -3135,6 +2759,86 @@ func decodeGetQuotaParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 	return params, nil
 }
 
+// GetRouteParams is parameters of get-route operation.
+type GetRouteParams struct {
+	RouteId RouteID
+}
+
+func unpackGetRouteParams(packed middleware.Parameters) (params GetRouteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "routeId",
+			In:   "path",
+		}
+		params.RouteId = packed[key].(RouteID)
+	}
+	return params
+}
+
+func decodeGetRouteParams(args [1]string, argsEscaped bool, r *http.Request) (params GetRouteParams, _ error) {
+	// Decode path: routeId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "routeId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotRouteIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotRouteIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.RouteId = RouteID(paramsDotRouteIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.RouteId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "routeId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetSecurityGroupParams is parameters of get-security-group operation.
 type GetSecurityGroupParams struct {
 	SecurityGroupId SecurityGroupID
@@ -3288,6 +2992,86 @@ func decodeGetSnapshotParams(args [1]string, argsEscaped bool, r *http.Request) 
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "snapshotId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetSubnetParams is parameters of get-subnet operation.
+type GetSubnetParams struct {
+	SubnetId SubnetID
+}
+
+func unpackGetSubnetParams(packed middleware.Parameters) (params GetSubnetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "subnetId",
+			In:   "path",
+		}
+		params.SubnetId = packed[key].(SubnetID)
+	}
+	return params
+}
+
+func decodeGetSubnetParams(args [1]string, argsEscaped bool, r *http.Request) (params GetSubnetParams, _ error) {
+	// Decode path: subnetId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "subnetId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotSubnetIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSubnetIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.SubnetId = SubnetID(paramsDotSubnetIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.SubnetId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subnetId",
 			In:   "path",
 			Err:  err,
 		}
@@ -3449,6 +3233,168 @@ func decodeGetVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *htt
 		return params, &ogenerrors.DecodeParamError{
 			Name: "virtualPrivateCloudId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetVirtualPrivateCloudFreeSubnetCidrParams is parameters of get-virtual-private-cloud-free-subnet-cidr operation.
+type GetVirtualPrivateCloudFreeSubnetCidrParams struct {
+	VirtualPrivateCloudId VirtualPrivateCloudID
+	PrefixLength          OptInt64 `json:",omitempty,omitzero"`
+}
+
+func unpackGetVirtualPrivateCloudFreeSubnetCidrParams(packed middleware.Parameters) (params GetVirtualPrivateCloudFreeSubnetCidrParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "virtualPrivateCloudId",
+			In:   "path",
+		}
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "prefix_length",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PrefixLength = v.(OptInt64)
+		}
+	}
+	return params
+}
+
+func decodeGetVirtualPrivateCloudFreeSubnetCidrParams(args [1]string, argsEscaped bool, r *http.Request) (params GetVirtualPrivateCloudFreeSubnetCidrParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: virtualPrivateCloudId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "virtualPrivateCloudId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVirtualPrivateCloudIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVirtualPrivateCloudIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "virtualPrivateCloudId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Set default value for query: prefix_length.
+	{
+		val := int64(24)
+		params.PrefixLength.SetTo(val)
+	}
+	// Decode query: prefix_length.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "prefix_length",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPrefixLengthVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPrefixLengthVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PrefixLength.SetTo(paramsDotPrefixLengthVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PrefixLength.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           16,
+							MaxSet:        true,
+							Max:           30,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "prefix_length",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -6633,7 +6579,8 @@ func decodeListRegionsParams(args [0]string, argsEscaped bool, r *http.Request) 
 
 // ListRoutesParams is parameters of list-routes operation.
 type ListRoutesParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	// Only routes of this virtual private cloud.
+	VirtualPrivateCloudID OptVirtualPrivateCloudID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -6643,10 +6590,12 @@ type ListRoutesParams struct {
 func unpackListRoutesParams(packed middleware.Parameters) (params ListRoutesParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
+			Name: "virtual_private_cloud_id",
+			In:   "query",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		if v, ok := packed[key]; ok {
+			params.VirtualPrivateCloudID = v.(OptVirtualPrivateCloudID)
+		}
 	}
 	{
 		key := middleware.ParameterKey{
@@ -6669,65 +6618,68 @@ func unpackListRoutesParams(packed middleware.Parameters) (params ListRoutesPara
 	return params
 }
 
-func decodeListRoutesParams(args [1]string, argsEscaped bool, r *http.Request) (params ListRoutesParams, _ error) {
+func decodeListRoutesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListRoutesParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: virtualPrivateCloudId.
+	// Decode query: virtual_private_cloud_id.
 	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "virtual_private_cloud_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
 		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
 
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotVirtualPrivateCloudIDVal VirtualPrivateCloudID
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
+					var paramsDotVirtualPrivateCloudIDValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotVirtualPrivateCloudIDValVal = c
+						return nil
+					}(); err != nil {
 						return err
 					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
+					paramsDotVirtualPrivateCloudIDVal = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIDValVal)
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudID.SetTo(paramsDotVirtualPrivateCloudIDVal)
 				return nil
-			}(); err != nil {
+			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
+				if value, ok := params.VirtualPrivateCloudID.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
 				}
 				return nil
 			}(); err != nil {
 				return err
 			}
-		} else {
-			return validate.ErrFieldRequired
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
+			Name: "virtual_private_cloud_id",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -7698,7 +7650,8 @@ func decodeListSnapshotsParams(args [0]string, argsEscaped bool, r *http.Request
 
 // ListSubnetsParams is parameters of list-subnets operation.
 type ListSubnetsParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	// Only subnets of this virtual private cloud.
+	VirtualPrivateCloudID OptVirtualPrivateCloudID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -7708,10 +7661,12 @@ type ListSubnetsParams struct {
 func unpackListSubnetsParams(packed middleware.Parameters) (params ListSubnetsParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
+			Name: "virtual_private_cloud_id",
+			In:   "query",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		if v, ok := packed[key]; ok {
+			params.VirtualPrivateCloudID = v.(OptVirtualPrivateCloudID)
+		}
 	}
 	{
 		key := middleware.ParameterKey{
@@ -7734,65 +7689,68 @@ func unpackListSubnetsParams(packed middleware.Parameters) (params ListSubnetsPa
 	return params
 }
 
-func decodeListSubnetsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListSubnetsParams, _ error) {
+func decodeListSubnetsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListSubnetsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: virtualPrivateCloudId.
+	// Decode query: virtual_private_cloud_id.
 	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "virtual_private_cloud_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
 		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
 
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotVirtualPrivateCloudIDVal VirtualPrivateCloudID
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
+					var paramsDotVirtualPrivateCloudIDValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotVirtualPrivateCloudIDValVal = c
+						return nil
+					}(); err != nil {
 						return err
 					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
+					paramsDotVirtualPrivateCloudIDVal = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIDValVal)
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudID.SetTo(paramsDotVirtualPrivateCloudIDVal)
 				return nil
-			}(); err != nil {
+			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
+				if value, ok := params.VirtualPrivateCloudID.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
 				}
 				return nil
 			}(); err != nil {
 				return err
 			}
-		} else {
-			return validate.ErrFieldRequired
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
+			Name: "virtual_private_cloud_id",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -9019,6 +8977,86 @@ func decodeOpenVirtualMachineConsoleParams(args [1]string, argsEscaped bool, r *
 	return params, nil
 }
 
+// PutVirtualPrivateCloudIpv6Params is parameters of put-virtual-private-cloud-ipv6 operation.
+type PutVirtualPrivateCloudIpv6Params struct {
+	VirtualPrivateCloudId VirtualPrivateCloudID
+}
+
+func unpackPutVirtualPrivateCloudIpv6Params(packed middleware.Parameters) (params PutVirtualPrivateCloudIpv6Params) {
+	{
+		key := middleware.ParameterKey{
+			Name: "virtualPrivateCloudId",
+			In:   "path",
+		}
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+	}
+	return params
+}
+
+func decodePutVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool, r *http.Request) (params PutVirtualPrivateCloudIpv6Params, _ error) {
+	// Decode path: virtualPrivateCloudId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "virtualPrivateCloudId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVirtualPrivateCloudIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVirtualPrivateCloudIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "virtualPrivateCloudId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RebootVirtualMachineParams is parameters of reboot-virtual-machine operation.
 type RebootVirtualMachineParams struct {
 	VirtualMachineId VirtualMachineID
@@ -9812,86 +9850,6 @@ func decodeRenameVirtualMachineParams(args [1]string, argsEscaped bool, r *http.
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RenameVirtualPrivateCloudParams is parameters of rename-virtual-private-cloud operation.
-type RenameVirtualPrivateCloudParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-}
-
-func unpackRenameVirtualPrivateCloudParams(packed middleware.Parameters) (params RenameVirtualPrivateCloudParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
-	}
-	return params
-}
-
-func decodeRenameVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameVirtualPrivateCloudParams, _ error) {
-	// Decode path: virtualPrivateCloudId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
 			In:   "path",
 			Err:  err,
 		}
@@ -11174,168 +11132,6 @@ func decodeStopVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Re
 	return params, nil
 }
 
-// SuggestSubnetCidrParams is parameters of suggest-subnet-cidr operation.
-type SuggestSubnetCidrParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-	PrefixLength          OptInt64 `json:",omitempty,omitzero"`
-}
-
-func unpackSuggestSubnetCidrParams(packed middleware.Parameters) (params SuggestSubnetCidrParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "prefix_length",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.PrefixLength = v.(OptInt64)
-		}
-	}
-	return params
-}
-
-func decodeSuggestSubnetCidrParams(args [1]string, argsEscaped bool, r *http.Request) (params SuggestSubnetCidrParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: virtualPrivateCloudId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualPrivateCloudId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualPrivateCloudIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualPrivateCloudIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualPrivateCloudId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Set default value for query: prefix_length.
-	{
-		val := int64(24)
-		params.PrefixLength.SetTo(val)
-	}
-	// Decode query: prefix_length.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "prefix_length",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPrefixLengthVal int64
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt64(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPrefixLengthVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.PrefixLength.SetTo(paramsDotPrefixLengthVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.PrefixLength.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           16,
-							MaxSet:        true,
-							Max:           30,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "prefix_length",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // UnbindElasticIPParams is parameters of unbind-elastic-ip operation.
 type UnbindElasticIPParams struct {
 	ElasticIpId ElasticIPID
@@ -11489,6 +11285,166 @@ func decodeUnrescueVirtualMachineParams(args [1]string, argsEscaped bool, r *htt
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "virtualMachineId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateSubnetParams is parameters of update-subnet operation.
+type UpdateSubnetParams struct {
+	SubnetId SubnetID
+}
+
+func unpackUpdateSubnetParams(packed middleware.Parameters) (params UpdateSubnetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "subnetId",
+			In:   "path",
+		}
+		params.SubnetId = packed[key].(SubnetID)
+	}
+	return params
+}
+
+func decodeUpdateSubnetParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateSubnetParams, _ error) {
+	// Decode path: subnetId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "subnetId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotSubnetIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSubnetIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.SubnetId = SubnetID(paramsDotSubnetIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.SubnetId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subnetId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateVirtualPrivateCloudParams is parameters of update-virtual-private-cloud operation.
+type UpdateVirtualPrivateCloudParams struct {
+	VirtualPrivateCloudId VirtualPrivateCloudID
+}
+
+func unpackUpdateVirtualPrivateCloudParams(packed middleware.Parameters) (params UpdateVirtualPrivateCloudParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "virtualPrivateCloudId",
+			In:   "path",
+		}
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+	}
+	return params
+}
+
+func decodeUpdateVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateVirtualPrivateCloudParams, _ error) {
+	// Decode path: virtualPrivateCloudId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "virtualPrivateCloudId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVirtualPrivateCloudIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVirtualPrivateCloudIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VirtualPrivateCloudId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "virtualPrivateCloudId",
 			In:   "path",
 			Err:  err,
 		}
