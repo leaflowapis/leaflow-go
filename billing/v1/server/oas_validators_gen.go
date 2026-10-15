@@ -1038,6 +1038,17 @@ func (s CancellationOrigin) Validate() error {
 	}
 }
 
+func (s CancellationPolicy) Validate() error {
+	switch s {
+	case "immediate":
+		return nil
+	case "period_end":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *CancellationRefundPreview) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -3706,7 +3717,7 @@ func (s *OrderItem) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
+		if value, ok := s.CancellationPolicy.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -3719,7 +3730,7 @@ func (s *OrderItem) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
+			Name:  "cancellation_policy",
 			Error: err,
 		})
 	}
@@ -4759,7 +4770,7 @@ func (s *Price) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
+		if value, ok := s.CancellationPolicy.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -4772,7 +4783,7 @@ func (s *Price) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
+			Name:  "cancellation_policy",
 			Error: err,
 		})
 	}
@@ -5695,7 +5706,7 @@ func (s *QuoteItemInput) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
+		if value, ok := s.CancellationPolicy.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -5708,7 +5719,7 @@ func (s *QuoteItemInput) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
+			Name:  "cancellation_policy",
 			Error: err,
 		})
 	}
@@ -5839,7 +5850,7 @@ func (s *QuoteRenewal) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
+		if value, ok := s.CancellationPolicy.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -5852,7 +5863,7 @@ func (s *QuoteRenewal) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
+			Name:  "cancellation_policy",
 			Error: err,
 		})
 	}
@@ -6480,6 +6491,8 @@ func (s RefundPolicy) Validate() error {
 		return nil
 	case "prorated":
 		return nil
+	case "short_rate":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -6610,7 +6623,7 @@ func (s *RenewRequest) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
+		if value, ok := s.CancellationPolicy.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -6623,7 +6636,7 @@ func (s *RenewRequest) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
+			Name:  "cancellation_policy",
 			Error: err,
 		})
 	}
@@ -6727,7 +6740,7 @@ func (s *RenewalOrderRequest) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
+		if value, ok := s.CancellationPolicy.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -6740,7 +6753,7 @@ func (s *RenewalOrderRequest) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
+			Name:  "cancellation_policy",
 			Error: err,
 		})
 	}
@@ -6770,7 +6783,7 @@ func (s *RenewalPrice) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
+		if value, ok := s.CancellationPolicy.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -6783,7 +6796,7 @@ func (s *RenewalPrice) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
+			Name:  "cancellation_policy",
 			Error: err,
 		})
 	}
@@ -7270,7 +7283,7 @@ func (s *Subscription) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
+		if value, ok := s.CancellationPolicy.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -7283,7 +7296,7 @@ func (s *Subscription) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
+			Name:  "cancellation_policy",
 			Error: err,
 		})
 	}
@@ -7611,17 +7624,6 @@ func (s SubscriptionStatus) Validate() error {
 	case "canceled":
 		return nil
 	case "terminated":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s TerminationPolicy) Validate() error {
-	switch s {
-	case "immediate":
-		return nil
-	case "period_end":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

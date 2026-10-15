@@ -102,7 +102,7 @@ func (UnimplementedHandler) CreateBillingAccount(ctx context.Context, req *Billi
 //     (`meta.field`), or the subscriptions do not share one service, project, account and currency;
 //   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
 //   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed, and
-//     `BILLING_CANCELLATION_TERMS_UNSET` when a licensed subscription has no termination terms, both
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a licensed subscription has no cancellation terms, both
 //     with `meta.subscription_id`;
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;

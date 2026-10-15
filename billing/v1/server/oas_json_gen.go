@@ -4035,6 +4035,46 @@ func (s *CancellationOrigin) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes CancellationPolicy as json.
+func (s CancellationPolicy) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes CancellationPolicy from json.
+func (s *CancellationPolicy) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CancellationPolicy to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch CancellationPolicy(v) {
+	case CancellationPolicyImmediate:
+		*s = CancellationPolicyImmediate
+	case CancellationPolicyPeriodEnd:
+		*s = CancellationPolicyPeriodEnd
+	default:
+		*s = CancellationPolicy(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s CancellationPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CancellationPolicy) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *CancellationRefundPreview) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -4069,6 +4109,10 @@ func (s *CancellationRefundPreview) encodeFields(e *jx.Encoder) {
 		s.UnusedAmount.Encode(e)
 	}
 	{
+		e.FieldStart("short_rate_surcharge_amount")
+		s.ShortRateSurchargeAmount.Encode(e)
+	}
+	{
 		e.FieldStart("refundable_amount")
 		s.RefundableAmount.Encode(e)
 	}
@@ -4098,18 +4142,19 @@ func (s *CancellationRefundPreview) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCancellationRefundPreview = [11]string{
+var jsonFieldsNameOfCancellationRefundPreview = [12]string{
 	0:  "mode",
 	1:  "scheduled_at",
 	2:  "proration_date",
 	3:  "currency",
 	4:  "unused_amount",
-	5:  "refundable_amount",
-	6:  "refund_amount",
-	7:  "credit_amount",
-	8:  "tax_amount",
-	9:  "forfeited_amount",
-	10: "items",
+	5:  "short_rate_surcharge_amount",
+	6:  "refundable_amount",
+	7:  "refund_amount",
+	8:  "credit_amount",
+	9:  "tax_amount",
+	10: "forfeited_amount",
+	11: "items",
 }
 
 // Decode decodes CancellationRefundPreview from json.
@@ -4173,8 +4218,18 @@ func (s *CancellationRefundPreview) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"unused_amount\"")
 			}
-		case "refundable_amount":
+		case "short_rate_surcharge_amount":
 			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.ShortRateSurchargeAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_surcharge_amount\"")
+			}
+		case "refundable_amount":
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.RefundableAmount.Decode(d); err != nil {
 					return err
@@ -4184,7 +4239,7 @@ func (s *CancellationRefundPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"refundable_amount\"")
 			}
 		case "refund_amount":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.RefundAmount.Decode(d); err != nil {
 					return err
@@ -4194,7 +4249,7 @@ func (s *CancellationRefundPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"refund_amount\"")
 			}
 		case "credit_amount":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.CreditAmount.Decode(d); err != nil {
 					return err
@@ -4204,7 +4259,7 @@ func (s *CancellationRefundPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"credit_amount\"")
 			}
 		case "tax_amount":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.TaxAmount.Decode(d); err != nil {
 					return err
@@ -4214,7 +4269,7 @@ func (s *CancellationRefundPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_amount\"")
 			}
 		case "forfeited_amount":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.ForfeitedAmount.Decode(d); err != nil {
 					return err
@@ -4224,7 +4279,7 @@ func (s *CancellationRefundPreview) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"forfeited_amount\"")
 			}
 		case "items":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				s.Items = make([]CancellationRefundPreviewItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -4252,7 +4307,7 @@ func (s *CancellationRefundPreview) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111001,
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4342,6 +4397,10 @@ func (s *CancellationRefundPreviewItem) encodeFields(e *jx.Encoder) {
 		s.UnusedAmount.Encode(e)
 	}
 	{
+		e.FieldStart("short_rate_surcharge_amount")
+		s.ShortRateSurchargeAmount.Encode(e)
+	}
+	{
 		e.FieldStart("refundable_amount")
 		s.RefundableAmount.Encode(e)
 	}
@@ -4363,7 +4422,7 @@ func (s *CancellationRefundPreviewItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCancellationRefundPreviewItem = [13]string{
+var jsonFieldsNameOfCancellationRefundPreviewItem = [14]string{
 	0:  "subscription_id",
 	1:  "plan_id",
 	2:  "plan_name",
@@ -4372,11 +4431,12 @@ var jsonFieldsNameOfCancellationRefundPreviewItem = [13]string{
 	5:  "usage_type",
 	6:  "auto_renew",
 	7:  "unused_amount",
-	8:  "refundable_amount",
-	9:  "refund_amount",
-	10: "credit_amount",
-	11: "tax_amount",
-	12: "forfeited_amount",
+	8:  "short_rate_surcharge_amount",
+	9:  "refundable_amount",
+	10: "refund_amount",
+	11: "credit_amount",
+	12: "tax_amount",
+	13: "forfeited_amount",
 }
 
 // Decode decodes CancellationRefundPreviewItem from json.
@@ -4476,8 +4536,18 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"unused_amount\"")
 			}
-		case "refundable_amount":
+		case "short_rate_surcharge_amount":
 			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.ShortRateSurchargeAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_surcharge_amount\"")
+			}
+		case "refundable_amount":
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.RefundableAmount.Decode(d); err != nil {
 					return err
@@ -4487,7 +4557,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"refundable_amount\"")
 			}
 		case "refund_amount":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.RefundAmount.Decode(d); err != nil {
 					return err
@@ -4497,7 +4567,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"refund_amount\"")
 			}
 		case "credit_amount":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.CreditAmount.Decode(d); err != nil {
 					return err
@@ -4507,7 +4577,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"credit_amount\"")
 			}
 		case "tax_amount":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.TaxAmount.Decode(d); err != nil {
 					return err
@@ -4517,7 +4587,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_amount\"")
 			}
 		case "forfeited_amount":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.ForfeitedAmount.Decode(d); err != nil {
 					return err
@@ -4537,7 +4607,7 @@ func (s *CancellationRefundPreviewItem) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11110111,
-		0b00011111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12137,6 +12207,39 @@ func (s *OptBool) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes CancellationPolicy as json.
+func (o OptCancellationPolicy) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes CancellationPolicy from json.
+func (o *OptCancellationPolicy) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptCancellationPolicy to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptCancellationPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptCancellationPolicy) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes CancellationRefundPreview as json.
 func (o OptCancellationRefundPreview) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -12606,6 +12709,57 @@ func (s OptNilInt) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNilInt) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes int64 as json.
+func (o OptNilInt64) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Int64(int64(o.Value))
+}
+
+// Decode decodes int64 from json.
+func (o *OptNilInt64) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilInt64 to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v int64
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	v, err := d.Int64()
+	if err != nil {
+		return err
+	}
+	o.Value = int64(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilInt64) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilInt64) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -13707,39 +13861,6 @@ func (s *OptSubscriptionCancellation) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes TerminationPolicy as json.
-func (o OptTerminationPolicy) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	e.Str(string(o.Value))
-}
-
-// Decode decodes TerminationPolicy from json.
-func (o *OptTerminationPolicy) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptTerminationPolicy to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptTerminationPolicy) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptTerminationPolicy) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes TransactionRefundDestination as json.
 func (o OptTransactionRefundDestination) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -14557,9 +14678,9 @@ func (s *OrderItem) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
+		if s.CancellationPolicy.Set {
+			e.FieldStart("cancellation_policy")
+			s.CancellationPolicy.Encode(e)
 		}
 	}
 	{
@@ -14569,15 +14690,21 @@ func (s *OrderItem) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.RefundMonthlyAmount.Set {
-			e.FieldStart("refund_monthly_amount")
-			s.RefundMonthlyAmount.Encode(e)
+		if s.MonthlyListAmount.Set {
+			e.FieldStart("monthly_list_amount")
+			s.MonthlyListAmount.Encode(e)
 		}
 	}
 	{
-		if s.RefundHourlyAmount.Set {
-			e.FieldStart("refund_hourly_amount")
-			s.RefundHourlyAmount.Encode(e)
+		if s.ShortRateMultiplier.Set {
+			e.FieldStart("short_rate_multiplier")
+			s.ShortRateMultiplier.Encode(e)
+		}
+	}
+	{
+		if s.ShortRateThresholdSeconds.Set {
+			e.FieldStart("short_rate_threshold_seconds")
+			s.ShortRateThresholdSeconds.Encode(e)
 		}
 	}
 	{
@@ -14700,7 +14827,7 @@ func (s *OrderItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOrderItem = [34]string{
+var jsonFieldsNameOfOrderItem = [35]string{
 	0:  "renewal_discounts_enabled",
 	1:  "invoice_item_ids",
 	2:  "position",
@@ -14708,33 +14835,34 @@ var jsonFieldsNameOfOrderItem = [34]string{
 	4:  "subscription_id",
 	5:  "interval",
 	6:  "interval_count",
-	7:  "termination_policy",
+	7:  "cancellation_policy",
 	8:  "refund_policy",
-	9:  "refund_monthly_amount",
-	10: "refund_hourly_amount",
-	11: "recurring_amount",
-	12: "setup_amount",
-	13: "type",
-	14: "usage_type",
-	15: "dimensions",
-	16: "tax_amount",
-	17: "tax_included_amount",
-	18: "id",
-	19: "order_id",
-	20: "price_id",
-	21: "product_id",
-	22: "product",
-	23: "plan_id",
-	24: "plan_name",
-	25: "quantity",
-	26: "unit_amount",
-	27: "gross_amount",
-	28: "discount_amount",
-	29: "amount",
-	30: "currency",
-	31: "period_start",
-	32: "period_end",
-	33: "status",
+	9:  "monthly_list_amount",
+	10: "short_rate_multiplier",
+	11: "short_rate_threshold_seconds",
+	12: "recurring_amount",
+	13: "setup_amount",
+	14: "type",
+	15: "usage_type",
+	16: "dimensions",
+	17: "tax_amount",
+	18: "tax_included_amount",
+	19: "id",
+	20: "order_id",
+	21: "price_id",
+	22: "product_id",
+	23: "product",
+	24: "plan_id",
+	25: "plan_name",
+	26: "quantity",
+	27: "unit_amount",
+	28: "gross_amount",
+	29: "discount_amount",
+	30: "amount",
+	31: "currency",
+	32: "period_start",
+	33: "period_end",
+	34: "status",
 }
 
 // Decode decodes OrderItem from json.
@@ -14825,15 +14953,15 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"interval_count\"")
 			}
-		case "termination_policy":
+		case "cancellation_policy":
 			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
+				s.CancellationPolicy.Reset()
+				if err := s.CancellationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"cancellation_policy\"")
 			}
 		case "refund_policy":
 			if err := func() error {
@@ -14845,25 +14973,35 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"refund_policy\"")
 			}
-		case "refund_monthly_amount":
+		case "monthly_list_amount":
 			if err := func() error {
-				s.RefundMonthlyAmount.Reset()
-				if err := s.RefundMonthlyAmount.Decode(d); err != nil {
+				s.MonthlyListAmount.Reset()
+				if err := s.MonthlyListAmount.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"refund_monthly_amount\"")
+				return errors.Wrap(err, "decode field \"monthly_list_amount\"")
 			}
-		case "refund_hourly_amount":
+		case "short_rate_multiplier":
 			if err := func() error {
-				s.RefundHourlyAmount.Reset()
-				if err := s.RefundHourlyAmount.Decode(d); err != nil {
+				s.ShortRateMultiplier.Reset()
+				if err := s.ShortRateMultiplier.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"refund_hourly_amount\"")
+				return errors.Wrap(err, "decode field \"short_rate_multiplier\"")
+			}
+		case "short_rate_threshold_seconds":
+			if err := func() error {
+				s.ShortRateThresholdSeconds.Reset()
+				if err := s.ShortRateThresholdSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_threshold_seconds\"")
 			}
 		case "recurring_amount":
 			if err := func() error {
@@ -14886,7 +15024,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"setup_amount\"")
 			}
 		case "type":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.Type.Decode(d); err != nil {
 					return err
@@ -14896,7 +15034,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"type\"")
 			}
 		case "usage_type":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.UsageType.Decode(d); err != nil {
 					return err
@@ -14906,7 +15044,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"usage_type\"")
 			}
 		case "dimensions":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.Dimensions.Decode(d); err != nil {
 					return err
@@ -14936,7 +15074,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_included_amount\"")
 			}
 		case "id":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -14958,7 +15096,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_id\"")
 			}
 		case "price_id":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PriceID = v
@@ -14990,7 +15128,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"product\"")
 			}
 		case "plan_id":
-			requiredBitSet[2] |= 1 << 7
+			requiredBitSet[3] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -15002,7 +15140,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "plan_name":
-			requiredBitSet[3] |= 1 << 0
+			requiredBitSet[3] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.PlanName = string(v)
@@ -15014,7 +15152,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_name\"")
 			}
 		case "quantity":
-			requiredBitSet[3] |= 1 << 1
+			requiredBitSet[3] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Quantity = string(v)
@@ -15066,7 +15204,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"amount\"")
 			}
 		case "currency":
-			requiredBitSet[3] |= 1 << 6
+			requiredBitSet[3] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -15098,7 +15236,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"period_end\"")
 			}
 		case "status":
-			requiredBitSet[4] |= 1 << 1
+			requiredBitSet[4] |= 1 << 2
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -15118,10 +15256,10 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [5]uint8{
 		0b00100000,
-		0b11100000,
-		0b10010100,
-		0b01000011,
-		0b00000010,
+		0b11000000,
+		0b00101001,
+		0b10000111,
+		0b00000100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -19013,15 +19151,27 @@ func (s *Price) encodeFields(e *jx.Encoder) {
 		e.Bool(s.Active)
 	}
 	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
+		if s.CancellationPolicy.Set {
+			e.FieldStart("cancellation_policy")
+			s.CancellationPolicy.Encode(e)
 		}
 	}
 	{
 		if s.RefundPolicy.Set {
 			e.FieldStart("refund_policy")
 			s.RefundPolicy.Encode(e)
+		}
+	}
+	{
+		if s.ShortRateMultiplier.Set {
+			e.FieldStart("short_rate_multiplier")
+			s.ShortRateMultiplier.Encode(e)
+		}
+	}
+	{
+		if s.ShortRateThresholdSeconds.Set {
+			e.FieldStart("short_rate_threshold_seconds")
+			s.ShortRateThresholdSeconds.Encode(e)
 		}
 	}
 	{
@@ -19120,7 +19270,7 @@ func (s *Price) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrice = [27]string{
+var jsonFieldsNameOfPrice = [29]string{
 	0:  "rate_card",
 	1:  "lookup_key",
 	2:  "product",
@@ -19129,25 +19279,27 @@ var jsonFieldsNameOfPrice = [27]string{
 	5:  "meter",
 	6:  "unit_quantity",
 	7:  "active",
-	8:  "termination_policy",
+	8:  "cancellation_policy",
 	9:  "refund_policy",
-	10: "product_id",
-	11: "id",
-	12: "plan_id",
-	13: "currency",
-	14: "type",
-	15: "usage_type",
-	16: "billing_scheme",
-	17: "unit_amount",
-	18: "tiers_mode",
-	19: "tiers",
-	20: "rate_card_id",
-	21: "min_quantity",
-	22: "max_quantity",
-	23: "quantity_step",
-	24: "interval_count",
-	25: "interval",
-	26: "setup_fee",
+	10: "short_rate_multiplier",
+	11: "short_rate_threshold_seconds",
+	12: "product_id",
+	13: "id",
+	14: "plan_id",
+	15: "currency",
+	16: "type",
+	17: "usage_type",
+	18: "billing_scheme",
+	19: "unit_amount",
+	20: "tiers_mode",
+	21: "tiers",
+	22: "rate_card_id",
+	23: "min_quantity",
+	24: "max_quantity",
+	25: "quantity_step",
+	26: "interval_count",
+	27: "interval",
+	28: "setup_fee",
 }
 
 // Decode decodes Price from json.
@@ -19243,15 +19395,15 @@ func (s *Price) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"active\"")
 			}
-		case "termination_policy":
+		case "cancellation_policy":
 			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
+				s.CancellationPolicy.Reset()
+				if err := s.CancellationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"cancellation_policy\"")
 			}
 		case "refund_policy":
 			if err := func() error {
@@ -19262,6 +19414,26 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"refund_policy\"")
+			}
+		case "short_rate_multiplier":
+			if err := func() error {
+				s.ShortRateMultiplier.Reset()
+				if err := s.ShortRateMultiplier.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_multiplier\"")
+			}
+		case "short_rate_threshold_seconds":
+			if err := func() error {
+				s.ShortRateThresholdSeconds.Reset()
+				if err := s.ShortRateThresholdSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_threshold_seconds\"")
 			}
 		case "product_id":
 			if err := func() error {
@@ -19274,7 +19446,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"product_id\"")
 			}
 		case "id":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -19286,7 +19458,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "plan_id":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -19298,7 +19470,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "currency":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -19310,7 +19482,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "type":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.Type.Decode(d); err != nil {
 					return err
@@ -19320,7 +19492,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"type\"")
 			}
 		case "usage_type":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.UsageType.Decode(d); err != nil {
 					return err
@@ -19427,7 +19599,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"interval_count\"")
 			}
 		case "interval":
-			requiredBitSet[3] |= 1 << 1
+			requiredBitSet[3] |= 1 << 3
 			if err := func() error {
 				if err := s.Interval.Decode(d); err != nil {
 					return err
@@ -19457,9 +19629,9 @@ func (s *Price) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [4]uint8{
 		0b11001100,
-		0b11111000,
-		0b00000000,
-		0b00000010,
+		0b11100000,
+		0b00000011,
+		0b00001000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -21456,9 +21628,9 @@ func (s *QuoteItemInput) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
+		if s.CancellationPolicy.Set {
+			e.FieldStart("cancellation_policy")
+			s.CancellationPolicy.Encode(e)
 		}
 	}
 	{
@@ -21501,7 +21673,7 @@ var jsonFieldsNameOfQuoteItemInput = [15]string{
 	6:  "usage_type",
 	7:  "interval",
 	8:  "interval_count",
-	9:  "termination_policy",
+	9:  "cancellation_policy",
 	10: "quantity",
 	11: "meter_id",
 	12: "meter_lookup_key",
@@ -21608,15 +21780,15 @@ func (s *QuoteItemInput) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"interval_count\"")
 			}
-		case "termination_policy":
+		case "cancellation_policy":
 			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
+				s.CancellationPolicy.Reset()
+				if err := s.CancellationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"cancellation_policy\"")
 			}
 		case "quantity":
 			requiredBitSet[1] |= 1 << 2
@@ -21859,9 +22031,9 @@ func (s *QuoteRenewal) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
+		if s.CancellationPolicy.Set {
+			e.FieldStart("cancellation_policy")
+			s.CancellationPolicy.Encode(e)
 		}
 	}
 	{
@@ -21877,7 +22049,7 @@ var jsonFieldsNameOfQuoteRenewal = [6]string{
 	1: "price_id",
 	2: "interval",
 	3: "interval_count",
-	4: "termination_policy",
+	4: "cancellation_policy",
 	5: "periods",
 }
 
@@ -21933,15 +22105,15 @@ func (s *QuoteRenewal) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"interval_count\"")
 			}
-		case "termination_policy":
+		case "cancellation_policy":
 			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
+				s.CancellationPolicy.Reset()
+				if err := s.CancellationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"cancellation_policy\"")
 			}
 		case "periods":
 			if err := func() error {
@@ -23880,6 +24052,8 @@ func (s *RefundPolicy) Decode(d *jx.Decoder) error {
 		*s = RefundPolicyNone
 	case RefundPolicyProrated:
 		*s = RefundPolicyProrated
+	case RefundPolicyShortRate:
+		*s = RefundPolicyShortRate
 	default:
 		*s = RefundPolicy(v)
 	}
@@ -24034,9 +24208,9 @@ func (s *RenewRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
+		if s.CancellationPolicy.Set {
+			e.FieldStart("cancellation_policy")
+			s.CancellationPolicy.Encode(e)
 		}
 	}
 	{
@@ -24070,7 +24244,7 @@ var jsonFieldsNameOfRenewRequest = [9]string{
 	1: "periods",
 	2: "interval_count",
 	3: "interval",
-	4: "termination_policy",
+	4: "cancellation_policy",
 	5: "payment_method_id",
 	6: "use_balance",
 	7: "use_credits",
@@ -24129,15 +24303,15 @@ func (s *RenewRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"interval\"")
 			}
-		case "termination_policy":
+		case "cancellation_policy":
 			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
+				s.CancellationPolicy.Reset()
+				if err := s.CancellationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"cancellation_policy\"")
 			}
 		case "payment_method_id":
 			if err := func() error {
@@ -24310,9 +24484,9 @@ func (s *RenewalOrderRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
+		if s.CancellationPolicy.Set {
+			e.FieldStart("cancellation_policy")
+			s.CancellationPolicy.Encode(e)
 		}
 	}
 }
@@ -24322,7 +24496,7 @@ var jsonFieldsNameOfRenewalOrderRequest = [5]string{
 	1: "periods",
 	2: "interval_count",
 	3: "interval",
-	4: "termination_policy",
+	4: "cancellation_policy",
 }
 
 // Decode decodes RenewalOrderRequest from json.
@@ -24377,15 +24551,15 @@ func (s *RenewalOrderRequest) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"interval\"")
 			}
-		case "termination_policy":
+		case "cancellation_policy":
 			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
+				s.CancellationPolicy.Reset()
+				if err := s.CancellationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"cancellation_policy\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -24495,15 +24669,27 @@ func (s *RenewalPrice) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *RenewalPrice) encodeFields(e *jx.Encoder) {
 	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
+		if s.CancellationPolicy.Set {
+			e.FieldStart("cancellation_policy")
+			s.CancellationPolicy.Encode(e)
 		}
 	}
 	{
 		if s.RefundPolicy.Set {
 			e.FieldStart("refund_policy")
 			s.RefundPolicy.Encode(e)
+		}
+	}
+	{
+		if s.ShortRateMultiplier.Set {
+			e.FieldStart("short_rate_multiplier")
+			s.ShortRateMultiplier.Encode(e)
+		}
+	}
+	{
+		if s.ShortRateThresholdSeconds.Set {
+			e.FieldStart("short_rate_threshold_seconds")
+			s.ShortRateThresholdSeconds.Encode(e)
 		}
 	}
 	{
@@ -24536,15 +24722,17 @@ func (s *RenewalPrice) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRenewalPrice = [8]string{
-	0: "termination_policy",
+var jsonFieldsNameOfRenewalPrice = [10]string{
+	0: "cancellation_policy",
 	1: "refund_policy",
-	2: "price_id",
-	3: "interval_count",
-	4: "interval",
-	5: "amount",
-	6: "currency",
-	7: "current",
+	2: "short_rate_multiplier",
+	3: "short_rate_threshold_seconds",
+	4: "price_id",
+	5: "interval_count",
+	6: "interval",
+	7: "amount",
+	8: "currency",
+	9: "current",
 }
 
 // Decode decodes RenewalPrice from json.
@@ -24552,19 +24740,19 @@ func (s *RenewalPrice) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode RenewalPrice to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "termination_policy":
+		case "cancellation_policy":
 			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
+				s.CancellationPolicy.Reset()
+				if err := s.CancellationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"cancellation_policy\"")
 			}
 		case "refund_policy":
 			if err := func() error {
@@ -24576,8 +24764,28 @@ func (s *RenewalPrice) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"refund_policy\"")
 			}
+		case "short_rate_multiplier":
+			if err := func() error {
+				s.ShortRateMultiplier.Reset()
+				if err := s.ShortRateMultiplier.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_multiplier\"")
+			}
+		case "short_rate_threshold_seconds":
+			if err := func() error {
+				s.ShortRateThresholdSeconds.Reset()
+				if err := s.ShortRateThresholdSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_threshold_seconds\"")
+			}
 		case "price_id":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PriceID = v
@@ -24589,7 +24797,7 @@ func (s *RenewalPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "interval_count":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int()
 				s.IntervalCount = int(v)
@@ -24601,7 +24809,7 @@ func (s *RenewalPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"interval_count\"")
 			}
 		case "interval":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Interval.Decode(d); err != nil {
 					return err
@@ -24631,7 +24839,7 @@ func (s *RenewalPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "current":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Bool()
 				s.Current = bool(v)
@@ -24651,8 +24859,9 @@ func (s *RenewalPrice) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b10011100,
+	for i, mask := range [2]uint8{
+		0b01110000,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -26951,15 +27160,33 @@ func (s *Subscription) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
+		if s.CancellationPolicy.Set {
+			e.FieldStart("cancellation_policy")
+			s.CancellationPolicy.Encode(e)
 		}
 	}
 	{
 		if s.RefundPolicy.Set {
 			e.FieldStart("refund_policy")
 			s.RefundPolicy.Encode(e)
+		}
+	}
+	{
+		if s.ShortRateMultiplier.Set {
+			e.FieldStart("short_rate_multiplier")
+			s.ShortRateMultiplier.Encode(e)
+		}
+	}
+	{
+		if s.ShortRateThresholdSeconds.Set {
+			e.FieldStart("short_rate_threshold_seconds")
+			s.ShortRateThresholdSeconds.Encode(e)
+		}
+	}
+	{
+		if s.MonthlyListAmount.Set {
+			e.FieldStart("monthly_list_amount")
+			s.MonthlyListAmount.Encode(e)
 		}
 	}
 	{
@@ -27114,7 +27341,7 @@ func (s *Subscription) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSubscription = [38]string{
+var jsonFieldsNameOfSubscription = [41]string{
 	0:  "renewal_discounts_enabled",
 	1:  "currency",
 	2:  "type",
@@ -27123,36 +27350,39 @@ var jsonFieldsNameOfSubscription = [38]string{
 	5:  "interval",
 	6:  "interval_count",
 	7:  "recurring_amount",
-	8:  "termination_policy",
+	8:  "cancellation_policy",
 	9:  "refund_policy",
-	10: "order_item_id",
-	11: "coupon_id",
-	12: "coupon",
-	13: "discounted_renewals_remaining",
-	14: "restrictions",
-	15: "billing_cycle_anchor",
-	16: "cancellation",
-	17: "scheduled_change",
-	18: "default_payment_method_id",
-	19: "created_at",
-	20: "id",
-	21: "billing_account_id",
-	22: "account",
-	23: "product_id",
-	24: "project_id",
-	25: "project",
-	26: "product",
-	27: "plan_id",
-	28: "plan_name",
-	29: "price_id",
-	30: "quantity",
-	31: "current_term_end",
-	32: "current_period_start",
-	33: "current_period_end",
-	34: "auto_renew",
-	35: "status",
-	36: "started_at",
-	37: "ended_at",
+	10: "short_rate_multiplier",
+	11: "short_rate_threshold_seconds",
+	12: "monthly_list_amount",
+	13: "order_item_id",
+	14: "coupon_id",
+	15: "coupon",
+	16: "discounted_renewals_remaining",
+	17: "restrictions",
+	18: "billing_cycle_anchor",
+	19: "cancellation",
+	20: "scheduled_change",
+	21: "default_payment_method_id",
+	22: "created_at",
+	23: "id",
+	24: "billing_account_id",
+	25: "account",
+	26: "product_id",
+	27: "project_id",
+	28: "project",
+	29: "product",
+	30: "plan_id",
+	31: "plan_name",
+	32: "price_id",
+	33: "quantity",
+	34: "current_term_end",
+	35: "current_period_start",
+	36: "current_period_end",
+	37: "auto_renew",
+	38: "status",
+	39: "started_at",
+	40: "ended_at",
 }
 
 // Decode decodes Subscription from json.
@@ -27160,7 +27390,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode Subscription to nil")
 	}
-	var requiredBitSet [5]uint8
+	var requiredBitSet [6]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -27246,15 +27476,15 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"recurring_amount\"")
 			}
-		case "termination_policy":
+		case "cancellation_policy":
 			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
+				s.CancellationPolicy.Reset()
+				if err := s.CancellationPolicy.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"cancellation_policy\"")
 			}
 		case "refund_policy":
 			if err := func() error {
@@ -27265,6 +27495,36 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"refund_policy\"")
+			}
+		case "short_rate_multiplier":
+			if err := func() error {
+				s.ShortRateMultiplier.Reset()
+				if err := s.ShortRateMultiplier.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_multiplier\"")
+			}
+		case "short_rate_threshold_seconds":
+			if err := func() error {
+				s.ShortRateThresholdSeconds.Reset()
+				if err := s.ShortRateThresholdSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"short_rate_threshold_seconds\"")
+			}
+		case "monthly_list_amount":
+			if err := func() error {
+				s.MonthlyListAmount.Reset()
+				if err := s.MonthlyListAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"monthly_list_amount\"")
 			}
 		case "order_item_id":
 			if err := func() error {
@@ -27374,7 +27634,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "id":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -27386,7 +27646,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "billing_account_id":
-			requiredBitSet[2] |= 1 << 5
+			requiredBitSet[3] |= 1 << 0
 			if err := func() error {
 				v, err := d.Int64()
 				s.BillingAccountID = int64(v)
@@ -27398,7 +27658,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"billing_account_id\"")
 			}
 		case "account":
-			requiredBitSet[2] |= 1 << 6
+			requiredBitSet[3] |= 1 << 1
 			if err := func() error {
 				if err := s.Account.Decode(d); err != nil {
 					return err
@@ -27408,7 +27668,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"account\"")
 			}
 		case "product_id":
-			requiredBitSet[2] |= 1 << 7
+			requiredBitSet[3] |= 1 << 2
 			if err := func() error {
 				if err := s.ProductID.Decode(d); err != nil {
 					return err
@@ -27438,7 +27698,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"project\"")
 			}
 		case "product":
-			requiredBitSet[3] |= 1 << 2
+			requiredBitSet[3] |= 1 << 5
 			if err := func() error {
 				if err := s.Product.Decode(d); err != nil {
 					return err
@@ -27448,7 +27708,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"product\"")
 			}
 		case "plan_id":
-			requiredBitSet[3] |= 1 << 3
+			requiredBitSet[3] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -27460,7 +27720,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "plan_name":
-			requiredBitSet[3] |= 1 << 4
+			requiredBitSet[3] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.PlanName = string(v)
@@ -27472,7 +27732,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_name\"")
 			}
 		case "price_id":
-			requiredBitSet[3] |= 1 << 5
+			requiredBitSet[4] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PriceID = v
@@ -27484,7 +27744,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "quantity":
-			requiredBitSet[3] |= 1 << 6
+			requiredBitSet[4] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Quantity = string(v)
@@ -27526,7 +27786,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"current_period_end\"")
 			}
 		case "auto_renew":
-			requiredBitSet[4] |= 1 << 2
+			requiredBitSet[4] |= 1 << 5
 			if err := func() error {
 				v, err := d.Bool()
 				s.AutoRenew = bool(v)
@@ -27538,7 +27798,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"auto_renew\"")
 			}
 		case "status":
-			requiredBitSet[4] |= 1 << 3
+			requiredBitSet[4] |= 1 << 6
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -27576,12 +27836,13 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [5]uint8{
+	for i, mask := range [6]uint8{
 		0b00111110,
 		0b00000000,
-		0b11110000,
-		0b01111100,
-		0b00001100,
+		0b10000000,
+		0b11100111,
+		0b01100011,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -28590,46 +28851,6 @@ func (s *TaxItem) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TaxItem) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes TerminationPolicy as json.
-func (s TerminationPolicy) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes TerminationPolicy from json.
-func (s *TerminationPolicy) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode TerminationPolicy to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch TerminationPolicy(v) {
-	case TerminationPolicyImmediate:
-		*s = TerminationPolicyImmediate
-	case TerminationPolicyPeriodEnd:
-		*s = TerminationPolicyPeriodEnd
-	default:
-		*s = TerminationPolicy(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s TerminationPolicy) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *TerminationPolicy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
