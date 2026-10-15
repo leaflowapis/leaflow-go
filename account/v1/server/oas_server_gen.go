@@ -169,7 +169,11 @@ type Handler interface {
 	ListMyInvitations(ctx context.Context, params ListMyInvitationsParams) (*LengthAwarePageInvitationResource, error)
 	// ListProjects implements list-projects operation.
 	//
-	// Deleted projects are excluded unless `status=DELETED` asks for them by name.
+	// Superseded by `QUERY /account/v1/projects`, which filters by status and pages by page number.
+	// Projects whose deletion has finished are excluded unless `include_deleted` is true; projects being
+	// deleted are included.
+	//
+	// Deprecated: schema marks this operation as deprecated.
 	//
 	// GET /account/v1/projects
 	ListProjects(ctx context.Context, params ListProjectsParams) (*LengthAwarePageProjectAccessResource, error)
@@ -196,6 +200,14 @@ type Handler interface {
 	//
 	// POST /account/v1/register
 	Register(ctx context.Context, req *RegisterRequestBody) (*AccountResource, error)
+	// SearchProjects implements search-projects operation.
+	//
+	// Projects the caller belongs to, most recently created first. The conditions in the body are combined
+	// with AND. Without `statuses`, only active projects are returned; projects being deleted and deleted
+	// projects are returned only when asked for by status.
+	//
+	// QUERY /account/v1/projects
+	SearchProjects(ctx context.Context, req *SearchProjectsRequestBody) (*ProjectAccessList, error)
 	// SubmitIdentityVerification implements submit-identity-verification operation.
 	//
 	// A submission awaiting review, and an account already verified, are both refused. A rejected

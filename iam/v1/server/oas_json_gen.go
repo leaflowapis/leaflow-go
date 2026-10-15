@@ -3941,6 +3941,10 @@ func (s *ProjectResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Slug)
 	}
 	{
+		e.FieldStart("status")
+		s.Status.Encode(e)
+	}
+	{
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
@@ -3950,17 +3954,18 @@ func (s *ProjectResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfProjectResource = [10]string{
-	0: "traits",
-	1: "deletion_requested_at",
-	2: "created_at",
-	3: "created_by",
-	4: "deleted_at",
-	5: "description",
-	6: "id",
-	7: "slug",
-	8: "name",
-	9: "updated_at",
+var jsonFieldsNameOfProjectResource = [11]string{
+	0:  "traits",
+	1:  "deletion_requested_at",
+	2:  "created_at",
+	3:  "created_by",
+	4:  "deleted_at",
+	5:  "description",
+	6:  "id",
+	7:  "slug",
+	8:  "status",
+	9:  "name",
+	10: "updated_at",
 }
 
 // Decode decodes ProjectResource from json.
@@ -4070,8 +4075,18 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"slug\"")
 			}
-		case "name":
+		case "status":
 			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		case "name":
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -4083,7 +4098,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -4105,7 +4120,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000011,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4147,6 +4162,48 @@ func (s *ProjectResource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ProjectResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ProjectResourceStatus as json.
+func (s ProjectResourceStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ProjectResourceStatus from json.
+func (s *ProjectResourceStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ProjectResourceStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ProjectResourceStatus(v) {
+	case ProjectResourceStatusActive:
+		*s = ProjectResourceStatusActive
+	case ProjectResourceStatusDeleting:
+		*s = ProjectResourceStatusDeleting
+	case ProjectResourceStatusDeleted:
+		*s = ProjectResourceStatusDeleted
+	default:
+		*s = ProjectResourceStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ProjectResourceStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ProjectResourceStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

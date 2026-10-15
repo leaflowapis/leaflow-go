@@ -219,7 +219,11 @@ func (UnimplementedHandler) ListMyInvitations(ctx context.Context, params ListMy
 
 // ListProjects implements list-projects operation.
 //
-// Deleted projects are excluded unless `status=DELETED` asks for them by name.
+// Superseded by `QUERY /account/v1/projects`, which filters by status and pages by page number.
+// Projects whose deletion has finished are excluded unless `include_deleted` is true; projects being
+// deleted are included.
+//
+// Deprecated: schema marks this operation as deprecated.
 //
 // GET /account/v1/projects
 func (UnimplementedHandler) ListProjects(ctx context.Context, params ListProjectsParams) (r *LengthAwarePageProjectAccessResource, _ error) {
@@ -252,6 +256,17 @@ func (UnimplementedHandler) PreviewInvitationByToken(ctx context.Context, params
 //
 // POST /account/v1/register
 func (UnimplementedHandler) Register(ctx context.Context, req *RegisterRequestBody) (r *AccountResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SearchProjects implements search-projects operation.
+//
+// Projects the caller belongs to, most recently created first. The conditions in the body are combined
+// with AND. Without `statuses`, only active projects are returned; projects being deleted and deleted
+// projects are returned only when asked for by status.
+//
+// QUERY /account/v1/projects
+func (UnimplementedHandler) SearchProjects(ctx context.Context, req *SearchProjectsRequestBody) (r *ProjectAccessList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

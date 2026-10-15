@@ -190,7 +190,11 @@ type Invoker interface {
 	ListMyInvitations(ctx context.Context, params ListMyInvitationsParams) (*LengthAwarePageInvitationResource, error)
 	// ListProjects invokes list-projects operation.
 	//
-	// Deleted projects are excluded unless `status=DELETED` asks for them by name.
+	// Superseded by `QUERY /account/v1/projects`, which filters by status and pages by page number.
+	// Projects whose deletion has finished are excluded unless `include_deleted` is true; projects being
+	// deleted are included.
+	//
+	// Deprecated: schema marks this operation as deprecated.
 	//
 	// GET /account/v1/projects
 	ListProjects(ctx context.Context, params ListProjectsParams) (*LengthAwarePageProjectAccessResource, error)
@@ -217,6 +221,14 @@ type Invoker interface {
 	//
 	// POST /account/v1/register
 	Register(ctx context.Context, request *RegisterRequestBody) (*AccountResource, error)
+	// SearchProjects invokes search-projects operation.
+	//
+	// Projects the caller belongs to, most recently created first. The conditions in the body are combined
+	// with AND. Without `statuses`, only active projects are returned; projects being deleted and deleted
+	// projects are returned only when asked for by status.
+	//
+	// QUERY /account/v1/projects
+	SearchProjects(ctx context.Context, request *SearchProjectsRequestBody) (*ProjectAccessList, error)
 	// SubmitIdentityVerification invokes submit-identity-verification operation.
 	//
 	// A submission awaiting review, and an account already verified, are both refused. A rejected
@@ -2108,7 +2120,11 @@ func (c *Client) sendListMyInvitations(ctx context.Context, params ListMyInvitat
 
 // ListProjects invokes list-projects operation.
 //
-// Deleted projects are excluded unless `status=DELETED` asks for them by name.
+// Superseded by `QUERY /account/v1/projects`, which filters by status and pages by page number.
+// Projects whose deletion has finished are excluded unless `include_deleted` is true; projects being
+// deleted are included.
+//
+// Deprecated: schema marks this operation as deprecated.
 //
 // GET /account/v1/projects
 func (c *Client) ListProjects(ctx context.Context, params ListProjectsParams) (*LengthAwarePageProjectAccessResource, error) {
@@ -2518,6 +2534,133 @@ func (c *Client) sendRegister(ctx context.Context, request *RegisterRequestBody)
 
 	stage = "DecodeResponse"
 	result, err := decodeRegisterResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SearchProjects invokes search-projects operation.
+//
+// Projects the caller belongs to, most recently created first. The conditions in the body are combined
+// with AND. Without `statuses`, only active projects are returned; projects being deleted and deleted
+// projects are returned only when asked for by status.
+//
+// QUERY /account/v1/projects
+func (c *Client) SearchProjects(ctx context.Context, request *SearchProjectsRequestBody) (*ProjectAccessList, error) {
+	res, err := c.sendSearchProjects(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendSearchProjects(ctx context.Context, request *SearchProjectsRequestBody) (res *ProjectAccessList, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-projects"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.URLTemplateKey.String("/account/v1/projects"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SearchProjectsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/projects"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "QUERY", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSearchProjectsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SearchProjectsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSearchProjectsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

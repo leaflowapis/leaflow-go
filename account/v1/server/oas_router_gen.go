@@ -36,8 +36,9 @@ var (
 		"GET": "Authorization",
 	}
 	rn8AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
+		"GET":   "Authorization",
+		"POST":  "Authorization,Content-Type",
+		"QUERY": "Authorization,Content-Type",
 	}
 	rn16AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -472,9 +473,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							s.handleListProjectsRequest([0]string{}, elemIsEscaped, w, r)
 						case "POST":
 							s.handleCreateProjectRequest([0]string{}, elemIsEscaped, w, r)
+						case "QUERY":
+							s.handleSearchProjectsRequest([0]string{}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET,POST",
+								allowedMethods: "GET,POST,QUERY",
 								allowedHeaders: rn8AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
@@ -1138,6 +1141,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							r.name = CreateProjectOperation
 							r.summary = "Create a project"
 							r.operationID = "create-project"
+							r.operationGroup = ""
+							r.pathPattern = "/account/v1/projects"
+							r.args = args
+							r.count = 0
+							return r, true
+						case "QUERY":
+							r.name = SearchProjectsOperation
+							r.summary = "Search the projects the caller belongs to"
+							r.operationID = "search-projects"
 							r.operationGroup = ""
 							r.pathPattern = "/account/v1/projects"
 							r.args = args

@@ -24,6 +24,7 @@ const (
 	ListProjectsOperation               OperationName = "ListProjects"
 	PreviewInvitationByTokenOperation   OperationName = "PreviewInvitationByToken"
 	RegisterOperation                   OperationName = "Register"
+	SearchProjectsOperation             OperationName = "SearchProjects"
 	SubmitIdentityVerificationOperation OperationName = "SubmitIdentityVerification"
 	UpdateAccountOperation              OperationName = "UpdateAccount"
 )

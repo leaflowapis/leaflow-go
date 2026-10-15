@@ -1736,9 +1736,13 @@ type ProjectResource struct {
 	ID          uuid.UUID   `json:"id"`
 	// The label naming the project in its address. It equals `id` until a custom slug is chosen. A custom
 	// slug does not change once set, and stays with the project after deletion.
-	Slug      string    `json:"slug"`
-	Name      string    `json:"name"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Slug string `json:"slug"`
+	// `active` until deletion is requested; `deleting` while the resources under the project are being
+	// removed, when `deletion_requested_at` is set; `deleted` once removal has finished, when `deleted_at`
+	// is set.
+	Status    ProjectResourceStatus `json:"status"`
+	Name      string                `json:"name"`
+	UpdatedAt time.Time             `json:"updated_at"`
 }
 
 // GetTraits returns the value of Traits.
@@ -1779,6 +1783,11 @@ func (s *ProjectResource) GetID() uuid.UUID {
 // GetSlug returns the value of Slug.
 func (s *ProjectResource) GetSlug() string {
 	return s.Slug
+}
+
+// GetStatus returns the value of Status.
+func (s *ProjectResource) GetStatus() ProjectResourceStatus {
+	return s.Status
 }
 
 // GetName returns the value of Name.
@@ -1831,6 +1840,11 @@ func (s *ProjectResource) SetSlug(val string) {
 	s.Slug = val
 }
 
+// SetStatus sets the value of Status.
+func (s *ProjectResource) SetStatus(val ProjectResourceStatus) {
+	s.Status = val
+}
+
 // SetName sets the value of Name.
 func (s *ProjectResource) SetName(val string) {
 	s.Name = val
@@ -1839,6 +1853,57 @@ func (s *ProjectResource) SetName(val string) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *ProjectResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// `active` until deletion is requested; `deleting` while the resources under the project are being
+// removed, when `deletion_requested_at` is set; `deleted` once removal has finished, when `deleted_at`
+// is set.
+type ProjectResourceStatus string
+
+const (
+	ProjectResourceStatusActive   ProjectResourceStatus = "active"
+	ProjectResourceStatusDeleting ProjectResourceStatus = "deleting"
+	ProjectResourceStatusDeleted  ProjectResourceStatus = "deleted"
+)
+
+// AllValues returns all ProjectResourceStatus values.
+func (ProjectResourceStatus) AllValues() []ProjectResourceStatus {
+	return []ProjectResourceStatus{
+		ProjectResourceStatusActive,
+		ProjectResourceStatusDeleting,
+		ProjectResourceStatusDeleted,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProjectResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ProjectResourceStatusActive:
+		return []byte(s), nil
+	case ProjectResourceStatusDeleting:
+		return []byte(s), nil
+	case ProjectResourceStatusDeleted:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProjectResourceStatus) UnmarshalText(data []byte) error {
+	switch ProjectResourceStatus(data) {
+	case ProjectResourceStatusActive:
+		*s = ProjectResourceStatusActive
+		return nil
+	case ProjectResourceStatusDeleting:
+		*s = ProjectResourceStatusDeleting
+		return nil
+	case ProjectResourceStatusDeleted:
+		*s = ProjectResourceStatusDeleted
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/ProjectTraitResource

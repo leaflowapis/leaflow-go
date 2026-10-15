@@ -51,6 +51,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListMyInvitationsOperation:          []string{},
 	ListProjectsOperation:               []string{},
 	RegisterOperation:                   []string{},
+	SearchProjectsOperation:             []string{},
 	SubmitIdentityVerificationOperation: []string{},
 	UpdateAccountOperation:              []string{},
 }

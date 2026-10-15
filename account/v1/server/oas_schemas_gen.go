@@ -1362,6 +1362,45 @@ func (o NilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// Pagination metadata for stable numbered pages. total_count is returned only when the operation can
+// determine it without an unbounded scan.
+// Ref: #/components/schemas/OffsetPagination
+type OffsetPagination struct {
+	Page       int64    `json:"page"`
+	PageSize   int64    `json:"page_size"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetPage returns the value of Page.
+func (s *OffsetPagination) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *OffsetPagination) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OffsetPagination) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetPage sets the value of Page.
+func (s *OffsetPagination) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *OffsetPagination) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OffsetPagination) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
 // NewOptBool returns new OptBool with value set to v.
 func NewOptBool(v bool) OptBool {
 	return OptBool{
@@ -1592,6 +1631,32 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
+// Ref: #/components/schemas/ProjectAccessList
+type ProjectAccessList struct {
+	Items      []ProjectAccessResource `json:"items"`
+	Pagination OffsetPagination        `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *ProjectAccessList) GetItems() []ProjectAccessResource {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *ProjectAccessList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *ProjectAccessList) SetItems(val []ProjectAccessResource) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *ProjectAccessList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
 // Ref: #/components/schemas/ProjectAccessResource
 type ProjectAccessResource struct {
 	Grant   GrantResource   `json:"grant"`
@@ -1630,9 +1695,10 @@ type ProjectResource struct {
 	ID          uuid.UUID   `json:"id"`
 	// The label naming the project in its address. It equals `id` until a custom slug is chosen. A custom
 	// slug does not change once set, and stays with the project after deletion.
-	Slug      string    `json:"slug"`
-	Name      string    `json:"name"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Slug      string        `json:"slug"`
+	Status    ProjectStatus `json:"status"`
+	Name      string        `json:"name"`
+	UpdatedAt time.Time     `json:"updated_at"`
 }
 
 // GetTraits returns the value of Traits.
@@ -1673,6 +1739,11 @@ func (s *ProjectResource) GetID() uuid.UUID {
 // GetSlug returns the value of Slug.
 func (s *ProjectResource) GetSlug() string {
 	return s.Slug
+}
+
+// GetStatus returns the value of Status.
+func (s *ProjectResource) GetStatus() ProjectStatus {
+	return s.Status
 }
 
 // GetName returns the value of Name.
@@ -1723,6 +1794,11 @@ func (s *ProjectResource) SetID(val uuid.UUID) {
 // SetSlug sets the value of Slug.
 func (s *ProjectResource) SetSlug(val string) {
 	s.Slug = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ProjectResource) SetStatus(val ProjectStatus) {
+	s.Status = val
 }
 
 // SetName sets the value of Name.
@@ -1808,6 +1884,58 @@ func (s *ProjectSlugAvailabilityResourceStatus) UnmarshalText(data []byte) error
 		return nil
 	case ProjectSlugAvailabilityResourceStatusTaken:
 		*s = ProjectSlugAvailabilityResourceStatusTaken
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `active` until deletion is requested; `deleting` while the resources under the project are being
+// removed, when `deletion_requested_at` is set; `deleted` once removal has finished, when `deleted_at`
+// is set.
+// Ref: #/components/schemas/ProjectStatus
+type ProjectStatus string
+
+const (
+	ProjectStatusActive   ProjectStatus = "active"
+	ProjectStatusDeleting ProjectStatus = "deleting"
+	ProjectStatusDeleted  ProjectStatus = "deleted"
+)
+
+// AllValues returns all ProjectStatus values.
+func (ProjectStatus) AllValues() []ProjectStatus {
+	return []ProjectStatus{
+		ProjectStatusActive,
+		ProjectStatusDeleting,
+		ProjectStatusDeleted,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProjectStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ProjectStatusActive:
+		return []byte(s), nil
+	case ProjectStatusDeleting:
+		return []byte(s), nil
+	case ProjectStatusDeleted:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProjectStatus) UnmarshalText(data []byte) error {
+	switch ProjectStatus(data) {
+	case ProjectStatusActive:
+		*s = ProjectStatusActive
+		return nil
+	case ProjectStatusDeleting:
+		*s = ProjectStatusDeleting
+		return nil
+	case ProjectStatusDeleted:
+		*s = ProjectStatusDeleted
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2130,6 +2258,58 @@ func (s *ScopedTokenResponseBody) SetToken(val string) {
 // SetTokenType sets the value of TokenType.
 func (s *ScopedTokenResponseBody) SetTokenType(val string) {
 	s.TokenType = val
+}
+
+// Ref: #/components/schemas/SearchProjectsRequestBody
+type SearchProjectsRequestBody struct {
+	// Matches against name, slug or description, and against the id when it is a complete project id.
+	Keyword OptString `json:"keyword"`
+	// The statuses to include. Omitted, only `active` projects are returned.
+	Statuses []ProjectStatus `json:"statuses"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:"page"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:"page_size"`
+}
+
+// GetKeyword returns the value of Keyword.
+func (s *SearchProjectsRequestBody) GetKeyword() OptString {
+	return s.Keyword
+}
+
+// GetStatuses returns the value of Statuses.
+func (s *SearchProjectsRequestBody) GetStatuses() []ProjectStatus {
+	return s.Statuses
+}
+
+// GetPage returns the value of Page.
+func (s *SearchProjectsRequestBody) GetPage() OptInt64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *SearchProjectsRequestBody) GetPageSize() OptInt64 {
+	return s.PageSize
+}
+
+// SetKeyword sets the value of Keyword.
+func (s *SearchProjectsRequestBody) SetKeyword(val OptString) {
+	s.Keyword = val
+}
+
+// SetStatuses sets the value of Statuses.
+func (s *SearchProjectsRequestBody) SetStatuses(val []ProjectStatus) {
+	s.Statuses = val
+}
+
+// SetPage sets the value of Page.
+func (s *SearchProjectsRequestBody) SetPage(val OptInt64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *SearchProjectsRequestBody) SetPageSize(val OptInt64) {
+	s.PageSize = val
 }
 
 // Ref: #/components/schemas/SettingsResource
