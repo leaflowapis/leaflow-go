@@ -23,7 +23,7 @@ var (
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn18AllowedHeaders = map[string]string{
+	rn24AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn6AllowedHeaders = map[string]string{
@@ -32,14 +32,23 @@ var (
 	rn5AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
+	rn20AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
 	rn8AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
+	rn16AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn10AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
 	rn11AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn20AllowedHeaders = map[string]string{
+	rn26AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 )
@@ -289,7 +298,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn18AllowedHeaders,
+										allowedHeaders: rn24AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -387,41 +396,27 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				}
 
-			case 'p': // Prefix: "projects"
+			case 'p': // Prefix: "project"
 
-				if l := len("projects"); len(elem) >= l && elem[0:l] == "projects" {
+				if l := len("project"); len(elem) >= l && elem[0:l] == "project" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					switch r.Method {
-					case "GET":
-						s.handleListProjectsRequest([0]string{}, elemIsEscaped, w, r)
-					case "POST":
-						s.handleCreateProjectRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET,POST",
-							allowedHeaders: rn8AllowedHeaders,
-							acceptPost:     "application/json",
-							acceptPatch:    "",
-						})
-					}
-
-					return
+					break
 				}
 				switch elem[0] {
-				case '/': // Prefix: "/"
+				case '-': // Prefix: "-slugs/"
 
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+					if l := len("-slugs/"); len(elem) >= l && elem[0:l] == "-slugs/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					// Param: "projectId"
+					// Param: "slug"
 					// Match until "/"
 					idx := strings.IndexByte(elem, '/')
 					if idx < 0 {
@@ -434,9 +429,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/scoped-tokens"
+					case '/': // Prefix: "/availability"
 
-						if l := len("/scoped-tokens"); len(elem) >= l && elem[0:l] == "/scoped-tokens" {
+						if l := len("/availability"); len(elem) >= l && elem[0:l] == "/availability" {
 							elem = elem[l:]
 						} else {
 							break
@@ -445,20 +440,154 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						if len(elem) == 0 {
 							// Leaf node.
 							switch r.Method {
-							case "POST":
-								s.handleCreateScopedTokenRequest([1]string{
+							case "GET":
+								s.handleGetProjectSlugAvailabilityRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "POST",
-									allowedHeaders: rn11AllowedHeaders,
+									allowedMethods: "GET",
+									allowedHeaders: rn20AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
 							}
 
 							return
+						}
+
+					}
+
+				case 's': // Prefix: "s"
+
+					if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						switch r.Method {
+						case "GET":
+							s.handleListProjectsRequest([0]string{}, elemIsEscaped, w, r)
+						case "POST":
+							s.handleCreateProjectRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET,POST",
+								allowedHeaders: rn8AllowedHeaders,
+								acceptPost:     "application/json",
+								acceptPatch:    "",
+							})
+						}
+
+						return
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'b': // Prefix: "by-slug/"
+							origElem := elem
+							if l := len("by-slug/"); len(elem) >= l && elem[0:l] == "by-slug/" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							// Param: "slug"
+							// Leaf parameter, slashes are prohibited
+							idx := strings.IndexByte(elem, '/')
+							if idx >= 0 {
+								break
+							}
+							args[0] = elem
+							elem = ""
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleGetProjectBySlugRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: rn16AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+							elem = origElem
+						}
+						// Param: "projectId"
+						// Match until "/"
+						idx := strings.IndexByte(elem, '/')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
+						if len(elem) == 0 {
+							switch r.Method {
+							case "GET":
+								s.handleGetProjectRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "GET",
+									allowedHeaders: rn10AllowedHeaders,
+									acceptPost:     "",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/scoped-tokens"
+
+							if l := len("/scoped-tokens"); len(elem) >= l && elem[0:l] == "/scoped-tokens" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleCreateScopedTokenRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn11AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
 						}
 
 					}
@@ -481,7 +610,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "POST",
-							allowedHeaders: rn20AllowedHeaders,
+							allowedHeaders: rn26AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -926,48 +1055,27 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 				}
 
-			case 'p': // Prefix: "projects"
+			case 'p': // Prefix: "project"
 
-				if l := len("projects"); len(elem) >= l && elem[0:l] == "projects" {
+				if l := len("project"); len(elem) >= l && elem[0:l] == "project" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					switch method {
-					case "GET":
-						r.name = ListProjectsOperation
-						r.summary = "List the projects the caller belongs to"
-						r.operationID = "list-projects"
-						r.operationGroup = ""
-						r.pathPattern = "/account/v1/projects"
-						r.args = args
-						r.count = 0
-						return r, true
-					case "POST":
-						r.name = CreateProjectOperation
-						r.summary = "Create a project"
-						r.operationID = "create-project"
-						r.operationGroup = ""
-						r.pathPattern = "/account/v1/projects"
-						r.args = args
-						r.count = 0
-						return r, true
-					default:
-						return
-					}
+					break
 				}
 				switch elem[0] {
-				case '/': // Prefix: "/"
+				case '-': // Prefix: "-slugs/"
 
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+					if l := len("-slugs/"); len(elem) >= l && elem[0:l] == "-slugs/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					// Param: "projectId"
+					// Param: "slug"
 					// Match until "/"
 					idx := strings.IndexByte(elem, '/')
 					if idx < 0 {
@@ -980,9 +1088,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/scoped-tokens"
+					case '/': // Prefix: "/availability"
 
-						if l := len("/scoped-tokens"); len(elem) >= l && elem[0:l] == "/scoped-tokens" {
+						if l := len("/availability"); len(elem) >= l && elem[0:l] == "/availability" {
 							elem = elem[l:]
 						} else {
 							break
@@ -991,18 +1099,153 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						if len(elem) == 0 {
 							// Leaf node.
 							switch method {
-							case "POST":
-								r.name = CreateScopedTokenOperation
-								r.summary = "Exchange the access token for a scoped token"
-								r.operationID = "create-scoped-token"
+							case "GET":
+								r.name = GetProjectSlugAvailabilityOperation
+								r.summary = "Check whether a custom slug can be chosen"
+								r.operationID = "get-project-slug-availability"
 								r.operationGroup = ""
-								r.pathPattern = "/account/v1/projects/{projectId}/scoped-tokens"
+								r.pathPattern = "/account/v1/project-slugs/{slug}/availability"
 								r.args = args
 								r.count = 1
 								return r, true
 							default:
 								return
 							}
+						}
+
+					}
+
+				case 's': // Prefix: "s"
+
+					if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						switch method {
+						case "GET":
+							r.name = ListProjectsOperation
+							r.summary = "List the projects the caller belongs to"
+							r.operationID = "list-projects"
+							r.operationGroup = ""
+							r.pathPattern = "/account/v1/projects"
+							r.args = args
+							r.count = 0
+							return r, true
+						case "POST":
+							r.name = CreateProjectOperation
+							r.summary = "Create a project"
+							r.operationID = "create-project"
+							r.operationGroup = ""
+							r.pathPattern = "/account/v1/projects"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'b': // Prefix: "by-slug/"
+							origElem := elem
+							if l := len("by-slug/"); len(elem) >= l && elem[0:l] == "by-slug/" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							// Param: "slug"
+							// Leaf parameter, slashes are prohibited
+							idx := strings.IndexByte(elem, '/')
+							if idx >= 0 {
+								break
+							}
+							args[0] = elem
+							elem = ""
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = GetProjectBySlugOperation
+									r.summary = "Get a project by its slug"
+									r.operationID = "get-project-by-slug"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/projects/by-slug/{slug}"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
+							elem = origElem
+						}
+						// Param: "projectId"
+						// Match until "/"
+						idx := strings.IndexByte(elem, '/')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
+						if len(elem) == 0 {
+							switch method {
+							case "GET":
+								r.name = GetProjectOperation
+								r.summary = "Get a project"
+								r.operationID = "get-project"
+								r.operationGroup = ""
+								r.pathPattern = "/account/v1/projects/{projectId}"
+								r.args = args
+								r.count = 1
+								return r, true
+							default:
+								return
+							}
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/scoped-tokens"
+
+							if l := len("/scoped-tokens"); len(elem) >= l && elem[0:l] == "/scoped-tokens" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = CreateScopedTokenOperation
+									r.summary = "Exchange the access token for a scoped token"
+									r.operationID = "create-scoped-token"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/projects/{projectId}/scoped-tokens"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
 						}
 
 					}

@@ -32,6 +32,7 @@ const (
 	RevokeSSHKeyOperation             OperationName = "RevokeSSHKey"
 	SetMemberPermissionsOperation     OperationName = "SetMemberPermissions"
 	SetMemberRolesOperation           OperationName = "SetMemberRoles"
+	SetProjectSlugOperation           OperationName = "SetProjectSlug"
 	TransferProjectOwnershipOperation OperationName = "TransferProjectOwnership"
 	UpdatePolicyOperation             OperationName = "UpdatePolicy"
 	UpdateProjectOperation            OperationName = "UpdateProject"

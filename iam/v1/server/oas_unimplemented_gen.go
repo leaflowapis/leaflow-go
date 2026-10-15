@@ -280,6 +280,28 @@ func (UnimplementedHandler) SetMemberRoles(ctx context.Context, req *SetMemberRo
 	return r, ht.ErrNotImplemented
 }
 
+// SetProjectSlug implements set-project-slug operation.
+//
+// Replaces the default slug, which is the project's `id`, with a custom one. Only the owner can do
+// this, and only once: a custom slug cannot be changed or removed afterwards. The address under the
+// `id` keeps working.
+//
+// Setting the slug the project already holds succeeds without change. Fails with:
+//
+//   - 400 `PROJECT_SLUG_INVALID` when the slug does not follow the format described on `slug`;
+//   - 422 `PROJECT_SLUG_RESERVED` when the name is reserved;
+//   - 409 `PROJECT_SLUG_TAKEN` when another project, including a deleted one, holds it;
+//   - 412 `PROJECT_SLUG_ALREADY_SET` when the project already holds a different custom slug;
+//   - 403 `PROJECT_PERMISSION_DENIED` when the caller is not the owner;
+//   - 429 `PROJECT_SLUG_CLAIM_RATE_LIMITED` when the caller has attempted to set custom slugs too
+//     often. Attempts count whether or not they succeed, and `meta.retry_after_seconds` on the error
+//     states how many seconds to wait before retrying.
+//
+// PUT /api/v1/project/slug
+func (UnimplementedHandler) SetProjectSlug(ctx context.Context, req *SetProjectSlugRequestBody) (r *ProjectAccessResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // TransferProjectOwnership implements transfer-project-ownership operation.
 //
 // The only way `OWNER` moves, and only the owner can initiate it.
@@ -303,7 +325,7 @@ func (UnimplementedHandler) UpdatePolicy(ctx context.Context, req *UpdatePolicyR
 
 // UpdateProject implements update-project operation.
 //
-// Update the name and description of a project.
+// The slug is not affected; it is set through `PUT /api/v1/project/slug`.
 //
 // PATCH /api/v1/project
 func (UnimplementedHandler) UpdateProject(ctx context.Context, req *UpdateProjectRequestBody) (r *ProjectAccessResource, _ error) {
