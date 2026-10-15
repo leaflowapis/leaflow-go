@@ -1334,6 +1334,19 @@ func encodeRenewSubscriptionResponse(response RenewSubscriptionRes, w http.Respo
 	}
 }
 
+func encodeResumeBillingAccountResponse(response *BillingAccount, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeSetAutoRenewResponse(response *Subscription, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -1361,6 +1374,19 @@ func encodeSetDefaultPaymentMethodResponse(response *PaymentMethod, w http.Respo
 }
 
 func encodeSetProjectAssignmentResponse(response *ProjectAssignment, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeSuspendBillingAccountResponse(response *BillingAccount, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

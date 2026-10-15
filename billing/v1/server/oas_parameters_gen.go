@@ -14272,6 +14272,71 @@ func decodeRenewSubscriptionParams(args [1]string, argsEscaped bool, r *http.Req
 	return params, nil
 }
 
+// ResumeBillingAccountParams is parameters of resume-billing-account operation.
+type ResumeBillingAccountParams struct {
+	AccountId int64
+}
+
+func unpackResumeBillingAccountParams(packed middleware.Parameters) (params ResumeBillingAccountParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
+	return params
+}
+
+func decodeResumeBillingAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params ResumeBillingAccountParams, _ error) {
+	// Decode path: accountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SetAutoRenewParams is parameters of set-auto-renew operation.
 type SetAutoRenewParams struct {
 	SubscriptionId uuid.UUID
@@ -14460,6 +14525,71 @@ func decodeSetProjectAssignmentParams(args [1]string, argsEscaped bool, r *http.
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "projectId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SuspendBillingAccountParams is parameters of suspend-billing-account operation.
+type SuspendBillingAccountParams struct {
+	AccountId int64
+}
+
+func unpackSuspendBillingAccountParams(packed middleware.Parameters) (params SuspendBillingAccountParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
+	return params
+}
+
+func decodeSuspendBillingAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params SuspendBillingAccountParams, _ error) {
+	// Decode path: accountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
 			In:   "path",
 			Err:  err,
 		}

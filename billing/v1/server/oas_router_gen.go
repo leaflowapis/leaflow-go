@@ -48,6 +48,12 @@ var (
 	rn69AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
+	rn97AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn100AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
 	rn12AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
@@ -55,7 +61,7 @@ var (
 	rn28AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn99AllowedHeaders = map[string]string{
+	rn101AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn56AllowedHeaders = map[string]string{
@@ -121,7 +127,7 @@ var (
 	rn24AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn98AllowedHeaders = map[string]string{
+	rn99AllowedHeaders = map[string]string{
 		"PUT": "Authorization",
 	}
 	rn92AllowedHeaders = map[string]string{
@@ -179,7 +185,7 @@ var (
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 	}
-	rn97AllowedHeaders = map[string]string{
+	rn98AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
 	rn7AllowedHeaders = map[string]string{
@@ -620,6 +626,60 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								return
 							}
 
+						case 'r': // Prefix: "resume"
+
+							if l := len("resume"); len(elem) >= l && elem[0:l] == "resume" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleResumeBillingAccountRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn97AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						case 's': // Prefix: "suspend"
+
+							if l := len("suspend"); len(elem) >= l && elem[0:l] == "suspend" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleSuspendBillingAccountRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn100AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
 						}
 
 					}
@@ -717,7 +777,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn99AllowedHeaders,
+										allowedHeaders: rn101AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -1408,7 +1468,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn98AllowedHeaders,
+											allowedHeaders: rn99AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -2038,7 +2098,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn97AllowedHeaders,
+											allowedHeaders: rn98AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -2915,6 +2975,56 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									r.operationID = "list-payment-options"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/billing-accounts/{accountId}/payment-options"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
+						case 'r': // Prefix: "resume"
+
+							if l := len("resume"); len(elem) >= l && elem[0:l] == "resume" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = ResumeBillingAccountOperation
+									r.summary = "Resume billing account"
+									r.operationID = "resume-billing-account"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/billing-accounts/{accountId}/resume"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
+						case 's': // Prefix: "suspend"
+
+							if l := len("suspend"); len(elem) >= l && elem[0:l] == "suspend" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = SuspendBillingAccountOperation
+									r.summary = "Suspend billing account"
+									r.operationID = "suspend-billing-account"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/billing-accounts/{accountId}/suspend"
 									r.args = args
 									r.count = 1
 									return r, true

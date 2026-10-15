@@ -475,6 +475,17 @@ func (s *BillingAccount) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if err := s.SuspendedBy.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "suspended_by",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -604,6 +615,19 @@ func (s BillingAccountStatus) Validate() error {
 	case "suspended":
 		return nil
 	case "closed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s BillingAccountSuspendedBy) Validate() error {
+	switch s {
+	case "none":
+		return nil
+	case "owner":
+		return nil
+	case "operator":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

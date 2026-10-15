@@ -651,6 +651,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/subscriptions/{subscriptionId}/renew
 	RenewSubscription(ctx context.Context, request *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error)
+	// ResumeBillingAccount invokes resume-billing-account operation.
+	//
+	// Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
+	// Leaflow suspended it. Does not create a resource.
+	//
+	// POST /api/v1/billing-accounts/{accountId}/resume
+	ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (*BillingAccount, error)
 	// SetAutoRenew invokes set-auto-renew operation.
 	//
 	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
@@ -682,6 +689,16 @@ type Invoker interface {
 	//
 	// PUT /api/v1/assignments/{projectId}
 	SetProjectAssignment(ctx context.Context, request *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
+	// SuspendBillingAccount invokes suspend-billing-account operation.
+	//
+	// Suspends your active billing account without closing it, also while it is in arrears. While
+	// suspended, it accepts no new purchases, renewals or project links, and the services it pays for
+	// start no new resources; running services, their charges and the handling of arrears continue, and
+	// you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
+	// resumed by Leaflow. Does not create a resource.
+	//
+	// POST /api/v1/billing-accounts/{accountId}/suspend
+	SuspendBillingAccount(ctx context.Context, params SuspendBillingAccountParams) (*BillingAccount, error)
 	// UnlinkProjectBillingAccount invokes unlink-project-billing-account operation.
 	//
 	// Ends the project's current assignment; the assignment history is kept. Allowed only when the project
@@ -12701,6 +12718,139 @@ func (c *Client) sendRenewSubscription(ctx context.Context, request *RenewReques
 	return result, nil
 }
 
+// ResumeBillingAccount invokes resume-billing-account operation.
+//
+// Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
+// Leaflow suspended it. Does not create a resource.
+//
+// POST /api/v1/billing-accounts/{accountId}/resume
+func (c *Client) ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (*BillingAccount, error) {
+	res, err := c.sendResumeBillingAccount(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (res *BillingAccount, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("resume-billing-account"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/resume"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ResumeBillingAccountOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/resume"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ResumeBillingAccountOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeResumeBillingAccountResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // SetAutoRenew invokes set-auto-renew operation.
 //
 // Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
@@ -13108,6 +13258,142 @@ func (c *Client) sendSetProjectAssignment(ctx context.Context, request *SetProje
 
 	stage = "DecodeResponse"
 	result, err := decodeSetProjectAssignmentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SuspendBillingAccount invokes suspend-billing-account operation.
+//
+// Suspends your active billing account without closing it, also while it is in arrears. While
+// suspended, it accepts no new purchases, renewals or project links, and the services it pays for
+// start no new resources; running services, their charges and the handling of arrears continue, and
+// you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
+// resumed by Leaflow. Does not create a resource.
+//
+// POST /api/v1/billing-accounts/{accountId}/suspend
+func (c *Client) SuspendBillingAccount(ctx context.Context, params SuspendBillingAccountParams) (*BillingAccount, error) {
+	res, err := c.sendSuspendBillingAccount(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendSuspendBillingAccount(ctx context.Context, params SuspendBillingAccountParams) (res *BillingAccount, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("suspend-billing-account"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/suspend"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SuspendBillingAccountOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/suspend"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, SuspendBillingAccountOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSuspendBillingAccountResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

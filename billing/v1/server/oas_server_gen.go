@@ -630,6 +630,13 @@ type Handler interface {
 	//
 	// POST /api/v1/subscriptions/{subscriptionId}/renew
 	RenewSubscription(ctx context.Context, req *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error)
+	// ResumeBillingAccount implements resume-billing-account operation.
+	//
+	// Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
+	// Leaflow suspended it. Does not create a resource.
+	//
+	// POST /api/v1/billing-accounts/{accountId}/resume
+	ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (*BillingAccount, error)
 	// SetAutoRenew implements set-auto-renew operation.
 	//
 	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
@@ -661,6 +668,16 @@ type Handler interface {
 	//
 	// PUT /api/v1/assignments/{projectId}
 	SetProjectAssignment(ctx context.Context, req *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
+	// SuspendBillingAccount implements suspend-billing-account operation.
+	//
+	// Suspends your active billing account without closing it, also while it is in arrears. While
+	// suspended, it accepts no new purchases, renewals or project links, and the services it pays for
+	// start no new resources; running services, their charges and the handling of arrears continue, and
+	// you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
+	// resumed by Leaflow. Does not create a resource.
+	//
+	// POST /api/v1/billing-accounts/{accountId}/suspend
+	SuspendBillingAccount(ctx context.Context, params SuspendBillingAccountParams) (*BillingAccount, error)
 	// UnlinkProjectBillingAccount implements unlink-project-billing-account operation.
 	//
 	// Ends the project's current assignment; the assignment history is kept. Allowed only when the project

@@ -1061,6 +1061,9 @@ type BillingAccount struct {
 	// Fixed when the account was opened.
 	Currency string               `json:"currency"`
 	Status   BillingAccountStatus `json:"status"`
+	// Who suspended the account: `owner` (you), `operator` (Leaflow), or `none` while it is not suspended.
+	// Only a suspension by `owner` can be resumed by you.
+	SuspendedBy BillingAccountSuspendedBy `json:"suspended_by"`
 	// How far past the suspension threshold the account may go before its resources are suspended; `0`
 	// means none.
 	GraceAmount OptString `json:"grace_amount"`
@@ -1095,6 +1098,11 @@ func (s *BillingAccount) GetCurrency() string {
 // GetStatus returns the value of Status.
 func (s *BillingAccount) GetStatus() BillingAccountStatus {
 	return s.Status
+}
+
+// GetSuspendedBy returns the value of SuspendedBy.
+func (s *BillingAccount) GetSuspendedBy() BillingAccountSuspendedBy {
+	return s.SuspendedBy
 }
 
 // GetGraceAmount returns the value of GraceAmount.
@@ -1140,6 +1148,11 @@ func (s *BillingAccount) SetCurrency(val string) {
 // SetStatus sets the value of Status.
 func (s *BillingAccount) SetStatus(val BillingAccountStatus) {
 	s.Status = val
+}
+
+// SetSuspendedBy sets the value of SuspendedBy.
+func (s *BillingAccount) SetSuspendedBy(val BillingAccountSuspendedBy) {
+	s.SuspendedBy = val
 }
 
 // SetGraceAmount sets the value of GraceAmount.
@@ -1256,6 +1269,56 @@ func (s *BillingAccountStatus) UnmarshalText(data []byte) error {
 		return nil
 	case BillingAccountStatusClosed:
 		*s = BillingAccountStatusClosed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Who suspended the account: `owner` (you), `operator` (Leaflow), or `none` while it is not suspended.
+// Only a suspension by `owner` can be resumed by you.
+type BillingAccountSuspendedBy string
+
+const (
+	BillingAccountSuspendedByNone     BillingAccountSuspendedBy = "none"
+	BillingAccountSuspendedByOwner    BillingAccountSuspendedBy = "owner"
+	BillingAccountSuspendedByOperator BillingAccountSuspendedBy = "operator"
+)
+
+// AllValues returns all BillingAccountSuspendedBy values.
+func (BillingAccountSuspendedBy) AllValues() []BillingAccountSuspendedBy {
+	return []BillingAccountSuspendedBy{
+		BillingAccountSuspendedByNone,
+		BillingAccountSuspendedByOwner,
+		BillingAccountSuspendedByOperator,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s BillingAccountSuspendedBy) MarshalText() ([]byte, error) {
+	switch s {
+	case BillingAccountSuspendedByNone:
+		return []byte(s), nil
+	case BillingAccountSuspendedByOwner:
+		return []byte(s), nil
+	case BillingAccountSuspendedByOperator:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *BillingAccountSuspendedBy) UnmarshalText(data []byte) error {
+	switch BillingAccountSuspendedBy(data) {
+	case BillingAccountSuspendedByNone:
+		*s = BillingAccountSuspendedByNone
+		return nil
+	case BillingAccountSuspendedByOwner:
+		*s = BillingAccountSuspendedByOwner
+		return nil
+	case BillingAccountSuspendedByOperator:
+		*s = BillingAccountSuspendedByOperator
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

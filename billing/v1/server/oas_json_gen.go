@@ -2295,6 +2295,10 @@ func (s *BillingAccount) encodeFields(e *jx.Encoder) {
 		s.Status.Encode(e)
 	}
 	{
+		e.FieldStart("suspended_by")
+		s.SuspendedBy.Encode(e)
+	}
+	{
 		if s.GraceAmount.Set {
 			e.FieldStart("grace_amount")
 			s.GraceAmount.Encode(e)
@@ -2318,16 +2322,17 @@ func (s *BillingAccount) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfBillingAccount = [9]string{
+var jsonFieldsNameOfBillingAccount = [10]string{
 	0: "invoice_contact_id",
 	1: "id",
 	2: "name",
 	3: "currency",
 	4: "status",
-	5: "grace_amount",
-	6: "grace_period_seconds",
-	7: "closed_at",
-	8: "created_at",
+	5: "suspended_by",
+	6: "grace_amount",
+	7: "grace_period_seconds",
+	8: "closed_at",
+	9: "created_at",
 }
 
 // Decode decodes BillingAccount from json.
@@ -2393,6 +2398,16 @@ func (s *BillingAccount) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
+		case "suspended_by":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.SuspendedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"suspended_by\"")
+			}
 		case "grace_amount":
 			if err := func() error {
 				s.GraceAmount.Reset()
@@ -2424,7 +2439,7 @@ func (s *BillingAccount) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"closed_at\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -2445,8 +2460,8 @@ func (s *BillingAccount) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b00011010,
-		0b00000001,
+		0b00111010,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2764,6 +2779,48 @@ func (s BillingAccountStatus) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *BillingAccountStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes BillingAccountSuspendedBy as json.
+func (s BillingAccountSuspendedBy) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes BillingAccountSuspendedBy from json.
+func (s *BillingAccountSuspendedBy) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode BillingAccountSuspendedBy to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch BillingAccountSuspendedBy(v) {
+	case BillingAccountSuspendedByNone:
+		*s = BillingAccountSuspendedByNone
+	case BillingAccountSuspendedByOwner:
+		*s = BillingAccountSuspendedByOwner
+	case BillingAccountSuspendedByOperator:
+		*s = BillingAccountSuspendedByOperator
+	default:
+		*s = BillingAccountSuspendedBy(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s BillingAccountSuspendedBy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *BillingAccountSuspendedBy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
