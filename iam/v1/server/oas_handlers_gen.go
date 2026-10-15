@@ -5207,7 +5207,10 @@ func (s *Server) handleSetMemberRolesRequest(args [1]string, argsEscaped bool, w
 //   - 422 `PROJECT_SLUG_RESERVED` when the name is reserved;
 //   - 409 `PROJECT_SLUG_TAKEN` when another project, including a deleted one, holds it;
 //   - 412 `PROJECT_SLUG_ALREADY_SET` when the project already holds a different custom slug;
-//   - 403 `PROJECT_PERMISSION_DENIED` when the caller is not the owner.
+//   - 403 `PROJECT_PERMISSION_DENIED` when the caller is not the owner;
+//   - 429 `PROJECT_SLUG_CLAIM_RATE_LIMITED` when the caller has attempted to set custom slugs too
+//     often. Attempts count whether or not they succeed, and `meta.retry_after_seconds` on the error
+//     states how many seconds to wait before retrying.
 //
 // PUT /api/v1/project/slug
 func (s *Server) handleSetProjectSlugRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

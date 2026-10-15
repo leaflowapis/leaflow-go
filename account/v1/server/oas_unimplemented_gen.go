@@ -54,7 +54,10 @@ func (UnimplementedHandler) AcceptInvitationByToken(ctx context.Context, req *Ac
 //
 //   - 400 `PROJECT_SLUG_INVALID` when it does not follow the format described on `slug`;
 //   - 422 `PROJECT_SLUG_RESERVED` when the name is reserved;
-//   - 409 `PROJECT_SLUG_TAKEN` when another project, including a deleted one, holds it.
+//   - 409 `PROJECT_SLUG_TAKEN` when another project, including a deleted one, holds it;
+//   - 429 `PROJECT_SLUG_CLAIM_RATE_LIMITED` when the account has attempted to claim custom slugs too
+//     often. Attempts count whether or not they succeed; creating a project without a custom slug does
+//     not count.
 //
 // POST /account/v1/projects
 func (UnimplementedHandler) CreateProject(ctx context.Context, req *CreateProjectRequestBody) (r *ProjectAccessResource, _ error) {
@@ -126,7 +129,9 @@ func (UnimplementedHandler) GetProject(ctx context.Context, params GetProjectPar
 //
 //   - 400 `PROJECT_SLUG_INVALID` when the value cannot be a slug;
 //   - 404 `PROJECT_NOT_FOUND` when no project holds the slug;
-//   - 403 `PROJECT_MEMBERSHIP_REQUIRED` when the caller is not a member of the project.
+//   - 403 `PROJECT_MEMBERSHIP_REQUIRED` when the caller is not a member of the project;
+//   - 429 `PROJECT_SLUG_LOOKUP_RATE_LIMITED` when the account has looked up slugs too often. This
+//     operation shares its limit with `GET /account/v1/project-slugs/{slug}/availability`.
 //
 // GET /account/v1/projects/by-slug/{slug}
 func (UnimplementedHandler) GetProjectBySlug(ctx context.Context, params GetProjectBySlugParams) (r *ProjectAccessResource, _ error) {
@@ -139,7 +144,11 @@ func (UnimplementedHandler) GetProjectBySlug(ctx context.Context, params GetProj
 // only by creating a project with it or by setting it, either of which may still fail with 409
 // `PROJECT_SLUG_TAKEN`.
 //
-// Fails with 400 `PROJECT_SLUG_INVALID` when the value does not follow the format of a custom slug.
+// Fails with:
+//
+//   - 400 `PROJECT_SLUG_INVALID` when the value does not follow the format of a custom slug;
+//   - 429 `PROJECT_SLUG_LOOKUP_RATE_LIMITED` when the account has looked up slugs too often. This
+//     operation shares its limit with `GET /account/v1/projects/by-slug/{slug}`.
 //
 // GET /account/v1/project-slugs/{slug}/availability
 func (UnimplementedHandler) GetProjectSlugAvailability(ctx context.Context, params GetProjectSlugAvailabilityParams) (r *ProjectSlugAvailabilityResource, _ error) {
