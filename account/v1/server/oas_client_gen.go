@@ -51,6 +51,13 @@ type Invoker interface {
 	//
 	// POST /account/v1/me/invitations/accept
 	AcceptInvitationByToken(ctx context.Context, request *AcceptInvitationByTokenRequestBody) (*AcceptedInvitationResponseBody, error)
+	// CancelAccountDeletion invokes cancel-account-deletion operation.
+	//
+	// Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
+	// 409 `ACCOUNT_DELETION_NOT_CANCELLABLE` once `scheduled_at` has passed.
+	//
+	// DELETE /account/v1/me/deletion
+	CancelAccountDeletion(ctx context.Context) (*AccountDeletionResource, error)
 	// CreateProject invokes create-project operation.
 	//
 	// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and
@@ -92,8 +99,23 @@ type Invoker interface {
 	// `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain
 	// consent and call `POST /account/v1/me/consents`.
 	//
+	// `status` is `DELETING` while a deletion is open; see `GET /account/v1/me/deletion`. A deleted
+	// account answers 410 `USER_DELETED`.
+	//
 	// GET /account/v1/me
 	GetAccount(ctx context.Context) (*AccountResource, error)
+	// GetAccountDeletion invokes get-account-deletion operation.
+	//
+	// `state` is `none` while no deletion is open. `blocking_projects` lists the projects the caller still
+	// owns; a deletion cannot be requested while it is not empty, so each of them must be transferred or
+	// deleted first.
+	//
+	// Conditions held by other services, such as an unpaid balance or a billing account still paying for a
+	// project, are not listed here. Read them from those services before requesting; they are checked
+	// again after the request, and a refusal shows up in `rejected_at` and `objections`.
+	//
+	// GET /account/v1/me/deletion
+	GetAccountDeletion(ctx context.Context) (*AccountDeletionResource, error)
 	// GetIdentityVerification invokes get-identity-verification operation.
 	//
 	// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the
@@ -217,10 +239,34 @@ type Invoker interface {
 	//
 	// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same
 	// versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the
-	// list again. An account that already exists answers 409.
+	// list again. An account that already exists answers 409, and one that has been deleted answers 410
+	// `USER_DELETED`: the same sign-in cannot register again.
 	//
 	// POST /account/v1/register
 	Register(ctx context.Context, request *RegisterRequestBody) (*AccountResource, error)
+	// RequestAccountDeletion invokes request-account-deletion operation.
+	//
+	// The account is frozen at once: it can no longer enter a project or change anything in one. The
+	// answer is 202 with `state` `checking` while the services holding data for the account are asked
+	// whether it can be closed. Poll `GET /account/v1/me/deletion` until `state` leaves `checking`, which
+	// normally takes a few seconds.
+	//
+	//  - If any service refuses, the account returns to use, `state` becomes `none`, and `rejected_at` and
+	//    `objections` say why.
+	//  - Otherwise `state` becomes `scheduled`, and the account is deleted at `scheduled_at`, fifteen days
+	//    after the request. The conditions are checked once more at that time.
+	//
+	// The deletion can be cancelled with `DELETE /account/v1/me/deletion` until `scheduled_at`, and not
+	// after. Once carried out it cannot be undone, and the same sign-in cannot register again. Any
+	// remaining balance and prepaid benefits are forfeited, which `acknowledge_forfeiture` confirms.
+	//
+	// Requesting again while a deletion is open returns it unchanged. Fails with 412 `USER_OWNS_PROJECTS`
+	// while `blocking_projects` is not empty, and with 401 `INSUFFICIENT_USER_AUTHENTICATION` unless the
+	// caller signed in within the last `meta.max_age` seconds; sign in again with that `max_age` and
+	// retry.
+	//
+	// POST /account/v1/me/deletion
+	RequestAccountDeletion(ctx context.Context, request *RequestAccountDeletionRequestBody) (*AccountDeletionResource, error)
 	// SearchProjects invokes search-projects operation.
 	//
 	// Projects the caller belongs to, most recently created first. The conditions in the body are combined
@@ -672,6 +718,120 @@ func (c *Client) sendAcceptInvitationByToken(ctx context.Context, request *Accep
 	return result, nil
 }
 
+// CancelAccountDeletion invokes cancel-account-deletion operation.
+//
+// Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
+// 409 `ACCOUNT_DELETION_NOT_CANCELLABLE` once `scheduled_at` has passed.
+//
+// DELETE /account/v1/me/deletion
+func (c *Client) CancelAccountDeletion(ctx context.Context) (*AccountDeletionResource, error) {
+	res, err := c.sendCancelAccountDeletion(ctx)
+	return res, err
+}
+
+func (c *Client) sendCancelAccountDeletion(ctx context.Context) (res *AccountDeletionResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("cancel-account-deletion"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/account/v1/me/deletion"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CancelAccountDeletionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/me/deletion"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CancelAccountDeletionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCancelAccountDeletionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateProject invokes create-project operation.
 //
 // The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and
@@ -958,6 +1118,9 @@ func (c *Client) sendCreateScopedToken(ctx context.Context, params CreateScopedT
 // `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain
 // consent and call `POST /account/v1/me/consents`.
 //
+// `status` is `DELETING` while a deletion is open; see `GET /account/v1/me/deletion`. A deleted
+// account answers 410 `USER_DELETED`.
+//
 // GET /account/v1/me
 func (c *Client) GetAccount(ctx context.Context) (*AccountResource, error) {
 	res, err := c.sendGetAccount(ctx)
@@ -1060,6 +1223,125 @@ func (c *Client) sendGetAccount(ctx context.Context) (res *AccountResource, err 
 
 	stage = "DecodeResponse"
 	result, err := decodeGetAccountResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetAccountDeletion invokes get-account-deletion operation.
+//
+// `state` is `none` while no deletion is open. `blocking_projects` lists the projects the caller still
+// owns; a deletion cannot be requested while it is not empty, so each of them must be transferred or
+// deleted first.
+//
+// Conditions held by other services, such as an unpaid balance or a billing account still paying for a
+// project, are not listed here. Read them from those services before requesting; they are checked
+// again after the request, and a refusal shows up in `rejected_at` and `objections`.
+//
+// GET /account/v1/me/deletion
+func (c *Client) GetAccountDeletion(ctx context.Context) (*AccountDeletionResource, error) {
+	res, err := c.sendGetAccountDeletion(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetAccountDeletion(ctx context.Context) (res *AccountDeletionResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-account-deletion"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/me/deletion"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAccountDeletionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/me/deletion"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetAccountDeletionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetAccountDeletionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2418,7 +2700,8 @@ func (c *Client) sendPreviewInvitationByToken(ctx context.Context, params Previe
 //
 // `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same
 // versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the
-// list again. An account that already exists answers 409.
+// list again. An account that already exists answers 409, and one that has been deleted answers 410
+// `USER_DELETED`: the same sign-in cannot register again.
 //
 // POST /account/v1/register
 func (c *Client) Register(ctx context.Context, request *RegisterRequestBody) (*AccountResource, error) {
@@ -2534,6 +2817,139 @@ func (c *Client) sendRegister(ctx context.Context, request *RegisterRequestBody)
 
 	stage = "DecodeResponse"
 	result, err := decodeRegisterResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RequestAccountDeletion invokes request-account-deletion operation.
+//
+// The account is frozen at once: it can no longer enter a project or change anything in one. The
+// answer is 202 with `state` `checking` while the services holding data for the account are asked
+// whether it can be closed. Poll `GET /account/v1/me/deletion` until `state` leaves `checking`, which
+// normally takes a few seconds.
+//
+//   - If any service refuses, the account returns to use, `state` becomes `none`, and `rejected_at` and
+//     `objections` say why.
+//   - Otherwise `state` becomes `scheduled`, and the account is deleted at `scheduled_at`, fifteen days
+//     after the request. The conditions are checked once more at that time.
+//
+// The deletion can be cancelled with `DELETE /account/v1/me/deletion` until `scheduled_at`, and not
+// after. Once carried out it cannot be undone, and the same sign-in cannot register again. Any
+// remaining balance and prepaid benefits are forfeited, which `acknowledge_forfeiture` confirms.
+//
+// Requesting again while a deletion is open returns it unchanged. Fails with 412 `USER_OWNS_PROJECTS`
+// while `blocking_projects` is not empty, and with 401 `INSUFFICIENT_USER_AUTHENTICATION` unless the
+// caller signed in within the last `meta.max_age` seconds; sign in again with that `max_age` and
+// retry.
+//
+// POST /account/v1/me/deletion
+func (c *Client) RequestAccountDeletion(ctx context.Context, request *RequestAccountDeletionRequestBody) (*AccountDeletionResource, error) {
+	res, err := c.sendRequestAccountDeletion(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendRequestAccountDeletion(ctx context.Context, request *RequestAccountDeletionRequestBody) (res *AccountDeletionResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("request-account-deletion"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/me/deletion"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RequestAccountDeletionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/me/deletion"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRequestAccountDeletionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RequestAccountDeletionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRequestAccountDeletionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

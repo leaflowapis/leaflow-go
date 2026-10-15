@@ -30,6 +30,13 @@ type Handler interface {
 	//
 	// POST /account/v1/me/invitations/accept
 	AcceptInvitationByToken(ctx context.Context, req *AcceptInvitationByTokenRequestBody) (*AcceptedInvitationResponseBody, error)
+	// CancelAccountDeletion implements cancel-account-deletion operation.
+	//
+	// Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
+	// 409 `ACCOUNT_DELETION_NOT_CANCELLABLE` once `scheduled_at` has passed.
+	//
+	// DELETE /account/v1/me/deletion
+	CancelAccountDeletion(ctx context.Context) (*AccountDeletionResource, error)
 	// CreateProject implements create-project operation.
 	//
 	// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and
@@ -71,8 +78,23 @@ type Handler interface {
 	// `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain
 	// consent and call `POST /account/v1/me/consents`.
 	//
+	// `status` is `DELETING` while a deletion is open; see `GET /account/v1/me/deletion`. A deleted
+	// account answers 410 `USER_DELETED`.
+	//
 	// GET /account/v1/me
 	GetAccount(ctx context.Context) (*AccountResource, error)
+	// GetAccountDeletion implements get-account-deletion operation.
+	//
+	// `state` is `none` while no deletion is open. `blocking_projects` lists the projects the caller still
+	// owns; a deletion cannot be requested while it is not empty, so each of them must be transferred or
+	// deleted first.
+	//
+	// Conditions held by other services, such as an unpaid balance or a billing account still paying for a
+	// project, are not listed here. Read them from those services before requesting; they are checked
+	// again after the request, and a refusal shows up in `rejected_at` and `objections`.
+	//
+	// GET /account/v1/me/deletion
+	GetAccountDeletion(ctx context.Context) (*AccountDeletionResource, error)
 	// GetIdentityVerification implements get-identity-verification operation.
 	//
 	// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the
@@ -196,10 +218,34 @@ type Handler interface {
 	//
 	// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same
 	// versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the
-	// list again. An account that already exists answers 409.
+	// list again. An account that already exists answers 409, and one that has been deleted answers 410
+	// `USER_DELETED`: the same sign-in cannot register again.
 	//
 	// POST /account/v1/register
 	Register(ctx context.Context, req *RegisterRequestBody) (*AccountResource, error)
+	// RequestAccountDeletion implements request-account-deletion operation.
+	//
+	// The account is frozen at once: it can no longer enter a project or change anything in one. The
+	// answer is 202 with `state` `checking` while the services holding data for the account are asked
+	// whether it can be closed. Poll `GET /account/v1/me/deletion` until `state` leaves `checking`, which
+	// normally takes a few seconds.
+	//
+	//  - If any service refuses, the account returns to use, `state` becomes `none`, and `rejected_at` and
+	//    `objections` say why.
+	//  - Otherwise `state` becomes `scheduled`, and the account is deleted at `scheduled_at`, fifteen days
+	//    after the request. The conditions are checked once more at that time.
+	//
+	// The deletion can be cancelled with `DELETE /account/v1/me/deletion` until `scheduled_at`, and not
+	// after. Once carried out it cannot be undone, and the same sign-in cannot register again. Any
+	// remaining balance and prepaid benefits are forfeited, which `acknowledge_forfeiture` confirms.
+	//
+	// Requesting again while a deletion is open returns it unchanged. Fails with 412 `USER_OWNS_PROJECTS`
+	// while `blocking_projects` is not empty, and with 401 `INSUFFICIENT_USER_AUTHENTICATION` unless the
+	// caller signed in within the last `meta.max_age` seconds; sign in again with that `max_age` and
+	// retry.
+	//
+	// POST /account/v1/me/deletion
+	RequestAccountDeletion(ctx context.Context, req *RequestAccountDeletionRequestBody) (*AccountDeletionResource, error)
 	// SearchProjects implements search-projects operation.
 	//
 	// Projects the caller belongs to, most recently created first. The conditions in the body are combined

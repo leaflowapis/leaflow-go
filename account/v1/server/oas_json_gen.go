@@ -321,6 +321,373 @@ func (s *AcceptedInvitationResponseBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *AccountDeletionObjectionResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *AccountDeletionObjectionResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("service")
+		e.Str(s.Service)
+	}
+	{
+		e.FieldStart("code")
+		e.Str(s.Code)
+	}
+}
+
+var jsonFieldsNameOfAccountDeletionObjectionResource = [2]string{
+	0: "service",
+	1: "code",
+}
+
+// Decode decodes AccountDeletionObjectionResource from json.
+func (s *AccountDeletionObjectionResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AccountDeletionObjectionResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "service":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Service = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"service\"")
+			}
+		case "code":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Code = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"code\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode AccountDeletionObjectionResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfAccountDeletionObjectionResource) {
+					name = jsonFieldsNameOfAccountDeletionObjectionResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *AccountDeletionObjectionResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AccountDeletionObjectionResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *AccountDeletionResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *AccountDeletionResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("state")
+		s.State.Encode(e)
+	}
+	{
+		e.FieldStart("requested_at")
+		s.RequestedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("scheduled_at")
+		s.ScheduledAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("requested_by_operator")
+		e.Bool(s.RequestedByOperator)
+	}
+	{
+		e.FieldStart("blocking_projects")
+		e.ArrStart()
+		for _, elem := range s.BlockingProjects {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("rejected_at")
+		s.RejectedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("objections")
+		e.ArrStart()
+		for _, elem := range s.Objections {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfAccountDeletionResource = [7]string{
+	0: "state",
+	1: "requested_at",
+	2: "scheduled_at",
+	3: "requested_by_operator",
+	4: "blocking_projects",
+	5: "rejected_at",
+	6: "objections",
+}
+
+// Decode decodes AccountDeletionResource from json.
+func (s *AccountDeletionResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AccountDeletionResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "state":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.State.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"state\"")
+			}
+		case "requested_at":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.RequestedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"requested_at\"")
+			}
+		case "scheduled_at":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.ScheduledAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scheduled_at\"")
+			}
+		case "requested_by_operator":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Bool()
+				s.RequestedByOperator = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"requested_by_operator\"")
+			}
+		case "blocking_projects":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				s.BlockingProjects = make([]ProjectResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem ProjectResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.BlockingProjects = append(s.BlockingProjects, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"blocking_projects\"")
+			}
+		case "rejected_at":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.RejectedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"rejected_at\"")
+			}
+		case "objections":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				s.Objections = make([]AccountDeletionObjectionResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem AccountDeletionObjectionResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Objections = append(s.Objections, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"objections\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode AccountDeletionResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b01111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfAccountDeletionResource) {
+					name = jsonFieldsNameOfAccountDeletionResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *AccountDeletionResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AccountDeletionResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes AccountDeletionState as json.
+func (s AccountDeletionState) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes AccountDeletionState from json.
+func (s *AccountDeletionState) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AccountDeletionState to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch AccountDeletionState(v) {
+	case AccountDeletionStateNone:
+		*s = AccountDeletionStateNone
+	case AccountDeletionStateChecking:
+		*s = AccountDeletionStateChecking
+	case AccountDeletionStateScheduled:
+		*s = AccountDeletionStateScheduled
+	case AccountDeletionStateExecuting:
+		*s = AccountDeletionStateExecuting
+	default:
+		*s = AccountDeletionState(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s AccountDeletionState) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AccountDeletionState) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *AccountResource) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -4678,6 +5045,102 @@ func (s *RegisterRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *RegisterRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *RequestAccountDeletionRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *RequestAccountDeletionRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("acknowledge_forfeiture")
+		e.Bool(true)
+	}
+}
+
+var jsonFieldsNameOfRequestAccountDeletionRequestBody = [1]string{
+	0: "acknowledge_forfeiture",
+}
+
+// Decode decodes RequestAccountDeletionRequestBody from json.
+func (s *RequestAccountDeletionRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode RequestAccountDeletionRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "acknowledge_forfeiture":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.AcknowledgeForfeiture = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"acknowledge_forfeiture\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode RequestAccountDeletionRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfRequestAccountDeletionRequestBody) {
+					name = jsonFieldsNameOfRequestAccountDeletionRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *RequestAccountDeletionRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *RequestAccountDeletionRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

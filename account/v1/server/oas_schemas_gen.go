@@ -61,6 +61,184 @@ func (s *AcceptedInvitationResponseBody) SetProject(val ProjectResource) {
 	s.Project = val
 }
 
+// Ref: #/components/schemas/AccountDeletionObjectionResource
+type AccountDeletionObjectionResource struct {
+	// The service that refused, such as `billing`.
+	Service string `json:"service"`
+	// A stable code defined by that service, such as `ARREARS`. The service documents what each code means
+	// and how to resolve it.
+	Code string `json:"code"`
+}
+
+// GetService returns the value of Service.
+func (s *AccountDeletionObjectionResource) GetService() string {
+	return s.Service
+}
+
+// GetCode returns the value of Code.
+func (s *AccountDeletionObjectionResource) GetCode() string {
+	return s.Code
+}
+
+// SetService sets the value of Service.
+func (s *AccountDeletionObjectionResource) SetService(val string) {
+	s.Service = val
+}
+
+// SetCode sets the value of Code.
+func (s *AccountDeletionObjectionResource) SetCode(val string) {
+	s.Code = val
+}
+
+// Ref: #/components/schemas/AccountDeletionResource
+type AccountDeletionResource struct {
+	State AccountDeletionState `json:"state"`
+	// Null while `state` is `none`.
+	RequestedAt NilDateTime `json:"requested_at"`
+	// When the deletion is carried out. Null while `state` is `none`.
+	ScheduledAt NilDateTime `json:"scheduled_at"`
+	// True when an operator requested the deletion rather than the account holder. False while `state` is
+	// `none`.
+	RequestedByOperator bool `json:"requested_by_operator"`
+	// Projects the caller owns that are not being deleted. A deletion cannot be requested while this is
+	// not empty.
+	BlockingProjects []ProjectResource `json:"blocking_projects"`
+	// When the most recent request was turned down. Null unless the most recent request was turned down.
+	RejectedAt NilDateTime `json:"rejected_at"`
+	// Why the most recent request was turned down. Empty unless `rejected_at` is set.
+	Objections []AccountDeletionObjectionResource `json:"objections"`
+}
+
+// GetState returns the value of State.
+func (s *AccountDeletionResource) GetState() AccountDeletionState {
+	return s.State
+}
+
+// GetRequestedAt returns the value of RequestedAt.
+func (s *AccountDeletionResource) GetRequestedAt() NilDateTime {
+	return s.RequestedAt
+}
+
+// GetScheduledAt returns the value of ScheduledAt.
+func (s *AccountDeletionResource) GetScheduledAt() NilDateTime {
+	return s.ScheduledAt
+}
+
+// GetRequestedByOperator returns the value of RequestedByOperator.
+func (s *AccountDeletionResource) GetRequestedByOperator() bool {
+	return s.RequestedByOperator
+}
+
+// GetBlockingProjects returns the value of BlockingProjects.
+func (s *AccountDeletionResource) GetBlockingProjects() []ProjectResource {
+	return s.BlockingProjects
+}
+
+// GetRejectedAt returns the value of RejectedAt.
+func (s *AccountDeletionResource) GetRejectedAt() NilDateTime {
+	return s.RejectedAt
+}
+
+// GetObjections returns the value of Objections.
+func (s *AccountDeletionResource) GetObjections() []AccountDeletionObjectionResource {
+	return s.Objections
+}
+
+// SetState sets the value of State.
+func (s *AccountDeletionResource) SetState(val AccountDeletionState) {
+	s.State = val
+}
+
+// SetRequestedAt sets the value of RequestedAt.
+func (s *AccountDeletionResource) SetRequestedAt(val NilDateTime) {
+	s.RequestedAt = val
+}
+
+// SetScheduledAt sets the value of ScheduledAt.
+func (s *AccountDeletionResource) SetScheduledAt(val NilDateTime) {
+	s.ScheduledAt = val
+}
+
+// SetRequestedByOperator sets the value of RequestedByOperator.
+func (s *AccountDeletionResource) SetRequestedByOperator(val bool) {
+	s.RequestedByOperator = val
+}
+
+// SetBlockingProjects sets the value of BlockingProjects.
+func (s *AccountDeletionResource) SetBlockingProjects(val []ProjectResource) {
+	s.BlockingProjects = val
+}
+
+// SetRejectedAt sets the value of RejectedAt.
+func (s *AccountDeletionResource) SetRejectedAt(val NilDateTime) {
+	s.RejectedAt = val
+}
+
+// SetObjections sets the value of Objections.
+func (s *AccountDeletionResource) SetObjections(val []AccountDeletionObjectionResource) {
+	s.Objections = val
+}
+
+// `none` while no deletion is open. `checking` while the services holding data for the account are
+// asked whether it can be closed. `scheduled` once they agree; it is carried out at `scheduled_at` and
+// can be cancelled until then. `executing` once `scheduled_at` has passed; it can no longer be
+// cancelled.
+// Ref: #/components/schemas/AccountDeletionState
+type AccountDeletionState string
+
+const (
+	AccountDeletionStateNone      AccountDeletionState = "none"
+	AccountDeletionStateChecking  AccountDeletionState = "checking"
+	AccountDeletionStateScheduled AccountDeletionState = "scheduled"
+	AccountDeletionStateExecuting AccountDeletionState = "executing"
+)
+
+// AllValues returns all AccountDeletionState values.
+func (AccountDeletionState) AllValues() []AccountDeletionState {
+	return []AccountDeletionState{
+		AccountDeletionStateNone,
+		AccountDeletionStateChecking,
+		AccountDeletionStateScheduled,
+		AccountDeletionStateExecuting,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AccountDeletionState) MarshalText() ([]byte, error) {
+	switch s {
+	case AccountDeletionStateNone:
+		return []byte(s), nil
+	case AccountDeletionStateChecking:
+		return []byte(s), nil
+	case AccountDeletionStateScheduled:
+		return []byte(s), nil
+	case AccountDeletionStateExecuting:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AccountDeletionState) UnmarshalText(data []byte) error {
+	switch AccountDeletionState(data) {
+	case AccountDeletionStateNone:
+		*s = AccountDeletionStateNone
+		return nil
+	case AccountDeletionStateChecking:
+		*s = AccountDeletionStateChecking
+		return nil
+	case AccountDeletionStateScheduled:
+		*s = AccountDeletionStateScheduled
+		return nil
+	case AccountDeletionStateExecuting:
+		*s = AccountDeletionStateExecuting
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/AccountResource
 type AccountResource struct {
 	CreatedAt       time.Time   `json:"created_at"`
@@ -2070,6 +2248,23 @@ func (s *RegisterRequestBody) SetCountry(val string) {
 // SetLocale sets the value of Locale.
 func (s *RegisterRequestBody) SetLocale(val Locale) {
 	s.Locale = val
+}
+
+// Ref: #/components/schemas/RequestAccountDeletionRequestBody
+type RequestAccountDeletionRequestBody struct {
+	// Must be true. Confirms that any remaining balance and prepaid benefits are forfeited when the
+	// deletion is carried out.
+	AcknowledgeForfeiture bool `json:"acknowledge_forfeiture"`
+}
+
+// GetAcknowledgeForfeiture returns the value of AcknowledgeForfeiture.
+func (s *RequestAccountDeletionRequestBody) GetAcknowledgeForfeiture() bool {
+	return s.AcknowledgeForfeiture
+}
+
+// SetAcknowledgeForfeiture sets the value of AcknowledgeForfeiture.
+func (s *RequestAccountDeletionRequestBody) SetAcknowledgeForfeiture(val bool) {
+	s.AcknowledgeForfeiture = val
 }
 
 // Ref: #/components/schemas/ResourceRefResource

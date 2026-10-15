@@ -44,6 +44,16 @@ func (UnimplementedHandler) AcceptInvitationByToken(ctx context.Context, req *Ac
 	return r, ht.ErrNotImplemented
 }
 
+// CancelAccountDeletion implements cancel-account-deletion operation.
+//
+// Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
+// 409 `ACCOUNT_DELETION_NOT_CANCELLABLE` once `scheduled_at` has passed.
+//
+// DELETE /account/v1/me/deletion
+func (UnimplementedHandler) CancelAccountDeletion(ctx context.Context) (r *AccountDeletionResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateProject implements create-project operation.
 //
 // The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and
@@ -91,8 +101,26 @@ func (UnimplementedHandler) CreateScopedToken(ctx context.Context, params Create
 // `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain
 // consent and call `POST /account/v1/me/consents`.
 //
+// `status` is `DELETING` while a deletion is open; see `GET /account/v1/me/deletion`. A deleted
+// account answers 410 `USER_DELETED`.
+//
 // GET /account/v1/me
 func (UnimplementedHandler) GetAccount(ctx context.Context) (r *AccountResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetAccountDeletion implements get-account-deletion operation.
+//
+// `state` is `none` while no deletion is open. `blocking_projects` lists the projects the caller still
+// owns; a deletion cannot be requested while it is not empty, so each of them must be transferred or
+// deleted first.
+//
+// Conditions held by other services, such as an unpaid balance or a billing account still paying for a
+// project, are not listed here. Read them from those services before requesting; they are checked
+// again after the request, and a refusal shows up in `rejected_at` and `objections`.
+//
+// GET /account/v1/me/deletion
+func (UnimplementedHandler) GetAccountDeletion(ctx context.Context) (r *AccountDeletionResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -252,10 +280,37 @@ func (UnimplementedHandler) PreviewInvitationByToken(ctx context.Context, params
 //
 // `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same
 // versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the
-// list again. An account that already exists answers 409.
+// list again. An account that already exists answers 409, and one that has been deleted answers 410
+// `USER_DELETED`: the same sign-in cannot register again.
 //
 // POST /account/v1/register
 func (UnimplementedHandler) Register(ctx context.Context, req *RegisterRequestBody) (r *AccountResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RequestAccountDeletion implements request-account-deletion operation.
+//
+// The account is frozen at once: it can no longer enter a project or change anything in one. The
+// answer is 202 with `state` `checking` while the services holding data for the account are asked
+// whether it can be closed. Poll `GET /account/v1/me/deletion` until `state` leaves `checking`, which
+// normally takes a few seconds.
+//
+//   - If any service refuses, the account returns to use, `state` becomes `none`, and `rejected_at` and
+//     `objections` say why.
+//   - Otherwise `state` becomes `scheduled`, and the account is deleted at `scheduled_at`, fifteen days
+//     after the request. The conditions are checked once more at that time.
+//
+// The deletion can be cancelled with `DELETE /account/v1/me/deletion` until `scheduled_at`, and not
+// after. Once carried out it cannot be undone, and the same sign-in cannot register again. Any
+// remaining balance and prepaid benefits are forfeited, which `acknowledge_forfeiture` confirms.
+//
+// Requesting again while a deletion is open returns it unchanged. Fails with 412 `USER_OWNS_PROJECTS`
+// while `blocking_projects` is not empty, and with 401 `INSUFFICIENT_USER_AUTHENTICATION` unless the
+// caller signed in within the last `meta.max_age` seconds; sign in again with that `max_age` and
+// retry.
+//
+// POST /account/v1/me/deletion
+func (UnimplementedHandler) RequestAccountDeletion(ctx context.Context, req *RequestAccountDeletionRequestBody) (r *AccountDeletionResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

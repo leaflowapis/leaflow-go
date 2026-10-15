@@ -51,6 +51,19 @@ func encodeAcceptInvitationByTokenResponse(response *AcceptedInvitationResponseB
 	return nil
 }
 
+func encodeCancelAccountDeletionResponse(response *AccountDeletionResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCreateProjectResponse(response *ProjectAccessResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -78,6 +91,19 @@ func encodeCreateScopedTokenResponse(response *ScopedTokenResponseBody, w http.R
 }
 
 func encodeGetAccountResponse(response *AccountResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetAccountDeletionResponse(response *AccountDeletionResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -236,6 +262,19 @@ func encodePreviewInvitationByTokenResponse(response *InvitationPreviewResource,
 func encodeRegisterResponse(response *AccountResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeRequestAccountDeletionResponse(response *AccountDeletionResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
