@@ -233,232 +233,21 @@ func (s *Server) handleAcceptPeeringRequest(args [1]string, argsEscaped bool, w 
 	}
 }
 
-// handleAllocateFloatingIPRequest handles allocate-floating-ip operation.
-//
-// If the private network is not yet connected to the internet, connectivity is established as part of
-// this call.
-//
-// Returns the floating IP as `pending` with its order; `address` is null until the address is
-// allocated after the order is accepted. A requested `address` is not held while pending; if it is no
-// longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is
-// refunded.
-//
-// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
-// network; enable IPv6 on that network instead.
-//
-// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's
-// `status` is not `available`. `meta.private_network_id` names it.
-//
-// POST /api/v1/floating-ips
-func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("allocate-floating-ip"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), AllocateFloatingIPOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: AllocateFloatingIPOperation,
-			ID:   "allocate-floating-ip",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, AllocateFloatingIPOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeAllocateFloatingIPRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response AllocateFloatingIPRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    AllocateFloatingIPOperation,
-			OperationSummary: "Allocate a floating IP",
-			OperationID:      "allocate-floating-ip",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *AllocateFloatingIPRequestBody
-			Params   = struct{}
-			Response = AllocateFloatingIPRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AllocateFloatingIP(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.AllocateFloatingIP(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeAllocateFloatingIPResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleAttachDiskRequest handles attach-disk operation.
 //
-// The disk must be in the same region and availability zone as the instance. Returns the disk; the
-// instance shows the `attach_disk` operation and the disk the `attach` operation until the attachment
-// is confirmed. Partition the disk and mount the file system inside the instance once it is attached.
+// The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
+// the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
+// attachment is confirmed. Partition the disk and mount the file system inside the virtual machine
+// once it is attached.
 //
-// POST /api/v1/instances/{instanceId}/disks
+// POST /api/v1/virtual-machines/{virtualMachineId}/disks
 func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("attach-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/disks"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/disks"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -608,9 +397,9 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
@@ -662,25 +451,25 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleAttachInstanceFloatingIPRequest handles attach-instance-floating-ip operation.
+// handleAttachNetworkInterfaceRequest handles attach-network-interface operation.
 //
-// Changes the public IP binding on the instance's primary network interface. The instance shows the
-// `bind_floating_ip` operation until the binding is confirmed.
+// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
+// and the interface the `attach` operation until the attachment is confirmed.
 //
-// POST /api/v1/instances/{instanceId}/floating-ips
-func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/network-interfaces
+func (s *Server) handleAttachNetworkInterfaceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-instance-floating-ip"),
+		otelogen.OperationID("attach-network-interface"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/floating-ips"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/network-interfaces"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), AttachInstanceFloatingIPOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), AttachNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -735,15 +524,15 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: AttachInstanceFloatingIPOperation,
-			ID:   "attach-instance-floating-ip",
+			Name: AttachNetworkInterfaceOperation,
+			ID:   "attach-network-interface",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachInstanceFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachNetworkInterfaceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -785,7 +574,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 			return
 		}
 	}
-	params, err := decodeAttachInstanceFloatingIPParams(args, argsEscaped, r)
+	params, err := decodeAttachNetworkInterfaceParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -797,7 +586,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeAttachInstanceFloatingIPRequest(r)
+	request, rawBody, close, err := s.decodeAttachNetworkInterfaceRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -813,244 +602,28 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 		}
 	}()
 
-	var response AttachInstanceFloatingIPRes
+	var response AttachNetworkInterfaceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    AttachInstanceFloatingIPOperation,
-			OperationSummary: "Bind a floating IP to an instance",
-			OperationID:      "attach-instance-floating-ip",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "instanceId",
-					In:   "path",
-				}: params.InstanceId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *AttachFloatingIPRequestBody
-			Params   = AttachInstanceFloatingIPParams
-			Response = AttachInstanceFloatingIPRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackAttachInstanceFloatingIPParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AttachInstanceFloatingIP(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.AttachInstanceFloatingIP(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeAttachInstanceFloatingIPResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleAttachPortRequest handles attach-port operation.
-//
-// Returns the network interface; the instance shows the `attach_port` operation and the interface the
-// `attach` operation until the attachment is confirmed.
-//
-// POST /api/v1/instances/{instanceId}/ports
-func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-port"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/ports"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), AttachPortOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: AttachPortOperation,
-			ID:   "attach-port",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachPortOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeAttachPortParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeAttachPortRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response AttachPortRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    AttachPortOperation,
+			OperationName:    AttachNetworkInterfaceOperation,
 			OperationSummary: "Attach a network interface",
-			OperationID:      "attach-port",
+			OperationID:      "attach-network-interface",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *AttachPortRequestBody
-			Params   = AttachPortParams
-			Response = AttachPortRes
+			Request  = *AttachNetworkInterfaceRequestBody
+			Params   = AttachNetworkInterfaceParams
+			Response = AttachNetworkInterfaceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1059,14 +632,14 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackAttachPortParams,
+			unpackAttachNetworkInterfaceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AttachPort(ctx, request, params)
+				response, err = s.h.AttachNetworkInterface(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.AttachPort(ctx, request, params)
+		response, err = s.h.AttachNetworkInterface(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1085,7 +658,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeAttachPortResponse(response, w, span); err != nil {
+	if err := encodeAttachNetworkInterfaceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1094,24 +667,25 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleBindFloatingIPRequest handles bind-floating-ip operation.
+// handleAttachVirtualMachineElasticIPRequest handles attach-virtual-machine-elastic-ip operation.
 //
-// The floating IP shows the `bind` operation until the binding is confirmed.
+// Changes the public IP binding on the virtual machine's primary network interface. The virtual
+// machine shows the `bind_elastic_ip` operation until the binding is confirmed.
 //
-// PUT /api/v1/floating-ips/{floatingIpId}/binding
-func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/elastic-ips
+func (s *Server) handleAttachVirtualMachineElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("bind-floating-ip"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}/binding"),
+		otelogen.OperationID("attach-virtual-machine-elastic-ip"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/elastic-ips"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), BindFloatingIPOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), AttachVirtualMachineElasticIPOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1166,15 +740,15 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: BindFloatingIPOperation,
-			ID:   "bind-floating-ip",
+			Name: AttachVirtualMachineElasticIPOperation,
+			ID:   "attach-virtual-machine-elastic-ip",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, BindFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachVirtualMachineElasticIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -1216,7 +790,7 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeBindFloatingIPParams(args, argsEscaped, r)
+	params, err := decodeAttachVirtualMachineElasticIPParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -1228,7 +802,7 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeBindFloatingIPRequest(r)
+	request, rawBody, close, err := s.decodeAttachVirtualMachineElasticIPRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -1244,28 +818,28 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response BindFloatingIPRes
+	var response AttachVirtualMachineElasticIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    BindFloatingIPOperation,
-			OperationSummary: "Bind a floating IP to a network interface",
-			OperationID:      "bind-floating-ip",
+			OperationName:    AttachVirtualMachineElasticIPOperation,
+			OperationSummary: "Bind an elastic IP to a virtual machine",
+			OperationID:      "attach-virtual-machine-elastic-ip",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "floatingIpId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.FloatingIpId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *BindFloatingIPRequestBody
-			Params   = BindFloatingIPParams
-			Response = BindFloatingIPRes
+			Request  = *AttachElasticIPRequestBody
+			Params   = AttachVirtualMachineElasticIPParams
+			Response = AttachVirtualMachineElasticIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1274,14 +848,14 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackBindFloatingIPParams,
+			unpackAttachVirtualMachineElasticIPParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.BindFloatingIP(ctx, request, params)
+				response, err = s.h.AttachVirtualMachineElasticIP(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.BindFloatingIP(ctx, request, params)
+		response, err = s.h.AttachVirtualMachineElasticIP(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1300,7 +874,222 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeBindFloatingIPResponse(response, w, span); err != nil {
+	if err := encodeAttachVirtualMachineElasticIPResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleBindElasticIPRequest handles bind-elastic-ip operation.
+//
+// The elastic IP shows the `bind` operation until the binding is confirmed.
+//
+// PUT /api/v1/elastic-ips/{elasticIpId}/binding
+func (s *Server) handleBindElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("bind-elastic-ip"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ips/{elasticIpId}/binding"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), BindElasticIPOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: BindElasticIPOperation,
+			ID:   "bind-elastic-ip",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, BindElasticIPOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeBindElasticIPParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeBindElasticIPRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response BindElasticIPRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    BindElasticIPOperation,
+			OperationSummary: "Bind an elastic IP to a network interface",
+			OperationID:      "bind-elastic-ip",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "elasticIpId",
+					In:   "path",
+				}: params.ElasticIpId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *BindElasticIPRequestBody
+			Params   = BindElasticIPParams
+			Response = BindElasticIPRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackBindElasticIPParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.BindElasticIP(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.BindElasticIP(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeBindElasticIPResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1311,19 +1100,15 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 
 // handleCreateBackupRequest handles create-backup operation.
 //
-// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
-// source disk is deleted, and can be restored to another availability zone in the same region. A
-// snapshot offers neither capability, as it resides in the same storage as the source disk and
-// prevents that disk from being deleted while it exists.
+// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
+// restored to another availability zone in the same region. A running virtual machine may produce a
+// file-system-inconsistent backup. Pending backups count toward Compute project quotas until cleanup
+// is confirmed.
 //
-// Disks attached to a running instance, including system disks, can be backed up.
-//
-// No order is placed. The backup is metered on the backup service of the disk's region by its
-// `capacity_gib` for as long as it is retained, until it is deleted; see `get-backup-service`. Refused
-// with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when that service is not active.
-//
-// Returns the backup while it is taken; the duration depends on the amount of data. Read the backup
-// until it is `available` or `failed`.
+// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
+// and Compute project quotas are checked before placement. No storage is allocated until the order is
+// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
+// than treating it as rejected.
 //
 // POST /api/v1/backups
 func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1521,1102 +1306,10 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleCreateBackupCapacityPackRequest handles create-backup-capacity-pack operation.
-//
-// Purchases a capacity pack, prepaid backup capacity for this project and region bought by month or
-// year: `billing` must be prepaid with a period, as offered in the backup service's
-// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
-// total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
-// excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
-// takes its order and payment and handles its renewal and cancellation through the pack's
-// subscription.
-//
-// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with
-// 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
-//
-// POST /api/v1/regions/{regionId}/backup-capacity-packs
-func (s *Server) handleCreateBackupCapacityPackRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-capacity-pack"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-capacity-packs"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupCapacityPackOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateBackupCapacityPackOperation,
-			ID:   "create-backup-capacity-pack",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupCapacityPackOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateBackupCapacityPackParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateBackupCapacityPackRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateBackupCapacityPackRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateBackupCapacityPackOperation,
-			OperationSummary: "Buy a backup capacity pack",
-			OperationID:      "create-backup-capacity-pack",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "regionId",
-					In:   "path",
-				}: params.RegionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *CreateBackupCapacityPackRequestBody
-			Params   = CreateBackupCapacityPackParams
-			Response = CreateBackupCapacityPackRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateBackupCapacityPackParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateBackupCapacityPack(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateBackupCapacityPack(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateBackupCapacityPackResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateBackupCapacityPackQuoteRequest handles create-backup-capacity-pack-quote operation.
-//
-// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or
-// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
-// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
-// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. `estimated_usage_amount` projects postpaid usage over one month of 730 hours and
-// is not collected at checkout. A request the purchase would refuse is refused the same way. Prices
-// may change, so quote again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
-func (s *Server) handleCreateBackupCapacityPackQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-capacity-pack-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-capacity-packs/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupCapacityPackQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateBackupCapacityPackQuoteOperation,
-			ID:   "create-backup-capacity-pack-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupCapacityPackQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateBackupCapacityPackQuoteParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateBackupCapacityPackQuoteRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateBackupCapacityPackQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateBackupCapacityPackQuoteOperation,
-			OperationSummary: "Quote buying a backup capacity pack",
-			OperationID:      "create-backup-capacity-pack-quote",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "regionId",
-					In:   "path",
-				}: params.RegionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *CreateBackupCapacityPackQuoteRequestBody
-			Params   = CreateBackupCapacityPackQuoteParams
-			Response = CreateBackupCapacityPackQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateBackupCapacityPackQuoteParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateBackupCapacityPackQuote(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateBackupCapacityPackQuote(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateBackupCapacityPackQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateBackupRestoreQuoteRequest handles create-backup-restore-quote operation.
-//
-// Prices what `restore-backup` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/backups/{backupId}/restore/quote
-func (s *Server) handleCreateBackupRestoreQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-restore-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/backups/{backupId}/restore/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupRestoreQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateBackupRestoreQuoteOperation,
-			ID:   "create-backup-restore-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupRestoreQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateBackupRestoreQuoteParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateBackupRestoreQuoteRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateBackupRestoreQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateBackupRestoreQuoteOperation,
-			OperationSummary: "Quote restoring from a backup",
-			OperationID:      "create-backup-restore-quote",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "backupId",
-					In:   "path",
-				}: params.BackupId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *RestoreBackupQuoteRequestBody
-			Params   = CreateBackupRestoreQuoteParams
-			Response = CreateBackupRestoreQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateBackupRestoreQuoteParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateBackupRestoreQuote(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateBackupRestoreQuote(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateBackupRestoreQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateBackupServiceRequest handles create-backup-service operation.
-//
-// Purchases the backup service for this project and region. The service itself has no charge; backups
-// are billed under it postpaid, by retained capacity. It takes no billing choice. Returns the service
-// as `pending` with its order; it becomes `active` once the order is accepted.
-//
-// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or
-// suspended.
-//
-// POST /api/v1/regions/{regionId}/backup-service
-func (s *Server) handleCreateBackupServiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-service"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-service"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupServiceOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateBackupServiceOperation,
-			ID:   "create-backup-service",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupServiceOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateBackupServiceParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateBackupServiceRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateBackupServiceRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateBackupServiceOperation,
-			OperationSummary: "Activate the backup service in a region",
-			OperationID:      "create-backup-service",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "regionId",
-					In:   "path",
-				}: params.RegionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *CreateBackupServiceRequestBody
-			Params   = CreateBackupServiceParams
-			Response = CreateBackupServiceRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateBackupServiceParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateBackupService(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateBackupService(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateBackupServiceResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateBackupServiceQuoteRequest handles create-backup-service-quote operation.
-//
-// Prices what `create-backup-service` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/backup-service/quote
-func (s *Server) handleCreateBackupServiceQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-service-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-service/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateBackupServiceQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateBackupServiceQuoteOperation,
-			ID:   "create-backup-service-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateBackupServiceQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateBackupServiceQuoteParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response CreateBackupServiceQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateBackupServiceQuoteOperation,
-			OperationSummary: "Quote activating the backup service",
-			OperationID:      "create-backup-service-quote",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "regionId",
-					In:   "path",
-				}: params.RegionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = CreateBackupServiceQuoteParams
-			Response = CreateBackupServiceQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateBackupServiceQuoteParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateBackupServiceQuote(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateBackupServiceQuote(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateBackupServiceQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleCreateDiskRequest handles create-disk operation.
 //
-// The disk is created in the availability zone of the selected disk type, and an instance must reside
-// in the same zone to attach it. Choosing the disk type therefore determines the zone.
+// The disk is created in the availability zone of the selected disk type, and a virtual machine must
+// reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
 // resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
@@ -2818,30 +1511,35 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 	}
 }
 
-// handleCreateDiskQuoteRequest handles create-disk-quote operation.
+// handleCreateElasticIPRequest handles create-elastic-ip operation.
 //
-// Prices what `create-disk` would order for the same request, without ordering or creating anything;
-// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
-// automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
+// Select a public elastic IP type. Compute records the pending resource and its deferred order before
+// allocating an address; checkout is performed in Billing.
 //
-// POST /api/v1/disks/quote
-func (s *Server) handleCreateDiskQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// Returns the elastic IP as `pending` with its order; `address` is null until the address is allocated
+// after the order is accepted. A requested `address` is not held while pending; if it is no longer
+// available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is refunded.
+//
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to virtual machines by the
+// virtual private cloud; enable IPv6 on that network instead.
+//
+// Allocation does not select or create a virtual private cloud. A later association selects an
+// assigned network-interface address; Compute then establishes the required network connectivity.
+//
+// POST /api/v1/elastic-ips
+func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk-quote"),
+		otelogen.OperationID("create-elastic-ip"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/disks/quote"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ips"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateDiskQuoteOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateElasticIPOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -2896,15 +1594,15 @@ func (s *Server) handleCreateDiskQuoteRequest(args [0]string, argsEscaped bool, 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: CreateDiskQuoteOperation,
-			ID:   "create-disk-quote",
+			Name: CreateElasticIPOperation,
+			ID:   "create-elastic-ip",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateDiskQuoteOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateElasticIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -2948,7 +1646,7 @@ func (s *Server) handleCreateDiskQuoteRequest(args [0]string, argsEscaped bool, 
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateDiskQuoteRequest(r)
+	request, rawBody, close, err := s.decodeCreateElasticIPRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -2964,13 +1662,13 @@ func (s *Server) handleCreateDiskQuoteRequest(args [0]string, argsEscaped bool, 
 		}
 	}()
 
-	var response CreateDiskQuoteRes
+	var response CreateElasticIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CreateDiskQuoteOperation,
-			OperationSummary: "Quote creating a disk",
-			OperationID:      "create-disk-quote",
+			OperationName:    CreateElasticIPOperation,
+			OperationSummary: "Allocate an elastic IP",
+			OperationID:      "create-elastic-ip",
 			Body:             request,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -2978,9 +1676,9 @@ func (s *Server) handleCreateDiskQuoteRequest(args [0]string, argsEscaped bool, 
 		}
 
 		type (
-			Request  = *CreateDiskQuoteRequestBody
+			Request  = *CreateElasticIPRequestBody
 			Params   = struct{}
-			Response = CreateDiskQuoteRes
+			Response = CreateElasticIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2991,12 +1689,12 @@ func (s *Server) handleCreateDiskQuoteRequest(args [0]string, argsEscaped bool, 
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateDiskQuote(ctx, request)
+				response, err = s.h.CreateElasticIP(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateDiskQuote(ctx, request)
+		response, err = s.h.CreateElasticIP(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -3015,653 +1713,7 @@ func (s *Server) handleCreateDiskQuoteRequest(args [0]string, argsEscaped bool, 
 		return
 	}
 
-	if err := encodeCreateDiskQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateDiskResizeQuoteRequest handles create-disk-resize-quote operation.
-//
-// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A
-// change that raises the price has the charge for the rest of the paid period as `total`; one that
-// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/disks/{diskId}/resize/quote
-func (s *Server) handleCreateDiskResizeQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk-resize-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/disks/{diskId}/resize/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateDiskResizeQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateDiskResizeQuoteOperation,
-			ID:   "create-disk-resize-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateDiskResizeQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateDiskResizeQuoteParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateDiskResizeQuoteRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateDiskResizeQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateDiskResizeQuoteOperation,
-			OperationSummary: "Quote resizing a disk",
-			OperationID:      "create-disk-resize-quote",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskId",
-					In:   "path",
-				}: params.DiskId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *ResizeDiskQuoteRequestBody
-			Params   = CreateDiskResizeQuoteParams
-			Response = CreateDiskResizeQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateDiskResizeQuoteParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateDiskResizeQuote(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateDiskResizeQuote(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateDiskResizeQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateFloatingIPBandwidthQuoteRequest handles create-floating-ip-bandwidth-quote operation.
-//
-// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing
-// anything. A change that raises the price has the charge for the rest of the paid period as `total`;
-// one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote
-func (s *Server) handleCreateFloatingIPBandwidthQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-floating-ip-bandwidth-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}/bandwidth/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateFloatingIPBandwidthQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateFloatingIPBandwidthQuoteOperation,
-			ID:   "create-floating-ip-bandwidth-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateFloatingIPBandwidthQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateFloatingIPBandwidthQuoteParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateFloatingIPBandwidthQuoteRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateFloatingIPBandwidthQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateFloatingIPBandwidthQuoteOperation,
-			OperationSummary: "Quote changing the bandwidth limit",
-			OperationID:      "create-floating-ip-bandwidth-quote",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "floatingIpId",
-					In:   "path",
-				}: params.FloatingIpId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *SetFloatingIPBandwidthQuoteRequestBody
-			Params   = CreateFloatingIPBandwidthQuoteParams
-			Response = CreateFloatingIPBandwidthQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateFloatingIPBandwidthQuoteParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateFloatingIPBandwidthQuote(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateFloatingIPBandwidthQuote(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateFloatingIPBandwidthQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateFloatingIPQuoteRequest handles create-floating-ip-quote operation.
-//
-// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/floating-ips/quote
-func (s *Server) handleCreateFloatingIPQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-floating-ip-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateFloatingIPQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateFloatingIPQuoteOperation,
-			ID:   "create-floating-ip-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateFloatingIPQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateFloatingIPQuoteRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateFloatingIPQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateFloatingIPQuoteOperation,
-			OperationSummary: "Quote allocating a floating IP",
-			OperationID:      "create-floating-ip-quote",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *AllocateFloatingIPQuoteRequestBody
-			Params   = struct{}
-			Response = CreateFloatingIPQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateFloatingIPQuote(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateFloatingIPQuote(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateFloatingIPQuoteResponse(response, w, span); err != nil {
+	if err := encodeCreateElasticIPResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -3672,30 +1724,14 @@ func (s *Server) handleCreateFloatingIPQuoteRequest(args [0]string, argsEscaped 
 
 // handleCreateImageRequest handles create-image operation.
 //
-// Creates a private image of this project from the system disk of the instance; data disks are not
-// included. The resulting image can create instances and rebuild them, and remains usable after the
-// source instance is released.
+// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
+// machine first for file-system consistency. The virtual machine cannot be released while its source
+// disk is being captured. Compute project quotas are enforced independently of billing.
 //
-// The image reflects the moment the capture started. Later changes to the instance are not included.
-// The image is returned as `pending` with its order, and the capture starts only once the order is
-// accepted.
-//
-// The capture then has two phases, reported by the status of the image:
-//
-//   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
-//     remains usable during this phase, although stopping it first is recommended for consistency.
-//   - `uploading` — no longer tied to the system disk. The instance may be started at this point;
-//     there is no need to wait for the capture to finish. The duration of this phase is proportional to
-//     the size of the system disk, roughly 3 minutes for 20 GB.
-//
-// The file system of a running instance may be captured mid-write, in which case the image is
-// equivalent to the disk contents after a power loss. Where consistency matters, stop the instance
-// before starting the capture and start it again once the status becomes `uploading`.
-//
-// The instance can be started, stopped and used normally during the capture, but cannot be released.
-//
-// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows.
-// Obtain a quote with `create-image-quote` first.
+// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
+// and Compute project quotas are checked before placement. No storage is allocated until the order is
+// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
+// than treating it as rejected.
 //
 // POST /api/v1/images
 func (s *Server) handleCreateImageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3838,7 +1874,7 @@ func (s *Server) handleCreateImageRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateImageOperation,
-			OperationSummary: "Capture an instance as a private image",
+			OperationSummary: "Capture a virtual machine as a private image",
 			OperationID:      "create-image",
 			Body:             request,
 			RawBody:          rawBody,
@@ -3893,29 +1929,25 @@ func (s *Server) handleCreateImageRequest(args [0]string, argsEscaped bool, w ht
 	}
 }
 
-// handleCreateImageQuoteRequest handles create-image-quote operation.
+// handleCreateNetworkInterfaceRequest handles create-network-interface operation.
 //
-// Prices the capture `create-image` would order for the same instance, without ordering anything;
-// nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the
-// most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account
-// discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before
-// credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. Prices may change, so quote again before final confirmation.
+// The new network interface is not attached to any virtual machine. Primary network interfaces are not
+// created here; they are created with the virtual machine.
 //
-// POST /api/v1/images/quote
-func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/network-interfaces
+func (s *Server) handleCreateNetworkInterfaceRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-image-quote"),
+		otelogen.OperationID("create-network-interface"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/images/quote"),
+		semconv.HTTPRouteKey.String("/api/v1/network-interfaces"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateImageQuoteOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -3970,15 +2002,15 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: CreateImageQuoteOperation,
-			ID:   "create-image-quote",
+			Name: CreateNetworkInterfaceOperation,
+			ID:   "create-network-interface",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateImageQuoteOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateNetworkInterfaceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -4022,7 +2054,7 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateImageQuoteRequest(r)
+	request, rawBody, close, err := s.decodeCreateNetworkInterfaceRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -4038,13 +2070,13 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 		}
 	}()
 
-	var response CreateImageQuoteRes
+	var response *NetworkInterface
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CreateImageQuoteOperation,
-			OperationSummary: "Quote capturing an instance as a private image",
-			OperationID:      "create-image-quote",
+			OperationName:    CreateNetworkInterfaceOperation,
+			OperationSummary: "Create a network interface",
+			OperationID:      "create-network-interface",
 			Body:             request,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -4052,9 +2084,9 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 		}
 
 		type (
-			Request  = *CreateImageQuoteRequestBody
+			Request  = *CreateNetworkInterfaceRequestBody
 			Params   = struct{}
-			Response = CreateImageQuoteRes
+			Response = *NetworkInterface
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4065,12 +2097,12 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateImageQuote(ctx, request)
+				response, err = s.h.CreateNetworkInterface(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateImageQuote(ctx, request)
+		response, err = s.h.CreateNetworkInterface(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -4089,433 +2121,7 @@ func (s *Server) handleCreateImageQuoteRequest(args [0]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeCreateImageQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateInstanceQuoteRequest handles create-instance-quote operation.
-//
-// Prices what `launch-instance` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/instances/quote
-func (s *Server) handleCreateInstanceQuoteRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-instance-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateInstanceQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateInstanceQuoteOperation,
-			ID:   "create-instance-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateInstanceQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateInstanceQuoteRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateInstanceQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateInstanceQuoteOperation,
-			OperationSummary: "Quote creating instances",
-			OperationID:      "create-instance-quote",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *LaunchInstanceQuoteRequestBody
-			Params   = struct{}
-			Response = CreateInstanceQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateInstanceQuote(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateInstanceQuote(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateInstanceQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateInstanceResizeQuoteRequest handles create-instance-resize-quote operation.
-//
-// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A
-// change that raises the price has the charge for the rest of the paid period as `total`; one that
-// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/instances/{instanceId}/resize/quote
-func (s *Server) handleCreateInstanceResizeQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-instance-resize-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/resize/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateInstanceResizeQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateInstanceResizeQuoteOperation,
-			ID:   "create-instance-resize-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateInstanceResizeQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateInstanceResizeQuoteParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateInstanceResizeQuoteRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateInstanceResizeQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateInstanceResizeQuoteOperation,
-			OperationSummary: "Quote resizing an instance",
-			OperationID:      "create-instance-resize-quote",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "instanceId",
-					In:   "path",
-				}: params.InstanceId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *ResizeInstanceQuoteRequestBody
-			Params   = CreateInstanceResizeQuoteParams
-			Response = CreateInstanceResizeQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateInstanceResizeQuoteParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateInstanceResizeQuote(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateInstanceResizeQuote(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateInstanceResizeQuoteResponse(response, w, span); err != nil {
+	if err := encodeCreateNetworkInterfaceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4725,423 +2331,21 @@ func (s *Server) handleCreatePeeringRequest(args [0]string, argsEscaped bool, w 
 	}
 }
 
-// handleCreatePortRequest handles create-port operation.
-//
-// The new network interface is not attached to any instance. Primary network interfaces are not
-// created here; they are created with the instance.
-//
-// POST /api/v1/ports
-func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-port"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/ports"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreatePortOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreatePortOperation,
-			ID:   "create-port",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreatePortOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreatePortRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *PortResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreatePortOperation,
-			OperationSummary: "Create a network interface",
-			OperationID:      "create-port",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *CreatePortRequestBody
-			Params   = struct{}
-			Response = *PortResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreatePort(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreatePort(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreatePortResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreatePrivateNetworkRequest handles create-private-network operation.
-//
-// Creates a private network definition and its default security group. The default security group
-// denies all inbound traffic and permits all outbound traffic.
-//
-// POST /api/v1/private-networks
-func (s *Server) handleCreatePrivateNetworkRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-private-network"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreatePrivateNetworkOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreatePrivateNetworkOperation,
-			ID:   "create-private-network",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreatePrivateNetworkOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreatePrivateNetworkRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *PrivateNetworkResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreatePrivateNetworkOperation,
-			OperationSummary: "Create a private network",
-			OperationID:      "create-private-network",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *CreatePrivateNetworkRequestBody
-			Params   = struct{}
-			Response = *PrivateNetworkResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreatePrivateNetwork(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreatePrivateNetwork(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreatePrivateNetworkResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleCreateRouteRequest handles create-route operation.
 //
 // Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
-// overrides the default route and takes every floating IP offline immediately; a destination equal to
+// overrides the default route and takes every elastic IP offline immediately; a destination equal to
 // the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
 // gateway of a subnet, which points back at the router itself.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/routes
+// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
 func (s *Server) handleCreateRouteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-route"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/routes"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -5291,9 +2495,9 @@ func (s *Server) handleCreateRouteRequest(args [1]string, argsEscaped bool, w ht
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 			},
 			Raw: r,
 		}
@@ -5765,23 +2969,14 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 
 // handleCreateSnapshotRequest handles create-snapshot operation.
 //
-// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block
-// device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the
-// instance first where the data matters.
+// Creates a snapshot of the disk. A running virtual machine may produce a file-system-inconsistent
+// snapshot; flush pending writes first. A system disk cannot be reverted while attached. Pending
+// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
 //
-// A snapshot of a system disk cannot be used to revert that system disk: reverting requires the disk
-// to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To
-// preserve and restore an entire system, use a private image; for a copy that crosses availability
-// zones and survives deletion of the disk, use a backup.
-//
-// Snapshot slots are purchased separately for this project and the source disk's region. This
-// operation reserves one available slot and returns the snapshot as `pending`; it places no order and
-// charges nothing. `pending` and `provisioning` snapshots occupy slots, so concurrent requests cannot
-// exceed the purchased limit. Read the snapshot until it is `available` or `failed`.
-//
-// Refused with SNAPSHOT_QUOTA_EXCEEDED when no slot is available. meta.region_id, meta.limit and
-// meta.used identify the applicable quota. A failed creation releases its slot only after any snapshot
-// data has been confirmed absent or removed.
+// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
+// and Compute project quotas are checked before placement. No storage is allocated until the order is
+// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
+// than treating it as rejected.
 //
 // POST /api/v1/snapshots
 func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5919,7 +3114,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *SnapshotResource
+	var response CreateSnapshotRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -5935,7 +3130,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = *CreateSnapshotRequestBody
 			Params   = struct{}
-			Response = *SnapshotResource
+			Response = CreateSnapshotRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5979,240 +3174,18 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 	}
 }
 
-// handleCreateSnapshotQuotaQuoteRequest handles create-snapshot-quota-quote operation.
-//
-// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now,
-// for the same request, without ordering or creating anything; nothing is reserved or recorded.
-// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
-// automatic checkout would collect before credit grants and balance; give it as
-// `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects postpaid usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/snapshot-quota/quote
-func (s *Server) handleCreateSnapshotQuotaQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-snapshot-quota-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/snapshot-quota/quote"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateSnapshotQuotaQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateSnapshotQuotaQuoteOperation,
-			ID:   "create-snapshot-quota-quote",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateSnapshotQuotaQuoteOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateSnapshotQuotaQuoteParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateSnapshotQuotaQuoteRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateSnapshotQuotaQuoteRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateSnapshotQuotaQuoteOperation,
-			OperationSummary: "Quote setting the regional snapshot quota",
-			OperationID:      "create-snapshot-quota-quote",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "regionId",
-					In:   "path",
-				}: params.RegionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *SetSnapshotQuotaQuoteRequestBody
-			Params   = CreateSnapshotQuotaQuoteParams
-			Response = CreateSnapshotQuotaQuoteRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateSnapshotQuotaQuoteParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateSnapshotQuotaQuote(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateSnapshotQuotaQuote(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateSnapshotQuotaQuoteResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleCreateSubnetRequest handles create-subnet operation.
 //
 // Create a subnet.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/subnets
+// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
 func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-subnet"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/subnets"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -6362,9 +3335,9 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 			},
 			Raw: r,
 		}
@@ -6416,10 +3389,448 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 	}
 }
 
+// handleCreateVirtualMachineRequest handles create-virtual-machine operation.
+//
+// Records the requested configuration, creates a deferred Billing order, including for metered terms,
+// and returns one `pending` virtual machine per requested virtual machine with the order. Each new
+// component carries its own commercial terms; their billing mode and period must match. A pending
+// virtual machine has no virtual machine, system disk or address, and is not metered.
+//
+// Creation starts only after Compute receives `orderAccepted` and verifies the accepted order with
+// Billing: the virtual machine becomes `provisioning`, then `active`. Preview and confirm checkout
+// through Billing using the returned order reference. A zero-total order still requires verified
+// acceptance; a canceled or expired order leaves the virtual machines `failed` with `order_canceled`
+// or `order_expired`. Do not submit another creation request after paying. After an uncertain
+// response, look the order up before submitting again.
+//
+// Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
+// subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
+// while the virtual machine is pending; if one is no longer usable when the order is accepted, the
+// virtual machine ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing
+// disks retain their own subscription. Virtual machines, disks and public IPs keep their own
+// subscription items on the same order.
+//
+// Virtual machines of one request succeed or fail individually. Each virtual machine, with its system
+// disk, network interface and elastic IP, is created or fails as a whole. Virtual machines that were
+// created are kept; each failed virtual machine ends `failed` with `provisioning_failed`, its part of
+// the order is refunded, and the order then ends `partially_completed`. Each virtual machine is named
+// after this request with a number appended.
+//
+// The network is checked before the order is created, and a request it refuses orders and charges
+// nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the virtual private cloud's `status`
+// is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a
+// security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to
+// another virtual private cloud, and `PORT_UNAVAILABLE` when the port's `status` is not `available`.
+// `meta` names the resource.
+//
+// POST /api/v1/virtual-machines
+func (s *Server) handleCreateVirtualMachineRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-virtual-machine"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateVirtualMachineOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateVirtualMachineOperation,
+			ID:   "create-virtual-machine",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateVirtualMachineOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateVirtualMachineRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateVirtualMachineRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateVirtualMachineOperation,
+			OperationSummary: "Create virtual machines",
+			OperationID:      "create-virtual-machine",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *CreateVirtualMachineRequestBody
+			Params   = struct{}
+			Response = CreateVirtualMachineRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateVirtualMachine(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateVirtualMachine(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateVirtualMachineResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateVirtualPrivateCloudRequest handles create-virtual-private-cloud operation.
+//
+// Creates a virtual private cloud definition and its default security group. The default security
+// group denies all inbound traffic and permits all outbound traffic.
+//
+// POST /api/v1/virtual-private-clouds
+func (s *Server) handleCreateVirtualPrivateCloudRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-virtual-private-cloud"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateVirtualPrivateCloudOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateVirtualPrivateCloudOperation,
+			ID:   "create-virtual-private-cloud",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateVirtualPrivateCloudOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateVirtualPrivateCloudRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *VirtualPrivateCloud
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateVirtualPrivateCloudOperation,
+			OperationSummary: "Create a virtual private cloud",
+			OperationID:      "create-virtual-private-cloud",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *CreateVirtualPrivateCloudRequestBody
+			Params   = struct{}
+			Response = *VirtualPrivateCloud
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateVirtualPrivateCloud(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateVirtualPrivateCloud(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateVirtualPrivateCloudResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleDeleteBackupRequest handles delete-backup operation.
 //
 // Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
 // the backup ends once it is deleted.
+//
+// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
+// whether its commercial subscription must be canceled first.
+//
+// A resource with a pending order must have that order canceled through Billing first. A subscribed
+// resource is released through its subscription cancellation. Cleanup must be confirmed before
+// metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/backups/{backupId}
 func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6826,16 +4237,18 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 //
 // Only a private image of this project can be deleted; any other image is reported as not found.
 //
-// Deletion is rejected while instances created from the image still exist, as they need it in order to
-// be rebuilt.
+// Deletion is rejected while virtual machines created from the image still exist, as they need it in
+// order to be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 // operation accepted while the `create` operation is in progress.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
+// whether its commercial subscription must be canceled first.
+//
+// A resource with a pending order must have that order canceled through Billing first. A subscribed
+// resource is released through its subscription cancellation. Cleanup must be confirmed before
+// metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/images/{imageId}
 func (s *Server) handleDeleteImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7033,34 +4446,25 @@ func (s *Server) handleDeleteImageRequest(args [1]string, argsEscaped bool, w ht
 	}
 }
 
-// handleDeleteInstanceRequest handles delete-instance operation.
+// handleDeleteNetworkInterfaceRequest handles delete-network-interface operation.
 //
-// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
-// with it. Data disks are detached and kept, and their snapshots and backups are unaffected. The
-// primary network interface is released with the instance.
+// The primary network interface cannot be deleted on its own, as it is released with the virtual
+// machine. A network interface still attached to a virtual machine cannot be deleted either.
 //
-// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
-// delete that image first.
-//
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
-// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
-// through Billing, the same set as its `release_subscription_ids`.
-//
-// DELETE /api/v1/instances/{instanceId}
-func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/network-interfaces/{networkInterfaceId}
+func (s *Server) handleDeleteNetworkInterfaceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-instance"),
+		otelogen.OperationID("delete-network-interface"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}"),
+		semconv.HTTPRouteKey.String("/api/v1/network-interfaces/{networkInterfaceId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteInstanceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -7115,15 +4519,15 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteInstanceOperation,
-			ID:   "delete-instance",
+			Name: DeleteNetworkInterfaceOperation,
+			ID:   "delete-network-interface",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteNetworkInterfaceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -7165,7 +4569,7 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeDeleteInstanceParams(args, argsEscaped, r)
+	params, err := decodeDeleteNetworkInterfaceParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -7178,28 +4582,28 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 
 	var rawBody []byte
 
-	var response DeleteInstanceRes
+	var response DeleteNetworkInterfaceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DeleteInstanceOperation,
-			OperationSummary: "Release an instance",
-			OperationID:      "delete-instance",
+			OperationName:    DeleteNetworkInterfaceOperation,
+			OperationSummary: "Delete a network interface",
+			OperationID:      "delete-network-interface",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "networkInterfaceId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.NetworkInterfaceId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DeleteInstanceParams
-			Response = DeleteInstanceRes
+			Params   = DeleteNetworkInterfaceParams
+			Response = DeleteNetworkInterfaceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7208,14 +4612,14 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackDeleteInstanceParams,
+			unpackDeleteNetworkInterfaceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DeleteInstance(ctx, params)
+				response, err = s.h.DeleteNetworkInterface(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DeleteInstance(ctx, params)
+		response, err = s.h.DeleteNetworkInterface(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7234,7 +4638,7 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeDeleteInstanceResponse(response, w, span); err != nil {
+	if err := encodeDeleteNetworkInterfaceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -7443,420 +4847,18 @@ func (s *Server) handleDeletePeeringRequest(args [1]string, argsEscaped bool, w 
 	}
 }
 
-// handleDeletePortRequest handles delete-port operation.
-//
-// The primary network interface cannot be deleted on its own, as it is released with the instance. A
-// network interface still attached to an instance cannot be deleted either.
-//
-// DELETE /api/v1/ports/{portId}
-func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-port"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/ports/{portId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeletePortOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: DeletePortOperation,
-			ID:   "delete-port",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeletePortOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeDeletePortParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response DeletePortRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    DeletePortOperation,
-			OperationSummary: "Delete a network interface",
-			OperationID:      "delete-port",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "portId",
-					In:   "path",
-				}: params.PortId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = DeletePortParams
-			Response = DeletePortRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackDeletePortParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DeletePort(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.DeletePort(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeDeletePortResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleDeletePrivateNetworkRequest handles delete-private-network operation.
-//
-// Deletion is rejected while instances or network interfaces remain in the network. Its subnets,
-// routes, security groups and IPv6 configuration are removed with it.
-//
-// DELETE /api/v1/private-networks/{privateNetworkId}
-func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-private-network"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeletePrivateNetworkOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: DeletePrivateNetworkOperation,
-			ID:   "delete-private-network",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeletePrivateNetworkOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeDeletePrivateNetworkParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response DeletePrivateNetworkRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    DeletePrivateNetworkOperation,
-			OperationSummary: "Release a private network",
-			OperationID:      "delete-private-network",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "privateNetworkId",
-					In:   "path",
-				}: params.PrivateNetworkId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = DeletePrivateNetworkParams
-			Response = DeletePrivateNetworkRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackDeletePrivateNetworkParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DeletePrivateNetwork(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.DeletePrivateNetwork(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeDeletePrivateNetworkResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleDeleteRouteRequest handles delete-route operation.
 //
 // Delete a static route.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId}
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes/{routeId}
 func (s *Server) handleDeleteRouteRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-route"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/routes/{routeId}"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes/{routeId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -7991,9 +4993,9 @@ func (s *Server) handleDeleteRouteRequest(args [2]string, argsEscaped bool, w ht
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 				{
 					Name: "routeId",
 					In:   "path",
@@ -8051,8 +5053,8 @@ func (s *Server) handleDeleteRouteRequest(args [2]string, argsEscaped bool, w ht
 
 // handleDeleteSecurityGroupRequest handles delete-security-group operation.
 //
-// The default security group cannot be deleted, as it is released with the private network. A security
-// group still referenced by a network interface cannot be deleted either.
+// The default security group cannot be deleted, as it is released with the virtual private cloud. A
+// security group still referenced by a network interface cannot be deleted either.
 //
 // DELETE /api/v1/security-groups/{securityGroupId}
 func (s *Server) handleDeleteSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8456,8 +5458,12 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 
 // handleDeleteSnapshotRequest handles delete-snapshot operation.
 //
-// Deletes this snapshot without canceling the project's snapshot quota purchase. A snapshot has no
-// individual Billing subscription. Its slot stays occupied until the deletion is confirmed.
+// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
+// confirmed.
+//
+// A resource with a pending order must have that order canceled through Billing first. A subscribed
+// resource is released through its subscription cancellation. Cleanup must be confirmed before
+// metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8660,14 +5666,14 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 // Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
 // next hop inside its CIDR.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
 func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-subnet"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -8802,9 +5808,9 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 				{
 					Name: "subnetId",
 					In:   "path",
@@ -8860,26 +5866,438 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 	}
 }
 
+// handleDeleteVirtualMachineRequest handles delete-virtual-machine operation.
+//
+// The system disk is deleted with the virtual machine, and snapshots created from the system disk are
+// deleted with it. Data disks are detached and kept, and their snapshots and backups are unaffected.
+// The primary network interface is released with the virtual machine.
+//
+// A virtual machine being captured as a private image cannot be released. Wait for the capture to
+// finish, or delete that image first.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the virtual machine, or for
+// a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names
+// that resource. The virtual machine is released by canceling the subscriptions listed in
+// `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+//
+// DELETE /api/v1/virtual-machines/{virtualMachineId}
+func (s *Server) handleDeleteVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-virtual-machine"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteVirtualMachineOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeleteVirtualMachineOperation,
+			ID:   "delete-virtual-machine",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteVirtualMachineOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeleteVirtualMachineParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response DeleteVirtualMachineRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeleteVirtualMachineOperation,
+			OperationSummary: "Release a virtual machine",
+			OperationID:      "delete-virtual-machine",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualMachineId",
+					In:   "path",
+				}: params.VirtualMachineId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeleteVirtualMachineParams
+			Response = DeleteVirtualMachineRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeleteVirtualMachineParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DeleteVirtualMachine(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DeleteVirtualMachine(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeleteVirtualMachineResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDeleteVirtualPrivateCloudRequest handles delete-virtual-private-cloud operation.
+//
+// Deletion is rejected while virtual machines or network interfaces remain in the network. Its
+// subnets, routes, security groups and IPv6 configuration are removed with it.
+//
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+func (s *Server) handleDeleteVirtualPrivateCloudRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-virtual-private-cloud"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteVirtualPrivateCloudOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeleteVirtualPrivateCloudOperation,
+			ID:   "delete-virtual-private-cloud",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteVirtualPrivateCloudOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeleteVirtualPrivateCloudParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response DeleteVirtualPrivateCloudRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeleteVirtualPrivateCloudOperation,
+			OperationSummary: "Release a virtual private cloud",
+			OperationID:      "delete-virtual-private-cloud",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualPrivateCloudId",
+					In:   "path",
+				}: params.VirtualPrivateCloudId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeleteVirtualPrivateCloudParams
+			Response = DeleteVirtualPrivateCloudRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeleteVirtualPrivateCloudParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DeleteVirtualPrivateCloud(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DeleteVirtualPrivateCloud(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeleteVirtualPrivateCloudResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleDetachDiskRequest handles detach-disk operation.
 //
-// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
-// system that is being written to corrupts data.
+// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
+// file system that is being written to corrupts data.
 //
-// The disk the instance boots from cannot be detached, whether it is the system disk bought with the
-// instance or a disk supplied as the existing boot_disk at launch. Such a request is refused with
-// `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the instance is what frees that disk.
+// The disk the virtual machine boots from cannot be detached, whether it is the system disk bought
+// with the virtual machine or a disk supplied as the existing boot_disk at launch. Such a request is
+// refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine is what
+// frees that disk.
 //
-// Returns the disk; the instance shows the `detach_disk` operation and the disk the `detach` operation
-// until the disk is detached.
+// Returns the disk; the virtual machine shows the `detach_disk` operation and the disk the `detach`
+// operation until the disk is detached.
 //
-// DELETE /api/v1/instances/{instanceId}/disks/{diskId}
+// DELETE /api/v1/virtual-machines/{virtualMachineId}/disks/{diskId}
 func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("detach-disk"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/disks/{diskId}"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/disks/{diskId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -9014,9 +6432,9 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 				{
 					Name: "diskId",
 					In:   "path",
@@ -9072,25 +6490,28 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 	}
 }
 
-// handleDetachInstanceFloatingIPRequest handles detach-instance-floating-ip operation.
+// handleDetachNetworkInterfaceRequest handles detach-network-interface operation.
 //
-// Changes the public IP binding on the instance's primary network interface. The instance shows the
-// `unbind_floating_ip` operation until the change is confirmed.
+// The primary network interface cannot be detached; the virtual machine would lose its network
+// address.
 //
-// DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// Returns the network interface; the virtual machine shows the `detach_network_interface` operation
+// and the interface the `detach` operation until it is detached.
+//
+// DELETE /api/v1/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
+func (s *Server) handleDetachNetworkInterfaceRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-instance-floating-ip"),
+		otelogen.OperationID("detach-network-interface"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/floating-ips/{floatingIpId}"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DetachInstanceFloatingIPOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DetachNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -9145,15 +6566,15 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DetachInstanceFloatingIPOperation,
-			ID:   "detach-instance-floating-ip",
+			Name: DetachNetworkInterfaceOperation,
+			ID:   "detach-network-interface",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachInstanceFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachNetworkInterfaceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -9195,7 +6616,7 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 			return
 		}
 	}
-	params, err := decodeDetachInstanceFloatingIPParams(args, argsEscaped, r)
+	params, err := decodeDetachNetworkInterfaceParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -9208,239 +6629,32 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 
 	var rawBody []byte
 
-	var response DetachInstanceFloatingIPRes
+	var response DetachNetworkInterfaceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DetachInstanceFloatingIPOperation,
-			OperationSummary: "Unbind the floating IP of an instance",
-			OperationID:      "detach-instance-floating-ip",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "instanceId",
-					In:   "path",
-				}: params.InstanceId,
-				{
-					Name: "floatingIpId",
-					In:   "path",
-				}: params.FloatingIpId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = DetachInstanceFloatingIPParams
-			Response = DetachInstanceFloatingIPRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackDetachInstanceFloatingIPParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DetachInstanceFloatingIP(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.DetachInstanceFloatingIP(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeDetachInstanceFloatingIPResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleDetachPortRequest handles detach-port operation.
-//
-// The primary network interface cannot be detached; the instance would lose its network address.
-//
-// Returns the network interface; the instance shows the `detach_port` operation and the interface the
-// `detach` operation until it is detached.
-//
-// DELETE /api/v1/instances/{instanceId}/ports/{portId}
-func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-port"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/ports/{portId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DetachPortOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: DetachPortOperation,
-			ID:   "detach-port",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachPortOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeDetachPortParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response DetachPortRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    DetachPortOperation,
+			OperationName:    DetachNetworkInterfaceOperation,
 			OperationSummary: "Detach a network interface",
-			OperationID:      "detach-port",
+			OperationID:      "detach-network-interface",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 				{
-					Name: "portId",
+					Name: "networkInterfaceId",
 					In:   "path",
-				}: params.PortId,
+				}: params.NetworkInterfaceId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DetachPortParams
-			Response = DetachPortRes
+			Params   = DetachNetworkInterfaceParams
+			Response = DetachNetworkInterfaceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9449,14 +6663,14 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackDetachPortParams,
+			unpackDetachNetworkInterfaceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DetachPort(ctx, params)
+				response, err = s.h.DetachNetworkInterface(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DetachPort(ctx, params)
+		response, err = s.h.DetachNetworkInterface(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -9475,7 +6689,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeDetachPortResponse(response, w, span); err != nil {
+	if err := encodeDetachNetworkInterfaceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -9484,24 +6698,229 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 	}
 }
 
-// handleDisablePrivateNetworkIpv6Request handles disable-private-network-ipv6 operation.
+// handleDetachVirtualMachineElasticIPRequest handles detach-virtual-machine-elastic-ip operation.
+//
+// Changes the public IP binding on the virtual machine's primary network interface. The virtual
+// machine shows the `unbind_elastic_ip` operation until the change is confirmed.
+//
+// DELETE /api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}
+func (s *Server) handleDetachVirtualMachineElasticIPRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("detach-virtual-machine-elastic-ip"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DetachVirtualMachineElasticIPOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DetachVirtualMachineElasticIPOperation,
+			ID:   "detach-virtual-machine-elastic-ip",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachVirtualMachineElasticIPOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDetachVirtualMachineElasticIPParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response DetachVirtualMachineElasticIPRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DetachVirtualMachineElasticIPOperation,
+			OperationSummary: "Unbind the elastic IP of a virtual machine",
+			OperationID:      "detach-virtual-machine-elastic-ip",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualMachineId",
+					In:   "path",
+				}: params.VirtualMachineId,
+				{
+					Name: "elasticIpId",
+					In:   "path",
+				}: params.ElasticIpId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DetachVirtualMachineElasticIPParams
+			Response = DetachVirtualMachineElasticIPRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDetachVirtualMachineElasticIPParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DetachVirtualMachineElasticIP(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DetachVirtualMachineElasticIP(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDetachVirtualMachineElasticIPResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDisableVirtualPrivateCloudIpv6Request handles disable-virtual-private-cloud-ipv6 operation.
 //
 // A released prefix is not re-allocated immediately.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
-func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (s *Server) handleDisableVirtualPrivateCloudIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("disable-private-network-ipv6"),
+		otelogen.OperationID("disable-virtual-private-cloud-ipv6"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/ipv6"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DisablePrivateNetworkIpv6Operation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DisableVirtualPrivateCloudIpv6Operation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -9556,15 +6975,15 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DisablePrivateNetworkIpv6Operation,
-			ID:   "disable-private-network-ipv6",
+			Name: DisableVirtualPrivateCloudIpv6Operation,
+			ID:   "disable-virtual-private-cloud-ipv6",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DisablePrivateNetworkIpv6Operation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DisableVirtualPrivateCloudIpv6Operation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -9606,7 +7025,7 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 			return
 		}
 	}
-	params, err := decodeDisablePrivateNetworkIpv6Params(args, argsEscaped, r)
+	params, err := decodeDisableVirtualPrivateCloudIpv6Params(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -9619,28 +7038,28 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 
 	var rawBody []byte
 
-	var response DisablePrivateNetworkIpv6Res
+	var response DisableVirtualPrivateCloudIpv6Res
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DisablePrivateNetworkIpv6Operation,
-			OperationSummary: "Disable IPv6 on a private network",
-			OperationID:      "disable-private-network-ipv6",
+			OperationName:    DisableVirtualPrivateCloudIpv6Operation,
+			OperationSummary: "Disable IPv6 on a virtual private cloud",
+			OperationID:      "disable-virtual-private-cloud-ipv6",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DisablePrivateNetworkIpv6Params
-			Response = DisablePrivateNetworkIpv6Res
+			Params   = DisableVirtualPrivateCloudIpv6Params
+			Response = DisableVirtualPrivateCloudIpv6Res
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9649,14 +7068,14 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 		](
 			m,
 			mreq,
-			unpackDisablePrivateNetworkIpv6Params,
+			unpackDisableVirtualPrivateCloudIpv6Params,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DisablePrivateNetworkIpv6(ctx, params)
+				response, err = s.h.DisableVirtualPrivateCloudIpv6(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DisablePrivateNetworkIpv6(ctx, params)
+		response, err = s.h.DisableVirtualPrivateCloudIpv6(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -9675,7 +7094,7 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 		return
 	}
 
-	if err := encodeDisablePrivateNetworkIpv6Response(response, w, span); err != nil {
+	if err := encodeDisableVirtualPrivateCloudIpv6Response(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -9684,28 +7103,29 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 	}
 }
 
-// handleEnablePrivateNetworkIpv6Request handles enable-private-network-ipv6 operation.
+// handleEnableVirtualPrivateCloudIpv6Request handles enable-virtual-private-cloud-ipv6 operation.
 //
-// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network
-// itself, can be neither requested nor released individually, and consume no public IPv4 address.
+// Delegates and routes an IPv6 prefix to the virtual private cloud. It requires no elastic IP or NAT
+// gateway. Addresses are assigned to virtual machines by the network and use its security groups; they
+// cannot be requested or released individually.
 //
-// If the private network is not yet connected to the internet, connectivity is established as part of
-// this call.
+// If the virtual private cloud is not yet connected to the internet, connectivity is established as
+// part of this call.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/ipv6
-func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (s *Server) handleEnableVirtualPrivateCloudIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("enable-private-network-ipv6"),
+		otelogen.OperationID("enable-virtual-private-cloud-ipv6"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/ipv6"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), EnablePrivateNetworkIpv6Operation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), EnableVirtualPrivateCloudIpv6Operation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -9760,15 +7180,15 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: EnablePrivateNetworkIpv6Operation,
-			ID:   "enable-private-network-ipv6",
+			Name: EnableVirtualPrivateCloudIpv6Operation,
+			ID:   "enable-virtual-private-cloud-ipv6",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, EnablePrivateNetworkIpv6Operation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, EnableVirtualPrivateCloudIpv6Operation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -9810,7 +7230,7 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 			return
 		}
 	}
-	params, err := decodeEnablePrivateNetworkIpv6Params(args, argsEscaped, r)
+	params, err := decodeEnableVirtualPrivateCloudIpv6Params(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -9823,28 +7243,28 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 
 	var rawBody []byte
 
-	var response EnablePrivateNetworkIpv6Res
+	var response EnableVirtualPrivateCloudIpv6Res
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    EnablePrivateNetworkIpv6Operation,
-			OperationSummary: "Enable IPv6 on a private network",
-			OperationID:      "enable-private-network-ipv6",
+			OperationName:    EnableVirtualPrivateCloudIpv6Operation,
+			OperationSummary: "Enable IPv6 on a virtual private cloud",
+			OperationID:      "enable-virtual-private-cloud-ipv6",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = EnablePrivateNetworkIpv6Params
-			Response = EnablePrivateNetworkIpv6Res
+			Params   = EnableVirtualPrivateCloudIpv6Params
+			Response = EnableVirtualPrivateCloudIpv6Res
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9853,14 +7273,14 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 		](
 			m,
 			mreq,
-			unpackEnablePrivateNetworkIpv6Params,
+			unpackEnableVirtualPrivateCloudIpv6Params,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.EnablePrivateNetworkIpv6(ctx, params)
+				response, err = s.h.EnableVirtualPrivateCloudIpv6(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.EnablePrivateNetworkIpv6(ctx, params)
+		response, err = s.h.EnableVirtualPrivateCloudIpv6(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -9879,7 +7299,7 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 		return
 	}
 
-	if err := encodeEnablePrivateNetworkIpv6Response(response, w, span); err != nil {
+	if err := encodeEnableVirtualPrivateCloudIpv6Response(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -10081,214 +7501,6 @@ func (s *Server) handleGetBackupRequest(args [1]string, argsEscaped bool, w http
 	}
 
 	if err := encodeGetBackupResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetBackupServiceRequest handles get-backup-service operation.
-//
-// The backup service of the authenticated project in this region. Backups can be created only while it
-// is `active`. Each hour, Compute covers retained backup capacity up to the total `capacity_gib` of
-// the capacity packs active in the region and meters only the excess on this service's subscription,
-// per GiB-hour.
-//
-// Canceling the service's subscription through Billing is refused while any backup is retained in the
-// region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity
-// packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment
-// deletes its backups.
-//
-// GET /api/v1/regions/{regionId}/backup-service
-func (s *Server) handleGetBackupServiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-backup-service"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-service"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetBackupServiceOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetBackupServiceOperation,
-			ID:   "get-backup-service",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetBackupServiceOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetBackupServiceParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *BackupService
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetBackupServiceOperation,
-			OperationSummary: "Get the backup service of a region",
-			OperationID:      "get-backup-service",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "regionId",
-					In:   "path",
-				}: params.RegionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetBackupServiceParams
-			Response = *BackupService
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetBackupServiceParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetBackupService(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetBackupService(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetBackupServiceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -10698,24 +7910,24 @@ func (s *Server) handleGetDiskTypeRequest(args [1]string, argsEscaped bool, w ht
 	}
 }
 
-// handleGetFloatingIPRequest handles get-floating-ip operation.
+// handleGetElasticIPRequest handles get-elastic-ip operation.
 //
-// Retrieve a floating IP.
+// Retrieve an elastic IP.
 //
-// GET /api/v1/floating-ips/{floatingIpId}
-func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/elastic-ips/{elasticIpId}
+func (s *Server) handleGetElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-floating-ip"),
+		otelogen.OperationID("get-elastic-ip"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ips/{elasticIpId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetFloatingIPOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetElasticIPOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -10770,15 +7982,15 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetFloatingIPOperation,
-			ID:   "get-floating-ip",
+			Name: GetElasticIPOperation,
+			ID:   "get-elastic-ip",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetElasticIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -10820,7 +8032,7 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 			return
 		}
 	}
-	params, err := decodeGetFloatingIPParams(args, argsEscaped, r)
+	params, err := decodeGetElasticIPParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -10833,28 +8045,28 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *FloatingIPResource
+	var response *ElasticIP
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetFloatingIPOperation,
-			OperationSummary: "Retrieve a floating IP",
-			OperationID:      "get-floating-ip",
+			OperationName:    GetElasticIPOperation,
+			OperationSummary: "Retrieve an elastic IP",
+			OperationID:      "get-elastic-ip",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "floatingIpId",
+					Name: "elasticIpId",
 					In:   "path",
-				}: params.FloatingIpId,
+				}: params.ElasticIpId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetFloatingIPParams
-			Response = *FloatingIPResource
+			Params   = GetElasticIPParams
+			Response = *ElasticIP
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -10863,14 +8075,14 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 		](
 			m,
 			mreq,
-			unpackGetFloatingIPParams,
+			unpackGetElasticIPParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetFloatingIP(ctx, params)
+				response, err = s.h.GetElasticIP(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetFloatingIP(ctx, params)
+		response, err = s.h.GetElasticIP(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -10889,7 +8101,208 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 		return
 	}
 
-	if err := encodeGetFloatingIPResponse(response, w, span); err != nil {
+	if err := encodeGetElasticIPResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetElasticIPTypeRequest handles get-elastic-ip-type operation.
+//
+// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
+// facts are returned.
+//
+// GET /api/v1/elastic-ip-types/{elasticIpTypeId}
+func (s *Server) handleGetElasticIPTypeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-elastic-ip-type"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ip-types/{elasticIpTypeId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetElasticIPTypeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetElasticIPTypeOperation,
+			ID:   "get-elastic-ip-type",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetElasticIPTypeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetElasticIPTypeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ElasticIPType
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetElasticIPTypeOperation,
+			OperationSummary: "Get an elastic IP product",
+			OperationID:      "get-elastic-ip-type",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "elasticIpTypeId",
+					In:   "path",
+				}: params.ElasticIpTypeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetElasticIPTypeParams
+			Response = *ElasticIPType
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetElasticIPTypeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetElasticIPType(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetElasticIPType(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetElasticIPTypeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -10901,8 +8314,8 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 // handleGetImageRequest handles get-image operation.
 //
 // Returns a public image, or a private image of this project; any other image is reported as not
-// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure_reason`
-// states why.
+// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure` describes
+// the outcome.
 //
 // GET /api/v1/images/{imageId}
 func (s *Server) handleGetImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11100,25 +8513,25 @@ func (s *Server) handleGetImageRequest(args [1]string, argsEscaped bool, w http.
 	}
 }
 
-// handleGetInstanceRequest handles get-instance operation.
+// handleGetMachineTypeRequest handles get-machine-type operation.
 //
-// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
-// progress.
+// Returns only an on-sale machine type, under the same access rules as listing. Off-sale, retired or
+// absent types return 404.
 //
-// GET /api/v1/instances/{instanceId}
-func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/machine-types/{machineTypeId}
+func (s *Server) handleGetMachineTypeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-instance"),
+		otelogen.OperationID("get-machine-type"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}"),
+		semconv.HTTPRouteKey.String("/api/v1/machine-types/{machineTypeId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInstanceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetMachineTypeOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -11173,15 +8586,15 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetInstanceOperation,
-			ID:   "get-instance",
+			Name: GetMachineTypeOperation,
+			ID:   "get-machine-type",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetMachineTypeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -11223,7 +8636,7 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 			return
 		}
 	}
-	params, err := decodeGetInstanceParams(args, argsEscaped, r)
+	params, err := decodeGetMachineTypeParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -11236,28 +8649,28 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 
 	var rawBody []byte
 
-	var response *InstanceResource
+	var response *MachineType
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetInstanceOperation,
-			OperationSummary: "Retrieve an instance",
-			OperationID:      "get-instance",
+			OperationName:    GetMachineTypeOperation,
+			OperationSummary: "Get a machine type",
+			OperationID:      "get-machine-type",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "machineTypeId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.MachineTypeId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetInstanceParams
-			Response = *InstanceResource
+			Params   = GetMachineTypeParams
+			Response = *MachineType
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -11266,14 +8679,14 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 		](
 			m,
 			mreq,
-			unpackGetInstanceParams,
+			unpackGetMachineTypeParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetInstance(ctx, params)
+				response, err = s.h.GetMachineType(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetInstance(ctx, params)
+		response, err = s.h.GetMachineType(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -11292,215 +8705,7 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 		return
 	}
 
-	if err := encodeGetInstanceResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetInstanceConsoleOutputRequest handles get-instance-console-output operation.
-//
-// The raw text produced by the instance during boot and by the kernel. Consult it first when login
-// fails or the remote console shows no output: it reveals where boot stopped, whether the system disk
-// was mounted, and whether initialisation reported errors.
-//
-// Instances in an error state, and instances suspended by the platform, can be read as well.
-//
-// GET /api/v1/instances/{instanceId}/console-output
-func (s *Server) handleGetInstanceConsoleOutputRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-instance-console-output"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/console-output"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInstanceConsoleOutputOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetInstanceConsoleOutputOperation,
-			ID:   "get-instance-console-output",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceConsoleOutputOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetInstanceConsoleOutputParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ConsoleOutputResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetInstanceConsoleOutputOperation,
-			OperationSummary: "Read the console output",
-			OperationID:      "get-instance-console-output",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "instanceId",
-					In:   "path",
-				}: params.InstanceId,
-				{
-					Name: "lines",
-					In:   "query",
-				}: params.Lines,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetInstanceConsoleOutputParams
-			Response = *ConsoleOutputResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetInstanceConsoleOutputParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetInstanceConsoleOutput(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetInstanceConsoleOutput(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetInstanceConsoleOutputResponse(response, w, span); err != nil {
+	if err := encodeGetMachineTypeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -11709,24 +8914,26 @@ func (s *Server) handleGetPeeringRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleGetPrivateNetworkRequest handles get-private-network operation.
+// handleGetQuotaRequest handles get-quota operation.
 //
-// Retrieve a private network.
+// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
+// Returns the effective limit, including its default when no override exists. Unknown resource values
+// are rejected.
 //
-// GET /api/v1/private-networks/{privateNetworkId}
-func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/quotas/{resource}
+func (s *Server) handleGetQuotaRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-private-network"),
+		otelogen.OperationID("get-quota"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}"),
+		semconv.HTTPRouteKey.String("/api/v1/quotas/{resource}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetPrivateNetworkOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetQuotaOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -11781,15 +8988,15 @@ func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetPrivateNetworkOperation,
-			ID:   "get-private-network",
+			Name: GetQuotaOperation,
+			ID:   "get-quota",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetPrivateNetworkOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetQuotaOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -11831,7 +9038,7 @@ func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool
 			return
 		}
 	}
-	params, err := decodeGetPrivateNetworkParams(args, argsEscaped, r)
+	params, err := decodeGetQuotaParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -11844,28 +9051,28 @@ func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool
 
 	var rawBody []byte
 
-	var response *PrivateNetworkResource
+	var response *ProjectQuota
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetPrivateNetworkOperation,
-			OperationSummary: "Retrieve a private network",
-			OperationID:      "get-private-network",
+			OperationName:    GetQuotaOperation,
+			OperationSummary: "Get a project quota",
+			OperationID:      "get-quota",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "resource",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.Resource,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetPrivateNetworkParams
-			Response = *PrivateNetworkResource
+			Params   = GetQuotaParams
+			Response = *ProjectQuota
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -11874,14 +9081,14 @@ func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool
 		](
 			m,
 			mreq,
-			unpackGetPrivateNetworkParams,
+			unpackGetQuotaParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetPrivateNetwork(ctx, params)
+				response, err = s.h.GetQuota(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetPrivateNetwork(ctx, params)
+		response, err = s.h.GetQuota(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -11900,207 +9107,7 @@ func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeGetPrivateNetworkResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetPrivateNetworkIpv6Request handles get-private-network-ipv6 operation.
-//
-// Retrieve the IPv6 configuration of a private network.
-//
-// GET /api/v1/private-networks/{privateNetworkId}/ipv6
-func (s *Server) handleGetPrivateNetworkIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-private-network-ipv6"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/ipv6"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetPrivateNetworkIpv6Operation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetPrivateNetworkIpv6Operation,
-			ID:   "get-private-network-ipv6",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetPrivateNetworkIpv6Operation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetPrivateNetworkIpv6Params(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *IPv6ResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetPrivateNetworkIpv6Operation,
-			OperationSummary: "Retrieve the IPv6 configuration of a private network",
-			OperationID:      "get-private-network-ipv6",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "privateNetworkId",
-					In:   "path",
-				}: params.PrivateNetworkId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetPrivateNetworkIpv6Params
-			Response = *IPv6ResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetPrivateNetworkIpv6Params,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetPrivateNetworkIpv6(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetPrivateNetworkIpv6(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetPrivateNetworkIpv6Response(response, w, span); err != nil {
+	if err := encodeGetQuotaResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -12509,35 +9516,25 @@ func (s *Server) handleGetSnapshotRequest(args [1]string, argsEscaped bool, w ht
 	}
 }
 
-// handleGetSnapshotQuotaRequest handles get-snapshot-quota operation.
+// handleGetVirtualMachineRequest handles get-virtual-machine operation.
 //
-// The snapshot count quota for the authenticated project in this region. Counts simultaneous snapshot
-// holdings, not lifetime create calls or storage bytes. Without an active purchase, limit and
-// available are zero; existing holdings, if any, still appear in used.
+// Returns the stored state of the virtual machine; it does not query the cloud. Use it to poll
+// creation progress.
 //
-// pending and provisioning creations reserve a slot. Snapshots being deleted or whose cleanup is
-// uncertain retain their slots until absence or deletion is confirmed. available is max(limit - used,
-// 0) while active, and zero when creation is not permitted; additional creation is refused while the
-// quota is inactive, suspended or exhausted.
-//
-// Canceling the quota's subscription through Billing is refused while any snapshot exists in the
-// region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment
-// deletes its snapshots, as for other reclaimed resources.
-//
-// GET /api/v1/regions/{regionId}/snapshot-quota
-func (s *Server) handleGetSnapshotQuotaRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/virtual-machines/{virtualMachineId}
+func (s *Server) handleGetVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-snapshot-quota"),
+		otelogen.OperationID("get-virtual-machine"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/snapshot-quota"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetSnapshotQuotaOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVirtualMachineOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -12592,15 +9589,15 @@ func (s *Server) handleGetSnapshotQuotaRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetSnapshotQuotaOperation,
-			ID:   "get-snapshot-quota",
+			Name: GetVirtualMachineOperation,
+			ID:   "get-virtual-machine",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetSnapshotQuotaOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVirtualMachineOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -12642,7 +9639,7 @@ func (s *Server) handleGetSnapshotQuotaRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeGetSnapshotQuotaParams(args, argsEscaped, r)
+	params, err := decodeGetVirtualMachineParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -12655,28 +9652,28 @@ func (s *Server) handleGetSnapshotQuotaRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response *SnapshotQuota
+	var response *VirtualMachine
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetSnapshotQuotaOperation,
-			OperationSummary: "Get regional snapshot quota",
-			OperationID:      "get-snapshot-quota",
+			OperationName:    GetVirtualMachineOperation,
+			OperationSummary: "Retrieve a virtual machine",
+			OperationID:      "get-virtual-machine",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "regionId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.RegionId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetSnapshotQuotaParams
-			Response = *SnapshotQuota
+			Params   = GetVirtualMachineParams
+			Response = *VirtualMachine
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -12685,14 +9682,14 @@ func (s *Server) handleGetSnapshotQuotaRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackGetSnapshotQuotaParams,
+			unpackGetVirtualMachineParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetSnapshotQuota(ctx, params)
+				response, err = s.h.GetVirtualMachine(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetSnapshotQuota(ctx, params)
+		response, err = s.h.GetVirtualMachine(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -12711,7 +9708,7 @@ func (s *Server) handleGetSnapshotQuotaRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeGetSnapshotQuotaResponse(response, w, span); err != nil {
+	if err := encodeGetVirtualMachineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -12720,53 +9717,24 @@ func (s *Server) handleGetSnapshotQuotaRequest(args [1]string, argsEscaped bool,
 	}
 }
 
-// handleLaunchInstanceRequest handles launch-instance operation.
+// handleGetVirtualPrivateCloudRequest handles get-virtual-private-cloud operation.
 //
-// Creates a Billing order, including for metered pricing, and returns one `pending` instance per
-// requested instance with the order. `billing` applies to the instance, its system disk and its
-// floating IP alike. A pending instance has no virtual machine, system disk or address, and is not
-// metered.
+// Retrieve a virtual private cloud.
 //
-// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`.
-// With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred
-// checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid
-// through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or
-// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
-// look the order up before submitting again.
-//
-// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id.
-// Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is
-// pending; if one is no longer usable when the order is accepted, the instance ends `failed` with
-// `provisioning_failed`. Image boots require boot_disk; existing disks retain their own subscription.
-// Instances, disks and public IPs keep their own subscription items on the same order.
-//
-// Instances of one request succeed or fail individually. Each instance, with its system disk, network
-// interface and floating IP, is created or fails as a whole. Instances that were created are kept;
-// each failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded,
-// and the order then ends `partially_completed`. Each instance is named after this request with a
-// number appended.
-//
-// The network is checked before the order is created, and a request it refuses orders and charges
-// nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not
-// `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security
-// group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another
-// private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names
-// the resource.
-//
-// POST /api/v1/instances
-func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+func (s *Server) handleGetVirtualPrivateCloudRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("launch-instance"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances"),
+		otelogen.OperationID("get-virtual-private-cloud"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), LaunchInstanceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVirtualPrivateCloudOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -12821,15 +9789,15 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: LaunchInstanceOperation,
-			ID:   "launch-instance",
+			Name: GetVirtualPrivateCloudOperation,
+			ID:   "get-virtual-private-cloud",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, LaunchInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVirtualPrivateCloudOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -12871,41 +9839,41 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 			return
 		}
 	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeLaunchInstanceRequest(r)
+	params, err := decodeGetVirtualPrivateCloudParams(args, argsEscaped, r)
 	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
+		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
 			Err:              err,
 		}
-		defer recordError("DecodeRequest", err)
+		defer recordError("DecodeParams", err)
 		s.cfg.ErrorHandler(ctx, w, r, err)
 		return
 	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
 
-	var response LaunchInstanceRes
+	var rawBody []byte
+
+	var response *VirtualPrivateCloud
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    LaunchInstanceOperation,
-			OperationSummary: "Create instances",
-			OperationID:      "launch-instance",
-			Body:             request,
+			OperationName:    GetVirtualPrivateCloudOperation,
+			OperationSummary: "Retrieve a virtual private cloud",
+			OperationID:      "get-virtual-private-cloud",
+			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualPrivateCloudId",
+					In:   "path",
+				}: params.VirtualPrivateCloudId,
+			},
+			Raw: r,
 		}
 
 		type (
-			Request  = *LaunchInstanceRequestBody
-			Params   = struct{}
-			Response = LaunchInstanceRes
+			Request  = struct{}
+			Params   = GetVirtualPrivateCloudParams
+			Response = *VirtualPrivateCloud
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -12914,14 +9882,14 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			nil,
+			unpackGetVirtualPrivateCloudParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.LaunchInstance(ctx, request)
+				response, err = s.h.GetVirtualPrivateCloud(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.LaunchInstance(ctx, request)
+		response, err = s.h.GetVirtualPrivateCloud(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -12940,7 +9908,207 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeLaunchInstanceResponse(response, w, span); err != nil {
+	if err := encodeGetVirtualPrivateCloudResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetVirtualPrivateCloudIpv6Request handles get-virtual-private-cloud-ipv6 operation.
+//
+// Returns the business prefix and enabled state, not backend provisioning or routing diagnostics.
+//
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
+func (s *Server) handleGetVirtualPrivateCloudIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-virtual-private-cloud-ipv6"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVirtualPrivateCloudIpv6Operation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetVirtualPrivateCloudIpv6Operation,
+			ID:   "get-virtual-private-cloud-ipv6",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVirtualPrivateCloudIpv6Operation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetVirtualPrivateCloudIpv6Params(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *IPv6ResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetVirtualPrivateCloudIpv6Operation,
+			OperationSummary: "Retrieve the IPv6 prefix enabled on a virtual private cloud",
+			OperationID:      "get-virtual-private-cloud-ipv6",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualPrivateCloudId",
+					In:   "path",
+				}: params.VirtualPrivateCloudId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetVirtualPrivateCloudIpv6Params
+			Response = *IPv6ResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetVirtualPrivateCloudIpv6Params,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetVirtualPrivateCloudIpv6(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetVirtualPrivateCloudIpv6(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetVirtualPrivateCloudIpv6Response(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -12951,8 +10119,8 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 
 // handleListAvailabilityZonesRequest handles list-availability-zones operation.
 //
-// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
-// before creating either.
+// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
+// zone before creating either.
 //
 // GET /api/v1/regions/{regionId}/availability-zones
 func (s *Server) handleListAvailabilityZonesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13150,214 +10318,6 @@ func (s *Server) handleListAvailabilityZonesRequest(args [1]string, argsEscaped 
 	}
 
 	if err := encodeListAvailabilityZonesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListBackupCapacityPacksRequest handles list-backup-capacity-packs operation.
-//
-// The capacity packs of the authenticated project in this region, newest first, including ended ones.
-//
-// GET /api/v1/regions/{regionId}/backup-capacity-packs
-func (s *Server) handleListBackupCapacityPacksRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-backup-capacity-packs"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/backup-capacity-packs"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListBackupCapacityPacksOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListBackupCapacityPacksOperation,
-			ID:   "list-backup-capacity-packs",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListBackupCapacityPacksOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListBackupCapacityPacksParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *BackupCapacityPackListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListBackupCapacityPacksOperation,
-			OperationSummary: "List backup capacity packs",
-			OperationID:      "list-backup-capacity-packs",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-				{
-					Name: "regionId",
-					In:   "path",
-				}: params.RegionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListBackupCapacityPacksParams
-			Response = *BackupCapacityPackListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListBackupCapacityPacksParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListBackupCapacityPacks(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListBackupCapacityPacks(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListBackupCapacityPacksResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -13790,8 +10750,8 @@ func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w 
 
 // handleListDisksRequest handles list-disks operation.
 //
-// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance
-// at that location are returned.
+// When both `region_code` and `availability_zone` are supplied, only disks attachable to a virtual
+// machine at that location are returned.
 //
 // GET /api/v1/disks
 func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14001,24 +10961,25 @@ func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http
 	}
 }
 
-// handleListFloatingIpsRequest handles list-floating-ips operation.
+// handleListElasticIPTypesRequest handles list-elastic-ip-types operation.
 //
-// List floating IPs.
+// Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
+// from Billing.
 //
-// GET /api/v1/floating-ips
-func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/elastic-ip-types
+func (s *Server) handleListElasticIPTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-floating-ips"),
+		otelogen.OperationID("list-elastic-ip-types"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ip-types"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListFloatingIpsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListElasticIPTypesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -14073,15 +11034,15 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListFloatingIpsOperation,
-			ID:   "list-floating-ips",
+			Name: ListElasticIPTypesOperation,
+			ID:   "list-elastic-ip-types",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListFloatingIpsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListElasticIPTypesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -14123,7 +11084,7 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 			return
 		}
 	}
-	params, err := decodeListFloatingIpsParams(args, argsEscaped, r)
+	params, err := decodeListElasticIPTypesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -14136,16 +11097,20 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 
 	var rawBody []byte
 
-	var response *FloatingIPListResponseBody
+	var response *ElasticIPTypeListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListFloatingIpsOperation,
-			OperationSummary: "List floating IPs",
-			OperationID:      "list-floating-ips",
+			OperationName:    ListElasticIPTypesOperation,
+			OperationSummary: "List public elastic IP products",
+			OperationID:      "list-elastic-ip-types",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "region_id",
+					In:   "query",
+				}: params.RegionID,
 				{
 					Name: "page",
 					In:   "query",
@@ -14160,8 +11125,8 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 
 		type (
 			Request  = struct{}
-			Params   = ListFloatingIpsParams
-			Response = *FloatingIPListResponseBody
+			Params   = ListElasticIPTypesParams
+			Response = *ElasticIPTypeListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14170,14 +11135,14 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 		](
 			m,
 			mreq,
-			unpackListFloatingIpsParams,
+			unpackListElasticIPTypesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListFloatingIps(ctx, params)
+				response, err = s.h.ListElasticIPTypes(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListFloatingIps(ctx, params)
+		response, err = s.h.ListElasticIPTypes(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -14196,7 +11161,211 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 		return
 	}
 
-	if err := encodeListFloatingIpsResponse(response, w, span); err != nil {
+	if err := encodeListElasticIPTypesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListElasticIpsRequest handles list-elastic-ips operation.
+//
+// List elastic IPs.
+//
+// GET /api/v1/elastic-ips
+func (s *Server) handleListElasticIpsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-elastic-ips"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ips"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListElasticIpsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListElasticIpsOperation,
+			ID:   "list-elastic-ips",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListElasticIpsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListElasticIpsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ElasticIPListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListElasticIpsOperation,
+			OperationSummary: "List elastic IPs",
+			OperationID:      "list-elastic-ips",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListElasticIpsParams
+			Response = *ElasticIPListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListElasticIpsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListElasticIps(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListElasticIps(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListElasticIpsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -14211,14 +11380,14 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 // narrows the list to one of the two.
 //
 // A public image is offered to every project. Only public images currently on sale are listed: one the
-// platform withdraws disappears from here and can no longer install new instances, while the instances
-// already running it keep running and can still be rebuilt onto it.
+// platform withdraws disappears from here and can no longer install new virtual machines, while the
+// virtual machines already running it keep running and can still be rebuilt onto it.
 //
-// A private image belongs to this project, which captured it from one of its instances, and is listed
-// in every status, including while its capture is in progress and after the capture failed.
+// A private image belongs to this project, which captured it from one of its virtual machines, and is
+// listed in every status, including while its capture is in progress and after the capture failed.
 //
 // An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected instance type cannot boot; filter the options accordingly.
+// memory of the selected machine type cannot boot; filter the options accordingly.
 //
 // GET /api/v1/images
 func (s *Server) handleListImagesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14428,24 +11597,25 @@ func (s *Server) handleListImagesRequest(args [0]string, argsEscaped bool, w htt
 	}
 }
 
-// handleListInstanceDisksRequest handles list-instance-disks operation.
+// handleListMachineTypesRequest handles list-machine-types operation.
 //
-// List the disks attached to an instance.
+// Only machine types currently on sale are listed. A withdrawn one disappears from here and can no
+// longer be ordered, while the virtual machines already running it keep running.
 //
-// GET /api/v1/instances/{instanceId}/disks
-func (s *Server) handleListInstanceDisksRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/machine-types
+func (s *Server) handleListMachineTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-instance-disks"),
+		otelogen.OperationID("list-machine-types"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/disks"),
+		semconv.HTTPRouteKey.String("/api/v1/machine-types"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstanceDisksOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListMachineTypesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -14500,15 +11670,15 @@ func (s *Server) handleListInstanceDisksRequest(args [1]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListInstanceDisksOperation,
-			ID:   "list-instance-disks",
+			Name: ListMachineTypesOperation,
+			ID:   "list-machine-types",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstanceDisksOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListMachineTypesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -14550,7 +11720,7 @@ func (s *Server) handleListInstanceDisksRequest(args [1]string, argsEscaped bool
 			return
 		}
 	}
-	params, err := decodeListInstanceDisksParams(args, argsEscaped, r)
+	params, err := decodeListMachineTypesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -14563,430 +11733,13 @@ func (s *Server) handleListInstanceDisksRequest(args [1]string, argsEscaped bool
 
 	var rawBody []byte
 
-	var response *DiskAttachmentList
+	var response *MachineTypeListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListInstanceDisksOperation,
-			OperationSummary: "List the disks attached to an instance",
-			OperationID:      "list-instance-disks",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "instanceId",
-					In:   "path",
-				}: params.InstanceId,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListInstanceDisksParams
-			Response = *DiskAttachmentList
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListInstanceDisksParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListInstanceDisks(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListInstanceDisks(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListInstanceDisksResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListInstancePortsRequest handles list-instance-ports operation.
-//
-// List the network interfaces of an instance.
-//
-// GET /api/v1/instances/{instanceId}/ports
-func (s *Server) handleListInstancePortsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-instance-ports"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/ports"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstancePortsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListInstancePortsOperation,
-			ID:   "list-instance-ports",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstancePortsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListInstancePortsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *PortAttachmentList
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListInstancePortsOperation,
-			OperationSummary: "List the network interfaces of an instance",
-			OperationID:      "list-instance-ports",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "instanceId",
-					In:   "path",
-				}: params.InstanceId,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListInstancePortsParams
-			Response = *PortAttachmentList
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListInstancePortsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListInstancePorts(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListInstancePorts(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListInstancePortsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListInstanceTypesRequest handles list-instance-types operation.
-//
-// Only instance types currently on sale are listed. A withdrawn one disappears from here and can no
-// longer be ordered, while the instances already running it keep running.
-//
-// GET /api/v1/instance-types
-func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-instance-types"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/instance-types"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstanceTypesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListInstanceTypesOperation,
-			ID:   "list-instance-types",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstanceTypesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListInstanceTypesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *InstanceTypeListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListInstanceTypesOperation,
-			OperationSummary: "List instance types on sale",
-			OperationID:      "list-instance-types",
+			OperationName:    ListMachineTypesOperation,
+			OperationSummary: "List machine types on sale",
+			OperationID:      "list-machine-types",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -15008,8 +11761,8 @@ func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool
 
 		type (
 			Request  = struct{}
-			Params   = ListInstanceTypesParams
-			Response = *InstanceTypeListResponseBody
+			Params   = ListMachineTypesParams
+			Response = *MachineTypeListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -15018,14 +11771,14 @@ func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool
 		](
 			m,
 			mreq,
-			unpackListInstanceTypesParams,
+			unpackListMachineTypesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListInstanceTypes(ctx, params)
+				response, err = s.h.ListMachineTypes(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListInstanceTypes(ctx, params)
+		response, err = s.h.ListMachineTypes(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -15044,7 +11797,7 @@ func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeListInstanceTypesResponse(response, w, span); err != nil {
+	if err := encodeListMachineTypesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -15053,24 +11806,24 @@ func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool
 	}
 }
 
-// handleListInstancesRequest handles list-instances operation.
+// handleListNetworkInterfacesRequest handles list-network-interfaces operation.
 //
-// Every instance in the project, newest first, in their stored state.
+// List network interfaces.
 //
-// GET /api/v1/instances
-func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/network-interfaces
+func (s *Server) handleListNetworkInterfacesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-instances"),
+		otelogen.OperationID("list-network-interfaces"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/instances"),
+		semconv.HTTPRouteKey.String("/api/v1/network-interfaces"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstancesOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListNetworkInterfacesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -15125,15 +11878,15 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListInstancesOperation,
-			ID:   "list-instances",
+			Name: ListNetworkInterfacesOperation,
+			ID:   "list-network-interfaces",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstancesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListNetworkInterfacesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -15175,7 +11928,7 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 			return
 		}
 	}
-	params, err := decodeListInstancesParams(args, argsEscaped, r)
+	params, err := decodeListNetworkInterfacesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -15188,20 +11941,16 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *InstanceListResponseBody
+	var response *NetworkInterfaceListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListInstancesOperation,
-			OperationSummary: "List instances",
-			OperationID:      "list-instances",
+			OperationName:    ListNetworkInterfacesOperation,
+			OperationSummary: "List network interfaces",
+			OperationID:      "list-network-interfaces",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "label",
-					In:   "query",
-				}: params.Label,
 				{
 					Name: "page",
 					In:   "query",
@@ -15216,8 +11965,8 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 
 		type (
 			Request  = struct{}
-			Params   = ListInstancesParams
-			Response = *InstanceListResponseBody
+			Params   = ListNetworkInterfacesParams
+			Response = *NetworkInterfaceListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -15226,14 +11975,14 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 		](
 			m,
 			mreq,
-			unpackListInstancesParams,
+			unpackListNetworkInterfacesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListInstances(ctx, params)
+				response, err = s.h.ListNetworkInterfaces(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListInstances(ctx, params)
+		response, err = s.h.ListNetworkInterfaces(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -15252,215 +12001,7 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 		return
 	}
 
-	if err := encodeListInstancesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListIpv4PoolsRequest handles list-ipv4-pools operation.
-//
-// Lists the public IP pools available for new allocations in this region.
-//
-// GET /api/v1/ipv4-pools
-func (s *Server) handleListIpv4PoolsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-ipv4-pools"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/ipv4-pools"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListIpv4PoolsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListIpv4PoolsOperation,
-			ID:   "list-ipv4-pools",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListIpv4PoolsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListIpv4PoolsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *IPv4PoolListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListIpv4PoolsOperation,
-			OperationSummary: "List public IP pools",
-			OperationID:      "list-ipv4-pools",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "region_id",
-					In:   "query",
-				}: params.RegionID,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListIpv4PoolsParams
-			Response = *IPv4PoolListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListIpv4PoolsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListIpv4Pools(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListIpv4Pools(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListIpv4PoolsResponse(response, w, span); err != nil {
+	if err := encodeListNetworkInterfacesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -15476,7 +12017,8 @@ func (s *Server) handleListIpv4PoolsRequest(args [0]string, argsEscaped bool, w 
 //
 // Operations performed by the platform are included, but the individual operator is not disclosed and
 // `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
-// an instance was stopped by the platform is needed, whereas the operator is internal information.
+// a virtual machine was stopped by the platform is needed, whereas the operator is internal
+// information.
 //
 // Fields such as passwords are replaced with a placeholder as the record is written and never appear
 // in `payload`.
@@ -15889,24 +12431,26 @@ func (s *Server) handleListPeeringsRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleListPortsRequest handles list-ports operation.
+// handleListQuotasRequest handles list-quotas operation.
 //
-// List network interfaces.
+// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
+// Returns all supported resource limits through shared pagination, including defaults for resources
+// without an override. No cross-domain usage total is returned.
 //
-// GET /api/v1/ports
-func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/quotas
+func (s *Server) handleListQuotasRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-ports"),
+		otelogen.OperationID("list-quotas"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/ports"),
+		semconv.HTTPRouteKey.String("/api/v1/quotas"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListPortsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListQuotasOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -15961,15 +12505,15 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListPortsOperation,
-			ID:   "list-ports",
+			Name: ListQuotasOperation,
+			ID:   "list-quotas",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListPortsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListQuotasOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -16011,7 +12555,7 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 			return
 		}
 	}
-	params, err := decodeListPortsParams(args, argsEscaped, r)
+	params, err := decodeListQuotasParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -16024,13 +12568,13 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 
 	var rawBody []byte
 
-	var response *PortListResponseBody
+	var response *ProjectQuotaListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListPortsOperation,
-			OperationSummary: "List network interfaces",
-			OperationID:      "list-ports",
+			OperationName:    ListQuotasOperation,
+			OperationSummary: "List project quotas",
+			OperationID:      "list-quotas",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -16048,8 +12592,8 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 
 		type (
 			Request  = struct{}
-			Params   = ListPortsParams
-			Response = *PortListResponseBody
+			Params   = ListQuotasParams
+			Response = *ProjectQuotaListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -16058,14 +12602,14 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 		](
 			m,
 			mreq,
-			unpackListPortsParams,
+			unpackListQuotasParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListPorts(ctx, params)
+				response, err = s.h.ListQuotas(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListPorts(ctx, params)
+		response, err = s.h.ListQuotas(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -16084,215 +12628,7 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 		return
 	}
 
-	if err := encodeListPortsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListPrivateNetworksRequest handles list-private-networks operation.
-//
-// List private networks.
-//
-// GET /api/v1/private-networks
-func (s *Server) handleListPrivateNetworksRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-private-networks"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListPrivateNetworksOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListPrivateNetworksOperation,
-			ID:   "list-private-networks",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListPrivateNetworksOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListPrivateNetworksParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *PrivateNetworkListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListPrivateNetworksOperation,
-			OperationSummary: "List private networks",
-			OperationID:      "list-private-networks",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "region_id",
-					In:   "query",
-				}: params.RegionID,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListPrivateNetworksParams
-			Response = *PrivateNetworkListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListPrivateNetworksParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListPrivateNetworks(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListPrivateNetworks(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListPrivateNetworksResponse(response, w, span); err != nil {
+	if err := encodeListQuotasResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -16509,14 +12845,14 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 //
 // List static routes.
 //
-// GET /api/v1/private-networks/{privateNetworkId}/routes
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes
 func (s *Server) handleListRoutesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-routes"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/routes"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/routes"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16651,9 +12987,9 @@ func (s *Server) handleListRoutesRequest(args [1]string, argsEscaped bool, w htt
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 				{
 					Name: "page",
 					In:   "query",
@@ -17071,9 +13407,9 @@ func (s *Server) handleListSecurityGroupsRequest(args [0]string, argsEscaped boo
 					In:   "query",
 				}: params.RegionID,
 				{
-					Name: "private_network_id",
+					Name: "virtual_private_cloud_id",
 					In:   "query",
-				}: params.PrivateNetworkID,
+				}: params.VirtualPrivateCloudID,
 				{
 					Name: "page",
 					In:   "query",
@@ -17346,14 +13682,14 @@ func (s *Server) handleListSnapshotsRequest(args [0]string, argsEscaped bool, w 
 // IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
 // deleted individually.
 //
-// GET /api/v1/private-networks/{privateNetworkId}/subnets
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets
 func (s *Server) handleListSubnetsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-subnets"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/subnets"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -17488,9 +13824,9 @@ func (s *Server) handleListSubnetsRequest(args [1]string, argsEscaped bool, w ht
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 				{
 					Name: "page",
 					In:   "query",
@@ -17550,27 +13886,24 @@ func (s *Server) handleListSubnetsRequest(args [1]string, argsEscaped bool, w ht
 	}
 }
 
-// handleOpenInstanceConsoleRequest handles open-instance-console operation.
+// handleListVirtualMachineDisksRequest handles list-virtual-machine-disks operation.
 //
-// Operates the instance directly from a browser and does not require the instance to be reachable over
-// the network, which makes it usable when a network misconfiguration prevents login.
+// List the disks attached to a virtual machine.
 //
-// The returned address is single-use and expires within minutes. Request a new one before each use.
-//
-// POST /api/v1/instances/{instanceId}/console
-func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/virtual-machines/{virtualMachineId}/disks
+func (s *Server) handleListVirtualMachineDisksRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("open-instance-console"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/console"),
+		otelogen.OperationID("list-virtual-machine-disks"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/disks"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), OpenInstanceConsoleOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVirtualMachineDisksOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -17625,15 +13958,15 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: OpenInstanceConsoleOperation,
-			ID:   "open-instance-console",
+			Name: ListVirtualMachineDisksOperation,
+			ID:   "list-virtual-machine-disks",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, OpenInstanceConsoleOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVirtualMachineDisksOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -17675,7 +14008,842 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 			return
 		}
 	}
-	params, err := decodeOpenInstanceConsoleParams(args, argsEscaped, r)
+	params, err := decodeListVirtualMachineDisksParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *DiskAttachmentList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListVirtualMachineDisksOperation,
+			OperationSummary: "List the disks attached to a virtual machine",
+			OperationID:      "list-virtual-machine-disks",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualMachineId",
+					In:   "path",
+				}: params.VirtualMachineId,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListVirtualMachineDisksParams
+			Response = *DiskAttachmentList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListVirtualMachineDisksParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListVirtualMachineDisks(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListVirtualMachineDisks(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListVirtualMachineDisksResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListVirtualMachineNetworkInterfacesRequest handles list-virtual-machine-network-interfaces operation.
+//
+// List the network interfaces of a virtual machine.
+//
+// GET /api/v1/virtual-machines/{virtualMachineId}/network-interfaces
+func (s *Server) handleListVirtualMachineNetworkInterfacesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-virtual-machine-network-interfaces"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/network-interfaces"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVirtualMachineNetworkInterfacesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListVirtualMachineNetworkInterfacesOperation,
+			ID:   "list-virtual-machine-network-interfaces",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVirtualMachineNetworkInterfacesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListVirtualMachineNetworkInterfacesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *NetworkInterfaceAttachmentList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListVirtualMachineNetworkInterfacesOperation,
+			OperationSummary: "List the network interfaces of a virtual machine",
+			OperationID:      "list-virtual-machine-network-interfaces",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualMachineId",
+					In:   "path",
+				}: params.VirtualMachineId,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListVirtualMachineNetworkInterfacesParams
+			Response = *NetworkInterfaceAttachmentList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListVirtualMachineNetworkInterfacesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListVirtualMachineNetworkInterfaces(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListVirtualMachineNetworkInterfaces(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListVirtualMachineNetworkInterfacesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListVirtualMachinesRequest handles list-virtual-machines operation.
+//
+// Every virtual machine in the project, newest first, in their stored state.
+//
+// GET /api/v1/virtual-machines
+func (s *Server) handleListVirtualMachinesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-virtual-machines"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVirtualMachinesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListVirtualMachinesOperation,
+			ID:   "list-virtual-machines",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVirtualMachinesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListVirtualMachinesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VirtualMachineListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListVirtualMachinesOperation,
+			OperationSummary: "List virtual machines",
+			OperationID:      "list-virtual-machines",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "label",
+					In:   "query",
+				}: params.Label,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListVirtualMachinesParams
+			Response = *VirtualMachineListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListVirtualMachinesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListVirtualMachines(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListVirtualMachines(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListVirtualMachinesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListVirtualPrivateCloudsRequest handles list-virtual-private-clouds operation.
+//
+// List virtual private clouds.
+//
+// GET /api/v1/virtual-private-clouds
+func (s *Server) handleListVirtualPrivateCloudsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-virtual-private-clouds"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVirtualPrivateCloudsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListVirtualPrivateCloudsOperation,
+			ID:   "list-virtual-private-clouds",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVirtualPrivateCloudsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListVirtualPrivateCloudsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VirtualPrivateCloudListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListVirtualPrivateCloudsOperation,
+			OperationSummary: "List virtual private clouds",
+			OperationID:      "list-virtual-private-clouds",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "region_id",
+					In:   "query",
+				}: params.RegionID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListVirtualPrivateCloudsParams
+			Response = *VirtualPrivateCloudListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListVirtualPrivateCloudsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListVirtualPrivateClouds(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListVirtualPrivateClouds(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListVirtualPrivateCloudsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleOpenVirtualMachineConsoleRequest handles open-virtual-machine-console operation.
+//
+// Operates the virtual machine directly from a browser and does not require the virtual machine to be
+// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+//
+// The returned address is single-use and expires within minutes. Request a new one before each use.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/console
+func (s *Server) handleOpenVirtualMachineConsoleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("open-virtual-machine-console"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/console"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), OpenVirtualMachineConsoleOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: OpenVirtualMachineConsoleOperation,
+			ID:   "open-virtual-machine-console",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, OpenVirtualMachineConsoleOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeOpenVirtualMachineConsoleParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -17692,23 +14860,23 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    OpenInstanceConsoleOperation,
+			OperationName:    OpenVirtualMachineConsoleOperation,
 			OperationSummary: "Open a remote console",
-			OperationID:      "open-instance-console",
+			OperationID:      "open-virtual-machine-console",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = OpenInstanceConsoleParams
+			Params   = OpenVirtualMachineConsoleParams
 			Response = *ConsoleResponseBody
 		)
 		response, err = middleware.HookMiddleware[
@@ -17718,14 +14886,14 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			unpackOpenInstanceConsoleParams,
+			unpackOpenVirtualMachineConsoleParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.OpenInstanceConsole(ctx, params)
+				response, err = s.h.OpenVirtualMachineConsole(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.OpenInstanceConsole(ctx, params)
+		response, err = s.h.OpenVirtualMachineConsole(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -17744,7 +14912,7 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 		return
 	}
 
-	if err := encodeOpenInstanceConsoleResponse(response, w, span); err != nil {
+	if err := encodeOpenVirtualMachineConsoleResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -17753,7 +14921,7 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 	}
 }
 
-// handleRebootInstanceRequest handles reboot-instance operation.
+// handleRebootVirtualMachineRequest handles reboot-virtual-machine operation.
 //
 // A reboot defaults to soft, in which the operating system shuts down normally before starting again.
 //
@@ -17761,27 +14929,27 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 // forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
 //
 // A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-// reboot the instance never carried out. Any other request for an operation, including a second soft
-// reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+// reboot the virtual machine never carried out. Any other request for an operation, including a second
+// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 //
-// An instance suspended by the platform must be unsuspended first.
+// A virtual machine suspended by the platform must be unsuspended first.
 //
-// The instance shows the `reboot` operation until the reboot has finished.
+// The virtual machine shows the `reboot` operation until the reboot has finished.
 //
-// POST /api/v1/instances/{instanceId}/reboot
-func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/reboot
+func (s *Server) handleRebootVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reboot-instance"),
+		otelogen.OperationID("reboot-virtual-machine"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/reboot"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/reboot"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RebootInstanceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RebootVirtualMachineOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -17836,15 +15004,15 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RebootInstanceOperation,
-			ID:   "reboot-instance",
+			Name: RebootVirtualMachineOperation,
+			ID:   "reboot-virtual-machine",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebootInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebootVirtualMachineOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -17886,7 +15054,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeRebootInstanceParams(args, argsEscaped, r)
+	params, err := decodeRebootVirtualMachineParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -17898,7 +15066,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRebootInstanceRequest(r)
+	request, rawBody, close, err := s.decodeRebootVirtualMachineRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -17914,28 +15082,28 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response RebootInstanceRes
+	var response RebootVirtualMachineRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RebootInstanceOperation,
-			OperationSummary: "Reboot an instance",
-			OperationID:      "reboot-instance",
+			OperationName:    RebootVirtualMachineOperation,
+			OperationSummary: "Reboot a virtual machine",
+			OperationID:      "reboot-virtual-machine",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *RebootInstanceRequestBody
-			Params   = RebootInstanceParams
-			Response = RebootInstanceRes
+			Request  = *RebootVirtualMachineRequestBody
+			Params   = RebootVirtualMachineParams
+			Response = RebootVirtualMachineRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -17944,14 +15112,14 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackRebootInstanceParams,
+			unpackRebootVirtualMachineParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RebootInstance(ctx, request, params)
+				response, err = s.h.RebootVirtualMachine(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RebootInstance(ctx, request, params)
+		response, err = s.h.RebootVirtualMachine(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -17970,7 +15138,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeRebootInstanceResponse(response, w, span); err != nil {
+	if err := encodeRebootVirtualMachineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -17979,30 +15147,31 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 	}
 }
 
-// handleRebuildInstanceRequest handles rebuild-instance operation.
+// handleRebuildVirtualMachineRequest handles rebuild-virtual-machine operation.
 //
 // All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
 //
-// The image this instance already runs is accepted even after the platform has withdrawn it, since
-// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
-// is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
+// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
+// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
+// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
+// order.
 //
-// The instance shows the `rebuild` operation until the rebuild has finished.
+// The virtual machine shows the `rebuild` operation until the rebuild has finished.
 //
-// POST /api/v1/instances/{instanceId}/rebuild
-func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/rebuild
+func (s *Server) handleRebuildVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rebuild-instance"),
+		otelogen.OperationID("rebuild-virtual-machine"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/rebuild"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/rebuild"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RebuildInstanceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RebuildVirtualMachineOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -18057,15 +15226,15 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RebuildInstanceOperation,
-			ID:   "rebuild-instance",
+			Name: RebuildVirtualMachineOperation,
+			ID:   "rebuild-virtual-machine",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebuildInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebuildVirtualMachineOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -18107,7 +15276,7 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 			return
 		}
 	}
-	params, err := decodeRebuildInstanceParams(args, argsEscaped, r)
+	params, err := decodeRebuildVirtualMachineParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -18119,7 +15288,7 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRebuildInstanceRequest(r)
+	request, rawBody, close, err := s.decodeRebuildVirtualMachineRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -18135,28 +15304,28 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 		}
 	}()
 
-	var response RebuildInstanceRes
+	var response RebuildVirtualMachineRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RebuildInstanceOperation,
-			OperationSummary: "Rebuild an instance",
-			OperationID:      "rebuild-instance",
+			OperationName:    RebuildVirtualMachineOperation,
+			OperationSummary: "Rebuild a virtual machine",
+			OperationID:      "rebuild-virtual-machine",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *RebuildInstanceRequestBody
-			Params   = RebuildInstanceParams
-			Response = RebuildInstanceRes
+			Request  = *RebuildVirtualMachineRequestBody
+			Params   = RebuildVirtualMachineParams
+			Response = RebuildVirtualMachineRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -18165,14 +15334,14 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 		](
 			m,
 			mreq,
-			unpackRebuildInstanceParams,
+			unpackRebuildVirtualMachineParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RebuildInstance(ctx, request, params)
+				response, err = s.h.RebuildVirtualMachine(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RebuildInstance(ctx, request, params)
+		response, err = s.h.RebuildVirtualMachine(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -18191,7 +15360,7 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 		return
 	}
 
-	if err := encodeRebuildInstanceResponse(response, w, span); err != nil {
+	if err := encodeRebuildVirtualMachineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -18400,30 +15569,31 @@ func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w 
 	}
 }
 
-// handleReleaseFloatingIPRequest handles release-floating-ip operation.
+// handleReleaseElasticIPRequest handles release-elastic-ip operation.
 //
-// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
-// is released.
+// Releases the elastic IP after unbinding it. The elastic IP shows the `delete` operation until
+// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
+// period. Unbinding or moving a binding alone does not release the address.
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-// pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling
-// the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
 // `release_subscription_ids`.
 //
-// DELETE /api/v1/floating-ips/{floatingIpId}
-func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/elastic-ips/{elasticIpId}
+func (s *Server) handleReleaseElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("release-floating-ip"),
+		otelogen.OperationID("release-elastic-ip"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ips/{elasticIpId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReleaseFloatingIPOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ReleaseElasticIPOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -18478,15 +15648,15 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ReleaseFloatingIPOperation,
-			ID:   "release-floating-ip",
+			Name: ReleaseElasticIPOperation,
+			ID:   "release-elastic-ip",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ReleaseFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ReleaseElasticIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -18528,7 +15698,7 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 			return
 		}
 	}
-	params, err := decodeReleaseFloatingIPParams(args, argsEscaped, r)
+	params, err := decodeReleaseElasticIPParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -18541,28 +15711,28 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 
 	var rawBody []byte
 
-	var response ReleaseFloatingIPRes
+	var response ReleaseElasticIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ReleaseFloatingIPOperation,
-			OperationSummary: "Release a floating IP",
-			OperationID:      "release-floating-ip",
+			OperationName:    ReleaseElasticIPOperation,
+			OperationSummary: "Release an elastic IP",
+			OperationID:      "release-elastic-ip",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "floatingIpId",
+					Name: "elasticIpId",
 					In:   "path",
-				}: params.FloatingIpId,
+				}: params.ElasticIpId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ReleaseFloatingIPParams
-			Response = ReleaseFloatingIPRes
+			Params   = ReleaseElasticIPParams
+			Response = ReleaseElasticIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -18571,14 +15741,14 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 		](
 			m,
 			mreq,
-			unpackReleaseFloatingIPParams,
+			unpackReleaseElasticIPParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReleaseFloatingIP(ctx, params)
+				response, err = s.h.ReleaseElasticIP(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ReleaseFloatingIP(ctx, params)
+		response, err = s.h.ReleaseElasticIP(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -18597,7 +15767,7 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeReleaseFloatingIPResponse(response, w, span); err != nil {
+	if err := encodeReleaseElasticIPResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -19252,437 +16422,6 @@ func (s *Server) handleRenameImageRequest(args [1]string, argsEscaped bool, w ht
 	}
 }
 
-// handleRenameInstanceRequest handles rename-instance operation.
-//
-// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
-// id.
-//
-// PATCH /api/v1/instances/{instanceId}
-func (s *Server) handleRenameInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-instance"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RenameInstanceOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: RenameInstanceOperation,
-			ID:   "rename-instance",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameInstanceOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeRenameInstanceParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeRenameInstanceRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *InstanceResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    RenameInstanceOperation,
-			OperationSummary: "Rename an instance",
-			OperationID:      "rename-instance",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "instanceId",
-					In:   "path",
-				}: params.InstanceId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *RenameInstanceRequestBody
-			Params   = RenameInstanceParams
-			Response = *InstanceResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackRenameInstanceParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RenameInstance(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.RenameInstance(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeRenameInstanceResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleRenamePrivateNetworkRequest handles rename-private-network operation.
-//
-// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
-//
-// PATCH /api/v1/private-networks/{privateNetworkId}
-func (s *Server) handleRenamePrivateNetworkRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-private-network"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RenamePrivateNetworkOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: RenamePrivateNetworkOperation,
-			ID:   "rename-private-network",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenamePrivateNetworkOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeRenamePrivateNetworkParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeRenamePrivateNetworkRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *PrivateNetworkResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    RenamePrivateNetworkOperation,
-			OperationSummary: "Rename a private network",
-			OperationID:      "rename-private-network",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "privateNetworkId",
-					In:   "path",
-				}: params.PrivateNetworkId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *RenamePrivateNetworkRequestBody
-			Params   = RenamePrivateNetworkParams
-			Response = *PrivateNetworkResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackRenamePrivateNetworkParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RenamePrivateNetwork(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.RenamePrivateNetwork(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeRenamePrivateNetworkResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleRenameSecurityGroupRequest handles rename-security-group operation.
 //
 // Changes the name only. Use the rule endpoints to change rules.
@@ -20113,30 +16852,25 @@ func (s *Server) handleRenameSnapshotRequest(args [1]string, argsEscaped bool, w
 	}
 }
 
-// handleResetInstancePasswordRequest handles reset-instance-password operation.
+// handleRenameVirtualMachineRequest handles rename-virtual-machine operation.
 //
-// Changes the root password without a reboot. The instance must be running.
+// Changes the display name only. The hostname inside the virtual machine is unchanged; it equals the
+// virtual machine id.
 //
-// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-// password can then only be set by rebuilding the instance, which erases all data on the system disk.
-//
-// The request is also rejected when the image is marked as supported but the corresponding component
-// has been removed or stopped inside the instance.
-//
-// POST /api/v1/instances/{instanceId}/password
-func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PATCH /api/v1/virtual-machines/{virtualMachineId}
+func (s *Server) handleRenameVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reset-instance-password"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/password"),
+		otelogen.OperationID("rename-virtual-machine"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ResetInstancePasswordOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RenameVirtualMachineOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -20191,15 +16925,15 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ResetInstancePasswordOperation,
-			ID:   "reset-instance-password",
+			Name: RenameVirtualMachineOperation,
+			ID:   "rename-virtual-machine",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResetInstancePasswordOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameVirtualMachineOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -20241,7 +16975,7 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 			return
 		}
 	}
-	params, err := decodeResetInstancePasswordParams(args, argsEscaped, r)
+	params, err := decodeRenameVirtualMachineParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -20253,7 +16987,7 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeResetInstancePasswordRequest(r)
+	request, rawBody, close, err := s.decodeRenameVirtualMachineRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -20269,28 +17003,28 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 		}
 	}()
 
-	var response ResetInstancePasswordRes
+	var response *VirtualMachine
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ResetInstancePasswordOperation,
-			OperationSummary: "Reset the login password",
-			OperationID:      "reset-instance-password",
+			OperationName:    RenameVirtualMachineOperation,
+			OperationSummary: "Rename a virtual machine",
+			OperationID:      "rename-virtual-machine",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *ResetPasswordRequestBody
-			Params   = ResetInstancePasswordParams
-			Response = ResetInstancePasswordRes
+			Request  = *RenameVirtualMachineRequestBody
+			Params   = RenameVirtualMachineParams
+			Response = *VirtualMachine
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -20299,14 +17033,14 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 		](
 			m,
 			mreq,
-			unpackResetInstancePasswordParams,
+			unpackRenameVirtualMachineParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ResetInstancePassword(ctx, request, params)
+				response, err = s.h.RenameVirtualMachine(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ResetInstancePassword(ctx, request, params)
+		response, err = s.h.RenameVirtualMachine(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -20325,7 +17059,661 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 		return
 	}
 
-	if err := encodeResetInstancePasswordResponse(response, w, span); err != nil {
+	if err := encodeRenameVirtualMachineResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRenameVirtualPrivateCloudRequest handles rename-virtual-private-cloud operation.
+//
+// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
+//
+// PATCH /api/v1/virtual-private-clouds/{virtualPrivateCloudId}
+func (s *Server) handleRenameVirtualPrivateCloudRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("rename-virtual-private-cloud"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RenameVirtualPrivateCloudOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RenameVirtualPrivateCloudOperation,
+			ID:   "rename-virtual-private-cloud",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameVirtualPrivateCloudOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRenameVirtualPrivateCloudParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRenameVirtualPrivateCloudRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *VirtualPrivateCloud
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RenameVirtualPrivateCloudOperation,
+			OperationSummary: "Rename a virtual private cloud",
+			OperationID:      "rename-virtual-private-cloud",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualPrivateCloudId",
+					In:   "path",
+				}: params.VirtualPrivateCloudId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RenameVirtualPrivateCloudRequestBody
+			Params   = RenameVirtualPrivateCloudParams
+			Response = *VirtualPrivateCloud
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRenameVirtualPrivateCloudParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RenameVirtualPrivateCloud(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RenameVirtualPrivateCloud(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRenameVirtualPrivateCloudResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRescueVirtualMachineRequest handles rescue-virtual-machine operation.
+//
+// Boots a temporary rescue environment while retaining the original system disk. The selected image
+// must support this virtual machine. Stop, resize, rebuild and password reset are unavailable in
+// rescue mode.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/rescue
+func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("rescue-virtual-machine"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/rescue"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RescueVirtualMachineOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RescueVirtualMachineOperation,
+			ID:   "rescue-virtual-machine",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RescueVirtualMachineOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRescueVirtualMachineParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRescueVirtualMachineRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response RescueVirtualMachineRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RescueVirtualMachineOperation,
+			OperationSummary: "Rescue a virtual machine",
+			OperationID:      "rescue-virtual-machine",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualMachineId",
+					In:   "path",
+				}: params.VirtualMachineId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RescueVirtualMachineRequestBody
+			Params   = RescueVirtualMachineParams
+			Response = RescueVirtualMachineRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRescueVirtualMachineParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RescueVirtualMachine(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RescueVirtualMachine(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRescueVirtualMachineResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleResetVirtualMachinePasswordRequest handles reset-virtual-machine-password operation.
+//
+// Changes the root password without a reboot. The virtual machine must be running.
+//
+// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
+// password can then only be set by rebuilding the virtual machine, which erases all data on the system
+// disk.
+//
+// The request is also rejected when the image is marked as supported but the corresponding component
+// has been removed or stopped inside the virtual machine.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/password
+func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("reset-virtual-machine-password"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/password"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ResetVirtualMachinePasswordOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ResetVirtualMachinePasswordOperation,
+			ID:   "reset-virtual-machine-password",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResetVirtualMachinePasswordOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeResetVirtualMachinePasswordParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeResetVirtualMachinePasswordRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response ResetVirtualMachinePasswordRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ResetVirtualMachinePasswordOperation,
+			OperationSummary: "Reset the login password",
+			OperationID:      "reset-virtual-machine-password",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualMachineId",
+					In:   "path",
+				}: params.VirtualMachineId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ResetPasswordRequestBody
+			Params   = ResetVirtualMachinePasswordParams
+			Response = ResetVirtualMachinePasswordRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackResetVirtualMachinePasswordParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ResetVirtualMachinePassword(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ResetVirtualMachinePassword(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeResetVirtualMachinePasswordResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -20341,8 +17729,8 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 // the resize is applied or its order is canceled, including while the order awaits checkout, so other
 // operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps
 // its current size until the resize is applied; once `size_gb` shows the new size, extend the file
-// system inside the instance. If the order is not accepted or the resize fails, the disk keeps its
-// size and the order shows the outcome.
+// system inside the virtual machine. If the order is not accepted or the resize fails, the disk keeps
+// its size and the order shows the outcome.
 //
 // An attached data disk whose performance scales with its size must be detached before it is resized.
 // The performance of an attached disk does not change until the disk is detached and attached again,
@@ -20568,36 +17956,37 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleResizeInstanceRequest handles resize-instance operation.
+// handleResizeVirtualMachineRequest handles resize-virtual-machine operation.
 //
-// Creates a Billing change order, including for metered pricing, and returns the instance with the
-// order. The instance keeps its billing mode and period, priced with the target type's matching
-// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not
-// submit a new purchase after paying. After an uncertain response, look the order up before submitting
-// again.
+// Records the requested configuration, creates a deferred Billing change order, including for metered
+// terms, and returns the virtual machine with the order. The virtual machine keeps its billing mode
+// and period; Billing resolves the applicable commercial terms and refuses an unavailable option with
+// 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts only after Compute receives `orderAccepted` and
+// verifies the accepted order with Billing. Do not submit the change again after paying. After an
+// uncertain response, look the order up before submitting again.
 //
-// The instance shows the `resize` operation until the resize is applied or its order is canceled,
-// including while the order awaits checkout, so other operations and a second resize are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-// type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not
-// accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A
-// completed resize is final and cannot be reverted; to return to the previous type, submit another
-// resize.
+// The virtual machine shows the `resize` operation until the resize is applied or its order is
+// canceled, including while the order awaits checkout, so other operations and a second resize are
+// refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is
+// applied; the new type takes effect, and is billed from then on, when `machine_type_id` shows it. If
+// the order is not accepted or the resize fails, the virtual machine keeps its current type and the
+// order shows the outcome. A completed resize is final and cannot be reverted; to return to the
+// previous type, submit another resize.
 //
-// POST /api/v1/instances/{instanceId}/resize
-func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/resize
+func (s *Server) handleResizeVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("resize-instance"),
+		otelogen.OperationID("resize-virtual-machine"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/resize"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/resize"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ResizeInstanceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ResizeVirtualMachineOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -20652,15 +18041,15 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ResizeInstanceOperation,
-			ID:   "resize-instance",
+			Name: ResizeVirtualMachineOperation,
+			ID:   "resize-virtual-machine",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResizeInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResizeVirtualMachineOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -20702,7 +18091,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeResizeInstanceParams(args, argsEscaped, r)
+	params, err := decodeResizeVirtualMachineParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -20714,7 +18103,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeResizeInstanceRequest(r)
+	request, rawBody, close, err := s.decodeResizeVirtualMachineRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -20730,28 +18119,28 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response ResizeInstanceRes
+	var response ResizeVirtualMachineRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ResizeInstanceOperation,
-			OperationSummary: "Resize an instance",
-			OperationID:      "resize-instance",
+			OperationName:    ResizeVirtualMachineOperation,
+			OperationSummary: "Resize a virtual machine",
+			OperationID:      "resize-virtual-machine",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *ResizeInstanceRequestBody
-			Params   = ResizeInstanceParams
-			Response = ResizeInstanceRes
+			Request  = *ResizeVirtualMachineRequestBody
+			Params   = ResizeVirtualMachineParams
+			Response = ResizeVirtualMachineRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -20760,14 +18149,14 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackResizeInstanceParams,
+			unpackResizeVirtualMachineParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ResizeInstance(ctx, request, params)
+				response, err = s.h.ResizeVirtualMachine(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ResizeInstance(ctx, request, params)
+		response, err = s.h.ResizeVirtualMachine(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -20786,7 +18175,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeResizeInstanceResponse(response, w, span); err != nil {
+	if err := encodeResizeVirtualMachineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21020,9 +18409,9 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 // moment is lost and cannot be recovered.
 //
 // Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
-// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
-// from the snapshot instead.
+// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
+// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
+// new disk from the snapshot instead.
 //
 // The disk shows the `revert` operation until the revert is complete.
 //
@@ -21237,7 +18626,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleRunInstanceCommandRequest handles run-instance-command operation.
+// handleRunVirtualMachineCommandRequest handles run-virtual-machine-command operation.
 //
 // Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
 // standard input and no way to answer a prompt: a command that waits for input produces nothing and is
@@ -21248,39 +18637,39 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 // that matches nothing exits 1 and is a perfectly successful call.
 //
 // The status therefore answers a different question — did the command run at all. A non-2xx means it
-// did not, and nothing about the instance was changed by this request: it was suspended, not running
-// or had no floating IP; or it refused the platform key; or the connection could not be opened.
+// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
+// running or had no elastic IP; or it refused the platform key; or the connection could not be opened.
 // Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 //
-// Three conditions must hold; the instance is unreachable otherwise:
+// Three conditions must hold; the virtual machine is unreachable otherwise:
 //
 //   - it is `active`
-//   - a floating IP is bound to it, since this endpoint connects over the public internet
+//   - an elastic IP is bound to it, since this endpoint connects over the public internet
 //   - its security group permits inbound TCP 22
 //
-// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
-// be set up first. The instance must have applied that key at first boot, which images without a full
-// cloud-init do not do.
+// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
+// has to be set up first. The virtual machine must have applied that key at first boot, which images
+// without a full cloud-init do not do.
 //
-// Do not pass secrets in the command. Read them from a file on the instance instead: neither the
-// command nor its output is a confidential channel.
+// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
+// the command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
-// POST /api/v1/instances/{instanceId}/commands
-func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/commands
+func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("run-instance-command"),
+		otelogen.OperationID("run-virtual-machine-command"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/commands"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/commands"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RunInstanceCommandOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RunVirtualMachineCommandOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -21335,15 +18724,15 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RunInstanceCommandOperation,
-			ID:   "run-instance-command",
+			Name: RunVirtualMachineCommandOperation,
+			ID:   "run-virtual-machine-command",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RunInstanceCommandOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RunVirtualMachineCommandOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -21385,7 +18774,7 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeRunInstanceCommandParams(args, argsEscaped, r)
+	params, err := decodeRunVirtualMachineCommandParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -21397,7 +18786,7 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRunInstanceCommandRequest(r)
+	request, rawBody, close, err := s.decodeRunVirtualMachineCommandRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -21417,23 +18806,23 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RunInstanceCommandOperation,
-			OperationSummary: "Run a command on an instance",
-			OperationID:      "run-instance-command",
+			OperationName:    RunVirtualMachineCommandOperation,
+			OperationSummary: "Run a command on a virtual machine",
+			OperationID:      "run-virtual-machine-command",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = *RunCommandRequestBody
-			Params   = RunInstanceCommandParams
+			Params   = RunVirtualMachineCommandParams
 			Response = *CommandResultResponseBody
 		)
 		response, err = middleware.HookMiddleware[
@@ -21443,14 +18832,14 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackRunInstanceCommandParams,
+			unpackRunVirtualMachineCommandParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RunInstanceCommand(ctx, request, params)
+				response, err = s.h.RunVirtualMachineCommand(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RunInstanceCommand(ctx, request, params)
+		response, err = s.h.RunVirtualMachineCommand(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -21469,7 +18858,7 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeRunInstanceCommandResponse(response, w, span); err != nil {
+	if err := encodeRunVirtualMachineCommandResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21478,34 +18867,24 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleSetFloatingIPBandwidthRequest handles set-floating-ip-bandwidth operation.
+// handleSearchElasticIPTypesRequest handles search-elastic-ip-types operation.
 //
-// Changes the bandwidth of this floating IP through an order that keeps its billing mode and period;
-// no separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike.
-// The floating IP shows the `set_bandwidth` operation until the change is applied or its order is
-// canceled, including while the order awaits checkout, so other operations and a second change are
-// refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change
-// is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
-// the order shows the outcome.
+// Search on-sale product names and descriptions. Filters use AND; pagination is independent.
 //
-// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
-// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
-// address that is not bound is checked when the address is bound to an instance.
-//
-// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/elastic-ip-types/search
+func (s *Server) handleSearchElasticIPTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-floating-ip-bandwidth"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}/bandwidth"),
+		otelogen.OperationID("search-elastic-ip-types"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ip-types/search"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SetFloatingIPBandwidthOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SearchElasticIPTypesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -21560,15 +18939,15 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: SetFloatingIPBandwidthOperation,
-			ID:   "set-floating-ip-bandwidth",
+			Name: SearchElasticIPTypesOperation,
+			ID:   "search-elastic-ip-types",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetFloatingIPBandwidthOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SearchElasticIPTypesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -21610,7 +18989,7 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 			return
 		}
 	}
-	params, err := decodeSetFloatingIPBandwidthParams(args, argsEscaped, r)
+	params, err := decodeSearchElasticIPTypesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -21622,44 +19001,41 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeSetFloatingIPBandwidthRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
 
-	var response SetFloatingIPBandwidthRes
+	var response *ElasticIPTypeListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    SetFloatingIPBandwidthOperation,
-			OperationSummary: "Set the bandwidth limit",
-			OperationID:      "set-floating-ip-bandwidth",
-			Body:             request,
+			OperationName:    SearchElasticIPTypesOperation,
+			OperationSummary: "Search public elastic IP products",
+			OperationID:      "search-elastic-ip-types",
+			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "floatingIpId",
-					In:   "path",
-				}: params.FloatingIpId,
+					Name: "region_id",
+					In:   "query",
+				}: params.RegionID,
+				{
+					Name: "q",
+					In:   "query",
+				}: params.Q,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *SetFloatingIPBandwidthRequestBody
-			Params   = SetFloatingIPBandwidthParams
-			Response = SetFloatingIPBandwidthRes
+			Request  = struct{}
+			Params   = SearchElasticIPTypesParams
+			Response = *ElasticIPTypeListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -21668,14 +19044,14 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		](
 			m,
 			mreq,
-			unpackSetFloatingIPBandwidthParams,
+			unpackSearchElasticIPTypesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.SetFloatingIPBandwidth(ctx, request, params)
+				response, err = s.h.SearchElasticIPTypes(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.SetFloatingIPBandwidth(ctx, request, params)
+		response, err = s.h.SearchElasticIPTypes(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -21694,7 +19070,7 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		return
 	}
 
-	if err := encodeSetFloatingIPBandwidthResponse(response, w, span); err != nil {
+	if err := encodeSearchElasticIPTypesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21703,28 +19079,253 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 	}
 }
 
-// handleSetInstanceLabelsRequest handles set-instance-labels operation.
+// handleSetElasticIPBandwidthRequest handles set-elastic-ip-bandwidth operation.
 //
-// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
+// Changes the bandwidth of this elastic IP through an order that keeps its billing mode and period; no
+// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
+// elastic IP shows the `set_bandwidth` operation until the change is applied or its order is canceled,
+// including while the order awaits checkout, so other operations and a second change are refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
+// the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows
+// the outcome.
+//
+// While the address is bound to a virtual machine, the limit must not exceed the `max_bandwidth_mbps`
+// of that virtual machine's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The
+// limit of an address that is not bound is checked when the address is bound to a virtual machine.
+//
+// PUT /api/v1/elastic-ips/{elasticIpId}/bandwidth
+func (s *Server) handleSetElasticIPBandwidthRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-elastic-ip-bandwidth"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ips/{elasticIpId}/bandwidth"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SetElasticIPBandwidthOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: SetElasticIPBandwidthOperation,
+			ID:   "set-elastic-ip-bandwidth",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetElasticIPBandwidthOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeSetElasticIPBandwidthParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeSetElasticIPBandwidthRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response SetElasticIPBandwidthRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    SetElasticIPBandwidthOperation,
+			OperationSummary: "Set the bandwidth limit",
+			OperationID:      "set-elastic-ip-bandwidth",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "elasticIpId",
+					In:   "path",
+				}: params.ElasticIpId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *SetElasticIPBandwidthRequestBody
+			Params   = SetElasticIPBandwidthParams
+			Response = SetElasticIPBandwidthRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackSetElasticIPBandwidthParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.SetElasticIPBandwidth(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.SetElasticIPBandwidth(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeSetElasticIPBandwidthResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleSetVirtualMachineLabelsRequest handles set-virtual-machine-labels operation.
+//
+// Records what this virtual machine is for, as key-value pairs. Nothing on the platform reads them.
 //
 // The whole set is replaced: whatever is absent from the request is removed.
 //
 // Do not put credentials here. Labels are visible to platform operators.
 //
-// PUT /api/v1/instances/{instanceId}/labels
-func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PUT /api/v1/virtual-machines/{virtualMachineId}/labels
+func (s *Server) handleSetVirtualMachineLabelsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-instance-labels"),
+		otelogen.OperationID("set-virtual-machine-labels"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/labels"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/labels"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SetInstanceLabelsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SetVirtualMachineLabelsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -21779,15 +19380,15 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: SetInstanceLabelsOperation,
-			ID:   "set-instance-labels",
+			Name: SetVirtualMachineLabelsOperation,
+			ID:   "set-virtual-machine-labels",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetInstanceLabelsOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetVirtualMachineLabelsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -21829,7 +19430,7 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 			return
 		}
 	}
-	params, err := decodeSetInstanceLabelsParams(args, argsEscaped, r)
+	params, err := decodeSetVirtualMachineLabelsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -21841,7 +19442,7 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeSetInstanceLabelsRequest(r)
+	request, rawBody, close, err := s.decodeSetVirtualMachineLabelsRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -21857,28 +19458,28 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 		}
 	}()
 
-	var response *InstanceResource
+	var response *VirtualMachine
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    SetInstanceLabelsOperation,
-			OperationSummary: "Replace an instance's labels",
-			OperationID:      "set-instance-labels",
+			OperationName:    SetVirtualMachineLabelsOperation,
+			OperationSummary: "Replace a virtual machine's labels",
+			OperationID:      "set-virtual-machine-labels",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *SetInstanceLabelsRequestBody
-			Params   = SetInstanceLabelsParams
-			Response = *InstanceResource
+			Request  = *SetVirtualMachineLabelsRequestBody
+			Params   = SetVirtualMachineLabelsParams
+			Response = *VirtualMachine
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -21887,14 +19488,14 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 		](
 			m,
 			mreq,
-			unpackSetInstanceLabelsParams,
+			unpackSetVirtualMachineLabelsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.SetInstanceLabels(ctx, request, params)
+				response, err = s.h.SetVirtualMachineLabels(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.SetInstanceLabels(ctx, request, params)
+		response, err = s.h.SetVirtualMachineLabels(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -21913,7 +19514,7 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeSetInstanceLabelsResponse(response, w, span); err != nil {
+	if err := encodeSetVirtualMachineLabelsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21922,29 +19523,29 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 	}
 }
 
-// handleSetInstanceNotesRequest handles set-instance-notes operation.
+// handleSetVirtualMachineNotesRequest handles set-virtual-machine-notes operation.
 //
-// A free-text note about this instance — what it runs, and what to be careful about before touching
-// it.
+// A free-text note about this virtual machine — what it runs, and what to be careful about before
+// touching it.
 //
 // The whole note is replaced; send an empty string to clear it.
 //
 // Do not put credentials here. The note is visible to platform operators.
 //
-// PUT /api/v1/instances/{instanceId}/notes
-func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PUT /api/v1/virtual-machines/{virtualMachineId}/notes
+func (s *Server) handleSetVirtualMachineNotesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-instance-notes"),
+		otelogen.OperationID("set-virtual-machine-notes"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/notes"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/notes"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SetInstanceNotesOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SetVirtualMachineNotesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -21999,15 +19600,15 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: SetInstanceNotesOperation,
-			ID:   "set-instance-notes",
+			Name: SetVirtualMachineNotesOperation,
+			ID:   "set-virtual-machine-notes",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetInstanceNotesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetVirtualMachineNotesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -22049,7 +19650,7 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeSetInstanceNotesParams(args, argsEscaped, r)
+	params, err := decodeSetVirtualMachineNotesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -22061,7 +19662,7 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeSetInstanceNotesRequest(r)
+	request, rawBody, close, err := s.decodeSetVirtualMachineNotesRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -22077,28 +19678,28 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 		}
 	}()
 
-	var response *InstanceResource
+	var response *VirtualMachine
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    SetInstanceNotesOperation,
-			OperationSummary: "Replace an instance's note",
-			OperationID:      "set-instance-notes",
+			OperationName:    SetVirtualMachineNotesOperation,
+			OperationSummary: "Replace a virtual machine's note",
+			OperationID:      "set-virtual-machine-notes",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *SetInstanceNotesRequestBody
-			Params   = SetInstanceNotesParams
-			Response = *InstanceResource
+			Request  = *SetVirtualMachineNotesRequestBody
+			Params   = SetVirtualMachineNotesParams
+			Response = *VirtualMachine
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -22107,14 +19708,14 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackSetInstanceNotesParams,
+			unpackSetVirtualMachineNotesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.SetInstanceNotes(ctx, request, params)
+				response, err = s.h.SetVirtualMachineNotes(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.SetInstanceNotes(ctx, request, params)
+		response, err = s.h.SetVirtualMachineNotes(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -22133,7 +19734,7 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeSetInstanceNotesResponse(response, w, span); err != nil {
+	if err := encodeSetVirtualMachineNotesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -22142,254 +19743,25 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 	}
 }
 
-// handleSetSnapshotQuotaRequest handles set-snapshot-quota operation.
+// handleStartVirtualMachineRequest handles start-virtual-machine operation.
 //
-// Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
-// the target total, not an additional number of slots or a consumable create allowance. billing
-// chooses one of the quota's pricing options; a change of an existing purchase keeps its billing mode
-// and period, and billing must name that option. The purchased quantity is this count.
+// Outstanding restrictions can prevent starting. The virtual machine shows the `start` operation until
+// it is running or the start has failed.
 //
-// Returns the quota with the order. pending_limit records the target while the current limit stays in
-// force; the new limit applies once the order is accepted and the quota is activated. Snapshots create
-// no further orders or subscriptions, and deleting one frees a slot without refunding the quota
-// purchase.
-//
-// Repeating the same target and billing choice while its purchase is pending returns the same order. A
-// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
-// identical target and billing choice returns its existing purchase without charging again; renewing
-// its term is a separate Billing renewal operation. A requested limit below used is refused with 409
-// SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
-//
-// PUT /api/v1/regions/{regionId}/snapshot-quota
-func (s *Server) handleSetSnapshotQuotaRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/start
+func (s *Server) handleStartVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-snapshot-quota"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/snapshot-quota"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SetSnapshotQuotaOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: SetSnapshotQuotaOperation,
-			ID:   "set-snapshot-quota",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, SetSnapshotQuotaOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeSetSnapshotQuotaParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeSetSnapshotQuotaRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response SetSnapshotQuotaRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    SetSnapshotQuotaOperation,
-			OperationSummary: "Set regional snapshot quota",
-			OperationID:      "set-snapshot-quota",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "regionId",
-					In:   "path",
-				}: params.RegionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *SetSnapshotQuotaRequestBody
-			Params   = SetSnapshotQuotaParams
-			Response = SetSnapshotQuotaRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackSetSnapshotQuotaParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.SetSnapshotQuota(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.SetSnapshotQuota(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeSetSnapshotQuotaResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleStartInstanceRequest handles start-instance operation.
-//
-// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
-// running or the start has failed.
-//
-// POST /api/v1/instances/{instanceId}/start
-func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-instance"),
+		otelogen.OperationID("start-virtual-machine"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/start"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/start"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StartInstanceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), StartVirtualMachineOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -22444,15 +19816,15 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StartInstanceOperation,
-			ID:   "start-instance",
+			Name: StartVirtualMachineOperation,
+			ID:   "start-virtual-machine",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, StartInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, StartVirtualMachineOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -22494,7 +19866,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 			return
 		}
 	}
-	params, err := decodeStartInstanceParams(args, argsEscaped, r)
+	params, err := decodeStartVirtualMachineParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -22506,7 +19878,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeStartInstanceRequest(r)
+	request, rawBody, close, err := s.decodeStartVirtualMachineRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -22522,28 +19894,28 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		}
 	}()
 
-	var response StartInstanceRes
+	var response StartVirtualMachineRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    StartInstanceOperation,
-			OperationSummary: "Start an instance",
-			OperationID:      "start-instance",
+			OperationName:    StartVirtualMachineOperation,
+			OperationSummary: "Start a virtual machine",
+			OperationID:      "start-virtual-machine",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = *PowerRequest
-			Params   = StartInstanceParams
-			Response = StartInstanceRes
+			Params   = StartVirtualMachineParams
+			Response = StartVirtualMachineRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -22552,14 +19924,14 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		](
 			m,
 			mreq,
-			unpackStartInstanceParams,
+			unpackStartVirtualMachineParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StartInstance(ctx, request, params)
+				response, err = s.h.StartVirtualMachine(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.StartInstance(ctx, request, params)
+		response, err = s.h.StartVirtualMachine(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -22578,7 +19950,7 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 		return
 	}
 
-	if err := encodeStartInstanceResponse(response, w, span); err != nil {
+	if err := encodeStartVirtualMachineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -22587,25 +19959,25 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 	}
 }
 
-// handleStopInstanceRequest handles stop-instance operation.
+// handleStopVirtualMachineRequest handles stop-virtual-machine operation.
 //
-// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
-// `stop` operation until it is stopped or the stop has failed.
+// A stopped virtual machine keeps its disks, network attachments and sellable quota. The virtual
+// machine shows the `stop` operation until it is stopped or the stop has failed.
 //
-// POST /api/v1/instances/{instanceId}/stop
-func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/virtual-machines/{virtualMachineId}/stop
+func (s *Server) handleStopVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("stop-instance"),
+		otelogen.OperationID("stop-virtual-machine"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/stop"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/stop"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StopInstanceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), StopVirtualMachineOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -22660,15 +20032,15 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StopInstanceOperation,
-			ID:   "stop-instance",
+			Name: StopVirtualMachineOperation,
+			ID:   "stop-virtual-machine",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, StopInstanceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, StopVirtualMachineOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -22710,7 +20082,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 			return
 		}
 	}
-	params, err := decodeStopInstanceParams(args, argsEscaped, r)
+	params, err := decodeStopVirtualMachineParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -22722,7 +20094,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeStopInstanceRequest(r)
+	request, rawBody, close, err := s.decodeStopVirtualMachineRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -22738,28 +20110,28 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response StopInstanceRes
+	var response StopVirtualMachineRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    StopInstanceOperation,
-			OperationSummary: "Stop an instance",
-			OperationID:      "stop-instance",
+			OperationName:    StopVirtualMachineOperation,
+			OperationSummary: "Stop a virtual machine",
+			OperationID:      "stop-virtual-machine",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "instanceId",
+					Name: "virtualMachineId",
 					In:   "path",
-				}: params.InstanceId,
+				}: params.VirtualMachineId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = *PowerRequest
-			Params   = StopInstanceParams
-			Response = StopInstanceRes
+			Params   = StopVirtualMachineParams
+			Response = StopVirtualMachineRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -22768,14 +20140,14 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		](
 			m,
 			mreq,
-			unpackStopInstanceParams,
+			unpackStopVirtualMachineParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StopInstance(ctx, request, params)
+				response, err = s.h.StopVirtualMachine(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.StopInstance(ctx, request, params)
+		response, err = s.h.StopVirtualMachine(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -22794,7 +20166,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 		return
 	}
 
-	if err := encodeStopInstanceResponse(response, w, span); err != nil {
+	if err := encodeStopVirtualMachineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -22808,14 +20180,14 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 // The returned value is a suggestion and is validated again when the subnet is created. It exists to
 // avoid errors when computing the next free CIDR by hand.
 //
-// GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr
+// GET /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/next-free-cidr
 func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("suggest-subnet-cidr"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-private-clouds/{virtualPrivateCloudId}/subnets/next-free-cidr"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -22950,9 +20322,9 @@ func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "privateNetworkId",
+					Name: "virtualPrivateCloudId",
 					In:   "path",
-				}: params.PrivateNetworkId,
+				}: params.VirtualPrivateCloudId,
 				{
 					Name: "prefix_length",
 					In:   "query",
@@ -23008,25 +20380,25 @@ func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool
 	}
 }
 
-// handleUnbindFloatingIPRequest handles unbind-floating-ip operation.
+// handleUnbindElasticIPRequest handles unbind-elastic-ip operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
-// floating IP shows the `unbind` operation until the change is confirmed.
+// elastic IP shows the `unbind` operation until the change is confirmed.
 //
-// DELETE /api/v1/floating-ips/{floatingIpId}/binding
-func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/elastic-ips/{elasticIpId}/binding
+func (s *Server) handleUnbindElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("unbind-floating-ip"),
+		otelogen.OperationID("unbind-elastic-ip"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}/binding"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ips/{elasticIpId}/binding"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UnbindFloatingIPOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UnbindElasticIPOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -23081,15 +20453,15 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: UnbindFloatingIPOperation,
-			ID:   "unbind-floating-ip",
+			Name: UnbindElasticIPOperation,
+			ID:   "unbind-elastic-ip",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, UnbindFloatingIPOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UnbindElasticIPOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -23131,7 +20503,7 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeUnbindFloatingIPParams(args, argsEscaped, r)
+	params, err := decodeUnbindElasticIPParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -23144,28 +20516,28 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response UnbindFloatingIPRes
+	var response UnbindElasticIPRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    UnbindFloatingIPOperation,
-			OperationSummary: "Unbind a floating IP",
-			OperationID:      "unbind-floating-ip",
+			OperationName:    UnbindElasticIPOperation,
+			OperationSummary: "Unbind an elastic IP",
+			OperationID:      "unbind-elastic-ip",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "floatingIpId",
+					Name: "elasticIpId",
 					In:   "path",
-				}: params.FloatingIpId,
+				}: params.ElasticIpId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = UnbindFloatingIPParams
-			Response = UnbindFloatingIPRes
+			Params   = UnbindElasticIPParams
+			Response = UnbindElasticIPRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -23174,14 +20546,14 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackUnbindFloatingIPParams,
+			unpackUnbindElasticIPParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UnbindFloatingIP(ctx, params)
+				response, err = s.h.UnbindElasticIP(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.UnbindFloatingIP(ctx, params)
+		response, err = s.h.UnbindElasticIP(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -23200,7 +20572,207 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeUnbindFloatingIPResponse(response, w, span); err != nil {
+	if err := encodeUnbindElasticIPResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleUnrescueVirtualMachineRequest handles unrescue-virtual-machine operation.
+//
+// Restores boot from the original system disk. Completion is shown by the virtual machine state.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
+func (s *Server) handleUnrescueVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("unrescue-virtual-machine"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/virtual-machines/{virtualMachineId}/unrescue"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UnrescueVirtualMachineOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: UnrescueVirtualMachineOperation,
+			ID:   "unrescue-virtual-machine",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UnrescueVirtualMachineOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeUnrescueVirtualMachineParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response UnrescueVirtualMachineRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    UnrescueVirtualMachineOperation,
+			OperationSummary: "Exit virtual machine rescue mode",
+			OperationID:      "unrescue-virtual-machine",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "virtualMachineId",
+					In:   "path",
+				}: params.VirtualMachineId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = UnrescueVirtualMachineParams
+			Response = UnrescueVirtualMachineRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackUnrescueVirtualMachineParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.UnrescueVirtualMachine(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.UnrescueVirtualMachine(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeUnrescueVirtualMachineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

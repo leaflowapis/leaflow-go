@@ -18,7 +18,31 @@ import (
 )
 
 var regexMap = map[string]ogenregex.Regexp{
-	"^[0-9]{1,15}([.][0-9]{1,10})?$": ogenregex.MustCompile("^[0-9]{1,15}([.][0-9]{1,10})?$"),
+	"^(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$": ogenregex.MustCompile("^(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$"),
+	"^backup_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                   ogenregex.MustCompile("^backup_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^disk_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                     ogenregex.MustCompile("^disk_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^disktype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                 ogenregex.MustCompile("^disktype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^eip_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                      ogenregex.MustCompile("^eip_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^eipassoc_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                 ogenregex.MustCompile("^eipassoc_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^eiptype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                  ogenregex.MustCompile("^eiptype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^eni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                      ogenregex.MustCompile("^eni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^eniaddr_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                  ogenregex.MustCompile("^eniaddr_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^image_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                    ogenregex.MustCompile("^image_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^mtype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                    ogenregex.MustCompile("^mtype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^oplog_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                    ogenregex.MustCompile("^oplog_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^peering_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                  ogenregex.MustCompile("^peering_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^region_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                   ogenregex.MustCompile("^region_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^route_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                    ogenregex.MustCompile("^route_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^sg_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                       ogenregex.MustCompile("^sg_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^sgrule_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                   ogenregex.MustCompile("^sgrule_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^snapshot_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                 ogenregex.MustCompile("^snapshot_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^subnet_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                   ogenregex.MustCompile("^subnet_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^vm_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                       ogenregex.MustCompile("^vm_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^vmdisk_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                   ogenregex.MustCompile("^vmdisk_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^vmeni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                    ogenregex.MustCompile("^vmeni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^vmrestriction_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                            ogenregex.MustCompile("^vmrestriction_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^vpc_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                      ogenregex.MustCompile("^vpc_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^zone_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                     ogenregex.MustCompile("^zone_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 }
 var (
 	// Allocate option closure once.

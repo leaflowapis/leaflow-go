@@ -27,21 +27,21 @@ func loadFinancialCases(t *testing.T) []financialCase {
 	return rows
 }
 
-// 从批准源的共同 64-case corpus 复用金额案例，直接核对本 SDK 实际 CheckoutOptions。
-func TestFinancialSourceCheckoutCases(t *testing.T) {
+func TestFinancialSourceAmountsCannotEnterCreateDisk(t *testing.T) {
 	for _, row := range loadFinancialCases(t) {
 		t.Run(row.Name, func(t *testing.T) {
-			raw, err := json.Marshal(map[string]json.RawMessage{"expected_amount": row.Input["expected_amount"]})
+			checkout, err := json.Marshal(row.Input)
 			if err != nil {
 				t.Fatal(err)
 			}
-			var value CheckoutOptions
+			raw := []byte(`{"disk_type_id":"disktype_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"mode":"postpaid"},"checkout":` + string(checkout) + `}`)
+			var value CreateDiskRequestBody
 			err = value.Decode(jx.DecodeBytes(raw))
 			if err == nil {
 				err = value.Validate()
 			}
-			if (err == nil) != row.Expected {
-				t.Fatalf("accepted=%v expected=%v error=%v", err == nil, row.Expected, err)
+			if err == nil {
+				t.Fatal("Compute accepted checkout fields that belong to Billing")
 			}
 		})
 	}
