@@ -217,8 +217,8 @@ func (UnimplementedHandler) GetUsageSummary(ctx context.Context, params GetUsage
 
 // GetUsageTimeline implements get-usage-timeline operation.
 //
-// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial, and the
-// number of buckets is limited to 100.
+// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial. The range may
+// span up to 400 days, and the number of buckets is limited to 400.
 //
 // To divide by local day, send `from` as midnight in local time with its offset and `bucket` as `24h`.
 // The server does not infer a timezone.

@@ -1018,7 +1018,7 @@ type GetUsageTimelineParams struct {
 	// Requests recorded before sources were tracked have none and are excluded.
 	Source OptString `json:",omitempty,omitzero"`
 	// The length of each bucket, written as a duration such as 1h or 24h. The number of buckets is limited
-	// to 100.
+	// to 400.
 	Bucket OptString `json:",omitempty,omitzero"`
 }
 
