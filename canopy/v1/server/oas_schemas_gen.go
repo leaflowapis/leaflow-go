@@ -4809,7 +4809,7 @@ func (s *ReasoningDiagnosticsRequested) init() ReasoningDiagnosticsRequested {
 
 // Ref: #/components/schemas/RequestResource
 type RequestResource struct {
-	// Null for a request made by an internal service directly for the project.
+	// Null for a request that did not come through one of the project's API keys.
 	APIKeyID NilUUID `json:"api_key_id"`
 	// The portion served from the upstream prefix cache, which costs an order of magnitude less than
 	// ordinary input.
@@ -4822,13 +4822,18 @@ type RequestResource struct {
 	ID           uuid.UUID   `json:"id"`
 	InputTokens  int64       `json:"input_tokens"`
 	// The model named in the request.
-	ModelID         string                `json:"model_id"`
-	OutputTokens    int64                 `json:"output_tokens"`
-	ReasoningTokens int64                 `json:"reasoning_tokens"`
-	Retries         int64                 `json:"retries"`
-	StartedAt       time.Time             `json:"started_at"`
-	Status          RequestResourceStatus `json:"status"`
-	Stream          bool                  `json:"stream"`
+	ModelID         string `json:"model_id"`
+	OutputTokens    int64  `json:"output_tokens"`
+	ReasoningTokens int64  `json:"reasoning_tokens"`
+	Retries         int64  `json:"retries"`
+	// Who made the request. `api_key` means one of the project's API keys and `project_token` a project
+	// access token on the OpenAI-compatible endpoints; any other value names the Leaflow service that made
+	// it on the project's behalf, such as `assistant`, and more services may appear. Null for requests
+	// recorded before sources were tracked.
+	Source    NilString             `json:"source"`
+	StartedAt time.Time             `json:"started_at"`
+	Status    RequestResourceStatus `json:"status"`
+	Stream    bool                  `json:"stream"`
 	// The id of the request on the upstream side. Quote it when reporting a problem.
 	UpstreamRequestID string `json:"upstream_request_id"`
 	// The HTTP status returned upstream. 0 indicates that the request never reached it.
@@ -4897,6 +4902,11 @@ func (s *RequestResource) GetReasoningTokens() int64 {
 // GetRetries returns the value of Retries.
 func (s *RequestResource) GetRetries() int64 {
 	return s.Retries
+}
+
+// GetSource returns the value of Source.
+func (s *RequestResource) GetSource() NilString {
+	return s.Source
 }
 
 // GetStartedAt returns the value of StartedAt.
@@ -4992,6 +5002,11 @@ func (s *RequestResource) SetReasoningTokens(val int64) {
 // SetRetries sets the value of Retries.
 func (s *RequestResource) SetRetries(val int64) {
 	s.Retries = val
+}
+
+// SetSource sets the value of Source.
+func (s *RequestResource) SetSource(val NilString) {
+	s.Source = val
 }
 
 // SetStartedAt sets the value of StartedAt.

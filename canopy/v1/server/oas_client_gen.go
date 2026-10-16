@@ -2632,6 +2632,23 @@ func (c *Client) sendGetUsageSummary(ctx context.Context, params GetUsageSummary
 			return res, errors.Wrap(err, "encode query")
 		}
 	}
+	{
+		// Encode "source" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Source.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
@@ -2826,6 +2843,23 @@ func (c *Client) sendGetUsageTimeline(ctx context.Context, params GetUsageTimeli
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Status.Get(); ok {
 				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "source" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Source.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -3454,6 +3488,23 @@ func (c *Client) sendListRequests(ctx context.Context, params ListRequestsParams
 		}
 	}
 	{
+		// Encode "source" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Source.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
 		// Encode "limit" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "limit",
@@ -3874,6 +3925,23 @@ func (c *Client) sendListUsageByModel(ctx context.Context, params ListUsageByMod
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Status.Get(); ok {
 				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "source" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Source.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {

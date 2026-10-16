@@ -3400,6 +3400,10 @@ func (s *Server) handleGetUsageSummaryRequest(args [0]string, argsEscaped bool, 
 					Name: "status",
 					In:   "query",
 				}: params.Status,
+				{
+					Name: "source",
+					In:   "query",
+				}: params.Source,
 			},
 			Raw: r,
 		}
@@ -3607,6 +3611,10 @@ func (s *Server) handleGetUsageTimelineRequest(args [0]string, argsEscaped bool,
 					Name: "status",
 					In:   "query",
 				}: params.Status,
+				{
+					Name: "source",
+					In:   "query",
+				}: params.Source,
 				{
 					Name: "bucket",
 					In:   "query",
@@ -4368,6 +4376,10 @@ func (s *Server) handleListRequestsRequest(args [0]string, argsEscaped bool, w h
 					In:   "query",
 				}: params.Status,
 				{
+					Name: "source",
+					In:   "query",
+				}: params.Source,
+				{
 					Name: "limit",
 					In:   "query",
 				}: params.Limit,
@@ -4782,6 +4794,10 @@ func (s *Server) handleListUsageByModelRequest(args [0]string, argsEscaped bool,
 					Name: "status",
 					In:   "query",
 				}: params.Status,
+				{
+					Name: "source",
+					In:   "query",
+				}: params.Source,
 			},
 			Raw: r,
 		}

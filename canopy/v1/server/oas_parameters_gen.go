@@ -633,6 +633,9 @@ type GetUsageSummaryParams struct {
 	APIKeyID OptString `json:",omitempty,omitzero"`
 	// Restricts the result to the specified status.
 	Status OptGetUsageSummaryStatus `json:",omitempty,omitzero"`
+	// Restricts the result to requests from the specified source, as reported in a request's `source`.
+	// Requests recorded before sources were tracked have none and are excluded.
+	Source OptString `json:",omitempty,omitzero"`
 }
 
 func unpackGetUsageSummaryParams(packed middleware.Parameters) (params GetUsageSummaryParams) {
@@ -675,6 +678,15 @@ func unpackGetUsageSummaryParams(packed middleware.Parameters) (params GetUsageS
 		}
 		if v, ok := packed[key]; ok {
 			params.Status = v.(OptGetUsageSummaryStatus)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "source",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Source = v.(OptString)
 		}
 	}
 	return params
@@ -919,6 +931,74 @@ func decodeGetUsageSummaryParams(args [0]string, argsEscaped bool, r *http.Reque
 			Err:  err,
 		}
 	}
+	// Decode query: source.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSourceVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSourceVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Source.SetTo(paramsDotSourceVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Source.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "source",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	return params, nil
 }
 
@@ -934,6 +1014,9 @@ type GetUsageTimelineParams struct {
 	APIKeyID OptString `json:",omitempty,omitzero"`
 	// Restricts the result to the specified status.
 	Status OptGetUsageTimelineStatus `json:",omitempty,omitzero"`
+	// Restricts the result to requests from the specified source, as reported in a request's `source`.
+	// Requests recorded before sources were tracked have none and are excluded.
+	Source OptString `json:",omitempty,omitzero"`
 	// The length of each bucket, written as a duration such as 1h or 24h. The number of buckets is limited
 	// to 100.
 	Bucket OptString `json:",omitempty,omitzero"`
@@ -979,6 +1062,15 @@ func unpackGetUsageTimelineParams(packed middleware.Parameters) (params GetUsage
 		}
 		if v, ok := packed[key]; ok {
 			params.Status = v.(OptGetUsageTimelineStatus)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "source",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Source = v.(OptString)
 		}
 	}
 	{
@@ -1228,6 +1320,74 @@ func decodeGetUsageTimelineParams(args [0]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: source.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSourceVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSourceVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Source.SetTo(paramsDotSourceVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Source.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "source",
 			In:   "query",
 			Err:  err,
 		}
@@ -1564,6 +1724,9 @@ type ListRequestsParams struct {
 	APIKeyID OptString `json:",omitempty,omitzero"`
 	// Restricts the result to the specified status.
 	Status OptListRequestsStatus `json:",omitempty,omitzero"`
+	// Restricts the result to requests from the specified source, as reported in a request's `source`.
+	// Requests recorded before sources were tracked have none and are excluded.
+	Source OptString `json:",omitempty,omitzero"`
 	// Items returned in this page. Defaults to 50; at most 200.
 	Limit OptInt64 `json:",omitempty,omitzero"`
 	// The next_cursor returned by the previous page. Omit it for the first page.
@@ -1610,6 +1773,15 @@ func unpackListRequestsParams(packed middleware.Parameters) (params ListRequests
 		}
 		if v, ok := packed[key]; ok {
 			params.Status = v.(OptListRequestsStatus)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "source",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Source = v.(OptString)
 		}
 	}
 	{
@@ -1868,6 +2040,74 @@ func decodeListRequestsParams(args [0]string, argsEscaped bool, r *http.Request)
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: source.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSourceVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSourceVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Source.SetTo(paramsDotSourceVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Source.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "source",
 			In:   "query",
 			Err:  err,
 		}
@@ -2327,6 +2567,9 @@ type ListUsageByModelParams struct {
 	APIKeyID OptString `json:",omitempty,omitzero"`
 	// Restricts the result to the specified status.
 	Status OptListUsageByModelStatus `json:",omitempty,omitzero"`
+	// Restricts the result to requests from the specified source, as reported in a request's `source`.
+	// Requests recorded before sources were tracked have none and are excluded.
+	Source OptString `json:",omitempty,omitzero"`
 }
 
 func unpackListUsageByModelParams(packed middleware.Parameters) (params ListUsageByModelParams) {
@@ -2369,6 +2612,15 @@ func unpackListUsageByModelParams(packed middleware.Parameters) (params ListUsag
 		}
 		if v, ok := packed[key]; ok {
 			params.Status = v.(OptListUsageByModelStatus)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "source",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Source = v.(OptString)
 		}
 	}
 	return params
@@ -2609,6 +2861,74 @@ func decodeListUsageByModelParams(args [0]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: source.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSourceVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSourceVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Source.SetTo(paramsDotSourceVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Source.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "source",
 			In:   "query",
 			Err:  err,
 		}
