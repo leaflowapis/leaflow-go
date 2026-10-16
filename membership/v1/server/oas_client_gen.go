@@ -39,7 +39,9 @@ type Invoker interface {
 	//
 	// Places a purchase order and returns the membership and invoice. Activation follows successful
 	// benefit issuance and delivery confirmation. Returns 409 MEMBERSHIP_EXISTS or 422
-	// MEMBERSHIP_PLAN_UNAVAILABLE.
+	// MEMBERSHIP_PLAN_UNAVAILABLE. Returns 403 MEMBERSHIP_ACCOUNT_DELETING while the caller's account
+	// deletion is pending, or 403 MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or
+	// banned.
 	//
 	// POST /api/v1/memberships
 	CreateMembership(ctx context.Context, request *MembershipCreate) (*MembershipPurchase, error)
@@ -76,7 +78,9 @@ type Invoker interface {
 	// ScheduleMembershipDowngrade invokes schedule-membership-downgrade operation.
 	//
 	// Schedules a lower tier for the next period. Current benefits remain valid. Returns 409
-	// MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_DOWNGRADE_INVALID.
+	// MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_DOWNGRADE_INVALID. Returns 403
+	// MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
+	// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 	//
 	// POST /api/v1/memberships/{membershipId}/downgrade
 	ScheduleMembershipDowngrade(ctx context.Context, request *MembershipDowngrade, params ScheduleMembershipDowngradeParams) (*Membership, error)
@@ -84,7 +88,9 @@ type Invoker interface {
 	//
 	// Places an order for the full-period price difference. The upgrade takes effect after benefit
 	// issuance and delivery confirmation; renewal uses the target tier. Returns 409 MEMBERSHIP_NOT_ACTIVE
-	// or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_UPGRADE_UNAVAILABLE.
+	// or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_UPGRADE_UNAVAILABLE. Returns 403
+	// MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
+	// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 	//
 	// POST /api/v1/memberships/{membershipId}/upgrade
 	UpgradeMembership(ctx context.Context, request *MembershipUpgrade, params UpgradeMembershipParams) (*MembershipPurchase, error)
@@ -267,7 +273,9 @@ func (c *Client) sendCancelMembershipDowngrade(ctx context.Context, params Cance
 //
 // Places a purchase order and returns the membership and invoice. Activation follows successful
 // benefit issuance and delivery confirmation. Returns 409 MEMBERSHIP_EXISTS or 422
-// MEMBERSHIP_PLAN_UNAVAILABLE.
+// MEMBERSHIP_PLAN_UNAVAILABLE. Returns 403 MEMBERSHIP_ACCOUNT_DELETING while the caller's account
+// deletion is pending, or 403 MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or
+// banned.
 //
 // POST /api/v1/memberships
 func (c *Client) CreateMembership(ctx context.Context, request *MembershipCreate) (*MembershipPurchase, error) {
@@ -1119,7 +1127,9 @@ func (c *Client) sendListPlans(ctx context.Context, params ListPlansParams) (res
 // ScheduleMembershipDowngrade invokes schedule-membership-downgrade operation.
 //
 // Schedules a lower tier for the next period. Current benefits remain valid. Returns 409
-// MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_DOWNGRADE_INVALID.
+// MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_DOWNGRADE_INVALID. Returns 403
+// MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
+// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
 // POST /api/v1/memberships/{membershipId}/downgrade
 func (c *Client) ScheduleMembershipDowngrade(ctx context.Context, request *MembershipDowngrade, params ScheduleMembershipDowngradeParams) (*Membership, error) {
@@ -1256,7 +1266,9 @@ func (c *Client) sendScheduleMembershipDowngrade(ctx context.Context, request *M
 //
 // Places an order for the full-period price difference. The upgrade takes effect after benefit
 // issuance and delivery confirmation; renewal uses the target tier. Returns 409 MEMBERSHIP_NOT_ACTIVE
-// or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_UPGRADE_UNAVAILABLE.
+// or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_UPGRADE_UNAVAILABLE. Returns 403
+// MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
+// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
 // POST /api/v1/memberships/{membershipId}/upgrade
 func (c *Client) UpgradeMembership(ctx context.Context, request *MembershipUpgrade, params UpgradeMembershipParams) (*MembershipPurchase, error) {

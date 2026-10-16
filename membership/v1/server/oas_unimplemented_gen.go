@@ -26,7 +26,9 @@ func (UnimplementedHandler) CancelMembershipDowngrade(ctx context.Context, param
 //
 // Places a purchase order and returns the membership and invoice. Activation follows successful
 // benefit issuance and delivery confirmation. Returns 409 MEMBERSHIP_EXISTS or 422
-// MEMBERSHIP_PLAN_UNAVAILABLE.
+// MEMBERSHIP_PLAN_UNAVAILABLE. Returns 403 MEMBERSHIP_ACCOUNT_DELETING while the caller's account
+// deletion is pending, or 403 MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or
+// banned.
 //
 // POST /api/v1/memberships
 func (UnimplementedHandler) CreateMembership(ctx context.Context, req *MembershipCreate) (r *MembershipPurchase, _ error) {
@@ -81,7 +83,9 @@ func (UnimplementedHandler) ListPlans(ctx context.Context, params ListPlansParam
 // ScheduleMembershipDowngrade implements schedule-membership-downgrade operation.
 //
 // Schedules a lower tier for the next period. Current benefits remain valid. Returns 409
-// MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_DOWNGRADE_INVALID.
+// MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_DOWNGRADE_INVALID. Returns 403
+// MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
+// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
 // POST /api/v1/memberships/{membershipId}/downgrade
 func (UnimplementedHandler) ScheduleMembershipDowngrade(ctx context.Context, req *MembershipDowngrade, params ScheduleMembershipDowngradeParams) (r *Membership, _ error) {
@@ -92,7 +96,9 @@ func (UnimplementedHandler) ScheduleMembershipDowngrade(ctx context.Context, req
 //
 // Places an order for the full-period price difference. The upgrade takes effect after benefit
 // issuance and delivery confirmation; renewal uses the target tier. Returns 409 MEMBERSHIP_NOT_ACTIVE
-// or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_UPGRADE_UNAVAILABLE.
+// or MEMBERSHIP_CHANGE_PENDING, or 422 MEMBERSHIP_UPGRADE_UNAVAILABLE. Returns 403
+// MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
+// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
 // POST /api/v1/memberships/{membershipId}/upgrade
 func (UnimplementedHandler) UpgradeMembership(ctx context.Context, req *MembershipUpgrade, params UpgradeMembershipParams) (r *MembershipPurchase, _ error) {

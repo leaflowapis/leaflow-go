@@ -20,6 +20,7 @@ const (
 	DeletePaymentMethodOperation         OperationName = "DeletePaymentMethod"
 	DeleteSubscriptionOperation          OperationName = "DeleteSubscription"
 	GetAccountBalanceOperation           OperationName = "GetAccountBalance"
+	GetAccountDeletionReadinessOperation OperationName = "GetAccountDeletionReadiness"
 	GetBillingAccountOperation           OperationName = "GetBillingAccount"
 	GetCancellationOperation             OperationName = "GetCancellation"
 	GetContactOperation                  OperationName = "GetContact"

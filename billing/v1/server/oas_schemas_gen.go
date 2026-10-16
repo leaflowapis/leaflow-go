@@ -187,6 +187,155 @@ func (s *AccountBalance) SetPendingReturnsAmount(val Money) {
 	s.PendingReturnsAmount = val
 }
 
+// `ARREARS`: the balance is negative. `PROJECTS_ASSIGNED`: the account still pays for a project, yours
+// or anyone else's. `ACTIVE_SUBSCRIPTION`: a subscription it bought has not ended. `OPEN_ORDER`: an
+// order is not finished. `UNPAID_INVOICE`: an issued invoice is not settled. `UNBILLED_USAGE`: usage
+// has not been invoiced yet; it is invoiced in the next billing run. `PENDING_TRANSACTION`: a top-up,
+// refund or withdrawal is still pending.
+// Ref: #/components/schemas/AccountDeletionObjection
+type AccountDeletionObjection string
+
+const (
+	AccountDeletionObjectionARREARS            AccountDeletionObjection = "ARREARS"
+	AccountDeletionObjectionPROJECTSASSIGNED   AccountDeletionObjection = "PROJECTS_ASSIGNED"
+	AccountDeletionObjectionACTIVESUBSCRIPTION AccountDeletionObjection = "ACTIVE_SUBSCRIPTION"
+	AccountDeletionObjectionOPENORDER          AccountDeletionObjection = "OPEN_ORDER"
+	AccountDeletionObjectionUNPAIDINVOICE      AccountDeletionObjection = "UNPAID_INVOICE"
+	AccountDeletionObjectionUNBILLEDUSAGE      AccountDeletionObjection = "UNBILLED_USAGE"
+	AccountDeletionObjectionPENDINGTRANSACTION AccountDeletionObjection = "PENDING_TRANSACTION"
+)
+
+// AllValues returns all AccountDeletionObjection values.
+func (AccountDeletionObjection) AllValues() []AccountDeletionObjection {
+	return []AccountDeletionObjection{
+		AccountDeletionObjectionARREARS,
+		AccountDeletionObjectionPROJECTSASSIGNED,
+		AccountDeletionObjectionACTIVESUBSCRIPTION,
+		AccountDeletionObjectionOPENORDER,
+		AccountDeletionObjectionUNPAIDINVOICE,
+		AccountDeletionObjectionUNBILLEDUSAGE,
+		AccountDeletionObjectionPENDINGTRANSACTION,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AccountDeletionObjection) MarshalText() ([]byte, error) {
+	switch s {
+	case AccountDeletionObjectionARREARS:
+		return []byte(s), nil
+	case AccountDeletionObjectionPROJECTSASSIGNED:
+		return []byte(s), nil
+	case AccountDeletionObjectionACTIVESUBSCRIPTION:
+		return []byte(s), nil
+	case AccountDeletionObjectionOPENORDER:
+		return []byte(s), nil
+	case AccountDeletionObjectionUNPAIDINVOICE:
+		return []byte(s), nil
+	case AccountDeletionObjectionUNBILLEDUSAGE:
+		return []byte(s), nil
+	case AccountDeletionObjectionPENDINGTRANSACTION:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AccountDeletionObjection) UnmarshalText(data []byte) error {
+	switch AccountDeletionObjection(data) {
+	case AccountDeletionObjectionARREARS:
+		*s = AccountDeletionObjectionARREARS
+		return nil
+	case AccountDeletionObjectionPROJECTSASSIGNED:
+		*s = AccountDeletionObjectionPROJECTSASSIGNED
+		return nil
+	case AccountDeletionObjectionACTIVESUBSCRIPTION:
+		*s = AccountDeletionObjectionACTIVESUBSCRIPTION
+		return nil
+	case AccountDeletionObjectionOPENORDER:
+		*s = AccountDeletionObjectionOPENORDER
+		return nil
+	case AccountDeletionObjectionUNPAIDINVOICE:
+		*s = AccountDeletionObjectionUNPAIDINVOICE
+		return nil
+	case AccountDeletionObjectionUNBILLEDUSAGE:
+		*s = AccountDeletionObjectionUNBILLEDUSAGE
+		return nil
+	case AccountDeletionObjectionPENDINGTRANSACTION:
+		*s = AccountDeletionObjectionPENDINGTRANSACTION
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AccountDeletionReadiness
+type AccountDeletionReadiness struct {
+	// Every billing account you own that is not closed; empty when you own none.
+	Accounts []AccountDeletionReadinessItem `json:"accounts"`
+}
+
+// GetAccounts returns the value of Accounts.
+func (s *AccountDeletionReadiness) GetAccounts() []AccountDeletionReadinessItem {
+	return s.Accounts
+}
+
+// SetAccounts sets the value of Accounts.
+func (s *AccountDeletionReadiness) SetAccounts(val []AccountDeletionReadinessItem) {
+	s.Accounts = val
+}
+
+// Ref: #/components/schemas/AccountDeletionReadinessItem
+type AccountDeletionReadinessItem struct {
+	Account BillingAccount `json:"account"`
+	// Topped-up funds, in the account's currency, forfeited when it closes. Negative means arrears.
+	Balance Money `json:"balance"`
+	// Remaining credit, in the account's currency, forfeited when it closes.
+	Credits Money `json:"credits"`
+	// What stops this account from closing; empty when it can close.
+	Objections []AccountDeletionObjection `json:"objections"`
+}
+
+// GetAccount returns the value of Account.
+func (s *AccountDeletionReadinessItem) GetAccount() BillingAccount {
+	return s.Account
+}
+
+// GetBalance returns the value of Balance.
+func (s *AccountDeletionReadinessItem) GetBalance() Money {
+	return s.Balance
+}
+
+// GetCredits returns the value of Credits.
+func (s *AccountDeletionReadinessItem) GetCredits() Money {
+	return s.Credits
+}
+
+// GetObjections returns the value of Objections.
+func (s *AccountDeletionReadinessItem) GetObjections() []AccountDeletionObjection {
+	return s.Objections
+}
+
+// SetAccount sets the value of Account.
+func (s *AccountDeletionReadinessItem) SetAccount(val BillingAccount) {
+	s.Account = val
+}
+
+// SetBalance sets the value of Balance.
+func (s *AccountDeletionReadinessItem) SetBalance(val Money) {
+	s.Balance = val
+}
+
+// SetCredits sets the value of Credits.
+func (s *AccountDeletionReadinessItem) SetCredits(val Money) {
+	s.Credits = val
+}
+
+// SetObjections sets the value of Objections.
+func (s *AccountDeletionReadinessItem) SetObjections(val []AccountDeletionObjection) {
+	s.Objections = val
+}
+
 // Ref: #/components/schemas/AccountIdentity
 type AccountIdentity struct {
 	ID       int64  `json:"id"`

@@ -177,6 +177,17 @@ type Handler interface {
 	//
 	// GET /api/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
+	// GetAccountDeletionReadiness implements get-account-deletion-readiness operation.
+	//
+	// Lists every billing account you own that is not closed, with what stops each from closing. Deleting
+	// your Leaflow account closes all of them and is refused while any lists an objection. Balance and
+	// credits left on them are forfeited when they close; the accounts and their records are kept, closed.
+	//
+	// A preview that holds nothing: the same check runs again when you request deletion and once more when
+	// the grace period ends.
+	//
+	// GET /api/v1/account-deletion/readiness
+	GetAccountDeletionReadiness(ctx context.Context) (*AccountDeletionReadiness, error)
 	// GetBillingAccount implements get-billing-account operation.
 	//
 	// Your billing account with its currency, status and invoice contact. Returns 404 if it does not exist

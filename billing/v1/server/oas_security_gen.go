@@ -51,6 +51,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	DeletePaymentMethodOperation:         []string{},
 	DeleteSubscriptionOperation:          []string{},
 	GetAccountBalanceOperation:           []string{},
+	GetAccountDeletionReadinessOperation: []string{},
 	GetBillingAccountOperation:           []string{},
 	GetCancellationOperation:             []string{},
 	GetContactOperation:                  []string{},

@@ -198,6 +198,17 @@ type Invoker interface {
 	//
 	// GET /api/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
+	// GetAccountDeletionReadiness invokes get-account-deletion-readiness operation.
+	//
+	// Lists every billing account you own that is not closed, with what stops each from closing. Deleting
+	// your Leaflow account closes all of them and is refused while any lists an objection. Balance and
+	// credits left on them are forfeited when they close; the accounts and their records are kept, closed.
+	//
+	// A preview that holds nothing: the same check runs again when you request deletion and once more when
+	// the grace period ends.
+	//
+	// GET /api/v1/account-deletion/readiness
+	GetAccountDeletionReadiness(ctx context.Context) (*AccountDeletionReadiness, error)
 	// GetBillingAccount invokes get-billing-account operation.
 	//
 	// Your billing account with its currency, status and invoice contact. Returns 404 if it does not exist
@@ -2737,6 +2748,124 @@ func (c *Client) sendGetAccountBalance(ctx context.Context, params GetAccountBal
 
 	stage = "DecodeResponse"
 	result, err := decodeGetAccountBalanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetAccountDeletionReadiness invokes get-account-deletion-readiness operation.
+//
+// Lists every billing account you own that is not closed, with what stops each from closing. Deleting
+// your Leaflow account closes all of them and is refused while any lists an objection. Balance and
+// credits left on them are forfeited when they close; the accounts and their records are kept, closed.
+//
+// A preview that holds nothing: the same check runs again when you request deletion and once more when
+// the grace period ends.
+//
+// GET /api/v1/account-deletion/readiness
+func (c *Client) GetAccountDeletionReadiness(ctx context.Context) (*AccountDeletionReadiness, error) {
+	res, err := c.sendGetAccountDeletionReadiness(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetAccountDeletionReadiness(ctx context.Context) (res *AccountDeletionReadiness, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-account-deletion-readiness"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/account-deletion/readiness"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAccountDeletionReadinessOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/account-deletion/readiness"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, GetAccountDeletionReadinessOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetAccountDeletionReadinessResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
