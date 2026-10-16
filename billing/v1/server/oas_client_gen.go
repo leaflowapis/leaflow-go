@@ -690,13 +690,13 @@ type Invoker interface {
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
 	// SetProjectAssignment invokes set-project-assignment operation.
 	//
-	// Links the project to another billing account. Charges already incurred stay with the account linked
-	// when they occurred and are invoiced to it; metered resources are settled up to the moment of the
-	// change. Amounts the previous account owes do not prevent the change. Orders keep the account they
-	// were placed with; paid periods are unaffected, and renewals are charged to the new account.
+	// Links the project to a billing account. A project without one is linked directly. Moving it to
+	// another account has the same requirements as unlinking: you own both accounts, the project has no
+	// metered resources, no subscriptions that have not ended and no orders in progress, and the current
+	// account has no unpaid invoices. Nothing moves with the project; charges already incurred stay with
+	// the account linked when they occurred.
 	//
-	// Refused once the project no longer accepts purchases because it is being deleted, and while a
-	// subscription or an in-progress order of the project uses a currency other than the new account's.
+	// Refused once the project no longer accepts purchases because it is being deleted.
 	//
 	// PUT /api/v1/assignments/{projectId}
 	SetProjectAssignment(ctx context.Context, request *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error)
@@ -714,9 +714,10 @@ type Invoker interface {
 	//
 	// Ends the project's current assignment; the assignment history is kept. Allowed only when the project
 	// has no metered resources, no subscriptions that have not ended and no orders in progress, including
-	// period-end changes; orders are not modified, so wait for them to complete. Charges already incurred
-	// stay with the billing account and are invoiced as usual; amounts it owes do not prevent unlinking.
-	// The project cannot make purchases until a billing account is linked again.
+	// period-end changes, and the billing account has no unpaid invoices; invoices of orders awaiting
+	// payment do not count. Orders are not modified, so wait for them to complete. Charges already
+	// incurred stay with the billing account and are invoiced as usual. The project cannot make purchases
+	// until a billing account is linked again.
 	//
 	// DELETE /api/v1/assignments/{projectId}
 	UnlinkProjectBillingAccount(ctx context.Context, params UnlinkProjectBillingAccountParams) error
@@ -13256,13 +13257,13 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 
 // SetProjectAssignment invokes set-project-assignment operation.
 //
-// Links the project to another billing account. Charges already incurred stay with the account linked
-// when they occurred and are invoiced to it; metered resources are settled up to the moment of the
-// change. Amounts the previous account owes do not prevent the change. Orders keep the account they
-// were placed with; paid periods are unaffected, and renewals are charged to the new account.
+// Links the project to a billing account. A project without one is linked directly. Moving it to
+// another account has the same requirements as unlinking: you own both accounts, the project has no
+// metered resources, no subscriptions that have not ended and no orders in progress, and the current
+// account has no unpaid invoices. Nothing moves with the project; charges already incurred stay with
+// the account linked when they occurred.
 //
-// Refused once the project no longer accepts purchases because it is being deleted, and while a
-// subscription or an in-progress order of the project uses a currency other than the new account's.
+// Refused once the project no longer accepts purchases because it is being deleted.
 //
 // PUT /api/v1/assignments/{projectId}
 func (c *Client) SetProjectAssignment(ctx context.Context, request *SetProjectAssignmentRequest, params SetProjectAssignmentParams) (*ProjectAssignment, error) {
@@ -13534,9 +13535,10 @@ func (c *Client) sendSuspendBillingAccount(ctx context.Context, params SuspendBi
 //
 // Ends the project's current assignment; the assignment history is kept. Allowed only when the project
 // has no metered resources, no subscriptions that have not ended and no orders in progress, including
-// period-end changes; orders are not modified, so wait for them to complete. Charges already incurred
-// stay with the billing account and are invoiced as usual; amounts it owes do not prevent unlinking.
-// The project cannot make purchases until a billing account is linked again.
+// period-end changes, and the billing account has no unpaid invoices; invoices of orders awaiting
+// payment do not count. Orders are not modified, so wait for them to complete. Charges already
+// incurred stay with the billing account and are invoiced as usual. The project cannot make purchases
+// until a billing account is linked again.
 //
 // DELETE /api/v1/assignments/{projectId}
 func (c *Client) UnlinkProjectBillingAccount(ctx context.Context, params UnlinkProjectBillingAccountParams) error {
