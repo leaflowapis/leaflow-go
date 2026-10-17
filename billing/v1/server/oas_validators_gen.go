@@ -3170,24 +3170,6 @@ func (s *InvoiceItem) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if value, ok := s.Type.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if value, ok := s.Project.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -3260,23 +3242,6 @@ func (s *InvoiceItemList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s InvoiceItemType) Validate() error {
-	switch s {
-	case "usage":
-		return nil
-	case "subscription":
-		return nil
-	case "one_time":
-		return nil
-	case "setup":
-		return nil
-	case "adjustment":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *InvoiceList) Validate() error {

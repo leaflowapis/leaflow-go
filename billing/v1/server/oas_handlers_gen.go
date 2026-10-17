@@ -13637,8 +13637,9 @@ func (s *Server) handleListWithdrawalsRequest(args [0]string, argsEscaped bool, 
 // deadline; `BILLING_INVOICE_NOT_PAYABLE` with `meta.reason` `subscription_canceling`,
 // `subscription_reclaiming` or `subscription_ended` for a renewal invoice whose subscription is being
 // canceled, is being reclaimed or has ended; and `BILLING_INVOICE_NOT_PAYABLE` with `meta.reason`
-// `usage_invoice` for a usage invoice, which is collected from credit grants and balance
-// automatically, including right after a top-up.
+// `fractional_amount` when the amount left for the gateway is not a whole number of the currency's
+// minor unit; such an invoice is collected from credit grants and balance automatically, including
+// right after a top-up.
 //
 // POST /api/v1/invoices/{invoiceId}/pay
 func (s *Server) handlePayInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

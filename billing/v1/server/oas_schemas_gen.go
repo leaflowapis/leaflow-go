@@ -4707,15 +4707,20 @@ type Invoice struct {
 	// Successful credit-grant payments, included in amount_paid; they do not reduce the receivable or tax
 	// base.
 	CreditApplied OptMoney `json:"credit_applied"`
-	// Subtotal less discount plus tax. Balance and credit grants pay it; they do not reduce it.
-	Total      Money    `json:"total"`
-	AmountPaid OptMoney `json:"amount_paid"`
+	// Subtotal less discount plus tax. Balance and credit grants pay it plus rounding_amount; they do not
+	// reduce it.
+	Total Money `json:"total"`
+	// Added to total to round the amount payable to the currency's minor unit; negative when rounded down.
+	// The rounding of a usage invoice carries over to the next invoice of the same billing period.
+	RoundingAmount Money    `json:"rounding_amount"`
+	AmountPaid     OptMoney `json:"amount_paid"`
 	// Issued credit notes that reduced unpaid receivables; the original invoice total is unchanged.
 	PrePaymentCreditNotesAmount Money `json:"pre_payment_credit_notes_amount"`
 	// Issued credit notes against payments already received; their refunds may not have completed.
 	PostPaymentCreditNotesAmount Money `json:"post_payment_credit_notes_amount"`
-	// What is still collectible after unpaid credit notes and successful payments; never below zero. Zero
-	// for a draft, whose total is the base price, and for a paid or void invoice.
+	// What is still collectible from total plus rounding_amount after unpaid credit notes and successful
+	// payments; never below zero. Zero for a draft, whose total is the base price, and for a paid or void
+	// invoice.
 	AmountDue   Money          `json:"amount_due"`
 	PeriodStart OptNilDateTime `json:"period_start"`
 	// Exclusive.
@@ -4804,6 +4809,11 @@ func (s *Invoice) GetCreditApplied() OptMoney {
 // GetTotal returns the value of Total.
 func (s *Invoice) GetTotal() Money {
 	return s.Total
+}
+
+// GetRoundingAmount returns the value of RoundingAmount.
+func (s *Invoice) GetRoundingAmount() Money {
+	return s.RoundingAmount
 }
 
 // GetAmountPaid returns the value of AmountPaid.
@@ -4961,6 +4971,11 @@ func (s *Invoice) SetTotal(val Money) {
 	s.Total = val
 }
 
+// SetRoundingAmount sets the value of RoundingAmount.
+func (s *Invoice) SetRoundingAmount(val Money) {
+	s.RoundingAmount = val
+}
+
 // SetAmountPaid sets the value of AmountPaid.
 func (s *Invoice) SetAmountPaid(val OptMoney) {
 	s.AmountPaid = val
@@ -5108,10 +5123,9 @@ type InvoiceItem struct {
 	// Tax on the discounted line, including tax already included in the price.
 	TaxAmount OptString `json:"tax_amount"`
 	// The part of tax_amount already included in amount.
-	TaxIncludedAmount OptString          `json:"tax_included_amount"`
-	ID                uuid.UUID          `json:"id"`
-	Type              OptInvoiceItemType `json:"type"`
-	ProjectID         OptNilUUID         `json:"project_id"`
+	TaxIncludedAmount OptString  `json:"tax_included_amount"`
+	ID                uuid.UUID  `json:"id"`
+	ProjectID         OptNilUUID `json:"project_id"`
 	// The project the charge was for and its current name. Absent when the line has no project or the
 	// project cannot be read; `project_id` still identifies it.
 	Project    OptNilNamedIdentity `json:"project"`
@@ -5125,11 +5139,16 @@ type InvoiceItem struct {
 	UnitAmount       OptMoney  `json:"unit_amount"`
 	// The quantity `unit_amount` prices, such as 1000000 tokens or 3600 seconds: `amount` is `quantity` ×
 	// `unit_amount` ÷ `unit_quantity`. Present together with `unit_amount`.
-	UnitQuantity OptString      `json:"unit_quantity"`
-	Amount       Money          `json:"amount"`
-	Currency     string         `json:"currency"`
-	PeriodStart  OptNilDateTime `json:"period_start"`
-	PeriodEnd    OptNilDateTime `json:"period_end"`
+	UnitQuantity OptString `json:"unit_quantity"`
+	Amount       Money     `json:"amount"`
+	// This line's share of the invoice's rounding_amount. The line's net amount is amount -
+	// discount_amount + tax_amount - tax_included_amount + rounding_amount.
+	RoundingAmount Money `json:"rounding_amount"`
+	// Usage charges billed on this line; zero for other lines.
+	UsageChargeCount int32          `json:"usage_charge_count"`
+	Currency         string         `json:"currency"`
+	PeriodStart      OptNilDateTime `json:"period_start"`
+	PeriodEnd        OptNilDateTime `json:"period_end"`
 	// For a usage line, the values of its meter's presentation dimensions, such as the model and token
 	// kind. Empty for other lines.
 	Dimensions OptInvoiceItemDimensions `json:"dimensions"`
@@ -5171,11 +5190,6 @@ func (s *InvoiceItem) GetTaxIncludedAmount() OptString {
 // GetID returns the value of ID.
 func (s *InvoiceItem) GetID() uuid.UUID {
 	return s.ID
-}
-
-// GetType returns the value of Type.
-func (s *InvoiceItem) GetType() OptInvoiceItemType {
-	return s.Type
 }
 
 // GetProjectID returns the value of ProjectID.
@@ -5226,6 +5240,16 @@ func (s *InvoiceItem) GetUnitQuantity() OptString {
 // GetAmount returns the value of Amount.
 func (s *InvoiceItem) GetAmount() Money {
 	return s.Amount
+}
+
+// GetRoundingAmount returns the value of RoundingAmount.
+func (s *InvoiceItem) GetRoundingAmount() Money {
+	return s.RoundingAmount
+}
+
+// GetUsageChargeCount returns the value of UsageChargeCount.
+func (s *InvoiceItem) GetUsageChargeCount() int32 {
+	return s.UsageChargeCount
 }
 
 // GetCurrency returns the value of Currency.
@@ -5288,11 +5312,6 @@ func (s *InvoiceItem) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetType sets the value of Type.
-func (s *InvoiceItem) SetType(val OptInvoiceItemType) {
-	s.Type = val
-}
-
 // SetProjectID sets the value of ProjectID.
 func (s *InvoiceItem) SetProjectID(val OptNilUUID) {
 	s.ProjectID = val
@@ -5341,6 +5360,16 @@ func (s *InvoiceItem) SetUnitQuantity(val OptString) {
 // SetAmount sets the value of Amount.
 func (s *InvoiceItem) SetAmount(val Money) {
 	s.Amount = val
+}
+
+// SetRoundingAmount sets the value of RoundingAmount.
+func (s *InvoiceItem) SetRoundingAmount(val Money) {
+	s.RoundingAmount = val
+}
+
+// SetUsageChargeCount sets the value of UsageChargeCount.
+func (s *InvoiceItem) SetUsageChargeCount(val int32) {
+	s.UsageChargeCount = val
 }
 
 // SetCurrency sets the value of Currency.
@@ -5482,68 +5511,6 @@ func (s *InvoiceItemProration) SetRemainingAmount(val Money) {
 // SetCreditedAmount sets the value of CreditedAmount.
 func (s *InvoiceItemProration) SetCreditedAmount(val Money) {
 	s.CreditedAmount = val
-}
-
-type InvoiceItemType string
-
-const (
-	InvoiceItemTypeUsage        InvoiceItemType = "usage"
-	InvoiceItemTypeSubscription InvoiceItemType = "subscription"
-	InvoiceItemTypeOneTime      InvoiceItemType = "one_time"
-	InvoiceItemTypeSetup        InvoiceItemType = "setup"
-	InvoiceItemTypeAdjustment   InvoiceItemType = "adjustment"
-)
-
-// AllValues returns all InvoiceItemType values.
-func (InvoiceItemType) AllValues() []InvoiceItemType {
-	return []InvoiceItemType{
-		InvoiceItemTypeUsage,
-		InvoiceItemTypeSubscription,
-		InvoiceItemTypeOneTime,
-		InvoiceItemTypeSetup,
-		InvoiceItemTypeAdjustment,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s InvoiceItemType) MarshalText() ([]byte, error) {
-	switch s {
-	case InvoiceItemTypeUsage:
-		return []byte(s), nil
-	case InvoiceItemTypeSubscription:
-		return []byte(s), nil
-	case InvoiceItemTypeOneTime:
-		return []byte(s), nil
-	case InvoiceItemTypeSetup:
-		return []byte(s), nil
-	case InvoiceItemTypeAdjustment:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InvoiceItemType) UnmarshalText(data []byte) error {
-	switch InvoiceItemType(data) {
-	case InvoiceItemTypeUsage:
-		*s = InvoiceItemTypeUsage
-		return nil
-	case InvoiceItemTypeSubscription:
-		*s = InvoiceItemTypeSubscription
-		return nil
-	case InvoiceItemTypeOneTime:
-		*s = InvoiceItemTypeOneTime
-		return nil
-	case InvoiceItemTypeSetup:
-		*s = InvoiceItemTypeSetup
-		return nil
-	case InvoiceItemTypeAdjustment:
-		*s = InvoiceItemTypeAdjustment
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/InvoiceList
@@ -7389,52 +7356,6 @@ func (o OptInvoiceItemDimensions) Get() (v InvoiceItemDimensions, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInvoiceItemDimensions) Or(d InvoiceItemDimensions) InvoiceItemDimensions {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptInvoiceItemType returns new OptInvoiceItemType with value set to v.
-func NewOptInvoiceItemType(v InvoiceItemType) OptInvoiceItemType {
-	return OptInvoiceItemType{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptInvoiceItemType is optional InvoiceItemType.
-type OptInvoiceItemType struct {
-	Value InvoiceItemType
-	Set   bool
-}
-
-// IsSet returns true if OptInvoiceItemType was set.
-func (o OptInvoiceItemType) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptInvoiceItemType) Reset() {
-	var v InvoiceItemType
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptInvoiceItemType) SetTo(v InvoiceItemType) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptInvoiceItemType) Get() (v InvoiceItemType, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptInvoiceItemType) Or(d InvoiceItemType) InvoiceItemType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -16399,6 +16320,9 @@ type StatementAmounts struct {
 	DiscountAmount Money `json:"discount_amount"`
 	TaxAmount      Money `json:"tax_amount"`
 	Total          Money `json:"total"`
+	// Added to total to round the invoiced amount to the currency's minor unit. Zero for an open
+	// statement's estimate.
+	RoundingAmount Money `json:"rounding_amount"`
 }
 
 // GetSubtotal returns the value of Subtotal.
@@ -16421,6 +16345,11 @@ func (s *StatementAmounts) GetTotal() Money {
 	return s.Total
 }
 
+// GetRoundingAmount returns the value of RoundingAmount.
+func (s *StatementAmounts) GetRoundingAmount() Money {
+	return s.RoundingAmount
+}
+
 // SetSubtotal sets the value of Subtotal.
 func (s *StatementAmounts) SetSubtotal(val Money) {
 	s.Subtotal = val
@@ -16439,6 +16368,11 @@ func (s *StatementAmounts) SetTaxAmount(val Money) {
 // SetTotal sets the value of Total.
 func (s *StatementAmounts) SetTotal(val Money) {
 	s.Total = val
+}
+
+// SetRoundingAmount sets the value of RoundingAmount.
+func (s *StatementAmounts) SetRoundingAmount(val Money) {
+	s.RoundingAmount = val
 }
 
 // Ref: #/components/schemas/StatementItem
