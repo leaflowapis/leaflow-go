@@ -9952,18 +9952,25 @@ func (s *PrivateImageResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// The effective limit for one IAM platform project and resource. Includes the default when no project
-// override exists. This representation contains no aggregated usage counter.
+// The limit in force for one IAM platform project on one resource in one region. This representation
+// contains no usage.
 // Ref: #/components/schemas/ProjectQuota
 type ProjectQuota struct {
 	ProjectID uuid.UUID         `json:"project_id"`
+	RegionID  RegionID          `json:"region_id"`
 	Resource  QuotaResourceType `json:"resource"`
 	Limit     int64             `json:"limit"`
+	Source    QuotaSource       `json:"source"`
 }
 
 // GetProjectID returns the value of ProjectID.
 func (s *ProjectQuota) GetProjectID() uuid.UUID {
 	return s.ProjectID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *ProjectQuota) GetRegionID() RegionID {
+	return s.RegionID
 }
 
 // GetResource returns the value of Resource.
@@ -9976,9 +9983,19 @@ func (s *ProjectQuota) GetLimit() int64 {
 	return s.Limit
 }
 
+// GetSource returns the value of Source.
+func (s *ProjectQuota) GetSource() QuotaSource {
+	return s.Source
+}
+
 // SetProjectID sets the value of ProjectID.
 func (s *ProjectQuota) SetProjectID(val uuid.UUID) {
 	s.ProjectID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *ProjectQuota) SetRegionID(val RegionID) {
+	s.RegionID = val
 }
 
 // SetResource sets the value of Resource.
@@ -9989,6 +10006,11 @@ func (s *ProjectQuota) SetResource(val QuotaResourceType) {
 // SetLimit sets the value of Limit.
 func (s *ProjectQuota) SetLimit(val int64) {
 	s.Limit = val
+}
+
+// SetSource sets the value of Source.
+func (s *ProjectQuota) SetSource(val QuotaSource) {
+	s.Source = val
 }
 
 // Ref: #/components/schemas/ProjectQuotaListResponseBody
@@ -10395,11 +10417,11 @@ func (s *PutVirtualMachineRescueResponseBody) SetVirtualMachine(val VirtualMachi
 
 func (*PutVirtualMachineRescueResponseBody) putVirtualMachineRescueRes() {}
 
-// The resource or capacity constrained by a project quota. Defaults when no override exists:
+// The resource or capacity constrained by a project quota in a region. Platform defaults:
 // virtual_machines=5; vcpus=16; memory_mib=32768; disks=20; disk_gib=500; virtual_private_clouds=3;
-// subnets=20; network_interfaces=20; elastic_ips=3; nat_gateways=1; security_groups=10;
-// security_group_rules=100; snapshots=20; backups=20; private_images=10. memory_mib is measured in MiB
-// and disk_gib in GiB. A zero limit permits no additional capacity; it is not unlimited.
+// subnets=20; network_interfaces=20; elastic_ips=3; security_groups=10; security_group_rules=100;
+// snapshots=20; backups=20; private_images=10. memory_mib is measured in MiB and disk_gib in GiB. A
+// zero limit permits no additional capacity; it is not unlimited.
 // Ref: #/components/schemas/QuotaResourceType
 type QuotaResourceType string
 
@@ -10413,7 +10435,6 @@ const (
 	QuotaResourceTypeSubnets              QuotaResourceType = "subnets"
 	QuotaResourceTypeNetworkInterfaces    QuotaResourceType = "network_interfaces"
 	QuotaResourceTypeElasticIps           QuotaResourceType = "elastic_ips"
-	QuotaResourceTypeNatGateways          QuotaResourceType = "nat_gateways"
 	QuotaResourceTypeSecurityGroups       QuotaResourceType = "security_groups"
 	QuotaResourceTypeSecurityGroupRules   QuotaResourceType = "security_group_rules"
 	QuotaResourceTypeSnapshots            QuotaResourceType = "snapshots"
@@ -10433,7 +10454,6 @@ func (QuotaResourceType) AllValues() []QuotaResourceType {
 		QuotaResourceTypeSubnets,
 		QuotaResourceTypeNetworkInterfaces,
 		QuotaResourceTypeElasticIps,
-		QuotaResourceTypeNatGateways,
 		QuotaResourceTypeSecurityGroups,
 		QuotaResourceTypeSecurityGroupRules,
 		QuotaResourceTypeSnapshots,
@@ -10462,8 +10482,6 @@ func (s QuotaResourceType) MarshalText() ([]byte, error) {
 	case QuotaResourceTypeNetworkInterfaces:
 		return []byte(s), nil
 	case QuotaResourceTypeElasticIps:
-		return []byte(s), nil
-	case QuotaResourceTypeNatGateways:
 		return []byte(s), nil
 	case QuotaResourceTypeSecurityGroups:
 		return []byte(s), nil
@@ -10510,9 +10528,6 @@ func (s *QuotaResourceType) UnmarshalText(data []byte) error {
 	case QuotaResourceTypeElasticIps:
 		*s = QuotaResourceTypeElasticIps
 		return nil
-	case QuotaResourceTypeNatGateways:
-		*s = QuotaResourceTypeNatGateways
-		return nil
 	case QuotaResourceTypeSecurityGroups:
 		*s = QuotaResourceTypeSecurityGroups
 		return nil
@@ -10527,6 +10542,50 @@ func (s *QuotaResourceType) UnmarshalText(data []byte) error {
 		return nil
 	case QuotaResourceTypePrivateImages:
 		*s = QuotaResourceTypePrivateImages
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Where a limit comes from. `default` is the platform default, which follows a change of the default;
+// `override` is a limit the platform set for this project in this region.
+// Ref: #/components/schemas/QuotaSource
+type QuotaSource string
+
+const (
+	QuotaSourceDefault  QuotaSource = "default"
+	QuotaSourceOverride QuotaSource = "override"
+)
+
+// AllValues returns all QuotaSource values.
+func (QuotaSource) AllValues() []QuotaSource {
+	return []QuotaSource{
+		QuotaSourceDefault,
+		QuotaSourceOverride,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuotaSource) MarshalText() ([]byte, error) {
+	switch s {
+	case QuotaSourceDefault:
+		return []byte(s), nil
+	case QuotaSourceOverride:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuotaSource) UnmarshalText(data []byte) error {
+	switch QuotaSource(data) {
+	case QuotaSourceDefault:
+		*s = QuotaSourceDefault
+		return nil
+	case QuotaSourceOverride:
+		*s = QuotaSourceOverride
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

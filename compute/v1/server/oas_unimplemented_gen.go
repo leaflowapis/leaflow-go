@@ -761,10 +761,10 @@ func (UnimplementedHandler) GetPublicImage(ctx context.Context, params GetPublic
 // GetQuota implements get-quota operation.
 //
 // Reads only the IAM project authorized by the scoped token; callers cannot select another project.
-// Returns the effective limit, including its default when no override exists. Unknown resource values
-// are rejected.
+// Returns the limit in force, the platform default when no limit was set. Unknown resource values are
+// rejected; an unknown region is refused with 404.
 //
-// GET /api/v1/quotas/{resource}
+// GET /api/v1/regions/{regionId}/quotas/{resource}
 func (UnimplementedHandler) GetQuota(ctx context.Context, params GetQuotaParams) (r *ProjectQuota, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1017,10 +1017,12 @@ func (UnimplementedHandler) ListPublicImages(ctx context.Context, params ListPub
 // ListQuotas implements list-quotas operation.
 //
 // Reads only the IAM project authorized by the scoped token; callers cannot select another project.
-// Returns all supported resource limits through shared pagination, including defaults for resources
-// without an override. No cross-domain usage total is returned.
+// Returns every resource's limit for the project in the region through shared pagination, the platform
+// default included where no limit was set. A quota is per region, since each region has its own
+// capacity; what the project holds in one region never counts against another. An unknown region is
+// refused with 404. No usage is returned.
 //
-// GET /api/v1/quotas
+// GET /api/v1/regions/{regionId}/quotas
 func (UnimplementedHandler) ListQuotas(ctx context.Context, params ListQuotasParams) (r *ProjectQuotaListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }

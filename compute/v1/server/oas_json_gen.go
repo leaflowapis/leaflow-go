@@ -17533,6 +17533,10 @@ func (s *ProjectQuota) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.ProjectID)
 	}
 	{
+		e.FieldStart("region_id")
+		s.RegionID.Encode(e)
+	}
+	{
 		e.FieldStart("resource")
 		s.Resource.Encode(e)
 	}
@@ -17540,12 +17544,18 @@ func (s *ProjectQuota) encodeFields(e *jx.Encoder) {
 		e.FieldStart("limit")
 		e.Int64(s.Limit)
 	}
+	{
+		e.FieldStart("source")
+		s.Source.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfProjectQuota = [3]string{
+var jsonFieldsNameOfProjectQuota = [5]string{
 	0: "project_id",
-	1: "resource",
-	2: "limit",
+	1: "region_id",
+	2: "resource",
+	3: "limit",
+	4: "source",
 }
 
 // Decode decodes ProjectQuota from json.
@@ -17569,8 +17579,18 @@ func (s *ProjectQuota) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"project_id\"")
 			}
-		case "resource":
+		case "region_id":
 			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.RegionID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"region_id\"")
+			}
+		case "resource":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.Resource.Decode(d); err != nil {
 					return err
@@ -17580,7 +17600,7 @@ func (s *ProjectQuota) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"resource\"")
 			}
 		case "limit":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.Limit = int64(v)
@@ -17590,6 +17610,16 @@ func (s *ProjectQuota) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"limit\"")
+			}
+		case "source":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.Source.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"source\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -17601,7 +17631,7 @@ func (s *ProjectQuota) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -18720,8 +18750,6 @@ func (s *QuotaResourceType) Decode(d *jx.Decoder) error {
 		*s = QuotaResourceTypeNetworkInterfaces
 	case QuotaResourceTypeElasticIps:
 		*s = QuotaResourceTypeElasticIps
-	case QuotaResourceTypeNatGateways:
-		*s = QuotaResourceTypeNatGateways
 	case QuotaResourceTypeSecurityGroups:
 		*s = QuotaResourceTypeSecurityGroups
 	case QuotaResourceTypeSecurityGroupRules:
@@ -18748,6 +18776,46 @@ func (s QuotaResourceType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *QuotaResourceType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes QuotaSource as json.
+func (s QuotaSource) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes QuotaSource from json.
+func (s *QuotaSource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode QuotaSource to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch QuotaSource(v) {
+	case QuotaSourceDefault:
+		*s = QuotaSourceDefault
+	case QuotaSourceOverride:
+		*s = QuotaSourceOverride
+	default:
+		*s = QuotaSource(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s QuotaSource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *QuotaSource) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

@@ -10429,17 +10429,17 @@ func (s *Server) handleGetPublicImageRequest(args [1]string, argsEscaped bool, w
 // handleGetQuotaRequest handles get-quota operation.
 //
 // Reads only the IAM project authorized by the scoped token; callers cannot select another project.
-// Returns the effective limit, including its default when no override exists. Unknown resource values
-// are rejected.
+// Returns the limit in force, the platform default when no limit was set. Unknown resource values are
+// rejected; an unknown region is refused with 404.
 //
-// GET /api/v1/quotas/{resource}
-func (s *Server) handleGetQuotaRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/regions/{regionId}/quotas/{resource}
+func (s *Server) handleGetQuotaRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-quota"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/quotas/{resource}"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/quotas/{resource}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -10568,11 +10568,15 @@ func (s *Server) handleGetQuotaRequest(args [1]string, argsEscaped bool, w http.
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetQuotaOperation,
-			OperationSummary: "Get a project quota",
+			OperationSummary: "Get a project quota in a region",
 			OperationID:      "get-quota",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
 				{
 					Name: "resource",
 					In:   "path",
@@ -15369,17 +15373,19 @@ func (s *Server) handleListPublicImagesRequest(args [0]string, argsEscaped bool,
 // handleListQuotasRequest handles list-quotas operation.
 //
 // Reads only the IAM project authorized by the scoped token; callers cannot select another project.
-// Returns all supported resource limits through shared pagination, including defaults for resources
-// without an override. No cross-domain usage total is returned.
+// Returns every resource's limit for the project in the region through shared pagination, the platform
+// default included where no limit was set. A quota is per region, since each region has its own
+// capacity; what the project holds in one region never counts against another. An unknown region is
+// refused with 404. No usage is returned.
 //
-// GET /api/v1/quotas
-func (s *Server) handleListQuotasRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/regions/{regionId}/quotas
+func (s *Server) handleListQuotasRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-quotas"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/quotas"),
+		semconv.HTTPRouteKey.String("/api/v1/regions/{regionId}/quotas"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -15508,7 +15514,7 @@ func (s *Server) handleListQuotasRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListQuotasOperation,
-			OperationSummary: "List project quotas",
+			OperationSummary: "List project quotas in a region",
 			OperationID:      "list-quotas",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -15521,6 +15527,10 @@ func (s *Server) handleListQuotasRequest(args [0]string, argsEscaped bool, w htt
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "regionId",
+					In:   "path",
+				}: params.RegionId,
 			},
 			Raw: r,
 		}

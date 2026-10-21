@@ -5430,6 +5430,17 @@ func (s *ProjectQuota) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if err := s.RegionID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "region_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.Resource.Validate(); err != nil {
 			return err
 		}
@@ -5458,6 +5469,17 @@ func (s *ProjectQuota) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "limit",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Source.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "source",
 			Error: err,
 		})
 	}
@@ -5785,8 +5807,6 @@ func (s QuotaResourceType) Validate() error {
 		return nil
 	case "elastic_ips":
 		return nil
-	case "nat_gateways":
-		return nil
 	case "security_groups":
 		return nil
 	case "security_group_rules":
@@ -5796,6 +5816,17 @@ func (s QuotaResourceType) Validate() error {
 	case "backups":
 		return nil
 	case "private_images":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s QuotaSource) Validate() error {
+	switch s {
+	case "default":
+		return nil
+	case "override":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

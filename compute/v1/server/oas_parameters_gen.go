@@ -3112,10 +3112,18 @@ func decodeGetPublicImageParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // GetQuotaParams is parameters of get-quota operation.
 type GetQuotaParams struct {
+	RegionId RegionID
 	Resource QuotaResourceType
 }
 
 func unpackGetQuotaParams(packed middleware.Parameters) (params GetQuotaParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(RegionID)
+	}
 	{
 		key := middleware.ParameterKey{
 			Name: "resource",
@@ -3126,12 +3134,72 @@ func unpackGetQuotaParams(packed middleware.Parameters) (params GetQuotaParams) 
 	return params
 }
 
-func decodeGetQuotaParams(args [1]string, argsEscaped bool, r *http.Request) (params GetQuotaParams, _ error) {
-	// Decode path: resource.
+func decodeGetQuotaParams(args [2]string, argsEscaped bool, r *http.Request) (params GetQuotaParams, _ error) {
+	// Decode path: regionId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotRegionIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotRegionIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.RegionId = RegionID(paramsDotRegionIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.RegionId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: resource.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -7163,6 +7231,7 @@ type ListQuotasParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
+	RegionId RegionID
 }
 
 func unpackListQuotasParams(packed middleware.Parameters) (params ListQuotasParams) {
@@ -7184,10 +7253,17 @@ func unpackListQuotasParams(packed middleware.Parameters) (params ListQuotasPara
 			params.PageSize = v.(OptInt64)
 		}
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(RegionID)
+	}
 	return params
 }
 
-func decodeListQuotasParams(args [0]string, argsEscaped bool, r *http.Request) (params ListQuotasParams, _ error) {
+func decodeListQuotasParams(args [1]string, argsEscaped bool, r *http.Request) (params ListQuotasParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Set default value for query: page.
 	{
@@ -7328,6 +7404,66 @@ func decodeListQuotasParams(args [0]string, argsEscaped bool, r *http.Request) (
 		return params, &ogenerrors.DecodeParamError{
 			Name: "page_size",
 			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotRegionIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotRegionIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.RegionId = RegionID(paramsDotRegionIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.RegionId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
+			In:   "path",
 			Err:  err,
 		}
 	}

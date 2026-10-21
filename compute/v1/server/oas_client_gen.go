@@ -627,10 +627,10 @@ type Invoker interface {
 	// GetQuota invokes get-quota operation.
 	//
 	// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
-	// Returns the effective limit, including its default when no override exists. Unknown resource values
-	// are rejected.
+	// Returns the limit in force, the platform default when no limit was set. Unknown resource values are
+	// rejected; an unknown region is refused with 404.
 	//
-	// GET /api/v1/quotas/{resource}
+	// GET /api/v1/regions/{regionId}/quotas/{resource}
 	GetQuota(ctx context.Context, params GetQuotaParams) (*ProjectQuota, error)
 	// GetRegion invokes get-region operation.
 	//
@@ -811,10 +811,12 @@ type Invoker interface {
 	// ListQuotas invokes list-quotas operation.
 	//
 	// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
-	// Returns all supported resource limits through shared pagination, including defaults for resources
-	// without an override. No cross-domain usage total is returned.
+	// Returns every resource's limit for the project in the region through shared pagination, the platform
+	// default included where no limit was set. A quota is per region, since each region has its own
+	// capacity; what the project holds in one region never counts against another. An unknown region is
+	// refused with 404. No usage is returned.
 	//
-	// GET /api/v1/quotas
+	// GET /api/v1/regions/{regionId}/quotas
 	ListQuotas(ctx context.Context, params ListQuotasParams) (*ProjectQuotaListResponseBody, error)
 	// ListRegions invokes list-regions operation.
 	//
@@ -8139,10 +8141,10 @@ func (c *Client) sendGetPublicImage(ctx context.Context, params GetPublicImagePa
 // GetQuota invokes get-quota operation.
 //
 // Reads only the IAM project authorized by the scoped token; callers cannot select another project.
-// Returns the effective limit, including its default when no override exists. Unknown resource values
-// are rejected.
+// Returns the limit in force, the platform default when no limit was set. Unknown resource values are
+// rejected; an unknown region is refused with 404.
 //
-// GET /api/v1/quotas/{resource}
+// GET /api/v1/regions/{regionId}/quotas/{resource}
 func (c *Client) GetQuota(ctx context.Context, params GetQuotaParams) (*ProjectQuota, error) {
 	res, err := c.sendGetQuota(ctx, params)
 	return res, err
@@ -8152,7 +8154,7 @@ func (c *Client) sendGetQuota(ctx context.Context, params GetQuotaParams) (res *
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-quota"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/quotas/{resource}"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/quotas/{resource}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8185,8 +8187,30 @@ func (c *Client) sendGetQuota(ctx context.Context, params GetQuotaParams) (res *
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/quotas/"
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/regions/"
+	{
+		// Encode "regionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "regionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.RegionId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/quotas/"
 	{
 		// Encode "resource" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -8203,7 +8227,7 @@ func (c *Client) sendGetQuota(ctx context.Context, params GetQuotaParams) (res *
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[3] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -11851,10 +11875,12 @@ func (c *Client) sendListPublicImages(ctx context.Context, params ListPublicImag
 // ListQuotas invokes list-quotas operation.
 //
 // Reads only the IAM project authorized by the scoped token; callers cannot select another project.
-// Returns all supported resource limits through shared pagination, including defaults for resources
-// without an override. No cross-domain usage total is returned.
+// Returns every resource's limit for the project in the region through shared pagination, the platform
+// default included where no limit was set. A quota is per region, since each region has its own
+// capacity; what the project holds in one region never counts against another. An unknown region is
+// refused with 404. No usage is returned.
 //
-// GET /api/v1/quotas
+// GET /api/v1/regions/{regionId}/quotas
 func (c *Client) ListQuotas(ctx context.Context, params ListQuotasParams) (*ProjectQuotaListResponseBody, error) {
 	res, err := c.sendListQuotas(ctx, params)
 	return res, err
@@ -11864,7 +11890,7 @@ func (c *Client) sendListQuotas(ctx context.Context, params ListQuotasParams) (r
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-quotas"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/quotas"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/quotas"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -11897,8 +11923,30 @@ func (c *Client) sendListQuotas(ctx context.Context, params ListQuotasParams) (r
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/quotas"
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/regions/"
+	{
+		// Encode "regionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "regionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.RegionId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/quotas"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
