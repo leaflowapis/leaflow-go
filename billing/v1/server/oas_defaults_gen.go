@@ -3,6 +3,22 @@
 package billingv1server
 
 // setDefaults set default value of fields.
+func (s *CheckoutOptions) setDefaults() {
+	{
+		val := CheckoutOptionsMode("automatic")
+		s.Mode.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *CheckoutSessionCreate) setDefaults() {
+	{
+		val := int(1)
+		s.Periods.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *PayInvoiceRequest) setDefaults() {
 	{
 		val := bool(true)
@@ -35,13 +51,5 @@ func (s *RenewRequest) setDefaults() {
 	{
 		val := bool(true)
 		s.UseCredits.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
-func (s *RenewalOrderRequest) setDefaults() {
-	{
-		val := int(1)
-		s.Periods.SetTo(val)
 	}
 }

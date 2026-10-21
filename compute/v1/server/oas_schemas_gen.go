@@ -4,6 +4,7 @@ package computev1server
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/go-faster/errors"
@@ -165,12 +166,16 @@ func (s *AllocateFloatingIPRequestBody) SetCheckout(val OptCheckoutOptions) {
 	s.Checkout = val
 }
 
-// The new floating IP, `pending` until its order is accepted, and the order. `address` is null until
-// the address is allocated.
+// The new floating IP, `pending` until its order is accepted, and its Checkout Session. `address` is
+// null until the address is allocated.
 // Ref: #/components/schemas/AllocateFloatingIPResponseBody
 type AllocateFloatingIPResponseBody struct {
 	FloatingIP FloatingIPResource `json:"floating_ip"`
-	Order      PlacedOrder        `json:"order"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetFloatingIP returns the value of FloatingIP.
@@ -178,9 +183,14 @@ func (s *AllocateFloatingIPResponseBody) GetFloatingIP() FloatingIPResource {
 	return s.FloatingIP
 }
 
-// GetOrder returns the value of Order.
-func (s *AllocateFloatingIPResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *AllocateFloatingIPResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *AllocateFloatingIPResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetFloatingIP sets the value of FloatingIP.
@@ -188,9 +198,14 @@ func (s *AllocateFloatingIPResponseBody) SetFloatingIP(val FloatingIPResource) {
 	s.FloatingIP = val
 }
 
-// SetOrder sets the value of Order.
-func (s *AllocateFloatingIPResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *AllocateFloatingIPResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *AllocateFloatingIPResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*AllocateFloatingIPResponseBody) allocateFloatingIPRes() {}
@@ -251,10 +266,14 @@ type BackupCapacityPack struct {
 	// capacity; `ended` no longer does because its subscription has ended; `failed` means the purchase
 	// failed, as `failure_reason` states.
 	Status BackupCapacityPackStatus `json:"status"`
-	// Why the purchase failed; null unless `status` is `failed`. `provisioning_failed` means it failed
-	// after the order was accepted, and its charge is refunded.
+	// Why the purchase failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means it failed after the order
+	// was accepted, and its charge is refunded.
 	FailureReason NilBackupCapacityPackFailureReason `json:"failure_reason"`
-	OrderID       uuid.UUID                          `json:"order_id"`
+	// The Billing Checkout Session that bought the pack. Null when the pack was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	// Null until the pack's checkout completes.
+	OrderID NilUUID `json:"order_id"`
 	// The pack's Billing subscription, through which it is renewed or canceled.
 	SubscriptionID NilUUID `json:"subscription_id"`
 	// The subscription a cancellation through Billing has to cover to release this capacity pack. A
@@ -289,8 +308,13 @@ func (s *BackupCapacityPack) GetFailureReason() NilBackupCapacityPackFailureReas
 	return s.FailureReason
 }
 
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *BackupCapacityPack) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
+}
+
 // GetOrderID returns the value of OrderID.
-func (s *BackupCapacityPack) GetOrderID() uuid.UUID {
+func (s *BackupCapacityPack) GetOrderID() NilUUID {
 	return s.OrderID
 }
 
@@ -334,8 +358,13 @@ func (s *BackupCapacityPack) SetFailureReason(val NilBackupCapacityPackFailureRe
 	s.FailureReason = val
 }
 
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *BackupCapacityPack) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
 // SetOrderID sets the value of OrderID.
-func (s *BackupCapacityPack) SetOrderID(val uuid.UUID) {
+func (s *BackupCapacityPack) SetOrderID(val NilUUID) {
 	s.OrderID = val
 }
 
@@ -354,11 +383,13 @@ func (s *BackupCapacityPack) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// Why the purchase failed; null unless `status` is `failed`. `provisioning_failed` means it failed
-// after the order was accepted, and its charge is refunded.
+// Why the purchase failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means it failed after the order
+// was accepted, and its charge is refunded.
 type BackupCapacityPackFailureReason string
 
 const (
+	BackupCapacityPackFailureReasonCheckoutExpired    BackupCapacityPackFailureReason = "checkout_expired"
 	BackupCapacityPackFailureReasonOrderDeclined      BackupCapacityPackFailureReason = "order_declined"
 	BackupCapacityPackFailureReasonOrderCanceled      BackupCapacityPackFailureReason = "order_canceled"
 	BackupCapacityPackFailureReasonOrderExpired       BackupCapacityPackFailureReason = "order_expired"
@@ -368,6 +399,7 @@ const (
 // AllValues returns all BackupCapacityPackFailureReason values.
 func (BackupCapacityPackFailureReason) AllValues() []BackupCapacityPackFailureReason {
 	return []BackupCapacityPackFailureReason{
+		BackupCapacityPackFailureReasonCheckoutExpired,
 		BackupCapacityPackFailureReasonOrderDeclined,
 		BackupCapacityPackFailureReasonOrderCanceled,
 		BackupCapacityPackFailureReasonOrderExpired,
@@ -378,6 +410,8 @@ func (BackupCapacityPackFailureReason) AllValues() []BackupCapacityPackFailureRe
 // MarshalText implements encoding.TextMarshaler.
 func (s BackupCapacityPackFailureReason) MarshalText() ([]byte, error) {
 	switch s {
+	case BackupCapacityPackFailureReasonCheckoutExpired:
+		return []byte(s), nil
 	case BackupCapacityPackFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case BackupCapacityPackFailureReasonOrderCanceled:
@@ -394,6 +428,9 @@ func (s BackupCapacityPackFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *BackupCapacityPackFailureReason) UnmarshalText(data []byte) error {
 	switch BackupCapacityPackFailureReason(data) {
+	case BackupCapacityPackFailureReasonCheckoutExpired:
+		*s = BackupCapacityPackFailureReasonCheckoutExpired
+		return nil
 	case BackupCapacityPackFailureReasonOrderDeclined:
 		*s = BackupCapacityPackFailureReasonOrderDeclined
 		return nil
@@ -835,12 +872,16 @@ type BackupService struct {
 	// its order; `provisioning` is being activated; `active` accepts new backups; `suspended` refuses new
 	// backups and keeps existing ones; `failed` means the activation failed, as `failure_reason` states.
 	Status BackupServiceStatus `json:"status"`
-	// Why the purchase failed; null unless `status` is `failed`. `provisioning_failed` means it failed
-	// after the order was accepted, and its charge is refunded.
+	// Why the purchase failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means it failed after the order
+	// was accepted, and its charge is refunded.
 	FailureReason NilBackupServiceFailureReason `json:"failure_reason"`
-	// The order that activated the service; null before an activation is requested.
+	// The Checkout Session of the activation; null before an activation is requested.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	// The order that activated the service; null until the activation's checkout completes.
 	OrderID NilUUID `json:"order_id"`
-	// The Billing subscription that backup usage is billed under; null before an activation is requested.
+	// The Billing subscription that backup usage is billed under; null until the activation's checkout
+	// completes.
 	SubscriptionID NilUUID `json:"subscription_id"`
 	// The subscription a cancellation through Billing has to cover to release this backup service. A
 	// subscription that has ended is not listed, and the list is empty when no subscription pays for the
@@ -871,6 +912,11 @@ func (s *BackupService) GetStatus() BackupServiceStatus {
 // GetFailureReason returns the value of FailureReason.
 func (s *BackupService) GetFailureReason() NilBackupServiceFailureReason {
 	return s.FailureReason
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *BackupService) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
 }
 
 // GetOrderID returns the value of OrderID.
@@ -923,6 +969,11 @@ func (s *BackupService) SetFailureReason(val NilBackupServiceFailureReason) {
 	s.FailureReason = val
 }
 
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *BackupService) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
 // SetOrderID sets the value of OrderID.
 func (s *BackupService) SetOrderID(val NilUUID) {
 	s.OrderID = val
@@ -958,11 +1009,13 @@ func (s *BackupService) SetCapacityPackPricing(val NilPricing) {
 	s.CapacityPackPricing = val
 }
 
-// Why the purchase failed; null unless `status` is `failed`. `provisioning_failed` means it failed
-// after the order was accepted, and its charge is refunded.
+// Why the purchase failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means it failed after the order
+// was accepted, and its charge is refunded.
 type BackupServiceFailureReason string
 
 const (
+	BackupServiceFailureReasonCheckoutExpired    BackupServiceFailureReason = "checkout_expired"
 	BackupServiceFailureReasonOrderDeclined      BackupServiceFailureReason = "order_declined"
 	BackupServiceFailureReasonOrderCanceled      BackupServiceFailureReason = "order_canceled"
 	BackupServiceFailureReasonOrderExpired       BackupServiceFailureReason = "order_expired"
@@ -972,6 +1025,7 @@ const (
 // AllValues returns all BackupServiceFailureReason values.
 func (BackupServiceFailureReason) AllValues() []BackupServiceFailureReason {
 	return []BackupServiceFailureReason{
+		BackupServiceFailureReasonCheckoutExpired,
 		BackupServiceFailureReasonOrderDeclined,
 		BackupServiceFailureReasonOrderCanceled,
 		BackupServiceFailureReasonOrderExpired,
@@ -982,6 +1036,8 @@ func (BackupServiceFailureReason) AllValues() []BackupServiceFailureReason {
 // MarshalText implements encoding.TextMarshaler.
 func (s BackupServiceFailureReason) MarshalText() ([]byte, error) {
 	switch s {
+	case BackupServiceFailureReasonCheckoutExpired:
+		return []byte(s), nil
 	case BackupServiceFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case BackupServiceFailureReasonOrderCanceled:
@@ -998,6 +1054,9 @@ func (s BackupServiceFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *BackupServiceFailureReason) UnmarshalText(data []byte) error {
 	switch BackupServiceFailureReason(data) {
+	case BackupServiceFailureReasonCheckoutExpired:
+		*s = BackupServiceFailureReasonCheckoutExpired
+		return nil
 	case BackupServiceFailureReasonOrderDeclined:
 		*s = BackupServiceFailureReasonOrderDeclined
 		return nil
@@ -1320,9 +1379,10 @@ func NewExistingBootDiskBootDisk(v ExistingBootDisk) BootDisk {
 	return s
 }
 
-// Shared checkout choices for a product purchase. Omitting this object or mode selects automatic
-// checkout. Each purchase creates its own order. Promotion codes are supplied only to Billing quote
-// and payment operations. A service may retain a failed creation record when Billing refuses a
+// Shared checkout choices for a product purchase. The service may set them or forward its client's
+// choices unchanged; it does not need to read them, and Billing validates them. Omitting this object
+// or mode selects automatic checkout. Each purchase creates its own Checkout Session. Promotion codes
+// are supplied only to Billing. A service may retain a failed creation record when Billing refuses a
 // purchase; no infrastructure is created for that refusal.
 // Ref: #/components/schemas/CheckoutOptions
 type CheckoutOptions struct {
@@ -1330,8 +1390,12 @@ type CheckoutOptions struct {
 	// Expected invoice total after discounts and tax, before applying credit grants or balance. A
 	// different total fails with BILLING_AMOUNT_CHANGED without charging or reserving a discount. Accepted
 	// only in automatic mode; with deferred it is refused with HTTP 400. For deferred checkout, give the
-	// expected amount when paying the invoice through Billing.
+	// expected amount when completing it through Billing.
 	ExpectedAmount OptString `json:"expected_amount"`
+	// Where the client goes after the customer finishes a deferred checkout. Any absolute URI with a
+	// scheme, including mobile and desktop application schemes. Billing stores it without checking the
+	// target; each client validates its own.
+	ReturnURL OptURI `json:"return_url"`
 }
 
 // GetMode returns the value of Mode.
@@ -1344,6 +1408,11 @@ func (s *CheckoutOptions) GetExpectedAmount() OptString {
 	return s.ExpectedAmount
 }
 
+// GetReturnURL returns the value of ReturnURL.
+func (s *CheckoutOptions) GetReturnURL() OptURI {
+	return s.ReturnURL
+}
+
 // SetMode sets the value of Mode.
 func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 	s.Mode = val
@@ -1352,6 +1421,11 @@ func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 // SetExpectedAmount sets the value of ExpectedAmount.
 func (s *CheckoutOptions) SetExpectedAmount(val OptString) {
 	s.ExpectedAmount = val
+}
+
+// SetReturnURL sets the value of ReturnURL.
+func (s *CheckoutOptions) SetReturnURL(val OptURI) {
+	s.ReturnURL = val
 }
 
 // Merged schema.
@@ -1559,7 +1633,11 @@ func (s *CreateBackupCapacityPackRequestBody) SetCheckout(val OptCheckoutOptions
 // Ref: #/components/schemas/CreateBackupCapacityPackResponseBody
 type CreateBackupCapacityPackResponseBody struct {
 	BackupCapacityPack BackupCapacityPack `json:"backup_capacity_pack"`
-	Order              PlacedOrder        `json:"order"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetBackupCapacityPack returns the value of BackupCapacityPack.
@@ -1567,9 +1645,14 @@ func (s *CreateBackupCapacityPackResponseBody) GetBackupCapacityPack() BackupCap
 	return s.BackupCapacityPack
 }
 
-// GetOrder returns the value of Order.
-func (s *CreateBackupCapacityPackResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateBackupCapacityPackResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateBackupCapacityPackResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetBackupCapacityPack sets the value of BackupCapacityPack.
@@ -1577,9 +1660,14 @@ func (s *CreateBackupCapacityPackResponseBody) SetBackupCapacityPack(val BackupC
 	s.BackupCapacityPack = val
 }
 
-// SetOrder sets the value of Order.
-func (s *CreateBackupCapacityPackResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateBackupCapacityPackResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateBackupCapacityPackResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*CreateBackupCapacityPackResponseBody) createBackupCapacityPackRes() {}
@@ -1628,7 +1716,11 @@ func (s *CreateBackupServiceRequestBody) SetCheckout(val OptCheckoutOptions) {
 // Ref: #/components/schemas/CreateBackupServiceResponseBody
 type CreateBackupServiceResponseBody struct {
 	BackupService BackupService `json:"backup_service"`
-	Order         PlacedOrder   `json:"order"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetBackupService returns the value of BackupService.
@@ -1636,9 +1728,14 @@ func (s *CreateBackupServiceResponseBody) GetBackupService() BackupService {
 	return s.BackupService
 }
 
-// GetOrder returns the value of Order.
-func (s *CreateBackupServiceResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateBackupServiceResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateBackupServiceResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetBackupService sets the value of BackupService.
@@ -1646,9 +1743,14 @@ func (s *CreateBackupServiceResponseBody) SetBackupService(val BackupService) {
 	s.BackupService = val
 }
 
-// SetOrder sets the value of Order.
-func (s *CreateBackupServiceResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateBackupServiceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateBackupServiceResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*CreateBackupServiceResponseBody) createBackupServiceRes() {}
@@ -1789,12 +1891,16 @@ func (s *CreateDiskRequestBody) SetCheckout(val OptCheckoutOptions) {
 	s.Checkout = val
 }
 
-// The new disk, `pending` until its order is accepted, and the order. Also returned for a disk
-// restored from a backup.
+// The new disk, `pending` until its order is accepted, and its Checkout Session. Also returned for a
+// disk restored from a backup.
 // Ref: #/components/schemas/CreateDiskResponseBody
 type CreateDiskResponseBody struct {
-	Disk  DiskResource `json:"disk"`
-	Order PlacedOrder  `json:"order"`
+	Disk DiskResource `json:"disk"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetDisk returns the value of Disk.
@@ -1802,9 +1908,14 @@ func (s *CreateDiskResponseBody) GetDisk() DiskResource {
 	return s.Disk
 }
 
-// GetOrder returns the value of Order.
-func (s *CreateDiskResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateDiskResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateDiskResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetDisk sets the value of Disk.
@@ -1812,9 +1923,14 @@ func (s *CreateDiskResponseBody) SetDisk(val DiskResource) {
 	s.Disk = val
 }
 
-// SetOrder sets the value of Order.
-func (s *CreateDiskResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateDiskResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateDiskResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*CreateDiskResponseBody) createDiskRes()    {}
@@ -1897,11 +2013,15 @@ func (s *CreateImageRequestBody) SetCheckout(val OptCheckoutOptions) {
 	s.Checkout = val
 }
 
-// The new private image, `pending` until its order is accepted, and the order.
+// The new private image, `pending` until its order is accepted, and its Checkout Session.
 // Ref: #/components/schemas/CreateImageResponseBody
 type CreateImageResponseBody struct {
 	Image ImageResource `json:"image"`
-	Order PlacedOrder   `json:"order"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetImage returns the value of Image.
@@ -1909,9 +2029,14 @@ func (s *CreateImageResponseBody) GetImage() ImageResource {
 	return s.Image
 }
 
-// GetOrder returns the value of Order.
-func (s *CreateImageResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateImageResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateImageResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetImage sets the value of Image.
@@ -1919,9 +2044,14 @@ func (s *CreateImageResponseBody) SetImage(val ImageResource) {
 	s.Image = val
 }
 
-// SetOrder sets the value of Order.
-func (s *CreateImageResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateImageResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateImageResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*CreateImageResponseBody) createImageRes() {}
@@ -2774,6 +2904,9 @@ type DiskResource struct {
 	OrderID NilUUID            `json:"order_id"`
 	// The Billing order item for this resource.
 	OrderItemID NilUUID `json:"order_item_id"`
+	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// until its checkout completes. Null when the resource was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
 	// The Billing subscription associated with this resource. It may still be pending; its presence does
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
@@ -2786,8 +2919,9 @@ type DiskResource struct {
 	// for, so that each line of a cancellation can name what it releases.
 	ReleaseSet  []ReleaseSetItem           `json:"release_set"`
 	AccessState NilDiskResourceAccessState `json:"access_state"`
-	// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
-	// after the order was accepted, and the charge for this disk is refunded.
+	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+	// order was accepted, and the charge for this disk is refunded.
 	FailureReason NilDiskResourceFailureReason `json:"failure_reason"`
 	// The operation in progress on this disk, or null when none is.
 	Operation  NilDiskOperation     `json:"operation"`
@@ -2854,6 +2988,11 @@ func (s *DiskResource) GetOrderID() NilUUID {
 // GetOrderItemID returns the value of OrderItemID.
 func (s *DiskResource) GetOrderItemID() NilUUID {
 	return s.OrderItemID
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *DiskResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -2961,6 +3100,11 @@ func (s *DiskResource) SetOrderItemID(val NilUUID) {
 	s.OrderItemID = val
 }
 
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *DiskResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *DiskResource) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
@@ -3066,11 +3210,13 @@ func (s *DiskResourceAccessState) UnmarshalText(data []byte) error {
 	}
 }
 
-// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
-// after the order was accepted, and the charge for this disk is refunded.
+// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+// order was accepted, and the charge for this disk is refunded.
 type DiskResourceFailureReason string
 
 const (
+	DiskResourceFailureReasonCheckoutExpired    DiskResourceFailureReason = "checkout_expired"
 	DiskResourceFailureReasonOrderDeclined      DiskResourceFailureReason = "order_declined"
 	DiskResourceFailureReasonOrderCanceled      DiskResourceFailureReason = "order_canceled"
 	DiskResourceFailureReasonOrderExpired       DiskResourceFailureReason = "order_expired"
@@ -3080,6 +3226,7 @@ const (
 // AllValues returns all DiskResourceFailureReason values.
 func (DiskResourceFailureReason) AllValues() []DiskResourceFailureReason {
 	return []DiskResourceFailureReason{
+		DiskResourceFailureReasonCheckoutExpired,
 		DiskResourceFailureReasonOrderDeclined,
 		DiskResourceFailureReasonOrderCanceled,
 		DiskResourceFailureReasonOrderExpired,
@@ -3090,6 +3237,8 @@ func (DiskResourceFailureReason) AllValues() []DiskResourceFailureReason {
 // MarshalText implements encoding.TextMarshaler.
 func (s DiskResourceFailureReason) MarshalText() ([]byte, error) {
 	switch s {
+	case DiskResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
 	case DiskResourceFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case DiskResourceFailureReasonOrderCanceled:
@@ -3106,6 +3255,9 @@ func (s DiskResourceFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *DiskResourceFailureReason) UnmarshalText(data []byte) error {
 	switch DiskResourceFailureReason(data) {
+	case DiskResourceFailureReasonCheckoutExpired:
+		*s = DiskResourceFailureReasonCheckoutExpired
+		return nil
 	case DiskResourceFailureReasonOrderDeclined:
 		*s = DiskResourceFailureReasonOrderDeclined
 		return nil
@@ -3859,6 +4011,9 @@ type FloatingIPResource struct {
 	OrderID NilUUID                  `json:"order_id"`
 	// The Billing order item for this resource.
 	OrderItemID NilUUID `json:"order_item_id"`
+	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// until its checkout completes. Null when the resource was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
 	// The Billing subscription associated with this resource. It may still be pending; its presence does
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
@@ -3870,8 +4025,9 @@ type FloatingIPResource struct {
 	// for, so that each line of a cancellation can name what it releases.
 	ReleaseSet  []ReleaseSetItem                 `json:"release_set"`
 	AccessState NilFloatingIPResourceAccessState `json:"access_state"`
-	// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
-	// after the order was accepted, and the charge for this floating IP is refunded.
+	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+	// order was accepted, and the charge for this floating IP is refunded.
 	FailureReason NilFloatingIPResourceFailureReason `json:"failure_reason"`
 	// The operation in progress on this floating IP, or null when none is.
 	Operation  NilFloatingIPOperation `json:"operation"`
@@ -3918,6 +4074,11 @@ func (s *FloatingIPResource) GetOrderID() NilUUID {
 // GetOrderItemID returns the value of OrderItemID.
 func (s *FloatingIPResource) GetOrderItemID() NilUUID {
 	return s.OrderItemID
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *FloatingIPResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -4003,6 +4164,11 @@ func (s *FloatingIPResource) SetOrderID(val NilUUID) {
 // SetOrderItemID sets the value of OrderItemID.
 func (s *FloatingIPResource) SetOrderItemID(val NilUUID) {
 	s.OrderItemID = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *FloatingIPResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
 }
 
 // SetSubscriptionID sets the value of SubscriptionID.
@@ -4111,11 +4277,13 @@ func (s *FloatingIPResourceAccessState) UnmarshalText(data []byte) error {
 	}
 }
 
-// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
-// after the order was accepted, and the charge for this floating IP is refunded.
+// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+// order was accepted, and the charge for this floating IP is refunded.
 type FloatingIPResourceFailureReason string
 
 const (
+	FloatingIPResourceFailureReasonCheckoutExpired    FloatingIPResourceFailureReason = "checkout_expired"
 	FloatingIPResourceFailureReasonOrderDeclined      FloatingIPResourceFailureReason = "order_declined"
 	FloatingIPResourceFailureReasonOrderCanceled      FloatingIPResourceFailureReason = "order_canceled"
 	FloatingIPResourceFailureReasonOrderExpired       FloatingIPResourceFailureReason = "order_expired"
@@ -4125,6 +4293,7 @@ const (
 // AllValues returns all FloatingIPResourceFailureReason values.
 func (FloatingIPResourceFailureReason) AllValues() []FloatingIPResourceFailureReason {
 	return []FloatingIPResourceFailureReason{
+		FloatingIPResourceFailureReasonCheckoutExpired,
 		FloatingIPResourceFailureReasonOrderDeclined,
 		FloatingIPResourceFailureReasonOrderCanceled,
 		FloatingIPResourceFailureReasonOrderExpired,
@@ -4135,6 +4304,8 @@ func (FloatingIPResourceFailureReason) AllValues() []FloatingIPResourceFailureRe
 // MarshalText implements encoding.TextMarshaler.
 func (s FloatingIPResourceFailureReason) MarshalText() ([]byte, error) {
 	switch s {
+	case FloatingIPResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
 	case FloatingIPResourceFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case FloatingIPResourceFailureReasonOrderCanceled:
@@ -4151,6 +4322,9 @@ func (s FloatingIPResourceFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *FloatingIPResourceFailureReason) UnmarshalText(data []byte) error {
 	switch FloatingIPResourceFailureReason(data) {
+	case FloatingIPResourceFailureReasonCheckoutExpired:
+		*s = FloatingIPResourceFailureReasonCheckoutExpired
+		return nil
 	case FloatingIPResourceFailureReasonOrderDeclined:
 		*s = FloatingIPResourceFailureReasonOrderDeclined
 		return nil
@@ -4815,6 +4989,9 @@ type ImageResource struct {
 	OrderID          NilUUID   `json:"order_id"`
 	// The Billing order item for this resource.
 	OrderItemID NilUUID `json:"order_item_id"`
+	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// until its checkout completes. Null when the resource was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
 	// The Billing subscription associated with this resource. It may still be pending; its presence does
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
@@ -4826,8 +5003,9 @@ type ImageResource struct {
 	// for, so that each line of a cancellation can name what it releases.
 	ReleaseSet  []ReleaseSetItem            `json:"release_set"`
 	AccessState NilImageResourceAccessState `json:"access_state"`
-	// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
-	// after the order was accepted, and the charge for this image is refunded.
+	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+	// order was accepted, and the charge for this image is refunded.
 	FailureReason NilImageResourceFailureReason `json:"failure_reason"`
 	// The operation in progress on this image, or null when none is.
 	Operation  NilImageOperation `json:"operation"`
@@ -4923,6 +5101,11 @@ func (s *ImageResource) GetOrderID() NilUUID {
 // GetOrderItemID returns the value of OrderItemID.
 func (s *ImageResource) GetOrderItemID() NilUUID {
 	return s.OrderItemID
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *ImageResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -5055,6 +5238,11 @@ func (s *ImageResource) SetOrderItemID(val NilUUID) {
 	s.OrderItemID = val
 }
 
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *ImageResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *ImageResource) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
@@ -5152,11 +5340,13 @@ func (s *ImageResourceAccessState) UnmarshalText(data []byte) error {
 	}
 }
 
-// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
-// after the order was accepted, and the charge for this image is refunded.
+// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+// order was accepted, and the charge for this image is refunded.
 type ImageResourceFailureReason string
 
 const (
+	ImageResourceFailureReasonCheckoutExpired    ImageResourceFailureReason = "checkout_expired"
 	ImageResourceFailureReasonOrderDeclined      ImageResourceFailureReason = "order_declined"
 	ImageResourceFailureReasonOrderCanceled      ImageResourceFailureReason = "order_canceled"
 	ImageResourceFailureReasonOrderExpired       ImageResourceFailureReason = "order_expired"
@@ -5166,6 +5356,7 @@ const (
 // AllValues returns all ImageResourceFailureReason values.
 func (ImageResourceFailureReason) AllValues() []ImageResourceFailureReason {
 	return []ImageResourceFailureReason{
+		ImageResourceFailureReasonCheckoutExpired,
 		ImageResourceFailureReasonOrderDeclined,
 		ImageResourceFailureReasonOrderCanceled,
 		ImageResourceFailureReasonOrderExpired,
@@ -5176,6 +5367,8 @@ func (ImageResourceFailureReason) AllValues() []ImageResourceFailureReason {
 // MarshalText implements encoding.TextMarshaler.
 func (s ImageResourceFailureReason) MarshalText() ([]byte, error) {
 	switch s {
+	case ImageResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
 	case ImageResourceFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case ImageResourceFailureReasonOrderCanceled:
@@ -5192,6 +5385,9 @@ func (s ImageResourceFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *ImageResourceFailureReason) UnmarshalText(data []byte) error {
 	switch ImageResourceFailureReason(data) {
+	case ImageResourceFailureReasonCheckoutExpired:
+		*s = ImageResourceFailureReasonCheckoutExpired
+		return nil
 	case ImageResourceFailureReasonOrderDeclined:
 		*s = ImageResourceFailureReasonOrderDeclined
 		return nil
@@ -5577,14 +5773,18 @@ type InstanceResource struct {
 	Generation   int64                  `json:"generation"`
 	ObservedAt   NilDateTime            `json:"observed_at"`
 	Restrictions []InstanceRestriction  `json:"restrictions"`
-	// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
-	// after the order was accepted, and the charge for this instance is refunded.
+	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+	// order was accepted, and the charge for this instance is refunded.
 	FailureReason NilInstanceResourceFailureReason `json:"failure_reason"`
 	// The operation in progress on this instance, or null when none is.
 	Operation NilInstanceOperation `json:"operation"`
 	OrderID   NilUUID              `json:"order_id"`
 	// The Billing order item for this resource.
 	OrderItemID NilUUID `json:"order_item_id"`
+	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// until its checkout completes. Null when the resource was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
 	// The Billing subscription associated with this resource. It may still be pending; its presence does
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
@@ -5724,6 +5924,11 @@ func (s *InstanceResource) GetOrderID() NilUUID {
 // GetOrderItemID returns the value of OrderItemID.
 func (s *InstanceResource) GetOrderItemID() NilUUID {
 	return s.OrderItemID
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *InstanceResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -5876,6 +6081,11 @@ func (s *InstanceResource) SetOrderItemID(val NilUUID) {
 	s.OrderItemID = val
 }
 
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *InstanceResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *InstanceResource) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
@@ -5961,11 +6171,13 @@ func (s *InstanceResourceAccessState) UnmarshalText(data []byte) error {
 	}
 }
 
-// Why creation failed; null unless `status` is `failed`. `provisioning_failed` means creation failed
-// after the order was accepted, and the charge for this instance is refunded.
+// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+// order was accepted, and the charge for this instance is refunded.
 type InstanceResourceFailureReason string
 
 const (
+	InstanceResourceFailureReasonCheckoutExpired    InstanceResourceFailureReason = "checkout_expired"
 	InstanceResourceFailureReasonOrderDeclined      InstanceResourceFailureReason = "order_declined"
 	InstanceResourceFailureReasonOrderCanceled      InstanceResourceFailureReason = "order_canceled"
 	InstanceResourceFailureReasonOrderExpired       InstanceResourceFailureReason = "order_expired"
@@ -5975,6 +6187,7 @@ const (
 // AllValues returns all InstanceResourceFailureReason values.
 func (InstanceResourceFailureReason) AllValues() []InstanceResourceFailureReason {
 	return []InstanceResourceFailureReason{
+		InstanceResourceFailureReasonCheckoutExpired,
 		InstanceResourceFailureReasonOrderDeclined,
 		InstanceResourceFailureReasonOrderCanceled,
 		InstanceResourceFailureReasonOrderExpired,
@@ -5985,6 +6198,8 @@ func (InstanceResourceFailureReason) AllValues() []InstanceResourceFailureReason
 // MarshalText implements encoding.TextMarshaler.
 func (s InstanceResourceFailureReason) MarshalText() ([]byte, error) {
 	switch s {
+	case InstanceResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
 	case InstanceResourceFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case InstanceResourceFailureReasonOrderCanceled:
@@ -6001,6 +6216,9 @@ func (s InstanceResourceFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *InstanceResourceFailureReason) UnmarshalText(data []byte) error {
 	switch InstanceResourceFailureReason(data) {
+	case InstanceResourceFailureReasonCheckoutExpired:
+		*s = InstanceResourceFailureReasonCheckoutExpired
+		return nil
 	case InstanceResourceFailureReasonOrderDeclined:
 		*s = InstanceResourceFailureReasonOrderDeclined
 		return nil
@@ -6747,13 +6965,17 @@ func (s *LaunchInstanceRequestBody) SetFloatingIP(val OptNewFloatingIP) {
 	s.FloatingIP = val
 }
 
-// The new instances, `pending` until their order is accepted, and the order they share.
+// The new instances, `pending` until their order is accepted, and the Checkout Session they share.
 // Ref: #/components/schemas/LaunchInstanceResponseBody
 type LaunchInstanceResponseBody struct {
 	// One instance per requested instance, in request order. Their IDs stay the same through checkout and
 	// creation.
 	Instances []InstanceResource `json:"instances"`
-	Order     PlacedOrder        `json:"order"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 	// Generated login password, returned only by this response. Null when no password was generated.
 	Password NilString `json:"password"`
 }
@@ -6763,9 +6985,14 @@ func (s *LaunchInstanceResponseBody) GetInstances() []InstanceResource {
 	return s.Instances
 }
 
-// GetOrder returns the value of Order.
-func (s *LaunchInstanceResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *LaunchInstanceResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *LaunchInstanceResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // GetPassword returns the value of Password.
@@ -6778,9 +7005,14 @@ func (s *LaunchInstanceResponseBody) SetInstances(val []InstanceResource) {
 	s.Instances = val
 }
 
-// SetOrder sets the value of Order.
-func (s *LaunchInstanceResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *LaunchInstanceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *LaunchInstanceResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 // SetPassword sets the value of Password.
@@ -7523,6 +7755,51 @@ func (o NilFloatingIPResourceFailureReason) Or(d FloatingIPResourceFailureReason
 	return d
 }
 
+// NewNilFunds returns new NilFunds with value set to v.
+func NewNilFunds(v Funds) NilFunds {
+	return NilFunds{
+		Value: v,
+	}
+}
+
+// NilFunds is nullable Funds.
+type NilFunds struct {
+	Value Funds
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilFunds) SetTo(v Funds) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilFunds) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilFunds) SetToNull() {
+	o.Null = true
+	var v Funds
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilFunds) Get() (v Funds, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilFunds) Or(d Funds) Funds {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilIPv4Binding returns new NilIPv4Binding with value set to v.
 func NewNilIPv4Binding(v IPv4Binding) NilIPv4Binding {
 	return NilIPv4Binding{
@@ -7832,6 +8109,51 @@ func (o NilInstanceResourceFailureReason) Get() (v InstanceResourceFailureReason
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInstanceResourceFailureReason) Or(d InstanceResourceFailureReason) InstanceResourceFailureReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInt returns new NilInt with value set to v.
+func NewNilInt(v int) NilInt {
+	return NilInt{
+		Value: v,
+	}
+}
+
+// NilInt is nullable int.
+type NilInt struct {
+	Value int
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInt) SetTo(v int) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInt) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInt) SetToNull() {
+	o.Null = true
+	var v int
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInt) Get() (v int, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInt) Or(d int) int {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9382,6 +9704,52 @@ func (o OptTerminationPolicy) Or(d TerminationPolicy) TerminationPolicy {
 	return d
 }
 
+// NewOptURI returns new OptURI with value set to v.
+func NewOptURI(v url.URL) OptURI {
+	return OptURI{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptURI is optional url.URL.
+type OptURI struct {
+	Value url.URL
+	Set   bool
+}
+
+// IsSet returns true if OptURI was set.
+func (o OptURI) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptURI) Reset() {
+	var v url.URL
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptURI) SetTo(v url.URL) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptURI) Get() (v url.URL, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptURI) Or(d url.URL) url.URL {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptUUID returns new OptUUID with value set to v.
 func NewOptUUID(v uuid.UUID) OptUUID {
 	return OptUUID{
@@ -9721,38 +10089,6 @@ func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
-}
-
-// Identifies the purchase. Read the order for purchase progress and its invoice for amounts and
-// payment status.
-// Ref: #/components/schemas/PlacedOrder
-type PlacedOrder struct {
-	// The invoice for this purchase, which may still be a draft awaiting checkout. Null when no invoice
-	// has been created. Its presence or absence does not establish whether delivery may begin.
-	InvoiceID NilUUID `json:"invoice_id"`
-	// The order, including for purchases without an immediate charge. Payment alone does not imply that
-	// the service has completed delivery.
-	OrderID uuid.UUID `json:"order_id"`
-}
-
-// GetInvoiceID returns the value of InvoiceID.
-func (s *PlacedOrder) GetInvoiceID() NilUUID {
-	return s.InvoiceID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *PlacedOrder) GetOrderID() uuid.UUID {
-	return s.OrderID
-}
-
-// SetInvoiceID sets the value of InvoiceID.
-func (s *PlacedOrder) SetInvoiceID(val NilUUID) {
-	s.InvoiceID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
-	s.OrderID = val
 }
 
 // Ref: #/components/schemas/PortAddress
@@ -10862,14 +11198,20 @@ func (*PrivateNetworkResource) deletePrivateNetworkRes() {}
 
 // A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
 // charged or reserved, and no discount redemption is consumed. Account discounts and tax are evaluated
-// as for automatic checkout. Promotion codes are evaluated through Billing quote operations. All
+// as for automatic checkout. Promotion codes are evaluated by Billing at checkout, not here. All
 // amounts use currency. This preview does not lock prices or guarantee discount availability. Success
 // includes complete checkout amounts and every requested usage estimate. If any item or requested
 // usage estimate cannot be calculated, the operation returns its existing structured error response;
-// it never returns a partial quote with HTTP 200.
+// it never returns a partial quote with HTTP 200. A quote without a billing account has no funds and
+// no account discount, and leaves out tax that would be added.
 // Ref: #/components/schemas/Quote
 type Quote struct {
-	Funds Funds `json:"funds"`
+	// Null for a quote without a billing account.
+	Funds NilFunds `json:"funds"`
+	// `complete`: tax is calculated for the billing account's invoice contact. `requires_location_inputs`:
+	// a quote without a billing account, which leaves out tax that would be added; tax already contained
+	// in a price is included.
+	TaxStatus QuoteTaxStatus `json:"tax_status"`
 	// One line for each item the purchase would order, in the order it would order them.
 	Items []QuoteItem `json:"items"`
 	// Sum of line amounts before discounts, less tax already included in the discounted line amounts, as
@@ -10895,8 +11237,13 @@ type Quote struct {
 }
 
 // GetFunds returns the value of Funds.
-func (s *Quote) GetFunds() Funds {
+func (s *Quote) GetFunds() NilFunds {
 	return s.Funds
+}
+
+// GetTaxStatus returns the value of TaxStatus.
+func (s *Quote) GetTaxStatus() QuoteTaxStatus {
+	return s.TaxStatus
 }
 
 // GetItems returns the value of Items.
@@ -10945,8 +11292,13 @@ func (s *Quote) GetRefundableAmount() NilMoney {
 }
 
 // SetFunds sets the value of Funds.
-func (s *Quote) SetFunds(val Funds) {
+func (s *Quote) SetFunds(val NilFunds) {
 	s.Funds = val
+}
+
+// SetTaxStatus sets the value of TaxStatus.
+func (s *Quote) SetTaxStatus(val QuoteTaxStatus) {
+	s.TaxStatus = val
 }
 
 // SetItems sets the value of Items.
@@ -11011,7 +11363,27 @@ func (*Quote) createSnapshotQuotaQuoteRes()       {}
 // price applies; an unrequested usage estimate remains null.
 // Ref: #/components/schemas/QuoteItem
 type QuoteItem struct {
-	PlanName string `json:"plan_name"`
+	ProductID string    `json:"product_id"`
+	PlanID    uuid.UUID `json:"plan_id"`
+	PlanName  string    `json:"plan_name"`
+	// The price the line is priced at, including one Billing selected. With quantity and dimensions it
+	// prices the same line in Billing's own quote, for example with a promotion code.
+	PriceID uuid.UUID `json:"price_id"`
+	// The dimension values the line is priced at, such as region and instance type.
+	Dimensions QuoteItemDimensions `json:"dimensions"`
+	// One_time or recurring.
+	Type QuoteItemType `json:"type"`
+	// Licensed or metered.
+	UsageType QuoteItemUsageType `json:"usage_type"`
+	// The billing period of a recurring licensed line; `none` otherwise.
+	Interval QuoteItemInterval `json:"interval"`
+	// Periods per billing cycle of a recurring licensed line; null otherwise.
+	IntervalCount NilInt `json:"interval_count"`
+	// The setup charge already included in amount; null when none applies.
+	SetupAmount NilMoney `json:"setup_amount"`
+	// Recurring licensed lines only; null otherwise. What each later period renews at, before discounts
+	// and tax, which differs from amount when the first period is priced differently.
+	RecurringAmount NilMoney `json:"recurring_amount"`
 	// Unit price before discounts, with tax included only where the price includes it. Null when no single
 	// unit price applies, such as tiered or multiple-rate pricing or an immediate change.
 	UnitAmount NilMoney `json:"unit_amount"`
@@ -11035,9 +11407,59 @@ type QuoteItem struct {
 	Currency             string   `json:"currency"`
 }
 
+// GetProductID returns the value of ProductID.
+func (s *QuoteItem) GetProductID() string {
+	return s.ProductID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *QuoteItem) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
 // GetPlanName returns the value of PlanName.
 func (s *QuoteItem) GetPlanName() string {
 	return s.PlanName
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *QuoteItem) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *QuoteItem) GetDimensions() QuoteItemDimensions {
+	return s.Dimensions
+}
+
+// GetType returns the value of Type.
+func (s *QuoteItem) GetType() QuoteItemType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *QuoteItem) GetUsageType() QuoteItemUsageType {
+	return s.UsageType
+}
+
+// GetInterval returns the value of Interval.
+func (s *QuoteItem) GetInterval() QuoteItemInterval {
+	return s.Interval
+}
+
+// GetIntervalCount returns the value of IntervalCount.
+func (s *QuoteItem) GetIntervalCount() NilInt {
+	return s.IntervalCount
+}
+
+// GetSetupAmount returns the value of SetupAmount.
+func (s *QuoteItem) GetSetupAmount() NilMoney {
+	return s.SetupAmount
+}
+
+// GetRecurringAmount returns the value of RecurringAmount.
+func (s *QuoteItem) GetRecurringAmount() NilMoney {
+	return s.RecurringAmount
 }
 
 // GetUnitAmount returns the value of UnitAmount.
@@ -11085,9 +11507,59 @@ func (s *QuoteItem) GetCurrency() string {
 	return s.Currency
 }
 
+// SetProductID sets the value of ProductID.
+func (s *QuoteItem) SetProductID(val string) {
+	s.ProductID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *QuoteItem) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
 // SetPlanName sets the value of PlanName.
 func (s *QuoteItem) SetPlanName(val string) {
 	s.PlanName = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteItem) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *QuoteItem) SetDimensions(val QuoteItemDimensions) {
+	s.Dimensions = val
+}
+
+// SetType sets the value of Type.
+func (s *QuoteItem) SetType(val QuoteItemType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *QuoteItem) SetUsageType(val QuoteItemUsageType) {
+	s.UsageType = val
+}
+
+// SetInterval sets the value of Interval.
+func (s *QuoteItem) SetInterval(val QuoteItemInterval) {
+	s.Interval = val
+}
+
+// SetIntervalCount sets the value of IntervalCount.
+func (s *QuoteItem) SetIntervalCount(val NilInt) {
+	s.IntervalCount = val
+}
+
+// SetSetupAmount sets the value of SetupAmount.
+func (s *QuoteItem) SetSetupAmount(val NilMoney) {
+	s.SetupAmount = val
+}
+
+// SetRecurringAmount sets the value of RecurringAmount.
+func (s *QuoteItem) SetRecurringAmount(val NilMoney) {
+	s.RecurringAmount = val
 }
 
 // SetUnitAmount sets the value of UnitAmount.
@@ -11133,6 +11605,202 @@ func (s *QuoteItem) SetEstimatedUsageAmount(val NilMoney) {
 // SetCurrency sets the value of Currency.
 func (s *QuoteItem) SetCurrency(val string) {
 	s.Currency = val
+}
+
+// The dimension values the line is priced at, such as region and instance type.
+type QuoteItemDimensions map[string]string
+
+func (s *QuoteItemDimensions) init() QuoteItemDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// The billing period of a recurring licensed line; `none` otherwise.
+type QuoteItemInterval string
+
+const (
+	QuoteItemIntervalNone  QuoteItemInterval = "none"
+	QuoteItemIntervalDay   QuoteItemInterval = "day"
+	QuoteItemIntervalMonth QuoteItemInterval = "month"
+	QuoteItemIntervalYear  QuoteItemInterval = "year"
+)
+
+// AllValues returns all QuoteItemInterval values.
+func (QuoteItemInterval) AllValues() []QuoteItemInterval {
+	return []QuoteItemInterval{
+		QuoteItemIntervalNone,
+		QuoteItemIntervalDay,
+		QuoteItemIntervalMonth,
+		QuoteItemIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteItemInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteItemIntervalNone:
+		return []byte(s), nil
+	case QuoteItemIntervalDay:
+		return []byte(s), nil
+	case QuoteItemIntervalMonth:
+		return []byte(s), nil
+	case QuoteItemIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteItemInterval) UnmarshalText(data []byte) error {
+	switch QuoteItemInterval(data) {
+	case QuoteItemIntervalNone:
+		*s = QuoteItemIntervalNone
+		return nil
+	case QuoteItemIntervalDay:
+		*s = QuoteItemIntervalDay
+		return nil
+	case QuoteItemIntervalMonth:
+		*s = QuoteItemIntervalMonth
+		return nil
+	case QuoteItemIntervalYear:
+		*s = QuoteItemIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One_time or recurring.
+type QuoteItemType string
+
+const (
+	QuoteItemTypeOneTime   QuoteItemType = "one_time"
+	QuoteItemTypeRecurring QuoteItemType = "recurring"
+)
+
+// AllValues returns all QuoteItemType values.
+func (QuoteItemType) AllValues() []QuoteItemType {
+	return []QuoteItemType{
+		QuoteItemTypeOneTime,
+		QuoteItemTypeRecurring,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteItemType) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteItemTypeOneTime:
+		return []byte(s), nil
+	case QuoteItemTypeRecurring:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteItemType) UnmarshalText(data []byte) error {
+	switch QuoteItemType(data) {
+	case QuoteItemTypeOneTime:
+		*s = QuoteItemTypeOneTime
+		return nil
+	case QuoteItemTypeRecurring:
+		*s = QuoteItemTypeRecurring
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Licensed or metered.
+type QuoteItemUsageType string
+
+const (
+	QuoteItemUsageTypeLicensed QuoteItemUsageType = "licensed"
+	QuoteItemUsageTypeMetered  QuoteItemUsageType = "metered"
+)
+
+// AllValues returns all QuoteItemUsageType values.
+func (QuoteItemUsageType) AllValues() []QuoteItemUsageType {
+	return []QuoteItemUsageType{
+		QuoteItemUsageTypeLicensed,
+		QuoteItemUsageTypeMetered,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteItemUsageType) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteItemUsageTypeLicensed:
+		return []byte(s), nil
+	case QuoteItemUsageTypeMetered:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteItemUsageType) UnmarshalText(data []byte) error {
+	switch QuoteItemUsageType(data) {
+	case QuoteItemUsageTypeLicensed:
+		*s = QuoteItemUsageTypeLicensed
+		return nil
+	case QuoteItemUsageTypeMetered:
+		*s = QuoteItemUsageTypeMetered
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `complete`: tax is calculated for the billing account's invoice contact. `requires_location_inputs`:
+// a quote without a billing account, which leaves out tax that would be added; tax already contained
+// in a price is included.
+type QuoteTaxStatus string
+
+const (
+	QuoteTaxStatusComplete               QuoteTaxStatus = "complete"
+	QuoteTaxStatusRequiresLocationInputs QuoteTaxStatus = "requires_location_inputs"
+)
+
+// AllValues returns all QuoteTaxStatus values.
+func (QuoteTaxStatus) AllValues() []QuoteTaxStatus {
+	return []QuoteTaxStatus{
+		QuoteTaxStatusComplete,
+		QuoteTaxStatusRequiresLocationInputs,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteTaxStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteTaxStatusComplete:
+		return []byte(s), nil
+	case QuoteTaxStatusRequiresLocationInputs:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteTaxStatus) UnmarshalText(data []byte) error {
+	switch QuoteTaxStatus(data) {
+	case QuoteTaxStatusComplete:
+		*s = QuoteTaxStatusComplete
+		return nil
+	case QuoteTaxStatusRequiresLocationInputs:
+		*s = QuoteTaxStatusRequiresLocationInputs
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/RebootInstanceRequestBody
@@ -11629,9 +12297,10 @@ type ResizeDiskRequestBody struct {
 	// Must be larger than the current capacity.
 	SizeGB   int64              `json:"size_gb"`
 	Checkout OptCheckoutOptions `json:"checkout"`
-	// The `proration_date` of this change's quote, so that the order is priced from the same instant.
-	// Defaults to the time of the request; it must be a whole second, not in the future and at most 10
-	// minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// The `proration_date` of this change's quote, so that the order is priced from the same instant. Only
+	// for automatic checkout; deferred checkout is priced when the customer completes it. Defaults to the
+	// time of the request; it must be a whole second, not in the future and at most 10 minutes old,
+	// otherwise the request is refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
 }
 
@@ -11665,11 +12334,15 @@ func (s *ResizeDiskRequestBody) SetProrationDate(val OptDateTime) {
 	s.ProrationDate = val
 }
 
-// The disk, still at its current size, and the order for the resize.
+// The disk, still at its current size, and the Checkout Session for the resize.
 // Ref: #/components/schemas/ResizeDiskResponseBody
 type ResizeDiskResponseBody struct {
-	Disk  DiskResource `json:"disk"`
-	Order PlacedOrder  `json:"order"`
+	Disk DiskResource `json:"disk"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetDisk returns the value of Disk.
@@ -11677,9 +12350,14 @@ func (s *ResizeDiskResponseBody) GetDisk() DiskResource {
 	return s.Disk
 }
 
-// GetOrder returns the value of Order.
-func (s *ResizeDiskResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *ResizeDiskResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *ResizeDiskResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetDisk sets the value of Disk.
@@ -11687,9 +12365,14 @@ func (s *ResizeDiskResponseBody) SetDisk(val DiskResource) {
 	s.Disk = val
 }
 
-// SetOrder sets the value of Order.
-func (s *ResizeDiskResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *ResizeDiskResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *ResizeDiskResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*ResizeDiskResponseBody) resizeDiskRes() {}
@@ -11716,9 +12399,10 @@ type ResizeInstanceRequestBody struct {
 	// Must be in the same region and availability zone as the current instance type.
 	InstanceTypeID uuid.UUID          `json:"instance_type_id"`
 	Checkout       OptCheckoutOptions `json:"checkout"`
-	// The `proration_date` of this change's quote, so that the order is priced from the same instant.
-	// Defaults to the time of the request; it must be a whole second, not in the future and at most 10
-	// minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// The `proration_date` of this change's quote, so that the order is priced from the same instant. Only
+	// for automatic checkout; deferred checkout is priced when the customer completes it. Defaults to the
+	// time of the request; it must be a whole second, not in the future and at most 10 minutes old,
+	// otherwise the request is refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
 }
 
@@ -11752,12 +12436,16 @@ func (s *ResizeInstanceRequestBody) SetProrationDate(val OptDateTime) {
 	s.ProrationDate = val
 }
 
-// The instance, still on its current type, and the order for the resize. The instance keeps its ID,
-// and its current subscription remains in force until the resize is applied.
+// The instance, still on its current type, and the Checkout Session for the resize. The instance keeps
+// its ID, and its current subscription remains in force until the resize is applied.
 // Ref: #/components/schemas/ResizeInstanceResponseBody
 type ResizeInstanceResponseBody struct {
 	Instance InstanceResource `json:"instance"`
-	Order    PlacedOrder      `json:"order"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetInstance returns the value of Instance.
@@ -11765,9 +12453,14 @@ func (s *ResizeInstanceResponseBody) GetInstance() InstanceResource {
 	return s.Instance
 }
 
-// GetOrder returns the value of Order.
-func (s *ResizeInstanceResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *ResizeInstanceResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *ResizeInstanceResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetInstance sets the value of Instance.
@@ -11775,9 +12468,14 @@ func (s *ResizeInstanceResponseBody) SetInstance(val InstanceResource) {
 	s.Instance = val
 }
 
-// SetOrder sets the value of Order.
-func (s *ResizeInstanceResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *ResizeInstanceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *ResizeInstanceResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*ResizeInstanceResponseBody) resizeInstanceRes() {}
@@ -12399,9 +13097,10 @@ type SetFloatingIPBandwidthRequestBody struct {
 	// Applied to both directions.
 	BandwidthMbps int64              `json:"bandwidth_mbps"`
 	Checkout      OptCheckoutOptions `json:"checkout"`
-	// The `proration_date` of this change's quote, so that the order is priced from the same instant.
-	// Defaults to the time of the request; it must be a whole second, not in the future and at most 10
-	// minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// The `proration_date` of this change's quote, so that the order is priced from the same instant. Only
+	// for automatic checkout; deferred checkout is priced when the customer completes it. Defaults to the
+	// time of the request; it must be a whole second, not in the future and at most 10 minutes old,
+	// otherwise the request is refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
 }
 
@@ -12435,11 +13134,15 @@ func (s *SetFloatingIPBandwidthRequestBody) SetProrationDate(val OptDateTime) {
 	s.ProrationDate = val
 }
 
-// The floating IP, still at its current bandwidth, and the order for the change.
+// The floating IP, still at its current bandwidth, and the Checkout Session for the change.
 // Ref: #/components/schemas/SetFloatingIPBandwidthResponseBody
 type SetFloatingIPBandwidthResponseBody struct {
 	FloatingIP FloatingIPResource `json:"floating_ip"`
-	Order      PlacedOrder        `json:"order"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetFloatingIP returns the value of FloatingIP.
@@ -12447,9 +13150,14 @@ func (s *SetFloatingIPBandwidthResponseBody) GetFloatingIP() FloatingIPResource 
 	return s.FloatingIP
 }
 
-// GetOrder returns the value of Order.
-func (s *SetFloatingIPBandwidthResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *SetFloatingIPBandwidthResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *SetFloatingIPBandwidthResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetFloatingIP sets the value of FloatingIP.
@@ -12457,9 +13165,14 @@ func (s *SetFloatingIPBandwidthResponseBody) SetFloatingIP(val FloatingIPResourc
 	s.FloatingIP = val
 }
 
-// SetOrder sets the value of Order.
-func (s *SetFloatingIPBandwidthResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *SetFloatingIPBandwidthResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *SetFloatingIPBandwidthResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*SetFloatingIPBandwidthResponseBody) setFloatingIPBandwidthRes() {}
@@ -12544,9 +13257,10 @@ type SetSnapshotQuotaRequestBody struct {
 	Limit    int64              `json:"limit"`
 	Billing  BillingChoice      `json:"billing"`
 	Checkout OptCheckoutOptions `json:"checkout"`
-	// The `proration_date` of this change's quote, so that the order is priced from the same instant.
-	// Defaults to the time of the request; it must be a whole second, not in the future and at most 10
-	// minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// The `proration_date` of this change's quote, so that the order is priced from the same instant. Only
+	// for automatic checkout; deferred checkout is priced when the customer completes it. Defaults to the
+	// time of the request; it must be a whole second, not in the future and at most 10 minutes old,
+	// otherwise the request is refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
 }
 
@@ -12593,7 +13307,11 @@ func (s *SetSnapshotQuotaRequestBody) SetProrationDate(val OptDateTime) {
 // Ref: #/components/schemas/SetSnapshotQuotaResponseBody
 type SetSnapshotQuotaResponseBody struct {
 	SnapshotQuota SnapshotQuota `json:"snapshot_quota"`
-	Order         PlacedOrder   `json:"order"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetSnapshotQuota returns the value of SnapshotQuota.
@@ -12601,9 +13319,14 @@ func (s *SetSnapshotQuotaResponseBody) GetSnapshotQuota() SnapshotQuota {
 	return s.SnapshotQuota
 }
 
-// GetOrder returns the value of Order.
-func (s *SetSnapshotQuotaResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *SetSnapshotQuotaResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *SetSnapshotQuotaResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetSnapshotQuota sets the value of SnapshotQuota.
@@ -12611,9 +13334,14 @@ func (s *SetSnapshotQuotaResponseBody) SetSnapshotQuota(val SnapshotQuota) {
 	s.SnapshotQuota = val
 }
 
-// SetOrder sets the value of Order.
-func (s *SetSnapshotQuotaResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *SetSnapshotQuotaResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *SetSnapshotQuotaResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*SetSnapshotQuotaResponseBody) setSnapshotQuotaRes() {}
@@ -12741,7 +13469,7 @@ type SnapshotQuota struct {
 	// Max(limit - used, 0), or zero while creation is not permitted.
 	Available int64 `json:"available"`
 	// The order establishing the currently associated quota purchase, including an initial pending
-	// purchase.
+	// purchase once its checkout completes.
 	OrderID NilUUID `json:"order_id"`
 	// The quota purchase's Billing subscription, not an individual snapshot subscription. May still be
 	// pending on an initial purchase; an existing subscription remains associated until a replacement
@@ -12756,10 +13484,12 @@ type SnapshotQuota struct {
 	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
 	// Target count awaiting checkout or activation; null when no purchase is pending.
 	PendingLimit NilInt64 `json:"pending_limit"`
-	// Order for the pending initial purchase or change; null when none is pending.
+	// Checkout Session of the pending initial purchase or change; null when none is pending.
+	PendingCheckoutSessionID NilUUID `json:"pending_checkout_session_id"`
+	// Order for the pending initial purchase or change once its checkout completes; null otherwise.
 	PendingOrderID NilUUID `json:"pending_order_id"`
 	// Why the first purchase failed; null unless status is failed. A failed change leaves the current
-	// limit in force and clears pending_limit; its order shows the outcome.
+	// limit in force and clears pending_limit; its Checkout Session or order shows the outcome.
 	FailureReason NilSnapshotQuotaFailureReason `json:"failure_reason"`
 	// How snapshot quota in this region can be bought, per snapshot slot. Null when the project has no
 	// billing account.
@@ -12814,6 +13544,11 @@ func (s *SnapshotQuota) GetReleaseSubscriptionIds() []uuid.UUID {
 // GetPendingLimit returns the value of PendingLimit.
 func (s *SnapshotQuota) GetPendingLimit() NilInt64 {
 	return s.PendingLimit
+}
+
+// GetPendingCheckoutSessionID returns the value of PendingCheckoutSessionID.
+func (s *SnapshotQuota) GetPendingCheckoutSessionID() NilUUID {
+	return s.PendingCheckoutSessionID
 }
 
 // GetPendingOrderID returns the value of PendingOrderID.
@@ -12881,6 +13616,11 @@ func (s *SnapshotQuota) SetPendingLimit(val NilInt64) {
 	s.PendingLimit = val
 }
 
+// SetPendingCheckoutSessionID sets the value of PendingCheckoutSessionID.
+func (s *SnapshotQuota) SetPendingCheckoutSessionID(val NilUUID) {
+	s.PendingCheckoutSessionID = val
+}
+
 // SetPendingOrderID sets the value of PendingOrderID.
 func (s *SnapshotQuota) SetPendingOrderID(val NilUUID) {
 	s.PendingOrderID = val
@@ -12897,10 +13637,11 @@ func (s *SnapshotQuota) SetPricing(val NilPricing) {
 }
 
 // Why the first purchase failed; null unless status is failed. A failed change leaves the current
-// limit in force and clears pending_limit; its order shows the outcome.
+// limit in force and clears pending_limit; its Checkout Session or order shows the outcome.
 type SnapshotQuotaFailureReason string
 
 const (
+	SnapshotQuotaFailureReasonCheckoutExpired    SnapshotQuotaFailureReason = "checkout_expired"
 	SnapshotQuotaFailureReasonOrderDeclined      SnapshotQuotaFailureReason = "order_declined"
 	SnapshotQuotaFailureReasonOrderCanceled      SnapshotQuotaFailureReason = "order_canceled"
 	SnapshotQuotaFailureReasonOrderExpired       SnapshotQuotaFailureReason = "order_expired"
@@ -12910,6 +13651,7 @@ const (
 // AllValues returns all SnapshotQuotaFailureReason values.
 func (SnapshotQuotaFailureReason) AllValues() []SnapshotQuotaFailureReason {
 	return []SnapshotQuotaFailureReason{
+		SnapshotQuotaFailureReasonCheckoutExpired,
 		SnapshotQuotaFailureReasonOrderDeclined,
 		SnapshotQuotaFailureReasonOrderCanceled,
 		SnapshotQuotaFailureReasonOrderExpired,
@@ -12920,6 +13662,8 @@ func (SnapshotQuotaFailureReason) AllValues() []SnapshotQuotaFailureReason {
 // MarshalText implements encoding.TextMarshaler.
 func (s SnapshotQuotaFailureReason) MarshalText() ([]byte, error) {
 	switch s {
+	case SnapshotQuotaFailureReasonCheckoutExpired:
+		return []byte(s), nil
 	case SnapshotQuotaFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case SnapshotQuotaFailureReasonOrderCanceled:
@@ -12936,6 +13680,9 @@ func (s SnapshotQuotaFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *SnapshotQuotaFailureReason) UnmarshalText(data []byte) error {
 	switch SnapshotQuotaFailureReason(data) {
+	case SnapshotQuotaFailureReasonCheckoutExpired:
+		*s = SnapshotQuotaFailureReasonCheckoutExpired
+		return nil
 	case SnapshotQuotaFailureReasonOrderDeclined:
 		*s = SnapshotQuotaFailureReasonOrderDeclined
 		return nil

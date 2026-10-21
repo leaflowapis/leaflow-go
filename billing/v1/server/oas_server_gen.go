@@ -15,15 +15,14 @@ type Handler interface {
 	// and are not refunded; failed items keep their outcome. The order stays pending while any item is
 	// pending, and its final status follows its items.
 	//
-	// Once the order's terms are fixed, the canceled items keep their agreed amounts and discounts: credit
-	// notes reduce the issued invoice, and collected amounts return to their original payment sources,
-	// possibly asynchronously. While a deferred order's terms are not fixed, the remaining items are
-	// priced again. An online payment waiting for the payer is canceled with the order; one the gateway is
-	// processing is refused with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`. Repeating the
-	// cancellation does not refund twice.
+	// The canceled items keep their agreed amounts and discounts: credit notes reduce the issued invoice,
+	// and collected amounts return to their original payment sources, possibly asynchronously. An online
+	// payment waiting for the payer is canceled with the order; one the gateway is processing is refused
+	// with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`. Repeating the cancellation does not refund
+	// twice.
 	//
 	// An accepted order is canceled by its owning service, and delivered items through subscription
-	// cancellation. Refunds are quoted with the quote operation's `refund` target.
+	// cancellation. Refunds are previewed with `preview-order-refund`.
 	//
 	// POST /api/v1/orders/{orderId}/cancel
 	CancelOrder(ctx context.Context, req OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error)
@@ -55,6 +54,22 @@ type Handler interface {
 	//
 	// POST /api/v1/top-ups/{topUpId}/cancel
 	CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error)
+	// ConfirmCheckoutSession implements confirm-checkout-session operation.
+	//
+	// Completes an open session: applies `promotion_code`, or otherwise the best applicable account
+	// discount, checks the total against `expected_amount` and creates the order with its invoice issued.
+	// A zero-total invoice is paid at once; otherwise pay the invoice next. A failed payment leaves the
+	// order and its terms as they are, and the invoice can be paid again until the order expires. Nothing
+	// is created when the code is invalid or inapplicable or the total differs, which fails with
+	// `BILLING_AMOUNT_CHANGED`.
+	//
+	// Confirming a complete session again with the same terms returns it with its order; different terms
+	// are refused with `BILLING_CHECKOUT_SESSION_COMPLETE`. An expired session is refused with
+	// `BILLING_CHECKOUT_SESSION_EXPIRED`. The order is delivered by the service that owns it once paid;
+	// confirmation alone does not mean delivery.
+	//
+	// POST /api/v1/checkout-sessions/{checkoutSessionId}/confirm
+	ConfirmCheckoutSession(ctx context.Context, req *CheckoutSessionConfirm, params ConfirmCheckoutSessionParams) (ConfirmCheckoutSessionRes, error)
 	// CreateBillingAccount implements create-billing-account operation.
 	//
 	// Creates a billing account. Its currency is fixed: prices, orders, invoices and balance are all in
@@ -103,6 +118,19 @@ type Handler interface {
 	//
 	// POST /api/v1/cancellations
 	CreateCancellation(ctx context.Context, req *CancellationCreate) (CreateCancellationRes, error)
+	// CreateCheckoutSession implements create-checkout-session operation.
+	//
+	// Opens a Checkout Session renewing one of your licensed subscriptions, with periods and price chosen
+	// as in renewing. Nothing is charged until you complete it, when a promotion code can be applied; it
+	// then renews from the subscription's current_term_end at that time. To renew at once from credit
+	// grants, balance or a payment method, renew the subscription instead. Purchases and changes of a
+	// service's resources are created through that service.
+	//
+	// Keep `checkout_session_id` and read the session after an unknown outcome; creating it again
+	// conflicts.
+	//
+	// POST /api/v1/checkout-sessions
+	CreateCheckoutSession(ctx context.Context, req *CheckoutSessionCreate) (CreateCheckoutSessionRes, error)
 	// CreateContact implements create-contact operation.
 	//
 	// Creates a contact for the billing account. To use it on invoices, set the account's
@@ -117,20 +145,6 @@ type Handler interface {
 	//
 	// POST /api/v1/payment-methods/setup
 	CreatePaymentMethodSetup(ctx context.Context, req *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
-	// CreateRenewalOrder implements create-renewal-order operation.
-	//
-	// Places a renewal order with a draft invoice, without applying a new discount or charging anything.
-	// Pay its invoice to renew; a promotion code can be applied when paying. Existing subscription
-	// discounts are kept. Periods and price are chosen as for renewing. The order can be paid until the
-	// current paid period ends, and never after the end of the first period it renews; unpaid by then, it
-	// is canceled. While auto-renew is on, the renewal due at the end of the period pays this order
-	// instead of placing another, applying an applicable account discount first if its terms are not fixed
-	// yet.
-	//
-	// Keep `order_id` and read the order after an unknown outcome; creating it again conflicts.
-	//
-	// POST /api/v1/subscriptions/{subscriptionId}/renewal-orders
-	CreateRenewalOrder(ctx context.Context, req *RenewalOrderRequest, params CreateRenewalOrderParams) (CreateRenewalOrderRes, error)
 	// CreateTopUp implements create-top-up operation.
 	//
 	// Creates a top-up for an account of the authenticated user and returns its payment information. The
@@ -170,6 +184,23 @@ type Handler interface {
 	//
 	// DELETE /api/v1/subscriptions/{subscriptionId}
 	DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error
+	// EstimateUsage implements estimate-usage operation.
+	//
+	// Estimates what future usage of metered prices would cost in `currency` at current rates, for anyone,
+	// signed in or not. Nothing is saved. Graduated and volume tiers apply to the estimated quantity
+	// alone, while actual charges follow each month's whole usage, and the amounts are before discounts
+	// and tax. Estimates are not collected at checkout. An item that cannot be priced fails the whole
+	// request.
+	//
+	// QUERY /api/v1/usage-estimates
+	EstimateUsage(ctx context.Context, req *UsageEstimateRequest) (*UsageEstimate, error)
+	// ExpireCheckoutSession implements expire-checkout-session operation.
+	//
+	// Ends an open session without an order; the service that created it releases what it was holding for
+	// the purchase. An expired session is returned unchanged.
+	//
+	// POST /api/v1/checkout-sessions/{checkoutSessionId}/expire
+	ExpireCheckoutSession(ctx context.Context, params ExpireCheckoutSessionParams) (ExpireCheckoutSessionRes, error)
 	// GetAccountBalance implements get-account-balance operation.
 	//
 	// The balance of your account, with credit groups, unpaid invoice amounts, unbilled estimates and
@@ -202,6 +233,27 @@ type Handler interface {
 	//
 	// GET /api/v1/cancellations/{cancellationId}
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
+	// GetCheckoutSession implements get-checkout-session operation.
+	//
+	// A Checkout Session of your billing account. Poll it to follow checkout; once it is complete, read
+	// its order for payment and delivery. An unknown session returns 404; another account's session
+	// returns 403.
+	//
+	// GET /api/v1/checkout-sessions/{checkoutSessionId}
+	GetCheckoutSession(ctx context.Context, params GetCheckoutSessionParams) (*CheckoutSession, error)
+	// GetCheckoutSessionQuote implements get-checkout-session-quote operation.
+	//
+	// What completing this open session now would invoice, with `promotion_code` or otherwise the best
+	// applicable account discount, and the account funds available for it. Nothing is applied, reserved or
+	// redeemed. An invalid or inapplicable code fails the request without changing the session.
+	//
+	// Complete the session with the returned `total` as `expected_amount`, the same `promotion_code` and,
+	// for an immediate change, the returned `proration_date`. An expired session is refused with
+	// `BILLING_CHECKOUT_SESSION_EXPIRED`, and a complete one with `BILLING_CHECKOUT_SESSION_COMPLETE`;
+	// read its order instead.
+	//
+	// GET /api/v1/checkout-sessions/{checkoutSessionId}/quote
+	GetCheckoutSessionQuote(ctx context.Context, params GetCheckoutSessionQuoteParams) (*Quote, error)
 	// GetContact implements get-contact operation.
 	//
 	// A contact of this billing account. Returns 404 if it does not exist in the account.
@@ -216,9 +268,8 @@ type Handler interface {
 	GetCreditNote(ctx context.Context, params GetCreditNoteParams) (*CreditNote, error)
 	// GetInvoice implements get-invoice operation.
 	//
-	// An invoice of your billing account, issued or an order's draft, with its amounts, tax lines and
-	// payment state. A missing invoice or another draft returns 404; an invoice of another user's account
-	// returns 403.
+	// An issued invoice of your billing account, with its amounts, tax lines and payment state. A missing
+	// or unissued invoice returns 404; an invoice of another user's account returns 403.
 	//
 	// GET /api/v1/invoices/{invoiceId}
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
@@ -257,13 +308,18 @@ type Handler interface {
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
 	// GetQuote implements get-quote operation.
 	//
-	// Calculates exactly one target for a billing account you own: proposed items, an existing order,
-	// renewals, a cancellation or an order refund. Nothing is saved, reserved or redeemed.
+	// Calculates what a proposed purchase, or the renewal of your subscriptions, would invoice now, and
+	// what each purchased line renews at. Nothing is saved, reserved or redeemed.
 	//
-	// Existing orders use their recorded account and terms; renewals and cancellations use the account
-	// currently paying for each subscription. Every target must belong to the requested account; a project
-	// token does not authorize a quote. An existing order's total is the expected_amount for paying its
-	// invoice. Usage estimates are not checkout amounts.
+	// With `billing_account_id`, the quote is for a billing account you own: its currency, account
+	// discounts, tax and funds apply, renewals use the account currently paying for each subscription, and
+	// an access token is required. Without it, proposed items are priced in `currency` for anyone, signed
+	// in or not: no account discount or funds apply, and `tax_status` is `requires_location_inputs`.
+	//
+	// A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
+	// completed with it; conditions that depend on the account, such as a first purchase, are checked only
+	// with an account and otherwise reported as `unverified`. Future usage of metered prices is estimated
+	// with `estimate-usage`.
 	//
 	// QUERY /api/v1/quotes
 	GetQuote(ctx context.Context, req *QuoteRequest) (*Quote, error)
@@ -339,6 +395,19 @@ type Handler interface {
 	//
 	// GET /api/v1/cancellations
 	ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error)
+	// ListCheckoutSessionItems implements list-checkout-session-items operation.
+	//
+	// What the session buys, by position. Prices and amounts are in its quote.
+	//
+	// GET /api/v1/checkout-sessions/{checkoutSessionId}/items
+	ListCheckoutSessionItems(ctx context.Context, params ListCheckoutSessionItemsParams) (*CheckoutSessionItemList, error)
+	// ListCheckoutSessions implements list-checkout-sessions operation.
+	//
+	// Checkout Sessions of your billing accounts, newest first. An open session is a purchase waiting for
+	// you to complete checkout.
+	//
+	// GET /api/v1/checkout-sessions
+	ListCheckoutSessions(ctx context.Context, params ListCheckoutSessionsParams) (*CheckoutSessionList, error)
 	// ListContacts implements list-contacts operation.
 	//
 	// Contacts of the billing account, inactive ones included. Returns 404 if the account does not exist.
@@ -387,16 +456,14 @@ type Handler interface {
 	ListFeatureGrants(ctx context.Context, params ListFeatureGrantsParams) (*FeatureGrantList, error)
 	// ListInvoiceItems implements list-invoice-items operation.
 	//
-	// Lines of an invoice of your billing account, issued or an order's draft, with their service periods
-	// and projects. A missing invoice or another draft returns 404; an invoice of another user's account
-	// returns 403.
+	// Lines of an issued invoice of your billing account, with their service periods and projects. A
+	// missing or unissued invoice returns 404; an invoice of another user's account returns 403.
 	//
 	// GET /api/v1/invoices/{invoiceId}/items
 	ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error)
 	// ListInvoices implements list-invoices operation.
 	//
-	// Issued invoices of your billing accounts. Drafts are not listed; an order's draft invoice is reached
-	// through its order. Top-ups have no invoices.
+	// Issued invoices of your billing accounts. Top-ups have no invoices.
 	//
 	// GET /api/v1/invoices
 	ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error)
@@ -548,15 +615,8 @@ type Handler interface {
 	//
 	// Pays the invoice from eligible credit grants and balance as requested, and collects the remainder
 	// through the selected gateway and method. Without a gateway, insufficient funds fail and no online
-	// payment starts.
-	//
-	// The draft invoice of a deferred order is priced on its first payment: promotion_code, or otherwise
-	// the best applicable account discount, is applied, the total is compared with expected_amount, and
-	// the invoice is issued before collection. An invalid or inapplicable code fails, and a total other
-	// than expected_amount fails with `BILLING_AMOUNT_CHANGED`; neither changes anything. Once fixed, the
-	// terms stay fixed even if collection does not complete, and a different promotion_code is refused
-	// with `BILLING_ORDER_CHECKOUT_CONFLICT`. A deferred period-end change can be paid only once its first
-	// period is due to be invoiced; earlier attempts fail with `BILLING_CHANGE_NOT_INVOICED`.
+	// payment starts. The invoice's amounts and discount were fixed when it was issued and are not changed
+	// by paying; promotion codes are applied when completing a Checkout Session.
 	//
 	// Returns a payment action when the customer must act; requires_action and processing are not paid. An
 	// unresolved online payment with the same gateway, method and saved payment method is reused, and
@@ -580,23 +640,27 @@ type Handler interface {
 	// PayTogether implements pay-together operation.
 	//
 	// Pays outstanding invoices, including those of the listed orders, from eligible credit grants and
-	// then balance, without a payment gateway. The draft invoice of a deferred order takes the best
-	// applicable account discount and is issued first, staying issued if payment fails; pay it alone to
-	// use a promotion code.
+	// then balance, without a payment gateway.
 	//
 	// All invoices are paid or none: insufficient funds fail with `BILLING_INSUFFICIENT_FUNDS`, and a
 	// total other than expected_amount fails with `BILLING_AMOUNT_CHANGED`, charging nothing. Paid
 	// invoices are not charged again. An earlier online payment for one of the invoices is canceled first;
 	// one the gateway is still processing is refused with `BILLING_PAYMENT_PENDING` and
 	// `meta.transaction_id`. Also refused with `BILLING_INVOICE_NOT_PAYABLE` for a void invoice;
-	// `BILLING_CHANGE_NOT_INVOICED` for a period-end change not yet due; `BILLING_ORDER_FAILED`,
-	// `BILLING_ORDER_CANCELED` or `BILLING_ORDER_EXPIRED` for an order in that state; and
-	// `BILLING_INVOICE_NOT_PAYABLE` with `meta.reason` `subscription_canceling`, `subscription_reclaiming`
-	// or `subscription_ended` for a renewal invoice of a subscription being canceled, being reclaimed or
-	// ended.
+	// `BILLING_ORDER_FAILED`, `BILLING_ORDER_CANCELED` or `BILLING_ORDER_EXPIRED` for an order in that
+	// state; and `BILLING_INVOICE_NOT_PAYABLE` with `meta.reason` `subscription_canceling`,
+	// `subscription_reclaiming` or `subscription_ended` for a renewal invoice of a subscription being
+	// canceled, being reclaimed or ended.
 	//
 	// POST /api/v1/payments
 	PayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentResult, error)
+	// PreviewCancellation implements preview-cancellation operation.
+	//
+	// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
+	// ended or refunded. Refused as creating it would be, except that nothing is recorded.
+	//
+	// QUERY /api/v1/cancellations/preview
+	PreviewCancellation(ctx context.Context, req *CancellationPreviewRequest) (*CancellationRefundPreview, error)
 	// PreviewInvoicePayment implements preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from
@@ -604,13 +668,18 @@ type Handler interface {
 	// afterwards takes exactly these amounts unless the account's funds change in between. Nothing is
 	// charged, reserved or created.
 	//
-	// A draft order invoice is priced as paying it with the same promotion_code would price it.
-	//
 	// Refused with the same errors as paying, except that insufficient funds are not an error here: they
 	// show as a `gateway_amount` above zero.
 	//
 	// GET /api/v1/invoices/{invoiceId}/payment-preview
 	PreviewInvoicePayment(ctx context.Context, params PreviewInvoicePaymentParams) (*PaymentPreview, error)
+	// PreviewOrderRefund implements preview-order-refund operation.
+	//
+	// What canceling the listed items, or the whole order, would refund to the original payment sources.
+	// Nothing is canceled or refunded.
+	//
+	// GET /api/v1/orders/{orderId}/refund-preview
+	PreviewOrderRefund(ctx context.Context, params PreviewOrderRefundParams) (*OrderRefundPreview, error)
 	// PreviewPayTogether implements preview-pay-together operation.
 	//
 	// What paying these invoices together now would take from credit grants and from the balance, per
@@ -636,7 +705,7 @@ type Handler interface {
 	//
 	// Without `payment_method_id`, the renewal is paid from credit grants and balance as `use_credits` and
 	// `use_balance` allow; when they cannot cover it, the request fails with `BILLING_INSUFFICIENT_FUNDS`
-	// and no order is left. To pay another way, create a renewal order and pay its invoice.
+	// and no order is left. To apply a promotion code or pay later, create a renewal Checkout Session.
 	//
 	// Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 	//

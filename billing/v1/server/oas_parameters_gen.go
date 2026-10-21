@@ -211,6 +211,71 @@ func decodeCancelTopUpParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// ConfirmCheckoutSessionParams is parameters of confirm-checkout-session operation.
+type ConfirmCheckoutSessionParams struct {
+	CheckoutSessionId uuid.UUID
+}
+
+func unpackConfirmCheckoutSessionParams(packed middleware.Parameters) (params ConfirmCheckoutSessionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "checkoutSessionId",
+			In:   "path",
+		}
+		params.CheckoutSessionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeConfirmCheckoutSessionParams(args [1]string, argsEscaped bool, r *http.Request) (params ConfirmCheckoutSessionParams, _ error) {
+	// Decode path: checkoutSessionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "checkoutSessionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CheckoutSessionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "checkoutSessionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CreateContactParams is parameters of create-contact operation.
 type CreateContactParams struct {
 	AccountId int64
@@ -269,71 +334,6 @@ func decodeCreateContactParams(args [1]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "accountId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// CreateRenewalOrderParams is parameters of create-renewal-order operation.
-type CreateRenewalOrderParams struct {
-	SubscriptionId uuid.UUID
-}
-
-func unpackCreateRenewalOrderParams(packed middleware.Parameters) (params CreateRenewalOrderParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "subscriptionId",
-			In:   "path",
-		}
-		params.SubscriptionId = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodeCreateRenewalOrderParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateRenewalOrderParams, _ error) {
-	// Decode path: subscriptionId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "subscriptionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.SubscriptionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "subscriptionId",
 			In:   "path",
 			Err:  err,
 		}
@@ -589,6 +589,71 @@ func decodeDeleteSubscriptionParams(args [1]string, argsEscaped bool, r *http.Re
 	return params, nil
 }
 
+// ExpireCheckoutSessionParams is parameters of expire-checkout-session operation.
+type ExpireCheckoutSessionParams struct {
+	CheckoutSessionId uuid.UUID
+}
+
+func unpackExpireCheckoutSessionParams(packed middleware.Parameters) (params ExpireCheckoutSessionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "checkoutSessionId",
+			In:   "path",
+		}
+		params.CheckoutSessionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeExpireCheckoutSessionParams(args [1]string, argsEscaped bool, r *http.Request) (params ExpireCheckoutSessionParams, _ error) {
+	// Decode path: checkoutSessionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "checkoutSessionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CheckoutSessionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "checkoutSessionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetAccountBalanceParams is parameters of get-account-balance operation.
 type GetAccountBalanceParams struct {
 	AccountId int64
@@ -777,6 +842,215 @@ func decodeGetCancellationParams(args [1]string, argsEscaped bool, r *http.Reque
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "cancellationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetCheckoutSessionParams is parameters of get-checkout-session operation.
+type GetCheckoutSessionParams struct {
+	CheckoutSessionId uuid.UUID
+}
+
+func unpackGetCheckoutSessionParams(packed middleware.Parameters) (params GetCheckoutSessionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "checkoutSessionId",
+			In:   "path",
+		}
+		params.CheckoutSessionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetCheckoutSessionParams(args [1]string, argsEscaped bool, r *http.Request) (params GetCheckoutSessionParams, _ error) {
+	// Decode path: checkoutSessionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "checkoutSessionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CheckoutSessionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "checkoutSessionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetCheckoutSessionQuoteParams is parameters of get-checkout-session-quote operation.
+type GetCheckoutSessionQuoteParams struct {
+	PromotionCode     OptString `json:",omitempty,omitzero"`
+	CheckoutSessionId uuid.UUID
+}
+
+func unpackGetCheckoutSessionQuoteParams(packed middleware.Parameters) (params GetCheckoutSessionQuoteParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "promotion_code",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PromotionCode = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "checkoutSessionId",
+			In:   "path",
+		}
+		params.CheckoutSessionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetCheckoutSessionQuoteParams(args [1]string, argsEscaped bool, r *http.Request) (params GetCheckoutSessionQuoteParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: promotion_code.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "promotion_code",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPromotionCodeVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPromotionCodeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PromotionCode.SetTo(paramsDotPromotionCodeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PromotionCode.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "promotion_code",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode path: checkoutSessionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "checkoutSessionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CheckoutSessionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "checkoutSessionId",
 			In:   "path",
 			Err:  err,
 		}
@@ -4058,6 +4332,606 @@ func decodeListCancellationsParams(args [0]string, argsEscaped bool, r *http.Req
 					}
 
 					paramsDotStatusVal = ListCancellationsStatus(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Status.SetTo(paramsDotStatusVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Status.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: project_ids.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "project_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.ProjectIds = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotProjectIdsVal uuid.UUID
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToUUID(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotProjectIdsVal = c
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.ProjectIds = append(params.ProjectIds, paramsDotProjectIdsVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.ProjectIds == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    100,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.ProjectIds)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.ProjectIds); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "project_ids",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListCheckoutSessionItemsParams is parameters of list-checkout-session-items operation.
+type ListCheckoutSessionItemsParams struct {
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize          OptInt64 `json:",omitempty,omitzero"`
+	CheckoutSessionId uuid.UUID
+}
+
+func unpackListCheckoutSessionItemsParams(packed middleware.Parameters) (params ListCheckoutSessionItemsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "page",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Page = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page_size",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "checkoutSessionId",
+			In:   "path",
+		}
+		params.CheckoutSessionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeListCheckoutSessionItemsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListCheckoutSessionItemsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Set default value for query: page.
+	{
+		val := int64(1)
+		params.Page.SetTo(val)
+	}
+	// Decode query: page.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Page.SetTo(paramsDotPageVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Page.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           2147483647,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: page_size.
+	{
+		val := int64(50)
+		params.PageSize.SetTo(val)
+	}
+	// Decode query: page_size.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PageSize.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode path: checkoutSessionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "checkoutSessionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CheckoutSessionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "checkoutSessionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListCheckoutSessionsParams is parameters of list-checkout-sessions operation.
+type ListCheckoutSessionsParams struct {
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
+	// Only this account of yours; all when omitted.
+	BillingAccountID OptInt64                 `json:",omitempty,omitzero"`
+	Status           OptCheckoutSessionStatus `json:",omitempty,omitzero"`
+	// Only records of these projects. Omit for all projects and account-level records. It does not grant
+	// access to other billing accounts.
+	ProjectIds []uuid.UUID `json:",omitempty"`
+}
+
+func unpackListCheckoutSessionsParams(packed middleware.Parameters) (params ListCheckoutSessionsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "page",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Page = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page_size",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "billing_account_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.BillingAccountID = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.(OptCheckoutSessionStatus)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "project_ids",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ProjectIds = v.([]uuid.UUID)
+		}
+	}
+	return params
+}
+
+func decodeListCheckoutSessionsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListCheckoutSessionsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Set default value for query: page.
+	{
+		val := int64(1)
+		params.Page.SetTo(val)
+	}
+	// Decode query: page.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Page.SetTo(paramsDotPageVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Page.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           2147483647,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: page_size.
+	{
+		val := int64(50)
+		params.PageSize.SetTo(val)
+	}
+	// Decode query: page_size.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PageSize.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: billing_account_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotBillingAccountIDVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotBillingAccountIDVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.BillingAccountID.SetTo(paramsDotBillingAccountIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "billing_account_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotStatusVal CheckoutSessionStatus
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotStatusVal = CheckoutSessionStatus(c)
 					return nil
 				}(); err != nil {
 					return err
@@ -13950,8 +14824,6 @@ func decodePayInvoiceParams(args [1]string, argsEscaped bool, r *http.Request) (
 
 // PreviewInvoicePaymentParams is parameters of preview-invoice-payment operation.
 type PreviewInvoicePaymentParams struct {
-	// As in paying; used only while the order's terms are not fixed.
-	PromotionCode OptString `json:",omitempty,omitzero"`
 	// As in paying. True when omitted.
 	UseBalance OptBool `json:",omitempty,omitzero"`
 	// As in paying. True when omitted.
@@ -13960,15 +14832,6 @@ type PreviewInvoicePaymentParams struct {
 }
 
 func unpackPreviewInvoicePaymentParams(packed middleware.Parameters) (params PreviewInvoicePaymentParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "promotion_code",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.PromotionCode = v.(OptString)
-		}
-	}
 	{
 		key := middleware.ParameterKey{
 			Name: "use_balance",
@@ -13999,74 +14862,6 @@ func unpackPreviewInvoicePaymentParams(packed middleware.Parameters) (params Pre
 
 func decodePreviewInvoicePaymentParams(args [1]string, argsEscaped bool, r *http.Request) (params PreviewInvoicePaymentParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode query: promotion_code.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "promotion_code",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPromotionCodeVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPromotionCodeVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.PromotionCode.SetTo(paramsDotPromotionCodeVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.PromotionCode.Get(); ok {
-					if err := func() error {
-						if err := (validate.String{
-							MinLength:     1,
-							MinLengthSet:  true,
-							MaxLength:     64,
-							MaxLengthSet:  true,
-							Email:         false,
-							Hostname:      false,
-							Regex:         nil,
-							MinNumeric:    0,
-							MinNumericSet: false,
-							MaxNumeric:    0,
-							MaxNumericSet: false,
-						}).Validate(string(value)); err != nil {
-							return errors.Wrap(err, "string")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "promotion_code",
-			In:   "query",
-			Err:  err,
-		}
-	}
 	// Set default value for query: use_balance.
 	{
 		val := bool(true)
@@ -14200,6 +14995,146 @@ func decodePreviewInvoicePaymentParams(args [1]string, argsEscaped bool, r *http
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "invoiceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PreviewOrderRefundParams is parameters of preview-order-refund operation.
+type PreviewOrderRefundParams struct {
+	// Only these items of the order. Omit for the whole order.
+	OrderItemIds []uuid.UUID `json:",omitempty"`
+	OrderId      uuid.UUID
+}
+
+func unpackPreviewOrderRefundParams(packed middleware.Parameters) (params PreviewOrderRefundParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "order_item_ids",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.OrderItemIds = v.([]uuid.UUID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "orderId",
+			In:   "path",
+		}
+		params.OrderId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodePreviewOrderRefundParams(args [1]string, argsEscaped bool, r *http.Request) (params PreviewOrderRefundParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: order_item_ids.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "order_item_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.OrderItemIds = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotOrderItemIdsVal uuid.UUID
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToUUID(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotOrderItemIdsVal = c
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.OrderItemIds = append(params.OrderItemIds, paramsDotOrderItemIdsVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.OrderItemIds == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    100,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.OrderItemIds)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.OrderItemIds); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "order_item_ids",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode path: orderId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "orderId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrderId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "orderId",
 			In:   "path",
 			Err:  err,
 		}

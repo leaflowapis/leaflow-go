@@ -4,6 +4,7 @@ package membershipv1server
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/go-faster/errors"
@@ -251,9 +252,10 @@ func (s *BenefitType) UnmarshalText(data []byte) error {
 	}
 }
 
-// Shared checkout choices for a product purchase. Omitting this object or mode selects automatic
-// checkout. Each purchase creates its own order. Promotion codes are supplied only to Billing quote
-// and payment operations. A service may retain a failed creation record when Billing refuses a
+// Shared checkout choices for a product purchase. The service may set them or forward its client's
+// choices unchanged; it does not need to read them, and Billing validates them. Omitting this object
+// or mode selects automatic checkout. Each purchase creates its own Checkout Session. Promotion codes
+// are supplied only to Billing. A service may retain a failed creation record when Billing refuses a
 // purchase; no infrastructure is created for that refusal.
 // Ref: #/components/schemas/CheckoutOptions
 type CheckoutOptions struct {
@@ -261,8 +263,12 @@ type CheckoutOptions struct {
 	// Expected invoice total after discounts and tax, before applying credit grants or balance. A
 	// different total fails with BILLING_AMOUNT_CHANGED without charging or reserving a discount. Accepted
 	// only in automatic mode; with deferred it is refused with HTTP 400. For deferred checkout, give the
-	// expected amount when paying the invoice through Billing.
+	// expected amount when completing it through Billing.
 	ExpectedAmount OptString `json:"expected_amount"`
+	// Where the client goes after the customer finishes a deferred checkout. Any absolute URI with a
+	// scheme, including mobile and desktop application schemes. Billing stores it without checking the
+	// target; each client validates its own.
+	ReturnURL OptURI `json:"return_url"`
 }
 
 // GetMode returns the value of Mode.
@@ -275,6 +281,11 @@ func (s *CheckoutOptions) GetExpectedAmount() OptString {
 	return s.ExpectedAmount
 }
 
+// GetReturnURL returns the value of ReturnURL.
+func (s *CheckoutOptions) GetReturnURL() OptURI {
+	return s.ReturnURL
+}
+
 // SetMode sets the value of Mode.
 func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 	s.Mode = val
@@ -283,6 +294,11 @@ func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 // SetExpectedAmount sets the value of ExpectedAmount.
 func (s *CheckoutOptions) SetExpectedAmount(val OptString) {
 	s.ExpectedAmount = val
+}
+
+// SetReturnURL sets the value of ReturnURL.
+func (s *CheckoutOptions) SetReturnURL(val OptURI) {
+	s.ReturnURL = val
 }
 
 // Merged schema.
@@ -882,235 +898,6 @@ func (s *GrantType) UnmarshalText(data []byte) error {
 	}
 }
 
-// `draft`: not yet issued; an order's draft invoice shows base prices until it is paid, when the
-// discount is applied and it is issued. Other drafts are visible only to operators. `open`: issued and
-// not yet settled; a zero-total invoice is paid at once. `paid` stays paid after a refund, with the
-// refunded part in amount_refunded. `void`: collection has stopped and any funds received have been
-// returned. Usage not yet invoiced is not on any invoice.
-// Ref: #/components/schemas/InvoiceStatus
-type InvoiceStatus string
-
-const (
-	InvoiceStatusDraft InvoiceStatus = "draft"
-	InvoiceStatusOpen  InvoiceStatus = "open"
-	InvoiceStatusPaid  InvoiceStatus = "paid"
-	InvoiceStatusVoid  InvoiceStatus = "void"
-)
-
-// AllValues returns all InvoiceStatus values.
-func (InvoiceStatus) AllValues() []InvoiceStatus {
-	return []InvoiceStatus{
-		InvoiceStatusDraft,
-		InvoiceStatusOpen,
-		InvoiceStatusPaid,
-		InvoiceStatusVoid,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s InvoiceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case InvoiceStatusDraft:
-		return []byte(s), nil
-	case InvoiceStatusOpen:
-		return []byte(s), nil
-	case InvoiceStatusPaid:
-		return []byte(s), nil
-	case InvoiceStatusVoid:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InvoiceStatus) UnmarshalText(data []byte) error {
-	switch InvoiceStatus(data) {
-	case InvoiceStatusDraft:
-		*s = InvoiceStatusDraft
-		return nil
-	case InvoiceStatusOpen:
-		*s = InvoiceStatusOpen
-		return nil
-	case InvoiceStatusPaid:
-		*s = InvoiceStatusPaid
-		return nil
-	case InvoiceStatusVoid:
-		*s = InvoiceStatusVoid
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// An order's invoice amounts, without contact details or payment methods. A draft shows base prices
-// until it is paid, when the discount is applied and it is issued; a zero-total invoice is issued and
-// paid at placement.
-// Ref: #/components/schemas/InvoiceSummary
-type InvoiceSummary struct {
-	ID       uuid.UUID     `json:"id"`
-	Number   OptString     `json:"number"`
-	Currency string        `json:"currency"`
-	Status   InvoiceStatus `json:"status"`
-	// Sum of the line amounts before discounts. Where prices include tax, the tax contained in each line's
-	// discounted amount is taken out here, so that total = subtotal - discount_amount + tax_amount always
-	// holds.
-	Subtotal string `json:"subtotal"`
-	// Sum of the line discounts, taken off before tax.
-	DiscountAmount string `json:"discount_amount"`
-	TaxAmount      string `json:"tax_amount"`
-	Total          string `json:"total"`
-	AmountPaid     string `json:"amount_paid"`
-	// Issued credit notes that reduced unpaid receivables; the original invoice total is unchanged.
-	PrePaymentCreditNotesAmount Money `json:"pre_payment_credit_notes_amount"`
-	// Issued credit notes against payments already received; their refunds may not have completed.
-	PostPaymentCreditNotesAmount Money `json:"post_payment_credit_notes_amount"`
-	// What is still collectible after unpaid credit notes and successful payments; never below zero.
-	AmountDue      string      `json:"amount_due"`
-	AmountRefunded string      `json:"amount_refunded"`
-	DueAt          OptDateTime `json:"due_at"`
-}
-
-// GetID returns the value of ID.
-func (s *InvoiceSummary) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetNumber returns the value of Number.
-func (s *InvoiceSummary) GetNumber() OptString {
-	return s.Number
-}
-
-// GetCurrency returns the value of Currency.
-func (s *InvoiceSummary) GetCurrency() string {
-	return s.Currency
-}
-
-// GetStatus returns the value of Status.
-func (s *InvoiceSummary) GetStatus() InvoiceStatus {
-	return s.Status
-}
-
-// GetSubtotal returns the value of Subtotal.
-func (s *InvoiceSummary) GetSubtotal() string {
-	return s.Subtotal
-}
-
-// GetDiscountAmount returns the value of DiscountAmount.
-func (s *InvoiceSummary) GetDiscountAmount() string {
-	return s.DiscountAmount
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *InvoiceSummary) GetTaxAmount() string {
-	return s.TaxAmount
-}
-
-// GetTotal returns the value of Total.
-func (s *InvoiceSummary) GetTotal() string {
-	return s.Total
-}
-
-// GetAmountPaid returns the value of AmountPaid.
-func (s *InvoiceSummary) GetAmountPaid() string {
-	return s.AmountPaid
-}
-
-// GetPrePaymentCreditNotesAmount returns the value of PrePaymentCreditNotesAmount.
-func (s *InvoiceSummary) GetPrePaymentCreditNotesAmount() Money {
-	return s.PrePaymentCreditNotesAmount
-}
-
-// GetPostPaymentCreditNotesAmount returns the value of PostPaymentCreditNotesAmount.
-func (s *InvoiceSummary) GetPostPaymentCreditNotesAmount() Money {
-	return s.PostPaymentCreditNotesAmount
-}
-
-// GetAmountDue returns the value of AmountDue.
-func (s *InvoiceSummary) GetAmountDue() string {
-	return s.AmountDue
-}
-
-// GetAmountRefunded returns the value of AmountRefunded.
-func (s *InvoiceSummary) GetAmountRefunded() string {
-	return s.AmountRefunded
-}
-
-// GetDueAt returns the value of DueAt.
-func (s *InvoiceSummary) GetDueAt() OptDateTime {
-	return s.DueAt
-}
-
-// SetID sets the value of ID.
-func (s *InvoiceSummary) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetNumber sets the value of Number.
-func (s *InvoiceSummary) SetNumber(val OptString) {
-	s.Number = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *InvoiceSummary) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetStatus sets the value of Status.
-func (s *InvoiceSummary) SetStatus(val InvoiceStatus) {
-	s.Status = val
-}
-
-// SetSubtotal sets the value of Subtotal.
-func (s *InvoiceSummary) SetSubtotal(val string) {
-	s.Subtotal = val
-}
-
-// SetDiscountAmount sets the value of DiscountAmount.
-func (s *InvoiceSummary) SetDiscountAmount(val string) {
-	s.DiscountAmount = val
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *InvoiceSummary) SetTaxAmount(val string) {
-	s.TaxAmount = val
-}
-
-// SetTotal sets the value of Total.
-func (s *InvoiceSummary) SetTotal(val string) {
-	s.Total = val
-}
-
-// SetAmountPaid sets the value of AmountPaid.
-func (s *InvoiceSummary) SetAmountPaid(val string) {
-	s.AmountPaid = val
-}
-
-// SetPrePaymentCreditNotesAmount sets the value of PrePaymentCreditNotesAmount.
-func (s *InvoiceSummary) SetPrePaymentCreditNotesAmount(val Money) {
-	s.PrePaymentCreditNotesAmount = val
-}
-
-// SetPostPaymentCreditNotesAmount sets the value of PostPaymentCreditNotesAmount.
-func (s *InvoiceSummary) SetPostPaymentCreditNotesAmount(val Money) {
-	s.PostPaymentCreditNotesAmount = val
-}
-
-// SetAmountDue sets the value of AmountDue.
-func (s *InvoiceSummary) SetAmountDue(val string) {
-	s.AmountDue = val
-}
-
-// SetAmountRefunded sets the value of AmountRefunded.
-func (s *InvoiceSummary) SetAmountRefunded(val string) {
-	s.AmountRefunded = val
-}
-
-// SetDueAt sets the value of DueAt.
-func (s *InvoiceSummary) SetDueAt(val OptDateTime) {
-	s.DueAt = val
-}
-
 // Ref: #/components/schemas/Membership
 type Membership struct {
 	ID               uuid.UUID   `json:"id"`
@@ -1377,11 +1164,15 @@ func (s *MembershipList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// The membership and its Billing purchase order.
+// The membership and its Billing Checkout Session.
 // Ref: #/components/schemas/MembershipPurchase
 type MembershipPurchase struct {
-	Membership Membership  `json:"membership"`
-	Order      PlacedOrder `json:"order"`
+	Membership Membership `json:"membership"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetMembership returns the value of Membership.
@@ -1389,9 +1180,14 @@ func (s *MembershipPurchase) GetMembership() Membership {
 	return s.Membership
 }
 
-// GetOrder returns the value of Order.
-func (s *MembershipPurchase) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *MembershipPurchase) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *MembershipPurchase) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetMembership sets the value of Membership.
@@ -1399,9 +1195,14 @@ func (s *MembershipPurchase) SetMembership(val Membership) {
 	s.Membership = val
 }
 
-// SetOrder sets the value of Order.
-func (s *MembershipPurchase) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *MembershipPurchase) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *MembershipPurchase) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 // Pending until delivery is confirmed; active afterwards; ended when terminated.
@@ -2145,52 +1946,6 @@ func (o OptCurrency) Or(d Currency) Currency {
 	return d
 }
 
-// NewOptDateTime returns new OptDateTime with value set to v.
-func NewOptDateTime(v time.Time) OptDateTime {
-	return OptDateTime{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDateTime is optional time.Time.
-type OptDateTime struct {
-	Value time.Time
-	Set   bool
-}
-
-// IsSet returns true if OptDateTime was set.
-func (o OptDateTime) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDateTime) Reset() {
-	var v time.Time
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDateTime) SetTo(v time.Time) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDateTime) Get() (v time.Time, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDateTime) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptDiscountBenefit returns new OptDiscountBenefit with value set to v.
 func NewOptDiscountBenefit(v DiscountBenefit) OptDiscountBenefit {
 	return OptDiscountBenefit{
@@ -2421,6 +2176,52 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
+// NewOptURI returns new OptURI with value set to v.
+func NewOptURI(v url.URL) OptURI {
+	return OptURI{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptURI is optional url.URL.
+type OptURI struct {
+	Value url.URL
+	Set   bool
+}
+
+// IsSet returns true if OptURI was set.
+func (o OptURI) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptURI) Reset() {
+	var v url.URL
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptURI) SetTo(v url.URL) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptURI) Get() (v url.URL, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptURI) Or(d url.URL) url.URL {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // A fulfilled membership period.
 // Ref: #/components/schemas/Period
 type Period struct {
@@ -2517,50 +2318,6 @@ func (s *PeriodList) SetItems(val []Period) {
 // SetPagination sets the value of Pagination.
 func (s *PeriodList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-// The Billing order this purchase placed and its invoice as they stood at placement. Read the order
-// and the invoice in Billing for current progress: the service starts delivery only after Billing
-// accepts the order, and payment alone does not mean delivery has completed.
-// Ref: #/components/schemas/PlacedOrder
-type PlacedOrder struct {
-	OrderID uuid.UUID `json:"order_id"`
-	// The order's invoice, the same as invoice.id.
-	InvoiceID uuid.UUID `json:"invoice_id"`
-	// What the purchase charges. A draft shows the base price in total and is paid through Billing, where
-	// a promotion code can still be applied; an open invoice is issued and awaits its amount_due; a paid
-	// one needs nothing further. A zero-total invoice is issued and paid at placement.
-	Invoice InvoiceSummary `json:"invoice"`
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *PlacedOrder) GetOrderID() uuid.UUID {
-	return s.OrderID
-}
-
-// GetInvoiceID returns the value of InvoiceID.
-func (s *PlacedOrder) GetInvoiceID() uuid.UUID {
-	return s.InvoiceID
-}
-
-// GetInvoice returns the value of Invoice.
-func (s *PlacedOrder) GetInvoice() InvoiceSummary {
-	return s.Invoice
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
-	s.OrderID = val
-}
-
-// SetInvoiceID sets the value of InvoiceID.
-func (s *PlacedOrder) SetInvoiceID(val uuid.UUID) {
-	s.InvoiceID = val
-}
-
-// SetInvoice sets the value of Invoice.
-func (s *PlacedOrder) SetInvoice(val InvoiceSummary) {
-	s.Invoice = val
 }
 
 // Ref: #/components/schemas/Plan

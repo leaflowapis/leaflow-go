@@ -19,16 +19,16 @@ type Handler interface {
 	// If the private network is not yet connected to the internet, connectivity is established as part of
 	// this call.
 	//
-	// Returns the floating IP as `pending` with its order; `address` is null until the address is
-	// allocated after the order is accepted. A requested `address` is not held while pending; if it is no
-	// longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is
+	// Returns the floating IP as `pending` with its Checkout Session; `address` is null until the address
+	// is allocated after the order is accepted. A requested `address` is not held while pending; if it is
+	// no longer available then, the floating IP ends `failed` with `provisioning_failed` and its charge is
 	// refunded.
 	//
 	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
 	// network; enable IPv6 on that network instead.
 	//
-	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any order is created, when the private network's
-	// `status` is not `available`. `meta.private_network_id` names it.
+	// Refused with `PRIVATE_NETWORK_UNAVAILABLE`, before any Checkout Session is created, when the private
+	// network's `status` is not `available`. `meta.private_network_id` names it.
 	//
 	// POST /api/v1/floating-ips
 	AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (AllocateFloatingIPRes, error)
@@ -88,8 +88,9 @@ type Handler interface {
 	// takes its order and payment and handles its renewal and cancellation through the pack's
 	// subscription.
 	//
-	// Returns the pack as `pending` with its order; it applies once the order is accepted. Refused with
-	// 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service is not active.
+	// Returns the pack as `pending` with its Checkout Session; it applies once the order is accepted.
+	// Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` and `meta.region_id` when the region's backup service
+	// is not active.
 	//
 	// POST /api/v1/regions/{regionId}/backup-capacity-packs
 	CreateBackupCapacityPack(ctx context.Context, req *CreateBackupCapacityPackRequestBody, params CreateBackupCapacityPackParams) (CreateBackupCapacityPackRes, error)
@@ -121,7 +122,7 @@ type Handler interface {
 	//
 	// Purchases the backup service for this project and region. The service itself has no charge; backups
 	// are metered under it by retained capacity. It takes no billing choice. Returns the service as
-	// `pending` with its order; it becomes `active` once the order is accepted.
+	// `pending` with its Checkout Session; it becomes `active` once the order is accepted.
 	//
 	// Refused with 409 `BACKUP_SERVICE_EXISTS` while an activation is pending or the service is active or
 	// suspended.
@@ -204,8 +205,8 @@ type Handler interface {
 	// source instance is released.
 	//
 	// The image reflects the moment the capture started. Later changes to the instance are not included.
-	// The image is returned as `pending` with its order, and the capture starts only once the order is
-	// accepted.
+	// The image is returned as `pending` with its Checkout Session, and the capture starts only once the
+	// order is accepted.
 	//
 	// The capture then has two phases, reported by the status of the image:
 	//
@@ -610,17 +611,18 @@ type Handler interface {
 	GetSnapshotQuota(ctx context.Context, params GetSnapshotQuotaParams) (*SnapshotQuota, error)
 	// LaunchInstance implements launch-instance operation.
 	//
-	// Creates a Billing order, including for metered pricing, and returns one `pending` instance per
-	// requested instance with the order. `billing` applies to the instance, its system disk and its
+	// Creates a Billing Checkout Session, including for metered pricing, and returns one `pending`
+	// instance per requested instance with it. `billing` applies to the instance, its system disk and its
 	// floating IP alike. A pending instance has no virtual machine, system disk or address, and is not
 	// metered.
 	//
 	// Creation starts once Billing accepts the order: the instance becomes `provisioning`, then `active`.
 	// With automatic checkout, insufficient funds refuse the request and nothing is created. With deferred
-	// checkout and an amount due, the instances stay `pending` until checkout is confirmed and paid
-	// through Billing; a canceled or expired order leaves them `failed` with `order_canceled` or
-	// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
-	// look the order up before submitting again.
+	// checkout, the instances stay `pending` until the customer completes checkout in Billing and the
+	// order is paid; an expired Checkout Session, or a canceled or expired order, leaves them `failed`
+	// with `checkout_expired`, `order_canceled` or `order_expired`. Do not submit another creation request
+	// after paying. After an uncertain response, look the Checkout Session up in Billing before submitting
+	// again.
 	//
 	// Choose an image or existing disk through boot_disk, and exactly one of port_id or subnet_id.
 	// Existing ports, boot disks or floating IPs require count=1. They are not held while the instance is
@@ -634,12 +636,12 @@ type Handler interface {
 	// and the order then ends `partially_completed`. Each instance is named after this request with a
 	// number appended.
 	//
-	// The network is checked before the order is created, and a request it refuses orders and charges
-	// nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's `status` is not
-	// `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security
-	// group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to another
-	// private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`. `meta` names
-	// the resource.
+	// The network is checked before the Checkout Session is created, and a request it refuses orders and
+	// charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the private network's
+	// `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or
+	// a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs
+	// to another private network, and `PORT_UNAVAILABLE` when the port's `status` is not `available`.
+	// `meta` names the resource.
 	//
 	// POST /api/v1/instances
 	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (LaunchInstanceRes, error)
@@ -914,13 +916,13 @@ type Handler interface {
 	ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (ResetInstancePasswordRes, error)
 	// ResizeDisk implements resize-disk operation.
 	//
-	// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the
-	// resize, which keeps the disk's usage type and period. The disk shows the `resize` operation until
-	// the resize is applied or its order is canceled, including while the order awaits checkout, so other
-	// operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps
-	// its current size until the resize is applied; once `size_gb` shows the new size, extend the file
-	// system inside the instance. If the order is not accepted or the resize fails, the disk keeps its
-	// size and the order shows the outcome.
+	// Capacity can only be increased; shrinking is not supported. Returns the disk with the Checkout
+	// Session for the resize, which keeps the disk's usage type and period. The disk shows the `resize`
+	// operation until the resize is applied, its Checkout Session expires or its order is canceled, so
+	// other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk
+	// keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the
+	// file system inside the instance. If checkout is not completed, the order is not accepted or the
+	// resize fails, the disk keeps its size and Billing shows the outcome.
 	//
 	// An attached data disk whose performance scales with its size must be detached before it is resized.
 	// The performance of an attached disk does not change until the disk is detached and attached again,
@@ -939,18 +941,19 @@ type Handler interface {
 	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
 	// ResizeInstance implements resize-instance operation.
 	//
-	// Creates a Billing change order, including for metered pricing, and returns the instance with the
-	// order. The instance keeps its usage type and period, priced with the target type's matching option;
-	// a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. Do not submit a
-	// new purchase after paying. After an uncertain response, look the order up before submitting again.
+	// Creates a Billing Checkout Session for the change, including for metered pricing, and returns the
+	// instance with it. The instance keeps its usage type and period, priced with the target type's
+	// matching option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`.
+	// Do not submit a new purchase after paying. After an uncertain response, look the Checkout Session up
+	// in Billing before submitting again.
 	//
-	// The instance shows the `resize` operation until the resize is applied or its order is canceled,
-	// including while the order awaits checkout, so other operations and a second resize are refused with
+	// The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
+	// or its order is canceled, so other operations and a second resize are refused with
 	// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-	// type takes effect, and is billed from then on, when `instance_type_id` shows it. If the order is not
-	// accepted or the resize fails, the instance keeps its current type and the order shows the outcome. A
-	// completed resize is final and cannot be reverted; to return to the previous type, submit another
-	// resize.
+	// type takes effect, and is billed from then on, when `instance_type_id` shows it. If checkout is not
+	// completed, the order is not accepted or the resize fails, the instance keeps its current type and
+	// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
+	// previous type, submit another resize.
 	//
 	// POST /api/v1/instances/{instanceId}/resize
 	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error)
@@ -959,8 +962,8 @@ type Handler interface {
 	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 	//
 	// The target disk type may belong to another availability zone of the same region, and its capacity
-	// must not be smaller than the backup. Returns the new disk as `pending` with its order; it cannot be
-	// attached until it is `available`.
+	// must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
+	// cannot be attached until it is `available`.
 	//
 	// POST /api/v1/backups/{backupId}/restore
 	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
@@ -1014,11 +1017,11 @@ type Handler interface {
 	//
 	// Changes the bandwidth of this floating IP through an order that keeps its usage type and period; no
 	// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-	// floating IP shows the `set_bandwidth` operation until the change is applied or its order is
-	// canceled, including while the order awaits checkout, so other operations and a second change are
-	// refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change
-	// is applied. If the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
-	// the order shows the outcome.
+	// floating IP shows the `set_bandwidth` operation until the change is applied, its Checkout Session
+	// expires or its order is canceled, so other operations and a second change are refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
+	// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
+	// value and Billing shows the outcome.
 	//
 	// While the address is bound to an instance, the limit must not exceed the `max_bandwidth_mbps` of
 	// that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of an
@@ -1054,16 +1057,16 @@ type Handler interface {
 	// chooses one of the quota's pricing options; a change of an existing purchase keeps its usage type
 	// and period, and billing must name that option. The purchased quantity is this count.
 	//
-	// Returns the quota with the order. pending_limit records the target while the current limit stays in
-	// force; the new limit applies once the order is accepted and the quota is activated. Snapshots create
-	// no further orders or subscriptions, and deleting one frees a slot without refunding the quota
-	// purchase.
+	// Returns the quota with the Checkout Session. pending_limit records the target while the current
+	// limit stays in force; the new limit applies once the order is accepted and the quota is activated.
+	// Snapshots create no further orders or subscriptions, and deleting one frees a slot without refunding
+	// the quota purchase.
 	//
-	// Repeating the same target and billing choice while its purchase is pending returns the same order. A
-	// conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already effective
-	// identical target and billing choice returns its existing purchase without charging again; renewing
-	// its term is a separate Billing renewal operation. A requested limit below used is refused with 409
-	// SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
+	// Repeating the same target and billing choice while its purchase is pending returns the same Checkout
+	// Session. A conflicting pending purchase is refused with SNAPSHOT_QUOTA_CHANGE_PENDING. An already
+	// effective identical target and billing choice returns its existing purchase without charging again;
+	// renewing its term is a separate Billing renewal operation. A requested limit below used is refused
+	// with 409 SNAPSHOT_QUOTA_IN_USE, with meta.used and meta.limit. A change never deletes snapshots.
 	//
 	// PUT /api/v1/regions/{regionId}/snapshot-quota
 	SetSnapshotQuota(ctx context.Context, req *SetSnapshotQuotaRequestBody, params SetSnapshotQuotaParams) (SetSnapshotQuotaRes, error)

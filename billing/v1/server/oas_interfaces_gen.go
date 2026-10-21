@@ -9,12 +9,20 @@ type CancelTopUpRes interface {
 	cancelTopUpRes()
 }
 
+type ConfirmCheckoutSessionRes interface {
+	confirmCheckoutSessionRes()
+}
+
 type CreateCancellationRes interface {
 	createCancellationRes()
 }
 
-type CreateRenewalOrderRes interface {
-	createRenewalOrderRes()
+type CreateCheckoutSessionRes interface {
+	createCheckoutSessionRes()
+}
+
+type ExpireCheckoutSessionRes interface {
+	expireCheckoutSessionRes()
 }
 
 type GetPlanRes interface {

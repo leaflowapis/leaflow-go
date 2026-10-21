@@ -4,6 +4,7 @@ package canopyv1server
 
 import (
 	"io"
+	"net/url"
 	"time"
 
 	"github.com/go-faster/errors"
@@ -450,9 +451,10 @@ func (s *ChatCompletionRequestMessagesItem) init() ChatCompletionRequestMessages
 	return m
 }
 
-// Shared checkout choices for a product purchase. Omitting this object or mode selects automatic
-// checkout. Each purchase creates its own order. Promotion codes are supplied only to Billing quote
-// and payment operations. A service may retain a failed creation record when Billing refuses a
+// Shared checkout choices for a product purchase. The service may set them or forward its client's
+// choices unchanged; it does not need to read them, and Billing validates them. Omitting this object
+// or mode selects automatic checkout. Each purchase creates its own Checkout Session. Promotion codes
+// are supplied only to Billing. A service may retain a failed creation record when Billing refuses a
 // purchase; no infrastructure is created for that refusal.
 // Ref: #/components/schemas/CheckoutOptions
 type CheckoutOptions struct {
@@ -460,8 +462,12 @@ type CheckoutOptions struct {
 	// Expected invoice total after discounts and tax, before applying credit grants or balance. A
 	// different total fails with BILLING_AMOUNT_CHANGED without charging or reserving a discount. Accepted
 	// only in automatic mode; with deferred it is refused with HTTP 400. For deferred checkout, give the
-	// expected amount when paying the invoice through Billing.
+	// expected amount when completing it through Billing.
 	ExpectedAmount OptString `json:"expected_amount"`
+	// Where the client goes after the customer finishes a deferred checkout. Any absolute URI with a
+	// scheme, including mobile and desktop application schemes. Billing stores it without checking the
+	// target; each client validates its own.
+	ReturnURL OptURI `json:"return_url"`
 }
 
 // GetMode returns the value of Mode.
@@ -474,6 +480,11 @@ func (s *CheckoutOptions) GetExpectedAmount() OptString {
 	return s.ExpectedAmount
 }
 
+// GetReturnURL returns the value of ReturnURL.
+func (s *CheckoutOptions) GetReturnURL() OptURI {
+	return s.ReturnURL
+}
+
 // SetMode sets the value of Mode.
 func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 	s.Mode = val
@@ -482,6 +493,11 @@ func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 // SetExpectedAmount sets the value of ExpectedAmount.
 func (s *CheckoutOptions) SetExpectedAmount(val OptString) {
 	s.ExpectedAmount = val
+}
+
+// SetReturnURL sets the value of ReturnURL.
+func (s *CheckoutOptions) SetReturnURL(val OptURI) {
+	s.ReturnURL = val
 }
 
 // Merged schema.
@@ -643,11 +659,15 @@ func (s *CreateServiceRequestBody) SetCheckout(val OptCheckoutOptions) {
 	s.Checkout = val
 }
 
-// The service, `pending` until its order is accepted, and the order.
+// The service, `pending` until its order is accepted, and its Checkout Session.
 // Ref: #/components/schemas/CreateServiceResponseBody
 type CreateServiceResponseBody struct {
 	Service ServiceResource `json:"service"`
-	Order   PlacedOrder     `json:"order"`
+	// The Billing Checkout Session of this enablement. With deferred checkout, the customer completes it
+	// in Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
 // GetService returns the value of Service.
@@ -655,9 +675,14 @@ func (s *CreateServiceResponseBody) GetService() ServiceResource {
 	return s.Service
 }
 
-// GetOrder returns the value of Order.
-func (s *CreateServiceResponseBody) GetOrder() PlacedOrder {
-	return s.Order
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateServiceResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateServiceResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
 // SetService sets the value of Service.
@@ -665,9 +690,14 @@ func (s *CreateServiceResponseBody) SetService(val ServiceResource) {
 	s.Service = val
 }
 
-// SetOrder sets the value of Order.
-func (s *CreateServiceResponseBody) SetOrder(val PlacedOrder) {
-	s.Order = val
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateServiceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateServiceResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
 func (*CreateServiceResponseBody) createServiceRes() {}
@@ -1382,235 +1412,6 @@ func (*InferenceErrorStatusCode) getInferenceModelRes()     {}
 func (*InferenceErrorStatusCode) getResponseRes()           {}
 func (*InferenceErrorStatusCode) listInferenceModelsRes()   {}
 func (*InferenceErrorStatusCode) streamGenerateContentRes() {}
-
-// `draft`: not yet issued; an order's draft invoice shows base prices until it is paid, when the
-// discount is applied and it is issued. Other drafts are visible only to operators. `open`: issued and
-// not yet settled; a zero-total invoice is paid at once. `paid` stays paid after a refund, with the
-// refunded part in amount_refunded. `void`: collection has stopped and any funds received have been
-// returned. Usage not yet invoiced is not on any invoice.
-// Ref: #/components/schemas/InvoiceStatus
-type InvoiceStatus string
-
-const (
-	InvoiceStatusDraft InvoiceStatus = "draft"
-	InvoiceStatusOpen  InvoiceStatus = "open"
-	InvoiceStatusPaid  InvoiceStatus = "paid"
-	InvoiceStatusVoid  InvoiceStatus = "void"
-)
-
-// AllValues returns all InvoiceStatus values.
-func (InvoiceStatus) AllValues() []InvoiceStatus {
-	return []InvoiceStatus{
-		InvoiceStatusDraft,
-		InvoiceStatusOpen,
-		InvoiceStatusPaid,
-		InvoiceStatusVoid,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s InvoiceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case InvoiceStatusDraft:
-		return []byte(s), nil
-	case InvoiceStatusOpen:
-		return []byte(s), nil
-	case InvoiceStatusPaid:
-		return []byte(s), nil
-	case InvoiceStatusVoid:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InvoiceStatus) UnmarshalText(data []byte) error {
-	switch InvoiceStatus(data) {
-	case InvoiceStatusDraft:
-		*s = InvoiceStatusDraft
-		return nil
-	case InvoiceStatusOpen:
-		*s = InvoiceStatusOpen
-		return nil
-	case InvoiceStatusPaid:
-		*s = InvoiceStatusPaid
-		return nil
-	case InvoiceStatusVoid:
-		*s = InvoiceStatusVoid
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// An order's invoice amounts, without contact details or payment methods. A draft shows base prices
-// until it is paid, when the discount is applied and it is issued; a zero-total invoice is issued and
-// paid at placement.
-// Ref: #/components/schemas/InvoiceSummary
-type InvoiceSummary struct {
-	ID       uuid.UUID     `json:"id"`
-	Number   OptString     `json:"number"`
-	Currency string        `json:"currency"`
-	Status   InvoiceStatus `json:"status"`
-	// Sum of the line amounts before discounts. Where prices include tax, the tax contained in each line's
-	// discounted amount is taken out here, so that total = subtotal - discount_amount + tax_amount always
-	// holds.
-	Subtotal string `json:"subtotal"`
-	// Sum of the line discounts, taken off before tax.
-	DiscountAmount string `json:"discount_amount"`
-	TaxAmount      string `json:"tax_amount"`
-	Total          string `json:"total"`
-	AmountPaid     string `json:"amount_paid"`
-	// Issued credit notes that reduced unpaid receivables; the original invoice total is unchanged.
-	PrePaymentCreditNotesAmount Money `json:"pre_payment_credit_notes_amount"`
-	// Issued credit notes against payments already received; their refunds may not have completed.
-	PostPaymentCreditNotesAmount Money `json:"post_payment_credit_notes_amount"`
-	// What is still collectible after unpaid credit notes and successful payments; never below zero.
-	AmountDue      string      `json:"amount_due"`
-	AmountRefunded string      `json:"amount_refunded"`
-	DueAt          OptDateTime `json:"due_at"`
-}
-
-// GetID returns the value of ID.
-func (s *InvoiceSummary) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetNumber returns the value of Number.
-func (s *InvoiceSummary) GetNumber() OptString {
-	return s.Number
-}
-
-// GetCurrency returns the value of Currency.
-func (s *InvoiceSummary) GetCurrency() string {
-	return s.Currency
-}
-
-// GetStatus returns the value of Status.
-func (s *InvoiceSummary) GetStatus() InvoiceStatus {
-	return s.Status
-}
-
-// GetSubtotal returns the value of Subtotal.
-func (s *InvoiceSummary) GetSubtotal() string {
-	return s.Subtotal
-}
-
-// GetDiscountAmount returns the value of DiscountAmount.
-func (s *InvoiceSummary) GetDiscountAmount() string {
-	return s.DiscountAmount
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *InvoiceSummary) GetTaxAmount() string {
-	return s.TaxAmount
-}
-
-// GetTotal returns the value of Total.
-func (s *InvoiceSummary) GetTotal() string {
-	return s.Total
-}
-
-// GetAmountPaid returns the value of AmountPaid.
-func (s *InvoiceSummary) GetAmountPaid() string {
-	return s.AmountPaid
-}
-
-// GetPrePaymentCreditNotesAmount returns the value of PrePaymentCreditNotesAmount.
-func (s *InvoiceSummary) GetPrePaymentCreditNotesAmount() Money {
-	return s.PrePaymentCreditNotesAmount
-}
-
-// GetPostPaymentCreditNotesAmount returns the value of PostPaymentCreditNotesAmount.
-func (s *InvoiceSummary) GetPostPaymentCreditNotesAmount() Money {
-	return s.PostPaymentCreditNotesAmount
-}
-
-// GetAmountDue returns the value of AmountDue.
-func (s *InvoiceSummary) GetAmountDue() string {
-	return s.AmountDue
-}
-
-// GetAmountRefunded returns the value of AmountRefunded.
-func (s *InvoiceSummary) GetAmountRefunded() string {
-	return s.AmountRefunded
-}
-
-// GetDueAt returns the value of DueAt.
-func (s *InvoiceSummary) GetDueAt() OptDateTime {
-	return s.DueAt
-}
-
-// SetID sets the value of ID.
-func (s *InvoiceSummary) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetNumber sets the value of Number.
-func (s *InvoiceSummary) SetNumber(val OptString) {
-	s.Number = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *InvoiceSummary) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetStatus sets the value of Status.
-func (s *InvoiceSummary) SetStatus(val InvoiceStatus) {
-	s.Status = val
-}
-
-// SetSubtotal sets the value of Subtotal.
-func (s *InvoiceSummary) SetSubtotal(val string) {
-	s.Subtotal = val
-}
-
-// SetDiscountAmount sets the value of DiscountAmount.
-func (s *InvoiceSummary) SetDiscountAmount(val string) {
-	s.DiscountAmount = val
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *InvoiceSummary) SetTaxAmount(val string) {
-	s.TaxAmount = val
-}
-
-// SetTotal sets the value of Total.
-func (s *InvoiceSummary) SetTotal(val string) {
-	s.Total = val
-}
-
-// SetAmountPaid sets the value of AmountPaid.
-func (s *InvoiceSummary) SetAmountPaid(val string) {
-	s.AmountPaid = val
-}
-
-// SetPrePaymentCreditNotesAmount sets the value of PrePaymentCreditNotesAmount.
-func (s *InvoiceSummary) SetPrePaymentCreditNotesAmount(val Money) {
-	s.PrePaymentCreditNotesAmount = val
-}
-
-// SetPostPaymentCreditNotesAmount sets the value of PostPaymentCreditNotesAmount.
-func (s *InvoiceSummary) SetPostPaymentCreditNotesAmount(val Money) {
-	s.PostPaymentCreditNotesAmount = val
-}
-
-// SetAmountDue sets the value of AmountDue.
-func (s *InvoiceSummary) SetAmountDue(val string) {
-	s.AmountDue = val
-}
-
-// SetAmountRefunded sets the value of AmountRefunded.
-func (s *InvoiceSummary) SetAmountRefunded(val string) {
-	s.AmountRefunded = val
-}
-
-// SetDueAt sets the value of DueAt.
-func (s *InvoiceSummary) SetDueAt(val OptDateTime) {
-	s.DueAt = val
-}
 
 // Ref: #/components/schemas/IssuedAPIKeyResource
 type IssuedAPIKeyResource struct {
@@ -2961,6 +2762,96 @@ func (o NilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewNilFunds returns new NilFunds with value set to v.
+func NewNilFunds(v Funds) NilFunds {
+	return NilFunds{
+		Value: v,
+	}
+}
+
+// NilFunds is nullable Funds.
+type NilFunds struct {
+	Value Funds
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilFunds) SetTo(v Funds) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilFunds) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilFunds) SetToNull() {
+	o.Null = true
+	var v Funds
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilFunds) Get() (v Funds, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilFunds) Or(d Funds) Funds {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInt returns new NilInt with value set to v.
+func NewNilInt(v int) NilInt {
+	return NilInt{
+		Value: v,
+	}
+}
+
+// NilInt is nullable int.
+type NilInt struct {
+	Value int
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInt) SetTo(v int) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInt) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInt) SetToNull() {
+	o.Null = true
+	var v int
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInt) Get() (v int, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilModelPricing returns new NilModelPricing with value set to v.
 func NewNilModelPricing(v ModelPricing) NilModelPricing {
 	return NilModelPricing{
@@ -3453,52 +3344,6 @@ func (o OptCheckoutOptionsMode) Get() (v CheckoutOptionsMode, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptCheckoutOptionsMode) Or(d CheckoutOptionsMode) CheckoutOptionsMode {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptDateTime returns new OptDateTime with value set to v.
-func NewOptDateTime(v time.Time) OptDateTime {
-	return OptDateTime{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDateTime is optional time.Time.
-type OptDateTime struct {
-	Value time.Time
-	Set   bool
-}
-
-// IsSet returns true if OptDateTime was set.
-func (o OptDateTime) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDateTime) Reset() {
-	var v time.Time
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDateTime) SetTo(v time.Time) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDateTime) Get() (v time.Time, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDateTime) Or(d time.Time) time.Time {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4375,60 +4220,68 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
-// The Billing order this purchase placed and its invoice as they stood at placement. Read the order
-// and the invoice in Billing for current progress: the service starts delivery only after Billing
-// accepts the order, and payment alone does not mean delivery has completed.
-// Ref: #/components/schemas/PlacedOrder
-type PlacedOrder struct {
-	OrderID uuid.UUID `json:"order_id"`
-	// The order's invoice, the same as invoice.id.
-	InvoiceID uuid.UUID `json:"invoice_id"`
-	// What the purchase charges. A draft shows the base price in total and is paid through Billing, where
-	// a promotion code can still be applied; an open invoice is issued and awaits its amount_due; a paid
-	// one needs nothing further. A zero-total invoice is issued and paid at placement.
-	Invoice InvoiceSummary `json:"invoice"`
+// NewOptURI returns new OptURI with value set to v.
+func NewOptURI(v url.URL) OptURI {
+	return OptURI{
+		Value: v,
+		Set:   true,
+	}
 }
 
-// GetOrderID returns the value of OrderID.
-func (s *PlacedOrder) GetOrderID() uuid.UUID {
-	return s.OrderID
+// OptURI is optional url.URL.
+type OptURI struct {
+	Value url.URL
+	Set   bool
 }
 
-// GetInvoiceID returns the value of InvoiceID.
-func (s *PlacedOrder) GetInvoiceID() uuid.UUID {
-	return s.InvoiceID
+// IsSet returns true if OptURI was set.
+func (o OptURI) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptURI) Reset() {
+	var v url.URL
+	o.Value = v
+	o.Set = false
 }
 
-// GetInvoice returns the value of Invoice.
-func (s *PlacedOrder) GetInvoice() InvoiceSummary {
-	return s.Invoice
+// SetTo sets value to v.
+func (o *OptURI) SetTo(v url.URL) {
+	o.Set = true
+	o.Value = v
 }
 
-// SetOrderID sets the value of OrderID.
-func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
-	s.OrderID = val
+// Get returns value and boolean that denotes whether value was set.
+func (o OptURI) Get() (v url.URL, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
 }
 
-// SetInvoiceID sets the value of InvoiceID.
-func (s *PlacedOrder) SetInvoiceID(val uuid.UUID) {
-	s.InvoiceID = val
-}
-
-// SetInvoice sets the value of Invoice.
-func (s *PlacedOrder) SetInvoice(val InvoiceSummary) {
-	s.Invoice = val
+// Or returns value if set, or given parameter if does not.
+func (o OptURI) Or(d url.URL) url.URL {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // A price preview for the purchase described by a service, calculated by Billing. Nothing is saved,
 // charged or reserved, and no discount redemption is consumed. Account discounts and tax are evaluated
-// as for automatic checkout. Promotion codes are evaluated through Billing quote operations. All
+// as for automatic checkout. Promotion codes are evaluated by Billing at checkout, not here. All
 // amounts use currency. This preview does not lock prices or guarantee discount availability. Success
 // includes complete checkout amounts and every requested usage estimate. If any item or requested
 // usage estimate cannot be calculated, the operation returns its existing structured error response;
-// it never returns a partial quote with HTTP 200.
+// it never returns a partial quote with HTTP 200. A quote without a billing account has no funds and
+// no account discount, and leaves out tax that would be added.
 // Ref: #/components/schemas/Quote
 type Quote struct {
-	Funds Funds `json:"funds"`
+	// Null for a quote without a billing account.
+	Funds NilFunds `json:"funds"`
+	// `complete`: tax is calculated for the billing account's invoice contact. `requires_location_inputs`:
+	// a quote without a billing account, which leaves out tax that would be added; tax already contained
+	// in a price is included.
+	TaxStatus QuoteTaxStatus `json:"tax_status"`
 	// One line for each item the purchase would order, in the order it would order them.
 	Items []QuoteItem `json:"items"`
 	// Sum of line amounts before discounts, less tax already included in the discounted line amounts, as
@@ -4454,8 +4307,13 @@ type Quote struct {
 }
 
 // GetFunds returns the value of Funds.
-func (s *Quote) GetFunds() Funds {
+func (s *Quote) GetFunds() NilFunds {
 	return s.Funds
+}
+
+// GetTaxStatus returns the value of TaxStatus.
+func (s *Quote) GetTaxStatus() QuoteTaxStatus {
+	return s.TaxStatus
 }
 
 // GetItems returns the value of Items.
@@ -4504,8 +4362,13 @@ func (s *Quote) GetRefundableAmount() NilMoney {
 }
 
 // SetFunds sets the value of Funds.
-func (s *Quote) SetFunds(val Funds) {
+func (s *Quote) SetFunds(val NilFunds) {
 	s.Funds = val
+}
+
+// SetTaxStatus sets the value of TaxStatus.
+func (s *Quote) SetTaxStatus(val QuoteTaxStatus) {
+	s.TaxStatus = val
 }
 
 // SetItems sets the value of Items.
@@ -4560,7 +4423,27 @@ func (*Quote) createServiceQuoteRes() {}
 // price applies; an unrequested usage estimate remains null.
 // Ref: #/components/schemas/QuoteItem
 type QuoteItem struct {
-	PlanName string `json:"plan_name"`
+	ProductID string    `json:"product_id"`
+	PlanID    uuid.UUID `json:"plan_id"`
+	PlanName  string    `json:"plan_name"`
+	// The price the line is priced at, including one Billing selected. With quantity and dimensions it
+	// prices the same line in Billing's own quote, for example with a promotion code.
+	PriceID uuid.UUID `json:"price_id"`
+	// The dimension values the line is priced at, such as region and instance type.
+	Dimensions QuoteItemDimensions `json:"dimensions"`
+	// One_time or recurring.
+	Type QuoteItemType `json:"type"`
+	// Licensed or metered.
+	UsageType QuoteItemUsageType `json:"usage_type"`
+	// The billing period of a recurring licensed line; `none` otherwise.
+	Interval QuoteItemInterval `json:"interval"`
+	// Periods per billing cycle of a recurring licensed line; null otherwise.
+	IntervalCount NilInt `json:"interval_count"`
+	// The setup charge already included in amount; null when none applies.
+	SetupAmount NilMoney `json:"setup_amount"`
+	// Recurring licensed lines only; null otherwise. What each later period renews at, before discounts
+	// and tax, which differs from amount when the first period is priced differently.
+	RecurringAmount NilMoney `json:"recurring_amount"`
 	// Unit price before discounts, with tax included only where the price includes it. Null when no single
 	// unit price applies, such as tiered or multiple-rate pricing or an immediate change.
 	UnitAmount NilMoney `json:"unit_amount"`
@@ -4584,9 +4467,59 @@ type QuoteItem struct {
 	Currency             string   `json:"currency"`
 }
 
+// GetProductID returns the value of ProductID.
+func (s *QuoteItem) GetProductID() string {
+	return s.ProductID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *QuoteItem) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
 // GetPlanName returns the value of PlanName.
 func (s *QuoteItem) GetPlanName() string {
 	return s.PlanName
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *QuoteItem) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *QuoteItem) GetDimensions() QuoteItemDimensions {
+	return s.Dimensions
+}
+
+// GetType returns the value of Type.
+func (s *QuoteItem) GetType() QuoteItemType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *QuoteItem) GetUsageType() QuoteItemUsageType {
+	return s.UsageType
+}
+
+// GetInterval returns the value of Interval.
+func (s *QuoteItem) GetInterval() QuoteItemInterval {
+	return s.Interval
+}
+
+// GetIntervalCount returns the value of IntervalCount.
+func (s *QuoteItem) GetIntervalCount() NilInt {
+	return s.IntervalCount
+}
+
+// GetSetupAmount returns the value of SetupAmount.
+func (s *QuoteItem) GetSetupAmount() NilMoney {
+	return s.SetupAmount
+}
+
+// GetRecurringAmount returns the value of RecurringAmount.
+func (s *QuoteItem) GetRecurringAmount() NilMoney {
+	return s.RecurringAmount
 }
 
 // GetUnitAmount returns the value of UnitAmount.
@@ -4634,9 +4567,59 @@ func (s *QuoteItem) GetCurrency() string {
 	return s.Currency
 }
 
+// SetProductID sets the value of ProductID.
+func (s *QuoteItem) SetProductID(val string) {
+	s.ProductID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *QuoteItem) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
 // SetPlanName sets the value of PlanName.
 func (s *QuoteItem) SetPlanName(val string) {
 	s.PlanName = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteItem) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *QuoteItem) SetDimensions(val QuoteItemDimensions) {
+	s.Dimensions = val
+}
+
+// SetType sets the value of Type.
+func (s *QuoteItem) SetType(val QuoteItemType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *QuoteItem) SetUsageType(val QuoteItemUsageType) {
+	s.UsageType = val
+}
+
+// SetInterval sets the value of Interval.
+func (s *QuoteItem) SetInterval(val QuoteItemInterval) {
+	s.Interval = val
+}
+
+// SetIntervalCount sets the value of IntervalCount.
+func (s *QuoteItem) SetIntervalCount(val NilInt) {
+	s.IntervalCount = val
+}
+
+// SetSetupAmount sets the value of SetupAmount.
+func (s *QuoteItem) SetSetupAmount(val NilMoney) {
+	s.SetupAmount = val
+}
+
+// SetRecurringAmount sets the value of RecurringAmount.
+func (s *QuoteItem) SetRecurringAmount(val NilMoney) {
+	s.RecurringAmount = val
 }
 
 // SetUnitAmount sets the value of UnitAmount.
@@ -4682,6 +4665,202 @@ func (s *QuoteItem) SetEstimatedUsageAmount(val NilMoney) {
 // SetCurrency sets the value of Currency.
 func (s *QuoteItem) SetCurrency(val string) {
 	s.Currency = val
+}
+
+// The dimension values the line is priced at, such as region and instance type.
+type QuoteItemDimensions map[string]string
+
+func (s *QuoteItemDimensions) init() QuoteItemDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// The billing period of a recurring licensed line; `none` otherwise.
+type QuoteItemInterval string
+
+const (
+	QuoteItemIntervalNone  QuoteItemInterval = "none"
+	QuoteItemIntervalDay   QuoteItemInterval = "day"
+	QuoteItemIntervalMonth QuoteItemInterval = "month"
+	QuoteItemIntervalYear  QuoteItemInterval = "year"
+)
+
+// AllValues returns all QuoteItemInterval values.
+func (QuoteItemInterval) AllValues() []QuoteItemInterval {
+	return []QuoteItemInterval{
+		QuoteItemIntervalNone,
+		QuoteItemIntervalDay,
+		QuoteItemIntervalMonth,
+		QuoteItemIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteItemInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteItemIntervalNone:
+		return []byte(s), nil
+	case QuoteItemIntervalDay:
+		return []byte(s), nil
+	case QuoteItemIntervalMonth:
+		return []byte(s), nil
+	case QuoteItemIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteItemInterval) UnmarshalText(data []byte) error {
+	switch QuoteItemInterval(data) {
+	case QuoteItemIntervalNone:
+		*s = QuoteItemIntervalNone
+		return nil
+	case QuoteItemIntervalDay:
+		*s = QuoteItemIntervalDay
+		return nil
+	case QuoteItemIntervalMonth:
+		*s = QuoteItemIntervalMonth
+		return nil
+	case QuoteItemIntervalYear:
+		*s = QuoteItemIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One_time or recurring.
+type QuoteItemType string
+
+const (
+	QuoteItemTypeOneTime   QuoteItemType = "one_time"
+	QuoteItemTypeRecurring QuoteItemType = "recurring"
+)
+
+// AllValues returns all QuoteItemType values.
+func (QuoteItemType) AllValues() []QuoteItemType {
+	return []QuoteItemType{
+		QuoteItemTypeOneTime,
+		QuoteItemTypeRecurring,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteItemType) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteItemTypeOneTime:
+		return []byte(s), nil
+	case QuoteItemTypeRecurring:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteItemType) UnmarshalText(data []byte) error {
+	switch QuoteItemType(data) {
+	case QuoteItemTypeOneTime:
+		*s = QuoteItemTypeOneTime
+		return nil
+	case QuoteItemTypeRecurring:
+		*s = QuoteItemTypeRecurring
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Licensed or metered.
+type QuoteItemUsageType string
+
+const (
+	QuoteItemUsageTypeLicensed QuoteItemUsageType = "licensed"
+	QuoteItemUsageTypeMetered  QuoteItemUsageType = "metered"
+)
+
+// AllValues returns all QuoteItemUsageType values.
+func (QuoteItemUsageType) AllValues() []QuoteItemUsageType {
+	return []QuoteItemUsageType{
+		QuoteItemUsageTypeLicensed,
+		QuoteItemUsageTypeMetered,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteItemUsageType) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteItemUsageTypeLicensed:
+		return []byte(s), nil
+	case QuoteItemUsageTypeMetered:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteItemUsageType) UnmarshalText(data []byte) error {
+	switch QuoteItemUsageType(data) {
+	case QuoteItemUsageTypeLicensed:
+		*s = QuoteItemUsageTypeLicensed
+		return nil
+	case QuoteItemUsageTypeMetered:
+		*s = QuoteItemUsageTypeMetered
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `complete`: tax is calculated for the billing account's invoice contact. `requires_location_inputs`:
+// a quote without a billing account, which leaves out tax that would be added; tax already contained
+// in a price is included.
+type QuoteTaxStatus string
+
+const (
+	QuoteTaxStatusComplete               QuoteTaxStatus = "complete"
+	QuoteTaxStatusRequiresLocationInputs QuoteTaxStatus = "requires_location_inputs"
+)
+
+// AllValues returns all QuoteTaxStatus values.
+func (QuoteTaxStatus) AllValues() []QuoteTaxStatus {
+	return []QuoteTaxStatus{
+		QuoteTaxStatusComplete,
+		QuoteTaxStatusRequiresLocationInputs,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteTaxStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteTaxStatusComplete:
+		return []byte(s), nil
+	case QuoteTaxStatusRequiresLocationInputs:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteTaxStatus) UnmarshalText(data []byte) error {
+	switch QuoteTaxStatus(data) {
+	case QuoteTaxStatusComplete:
+		*s = QuoteTaxStatusComplete
+		return nil
+	case QuoteTaxStatusRequiresLocationInputs:
+		*s = QuoteTaxStatusRequiresLocationInputs
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/ReasoningCapabilities
@@ -5365,18 +5544,23 @@ func (*ResponseResource) getResponseRes()    {}
 // The model platform service of a project.
 // Ref: #/components/schemas/ServiceResource
 type ServiceResource struct {
-	// `inactive` has never been enabled or its subscription has ended; `pending` awaits acceptance of its
-	// order; `active` accepts requests on the forwarding endpoints; `failed` means the enablement failed,
-	// as `failure_reason` states. An `inactive` or `failed` service can be enabled again.
+	// `inactive` has never been enabled or its subscription has ended; `pending` awaits completion of its
+	// checkout and acceptance of its order; `active` accepts requests on the forwarding endpoints;
+	// `failed` means the enablement failed, as `failure_reason` states. An `inactive` or `failed` service
+	// can be enabled again.
 	Status ServiceResourceStatus `json:"status"`
-	// Why the enablement failed; null unless `status` is `failed`. `order_declined` means Billing did not
-	// accept the order, for example because the billing account is suspended; `order_canceled` means the
-	// order was withdrawn; `order_expired` means it was not paid in time.
+	// Why the enablement failed; null unless `status` is `failed`. `checkout_expired` means checkout was
+	// not completed before its Checkout Session expired; `order_declined` means Billing did not accept the
+	// order, for example because the billing account is suspended; `order_canceled` means the order was
+	// withdrawn; `order_expired` means it was not paid in time.
 	FailureReason NilServiceResourceFailureReason `json:"failure_reason"`
-	// The order that enabled the service, or that the latest enablement placed; null before any
-	// enablement.
+	// The Checkout Session of the latest enablement; null before any enablement.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	// The order that enabled the service, or that the latest enablement's checkout created; null before
+	// checkout completes.
 	OrderID NilUUID `json:"order_id"`
-	// The Billing subscription that requests are billed under; null before any enablement.
+	// The Billing subscription that requests are billed under; null until an enablement's checkout
+	// completes.
 	SubscriptionID NilUUID `json:"subscription_id"`
 	// When the service became active and billing began; null until then.
 	ActivatedAt NilDateTime `json:"activated_at"`
@@ -5392,6 +5576,11 @@ func (s *ServiceResource) GetStatus() ServiceResourceStatus {
 // GetFailureReason returns the value of FailureReason.
 func (s *ServiceResource) GetFailureReason() NilServiceResourceFailureReason {
 	return s.FailureReason
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *ServiceResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
 }
 
 // GetOrderID returns the value of OrderID.
@@ -5424,6 +5613,11 @@ func (s *ServiceResource) SetFailureReason(val NilServiceResourceFailureReason) 
 	s.FailureReason = val
 }
 
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *ServiceResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
 // SetOrderID sets the value of OrderID.
 func (s *ServiceResource) SetOrderID(val NilUUID) {
 	s.OrderID = val
@@ -5446,20 +5640,23 @@ func (s *ServiceResource) SetEndedAt(val NilDateTime) {
 
 func (*ServiceResource) getServiceRes() {}
 
-// Why the enablement failed; null unless `status` is `failed`. `order_declined` means Billing did not
-// accept the order, for example because the billing account is suspended; `order_canceled` means the
-// order was withdrawn; `order_expired` means it was not paid in time.
+// Why the enablement failed; null unless `status` is `failed`. `checkout_expired` means checkout was
+// not completed before its Checkout Session expired; `order_declined` means Billing did not accept the
+// order, for example because the billing account is suspended; `order_canceled` means the order was
+// withdrawn; `order_expired` means it was not paid in time.
 type ServiceResourceFailureReason string
 
 const (
-	ServiceResourceFailureReasonOrderDeclined ServiceResourceFailureReason = "order_declined"
-	ServiceResourceFailureReasonOrderCanceled ServiceResourceFailureReason = "order_canceled"
-	ServiceResourceFailureReasonOrderExpired  ServiceResourceFailureReason = "order_expired"
+	ServiceResourceFailureReasonCheckoutExpired ServiceResourceFailureReason = "checkout_expired"
+	ServiceResourceFailureReasonOrderDeclined   ServiceResourceFailureReason = "order_declined"
+	ServiceResourceFailureReasonOrderCanceled   ServiceResourceFailureReason = "order_canceled"
+	ServiceResourceFailureReasonOrderExpired    ServiceResourceFailureReason = "order_expired"
 )
 
 // AllValues returns all ServiceResourceFailureReason values.
 func (ServiceResourceFailureReason) AllValues() []ServiceResourceFailureReason {
 	return []ServiceResourceFailureReason{
+		ServiceResourceFailureReasonCheckoutExpired,
 		ServiceResourceFailureReasonOrderDeclined,
 		ServiceResourceFailureReasonOrderCanceled,
 		ServiceResourceFailureReasonOrderExpired,
@@ -5469,6 +5666,8 @@ func (ServiceResourceFailureReason) AllValues() []ServiceResourceFailureReason {
 // MarshalText implements encoding.TextMarshaler.
 func (s ServiceResourceFailureReason) MarshalText() ([]byte, error) {
 	switch s {
+	case ServiceResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
 	case ServiceResourceFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case ServiceResourceFailureReasonOrderCanceled:
@@ -5483,6 +5682,9 @@ func (s ServiceResourceFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *ServiceResourceFailureReason) UnmarshalText(data []byte) error {
 	switch ServiceResourceFailureReason(data) {
+	case ServiceResourceFailureReasonCheckoutExpired:
+		*s = ServiceResourceFailureReasonCheckoutExpired
+		return nil
 	case ServiceResourceFailureReasonOrderDeclined:
 		*s = ServiceResourceFailureReasonOrderDeclined
 		return nil
@@ -5497,9 +5699,10 @@ func (s *ServiceResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// `inactive` has never been enabled or its subscription has ended; `pending` awaits acceptance of its
-// order; `active` accepts requests on the forwarding endpoints; `failed` means the enablement failed,
-// as `failure_reason` states. An `inactive` or `failed` service can be enabled again.
+// `inactive` has never been enabled or its subscription has ended; `pending` awaits completion of its
+// checkout and acceptance of its order; `active` accepts requests on the forwarding endpoints;
+// `failed` means the enablement failed, as `failure_reason` states. An `inactive` or `failed` service
+// can be enabled again.
 type ServiceResourceStatus string
 
 const (

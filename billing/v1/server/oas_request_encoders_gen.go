@@ -44,6 +44,20 @@ func encodeCancelSubscriptionRequest(
 	return nil
 }
 
+func encodeConfirmCheckoutSessionRequest(
+	req *CheckoutSessionConfirm,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateBillingAccountRequest(
 	req *BillingAccountCreate,
 	r *http.Request,
@@ -60,6 +74,20 @@ func encodeCreateBillingAccountRequest(
 
 func encodeCreateCancellationRequest(
 	req *CancellationCreate,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateCheckoutSessionRequest(
+	req *CheckoutSessionCreate,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -100,20 +128,6 @@ func encodeCreatePaymentMethodSetupRequest(
 	return nil
 }
 
-func encodeCreateRenewalOrderRequest(
-	req *RenewalOrderRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeCreateTopUpRequest(
 	req *TopUpCreate,
 	r *http.Request,
@@ -130,6 +144,20 @@ func encodeCreateTopUpRequest(
 
 func encodeCreateWithdrawalRequest(
 	req *WithdrawalCreate,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeEstimateUsageRequest(
+	req *UsageEstimateRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -178,6 +206,20 @@ func encodePayInvoiceRequest(
 
 func encodePayTogetherRequest(
 	req *PayTogetherRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePreviewCancellationRequest(
+	req *CancellationPreviewRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
