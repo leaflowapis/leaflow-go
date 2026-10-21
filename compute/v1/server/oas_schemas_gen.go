@@ -1728,6 +1728,9 @@ type DiskAttachment struct {
 	DetachedAt               NilDateTime          `json:"detached_at"`
 	ReleasedAt               NilDateTime          `json:"released_at"`
 	Device                   NilString            `json:"device"`
+	// The disk's performance in effect on this attachment, as it was when the attachment was made. Null
+	// until the attachment is made.
+	Performance NilDiskPerformance `json:"performance"`
 }
 
 // GetID returns the value of ID.
@@ -1780,6 +1783,11 @@ func (s *DiskAttachment) GetDevice() NilString {
 	return s.Device
 }
 
+// GetPerformance returns the value of Performance.
+func (s *DiskAttachment) GetPerformance() NilDiskPerformance {
+	return s.Performance
+}
+
 // SetID sets the value of ID.
 func (s *DiskAttachment) SetID(val VirtualMachineDiskID) {
 	s.ID = val
@@ -1828,6 +1836,11 @@ func (s *DiskAttachment) SetReleasedAt(val NilDateTime) {
 // SetDevice sets the value of Device.
 func (s *DiskAttachment) SetDevice(val NilString) {
 	s.Device = val
+}
+
+// SetPerformance sets the value of Performance.
+func (s *DiskAttachment) SetPerformance(val NilDiskPerformance) {
+	s.Performance = val
 }
 
 // Ref: #/components/schemas/DiskAttachmentList
@@ -2097,6 +2110,33 @@ func (s *DiskOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
+// A disk's limits.
+// Ref: #/components/schemas/DiskPerformance
+type DiskPerformance struct {
+	Iops                     int64 `json:"iops"`
+	ThroughputBytesPerSecond int64 `json:"throughput_bytes_per_second"`
+}
+
+// GetIops returns the value of Iops.
+func (s *DiskPerformance) GetIops() int64 {
+	return s.Iops
+}
+
+// GetThroughputBytesPerSecond returns the value of ThroughputBytesPerSecond.
+func (s *DiskPerformance) GetThroughputBytesPerSecond() int64 {
+	return s.ThroughputBytesPerSecond
+}
+
+// SetIops sets the value of Iops.
+func (s *DiskPerformance) SetIops(val int64) {
+	s.Iops = val
+}
+
+// SetThroughputBytesPerSecond sets the value of ThroughputBytesPerSecond.
+func (s *DiskPerformance) SetThroughputBytesPerSecond(val int64) {
+	s.ThroughputBytesPerSecond = val
+}
+
 // A resource a release set releases.
 // Ref: #/components/schemas/DiskReleaseResource
 type DiskReleaseResource struct {
@@ -2182,14 +2222,7 @@ type DiskResource struct {
 	Name               string             `json:"name"`
 	RegionID           RegionID           `json:"region_id"`
 	SizeGB             int64              `json:"size_gb"`
-	// IOPS this disk is allowed. Null when its type is not rate-limited.
-	//
-	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the note on
-	// the resize endpoint: growing a disk that is attached is refused, precisely because the new figure
-	// would not take effect until it was attached again.
-	Iops NilInt64 `json:"iops"`
-	// Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited.
-	ThroughputBytesPerSec NilInt64 `json:"throughput_bytes_per_sec"`
+	Performance        DiskPerformance    `json:"performance"`
 	// `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is
 	// created; then `available`, or `in_use` once attached. `failed` means the disk was not created;
 	// `failure_reason` states why. `missing` means the disk no longer exists in the cloud.
@@ -2258,14 +2291,9 @@ func (s *DiskResource) GetSizeGB() int64 {
 	return s.SizeGB
 }
 
-// GetIops returns the value of Iops.
-func (s *DiskResource) GetIops() NilInt64 {
-	return s.Iops
-}
-
-// GetThroughputBytesPerSec returns the value of ThroughputBytesPerSec.
-func (s *DiskResource) GetThroughputBytesPerSec() NilInt64 {
-	return s.ThroughputBytesPerSec
+// GetPerformance returns the value of Performance.
+func (s *DiskResource) GetPerformance() DiskPerformance {
+	return s.Performance
 }
 
 // GetStatus returns the value of Status.
@@ -2368,14 +2396,9 @@ func (s *DiskResource) SetSizeGB(val int64) {
 	s.SizeGB = val
 }
 
-// SetIops sets the value of Iops.
-func (s *DiskResource) SetIops(val NilInt64) {
-	s.Iops = val
-}
-
-// SetThroughputBytesPerSec sets the value of ThroughputBytesPerSec.
-func (s *DiskResource) SetThroughputBytesPerSec(val NilInt64) {
-	s.ThroughputBytesPerSec = val
+// SetPerformance sets the value of Performance.
+func (s *DiskResource) SetPerformance(val DiskPerformance) {
+	s.Performance = val
 }
 
 // SetStatus sets the value of Status.
@@ -2682,6 +2705,38 @@ func (s *DiskTypeListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// How fast a disk of this type runs for its size. Alibaba Cloud's ESSD levels have this shape; PL1,
+// for example, is IOPS `min(50000, 1800 + 50 × size_gb)`.
+//
+// A disk's own performance, computed from these for its size, is on the disk. Growing a disk raises
+// it, and the new performance applies from the disk's next attachment or the next start of its stopped
+// virtual machine.
+// Ref: #/components/schemas/DiskTypePerformance
+type DiskTypePerformance struct {
+	Iops                     PerformanceFormula `json:"iops"`
+	ThroughputBytesPerSecond PerformanceFormula `json:"throughput_bytes_per_second"`
+}
+
+// GetIops returns the value of Iops.
+func (s *DiskTypePerformance) GetIops() PerformanceFormula {
+	return s.Iops
+}
+
+// GetThroughputBytesPerSecond returns the value of ThroughputBytesPerSecond.
+func (s *DiskTypePerformance) GetThroughputBytesPerSecond() PerformanceFormula {
+	return s.ThroughputBytesPerSecond
+}
+
+// SetIops sets the value of Iops.
+func (s *DiskTypePerformance) SetIops(val PerformanceFormula) {
+	s.Iops = val
+}
+
+// SetThroughputBytesPerSecond sets the value of ThroughputBytesPerSecond.
+func (s *DiskTypePerformance) SetThroughputBytesPerSecond(val PerformanceFormula) {
+	s.ThroughputBytesPerSecond = val
+}
+
 // The intended creation use of a disk type, not the current boot role or deletion policy of an
 // individual disk.
 // Ref: #/components/schemas/DiskTypePurpose
@@ -2728,31 +2783,16 @@ func (s *DiskTypePurpose) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/DiskTypeResource
 type DiskTypeResource struct {
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	ID                 DiskTypeID         `json:"id"`
-	Purpose            DiskTypePurpose    `json:"purpose"`
-	// IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
-	//
-	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the range. The
-	// exact figure for the size actually bought appears on the disk itself once it exists.
-	IopsAtMinSize NilInt64 `json:"iops_at_min_size"`
-	// IOPS a disk of `max_size_gb` gets. Null when this type is not rate-limited.
-	IopsAtMaxSize NilInt64              `json:"iops_at_max_size"`
-	MaxSizeGB     int64                 `json:"max_size_gb"`
-	Media         DiskTypeResourceMedia `json:"media"`
-	MinSizeGB     int64                 `json:"min_size_gb"`
-	Name          string                `json:"name"`
-	RegionID      RegionID              `json:"region_id"`
-	StepGB        int64                 `json:"step_gb"`
-	// Throughput a disk of `min_size_gb` gets, in bytes per second. Null when this type is not
-	// rate-limited.
-	//
-	// Bytes rather than MiB so the number needs no rounding on the way out; divide by 1048576 for MiB/s at
-	// the point of display.
-	ThroughputAtMinSize NilInt64 `json:"throughput_at_min_size"`
-	// Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not
-	// rate-limited.
-	ThroughputAtMaxSize NilInt64 `json:"throughput_at_max_size"`
+	AvailabilityZoneID AvailabilityZoneID    `json:"availability_zone_id"`
+	ID                 DiskTypeID            `json:"id"`
+	Purpose            DiskTypePurpose       `json:"purpose"`
+	MaxSizeGB          int64                 `json:"max_size_gb"`
+	Media              DiskTypeResourceMedia `json:"media"`
+	MinSizeGB          int64                 `json:"min_size_gb"`
+	Name               string                `json:"name"`
+	RegionID           RegionID              `json:"region_id"`
+	StepGB             int64                 `json:"step_gb"`
+	Performance        DiskTypePerformance   `json:"performance"`
 	// The actual Billing Plan associated with this resource. Read prices and commercial terms directly
 	// from Billing using this identifier.
 	PlanID uuid.UUID `json:"plan_id"`
@@ -2771,16 +2811,6 @@ func (s *DiskTypeResource) GetID() DiskTypeID {
 // GetPurpose returns the value of Purpose.
 func (s *DiskTypeResource) GetPurpose() DiskTypePurpose {
 	return s.Purpose
-}
-
-// GetIopsAtMinSize returns the value of IopsAtMinSize.
-func (s *DiskTypeResource) GetIopsAtMinSize() NilInt64 {
-	return s.IopsAtMinSize
-}
-
-// GetIopsAtMaxSize returns the value of IopsAtMaxSize.
-func (s *DiskTypeResource) GetIopsAtMaxSize() NilInt64 {
-	return s.IopsAtMaxSize
 }
 
 // GetMaxSizeGB returns the value of MaxSizeGB.
@@ -2813,14 +2843,9 @@ func (s *DiskTypeResource) GetStepGB() int64 {
 	return s.StepGB
 }
 
-// GetThroughputAtMinSize returns the value of ThroughputAtMinSize.
-func (s *DiskTypeResource) GetThroughputAtMinSize() NilInt64 {
-	return s.ThroughputAtMinSize
-}
-
-// GetThroughputAtMaxSize returns the value of ThroughputAtMaxSize.
-func (s *DiskTypeResource) GetThroughputAtMaxSize() NilInt64 {
-	return s.ThroughputAtMaxSize
+// GetPerformance returns the value of Performance.
+func (s *DiskTypeResource) GetPerformance() DiskTypePerformance {
+	return s.Performance
 }
 
 // GetPlanID returns the value of PlanID.
@@ -2841,16 +2866,6 @@ func (s *DiskTypeResource) SetID(val DiskTypeID) {
 // SetPurpose sets the value of Purpose.
 func (s *DiskTypeResource) SetPurpose(val DiskTypePurpose) {
 	s.Purpose = val
-}
-
-// SetIopsAtMinSize sets the value of IopsAtMinSize.
-func (s *DiskTypeResource) SetIopsAtMinSize(val NilInt64) {
-	s.IopsAtMinSize = val
-}
-
-// SetIopsAtMaxSize sets the value of IopsAtMaxSize.
-func (s *DiskTypeResource) SetIopsAtMaxSize(val NilInt64) {
-	s.IopsAtMaxSize = val
 }
 
 // SetMaxSizeGB sets the value of MaxSizeGB.
@@ -2883,14 +2898,9 @@ func (s *DiskTypeResource) SetStepGB(val int64) {
 	s.StepGB = val
 }
 
-// SetThroughputAtMinSize sets the value of ThroughputAtMinSize.
-func (s *DiskTypeResource) SetThroughputAtMinSize(val NilInt64) {
-	s.ThroughputAtMinSize = val
-}
-
-// SetThroughputAtMaxSize sets the value of ThroughputAtMaxSize.
-func (s *DiskTypeResource) SetThroughputAtMaxSize(val NilInt64) {
-	s.ThroughputAtMaxSize = val
+// SetPerformance sets the value of Performance.
+func (s *DiskTypeResource) SetPerformance(val DiskTypePerformance) {
+	s.Performance = val
 }
 
 // SetPlanID sets the value of PlanID.
@@ -4725,19 +4735,13 @@ func (s *InternetChargeType) UnmarshalText(data []byte) error {
 type MachineType struct {
 	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
 	ID                 MachineTypeID      `json:"id"`
-	// The most public bandwidth a machine of this type may be given, in Mbps. Asking for more when
-	// creating a machine, or raising a bound address past it, is refused.
+	// The machine's network rate, in Mbps. Each network interface of the machine is limited to it in both
+	// directions — per interface rather than shared, so a machine with two interfaces has this rate on
+	// each of them; `max_network_interfaces` says how many it may have. Zero is no limit.
 	//
-	// A ceiling on what can be bought, not a speed. How fast the machine's own interfaces run is
-	// `network_egress_kbps` / `network_ingress_kbps`.
-	MaxBandwidthMbps int64 `json:"max_bandwidth_mbps"`
-	// Outbound ceiling of each network interface, in kbps. Null when this type is not rate-limited.
-	//
-	// Per interface rather than per machine: a machine with two interfaces has this ceiling on each of
-	// them, not shared between them. `max_network_interfaces` says how many it may have.
-	NetworkEgressKbps NilInt64 `json:"network_egress_kbps"`
-	// Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited.
-	NetworkIngressKbps   NilInt64 `json:"network_ingress_kbps"`
+	// An elastic IP bound to the machine cannot be bought faster than this rate; asking for more is
+	// refused with `INSTANCE_BANDWIDTH_CEILING`.
+	MaxBandwidthMbps     int64    `json:"max_bandwidth_mbps"`
 	MaxElasticIps        int64    `json:"max_elastic_ips"`
 	MaxNetworkInterfaces int64    `json:"max_network_interfaces"`
 	Name                 string   `json:"name"`
@@ -4762,16 +4766,6 @@ func (s *MachineType) GetID() MachineTypeID {
 // GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
 func (s *MachineType) GetMaxBandwidthMbps() int64 {
 	return s.MaxBandwidthMbps
-}
-
-// GetNetworkEgressKbps returns the value of NetworkEgressKbps.
-func (s *MachineType) GetNetworkEgressKbps() NilInt64 {
-	return s.NetworkEgressKbps
-}
-
-// GetNetworkIngressKbps returns the value of NetworkIngressKbps.
-func (s *MachineType) GetNetworkIngressKbps() NilInt64 {
-	return s.NetworkIngressKbps
 }
 
 // GetMaxElasticIps returns the value of MaxElasticIps.
@@ -4822,16 +4816,6 @@ func (s *MachineType) SetID(val MachineTypeID) {
 // SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
 func (s *MachineType) SetMaxBandwidthMbps(val int64) {
 	s.MaxBandwidthMbps = val
-}
-
-// SetNetworkEgressKbps sets the value of NetworkEgressKbps.
-func (s *MachineType) SetNetworkEgressKbps(val NilInt64) {
-	s.NetworkEgressKbps = val
-}
-
-// SetNetworkIngressKbps sets the value of NetworkIngressKbps.
-func (s *MachineType) SetNetworkIngressKbps(val NilInt64) {
-	s.NetworkIngressKbps = val
 }
 
 // SetMaxElasticIps sets the value of MaxElasticIps.
@@ -5928,6 +5912,51 @@ func (o NilDiskOperation) Get() (v DiskOperation, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDiskOperation) Or(d DiskOperation) DiskOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilDiskPerformance returns new NilDiskPerformance with value set to v.
+func NewNilDiskPerformance(v DiskPerformance) NilDiskPerformance {
+	return NilDiskPerformance{
+		Value: v,
+	}
+}
+
+// NilDiskPerformance is nullable DiskPerformance.
+type NilDiskPerformance struct {
+	Value DiskPerformance
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilDiskPerformance) SetTo(v DiskPerformance) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilDiskPerformance) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilDiskPerformance) SetToNull() {
+	o.Null = true
+	var v DiskPerformance
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilDiskPerformance) Get() (v DiskPerformance, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilDiskPerformance) Or(d DiskPerformance) DiskPerformance {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8844,6 +8873,45 @@ func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// One performance metric of a disk type for a disk of `size_gb`,
+// `min(max, base + size_gb × per_gib)`. A `per_gib` of zero is a fixed performance.
+// Ref: #/components/schemas/PerformanceFormula
+type PerformanceFormula struct {
+	Base   int64 `json:"base"`
+	PerGib int64 `json:"per_gib"`
+	Max    int64 `json:"max"`
+}
+
+// GetBase returns the value of Base.
+func (s *PerformanceFormula) GetBase() int64 {
+	return s.Base
+}
+
+// GetPerGib returns the value of PerGib.
+func (s *PerformanceFormula) GetPerGib() int64 {
+	return s.PerGib
+}
+
+// GetMax returns the value of Max.
+func (s *PerformanceFormula) GetMax() int64 {
+	return s.Max
+}
+
+// SetBase sets the value of Base.
+func (s *PerformanceFormula) SetBase(val int64) {
+	s.Base = val
+}
+
+// SetPerGib sets the value of PerGib.
+func (s *PerformanceFormula) SetPerGib(val int64) {
+	s.PerGib = val
+}
+
+// SetMax sets the value of Max.
+func (s *PerformanceFormula) SetMax(val int64) {
+	s.Max = val
 }
 
 // The Billing order created for this request. Continue checkout in Billing; payment and resource

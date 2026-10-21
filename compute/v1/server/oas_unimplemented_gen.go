@@ -1038,18 +1038,10 @@ func (UnimplementedHandler) ResetVirtualMachinePassword(ctx context.Context, req
 // system inside the virtual machine. If the order is not accepted or the resize fails, the disk keeps
 // its size and the order shows the outcome.
 //
-// An attached data disk whose performance scales with its size must be detached before it is resized.
-// The performance of an attached disk does not change until the disk is detached and attached again,
-// so such a request is refused with `DISK_RESIZE_NEEDS_DETACH` rather than providing the new capacity
-// at the performance of the previous size. Detach the disk, resize it, and attach it again.
-//
-// The request is refused only when the new size has a different performance level. A disk whose type
-// has no QoS level, or whose performance has already reached the maximum of its type, can be resized
-// while attached.
-//
-// A system disk can be resized while attached, because a system disk cannot be detached. System disk
-// types use a performance level that does not scale with size, so resizing a system disk does not
-// change its performance.
+// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
+// disk's `performance` shows what its type gives the new size. That performance applies from the
+// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
+// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
 //
 // POST /api/v1/disks/{diskId}/resize
 func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (r ResizeDiskRes, _ error) {
