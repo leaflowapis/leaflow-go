@@ -2537,9 +2537,10 @@ func (s *Server) handleCreateRouteRequest(args [0]string, argsEscaped bool, w ht
 
 // handleCreateSecurityGroupRequest handles create-security-group operation.
 //
-// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
-// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
-// on large packets.
+// A new security group admits all outbound traffic and denies inbound traffic, except ICMP
+// fragmentation-needed (IPv4) and Packet Too Big (IPv6). Without those two, path MTU discovery fails,
+// which shows as connections that establish and then stall on large packets. All of these are ordinary
+// rules and can be deleted.
 //
 // POST /api/v1/security-groups
 func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2677,7 +2678,7 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 		}
 	}()
 
-	var response *SecurityGroupResource
+	var response *SecurityGroup
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -2693,7 +2694,7 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 		type (
 			Request  = *CreateSecurityGroupRequestBody
 			Params   = struct{}
-			Response = *SecurityGroupResource
+			Response = *SecurityGroup
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2739,17 +2740,18 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 
 // handleCreateSecurityGroupRuleRequest handles create-security-group-rule operation.
 //
-// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
-// value are treated as equivalent.
+// Refused when the group already has a rule meaning the same thing; `0.0.0.0/0`, `::/0` and an omitted
+// remote prefix all mean every address. Rules cannot be changed; replace one by creating the new rule
+// and deleting the old one.
 //
-// POST /api/v1/security-groups/{securityGroupId}/rules
-func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/security-group-rules
+func (s *Server) handleCreateSecurityGroupRuleRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-security-group-rule"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/security-groups/{securityGroupId}/rules"),
+		semconv.HTTPRouteKey.String("/api/v1/security-group-rules"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -2860,16 +2862,6 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 			return
 		}
 	}
-	params, err := decodeCreateSecurityGroupRuleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
 	request, rawBody, close, err := s.decodeCreateSecurityGroupRuleRequest(r)
@@ -2888,7 +2880,7 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 		}
 	}()
 
-	var response *SecurityRuleResource
+	var response *SecurityGroupRule
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -2897,19 +2889,14 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 			OperationID:      "create-security-group-rule",
 			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "securityGroupId",
-					In:   "path",
-				}: params.SecurityGroupId,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
-			Request  = *CreateSecurityRuleRequestBody
-			Params   = CreateSecurityGroupRuleParams
-			Response = *SecurityRuleResource
+			Request  = *CreateSecurityGroupRuleRequestBody
+			Params   = struct{}
+			Response = *SecurityGroupRule
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2918,14 +2905,14 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 		](
 			m,
 			mreq,
-			unpackCreateSecurityGroupRuleParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateSecurityGroupRule(ctx, request, params)
+				response, err = s.h.CreateSecurityGroupRule(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateSecurityGroupRule(ctx, request, params)
+		response, err = s.h.CreateSecurityGroupRule(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5023,8 +5010,8 @@ func (s *Server) handleDeleteRouteRequest(args [1]string, argsEscaped bool, w ht
 
 // handleDeleteSecurityGroupRequest handles delete-security-group operation.
 //
-// The default security group cannot be deleted, as it is released with the virtual private cloud. A
-// security group still referenced by a network interface cannot be deleted either.
+// Refused while a network interface uses the group. The default security group cannot be deleted; it
+// goes with its virtual private cloud.
 //
 // DELETE /api/v1/security-groups/{securityGroupId}
 func (s *Server) handleDeleteSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5226,14 +5213,14 @@ func (s *Server) handleDeleteSecurityGroupRequest(args [1]string, argsEscaped bo
 //
 // Delete a security group rule.
 //
-// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
-func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/security-group-rules/{ruleId}
+func (s *Server) handleDeleteSecurityGroupRuleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-security-group-rule"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/security-groups/{securityGroupId}/rules/{ruleId}"),
+		semconv.HTTPRouteKey.String("/api/v1/security-group-rules/{ruleId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -5367,10 +5354,6 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "securityGroupId",
-					In:   "path",
-				}: params.SecurityGroupId,
 				{
 					Name: "ruleId",
 					In:   "path",
@@ -9080,7 +9063,7 @@ func (s *Server) handleGetRouteRequest(args [1]string, argsEscaped bool, w http.
 
 // handleGetSecurityGroupRequest handles get-security-group operation.
 //
-// Retrieve a security group.
+// Get a security group.
 //
 // GET /api/v1/security-groups/{securityGroupId}
 func (s *Server) handleGetSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9213,12 +9196,12 @@ func (s *Server) handleGetSecurityGroupRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response *SecurityGroupResource
+	var response *SecurityGroup
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetSecurityGroupOperation,
-			OperationSummary: "Retrieve a security group",
+			OperationSummary: "Get a security group",
 			OperationID:      "get-security-group",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9234,7 +9217,7 @@ func (s *Server) handleGetSecurityGroupRequest(args [1]string, argsEscaped bool,
 		type (
 			Request  = struct{}
 			Params   = GetSecurityGroupParams
-			Response = *SecurityGroupResource
+			Response = *SecurityGroup
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9270,6 +9253,206 @@ func (s *Server) handleGetSecurityGroupRequest(args [1]string, argsEscaped bool,
 	}
 
 	if err := encodeGetSecurityGroupResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetSecurityGroupRuleRequest handles get-security-group-rule operation.
+//
+// Get a security group rule.
+//
+// GET /api/v1/security-group-rules/{ruleId}
+func (s *Server) handleGetSecurityGroupRuleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-security-group-rule"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/security-group-rules/{ruleId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetSecurityGroupRuleOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetSecurityGroupRuleOperation,
+			ID:   "get-security-group-rule",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetSecurityGroupRuleOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetSecurityGroupRuleParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *SecurityGroupRule
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetSecurityGroupRuleOperation,
+			OperationSummary: "Get a security group rule",
+			OperationID:      "get-security-group-rule",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "ruleId",
+					In:   "path",
+				}: params.RuleId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetSecurityGroupRuleParams
+			Response = *SecurityGroupRule
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetSecurityGroupRuleParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetSecurityGroupRule(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetSecurityGroupRule(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetSecurityGroupRuleResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -13421,14 +13604,14 @@ func (s *Server) handleListRoutesRequest(args [0]string, argsEscaped bool, w htt
 //
 // List security group rules.
 //
-// GET /api/v1/security-groups/{securityGroupId}/rules
-func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/security-group-rules
+func (s *Server) handleListSecurityGroupRulesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-security-group-rules"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/security-groups/{securityGroupId}/rules"),
+		semconv.HTTPRouteKey.String("/api/v1/security-group-rules"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -13552,7 +13735,7 @@ func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped
 
 	var rawBody []byte
 
-	var response *SecurityRuleListResponseBody
+	var response *SecurityGroupRuleListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -13563,9 +13746,9 @@ func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "securityGroupId",
-					In:   "path",
-				}: params.SecurityGroupId,
+					Name: "security_group_id",
+					In:   "query",
+				}: params.SecurityGroupID,
 				{
 					Name: "page",
 					In:   "query",
@@ -13581,7 +13764,7 @@ func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped
 		type (
 			Request  = struct{}
 			Params   = ListSecurityGroupRulesParams
-			Response = *SecurityRuleListResponseBody
+			Response = *SecurityGroupRuleListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -16987,221 +17170,6 @@ func (s *Server) handleRenameImageRequest(args [1]string, argsEscaped bool, w ht
 	}
 
 	if err := encodeRenameImageResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleRenameSecurityGroupRequest handles rename-security-group operation.
-//
-// Changes the name only. Use the rule endpoints to change rules.
-//
-// PATCH /api/v1/security-groups/{securityGroupId}
-func (s *Server) handleRenameSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-security-group"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/security-groups/{securityGroupId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RenameSecurityGroupOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: RenameSecurityGroupOperation,
-			ID:   "rename-security-group",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RenameSecurityGroupOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeRenameSecurityGroupParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeRenameSecurityGroupRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *SecurityGroupResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    RenameSecurityGroupOperation,
-			OperationSummary: "Rename a security group",
-			OperationID:      "rename-security-group",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "securityGroupId",
-					In:   "path",
-				}: params.SecurityGroupId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *RenameSecurityGroupRequestBody
-			Params   = RenameSecurityGroupParams
-			Response = *SecurityGroupResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackRenameSecurityGroupParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RenameSecurityGroup(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.RenameSecurityGroup(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeRenameSecurityGroupResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -20926,6 +20894,222 @@ func (s *Server) handleUnrescueVirtualMachineRequest(args [1]string, argsEscaped
 	}
 
 	if err := encodeUnrescueVirtualMachineResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleUpdateSecurityGroupRequest handles update-security-group operation.
+//
+// Changes the name or description. Rules are resources of their own, created and deleted under
+// `/security-group-rules`.
+//
+// PATCH /api/v1/security-groups/{securityGroupId}
+func (s *Server) handleUpdateSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-security-group"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v1/security-groups/{securityGroupId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateSecurityGroupOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: UpdateSecurityGroupOperation,
+			ID:   "update-security-group",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateSecurityGroupOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeUpdateSecurityGroupParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeUpdateSecurityGroupRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *SecurityGroup
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    UpdateSecurityGroupOperation,
+			OperationSummary: "Update a security group",
+			OperationID:      "update-security-group",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "securityGroupId",
+					In:   "path",
+				}: params.SecurityGroupId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *UpdateSecurityGroupRequestBody
+			Params   = UpdateSecurityGroupParams
+			Response = *SecurityGroup
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackUpdateSecurityGroupParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.UpdateSecurityGroup(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.UpdateSecurityGroup(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeUpdateSecurityGroupResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

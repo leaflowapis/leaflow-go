@@ -330,7 +330,7 @@ func encodeCreateRouteResponse(response *RouteResource, w http.ResponseWriter, s
 	return nil
 }
 
-func encodeCreateSecurityGroupResponse(response *SecurityGroupResource, w http.ResponseWriter, span trace.Span) error {
+func encodeCreateSecurityGroupResponse(response *SecurityGroup, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
 
@@ -343,7 +343,7 @@ func encodeCreateSecurityGroupResponse(response *SecurityGroupResource, w http.R
 	return nil
 }
 
-func encodeCreateSecurityGroupRuleResponse(response *SecurityRuleResource, w http.ResponseWriter, span trace.Span) error {
+func encodeCreateSecurityGroupRuleResponse(response *SecurityGroupRule, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
 
@@ -963,7 +963,20 @@ func encodeGetRouteResponse(response *RouteResource, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeGetSecurityGroupResponse(response *SecurityGroupResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetSecurityGroupResponse(response *SecurityGroup, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetSecurityGroupRuleResponse(response *SecurityGroupRule, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1236,7 +1249,7 @@ func encodeListRoutesResponse(response *RouteListResponseBody, w http.ResponseWr
 	return nil
 }
 
-func encodeListSecurityGroupRulesResponse(response *SecurityRuleListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListSecurityGroupRulesResponse(response *SecurityGroupRuleListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1517,19 +1530,6 @@ func encodeRenameDiskResponse(response *DiskResource, w http.ResponseWriter, spa
 }
 
 func encodeRenameImageResponse(response *ImageResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeRenameSecurityGroupResponse(response *SecurityGroupResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1959,6 +1959,19 @@ func encodeUnrescueVirtualMachineResponse(response UnrescueVirtualMachineRes, w 
 	default:
 		return errors.Errorf("unexpected response type: %T", response)
 	}
+}
+
+func encodeUpdateSecurityGroupResponse(response *SecurityGroup, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
 }
 
 func encodeUpdateSubnetResponse(response *Subnet, w http.ResponseWriter, span trace.Span) error {

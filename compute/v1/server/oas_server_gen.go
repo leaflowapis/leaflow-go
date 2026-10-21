@@ -124,19 +124,21 @@ type Handler interface {
 	CreateRoute(ctx context.Context, req *CreateRouteRequestBody) (*RouteResource, error)
 	// CreateSecurityGroup implements create-security-group operation.
 	//
-	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
-	// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
-	// on large packets.
+	// A new security group admits all outbound traffic and denies inbound traffic, except ICMP
+	// fragmentation-needed (IPv4) and Packet Too Big (IPv6). Without those two, path MTU discovery fails,
+	// which shows as connections that establish and then stall on large packets. All of these are ordinary
+	// rules and can be deleted.
 	//
 	// POST /api/v1/security-groups
-	CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (*SecurityGroupResource, error)
+	CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (*SecurityGroup, error)
 	// CreateSecurityGroupRule implements create-security-group-rule operation.
 	//
-	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
-	// value are treated as equivalent.
+	// Refused when the group already has a rule meaning the same thing; `0.0.0.0/0`, `::/0` and an omitted
+	// remote prefix all mean every address. Rules cannot be changed; replace one by creating the new rule
+	// and deleting the old one.
 	//
-	// POST /api/v1/security-groups/{securityGroupId}/rules
-	CreateSecurityGroupRule(ctx context.Context, req *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (*SecurityRuleResource, error)
+	// POST /api/v1/security-group-rules
+	CreateSecurityGroupRule(ctx context.Context, req *CreateSecurityGroupRuleRequestBody) (*SecurityGroupRule, error)
 	// CreateSnapshot implements create-snapshot operation.
 	//
 	// Creates a snapshot of the disk. A running virtual machine may produce a file-system-inconsistent
@@ -267,8 +269,8 @@ type Handler interface {
 	DeleteRoute(ctx context.Context, params DeleteRouteParams) error
 	// DeleteSecurityGroup implements delete-security-group operation.
 	//
-	// The default security group cannot be deleted, as it is released with the virtual private cloud. A
-	// security group still referenced by a network interface cannot be deleted either.
+	// Refused while a network interface uses the group. The default security group cannot be deleted; it
+	// goes with its virtual private cloud.
 	//
 	// DELETE /api/v1/security-groups/{securityGroupId}
 	DeleteSecurityGroup(ctx context.Context, params DeleteSecurityGroupParams) error
@@ -276,7 +278,7 @@ type Handler interface {
 	//
 	// Delete a security group rule.
 	//
-	// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
+	// DELETE /api/v1/security-group-rules/{ruleId}
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot implements delete-snapshot operation.
 	//
@@ -428,10 +430,16 @@ type Handler interface {
 	GetRoute(ctx context.Context, params GetRouteParams) (*RouteResource, error)
 	// GetSecurityGroup implements get-security-group operation.
 	//
-	// Retrieve a security group.
+	// Get a security group.
 	//
 	// GET /api/v1/security-groups/{securityGroupId}
-	GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (*SecurityGroupResource, error)
+	GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (*SecurityGroup, error)
+	// GetSecurityGroupRule implements get-security-group-rule operation.
+	//
+	// Get a security group rule.
+	//
+	// GET /api/v1/security-group-rules/{ruleId}
+	GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (*SecurityGroupRule, error)
 	// GetSnapshot implements get-snapshot operation.
 	//
 	// Retrieve a snapshot.
@@ -587,8 +595,8 @@ type Handler interface {
 	//
 	// List security group rules.
 	//
-	// GET /api/v1/security-groups/{securityGroupId}/rules
-	ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityRuleListResponseBody, error)
+	// GET /api/v1/security-group-rules
+	ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityGroupRuleListResponseBody, error)
 	// ListSecurityGroups implements list-security-groups operation.
 	//
 	// List security groups.
@@ -720,12 +728,6 @@ type Handler interface {
 	//
 	// PATCH /api/v1/images/{imageId}
 	RenameImage(ctx context.Context, req *RenameImageRequestBody, params RenameImageParams) (*ImageResource, error)
-	// RenameSecurityGroup implements rename-security-group operation.
-	//
-	// Changes the name only. Use the rule endpoints to change rules.
-	//
-	// PATCH /api/v1/security-groups/{securityGroupId}
-	RenameSecurityGroup(ctx context.Context, req *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (*SecurityGroupResource, error)
 	// RenameSnapshot implements rename-snapshot operation.
 	//
 	// Rename a snapshot.
@@ -930,6 +932,13 @@ type Handler interface {
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
 	UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error)
+	// UpdateSecurityGroup implements update-security-group operation.
+	//
+	// Changes the name or description. Rules are resources of their own, created and deleted under
+	// `/security-group-rules`.
+	//
+	// PATCH /api/v1/security-groups/{securityGroupId}
+	UpdateSecurityGroup(ctx context.Context, req *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (*SecurityGroup, error)
 	// UpdateSubnet implements update-subnet operation.
 	//
 	// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed

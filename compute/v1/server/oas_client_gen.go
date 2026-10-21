@@ -145,19 +145,21 @@ type Invoker interface {
 	CreateRoute(ctx context.Context, request *CreateRouteRequestBody) (*RouteResource, error)
 	// CreateSecurityGroup invokes create-security-group operation.
 	//
-	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
-	// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
-	// on large packets.
+	// A new security group admits all outbound traffic and denies inbound traffic, except ICMP
+	// fragmentation-needed (IPv4) and Packet Too Big (IPv6). Without those two, path MTU discovery fails,
+	// which shows as connections that establish and then stall on large packets. All of these are ordinary
+	// rules and can be deleted.
 	//
 	// POST /api/v1/security-groups
-	CreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (*SecurityGroupResource, error)
+	CreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (*SecurityGroup, error)
 	// CreateSecurityGroupRule invokes create-security-group-rule operation.
 	//
-	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
-	// value are treated as equivalent.
+	// Refused when the group already has a rule meaning the same thing; `0.0.0.0/0`, `::/0` and an omitted
+	// remote prefix all mean every address. Rules cannot be changed; replace one by creating the new rule
+	// and deleting the old one.
 	//
-	// POST /api/v1/security-groups/{securityGroupId}/rules
-	CreateSecurityGroupRule(ctx context.Context, request *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (*SecurityRuleResource, error)
+	// POST /api/v1/security-group-rules
+	CreateSecurityGroupRule(ctx context.Context, request *CreateSecurityGroupRuleRequestBody) (*SecurityGroupRule, error)
 	// CreateSnapshot invokes create-snapshot operation.
 	//
 	// Creates a snapshot of the disk. A running virtual machine may produce a file-system-inconsistent
@@ -288,8 +290,8 @@ type Invoker interface {
 	DeleteRoute(ctx context.Context, params DeleteRouteParams) error
 	// DeleteSecurityGroup invokes delete-security-group operation.
 	//
-	// The default security group cannot be deleted, as it is released with the virtual private cloud. A
-	// security group still referenced by a network interface cannot be deleted either.
+	// Refused while a network interface uses the group. The default security group cannot be deleted; it
+	// goes with its virtual private cloud.
 	//
 	// DELETE /api/v1/security-groups/{securityGroupId}
 	DeleteSecurityGroup(ctx context.Context, params DeleteSecurityGroupParams) error
@@ -297,7 +299,7 @@ type Invoker interface {
 	//
 	// Delete a security group rule.
 	//
-	// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
+	// DELETE /api/v1/security-group-rules/{ruleId}
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot invokes delete-snapshot operation.
 	//
@@ -449,10 +451,16 @@ type Invoker interface {
 	GetRoute(ctx context.Context, params GetRouteParams) (*RouteResource, error)
 	// GetSecurityGroup invokes get-security-group operation.
 	//
-	// Retrieve a security group.
+	// Get a security group.
 	//
 	// GET /api/v1/security-groups/{securityGroupId}
-	GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (*SecurityGroupResource, error)
+	GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (*SecurityGroup, error)
+	// GetSecurityGroupRule invokes get-security-group-rule operation.
+	//
+	// Get a security group rule.
+	//
+	// GET /api/v1/security-group-rules/{ruleId}
+	GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (*SecurityGroupRule, error)
 	// GetSnapshot invokes get-snapshot operation.
 	//
 	// Retrieve a snapshot.
@@ -608,8 +616,8 @@ type Invoker interface {
 	//
 	// List security group rules.
 	//
-	// GET /api/v1/security-groups/{securityGroupId}/rules
-	ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityRuleListResponseBody, error)
+	// GET /api/v1/security-group-rules
+	ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityGroupRuleListResponseBody, error)
 	// ListSecurityGroups invokes list-security-groups operation.
 	//
 	// List security groups.
@@ -741,12 +749,6 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/images/{imageId}
 	RenameImage(ctx context.Context, request *RenameImageRequestBody, params RenameImageParams) (*ImageResource, error)
-	// RenameSecurityGroup invokes rename-security-group operation.
-	//
-	// Changes the name only. Use the rule endpoints to change rules.
-	//
-	// PATCH /api/v1/security-groups/{securityGroupId}
-	RenameSecurityGroup(ctx context.Context, request *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (*SecurityGroupResource, error)
 	// RenameSnapshot invokes rename-snapshot operation.
 	//
 	// Rename a snapshot.
@@ -951,6 +953,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
 	UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error)
+	// UpdateSecurityGroup invokes update-security-group operation.
+	//
+	// Changes the name or description. Rules are resources of their own, created and deleted under
+	// `/security-group-rules`.
+	//
+	// PATCH /api/v1/security-groups/{securityGroupId}
+	UpdateSecurityGroup(ctx context.Context, request *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (*SecurityGroup, error)
 	// UpdateSubnet invokes update-subnet operation.
 	//
 	// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
@@ -2650,17 +2659,18 @@ func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteReques
 
 // CreateSecurityGroup invokes create-security-group operation.
 //
-// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
-// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
-// on large packets.
+// A new security group admits all outbound traffic and denies inbound traffic, except ICMP
+// fragmentation-needed (IPv4) and Packet Too Big (IPv6). Without those two, path MTU discovery fails,
+// which shows as connections that establish and then stall on large packets. All of these are ordinary
+// rules and can be deleted.
 //
 // POST /api/v1/security-groups
-func (c *Client) CreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (*SecurityGroupResource, error) {
+func (c *Client) CreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (*SecurityGroup, error) {
 	res, err := c.sendCreateSecurityGroup(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (res *SecurityGroupResource, err error) {
+func (c *Client) sendCreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (res *SecurityGroup, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2777,16 +2787,17 @@ func (c *Client) sendCreateSecurityGroup(ctx context.Context, request *CreateSec
 
 // CreateSecurityGroupRule invokes create-security-group-rule operation.
 //
-// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
-// value are treated as equivalent.
+// Refused when the group already has a rule meaning the same thing; `0.0.0.0/0`, `::/0` and an omitted
+// remote prefix all mean every address. Rules cannot be changed; replace one by creating the new rule
+// and deleting the old one.
 //
-// POST /api/v1/security-groups/{securityGroupId}/rules
-func (c *Client) CreateSecurityGroupRule(ctx context.Context, request *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (*SecurityRuleResource, error) {
-	res, err := c.sendCreateSecurityGroupRule(ctx, request, params)
+// POST /api/v1/security-group-rules
+func (c *Client) CreateSecurityGroupRule(ctx context.Context, request *CreateSecurityGroupRuleRequestBody) (*SecurityGroupRule, error) {
+	res, err := c.sendCreateSecurityGroupRule(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (res *SecurityRuleResource, err error) {
+func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *CreateSecurityGroupRuleRequestBody) (res *SecurityGroupRule, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2799,7 +2810,7 @@ func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *Creat
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-security-group-rule"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/security-groups/{securityGroupId}/rules"),
+		semconv.URLTemplateKey.String("/api/v1/security-group-rules"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2832,30 +2843,8 @@ func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *Creat
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/security-groups/"
-	{
-		// Encode "securityGroupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "securityGroupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.SecurityGroupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/rules"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/security-group-rules"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -4297,8 +4286,8 @@ func (c *Client) sendDeleteRoute(ctx context.Context, params DeleteRouteParams) 
 
 // DeleteSecurityGroup invokes delete-security-group operation.
 //
-// The default security group cannot be deleted, as it is released with the virtual private cloud. A
-// security group still referenced by a network interface cannot be deleted either.
+// Refused while a network interface uses the group. The default security group cannot be deleted; it
+// goes with its virtual private cloud.
 //
 // DELETE /api/v1/security-groups/{securityGroupId}
 func (c *Client) DeleteSecurityGroup(ctx context.Context, params DeleteSecurityGroupParams) error {
@@ -4434,7 +4423,7 @@ func (c *Client) sendDeleteSecurityGroup(ctx context.Context, params DeleteSecur
 //
 // Delete a security group rule.
 //
-// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
+// DELETE /api/v1/security-group-rules/{ruleId}
 func (c *Client) DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error {
 	_, err := c.sendDeleteSecurityGroupRule(ctx, params)
 	return err
@@ -4444,7 +4433,7 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-security-group-rule"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/security-groups/{securityGroupId}/rules/{ruleId}"),
+		semconv.URLTemplateKey.String("/api/v1/security-group-rules/{ruleId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4477,30 +4466,8 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/security-groups/"
-	{
-		// Encode "securityGroupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "securityGroupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.SecurityGroupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/rules/"
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/security-group-rules/"
 	{
 		// Encode "ruleId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -4520,7 +4487,7 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[3] = encoded
+		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -7104,15 +7071,15 @@ func (c *Client) sendGetRoute(ctx context.Context, params GetRouteParams) (res *
 
 // GetSecurityGroup invokes get-security-group operation.
 //
-// Retrieve a security group.
+// Get a security group.
 //
 // GET /api/v1/security-groups/{securityGroupId}
-func (c *Client) GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (*SecurityGroupResource, error) {
+func (c *Client) GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (*SecurityGroup, error) {
 	res, err := c.sendGetSecurityGroup(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (res *SecurityGroupResource, err error) {
+func (c *Client) sendGetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (res *SecurityGroup, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-security-group"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -7229,6 +7196,140 @@ func (c *Client) sendGetSecurityGroup(ctx context.Context, params GetSecurityGro
 
 	stage = "DecodeResponse"
 	result, err := decodeGetSecurityGroupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetSecurityGroupRule invokes get-security-group-rule operation.
+//
+// Get a security group rule.
+//
+// GET /api/v1/security-group-rules/{ruleId}
+func (c *Client) GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (*SecurityGroupRule, error) {
+	res, err := c.sendGetSecurityGroupRule(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (res *SecurityGroupRule, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-security-group-rule"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/security-group-rules/{ruleId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSecurityGroupRuleOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/security-group-rules/"
+	{
+		// Encode "ruleId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "ruleId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.RuleId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetSecurityGroupRuleOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetSecurityGroupRuleResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -10445,17 +10546,17 @@ func (c *Client) sendListRoutes(ctx context.Context, params ListRoutesParams) (r
 //
 // List security group rules.
 //
-// GET /api/v1/security-groups/{securityGroupId}/rules
-func (c *Client) ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityRuleListResponseBody, error) {
+// GET /api/v1/security-group-rules
+func (c *Client) ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityGroupRuleListResponseBody, error) {
 	res, err := c.sendListSecurityGroupRules(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (res *SecurityRuleListResponseBody, err error) {
+func (c *Client) sendListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (res *SecurityGroupRuleListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-security-group-rules"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/security-groups/{securityGroupId}/rules"),
+		semconv.URLTemplateKey.String("/api/v1/security-group-rules"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -10488,34 +10589,32 @@ func (c *Client) sendListSecurityGroupRules(ctx context.Context, params ListSecu
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/security-groups/"
-	{
-		// Encode "securityGroupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "securityGroupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.SecurityGroupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/rules"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/security-group-rules"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
+	{
+		// Encode "security_group_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "security_group_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.SecurityGroupID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
@@ -10672,7 +10771,7 @@ func (c *Client) sendListSecurityGroups(ctx context.Context, params ListSecurity
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "region_id",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -10692,7 +10791,7 @@ func (c *Client) sendListSecurityGroups(ctx context.Context, params ListSecurity
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "virtual_private_cloud_id",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -13122,152 +13221,6 @@ func (c *Client) sendRenameImage(ctx context.Context, request *RenameImageReques
 
 	stage = "DecodeResponse"
 	result, err := decodeRenameImageResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenameSecurityGroup invokes rename-security-group operation.
-//
-// Changes the name only. Use the rule endpoints to change rules.
-//
-// PATCH /api/v1/security-groups/{securityGroupId}
-func (c *Client) RenameSecurityGroup(ctx context.Context, request *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (*SecurityGroupResource, error) {
-	res, err := c.sendRenameSecurityGroup(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameSecurityGroup(ctx context.Context, request *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (res *SecurityGroupResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-security-group"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/security-groups/{securityGroupId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameSecurityGroupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/security-groups/"
-	{
-		// Encode "securityGroupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "securityGroupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.SecurityGroupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenameSecurityGroupRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RenameSecurityGroupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenameSecurityGroupResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -15881,6 +15834,153 @@ func (c *Client) sendUnrescueVirtualMachine(ctx context.Context, params Unrescue
 
 	stage = "DecodeResponse"
 	result, err := decodeUnrescueVirtualMachineResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateSecurityGroup invokes update-security-group operation.
+//
+// Changes the name or description. Rules are resources of their own, created and deleted under
+// `/security-group-rules`.
+//
+// PATCH /api/v1/security-groups/{securityGroupId}
+func (c *Client) UpdateSecurityGroup(ctx context.Context, request *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (*SecurityGroup, error) {
+	res, err := c.sendUpdateSecurityGroup(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateSecurityGroup(ctx context.Context, request *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (res *SecurityGroup, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-security-group"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/security-groups/{securityGroupId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateSecurityGroupOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/security-groups/"
+	{
+		// Encode "securityGroupId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "securityGroupId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.SecurityGroupId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateSecurityGroupRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateSecurityGroupOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateSecurityGroupResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

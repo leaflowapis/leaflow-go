@@ -414,86 +414,6 @@ func decodeBindElasticIPParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
-// CreateSecurityGroupRuleParams is parameters of create-security-group-rule operation.
-type CreateSecurityGroupRuleParams struct {
-	SecurityGroupId SecurityGroupID
-}
-
-func unpackCreateSecurityGroupRuleParams(packed middleware.Parameters) (params CreateSecurityGroupRuleParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "securityGroupId",
-			In:   "path",
-		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
-	}
-	return params
-}
-
-func decodeCreateSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateSecurityGroupRuleParams, _ error) {
-	// Decode path: securityGroupId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "securityGroupId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotSecurityGroupIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotSecurityGroupIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.SecurityGroupId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "securityGroupId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // DeleteBackupParams is parameters of delete-backup operation.
 type DeleteBackupParams struct {
 	BackupId DiskBackupID
@@ -1056,18 +976,10 @@ func decodeDeleteSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 
 // DeleteSecurityGroupRuleParams is parameters of delete-security-group-rule operation.
 type DeleteSecurityGroupRuleParams struct {
-	SecurityGroupId SecurityGroupID
-	RuleId          SecurityGroupRuleID
+	RuleId SecurityGroupRuleID
 }
 
 func unpackDeleteSecurityGroupRuleParams(packed middleware.Parameters) (params DeleteSecurityGroupRuleParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "securityGroupId",
-			In:   "path",
-		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
-	}
 	{
 		key := middleware.ParameterKey{
 			Name: "ruleId",
@@ -1078,72 +990,12 @@ func unpackDeleteSecurityGroupRuleParams(packed middleware.Parameters) (params D
 	return params
 }
 
-func decodeDeleteSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteSecurityGroupRuleParams, _ error) {
-	// Decode path: securityGroupId.
+func decodeDeleteSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteSecurityGroupRuleParams, _ error) {
+	// Decode path: ruleId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "securityGroupId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotSecurityGroupIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotSecurityGroupIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.SecurityGroupId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "securityGroupId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: ruleId.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -2912,6 +2764,86 @@ func decodeGetSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "securityGroupId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetSecurityGroupRuleParams is parameters of get-security-group-rule operation.
+type GetSecurityGroupRuleParams struct {
+	RuleId SecurityGroupRuleID
+}
+
+func unpackGetSecurityGroupRuleParams(packed middleware.Parameters) (params GetSecurityGroupRuleParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "ruleId",
+			In:   "path",
+		}
+		params.RuleId = packed[key].(SecurityGroupRuleID)
+	}
+	return params
+}
+
+func decodeGetSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.Request) (params GetSecurityGroupRuleParams, _ error) {
+	// Decode path: ruleId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "ruleId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotRuleIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotRuleIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.RuleId = SecurityGroupRuleID(paramsDotRuleIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.RuleId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "ruleId",
 			In:   "path",
 			Err:  err,
 		}
@@ -6830,7 +6762,8 @@ func decodeListRoutesParams(args [0]string, argsEscaped bool, r *http.Request) (
 
 // ListSecurityGroupRulesParams is parameters of list-security-group-rules operation.
 type ListSecurityGroupRulesParams struct {
-	SecurityGroupId SecurityGroupID
+	// Only rules of this security group.
+	SecurityGroupID OptSecurityGroupID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -6840,10 +6773,12 @@ type ListSecurityGroupRulesParams struct {
 func unpackListSecurityGroupRulesParams(packed middleware.Parameters) (params ListSecurityGroupRulesParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "securityGroupId",
-			In:   "path",
+			Name: "security_group_id",
+			In:   "query",
 		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
+		if v, ok := packed[key]; ok {
+			params.SecurityGroupID = v.(OptSecurityGroupID)
+		}
 	}
 	{
 		key := middleware.ParameterKey{
@@ -6866,65 +6801,68 @@ func unpackListSecurityGroupRulesParams(packed middleware.Parameters) (params Li
 	return params
 }
 
-func decodeListSecurityGroupRulesParams(args [1]string, argsEscaped bool, r *http.Request) (params ListSecurityGroupRulesParams, _ error) {
+func decodeListSecurityGroupRulesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListSecurityGroupRulesParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: securityGroupId.
+	// Decode query: security_group_id.
 	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "security_group_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
 		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "securityGroupId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
 
-			if err := func() error {
-				var paramsDotSecurityGroupIdVal string
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSecurityGroupIDVal SecurityGroupID
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
+					var paramsDotSecurityGroupIDValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotSecurityGroupIDValVal = c
+						return nil
+					}(); err != nil {
 						return err
 					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotSecurityGroupIdVal = c
+					paramsDotSecurityGroupIDVal = SecurityGroupID(paramsDotSecurityGroupIDValVal)
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
+				params.SecurityGroupID.SetTo(paramsDotSecurityGroupIDVal)
 				return nil
-			}(); err != nil {
+			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.SecurityGroupId.Validate(); err != nil {
-					return err
+				if value, ok := params.SecurityGroupID.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
 				}
 				return nil
 			}(); err != nil {
 				return err
 			}
-		} else {
-			return validate.ErrFieldRequired
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "securityGroupId",
-			In:   "path",
+			Name: "security_group_id",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -7075,8 +7013,9 @@ func decodeListSecurityGroupRulesParams(args [1]string, argsEscaped bool, r *htt
 
 // ListSecurityGroupsParams is parameters of list-security-groups operation.
 type ListSecurityGroupsParams struct {
+	// Only security groups in this region.
 	RegionID OptRegionID `json:",omitempty,omitzero"`
-	// Return only the security groups of this virtual private cloud.
+	// Only security groups of this virtual private cloud.
 	VirtualPrivateCloudID OptVirtualPrivateCloudID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
@@ -7131,7 +7070,7 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "region_id",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -7194,7 +7133,7 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "virtual_private_cloud_id",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
@@ -9617,86 +9556,6 @@ func decodeRenameImageParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
-// RenameSecurityGroupParams is parameters of rename-security-group operation.
-type RenameSecurityGroupParams struct {
-	SecurityGroupId SecurityGroupID
-}
-
-func unpackRenameSecurityGroupParams(packed middleware.Parameters) (params RenameSecurityGroupParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "securityGroupId",
-			In:   "path",
-		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
-	}
-	return params
-}
-
-func decodeRenameSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameSecurityGroupParams, _ error) {
-	// Decode path: securityGroupId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "securityGroupId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotSecurityGroupIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotSecurityGroupIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.SecurityGroupId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "securityGroupId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // RenameSnapshotParams is parameters of rename-snapshot operation.
 type RenameSnapshotParams struct {
 	SnapshotId SnapshotID
@@ -11285,6 +11144,86 @@ func decodeUnrescueVirtualMachineParams(args [1]string, argsEscaped bool, r *htt
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "virtualMachineId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateSecurityGroupParams is parameters of update-security-group operation.
+type UpdateSecurityGroupParams struct {
+	SecurityGroupId SecurityGroupID
+}
+
+func unpackUpdateSecurityGroupParams(packed middleware.Parameters) (params UpdateSecurityGroupParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "securityGroupId",
+			In:   "path",
+		}
+		params.SecurityGroupId = packed[key].(SecurityGroupID)
+	}
+	return params
+}
+
+func decodeUpdateSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateSecurityGroupParams, _ error) {
+	// Decode path: securityGroupId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "securityGroupId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotSecurityGroupIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSecurityGroupIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.SecurityGroupId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "securityGroupId",
 			In:   "path",
 			Err:  err,
 		}

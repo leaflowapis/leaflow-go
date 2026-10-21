@@ -51,6 +51,7 @@ const (
 	GetQuotaOperation                             OperationName = "GetQuota"
 	GetRouteOperation                             OperationName = "GetRoute"
 	GetSecurityGroupOperation                     OperationName = "GetSecurityGroup"
+	GetSecurityGroupRuleOperation                 OperationName = "GetSecurityGroupRule"
 	GetSnapshotOperation                          OperationName = "GetSnapshot"
 	GetSubnetOperation                            OperationName = "GetSubnet"
 	GetVirtualMachineOperation                    OperationName = "GetVirtualMachine"
@@ -88,7 +89,6 @@ const (
 	RenameBackupOperation                         OperationName = "RenameBackup"
 	RenameDiskOperation                           OperationName = "RenameDisk"
 	RenameImageOperation                          OperationName = "RenameImage"
-	RenameSecurityGroupOperation                  OperationName = "RenameSecurityGroup"
 	RenameSnapshotOperation                       OperationName = "RenameSnapshot"
 	RenameVirtualMachineOperation                 OperationName = "RenameVirtualMachine"
 	RescueVirtualMachineOperation                 OperationName = "RescueVirtualMachine"
@@ -106,6 +106,7 @@ const (
 	StopVirtualMachineOperation                   OperationName = "StopVirtualMachine"
 	UnbindElasticIPOperation                      OperationName = "UnbindElasticIP"
 	UnrescueVirtualMachineOperation               OperationName = "UnrescueVirtualMachine"
+	UpdateSecurityGroupOperation                  OperationName = "UpdateSecurityGroup"
 	UpdateSubnetOperation                         OperationName = "UpdateSubnet"
 	UpdateVirtualPrivateCloudOperation            OperationName = "UpdateVirtualPrivateCloud"
 )

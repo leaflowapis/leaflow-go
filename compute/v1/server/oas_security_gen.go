@@ -89,6 +89,7 @@ var operationRolesScopedTokenAuth = map[string][]string{
 	GetQuotaOperation:                             []string{},
 	GetRouteOperation:                             []string{},
 	GetSecurityGroupOperation:                     []string{},
+	GetSecurityGroupRuleOperation:                 []string{},
 	GetSnapshotOperation:                          []string{},
 	GetSubnetOperation:                            []string{},
 	GetVirtualMachineOperation:                    []string{},
@@ -126,7 +127,6 @@ var operationRolesScopedTokenAuth = map[string][]string{
 	RenameBackupOperation:                         []string{},
 	RenameDiskOperation:                           []string{},
 	RenameImageOperation:                          []string{},
-	RenameSecurityGroupOperation:                  []string{},
 	RenameSnapshotOperation:                       []string{},
 	RenameVirtualMachineOperation:                 []string{},
 	RescueVirtualMachineOperation:                 []string{},
@@ -144,6 +144,7 @@ var operationRolesScopedTokenAuth = map[string][]string{
 	StopVirtualMachineOperation:                   []string{},
 	UnbindElasticIPOperation:                      []string{},
 	UnrescueVirtualMachineOperation:               []string{},
+	UpdateSecurityGroupOperation:                  []string{},
 	UpdateSubnetOperation:                         []string{},
 	UpdateVirtualPrivateCloudOperation:            []string{},
 }

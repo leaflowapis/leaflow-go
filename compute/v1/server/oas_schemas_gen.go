@@ -1229,19 +1229,9 @@ func (s *CreateRouteRequestBody) SetDescription(val OptString) {
 
 // Ref: #/components/schemas/CreateSecurityGroupRequestBody
 type CreateSecurityGroupRequestBody struct {
-	Description           OptString             `json:"description"`
-	Name                  string                `json:"name"`
 	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
-}
-
-// GetDescription returns the value of Description.
-func (s *CreateSecurityGroupRequestBody) GetDescription() OptString {
-	return s.Description
-}
-
-// GetName returns the value of Name.
-func (s *CreateSecurityGroupRequestBody) GetName() string {
-	return s.Name
+	Name                  string                `json:"name"`
+	Description           OptString             `json:"description"`
 }
 
 // GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
@@ -1249,14 +1239,14 @@ func (s *CreateSecurityGroupRequestBody) GetVirtualPrivateCloudID() VirtualPriva
 	return s.VirtualPrivateCloudID
 }
 
-// SetDescription sets the value of Description.
-func (s *CreateSecurityGroupRequestBody) SetDescription(val OptString) {
-	s.Description = val
+// GetName returns the value of Name.
+func (s *CreateSecurityGroupRequestBody) GetName() string {
+	return s.Name
 }
 
-// SetName sets the value of Name.
-func (s *CreateSecurityGroupRequestBody) SetName(val string) {
-	s.Name = val
+// GetDescription returns the value of Description.
+func (s *CreateSecurityGroupRequestBody) GetDescription() OptString {
+	return s.Description
 }
 
 // SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
@@ -1264,170 +1254,125 @@ func (s *CreateSecurityGroupRequestBody) SetVirtualPrivateCloudID(val VirtualPri
 	s.VirtualPrivateCloudID = val
 }
 
-// Ref: #/components/schemas/CreateSecurityRuleRequestBody
-type CreateSecurityRuleRequestBody struct {
-	Description OptString                              `json:"description"`
-	Direction   CreateSecurityRuleRequestBodyDirection `json:"direction"`
-	Ethertype   CreateSecurityRuleRequestBodyEthertype `json:"ethertype"`
-	// Denotes the ICMP code (0–255) rather than a port when the protocol is ICMP.
-	PortRangeMax OptNilInt64 `json:"port_range_max"`
-	// Denotes the ICMP type (0–255) rather than a port when the protocol is ICMP.
-	PortRangeMin OptNilInt64 `json:"port_range_min"`
-	// For example `tcp`, `udp`, `icmp` or `ipv6-icmp`. All protocols when omitted.
-	Protocol OptString `json:"protocol"`
-	// Equivalent to `0.0.0.0/0` or `::/0` when omitted.
-	RemoteIPPrefix OptString `json:"remote_ip_prefix"`
-}
-
-// GetDescription returns the value of Description.
-func (s *CreateSecurityRuleRequestBody) GetDescription() OptString {
-	return s.Description
-}
-
-// GetDirection returns the value of Direction.
-func (s *CreateSecurityRuleRequestBody) GetDirection() CreateSecurityRuleRequestBodyDirection {
-	return s.Direction
-}
-
-// GetEthertype returns the value of Ethertype.
-func (s *CreateSecurityRuleRequestBody) GetEthertype() CreateSecurityRuleRequestBodyEthertype {
-	return s.Ethertype
-}
-
-// GetPortRangeMax returns the value of PortRangeMax.
-func (s *CreateSecurityRuleRequestBody) GetPortRangeMax() OptNilInt64 {
-	return s.PortRangeMax
-}
-
-// GetPortRangeMin returns the value of PortRangeMin.
-func (s *CreateSecurityRuleRequestBody) GetPortRangeMin() OptNilInt64 {
-	return s.PortRangeMin
-}
-
-// GetProtocol returns the value of Protocol.
-func (s *CreateSecurityRuleRequestBody) GetProtocol() OptString {
-	return s.Protocol
-}
-
-// GetRemoteIPPrefix returns the value of RemoteIPPrefix.
-func (s *CreateSecurityRuleRequestBody) GetRemoteIPPrefix() OptString {
-	return s.RemoteIPPrefix
+// SetName sets the value of Name.
+func (s *CreateSecurityGroupRequestBody) SetName(val string) {
+	s.Name = val
 }
 
 // SetDescription sets the value of Description.
-func (s *CreateSecurityRuleRequestBody) SetDescription(val OptString) {
+func (s *CreateSecurityGroupRequestBody) SetDescription(val OptString) {
 	s.Description = val
 }
 
+// Ref: #/components/schemas/CreateSecurityGroupRuleRequestBody
+type CreateSecurityGroupRuleRequestBody struct {
+	SecurityGroupID SecurityGroupID                             `json:"security_group_id"`
+	Direction       SecurityGroupRuleDirection                  `json:"direction"`
+	IPVersion       CreateSecurityGroupRuleRequestBodyIPVersion `json:"ip_version"`
+	// For example `tcp`, `udp`, `icmp` or `ipv6-icmp`. Every protocol when omitted.
+	Protocol OptString `json:"protocol"`
+	// The first port, or the ICMP type (0–255) when the protocol is ICMP. Ports need a protocol, and a
+	// port range needs both ends; give the same port twice for one port.
+	PortRangeMin OptInt64 `json:"port_range_min"`
+	// The last port, or the ICMP code (0–255) when the protocol is ICMP.
+	PortRangeMax OptInt64 `json:"port_range_max"`
+	// A CIDR of the rule's IP version. Every address when omitted.
+	RemoteIPPrefix OptString `json:"remote_ip_prefix"`
+	Description    OptString `json:"description"`
+}
+
+// GetSecurityGroupID returns the value of SecurityGroupID.
+func (s *CreateSecurityGroupRuleRequestBody) GetSecurityGroupID() SecurityGroupID {
+	return s.SecurityGroupID
+}
+
+// GetDirection returns the value of Direction.
+func (s *CreateSecurityGroupRuleRequestBody) GetDirection() SecurityGroupRuleDirection {
+	return s.Direction
+}
+
+// GetIPVersion returns the value of IPVersion.
+func (s *CreateSecurityGroupRuleRequestBody) GetIPVersion() CreateSecurityGroupRuleRequestBodyIPVersion {
+	return s.IPVersion
+}
+
+// GetProtocol returns the value of Protocol.
+func (s *CreateSecurityGroupRuleRequestBody) GetProtocol() OptString {
+	return s.Protocol
+}
+
+// GetPortRangeMin returns the value of PortRangeMin.
+func (s *CreateSecurityGroupRuleRequestBody) GetPortRangeMin() OptInt64 {
+	return s.PortRangeMin
+}
+
+// GetPortRangeMax returns the value of PortRangeMax.
+func (s *CreateSecurityGroupRuleRequestBody) GetPortRangeMax() OptInt64 {
+	return s.PortRangeMax
+}
+
+// GetRemoteIPPrefix returns the value of RemoteIPPrefix.
+func (s *CreateSecurityGroupRuleRequestBody) GetRemoteIPPrefix() OptString {
+	return s.RemoteIPPrefix
+}
+
+// GetDescription returns the value of Description.
+func (s *CreateSecurityGroupRuleRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// SetSecurityGroupID sets the value of SecurityGroupID.
+func (s *CreateSecurityGroupRuleRequestBody) SetSecurityGroupID(val SecurityGroupID) {
+	s.SecurityGroupID = val
+}
+
 // SetDirection sets the value of Direction.
-func (s *CreateSecurityRuleRequestBody) SetDirection(val CreateSecurityRuleRequestBodyDirection) {
+func (s *CreateSecurityGroupRuleRequestBody) SetDirection(val SecurityGroupRuleDirection) {
 	s.Direction = val
 }
 
-// SetEthertype sets the value of Ethertype.
-func (s *CreateSecurityRuleRequestBody) SetEthertype(val CreateSecurityRuleRequestBodyEthertype) {
-	s.Ethertype = val
-}
-
-// SetPortRangeMax sets the value of PortRangeMax.
-func (s *CreateSecurityRuleRequestBody) SetPortRangeMax(val OptNilInt64) {
-	s.PortRangeMax = val
-}
-
-// SetPortRangeMin sets the value of PortRangeMin.
-func (s *CreateSecurityRuleRequestBody) SetPortRangeMin(val OptNilInt64) {
-	s.PortRangeMin = val
+// SetIPVersion sets the value of IPVersion.
+func (s *CreateSecurityGroupRuleRequestBody) SetIPVersion(val CreateSecurityGroupRuleRequestBodyIPVersion) {
+	s.IPVersion = val
 }
 
 // SetProtocol sets the value of Protocol.
-func (s *CreateSecurityRuleRequestBody) SetProtocol(val OptString) {
+func (s *CreateSecurityGroupRuleRequestBody) SetProtocol(val OptString) {
 	s.Protocol = val
 }
 
+// SetPortRangeMin sets the value of PortRangeMin.
+func (s *CreateSecurityGroupRuleRequestBody) SetPortRangeMin(val OptInt64) {
+	s.PortRangeMin = val
+}
+
+// SetPortRangeMax sets the value of PortRangeMax.
+func (s *CreateSecurityGroupRuleRequestBody) SetPortRangeMax(val OptInt64) {
+	s.PortRangeMax = val
+}
+
 // SetRemoteIPPrefix sets the value of RemoteIPPrefix.
-func (s *CreateSecurityRuleRequestBody) SetRemoteIPPrefix(val OptString) {
+func (s *CreateSecurityGroupRuleRequestBody) SetRemoteIPPrefix(val OptString) {
 	s.RemoteIPPrefix = val
 }
 
-type CreateSecurityRuleRequestBodyDirection string
+// SetDescription sets the value of Description.
+func (s *CreateSecurityGroupRuleRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+type CreateSecurityGroupRuleRequestBodyIPVersion int64
 
 const (
-	CreateSecurityRuleRequestBodyDirectionIngress CreateSecurityRuleRequestBodyDirection = "ingress"
-	CreateSecurityRuleRequestBodyDirectionEgress  CreateSecurityRuleRequestBodyDirection = "egress"
+	CreateSecurityGroupRuleRequestBodyIPVersion4 CreateSecurityGroupRuleRequestBodyIPVersion = 4
+	CreateSecurityGroupRuleRequestBodyIPVersion6 CreateSecurityGroupRuleRequestBodyIPVersion = 6
 )
 
-// AllValues returns all CreateSecurityRuleRequestBodyDirection values.
-func (CreateSecurityRuleRequestBodyDirection) AllValues() []CreateSecurityRuleRequestBodyDirection {
-	return []CreateSecurityRuleRequestBodyDirection{
-		CreateSecurityRuleRequestBodyDirectionIngress,
-		CreateSecurityRuleRequestBodyDirectionEgress,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateSecurityRuleRequestBodyDirection) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateSecurityRuleRequestBodyDirectionIngress:
-		return []byte(s), nil
-	case CreateSecurityRuleRequestBodyDirectionEgress:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateSecurityRuleRequestBodyDirection) UnmarshalText(data []byte) error {
-	switch CreateSecurityRuleRequestBodyDirection(data) {
-	case CreateSecurityRuleRequestBodyDirectionIngress:
-		*s = CreateSecurityRuleRequestBodyDirectionIngress
-		return nil
-	case CreateSecurityRuleRequestBodyDirectionEgress:
-		*s = CreateSecurityRuleRequestBodyDirectionEgress
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type CreateSecurityRuleRequestBodyEthertype string
-
-const (
-	CreateSecurityRuleRequestBodyEthertypeIPv4 CreateSecurityRuleRequestBodyEthertype = "IPv4"
-	CreateSecurityRuleRequestBodyEthertypeIPv6 CreateSecurityRuleRequestBodyEthertype = "IPv6"
-)
-
-// AllValues returns all CreateSecurityRuleRequestBodyEthertype values.
-func (CreateSecurityRuleRequestBodyEthertype) AllValues() []CreateSecurityRuleRequestBodyEthertype {
-	return []CreateSecurityRuleRequestBodyEthertype{
-		CreateSecurityRuleRequestBodyEthertypeIPv4,
-		CreateSecurityRuleRequestBodyEthertypeIPv6,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateSecurityRuleRequestBodyEthertype) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateSecurityRuleRequestBodyEthertypeIPv4:
-		return []byte(s), nil
-	case CreateSecurityRuleRequestBodyEthertypeIPv6:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateSecurityRuleRequestBodyEthertype) UnmarshalText(data []byte) error {
-	switch CreateSecurityRuleRequestBodyEthertype(data) {
-	case CreateSecurityRuleRequestBodyEthertypeIPv4:
-		*s = CreateSecurityRuleRequestBodyEthertypeIPv4
-		return nil
-	case CreateSecurityRuleRequestBodyEthertypeIPv6:
-		*s = CreateSecurityRuleRequestBodyEthertypeIPv6
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
+// AllValues returns all CreateSecurityGroupRuleRequestBodyIPVersion values.
+func (CreateSecurityGroupRuleRequestBodyIPVersion) AllValues() []CreateSecurityGroupRuleRequestBodyIPVersion {
+	return []CreateSecurityGroupRuleRequestBodyIPVersion{
+		CreateSecurityGroupRuleRequestBodyIPVersion4,
+		CreateSecurityGroupRuleRequestBodyIPVersion6,
 	}
 }
 
@@ -8054,74 +7999,6 @@ func (o OptNilDiskAttachment) Or(d DiskAttachment) DiskAttachment {
 	return d
 }
 
-// NewOptNilInt64 returns new OptNilInt64 with value set to v.
-func NewOptNilInt64(v int64) OptNilInt64 {
-	return OptNilInt64{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilInt64 is optional nullable int64.
-type OptNilInt64 struct {
-	Value int64
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilInt64 was set.
-func (o OptNilInt64) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilInt64) Reset() {
-	var v int64
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilInt64) SetTo(v int64) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilInt64) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilInt64) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v int64
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilInt64) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilInt64) Get() (v int64, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilInt64) Or(d int64) int64 {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNilNetworkInterfaceAttachment returns new OptNilNetworkInterfaceAttachment with value set to v.
 func NewOptNilNetworkInterfaceAttachment(v NetworkInterfaceAttachment) OptNilNetworkInterfaceAttachment {
 	return OptNilNetworkInterfaceAttachment{
@@ -8298,6 +8175,52 @@ func (o OptRegionID) Get() (v RegionID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptRegionID) Or(d RegionID) RegionID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSecurityGroupID returns new OptSecurityGroupID with value set to v.
+func NewOptSecurityGroupID(v SecurityGroupID) OptSecurityGroupID {
+	return OptSecurityGroupID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSecurityGroupID is optional SecurityGroupID.
+type OptSecurityGroupID struct {
+	Value SecurityGroupID
+	Set   bool
+}
+
+// IsSet returns true if OptSecurityGroupID was set.
+func (o OptSecurityGroupID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSecurityGroupID) Reset() {
+	var v SecurityGroupID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSecurityGroupID) SetTo(v SecurityGroupID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSecurityGroupID) Get() (v SecurityGroupID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSecurityGroupID) Or(d SecurityGroupID) SecurityGroupID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9506,21 +9429,6 @@ func (s *RenameImageRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/RenameSecurityGroupRequestBody
-type RenameSecurityGroupRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameSecurityGroupRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameSecurityGroupRequestBody) SetName(val string) {
-	s.Name = val
-}
-
 // Ref: #/components/schemas/RenameSnapshotRequestBody
 type RenameSnapshotRequestBody struct {
 	Name string `json:"name"`
@@ -10076,16 +9984,98 @@ func (s *ScopedTokenAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
+// Ref: #/components/schemas/SecurityGroup
+type SecurityGroup struct {
+	ID                    SecurityGroupID       `json:"id"`
+	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
+	Name                  string                `json:"name"`
+	Description           string                `json:"description"`
+	// The default security group goes with its virtual private cloud and cannot be deleted on its own.
+	IsDefault bool      `json:"is_default"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *SecurityGroup) GetID() SecurityGroupID {
+	return s.ID
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *SecurityGroup) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
+}
+
+// GetName returns the value of Name.
+func (s *SecurityGroup) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *SecurityGroup) GetDescription() string {
+	return s.Description
+}
+
+// GetIsDefault returns the value of IsDefault.
+func (s *SecurityGroup) GetIsDefault() bool {
+	return s.IsDefault
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *SecurityGroup) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *SecurityGroup) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *SecurityGroup) SetID(val SecurityGroupID) {
+	s.ID = val
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *SecurityGroup) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetName sets the value of Name.
+func (s *SecurityGroup) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *SecurityGroup) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetIsDefault sets the value of IsDefault.
+func (s *SecurityGroup) SetIsDefault(val bool) {
+	s.IsDefault = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *SecurityGroup) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *SecurityGroup) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
 type SecurityGroupID string
 
 // Ref: #/components/schemas/SecurityGroupListResponseBody
 type SecurityGroupListResponseBody struct {
-	Items      []SecurityGroupResource `json:"items"`
-	Pagination OffsetPagination        `json:"pagination"`
+	Items      []SecurityGroup  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
-func (s *SecurityGroupListResponseBody) GetItems() []SecurityGroupResource {
+func (s *SecurityGroupListResponseBody) GetItems() []SecurityGroup {
 	return s.Items
 }
 
@@ -10095,7 +10085,7 @@ func (s *SecurityGroupListResponseBody) GetPagination() OffsetPagination {
 }
 
 // SetItems sets the value of Items.
-func (s *SecurityGroupListResponseBody) SetItems(val []SecurityGroupResource) {
+func (s *SecurityGroupListResponseBody) SetItems(val []SecurityGroup) {
 	s.Items = val
 }
 
@@ -10104,291 +10094,207 @@ func (s *SecurityGroupListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// Ref: #/components/schemas/SecurityGroupResource
-type SecurityGroupResource struct {
-	CreatedAt   time.Time       `json:"created_at"`
-	Description string          `json:"description"`
-	ID          SecurityGroupID `json:"id"`
-	// The default security group is released with its virtual private cloud and cannot be deleted
-	// individually.
-	IsDefault             bool                  `json:"is_default"`
-	Name                  string                `json:"name"`
-	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *SecurityGroupResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDescription returns the value of Description.
-func (s *SecurityGroupResource) GetDescription() string {
-	return s.Description
+// Ref: #/components/schemas/SecurityGroupRule
+type SecurityGroupRule struct {
+	ID              SecurityGroupRuleID        `json:"id"`
+	SecurityGroupID SecurityGroupID            `json:"security_group_id"`
+	Direction       SecurityGroupRuleDirection `json:"direction"`
+	IPVersion       SecurityGroupRuleIPVersion `json:"ip_version"`
+	// Null for every protocol.
+	Protocol NilString `json:"protocol"`
+	// The first port, or the ICMP type when the protocol is ICMP. Null for every port.
+	PortRangeMin NilInt64 `json:"port_range_min"`
+	// The last port, or the ICMP code when the protocol is ICMP. Null for every port.
+	PortRangeMax NilInt64 `json:"port_range_max"`
+	// Null for every address.
+	RemoteIPPrefix NilString `json:"remote_ip_prefix"`
+	Description    string    `json:"description"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 // GetID returns the value of ID.
-func (s *SecurityGroupResource) GetID() SecurityGroupID {
+func (s *SecurityGroupRule) GetID() SecurityGroupRuleID {
 	return s.ID
 }
 
-// GetIsDefault returns the value of IsDefault.
-func (s *SecurityGroupResource) GetIsDefault() bool {
-	return s.IsDefault
+// GetSecurityGroupID returns the value of SecurityGroupID.
+func (s *SecurityGroupRule) GetSecurityGroupID() SecurityGroupID {
+	return s.SecurityGroupID
 }
 
-// GetName returns the value of Name.
-func (s *SecurityGroupResource) GetName() string {
-	return s.Name
+// GetDirection returns the value of Direction.
+func (s *SecurityGroupRule) GetDirection() SecurityGroupRuleDirection {
+	return s.Direction
 }
 
-// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
-func (s *SecurityGroupResource) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
-	return s.VirtualPrivateCloudID
+// GetIPVersion returns the value of IPVersion.
+func (s *SecurityGroupRule) GetIPVersion() SecurityGroupRuleIPVersion {
+	return s.IPVersion
 }
 
-// SetCreatedAt sets the value of CreatedAt.
-func (s *SecurityGroupResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
+// GetProtocol returns the value of Protocol.
+func (s *SecurityGroupRule) GetProtocol() NilString {
+	return s.Protocol
 }
 
-// SetDescription sets the value of Description.
-func (s *SecurityGroupResource) SetDescription(val string) {
-	s.Description = val
+// GetPortRangeMin returns the value of PortRangeMin.
+func (s *SecurityGroupRule) GetPortRangeMin() NilInt64 {
+	return s.PortRangeMin
+}
+
+// GetPortRangeMax returns the value of PortRangeMax.
+func (s *SecurityGroupRule) GetPortRangeMax() NilInt64 {
+	return s.PortRangeMax
+}
+
+// GetRemoteIPPrefix returns the value of RemoteIPPrefix.
+func (s *SecurityGroupRule) GetRemoteIPPrefix() NilString {
+	return s.RemoteIPPrefix
+}
+
+// GetDescription returns the value of Description.
+func (s *SecurityGroupRule) GetDescription() string {
+	return s.Description
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *SecurityGroupRule) GetCreatedAt() time.Time {
+	return s.CreatedAt
 }
 
 // SetID sets the value of ID.
-func (s *SecurityGroupResource) SetID(val SecurityGroupID) {
+func (s *SecurityGroupRule) SetID(val SecurityGroupRuleID) {
 	s.ID = val
 }
 
-// SetIsDefault sets the value of IsDefault.
-func (s *SecurityGroupResource) SetIsDefault(val bool) {
-	s.IsDefault = val
+// SetSecurityGroupID sets the value of SecurityGroupID.
+func (s *SecurityGroupRule) SetSecurityGroupID(val SecurityGroupID) {
+	s.SecurityGroupID = val
 }
 
-// SetName sets the value of Name.
-func (s *SecurityGroupResource) SetName(val string) {
-	s.Name = val
+// SetDirection sets the value of Direction.
+func (s *SecurityGroupRule) SetDirection(val SecurityGroupRuleDirection) {
+	s.Direction = val
 }
 
-// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
-func (s *SecurityGroupResource) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
-	s.VirtualPrivateCloudID = val
+// SetIPVersion sets the value of IPVersion.
+func (s *SecurityGroupRule) SetIPVersion(val SecurityGroupRuleIPVersion) {
+	s.IPVersion = val
+}
+
+// SetProtocol sets the value of Protocol.
+func (s *SecurityGroupRule) SetProtocol(val NilString) {
+	s.Protocol = val
+}
+
+// SetPortRangeMin sets the value of PortRangeMin.
+func (s *SecurityGroupRule) SetPortRangeMin(val NilInt64) {
+	s.PortRangeMin = val
+}
+
+// SetPortRangeMax sets the value of PortRangeMax.
+func (s *SecurityGroupRule) SetPortRangeMax(val NilInt64) {
+	s.PortRangeMax = val
+}
+
+// SetRemoteIPPrefix sets the value of RemoteIPPrefix.
+func (s *SecurityGroupRule) SetRemoteIPPrefix(val NilString) {
+	s.RemoteIPPrefix = val
+}
+
+// SetDescription sets the value of Description.
+func (s *SecurityGroupRule) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *SecurityGroupRule) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/SecurityGroupRuleDirection
+type SecurityGroupRuleDirection string
+
+const (
+	SecurityGroupRuleDirectionIngress SecurityGroupRuleDirection = "ingress"
+	SecurityGroupRuleDirectionEgress  SecurityGroupRuleDirection = "egress"
+)
+
+// AllValues returns all SecurityGroupRuleDirection values.
+func (SecurityGroupRuleDirection) AllValues() []SecurityGroupRuleDirection {
+	return []SecurityGroupRuleDirection{
+		SecurityGroupRuleDirectionIngress,
+		SecurityGroupRuleDirectionEgress,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SecurityGroupRuleDirection) MarshalText() ([]byte, error) {
+	switch s {
+	case SecurityGroupRuleDirectionIngress:
+		return []byte(s), nil
+	case SecurityGroupRuleDirectionEgress:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SecurityGroupRuleDirection) UnmarshalText(data []byte) error {
+	switch SecurityGroupRuleDirection(data) {
+	case SecurityGroupRuleDirectionIngress:
+		*s = SecurityGroupRuleDirectionIngress
+		return nil
+	case SecurityGroupRuleDirectionEgress:
+		*s = SecurityGroupRuleDirectionEgress
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type SecurityGroupRuleID string
 
-// Ref: #/components/schemas/SecurityRuleListResponseBody
-type SecurityRuleListResponseBody struct {
-	Items      []SecurityRuleResource `json:"items"`
-	Pagination OffsetPagination       `json:"pagination"`
+type SecurityGroupRuleIPVersion int64
+
+const (
+	SecurityGroupRuleIPVersion4 SecurityGroupRuleIPVersion = 4
+	SecurityGroupRuleIPVersion6 SecurityGroupRuleIPVersion = 6
+)
+
+// AllValues returns all SecurityGroupRuleIPVersion values.
+func (SecurityGroupRuleIPVersion) AllValues() []SecurityGroupRuleIPVersion {
+	return []SecurityGroupRuleIPVersion{
+		SecurityGroupRuleIPVersion4,
+		SecurityGroupRuleIPVersion6,
+	}
+}
+
+// Ref: #/components/schemas/SecurityGroupRuleListResponseBody
+type SecurityGroupRuleListResponseBody struct {
+	Items      []SecurityGroupRule `json:"items"`
+	Pagination OffsetPagination    `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
-func (s *SecurityRuleListResponseBody) GetItems() []SecurityRuleResource {
+func (s *SecurityGroupRuleListResponseBody) GetItems() []SecurityGroupRule {
 	return s.Items
 }
 
 // GetPagination returns the value of Pagination.
-func (s *SecurityRuleListResponseBody) GetPagination() OffsetPagination {
+func (s *SecurityGroupRuleListResponseBody) GetPagination() OffsetPagination {
 	return s.Pagination
 }
 
 // SetItems sets the value of Items.
-func (s *SecurityRuleListResponseBody) SetItems(val []SecurityRuleResource) {
+func (s *SecurityGroupRuleListResponseBody) SetItems(val []SecurityGroupRule) {
 	s.Items = val
 }
 
 // SetPagination sets the value of Pagination.
-func (s *SecurityRuleListResponseBody) SetPagination(val OffsetPagination) {
+func (s *SecurityGroupRuleListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-// Ref: #/components/schemas/SecurityRuleResource
-type SecurityRuleResource struct {
-	CreatedAt   time.Time                     `json:"created_at"`
-	Description string                        `json:"description"`
-	Direction   SecurityRuleResourceDirection `json:"direction"`
-	Ethertype   SecurityRuleResourceEthertype `json:"ethertype"`
-	ID          SecurityGroupRuleID           `json:"id"`
-	// Denotes the ICMP code rather than a port when the protocol is ICMP.
-	PortRangeMax NilInt64 `json:"port_range_max"`
-	// Denotes the ICMP type rather than a port when the protocol is ICMP.
-	PortRangeMin   NilInt64  `json:"port_range_min"`
-	Protocol       NilString `json:"protocol"`
-	RemoteIPPrefix NilString `json:"remote_ip_prefix"`
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *SecurityRuleResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDescription returns the value of Description.
-func (s *SecurityRuleResource) GetDescription() string {
-	return s.Description
-}
-
-// GetDirection returns the value of Direction.
-func (s *SecurityRuleResource) GetDirection() SecurityRuleResourceDirection {
-	return s.Direction
-}
-
-// GetEthertype returns the value of Ethertype.
-func (s *SecurityRuleResource) GetEthertype() SecurityRuleResourceEthertype {
-	return s.Ethertype
-}
-
-// GetID returns the value of ID.
-func (s *SecurityRuleResource) GetID() SecurityGroupRuleID {
-	return s.ID
-}
-
-// GetPortRangeMax returns the value of PortRangeMax.
-func (s *SecurityRuleResource) GetPortRangeMax() NilInt64 {
-	return s.PortRangeMax
-}
-
-// GetPortRangeMin returns the value of PortRangeMin.
-func (s *SecurityRuleResource) GetPortRangeMin() NilInt64 {
-	return s.PortRangeMin
-}
-
-// GetProtocol returns the value of Protocol.
-func (s *SecurityRuleResource) GetProtocol() NilString {
-	return s.Protocol
-}
-
-// GetRemoteIPPrefix returns the value of RemoteIPPrefix.
-func (s *SecurityRuleResource) GetRemoteIPPrefix() NilString {
-	return s.RemoteIPPrefix
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *SecurityRuleResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDescription sets the value of Description.
-func (s *SecurityRuleResource) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetDirection sets the value of Direction.
-func (s *SecurityRuleResource) SetDirection(val SecurityRuleResourceDirection) {
-	s.Direction = val
-}
-
-// SetEthertype sets the value of Ethertype.
-func (s *SecurityRuleResource) SetEthertype(val SecurityRuleResourceEthertype) {
-	s.Ethertype = val
-}
-
-// SetID sets the value of ID.
-func (s *SecurityRuleResource) SetID(val SecurityGroupRuleID) {
-	s.ID = val
-}
-
-// SetPortRangeMax sets the value of PortRangeMax.
-func (s *SecurityRuleResource) SetPortRangeMax(val NilInt64) {
-	s.PortRangeMax = val
-}
-
-// SetPortRangeMin sets the value of PortRangeMin.
-func (s *SecurityRuleResource) SetPortRangeMin(val NilInt64) {
-	s.PortRangeMin = val
-}
-
-// SetProtocol sets the value of Protocol.
-func (s *SecurityRuleResource) SetProtocol(val NilString) {
-	s.Protocol = val
-}
-
-// SetRemoteIPPrefix sets the value of RemoteIPPrefix.
-func (s *SecurityRuleResource) SetRemoteIPPrefix(val NilString) {
-	s.RemoteIPPrefix = val
-}
-
-type SecurityRuleResourceDirection string
-
-const (
-	SecurityRuleResourceDirectionIngress SecurityRuleResourceDirection = "ingress"
-	SecurityRuleResourceDirectionEgress  SecurityRuleResourceDirection = "egress"
-)
-
-// AllValues returns all SecurityRuleResourceDirection values.
-func (SecurityRuleResourceDirection) AllValues() []SecurityRuleResourceDirection {
-	return []SecurityRuleResourceDirection{
-		SecurityRuleResourceDirectionIngress,
-		SecurityRuleResourceDirectionEgress,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SecurityRuleResourceDirection) MarshalText() ([]byte, error) {
-	switch s {
-	case SecurityRuleResourceDirectionIngress:
-		return []byte(s), nil
-	case SecurityRuleResourceDirectionEgress:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SecurityRuleResourceDirection) UnmarshalText(data []byte) error {
-	switch SecurityRuleResourceDirection(data) {
-	case SecurityRuleResourceDirectionIngress:
-		*s = SecurityRuleResourceDirectionIngress
-		return nil
-	case SecurityRuleResourceDirectionEgress:
-		*s = SecurityRuleResourceDirectionEgress
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type SecurityRuleResourceEthertype string
-
-const (
-	SecurityRuleResourceEthertypeIPv4 SecurityRuleResourceEthertype = "IPv4"
-	SecurityRuleResourceEthertypeIPv6 SecurityRuleResourceEthertype = "IPv6"
-)
-
-// AllValues returns all SecurityRuleResourceEthertype values.
-func (SecurityRuleResourceEthertype) AllValues() []SecurityRuleResourceEthertype {
-	return []SecurityRuleResourceEthertype{
-		SecurityRuleResourceEthertypeIPv4,
-		SecurityRuleResourceEthertypeIPv6,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SecurityRuleResourceEthertype) MarshalText() ([]byte, error) {
-	switch s {
-	case SecurityRuleResourceEthertypeIPv4:
-		return []byte(s), nil
-	case SecurityRuleResourceEthertypeIPv6:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SecurityRuleResourceEthertype) UnmarshalText(data []byte) error {
-	switch SecurityRuleResourceEthertype(data) {
-	case SecurityRuleResourceEthertypeIPv4:
-		*s = SecurityRuleResourceEthertypeIPv4
-		return nil
-	case SecurityRuleResourceEthertypeIPv6:
-		*s = SecurityRuleResourceEthertypeIPv6
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Change bandwidth on the elastic IP identified by the path. This is a configuration change of that
@@ -11032,6 +10938,32 @@ func (s *TerminationPolicy) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/UpdateSecurityGroupRequestBody
+type UpdateSecurityGroupRequestBody struct {
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateSecurityGroupRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *UpdateSecurityGroupRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// SetName sets the value of Name.
+func (s *UpdateSecurityGroupRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *UpdateSecurityGroupRequestBody) SetDescription(val OptString) {
+	s.Description = val
 }
 
 // Ref: #/components/schemas/UpdateSubnetRequestBody

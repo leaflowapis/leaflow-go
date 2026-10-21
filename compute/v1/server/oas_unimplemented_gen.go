@@ -165,22 +165,24 @@ func (UnimplementedHandler) CreateRoute(ctx context.Context, req *CreateRouteReq
 
 // CreateSecurityGroup implements create-security-group operation.
 //
-// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
-// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
-// on large packets.
+// A new security group admits all outbound traffic and denies inbound traffic, except ICMP
+// fragmentation-needed (IPv4) and Packet Too Big (IPv6). Without those two, path MTU discovery fails,
+// which shows as connections that establish and then stall on large packets. All of these are ordinary
+// rules and can be deleted.
 //
 // POST /api/v1/security-groups
-func (UnimplementedHandler) CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (r *SecurityGroupResource, _ error) {
+func (UnimplementedHandler) CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (r *SecurityGroup, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // CreateSecurityGroupRule implements create-security-group-rule operation.
 //
-// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
-// value are treated as equivalent.
+// Refused when the group already has a rule meaning the same thing; `0.0.0.0/0`, `::/0` and an omitted
+// remote prefix all mean every address. Rules cannot be changed; replace one by creating the new rule
+// and deleting the old one.
 //
-// POST /api/v1/security-groups/{securityGroupId}/rules
-func (UnimplementedHandler) CreateSecurityGroupRule(ctx context.Context, req *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (r *SecurityRuleResource, _ error) {
+// POST /api/v1/security-group-rules
+func (UnimplementedHandler) CreateSecurityGroupRule(ctx context.Context, req *CreateSecurityGroupRuleRequestBody) (r *SecurityGroupRule, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -344,8 +346,8 @@ func (UnimplementedHandler) DeleteRoute(ctx context.Context, params DeleteRouteP
 
 // DeleteSecurityGroup implements delete-security-group operation.
 //
-// The default security group cannot be deleted, as it is released with the virtual private cloud. A
-// security group still referenced by a network interface cannot be deleted either.
+// Refused while a network interface uses the group. The default security group cannot be deleted; it
+// goes with its virtual private cloud.
 //
 // DELETE /api/v1/security-groups/{securityGroupId}
 func (UnimplementedHandler) DeleteSecurityGroup(ctx context.Context, params DeleteSecurityGroupParams) error {
@@ -356,7 +358,7 @@ func (UnimplementedHandler) DeleteSecurityGroup(ctx context.Context, params Dele
 //
 // Delete a security group rule.
 //
-// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
+// DELETE /api/v1/security-group-rules/{ruleId}
 func (UnimplementedHandler) DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error {
 	return ht.ErrNotImplemented
 }
@@ -565,10 +567,19 @@ func (UnimplementedHandler) GetRoute(ctx context.Context, params GetRouteParams)
 
 // GetSecurityGroup implements get-security-group operation.
 //
-// Retrieve a security group.
+// Get a security group.
 //
 // GET /api/v1/security-groups/{securityGroupId}
-func (UnimplementedHandler) GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (r *SecurityGroupResource, _ error) {
+func (UnimplementedHandler) GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (r *SecurityGroup, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetSecurityGroupRule implements get-security-group-rule operation.
+//
+// Get a security group rule.
+//
+// GET /api/v1/security-group-rules/{ruleId}
+func (UnimplementedHandler) GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (r *SecurityGroupRule, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -787,8 +798,8 @@ func (UnimplementedHandler) ListRoutes(ctx context.Context, params ListRoutesPar
 //
 // List security group rules.
 //
-// GET /api/v1/security-groups/{securityGroupId}/rules
-func (UnimplementedHandler) ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (r *SecurityRuleListResponseBody, _ error) {
+// GET /api/v1/security-group-rules
+func (UnimplementedHandler) ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (r *SecurityGroupRuleListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -968,15 +979,6 @@ func (UnimplementedHandler) RenameDisk(ctx context.Context, req *RenameDiskReque
 //
 // PATCH /api/v1/images/{imageId}
 func (UnimplementedHandler) RenameImage(ctx context.Context, req *RenameImageRequestBody, params RenameImageParams) (r *ImageResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenameSecurityGroup implements rename-security-group operation.
-//
-// Changes the name only. Use the rule endpoints to change rules.
-//
-// PATCH /api/v1/security-groups/{securityGroupId}
-func (UnimplementedHandler) RenameSecurityGroup(ctx context.Context, req *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (r *SecurityGroupResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1232,6 +1234,16 @@ func (UnimplementedHandler) UnbindElasticIP(ctx context.Context, params UnbindEl
 //
 // POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
 func (UnimplementedHandler) UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (r UnrescueVirtualMachineRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateSecurityGroup implements update-security-group operation.
+//
+// Changes the name or description. Rules are resources of their own, created and deleted under
+// `/security-group-rules`.
+//
+// PATCH /api/v1/security-groups/{securityGroupId}
+func (UnimplementedHandler) UpdateSecurityGroup(ctx context.Context, req *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (r *SecurityGroup, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

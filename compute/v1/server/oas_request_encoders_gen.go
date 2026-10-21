@@ -179,7 +179,7 @@ func encodeCreateSecurityGroupRequest(
 }
 
 func encodeCreateSecurityGroupRuleRequest(
-	req *CreateSecurityRuleRequestBody,
+	req *CreateSecurityGroupRuleRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -306,20 +306,6 @@ func encodeRenameDiskRequest(
 
 func encodeRenameImageRequest(
 	req *RenameImageRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeRenameSecurityGroupRequest(
-	req *RenameSecurityGroupRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -516,6 +502,20 @@ func encodeStartVirtualMachineRequest(
 
 func encodeStopVirtualMachineRequest(
 	req *PowerRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateSecurityGroupRequest(
+	req *UpdateSecurityGroupRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

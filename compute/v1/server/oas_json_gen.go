@@ -3274,25 +3274,25 @@ func (s *CreateSecurityGroupRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CreateSecurityGroupRequestBody) encodeFields(e *jx.Encoder) {
 	{
-		if s.Description.Set {
-			e.FieldStart("description")
-			s.Description.Encode(e)
-		}
+		e.FieldStart("virtual_private_cloud_id")
+		s.VirtualPrivateCloudID.Encode(e)
 	}
 	{
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("virtual_private_cloud_id")
-		s.VirtualPrivateCloudID.Encode(e)
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
 	}
 }
 
 var jsonFieldsNameOfCreateSecurityGroupRequestBody = [3]string{
-	0: "description",
+	0: "virtual_private_cloud_id",
 	1: "name",
-	2: "virtual_private_cloud_id",
+	2: "description",
 }
 
 // Decode decodes CreateSecurityGroupRequestBody from json.
@@ -3304,15 +3304,15 @@ func (s *CreateSecurityGroupRequestBody) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "description":
+		case "virtual_private_cloud_id":
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				s.Description.Reset()
-				if err := s.Description.Decode(d); err != nil {
+				if err := s.VirtualPrivateCloudID.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"description\"")
+				return errors.Wrap(err, "decode field \"virtual_private_cloud_id\"")
 			}
 		case "name":
 			requiredBitSet[0] |= 1 << 1
@@ -3326,15 +3326,15 @@ func (s *CreateSecurityGroupRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "virtual_private_cloud_id":
-			requiredBitSet[0] |= 1 << 2
+		case "description":
 			if err := func() error {
-				if err := s.VirtualPrivateCloudID.Decode(d); err != nil {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"virtual_private_cloud_id\"")
+				return errors.Wrap(err, "decode field \"description\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -3346,7 +3346,7 @@ func (s *CreateSecurityGroupRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000110,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3393,32 +3393,30 @@ func (s *CreateSecurityGroupRequestBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *CreateSecurityRuleRequestBody) Encode(e *jx.Encoder) {
+func (s *CreateSecurityGroupRuleRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *CreateSecurityRuleRequestBody) encodeFields(e *jx.Encoder) {
+func (s *CreateSecurityGroupRuleRequestBody) encodeFields(e *jx.Encoder) {
 	{
-		if s.Description.Set {
-			e.FieldStart("description")
-			s.Description.Encode(e)
-		}
+		e.FieldStart("security_group_id")
+		s.SecurityGroupID.Encode(e)
 	}
 	{
 		e.FieldStart("direction")
 		s.Direction.Encode(e)
 	}
 	{
-		e.FieldStart("ethertype")
-		s.Ethertype.Encode(e)
+		e.FieldStart("ip_version")
+		s.IPVersion.Encode(e)
 	}
 	{
-		if s.PortRangeMax.Set {
-			e.FieldStart("port_range_max")
-			s.PortRangeMax.Encode(e)
+		if s.Protocol.Set {
+			e.FieldStart("protocol")
+			s.Protocol.Encode(e)
 		}
 	}
 	{
@@ -3428,9 +3426,9 @@ func (s *CreateSecurityRuleRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Protocol.Set {
-			e.FieldStart("protocol")
-			s.Protocol.Encode(e)
+		if s.PortRangeMax.Set {
+			e.FieldStart("port_range_max")
+			s.PortRangeMax.Encode(e)
 		}
 	}
 	{
@@ -3439,36 +3437,43 @@ func (s *CreateSecurityRuleRequestBody) encodeFields(e *jx.Encoder) {
 			s.RemoteIPPrefix.Encode(e)
 		}
 	}
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCreateSecurityRuleRequestBody = [7]string{
-	0: "description",
+var jsonFieldsNameOfCreateSecurityGroupRuleRequestBody = [8]string{
+	0: "security_group_id",
 	1: "direction",
-	2: "ethertype",
-	3: "port_range_max",
+	2: "ip_version",
+	3: "protocol",
 	4: "port_range_min",
-	5: "protocol",
+	5: "port_range_max",
 	6: "remote_ip_prefix",
+	7: "description",
 }
 
-// Decode decodes CreateSecurityRuleRequestBody from json.
-func (s *CreateSecurityRuleRequestBody) Decode(d *jx.Decoder) error {
+// Decode decodes CreateSecurityGroupRuleRequestBody from json.
+func (s *CreateSecurityGroupRuleRequestBody) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode CreateSecurityRuleRequestBody to nil")
+		return errors.New("invalid: unable to decode CreateSecurityGroupRuleRequestBody to nil")
 	}
 	var requiredBitSet [1]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "description":
+		case "security_group_id":
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				s.Description.Reset()
-				if err := s.Description.Decode(d); err != nil {
+				if err := s.SecurityGroupID.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"description\"")
+				return errors.Wrap(err, "decode field \"security_group_id\"")
 			}
 		case "direction":
 			requiredBitSet[0] |= 1 << 1
@@ -3480,35 +3485,15 @@ func (s *CreateSecurityRuleRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"direction\"")
 			}
-		case "ethertype":
+		case "ip_version":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Ethertype.Decode(d); err != nil {
+				if err := s.IPVersion.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"ethertype\"")
-			}
-		case "port_range_max":
-			if err := func() error {
-				s.PortRangeMax.Reset()
-				if err := s.PortRangeMax.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"port_range_max\"")
-			}
-		case "port_range_min":
-			if err := func() error {
-				s.PortRangeMin.Reset()
-				if err := s.PortRangeMin.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"port_range_min\"")
+				return errors.Wrap(err, "decode field \"ip_version\"")
 			}
 		case "protocol":
 			if err := func() error {
@@ -3520,6 +3505,26 @@ func (s *CreateSecurityRuleRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"protocol\"")
 			}
+		case "port_range_min":
+			if err := func() error {
+				s.PortRangeMin.Reset()
+				if err := s.PortRangeMin.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"port_range_min\"")
+			}
+		case "port_range_max":
+			if err := func() error {
+				s.PortRangeMax.Reset()
+				if err := s.PortRangeMax.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"port_range_max\"")
+			}
 		case "remote_ip_prefix":
 			if err := func() error {
 				s.RemoteIPPrefix.Reset()
@@ -3530,17 +3535,27 @@ func (s *CreateSecurityRuleRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"remote_ip_prefix\"")
 			}
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode CreateSecurityRuleRequestBody")
+		return errors.Wrap(err, "decode CreateSecurityGroupRuleRequestBody")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000110,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3552,8 +3567,8 @@ func (s *CreateSecurityRuleRequestBody) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfCreateSecurityRuleRequestBody) {
-					name = jsonFieldsNameOfCreateSecurityRuleRequestBody[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfCreateSecurityGroupRuleRequestBody) {
+					name = jsonFieldsNameOfCreateSecurityGroupRuleRequestBody[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -3574,94 +3589,46 @@ func (s *CreateSecurityRuleRequestBody) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *CreateSecurityRuleRequestBody) MarshalJSON() ([]byte, error) {
+func (s *CreateSecurityGroupRuleRequestBody) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *CreateSecurityRuleRequestBody) UnmarshalJSON(data []byte) error {
+func (s *CreateSecurityGroupRuleRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
 
-// Encode encodes CreateSecurityRuleRequestBodyDirection as json.
-func (s CreateSecurityRuleRequestBodyDirection) Encode(e *jx.Encoder) {
-	e.Str(string(s))
+// Encode encodes CreateSecurityGroupRuleRequestBodyIPVersion as json.
+func (s CreateSecurityGroupRuleRequestBodyIPVersion) Encode(e *jx.Encoder) {
+	e.Int64(int64(s))
 }
 
-// Decode decodes CreateSecurityRuleRequestBodyDirection from json.
-func (s *CreateSecurityRuleRequestBodyDirection) Decode(d *jx.Decoder) error {
+// Decode decodes CreateSecurityGroupRuleRequestBodyIPVersion from json.
+func (s *CreateSecurityGroupRuleRequestBodyIPVersion) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode CreateSecurityRuleRequestBodyDirection to nil")
+		return errors.New("invalid: unable to decode CreateSecurityGroupRuleRequestBodyIPVersion to nil")
 	}
-	v, err := d.StrBytes()
+	v, err := d.Int64()
 	if err != nil {
 		return err
 	}
-	// Try to use constant string.
-	switch CreateSecurityRuleRequestBodyDirection(v) {
-	case CreateSecurityRuleRequestBodyDirectionIngress:
-		*s = CreateSecurityRuleRequestBodyDirectionIngress
-	case CreateSecurityRuleRequestBodyDirectionEgress:
-		*s = CreateSecurityRuleRequestBodyDirectionEgress
-	default:
-		*s = CreateSecurityRuleRequestBodyDirection(v)
-	}
+	*s = CreateSecurityGroupRuleRequestBodyIPVersion(v)
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s CreateSecurityRuleRequestBodyDirection) MarshalJSON() ([]byte, error) {
+func (s CreateSecurityGroupRuleRequestBodyIPVersion) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *CreateSecurityRuleRequestBodyDirection) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes CreateSecurityRuleRequestBodyEthertype as json.
-func (s CreateSecurityRuleRequestBodyEthertype) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes CreateSecurityRuleRequestBodyEthertype from json.
-func (s *CreateSecurityRuleRequestBodyEthertype) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode CreateSecurityRuleRequestBodyEthertype to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch CreateSecurityRuleRequestBodyEthertype(v) {
-	case CreateSecurityRuleRequestBodyEthertypeIPv4:
-		*s = CreateSecurityRuleRequestBodyEthertypeIPv4
-	case CreateSecurityRuleRequestBodyEthertypeIPv6:
-		*s = CreateSecurityRuleRequestBodyEthertypeIPv6
-	default:
-		*s = CreateSecurityRuleRequestBodyEthertype(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s CreateSecurityRuleRequestBodyEthertype) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *CreateSecurityRuleRequestBodyEthertype) UnmarshalJSON(data []byte) error {
+func (s *CreateSecurityGroupRuleRequestBodyIPVersion) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -14440,57 +14407,6 @@ func (s *OptNilDiskAttachment) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes int64 as json.
-func (o OptNilInt64) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	if o.Null {
-		e.Null()
-		return
-	}
-	e.Int64(int64(o.Value))
-}
-
-// Decode decodes int64 from json.
-func (o *OptNilInt64) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptNilInt64 to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v int64
-		o.Value = v
-		o.Set = true
-		o.Null = true
-		return nil
-	}
-	o.Set = true
-	o.Null = false
-	v, err := d.Int64()
-	if err != nil {
-		return err
-	}
-	o.Value = int64(v)
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptNilInt64) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNilInt64) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes NetworkInterfaceAttachment as json.
 func (o OptNilNetworkInterfaceAttachment) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -14630,6 +14546,39 @@ func (s OptRegionID) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptRegionID) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SecurityGroupID as json.
+func (o OptSecurityGroupID) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes SecurityGroupID from json.
+func (o *OptSecurityGroupID) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptSecurityGroupID to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptSecurityGroupID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptSecurityGroupID) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -17125,102 +17074,6 @@ func (s *RenameImageRequestBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *RenameSecurityGroupRequestBody) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *RenameSecurityGroupRequestBody) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("name")
-		e.Str(s.Name)
-	}
-}
-
-var jsonFieldsNameOfRenameSecurityGroupRequestBody = [1]string{
-	0: "name",
-}
-
-// Decode decodes RenameSecurityGroupRequestBody from json.
-func (s *RenameSecurityGroupRequestBody) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode RenameSecurityGroupRequestBody to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "name":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Str()
-				s.Name = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"name\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode RenameSecurityGroupRequestBody")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000001,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfRenameSecurityGroupRequestBody) {
-					name = jsonFieldsNameOfRenameSecurityGroupRequestBody[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *RenameSecurityGroupRequestBody) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RenameSecurityGroupRequestBody) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
 func (s *RenameSnapshotRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -19043,6 +18896,200 @@ func (s *RunCommandRequestBody) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode implements json.Marshaler.
+func (s *SecurityGroup) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *SecurityGroup) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		s.ID.Encode(e)
+	}
+	{
+		e.FieldStart("virtual_private_cloud_id")
+		s.VirtualPrivateCloudID.Encode(e)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("description")
+		e.Str(s.Description)
+	}
+	{
+		e.FieldStart("is_default")
+		e.Bool(s.IsDefault)
+	}
+	{
+		e.FieldStart("created_at")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+	{
+		e.FieldStart("updated_at")
+		json.EncodeDateTime(e, s.UpdatedAt)
+	}
+}
+
+var jsonFieldsNameOfSecurityGroup = [7]string{
+	0: "id",
+	1: "virtual_private_cloud_id",
+	2: "name",
+	3: "description",
+	4: "is_default",
+	5: "created_at",
+	6: "updated_at",
+}
+
+// Decode decodes SecurityGroup from json.
+func (s *SecurityGroup) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SecurityGroup to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.ID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "virtual_private_cloud_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.VirtualPrivateCloudID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"virtual_private_cloud_id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "description":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Description = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "is_default":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Bool()
+				s.IsDefault = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"is_default\"")
+			}
+		case "created_at":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"created_at\"")
+			}
+		case "updated_at":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.UpdatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"updated_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode SecurityGroup")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b01111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfSecurityGroup) {
+					name = jsonFieldsNameOfSecurityGroup[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *SecurityGroup) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SecurityGroup) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes SecurityGroupID as json.
 func (s SecurityGroupID) Encode(e *jx.Encoder) {
 	unwrapped := string(s)
@@ -19094,15 +19141,11 @@ func (s *SecurityGroupListResponseBody) Encode(e *jx.Encoder) {
 func (s *SecurityGroupListResponseBody) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("items")
-		if s.Items == nil {
-			e.Null()
-		} else {
-			e.ArrStart()
-			for _, elem := range s.Items {
-				elem.Encode(e)
-			}
-			e.ArrEnd()
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
 		}
+		e.ArrEnd()
 	}
 	{
 		e.FieldStart("pagination")
@@ -19127,23 +19170,16 @@ func (s *SecurityGroupListResponseBody) Decode(d *jx.Decoder) error {
 		case "items":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				switch tt := d.Next(); tt {
-				case jx.Null:
-					if err := d.Skip(); err != nil {
+				s.Items = make([]SecurityGroup, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SecurityGroup
+					if err := elem.Decode(d); err != nil {
 						return err
 					}
-				default:
-					s.Items = make([]SecurityGroupResource, 0)
-					if err := d.Arr(func(d *jx.Decoder) error {
-						var elem SecurityGroupResource
-						if err := elem.Decode(d); err != nil {
-							return err
-						}
-						s.Items = append(s.Items, elem)
-						return nil
-					}); err != nil {
-						return err
-					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
 				}
 				return nil
 			}(); err != nil {
@@ -19216,72 +19252,160 @@ func (s *SecurityGroupListResponseBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *SecurityGroupResource) Encode(e *jx.Encoder) {
+func (s *SecurityGroupRule) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *SecurityGroupResource) encodeFields(e *jx.Encoder) {
+func (s *SecurityGroupRule) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("created_at")
-		json.EncodeDateTime(e, s.CreatedAt)
+		e.FieldStart("id")
+		s.ID.Encode(e)
+	}
+	{
+		e.FieldStart("security_group_id")
+		s.SecurityGroupID.Encode(e)
+	}
+	{
+		e.FieldStart("direction")
+		s.Direction.Encode(e)
+	}
+	{
+		e.FieldStart("ip_version")
+		s.IPVersion.Encode(e)
+	}
+	{
+		e.FieldStart("protocol")
+		s.Protocol.Encode(e)
+	}
+	{
+		e.FieldStart("port_range_min")
+		s.PortRangeMin.Encode(e)
+	}
+	{
+		e.FieldStart("port_range_max")
+		s.PortRangeMax.Encode(e)
+	}
+	{
+		e.FieldStart("remote_ip_prefix")
+		s.RemoteIPPrefix.Encode(e)
 	}
 	{
 		e.FieldStart("description")
 		e.Str(s.Description)
 	}
 	{
-		e.FieldStart("id")
-		s.ID.Encode(e)
-	}
-	{
-		e.FieldStart("is_default")
-		e.Bool(s.IsDefault)
-	}
-	{
-		e.FieldStart("name")
-		e.Str(s.Name)
-	}
-	{
-		e.FieldStart("virtual_private_cloud_id")
-		s.VirtualPrivateCloudID.Encode(e)
+		e.FieldStart("created_at")
+		json.EncodeDateTime(e, s.CreatedAt)
 	}
 }
 
-var jsonFieldsNameOfSecurityGroupResource = [6]string{
-	0: "created_at",
-	1: "description",
-	2: "id",
-	3: "is_default",
-	4: "name",
-	5: "virtual_private_cloud_id",
+var jsonFieldsNameOfSecurityGroupRule = [10]string{
+	0: "id",
+	1: "security_group_id",
+	2: "direction",
+	3: "ip_version",
+	4: "protocol",
+	5: "port_range_min",
+	6: "port_range_max",
+	7: "remote_ip_prefix",
+	8: "description",
+	9: "created_at",
 }
 
-// Decode decodes SecurityGroupResource from json.
-func (s *SecurityGroupResource) Decode(d *jx.Decoder) error {
+// Decode decodes SecurityGroupRule from json.
+func (s *SecurityGroupRule) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode SecurityGroupResource to nil")
+		return errors.New("invalid: unable to decode SecurityGroupRule to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "created_at":
+		case "id":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := json.DecodeDateTime(d)
-				s.CreatedAt = v
-				if err != nil {
+				if err := s.ID.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"created_at\"")
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "security_group_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.SecurityGroupID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"security_group_id\"")
+			}
+		case "direction":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Direction.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"direction\"")
+			}
+		case "ip_version":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.IPVersion.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"ip_version\"")
+			}
+		case "protocol":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.Protocol.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"protocol\"")
+			}
+		case "port_range_min":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.PortRangeMin.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"port_range_min\"")
+			}
+		case "port_range_max":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.PortRangeMax.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"port_range_max\"")
+			}
+		case "remote_ip_prefix":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.RemoteIPPrefix.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"remote_ip_prefix\"")
 			}
 		case "description":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Description = string(v)
@@ -19292,61 +19416,30 @@ func (s *SecurityGroupResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"description\"")
 			}
-		case "id":
-			requiredBitSet[0] |= 1 << 2
+		case "created_at":
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
-				if err := s.ID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"id\"")
-			}
-		case "is_default":
-			requiredBitSet[0] |= 1 << 3
-			if err := func() error {
-				v, err := d.Bool()
-				s.IsDefault = bool(v)
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"is_default\"")
-			}
-		case "name":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				v, err := d.Str()
-				s.Name = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"name\"")
-			}
-		case "virtual_private_cloud_id":
-			requiredBitSet[0] |= 1 << 5
-			if err := func() error {
-				if err := s.VirtualPrivateCloudID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"virtual_private_cloud_id\"")
+				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode SecurityGroupResource")
+		return errors.Wrap(err, "decode SecurityGroupRule")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00111111,
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -19358,8 +19451,8 @@ func (s *SecurityGroupResource) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfSecurityGroupResource) {
-					name = jsonFieldsNameOfSecurityGroupResource[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfSecurityGroupRule) {
+					name = jsonFieldsNameOfSecurityGroupRule[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -19380,14 +19473,54 @@ func (s *SecurityGroupResource) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *SecurityGroupResource) MarshalJSON() ([]byte, error) {
+func (s *SecurityGroupRule) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *SecurityGroupResource) UnmarshalJSON(data []byte) error {
+func (s *SecurityGroupRule) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SecurityGroupRuleDirection as json.
+func (s SecurityGroupRuleDirection) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SecurityGroupRuleDirection from json.
+func (s *SecurityGroupRuleDirection) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SecurityGroupRuleDirection to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SecurityGroupRuleDirection(v) {
+	case SecurityGroupRuleDirectionIngress:
+		*s = SecurityGroupRuleDirectionIngress
+	case SecurityGroupRuleDirectionEgress:
+		*s = SecurityGroupRuleDirectionEgress
+	default:
+		*s = SecurityGroupRuleDirection(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SecurityGroupRuleDirection) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SecurityGroupRuleDirection) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -19432,26 +19565,54 @@ func (s *SecurityGroupRuleID) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes SecurityGroupRuleIPVersion as json.
+func (s SecurityGroupRuleIPVersion) Encode(e *jx.Encoder) {
+	e.Int64(int64(s))
+}
+
+// Decode decodes SecurityGroupRuleIPVersion from json.
+func (s *SecurityGroupRuleIPVersion) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SecurityGroupRuleIPVersion to nil")
+	}
+	v, err := d.Int64()
+	if err != nil {
+		return err
+	}
+	*s = SecurityGroupRuleIPVersion(v)
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SecurityGroupRuleIPVersion) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SecurityGroupRuleIPVersion) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
-func (s *SecurityRuleListResponseBody) Encode(e *jx.Encoder) {
+func (s *SecurityGroupRuleListResponseBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *SecurityRuleListResponseBody) encodeFields(e *jx.Encoder) {
+func (s *SecurityGroupRuleListResponseBody) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("items")
-		if s.Items == nil {
-			e.Null()
-		} else {
-			e.ArrStart()
-			for _, elem := range s.Items {
-				elem.Encode(e)
-			}
-			e.ArrEnd()
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
 		}
+		e.ArrEnd()
 	}
 	{
 		e.FieldStart("pagination")
@@ -19459,15 +19620,15 @@ func (s *SecurityRuleListResponseBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSecurityRuleListResponseBody = [2]string{
+var jsonFieldsNameOfSecurityGroupRuleListResponseBody = [2]string{
 	0: "items",
 	1: "pagination",
 }
 
-// Decode decodes SecurityRuleListResponseBody from json.
-func (s *SecurityRuleListResponseBody) Decode(d *jx.Decoder) error {
+// Decode decodes SecurityGroupRuleListResponseBody from json.
+func (s *SecurityGroupRuleListResponseBody) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode SecurityRuleListResponseBody to nil")
+		return errors.New("invalid: unable to decode SecurityGroupRuleListResponseBody to nil")
 	}
 	var requiredBitSet [1]uint8
 
@@ -19476,23 +19637,16 @@ func (s *SecurityRuleListResponseBody) Decode(d *jx.Decoder) error {
 		case "items":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				switch tt := d.Next(); tt {
-				case jx.Null:
-					if err := d.Skip(); err != nil {
+				s.Items = make([]SecurityGroupRule, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SecurityGroupRule
+					if err := elem.Decode(d); err != nil {
 						return err
 					}
-				default:
-					s.Items = make([]SecurityRuleResource, 0)
-					if err := d.Arr(func(d *jx.Decoder) error {
-						var elem SecurityRuleResource
-						if err := elem.Decode(d); err != nil {
-							return err
-						}
-						s.Items = append(s.Items, elem)
-						return nil
-					}); err != nil {
-						return err
-					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
 				}
 				return nil
 			}(); err != nil {
@@ -19513,7 +19667,7 @@ func (s *SecurityRuleListResponseBody) Decode(d *jx.Decoder) error {
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode SecurityRuleListResponseBody")
+		return errors.Wrap(err, "decode SecurityGroupRuleListResponseBody")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
@@ -19530,8 +19684,8 @@ func (s *SecurityRuleListResponseBody) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfSecurityRuleListResponseBody) {
-					name = jsonFieldsNameOfSecurityRuleListResponseBody[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfSecurityGroupRuleListResponseBody) {
+					name = jsonFieldsNameOfSecurityGroupRuleListResponseBody[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -19552,313 +19706,14 @@ func (s *SecurityRuleListResponseBody) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *SecurityRuleListResponseBody) MarshalJSON() ([]byte, error) {
+func (s *SecurityGroupRuleListResponseBody) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *SecurityRuleListResponseBody) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *SecurityRuleResource) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *SecurityRuleResource) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("created_at")
-		json.EncodeDateTime(e, s.CreatedAt)
-	}
-	{
-		e.FieldStart("description")
-		e.Str(s.Description)
-	}
-	{
-		e.FieldStart("direction")
-		s.Direction.Encode(e)
-	}
-	{
-		e.FieldStart("ethertype")
-		s.Ethertype.Encode(e)
-	}
-	{
-		e.FieldStart("id")
-		s.ID.Encode(e)
-	}
-	{
-		e.FieldStart("port_range_max")
-		s.PortRangeMax.Encode(e)
-	}
-	{
-		e.FieldStart("port_range_min")
-		s.PortRangeMin.Encode(e)
-	}
-	{
-		e.FieldStart("protocol")
-		s.Protocol.Encode(e)
-	}
-	{
-		e.FieldStart("remote_ip_prefix")
-		s.RemoteIPPrefix.Encode(e)
-	}
-}
-
-var jsonFieldsNameOfSecurityRuleResource = [9]string{
-	0: "created_at",
-	1: "description",
-	2: "direction",
-	3: "ethertype",
-	4: "id",
-	5: "port_range_max",
-	6: "port_range_min",
-	7: "protocol",
-	8: "remote_ip_prefix",
-}
-
-// Decode decodes SecurityRuleResource from json.
-func (s *SecurityRuleResource) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode SecurityRuleResource to nil")
-	}
-	var requiredBitSet [2]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "created_at":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := json.DecodeDateTime(d)
-				s.CreatedAt = v
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"created_at\"")
-			}
-		case "description":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				v, err := d.Str()
-				s.Description = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"description\"")
-			}
-		case "direction":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				if err := s.Direction.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"direction\"")
-			}
-		case "ethertype":
-			requiredBitSet[0] |= 1 << 3
-			if err := func() error {
-				if err := s.Ethertype.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"ethertype\"")
-			}
-		case "id":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				if err := s.ID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"id\"")
-			}
-		case "port_range_max":
-			requiredBitSet[0] |= 1 << 5
-			if err := func() error {
-				if err := s.PortRangeMax.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"port_range_max\"")
-			}
-		case "port_range_min":
-			requiredBitSet[0] |= 1 << 6
-			if err := func() error {
-				if err := s.PortRangeMin.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"port_range_min\"")
-			}
-		case "protocol":
-			requiredBitSet[0] |= 1 << 7
-			if err := func() error {
-				if err := s.Protocol.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"protocol\"")
-			}
-		case "remote_ip_prefix":
-			requiredBitSet[1] |= 1 << 0
-			if err := func() error {
-				if err := s.RemoteIPPrefix.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"remote_ip_prefix\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode SecurityRuleResource")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
-		0b11111111,
-		0b00000001,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfSecurityRuleResource) {
-					name = jsonFieldsNameOfSecurityRuleResource[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *SecurityRuleResource) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *SecurityRuleResource) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes SecurityRuleResourceDirection as json.
-func (s SecurityRuleResourceDirection) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes SecurityRuleResourceDirection from json.
-func (s *SecurityRuleResourceDirection) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode SecurityRuleResourceDirection to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch SecurityRuleResourceDirection(v) {
-	case SecurityRuleResourceDirectionIngress:
-		*s = SecurityRuleResourceDirectionIngress
-	case SecurityRuleResourceDirectionEgress:
-		*s = SecurityRuleResourceDirectionEgress
-	default:
-		*s = SecurityRuleResourceDirection(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s SecurityRuleResourceDirection) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *SecurityRuleResourceDirection) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes SecurityRuleResourceEthertype as json.
-func (s SecurityRuleResourceEthertype) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes SecurityRuleResourceEthertype from json.
-func (s *SecurityRuleResourceEthertype) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode SecurityRuleResourceEthertype to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch SecurityRuleResourceEthertype(v) {
-	case SecurityRuleResourceEthertypeIPv4:
-		*s = SecurityRuleResourceEthertypeIPv4
-	case SecurityRuleResourceEthertypeIPv6:
-		*s = SecurityRuleResourceEthertypeIPv6
-	default:
-		*s = SecurityRuleResourceEthertype(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s SecurityRuleResourceEthertype) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *SecurityRuleResourceEthertype) UnmarshalJSON(data []byte) error {
+func (s *SecurityGroupRuleListResponseBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -21467,6 +21322,97 @@ func (s TerminationPolicy) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TerminationPolicy) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *UpdateSecurityGroupRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *UpdateSecurityGroupRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.Name.Set {
+			e.FieldStart("name")
+			s.Name.Encode(e)
+		}
+	}
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfUpdateSecurityGroupRequestBody = [2]string{
+	0: "name",
+	1: "description",
+}
+
+// Decode decodes UpdateSecurityGroupRequestBody from json.
+func (s *UpdateSecurityGroupRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode UpdateSecurityGroupRequestBody to nil")
+	}
+	var propertiesCount int
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		propertiesCount++
+		switch string(k) {
+		case "name":
+			if err := func() error {
+				s.Name.Reset()
+				if err := s.Name.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode UpdateSecurityGroupRequestBody")
+	}
+	// Validate properties count.
+	if err := (validate.Object{
+		MinProperties:    1,
+		MinPropertiesSet: true,
+		MaxProperties:    0,
+		MaxPropertiesSet: false,
+	}).ValidateProperties(propertiesCount); err != nil {
+		return errors.Wrap(err, "object")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *UpdateSecurityGroupRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *UpdateSecurityGroupRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
