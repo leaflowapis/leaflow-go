@@ -230,13 +230,13 @@ type Invoker interface {
 	// their usage type and period must match. A pending virtual machine has no server, system disk or
 	// address, and is not metered.
 	//
-	// Creation starts once Billing accepts the order: the virtual machine becomes `provisioning`, then
-	// `active`. With automatic checkout, insufficient funds refuse the request and nothing is created.
-	// With deferred checkout, the virtual machines stay `pending` until the customer completes checkout in
-	// Billing and the order is paid; an expired Checkout Session, or a canceled or expired order, leaves
-	// them `failed` with `checkout_expired`, `order_canceled` or `order_expired`. Do not submit another
-	// creation request after paying. After an uncertain response, look the Checkout Session up in Billing
-	// before submitting again.
+	// Creation starts once Billing accepts the order: the virtual machine stays `pending` with the
+	// `create` operation while it is created, then becomes `active`. With automatic checkout, insufficient
+	// funds refuse the request and nothing is created. With deferred checkout, the virtual machines stay
+	// `pending` until the customer completes checkout in Billing and the order is paid; an expired
+	// Checkout Session, or a canceled or expired order, leaves them `failed` with `checkout_expired`,
+	// `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an
+	// uncertain response, look the Checkout Session up in Billing before submitting again.
 	//
 	// Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
 	// subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
@@ -1007,12 +1007,13 @@ type Invoker interface {
 	//
 	// The accepter project writes its decision as `acceptance`. Only the accepter project may write it;
 	// the requester project is refused, because a peering would otherwise be accepted by the party who
-	// asked for it. The decision is written once: a peering that is no longer `pending_acceptance` refuses
-	// it.
+	// asked for it. The decision is written once: a peering whose `acceptance` is no longer `pending`
+	// refuses it.
 	//
 	// `accepted` starts the provisioning of the connectivity and returns 202; the peering shows the
-	// `provision` operation until it is `active`. `rejected` returns 200 with the peering `rejected`, and
-	// no connectivity is ever created. Does not change security groups or provide transitive routing.
+	// `provision` operation until it is `active`. `rejected` returns 200 with the peering's `acceptance`
+	// `rejected` and its `status` `deleted`, and no connectivity is ever created. Does not change security
+	// groups or provide transitive routing.
 	//
 	// PATCH /api/v1/peerings/{peeringId}
 	UpdatePeering(ctx context.Context, request *UpdatePeeringRequestBody, params UpdatePeeringParams) (UpdatePeeringRes, error)
@@ -3073,13 +3074,13 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 // their usage type and period must match. A pending virtual machine has no server, system disk or
 // address, and is not metered.
 //
-// Creation starts once Billing accepts the order: the virtual machine becomes `provisioning`, then
-// `active`. With automatic checkout, insufficient funds refuse the request and nothing is created.
-// With deferred checkout, the virtual machines stay `pending` until the customer completes checkout in
-// Billing and the order is paid; an expired Checkout Session, or a canceled or expired order, leaves
-// them `failed` with `checkout_expired`, `order_canceled` or `order_expired`. Do not submit another
-// creation request after paying. After an uncertain response, look the Checkout Session up in Billing
-// before submitting again.
+// Creation starts once Billing accepts the order: the virtual machine stays `pending` with the
+// `create` operation while it is created, then becomes `active`. With automatic checkout, insufficient
+// funds refuse the request and nothing is created. With deferred checkout, the virtual machines stay
+// `pending` until the customer completes checkout in Billing and the order is paid; an expired
+// Checkout Session, or a canceled or expired order, leaves them `failed` with `checkout_expired`,
+// `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an
+// uncertain response, look the Checkout Session up in Billing before submitting again.
 //
 // Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
 // subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
@@ -14954,12 +14955,13 @@ func (c *Client) sendUpdateNetworkInterface(ctx context.Context, request *Update
 //
 // The accepter project writes its decision as `acceptance`. Only the accepter project may write it;
 // the requester project is refused, because a peering would otherwise be accepted by the party who
-// asked for it. The decision is written once: a peering that is no longer `pending_acceptance` refuses
-// it.
+// asked for it. The decision is written once: a peering whose `acceptance` is no longer `pending`
+// refuses it.
 //
 // `accepted` starts the provisioning of the connectivity and returns 202; the peering shows the
-// `provision` operation until it is `active`. `rejected` returns 200 with the peering `rejected`, and
-// no connectivity is ever created. Does not change security groups or provide transitive routing.
+// `provision` operation until it is `active`. `rejected` returns 200 with the peering's `acceptance`
+// `rejected` and its `status` `deleted`, and no connectivity is ever created. Does not change security
+// groups or provide transitive routing.
 //
 // PATCH /api/v1/peerings/{peeringId}
 func (c *Client) UpdatePeering(ctx context.Context, request *UpdatePeeringRequestBody, params UpdatePeeringParams) (UpdatePeeringRes, error) {

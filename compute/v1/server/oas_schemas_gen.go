@@ -1953,7 +1953,6 @@ const (
 	DiskAttachmentStateReserved DiskAttachmentState = "reserved"
 	DiskAttachmentStateAttached DiskAttachmentState = "attached"
 	DiskAttachmentStateReleased DiskAttachmentState = "released"
-	DiskAttachmentStateUnknown  DiskAttachmentState = "unknown"
 )
 
 // AllValues returns all DiskAttachmentState values.
@@ -1962,7 +1961,6 @@ func (DiskAttachmentState) AllValues() []DiskAttachmentState {
 		DiskAttachmentStateReserved,
 		DiskAttachmentStateAttached,
 		DiskAttachmentStateReleased,
-		DiskAttachmentStateUnknown,
 	}
 }
 
@@ -1974,8 +1972,6 @@ func (s DiskAttachmentState) MarshalText() ([]byte, error) {
 	case DiskAttachmentStateAttached:
 		return []byte(s), nil
 	case DiskAttachmentStateReleased:
-		return []byte(s), nil
-	case DiskAttachmentStateUnknown:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1993,9 +1989,6 @@ func (s *DiskAttachmentState) UnmarshalText(data []byte) error {
 		return nil
 	case DiskAttachmentStateReleased:
 		*s = DiskAttachmentStateReleased
-		return nil
-	case DiskAttachmentStateUnknown:
-		*s = DiskAttachmentStateUnknown
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2197,8 +2190,8 @@ type DiskBackupResource struct {
 	CapacityGib int64 `json:"capacity_gib"`
 	// The disk this backup was taken from. The backup remains usable after that disk is deleted.
 	SourceDiskID DiskID `json:"source_disk_id"`
-	// `provisioning` while the backup is taken, then `available`. `failed` means the backup was not
-	// created. `missing` means the backup no longer exists in the cloud.
+	// `pending` from the purchase until the backup is taken, then `available`; while it is taken the
+	// backup shows the `create` operation. `failed` means the backup was not created.
 	Status DiskBackupResourceStatus `json:"status"`
 	// The operation in progress on this backup, or null when none is.
 	Operation NilDiskBackupOperation `json:"operation"`
@@ -2450,30 +2443,26 @@ func (s *DiskBackupResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// `provisioning` while the backup is taken, then `available`. `failed` means the backup was not
-// created. `missing` means the backup no longer exists in the cloud.
+// `pending` from the purchase until the backup is taken, then `available`; while it is taken the
+// backup shows the `create` operation. `failed` means the backup was not created.
 type DiskBackupResourceStatus string
 
 const (
-	DiskBackupResourceStatusPending      DiskBackupResourceStatus = "pending"
-	DiskBackupResourceStatusProvisioning DiskBackupResourceStatus = "provisioning"
-	DiskBackupResourceStatusAvailable    DiskBackupResourceStatus = "available"
-	DiskBackupResourceStatusDeleted      DiskBackupResourceStatus = "deleted"
-	DiskBackupResourceStatusFailed       DiskBackupResourceStatus = "failed"
-	DiskBackupResourceStatusError        DiskBackupResourceStatus = "error"
-	DiskBackupResourceStatusMissing      DiskBackupResourceStatus = "missing"
+	DiskBackupResourceStatusPending   DiskBackupResourceStatus = "pending"
+	DiskBackupResourceStatusAvailable DiskBackupResourceStatus = "available"
+	DiskBackupResourceStatusDeleted   DiskBackupResourceStatus = "deleted"
+	DiskBackupResourceStatusFailed    DiskBackupResourceStatus = "failed"
+	DiskBackupResourceStatusError     DiskBackupResourceStatus = "error"
 )
 
 // AllValues returns all DiskBackupResourceStatus values.
 func (DiskBackupResourceStatus) AllValues() []DiskBackupResourceStatus {
 	return []DiskBackupResourceStatus{
 		DiskBackupResourceStatusPending,
-		DiskBackupResourceStatusProvisioning,
 		DiskBackupResourceStatusAvailable,
 		DiskBackupResourceStatusDeleted,
 		DiskBackupResourceStatusFailed,
 		DiskBackupResourceStatusError,
-		DiskBackupResourceStatusMissing,
 	}
 }
 
@@ -2482,8 +2471,6 @@ func (s DiskBackupResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case DiskBackupResourceStatusPending:
 		return []byte(s), nil
-	case DiskBackupResourceStatusProvisioning:
-		return []byte(s), nil
 	case DiskBackupResourceStatusAvailable:
 		return []byte(s), nil
 	case DiskBackupResourceStatusDeleted:
@@ -2491,8 +2478,6 @@ func (s DiskBackupResourceStatus) MarshalText() ([]byte, error) {
 	case DiskBackupResourceStatusFailed:
 		return []byte(s), nil
 	case DiskBackupResourceStatusError:
-		return []byte(s), nil
-	case DiskBackupResourceStatusMissing:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -2505,9 +2490,6 @@ func (s *DiskBackupResourceStatus) UnmarshalText(data []byte) error {
 	case DiskBackupResourceStatusPending:
 		*s = DiskBackupResourceStatusPending
 		return nil
-	case DiskBackupResourceStatusProvisioning:
-		*s = DiskBackupResourceStatusProvisioning
-		return nil
 	case DiskBackupResourceStatusAvailable:
 		*s = DiskBackupResourceStatusAvailable
 		return nil
@@ -2519,9 +2501,6 @@ func (s *DiskBackupResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case DiskBackupResourceStatusError:
 		*s = DiskBackupResourceStatusError
-		return nil
-	case DiskBackupResourceStatusMissing:
-		*s = DiskBackupResourceStatusMissing
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2784,9 +2763,10 @@ type DiskResource struct {
 	RegionID           RegionID           `json:"region_id"`
 	SizeGB             int64              `json:"size_gb"`
 	Performance        DiskPerformance    `json:"performance"`
-	// `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is
-	// created; then `available`, or `in_use` once attached. `failed` means the disk was not created;
-	// `failure_reason` states why. `missing` means the disk no longer exists in the cloud.
+	// `pending` until the disk is created, with no storage allocated before the order is accepted and the
+	// `create` operation shown while it is created; then `available`, or `in_use` once attached. `failed`
+	// means the disk was not created; `failure_reason` states why. `error` means the cloud reports the
+	// disk broken.
 	Status DiskResourceStatus `json:"status"`
 	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
 	// until its checkout completes. Null when the resource was not bought through one.
@@ -3138,33 +3118,30 @@ func (s *DiskResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` until the order is accepted, with no storage allocated; `provisioning` while the disk is
-// created; then `available`, or `in_use` once attached. `failed` means the disk was not created;
-// `failure_reason` states why. `missing` means the disk no longer exists in the cloud.
+// `pending` until the disk is created, with no storage allocated before the order is accepted and the
+// `create` operation shown while it is created; then `available`, or `in_use` once attached. `failed`
+// means the disk was not created; `failure_reason` states why. `error` means the cloud reports the
+// disk broken.
 type DiskResourceStatus string
 
 const (
-	DiskResourceStatusPending      DiskResourceStatus = "pending"
-	DiskResourceStatusProvisioning DiskResourceStatus = "provisioning"
-	DiskResourceStatusAvailable    DiskResourceStatus = "available"
-	DiskResourceStatusInUse        DiskResourceStatus = "in_use"
-	DiskResourceStatusDeleted      DiskResourceStatus = "deleted"
-	DiskResourceStatusFailed       DiskResourceStatus = "failed"
-	DiskResourceStatusError        DiskResourceStatus = "error"
-	DiskResourceStatusMissing      DiskResourceStatus = "missing"
+	DiskResourceStatusPending   DiskResourceStatus = "pending"
+	DiskResourceStatusAvailable DiskResourceStatus = "available"
+	DiskResourceStatusInUse     DiskResourceStatus = "in_use"
+	DiskResourceStatusDeleted   DiskResourceStatus = "deleted"
+	DiskResourceStatusFailed    DiskResourceStatus = "failed"
+	DiskResourceStatusError     DiskResourceStatus = "error"
 )
 
 // AllValues returns all DiskResourceStatus values.
 func (DiskResourceStatus) AllValues() []DiskResourceStatus {
 	return []DiskResourceStatus{
 		DiskResourceStatusPending,
-		DiskResourceStatusProvisioning,
 		DiskResourceStatusAvailable,
 		DiskResourceStatusInUse,
 		DiskResourceStatusDeleted,
 		DiskResourceStatusFailed,
 		DiskResourceStatusError,
-		DiskResourceStatusMissing,
 	}
 }
 
@@ -3172,8 +3149,6 @@ func (DiskResourceStatus) AllValues() []DiskResourceStatus {
 func (s DiskResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case DiskResourceStatusPending:
-		return []byte(s), nil
-	case DiskResourceStatusProvisioning:
 		return []byte(s), nil
 	case DiskResourceStatusAvailable:
 		return []byte(s), nil
@@ -3185,8 +3160,6 @@ func (s DiskResourceStatus) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case DiskResourceStatusError:
 		return []byte(s), nil
-	case DiskResourceStatusMissing:
-		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
 	}
@@ -3197,9 +3170,6 @@ func (s *DiskResourceStatus) UnmarshalText(data []byte) error {
 	switch DiskResourceStatus(data) {
 	case DiskResourceStatusPending:
 		*s = DiskResourceStatusPending
-		return nil
-	case DiskResourceStatusProvisioning:
-		*s = DiskResourceStatusProvisioning
 		return nil
 	case DiskResourceStatusAvailable:
 		*s = DiskResourceStatusAvailable
@@ -3215,9 +3185,6 @@ func (s *DiskResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case DiskResourceStatusError:
 		*s = DiskResourceStatusError
-		return nil
-	case DiskResourceStatusMissing:
-		*s = DiskResourceStatusMissing
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3521,9 +3488,9 @@ type ElasticIP struct {
 	ID            ElasticIPID     `json:"id"`
 	TypeID        ElasticIPTypeID `json:"type_id"`
 	RegionID      RegionID        `json:"region_id"`
-	// `pending` until the order is accepted, with no address allocated; `provisioning` while the address
-	// is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states
-	// why. `missing` means the address no longer exists in the cloud.
+	// `pending` until the address is created, with no address allocated before the order is accepted and
+	// the `create` operation shown while it is created; then `available`. `failed` means no address was
+	// allocated; `failure_reason` states why.
 	Status ElasticIPStatus `json:"status"`
 	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
 	// until its checkout completes. Null when the resource was not bought through one.
@@ -3806,8 +3773,8 @@ type ElasticIPAssociation struct {
 	Address                   IPv4HostAddress           `json:"address"`
 	FixedIP                   IPv4HostAddress           `json:"fixed_ip"`
 	State                     ElasticIPAssociationState `json:"state"`
-	BoundAt                   NilDateTime               `json:"bound_at"`
-	UnboundAt                 NilDateTime               `json:"unbound_at"`
+	AssociatedAt              NilDateTime               `json:"associated_at"`
+	DisassociatedAt           NilDateTime               `json:"disassociated_at"`
 	ReleasedAt                NilDateTime               `json:"released_at"`
 }
 
@@ -3841,14 +3808,14 @@ func (s *ElasticIPAssociation) GetState() ElasticIPAssociationState {
 	return s.State
 }
 
-// GetBoundAt returns the value of BoundAt.
-func (s *ElasticIPAssociation) GetBoundAt() NilDateTime {
-	return s.BoundAt
+// GetAssociatedAt returns the value of AssociatedAt.
+func (s *ElasticIPAssociation) GetAssociatedAt() NilDateTime {
+	return s.AssociatedAt
 }
 
-// GetUnboundAt returns the value of UnboundAt.
-func (s *ElasticIPAssociation) GetUnboundAt() NilDateTime {
-	return s.UnboundAt
+// GetDisassociatedAt returns the value of DisassociatedAt.
+func (s *ElasticIPAssociation) GetDisassociatedAt() NilDateTime {
+	return s.DisassociatedAt
 }
 
 // GetReleasedAt returns the value of ReleasedAt.
@@ -3886,14 +3853,14 @@ func (s *ElasticIPAssociation) SetState(val ElasticIPAssociationState) {
 	s.State = val
 }
 
-// SetBoundAt sets the value of BoundAt.
-func (s *ElasticIPAssociation) SetBoundAt(val NilDateTime) {
-	s.BoundAt = val
+// SetAssociatedAt sets the value of AssociatedAt.
+func (s *ElasticIPAssociation) SetAssociatedAt(val NilDateTime) {
+	s.AssociatedAt = val
 }
 
-// SetUnboundAt sets the value of UnboundAt.
-func (s *ElasticIPAssociation) SetUnboundAt(val NilDateTime) {
-	s.UnboundAt = val
+// SetDisassociatedAt sets the value of DisassociatedAt.
+func (s *ElasticIPAssociation) SetDisassociatedAt(val NilDateTime) {
+	s.DisassociatedAt = val
 }
 
 // SetReleasedAt sets the value of ReleasedAt.
@@ -3906,28 +3873,24 @@ type ElasticIPAssociationID string
 type ElasticIPAssociationState string
 
 const (
-	ElasticIPAssociationStateBound    ElasticIPAssociationState = "bound"
-	ElasticIPAssociationStateReleased ElasticIPAssociationState = "released"
-	ElasticIPAssociationStateUnknown  ElasticIPAssociationState = "unknown"
+	ElasticIPAssociationStateAssociated ElasticIPAssociationState = "associated"
+	ElasticIPAssociationStateReleased   ElasticIPAssociationState = "released"
 )
 
 // AllValues returns all ElasticIPAssociationState values.
 func (ElasticIPAssociationState) AllValues() []ElasticIPAssociationState {
 	return []ElasticIPAssociationState{
-		ElasticIPAssociationStateBound,
+		ElasticIPAssociationStateAssociated,
 		ElasticIPAssociationStateReleased,
-		ElasticIPAssociationStateUnknown,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s ElasticIPAssociationState) MarshalText() ([]byte, error) {
 	switch s {
-	case ElasticIPAssociationStateBound:
+	case ElasticIPAssociationStateAssociated:
 		return []byte(s), nil
 	case ElasticIPAssociationStateReleased:
-		return []byte(s), nil
-	case ElasticIPAssociationStateUnknown:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -3937,14 +3900,11 @@ func (s ElasticIPAssociationState) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *ElasticIPAssociationState) UnmarshalText(data []byte) error {
 	switch ElasticIPAssociationState(data) {
-	case ElasticIPAssociationStateBound:
-		*s = ElasticIPAssociationStateBound
+	case ElasticIPAssociationStateAssociated:
+		*s = ElasticIPAssociationStateAssociated
 		return nil
 	case ElasticIPAssociationStateReleased:
 		*s = ElasticIPAssociationStateReleased
-		return nil
-	case ElasticIPAssociationStateUnknown:
-		*s = ElasticIPAssociationStateUnknown
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4222,33 +4182,27 @@ func (s *ElasticIPReleaseResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` until the order is accepted, with no address allocated; `provisioning` while the address
-// is allocated; then `available`. `failed` means no address was allocated; `failure_reason` states
-// why. `missing` means the address no longer exists in the cloud.
+// `pending` until the address is created, with no address allocated before the order is accepted and
+// the `create` operation shown while it is created; then `available`. `failed` means no address was
+// allocated; `failure_reason` states why.
 type ElasticIPStatus string
 
 const (
-	ElasticIPStatusPending      ElasticIPStatus = "pending"
-	ElasticIPStatusProvisioning ElasticIPStatus = "provisioning"
-	ElasticIPStatusAvailable    ElasticIPStatus = "available"
-	ElasticIPStatusDeleted      ElasticIPStatus = "deleted"
-	ElasticIPStatusFailed       ElasticIPStatus = "failed"
-	ElasticIPStatusError        ElasticIPStatus = "error"
-	ElasticIPStatusUnknown      ElasticIPStatus = "unknown"
-	ElasticIPStatusMissing      ElasticIPStatus = "missing"
+	ElasticIPStatusPending   ElasticIPStatus = "pending"
+	ElasticIPStatusAvailable ElasticIPStatus = "available"
+	ElasticIPStatusDeleted   ElasticIPStatus = "deleted"
+	ElasticIPStatusFailed    ElasticIPStatus = "failed"
+	ElasticIPStatusError     ElasticIPStatus = "error"
 )
 
 // AllValues returns all ElasticIPStatus values.
 func (ElasticIPStatus) AllValues() []ElasticIPStatus {
 	return []ElasticIPStatus{
 		ElasticIPStatusPending,
-		ElasticIPStatusProvisioning,
 		ElasticIPStatusAvailable,
 		ElasticIPStatusDeleted,
 		ElasticIPStatusFailed,
 		ElasticIPStatusError,
-		ElasticIPStatusUnknown,
-		ElasticIPStatusMissing,
 	}
 }
 
@@ -4257,8 +4211,6 @@ func (s ElasticIPStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case ElasticIPStatusPending:
 		return []byte(s), nil
-	case ElasticIPStatusProvisioning:
-		return []byte(s), nil
 	case ElasticIPStatusAvailable:
 		return []byte(s), nil
 	case ElasticIPStatusDeleted:
@@ -4266,10 +4218,6 @@ func (s ElasticIPStatus) MarshalText() ([]byte, error) {
 	case ElasticIPStatusFailed:
 		return []byte(s), nil
 	case ElasticIPStatusError:
-		return []byte(s), nil
-	case ElasticIPStatusUnknown:
-		return []byte(s), nil
-	case ElasticIPStatusMissing:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -4282,9 +4230,6 @@ func (s *ElasticIPStatus) UnmarshalText(data []byte) error {
 	case ElasticIPStatusPending:
 		*s = ElasticIPStatusPending
 		return nil
-	case ElasticIPStatusProvisioning:
-		*s = ElasticIPStatusProvisioning
-		return nil
 	case ElasticIPStatusAvailable:
 		*s = ElasticIPStatusAvailable
 		return nil
@@ -4296,12 +4241,6 @@ func (s *ElasticIPStatus) UnmarshalText(data []byte) error {
 		return nil
 	case ElasticIPStatusError:
 		*s = ElasticIPStatusError
-		return nil
-	case ElasticIPStatusUnknown:
-		*s = ElasticIPStatusUnknown
-		return nil
-	case ElasticIPStatusMissing:
-		*s = ElasticIPStatusMissing
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4934,7 +4873,8 @@ type NetworkInterface struct {
 	ElasticIPAddresses []string                      `json:"elastic_ip_addresses"`
 	Addresses          []NetworkInterfaceAddress     `json:"addresses"`
 	Attachment         NilNetworkInterfaceAttachment `json:"attachment"`
-	// `missing` means the interface no longer exists in the cloud.
+	// `pending` until the interface is created, then `available`. `error` means its creation failed or the
+	// cloud reports it broken; delete it and create another.
 	Status NetworkInterfaceStatus `json:"status"`
 	// The operation in progress on this network interface, or null when none is.
 	Operation NilNetworkInterfaceOperation `json:"operation"`
@@ -5187,7 +5127,6 @@ const (
 	NetworkInterfaceAddressStateReserved NetworkInterfaceAddressState = "reserved"
 	NetworkInterfaceAddressStateAssigned NetworkInterfaceAddressState = "assigned"
 	NetworkInterfaceAddressStateReleased NetworkInterfaceAddressState = "released"
-	NetworkInterfaceAddressStateUnknown  NetworkInterfaceAddressState = "unknown"
 )
 
 // AllValues returns all NetworkInterfaceAddressState values.
@@ -5196,7 +5135,6 @@ func (NetworkInterfaceAddressState) AllValues() []NetworkInterfaceAddressState {
 		NetworkInterfaceAddressStateReserved,
 		NetworkInterfaceAddressStateAssigned,
 		NetworkInterfaceAddressStateReleased,
-		NetworkInterfaceAddressStateUnknown,
 	}
 }
 
@@ -5208,8 +5146,6 @@ func (s NetworkInterfaceAddressState) MarshalText() ([]byte, error) {
 	case NetworkInterfaceAddressStateAssigned:
 		return []byte(s), nil
 	case NetworkInterfaceAddressStateReleased:
-		return []byte(s), nil
-	case NetworkInterfaceAddressStateUnknown:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5227,9 +5163,6 @@ func (s *NetworkInterfaceAddressState) UnmarshalText(data []byte) error {
 		return nil
 	case NetworkInterfaceAddressStateReleased:
 		*s = NetworkInterfaceAddressStateReleased
-		return nil
-	case NetworkInterfaceAddressStateUnknown:
-		*s = NetworkInterfaceAddressStateUnknown
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -5412,7 +5345,6 @@ const (
 	NetworkInterfaceAttachmentStateReserved NetworkInterfaceAttachmentState = "reserved"
 	NetworkInterfaceAttachmentStateAttached NetworkInterfaceAttachmentState = "attached"
 	NetworkInterfaceAttachmentStateReleased NetworkInterfaceAttachmentState = "released"
-	NetworkInterfaceAttachmentStateUnknown  NetworkInterfaceAttachmentState = "unknown"
 )
 
 // AllValues returns all NetworkInterfaceAttachmentState values.
@@ -5421,7 +5353,6 @@ func (NetworkInterfaceAttachmentState) AllValues() []NetworkInterfaceAttachmentS
 		NetworkInterfaceAttachmentStateReserved,
 		NetworkInterfaceAttachmentStateAttached,
 		NetworkInterfaceAttachmentStateReleased,
-		NetworkInterfaceAttachmentStateUnknown,
 	}
 }
 
@@ -5433,8 +5364,6 @@ func (s NetworkInterfaceAttachmentState) MarshalText() ([]byte, error) {
 	case NetworkInterfaceAttachmentStateAttached:
 		return []byte(s), nil
 	case NetworkInterfaceAttachmentStateReleased:
-		return []byte(s), nil
-	case NetworkInterfaceAttachmentStateUnknown:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5452,9 +5381,6 @@ func (s *NetworkInterfaceAttachmentState) UnmarshalText(data []byte) error {
 		return nil
 	case NetworkInterfaceAttachmentStateReleased:
 		*s = NetworkInterfaceAttachmentStateReleased
-		return nil
-	case NetworkInterfaceAttachmentStateUnknown:
-		*s = NetworkInterfaceAttachmentStateUnknown
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -5584,15 +5510,14 @@ func (s *NetworkInterfaceOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
-// `missing` means the interface no longer exists in the cloud.
+// `pending` until the interface is created, then `available`. `error` means its creation failed or the
+// cloud reports it broken; delete it and create another.
 type NetworkInterfaceStatus string
 
 const (
 	NetworkInterfaceStatusPending   NetworkInterfaceStatus = "pending"
 	NetworkInterfaceStatusAvailable NetworkInterfaceStatus = "available"
 	NetworkInterfaceStatusError     NetworkInterfaceStatus = "error"
-	NetworkInterfaceStatusUnknown   NetworkInterfaceStatus = "unknown"
-	NetworkInterfaceStatusMissing   NetworkInterfaceStatus = "missing"
 )
 
 // AllValues returns all NetworkInterfaceStatus values.
@@ -5601,8 +5526,6 @@ func (NetworkInterfaceStatus) AllValues() []NetworkInterfaceStatus {
 		NetworkInterfaceStatusPending,
 		NetworkInterfaceStatusAvailable,
 		NetworkInterfaceStatusError,
-		NetworkInterfaceStatusUnknown,
-		NetworkInterfaceStatusMissing,
 	}
 }
 
@@ -5614,10 +5537,6 @@ func (s NetworkInterfaceStatus) MarshalText() ([]byte, error) {
 	case NetworkInterfaceStatusAvailable:
 		return []byte(s), nil
 	case NetworkInterfaceStatusError:
-		return []byte(s), nil
-	case NetworkInterfaceStatusUnknown:
-		return []byte(s), nil
-	case NetworkInterfaceStatusMissing:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5635,12 +5554,6 @@ func (s *NetworkInterfaceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case NetworkInterfaceStatusError:
 		*s = NetworkInterfaceStatusError
-		return nil
-	case NetworkInterfaceStatusUnknown:
-		*s = NetworkInterfaceStatusUnknown
-		return nil
-	case NetworkInterfaceStatusMissing:
-		*s = NetworkInterfaceStatusMissing
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -9155,11 +9068,13 @@ type PeeringResource struct {
 	RequesterVirtualPrivateCloudID VirtualPrivateCloudID `json:"requester_virtual_private_cloud_id"`
 	AccepterVirtualPrivateCloudID  VirtualPrivateCloudID `json:"accepter_virtual_private_cloud_id"`
 	// The accepter project's decision. `pending` until it writes one; `accepted` and `rejected` follow the
-	// `acceptance` of `update-peering`, consistent with `status` being `pending_acceptance`, any of the
-	// states after acceptance, or `rejected`.
+	// `acceptance` of `update-peering`. A rejected peering is `deleted`.
 	Acceptance PeeringResourceAcceptance `json:"acceptance"`
-	Status     PeeringResourceStatus     `json:"status"`
-	CreatedAt  time.Time                 `json:"created_at"`
+	// `pending` until the connectivity exists: while acceptance is pending, and after it is accepted while
+	// the `provision` operation builds the link. Then `active`. `failed` means the link could not be
+	// built; `failure_reason` states why. `deleted` once deleted or rejected.
+	Status    PeeringResourceStatus `json:"status"`
+	CreatedAt time.Time             `json:"created_at"`
 	// Why provisioning failed; null unless `status` is `failed`.
 	FailureReason NilString `json:"failure_reason"`
 	// The operation in progress on this peering, or null when none is.
@@ -9289,8 +9204,7 @@ func (s *PeeringResource) SetOperation(val NilPeeringOperation) {
 func (*PeeringResource) deletePeeringRes() {}
 
 // The accepter project's decision. `pending` until it writes one; `accepted` and `rejected` follow the
-// `acceptance` of `update-peering`, consistent with `status` being `pending_acceptance`, any of the
-// states after acceptance, or `rejected`.
+// `acceptance` of `update-peering`. A rejected peering is `deleted`.
 type PeeringResourceAcceptance string
 
 const (
@@ -9339,25 +9253,24 @@ func (s *PeeringResourceAcceptance) UnmarshalText(data []byte) error {
 	}
 }
 
+// `pending` until the connectivity exists: while acceptance is pending, and after it is accepted while
+// the `provision` operation builds the link. Then `active`. `failed` means the link could not be
+// built; `failure_reason` states why. `deleted` once deleted or rejected.
 type PeeringResourceStatus string
 
 const (
-	PeeringResourceStatusPendingAcceptance PeeringResourceStatus = "pending_acceptance"
-	PeeringResourceStatusProvisioning      PeeringResourceStatus = "provisioning"
-	PeeringResourceStatusActive            PeeringResourceStatus = "active"
-	PeeringResourceStatusDeleted           PeeringResourceStatus = "deleted"
-	PeeringResourceStatusRejected          PeeringResourceStatus = "rejected"
-	PeeringResourceStatusFailed            PeeringResourceStatus = "failed"
+	PeeringResourceStatusPending PeeringResourceStatus = "pending"
+	PeeringResourceStatusActive  PeeringResourceStatus = "active"
+	PeeringResourceStatusDeleted PeeringResourceStatus = "deleted"
+	PeeringResourceStatusFailed  PeeringResourceStatus = "failed"
 )
 
 // AllValues returns all PeeringResourceStatus values.
 func (PeeringResourceStatus) AllValues() []PeeringResourceStatus {
 	return []PeeringResourceStatus{
-		PeeringResourceStatusPendingAcceptance,
-		PeeringResourceStatusProvisioning,
+		PeeringResourceStatusPending,
 		PeeringResourceStatusActive,
 		PeeringResourceStatusDeleted,
-		PeeringResourceStatusRejected,
 		PeeringResourceStatusFailed,
 	}
 }
@@ -9365,15 +9278,11 @@ func (PeeringResourceStatus) AllValues() []PeeringResourceStatus {
 // MarshalText implements encoding.TextMarshaler.
 func (s PeeringResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case PeeringResourceStatusPendingAcceptance:
-		return []byte(s), nil
-	case PeeringResourceStatusProvisioning:
+	case PeeringResourceStatusPending:
 		return []byte(s), nil
 	case PeeringResourceStatusActive:
 		return []byte(s), nil
 	case PeeringResourceStatusDeleted:
-		return []byte(s), nil
-	case PeeringResourceStatusRejected:
 		return []byte(s), nil
 	case PeeringResourceStatusFailed:
 		return []byte(s), nil
@@ -9385,20 +9294,14 @@ func (s PeeringResourceStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 	switch PeeringResourceStatus(data) {
-	case PeeringResourceStatusPendingAcceptance:
-		*s = PeeringResourceStatusPendingAcceptance
-		return nil
-	case PeeringResourceStatusProvisioning:
-		*s = PeeringResourceStatusProvisioning
+	case PeeringResourceStatusPending:
+		*s = PeeringResourceStatusPending
 		return nil
 	case PeeringResourceStatusActive:
 		*s = PeeringResourceStatusActive
 		return nil
 	case PeeringResourceStatusDeleted:
 		*s = PeeringResourceStatusDeleted
-		return nil
-	case PeeringResourceStatusRejected:
-		*s = PeeringResourceStatusRejected
 		return nil
 	case PeeringResourceStatusFailed:
 		*s = PeeringResourceStatusFailed
@@ -9662,9 +9565,10 @@ type PrivateImageResource struct {
 	MinRAMMB int64 `json:"min_ram_mb"`
 	// False means a new password can only be set by rebuilding a virtual machine created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
-	// Only available images can install virtual machines. A capture starts pending, then provisioning and
-	// uploading before available. Failed means no usable image was produced; failure describes the
-	// outcome. Missing means the image is absent from the infrastructure.
+	// Only available images can install virtual machines. A capture is pending until it finishes and shows
+	// the `create` operation while it runs, then becomes available. Failed means no usable image was
+	// produced; failure describes the outcome. Error means the image service broke the image or no longer
+	// holds it, and nothing can be installed from it.
 	Status PrivateImageResourceStatus `json:"status"`
 	// Details of why the capture failed; non-empty only when `status` is `failed`.
 	Failure NilString `json:"failure"`
@@ -9982,33 +9886,28 @@ func (s *PrivateImageResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// Only available images can install virtual machines. A capture starts pending, then provisioning and
-// uploading before available. Failed means no usable image was produced; failure describes the
-// outcome. Missing means the image is absent from the infrastructure.
+// Only available images can install virtual machines. A capture is pending until it finishes and shows
+// the `create` operation while it runs, then becomes available. Failed means no usable image was
+// produced; failure describes the outcome. Error means the image service broke the image or no longer
+// holds it, and nothing can be installed from it.
 type PrivateImageResourceStatus string
 
 const (
-	PrivateImageResourceStatusPending      PrivateImageResourceStatus = "pending"
-	PrivateImageResourceStatusProvisioning PrivateImageResourceStatus = "provisioning"
-	PrivateImageResourceStatusUploading    PrivateImageResourceStatus = "uploading"
-	PrivateImageResourceStatusAvailable    PrivateImageResourceStatus = "available"
-	PrivateImageResourceStatusDeleted      PrivateImageResourceStatus = "deleted"
-	PrivateImageResourceStatusFailed       PrivateImageResourceStatus = "failed"
-	PrivateImageResourceStatusError        PrivateImageResourceStatus = "error"
-	PrivateImageResourceStatusMissing      PrivateImageResourceStatus = "missing"
+	PrivateImageResourceStatusPending   PrivateImageResourceStatus = "pending"
+	PrivateImageResourceStatusAvailable PrivateImageResourceStatus = "available"
+	PrivateImageResourceStatusDeleted   PrivateImageResourceStatus = "deleted"
+	PrivateImageResourceStatusFailed    PrivateImageResourceStatus = "failed"
+	PrivateImageResourceStatusError     PrivateImageResourceStatus = "error"
 )
 
 // AllValues returns all PrivateImageResourceStatus values.
 func (PrivateImageResourceStatus) AllValues() []PrivateImageResourceStatus {
 	return []PrivateImageResourceStatus{
 		PrivateImageResourceStatusPending,
-		PrivateImageResourceStatusProvisioning,
-		PrivateImageResourceStatusUploading,
 		PrivateImageResourceStatusAvailable,
 		PrivateImageResourceStatusDeleted,
 		PrivateImageResourceStatusFailed,
 		PrivateImageResourceStatusError,
-		PrivateImageResourceStatusMissing,
 	}
 }
 
@@ -10017,10 +9916,6 @@ func (s PrivateImageResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case PrivateImageResourceStatusPending:
 		return []byte(s), nil
-	case PrivateImageResourceStatusProvisioning:
-		return []byte(s), nil
-	case PrivateImageResourceStatusUploading:
-		return []byte(s), nil
 	case PrivateImageResourceStatusAvailable:
 		return []byte(s), nil
 	case PrivateImageResourceStatusDeleted:
@@ -10028,8 +9923,6 @@ func (s PrivateImageResourceStatus) MarshalText() ([]byte, error) {
 	case PrivateImageResourceStatusFailed:
 		return []byte(s), nil
 	case PrivateImageResourceStatusError:
-		return []byte(s), nil
-	case PrivateImageResourceStatusMissing:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -10042,12 +9935,6 @@ func (s *PrivateImageResourceStatus) UnmarshalText(data []byte) error {
 	case PrivateImageResourceStatusPending:
 		*s = PrivateImageResourceStatusPending
 		return nil
-	case PrivateImageResourceStatusProvisioning:
-		*s = PrivateImageResourceStatusProvisioning
-		return nil
-	case PrivateImageResourceStatusUploading:
-		*s = PrivateImageResourceStatusUploading
-		return nil
 	case PrivateImageResourceStatusAvailable:
 		*s = PrivateImageResourceStatusAvailable
 		return nil
@@ -10059,9 +9946,6 @@ func (s *PrivateImageResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case PrivateImageResourceStatusError:
 		*s = PrivateImageResourceStatusError
-		return nil
-	case PrivateImageResourceStatusMissing:
-		*s = PrivateImageResourceStatusMissing
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -11639,9 +11523,9 @@ type SnapshotResource struct {
 	RegionID           RegionID           `json:"region_id"`
 	// Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller.
 	SizeGB int64 `json:"size_gb"`
-	// `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then
-	// `available`. `failed` means the snapshot was not created; its slot is released once no snapshot data
-	// remains. `missing` means the snapshot no longer exists in the cloud.
+	// `pending` once a quota slot is reserved and until the snapshot is taken, showing the `create`
+	// operation while it is taken; then `available`. `failed` means the snapshot was not created; its slot
+	// is released once no snapshot data remains. `error` means the cloud reports the snapshot broken.
 	Status SnapshotResourceStatus `json:"status"`
 	// The operation in progress on this snapshot, or null when none is.
 	Operation NilSnapshotOperation `json:"operation"`
@@ -11881,31 +11765,27 @@ func (s *SnapshotResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` once a quota slot is reserved, `provisioning` while the snapshot is taken, then
-// `available`. `failed` means the snapshot was not created; its slot is released once no snapshot data
-// remains. `missing` means the snapshot no longer exists in the cloud.
+// `pending` once a quota slot is reserved and until the snapshot is taken, showing the `create`
+// operation while it is taken; then `available`. `failed` means the snapshot was not created; its slot
+// is released once no snapshot data remains. `error` means the cloud reports the snapshot broken.
 type SnapshotResourceStatus string
 
 const (
-	SnapshotResourceStatusPending      SnapshotResourceStatus = "pending"
-	SnapshotResourceStatusProvisioning SnapshotResourceStatus = "provisioning"
-	SnapshotResourceStatusAvailable    SnapshotResourceStatus = "available"
-	SnapshotResourceStatusDeleted      SnapshotResourceStatus = "deleted"
-	SnapshotResourceStatusFailed       SnapshotResourceStatus = "failed"
-	SnapshotResourceStatusError        SnapshotResourceStatus = "error"
-	SnapshotResourceStatusMissing      SnapshotResourceStatus = "missing"
+	SnapshotResourceStatusPending   SnapshotResourceStatus = "pending"
+	SnapshotResourceStatusAvailable SnapshotResourceStatus = "available"
+	SnapshotResourceStatusDeleted   SnapshotResourceStatus = "deleted"
+	SnapshotResourceStatusFailed    SnapshotResourceStatus = "failed"
+	SnapshotResourceStatusError     SnapshotResourceStatus = "error"
 )
 
 // AllValues returns all SnapshotResourceStatus values.
 func (SnapshotResourceStatus) AllValues() []SnapshotResourceStatus {
 	return []SnapshotResourceStatus{
 		SnapshotResourceStatusPending,
-		SnapshotResourceStatusProvisioning,
 		SnapshotResourceStatusAvailable,
 		SnapshotResourceStatusDeleted,
 		SnapshotResourceStatusFailed,
 		SnapshotResourceStatusError,
-		SnapshotResourceStatusMissing,
 	}
 }
 
@@ -11914,8 +11794,6 @@ func (s SnapshotResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case SnapshotResourceStatusPending:
 		return []byte(s), nil
-	case SnapshotResourceStatusProvisioning:
-		return []byte(s), nil
 	case SnapshotResourceStatusAvailable:
 		return []byte(s), nil
 	case SnapshotResourceStatusDeleted:
@@ -11923,8 +11801,6 @@ func (s SnapshotResourceStatus) MarshalText() ([]byte, error) {
 	case SnapshotResourceStatusFailed:
 		return []byte(s), nil
 	case SnapshotResourceStatusError:
-		return []byte(s), nil
-	case SnapshotResourceStatusMissing:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -11937,9 +11813,6 @@ func (s *SnapshotResourceStatus) UnmarshalText(data []byte) error {
 	case SnapshotResourceStatusPending:
 		*s = SnapshotResourceStatusPending
 		return nil
-	case SnapshotResourceStatusProvisioning:
-		*s = SnapshotResourceStatusProvisioning
-		return nil
 	case SnapshotResourceStatusAvailable:
 		*s = SnapshotResourceStatusAvailable
 		return nil
@@ -11951,9 +11824,6 @@ func (s *SnapshotResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case SnapshotResourceStatusError:
 		*s = SnapshotResourceStatusError
-		return nil
-	case SnapshotResourceStatusMissing:
-		*s = SnapshotResourceStatusMissing
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -12772,11 +12642,11 @@ type VirtualMachine struct {
 	// associated.
 	ElasticIPAddresses []string `json:"elastic_ip_addresses"`
 	RegionID           RegionID `json:"region_id"`
-	// `pending` until the order is accepted: no virtual machine exists and addresses are null.
-	// `provisioning` while the virtual machine is created, then `active`. `failed` means the virtual
-	// machine was not created; `failure_reason` states why. `missing` means the virtual machine no longer
-	// exists in the cloud. The other values are the state last observed in the cloud; an operation in
-	// progress appears in `operation`, not here.
+	// `pending` until the virtual machine is created: before the order is accepted no virtual machine
+	// exists and addresses are null, and while it is created it shows the `create` operation. Then
+	// `active`. `failed` means the virtual machine was not created; `failure_reason` states why. The other
+	// values are the state of the virtual machine in the cloud; an operation in progress appears in
+	// `operation`, not here.
 	Status       VirtualMachineStatus        `json:"status"`
 	SubnetID     NilSubnetID                 `json:"subnet_id"`
 	UpdatedAt    time.Time                   `json:"updated_at"`
@@ -13706,16 +13576,15 @@ func (s *VirtualMachineRestrictionSource) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` until the order is accepted: no virtual machine exists and addresses are null.
-// `provisioning` while the virtual machine is created, then `active`. `failed` means the virtual
-// machine was not created; `failure_reason` states why. `missing` means the virtual machine no longer
-// exists in the cloud. The other values are the state last observed in the cloud; an operation in
-// progress appears in `operation`, not here.
+// `pending` until the virtual machine is created: before the order is accepted no virtual machine
+// exists and addresses are null, and while it is created it shows the `create` operation. Then
+// `active`. `failed` means the virtual machine was not created; `failure_reason` states why. The other
+// values are the state of the virtual machine in the cloud; an operation in progress appears in
+// `operation`, not here.
 type VirtualMachineStatus string
 
 const (
 	VirtualMachineStatusPending          VirtualMachineStatus = "pending"
-	VirtualMachineStatusProvisioning     VirtualMachineStatus = "provisioning"
 	VirtualMachineStatusActive           VirtualMachineStatus = "active"
 	VirtualMachineStatusStopped          VirtualMachineStatus = "stopped"
 	VirtualMachineStatusPaused           VirtualMachineStatus = "paused"
@@ -13726,15 +13595,12 @@ const (
 	VirtualMachineStatusDeleted          VirtualMachineStatus = "deleted"
 	VirtualMachineStatusFailed           VirtualMachineStatus = "failed"
 	VirtualMachineStatusError            VirtualMachineStatus = "error"
-	VirtualMachineStatusUnknown          VirtualMachineStatus = "unknown"
-	VirtualMachineStatusMissing          VirtualMachineStatus = "missing"
 )
 
 // AllValues returns all VirtualMachineStatus values.
 func (VirtualMachineStatus) AllValues() []VirtualMachineStatus {
 	return []VirtualMachineStatus{
 		VirtualMachineStatusPending,
-		VirtualMachineStatusProvisioning,
 		VirtualMachineStatusActive,
 		VirtualMachineStatusStopped,
 		VirtualMachineStatusPaused,
@@ -13745,8 +13611,6 @@ func (VirtualMachineStatus) AllValues() []VirtualMachineStatus {
 		VirtualMachineStatusDeleted,
 		VirtualMachineStatusFailed,
 		VirtualMachineStatusError,
-		VirtualMachineStatusUnknown,
-		VirtualMachineStatusMissing,
 	}
 }
 
@@ -13754,8 +13618,6 @@ func (VirtualMachineStatus) AllValues() []VirtualMachineStatus {
 func (s VirtualMachineStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case VirtualMachineStatusPending:
-		return []byte(s), nil
-	case VirtualMachineStatusProvisioning:
 		return []byte(s), nil
 	case VirtualMachineStatusActive:
 		return []byte(s), nil
@@ -13777,10 +13639,6 @@ func (s VirtualMachineStatus) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case VirtualMachineStatusError:
 		return []byte(s), nil
-	case VirtualMachineStatusUnknown:
-		return []byte(s), nil
-	case VirtualMachineStatusMissing:
-		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
 	}
@@ -13791,9 +13649,6 @@ func (s *VirtualMachineStatus) UnmarshalText(data []byte) error {
 	switch VirtualMachineStatus(data) {
 	case VirtualMachineStatusPending:
 		*s = VirtualMachineStatusPending
-		return nil
-	case VirtualMachineStatusProvisioning:
-		*s = VirtualMachineStatusProvisioning
 		return nil
 	case VirtualMachineStatusActive:
 		*s = VirtualMachineStatusActive
@@ -13825,12 +13680,6 @@ func (s *VirtualMachineStatus) UnmarshalText(data []byte) error {
 	case VirtualMachineStatusError:
 		*s = VirtualMachineStatusError
 		return nil
-	case VirtualMachineStatusUnknown:
-		*s = VirtualMachineStatusUnknown
-		return nil
-	case VirtualMachineStatusMissing:
-		*s = VirtualMachineStatusMissing
-		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
@@ -13845,11 +13694,11 @@ type VirtualPrivateCloud struct {
 	// The /64 prefix routed to the network, null while IPv6 is not enabled.
 	Ipv6Cidr NilString `json:"ipv6_cidr"`
 	// `pending` until the virtual private cloud's network and router exist. `failed` means creation failed
-	// or the backend lost the network; virtual machines cannot be created in it then and are refused with
-	// `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
-	// subnets, security groups and routes in it can no longer be created, changed or deleted, and are
-	// refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
-	// `deleting` with no operation, and deleting it again resumes from where it stopped.
+	// or the cloud reports the network broken; virtual machines cannot be created in it then and are
+	// refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began
+	// until it is gone: subnets, security groups and routes in it can no longer be created, changed or
+	// deleted, and are refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the
+	// end leaves it `deleting` with no operation, and deleting it again resumes from where it stopped.
 	Status VirtualPrivateCloudStatus `json:"status"`
 	// The operation in progress on this virtual private cloud, or null when none is.
 	Operation NilVirtualPrivateCloudOperation `json:"operation"`
@@ -14092,11 +13941,11 @@ func (s *VirtualPrivateCloudOperationType) UnmarshalText(data []byte) error {
 }
 
 // `pending` until the virtual private cloud's network and router exist. `failed` means creation failed
-// or the backend lost the network; virtual machines cannot be created in it then and are refused with
-// `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
-// subnets, security groups and routes in it can no longer be created, changed or deleted, and are
-// refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
-// `deleting` with no operation, and deleting it again resumes from where it stopped.
+// or the cloud reports the network broken; virtual machines cannot be created in it then and are
+// refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began
+// until it is gone: subnets, security groups and routes in it can no longer be created, changed or
+// deleted, and are refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the
+// end leaves it `deleting` with no operation, and deleting it again resumes from where it stopped.
 type VirtualPrivateCloudStatus string
 
 const (

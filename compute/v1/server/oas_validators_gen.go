@@ -2155,8 +2155,6 @@ func (s DiskAttachmentState) Validate() error {
 		return nil
 	case "released":
 		return nil
-	case "unknown":
-		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -2461,8 +2459,6 @@ func (s DiskBackupResourceStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
-	case "provisioning":
-		return nil
 	case "available":
 		return nil
 	case "deleted":
@@ -2470,8 +2466,6 @@ func (s DiskBackupResourceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
-		return nil
-	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -2840,8 +2834,6 @@ func (s DiskResourceStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
-	case "provisioning":
-		return nil
 	case "available":
 		return nil
 	case "in_use":
@@ -2851,8 +2843,6 @@ func (s DiskResourceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
-		return nil
-	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3318,11 +3308,9 @@ func (s ElasticIPAssociationID) Validate() error {
 
 func (s ElasticIPAssociationState) Validate() error {
 	switch s {
-	case "bound":
+	case "associated":
 		return nil
 	case "released":
-		return nil
-	case "unknown":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3507,8 +3495,6 @@ func (s ElasticIPStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
-	case "provisioning":
-		return nil
 	case "available":
 		return nil
 	case "deleted":
@@ -3516,10 +3502,6 @@ func (s ElasticIPStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
-		return nil
-	case "unknown":
-		return nil
-	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -4202,8 +4184,6 @@ func (s NetworkInterfaceAddressState) Validate() error {
 		return nil
 	case "released":
 		return nil
-	case "unknown":
-		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -4346,8 +4326,6 @@ func (s NetworkInterfaceAttachmentState) Validate() error {
 		return nil
 	case "released":
 		return nil
-	case "unknown":
-		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -4468,10 +4446,6 @@ func (s NetworkInterfaceStatus) Validate() error {
 	case "available":
 		return nil
 	case "error":
-		return nil
-	case "unknown":
-		return nil
-	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -5127,15 +5101,11 @@ func (s PeeringResourceAcceptance) Validate() error {
 
 func (s PeeringResourceStatus) Validate() error {
 	switch s {
-	case "pending_acceptance":
-		return nil
-	case "provisioning":
+	case "pending":
 		return nil
 	case "active":
 		return nil
 	case "deleted":
-		return nil
-	case "rejected":
 		return nil
 	case "failed":
 		return nil
@@ -5440,10 +5410,6 @@ func (s PrivateImageResourceStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
-	case "provisioning":
-		return nil
-	case "uploading":
-		return nil
 	case "available":
 		return nil
 	case "deleted":
@@ -5451,8 +5417,6 @@ func (s PrivateImageResourceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
-		return nil
-	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -6687,8 +6651,6 @@ func (s SnapshotResourceStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
-	case "provisioning":
-		return nil
 	case "available":
 		return nil
 	case "deleted":
@@ -6696,8 +6658,6 @@ func (s SnapshotResourceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
-		return nil
-	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -8426,8 +8386,6 @@ func (s VirtualMachineStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
-	case "provisioning":
-		return nil
 	case "active":
 		return nil
 	case "stopped":
@@ -8447,10 +8405,6 @@ func (s VirtualMachineStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
-		return nil
-	case "unknown":
-		return nil
-	case "missing":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

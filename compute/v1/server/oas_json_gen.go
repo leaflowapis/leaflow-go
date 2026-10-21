@@ -5194,8 +5194,6 @@ func (s *DiskAttachmentState) Decode(d *jx.Decoder) error {
 		*s = DiskAttachmentStateAttached
 	case DiskAttachmentStateReleased:
 		*s = DiskAttachmentStateReleased
-	case DiskAttachmentStateUnknown:
-		*s = DiskAttachmentStateUnknown
 	default:
 		*s = DiskAttachmentState(v)
 	}
@@ -6109,8 +6107,6 @@ func (s *DiskBackupResourceStatus) Decode(d *jx.Decoder) error {
 	switch DiskBackupResourceStatus(v) {
 	case DiskBackupResourceStatusPending:
 		*s = DiskBackupResourceStatusPending
-	case DiskBackupResourceStatusProvisioning:
-		*s = DiskBackupResourceStatusProvisioning
 	case DiskBackupResourceStatusAvailable:
 		*s = DiskBackupResourceStatusAvailable
 	case DiskBackupResourceStatusDeleted:
@@ -6119,8 +6115,6 @@ func (s *DiskBackupResourceStatus) Decode(d *jx.Decoder) error {
 		*s = DiskBackupResourceStatusFailed
 	case DiskBackupResourceStatusError:
 		*s = DiskBackupResourceStatusError
-	case DiskBackupResourceStatusMissing:
-		*s = DiskBackupResourceStatusMissing
 	default:
 		*s = DiskBackupResourceStatus(v)
 	}
@@ -7246,8 +7240,6 @@ func (s *DiskResourceStatus) Decode(d *jx.Decoder) error {
 	switch DiskResourceStatus(v) {
 	case DiskResourceStatusPending:
 		*s = DiskResourceStatusPending
-	case DiskResourceStatusProvisioning:
-		*s = DiskResourceStatusProvisioning
 	case DiskResourceStatusAvailable:
 		*s = DiskResourceStatusAvailable
 	case DiskResourceStatusInUse:
@@ -7258,8 +7250,6 @@ func (s *DiskResourceStatus) Decode(d *jx.Decoder) error {
 		*s = DiskResourceStatusFailed
 	case DiskResourceStatusError:
 		*s = DiskResourceStatusError
-	case DiskResourceStatusMissing:
-		*s = DiskResourceStatusMissing
 	default:
 		*s = DiskResourceStatus(v)
 	}
@@ -8357,12 +8347,12 @@ func (s *ElasticIPAssociation) encodeFields(e *jx.Encoder) {
 		s.State.Encode(e)
 	}
 	{
-		e.FieldStart("bound_at")
-		s.BoundAt.Encode(e, json.EncodeDateTime)
+		e.FieldStart("associated_at")
+		s.AssociatedAt.Encode(e, json.EncodeDateTime)
 	}
 	{
-		e.FieldStart("unbound_at")
-		s.UnboundAt.Encode(e, json.EncodeDateTime)
+		e.FieldStart("disassociated_at")
+		s.DisassociatedAt.Encode(e, json.EncodeDateTime)
 	}
 	{
 		e.FieldStart("released_at")
@@ -8377,8 +8367,8 @@ var jsonFieldsNameOfElasticIPAssociation = [9]string{
 	3: "address",
 	4: "fixed_ip",
 	5: "state",
-	6: "bound_at",
-	7: "unbound_at",
+	6: "associated_at",
+	7: "disassociated_at",
 	8: "released_at",
 }
 
@@ -8451,25 +8441,25 @@ func (s *ElasticIPAssociation) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"state\"")
 			}
-		case "bound_at":
+		case "associated_at":
 			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
-				if err := s.BoundAt.Decode(d, json.DecodeDateTime); err != nil {
+				if err := s.AssociatedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"bound_at\"")
+				return errors.Wrap(err, "decode field \"associated_at\"")
 			}
-		case "unbound_at":
+		case "disassociated_at":
 			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
-				if err := s.UnboundAt.Decode(d, json.DecodeDateTime); err != nil {
+				if err := s.DisassociatedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"unbound_at\"")
+				return errors.Wrap(err, "decode field \"disassociated_at\"")
 			}
 		case "released_at":
 			requiredBitSet[1] |= 1 << 0
@@ -8594,12 +8584,10 @@ func (s *ElasticIPAssociationState) Decode(d *jx.Decoder) error {
 	}
 	// Try to use constant string.
 	switch ElasticIPAssociationState(v) {
-	case ElasticIPAssociationStateBound:
-		*s = ElasticIPAssociationStateBound
+	case ElasticIPAssociationStateAssociated:
+		*s = ElasticIPAssociationStateAssociated
 	case ElasticIPAssociationStateReleased:
 		*s = ElasticIPAssociationStateReleased
-	case ElasticIPAssociationStateUnknown:
-		*s = ElasticIPAssociationStateUnknown
 	default:
 		*s = ElasticIPAssociationState(v)
 	}
@@ -9181,8 +9169,6 @@ func (s *ElasticIPStatus) Decode(d *jx.Decoder) error {
 	switch ElasticIPStatus(v) {
 	case ElasticIPStatusPending:
 		*s = ElasticIPStatusPending
-	case ElasticIPStatusProvisioning:
-		*s = ElasticIPStatusProvisioning
 	case ElasticIPStatusAvailable:
 		*s = ElasticIPStatusAvailable
 	case ElasticIPStatusDeleted:
@@ -9191,10 +9177,6 @@ func (s *ElasticIPStatus) Decode(d *jx.Decoder) error {
 		*s = ElasticIPStatusFailed
 	case ElasticIPStatusError:
 		*s = ElasticIPStatusError
-	case ElasticIPStatusUnknown:
-		*s = ElasticIPStatusUnknown
-	case ElasticIPStatusMissing:
-		*s = ElasticIPStatusMissing
 	default:
 		*s = ElasticIPStatus(v)
 	}
@@ -11304,8 +11286,6 @@ func (s *NetworkInterfaceAddressState) Decode(d *jx.Decoder) error {
 		*s = NetworkInterfaceAddressStateAssigned
 	case NetworkInterfaceAddressStateReleased:
 		*s = NetworkInterfaceAddressStateReleased
-	case NetworkInterfaceAddressStateUnknown:
-		*s = NetworkInterfaceAddressStateUnknown
 	default:
 		*s = NetworkInterfaceAddressState(v)
 	}
@@ -11726,8 +11706,6 @@ func (s *NetworkInterfaceAttachmentState) Decode(d *jx.Decoder) error {
 		*s = NetworkInterfaceAttachmentStateAttached
 	case NetworkInterfaceAttachmentStateReleased:
 		*s = NetworkInterfaceAttachmentStateReleased
-	case NetworkInterfaceAttachmentStateUnknown:
-		*s = NetworkInterfaceAttachmentStateUnknown
 	default:
 		*s = NetworkInterfaceAttachmentState(v)
 	}
@@ -12099,10 +12077,6 @@ func (s *NetworkInterfaceStatus) Decode(d *jx.Decoder) error {
 		*s = NetworkInterfaceStatusAvailable
 	case NetworkInterfaceStatusError:
 		*s = NetworkInterfaceStatusError
-	case NetworkInterfaceStatusUnknown:
-		*s = NetworkInterfaceStatusUnknown
-	case NetworkInterfaceStatusMissing:
-		*s = NetworkInterfaceStatusMissing
 	default:
 		*s = NetworkInterfaceStatus(v)
 	}
@@ -16395,16 +16369,12 @@ func (s *PeeringResourceStatus) Decode(d *jx.Decoder) error {
 	}
 	// Try to use constant string.
 	switch PeeringResourceStatus(v) {
-	case PeeringResourceStatusPendingAcceptance:
-		*s = PeeringResourceStatusPendingAcceptance
-	case PeeringResourceStatusProvisioning:
-		*s = PeeringResourceStatusProvisioning
+	case PeeringResourceStatusPending:
+		*s = PeeringResourceStatusPending
 	case PeeringResourceStatusActive:
 		*s = PeeringResourceStatusActive
 	case PeeringResourceStatusDeleted:
 		*s = PeeringResourceStatusDeleted
-	case PeeringResourceStatusRejected:
-		*s = PeeringResourceStatusRejected
 	case PeeringResourceStatusFailed:
 		*s = PeeringResourceStatusFailed
 	default:
@@ -17521,10 +17491,6 @@ func (s *PrivateImageResourceStatus) Decode(d *jx.Decoder) error {
 	switch PrivateImageResourceStatus(v) {
 	case PrivateImageResourceStatusPending:
 		*s = PrivateImageResourceStatusPending
-	case PrivateImageResourceStatusProvisioning:
-		*s = PrivateImageResourceStatusProvisioning
-	case PrivateImageResourceStatusUploading:
-		*s = PrivateImageResourceStatusUploading
 	case PrivateImageResourceStatusAvailable:
 		*s = PrivateImageResourceStatusAvailable
 	case PrivateImageResourceStatusDeleted:
@@ -17533,8 +17499,6 @@ func (s *PrivateImageResourceStatus) Decode(d *jx.Decoder) error {
 		*s = PrivateImageResourceStatusFailed
 	case PrivateImageResourceStatusError:
 		*s = PrivateImageResourceStatusError
-	case PrivateImageResourceStatusMissing:
-		*s = PrivateImageResourceStatusMissing
 	default:
 		*s = PrivateImageResourceStatus(v)
 	}
@@ -21514,8 +21478,6 @@ func (s *SnapshotResourceStatus) Decode(d *jx.Decoder) error {
 	switch SnapshotResourceStatus(v) {
 	case SnapshotResourceStatusPending:
 		*s = SnapshotResourceStatusPending
-	case SnapshotResourceStatusProvisioning:
-		*s = SnapshotResourceStatusProvisioning
 	case SnapshotResourceStatusAvailable:
 		*s = SnapshotResourceStatusAvailable
 	case SnapshotResourceStatusDeleted:
@@ -21524,8 +21486,6 @@ func (s *SnapshotResourceStatus) Decode(d *jx.Decoder) error {
 		*s = SnapshotResourceStatusFailed
 	case SnapshotResourceStatusError:
 		*s = SnapshotResourceStatusError
-	case SnapshotResourceStatusMissing:
-		*s = SnapshotResourceStatusMissing
 	default:
 		*s = SnapshotResourceStatus(v)
 	}
@@ -25599,8 +25559,6 @@ func (s *VirtualMachineStatus) Decode(d *jx.Decoder) error {
 	switch VirtualMachineStatus(v) {
 	case VirtualMachineStatusPending:
 		*s = VirtualMachineStatusPending
-	case VirtualMachineStatusProvisioning:
-		*s = VirtualMachineStatusProvisioning
 	case VirtualMachineStatusActive:
 		*s = VirtualMachineStatusActive
 	case VirtualMachineStatusStopped:
@@ -25621,10 +25579,6 @@ func (s *VirtualMachineStatus) Decode(d *jx.Decoder) error {
 		*s = VirtualMachineStatusFailed
 	case VirtualMachineStatusError:
 		*s = VirtualMachineStatusError
-	case VirtualMachineStatusUnknown:
-		*s = VirtualMachineStatusUnknown
-	case VirtualMachineStatusMissing:
-		*s = VirtualMachineStatusMissing
 	default:
 		*s = VirtualMachineStatus(v)
 	}
