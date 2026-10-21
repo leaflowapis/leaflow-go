@@ -15635,6 +15635,10 @@ func (s *PerformanceFormula) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PerformanceFormula) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("min")
+		e.Int64(s.Min)
+	}
+	{
 		e.FieldStart("base")
 		e.Int64(s.Base)
 	}
@@ -15648,10 +15652,11 @@ func (s *PerformanceFormula) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPerformanceFormula = [3]string{
-	0: "base",
-	1: "per_gib",
-	2: "max",
+var jsonFieldsNameOfPerformanceFormula = [4]string{
+	0: "min",
+	1: "base",
+	2: "per_gib",
+	3: "max",
 }
 
 // Decode decodes PerformanceFormula from json.
@@ -15663,8 +15668,20 @@ func (s *PerformanceFormula) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "base":
+		case "min":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int64()
+				s.Min = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"min\"")
+			}
+		case "base":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Int64()
 				s.Base = int64(v)
@@ -15676,7 +15693,7 @@ func (s *PerformanceFormula) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"base\"")
 			}
 		case "per_gib":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.PerGib = int64(v)
@@ -15688,7 +15705,7 @@ func (s *PerformanceFormula) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"per_gib\"")
 			}
 		case "max":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.Max = int64(v)
@@ -15709,7 +15726,7 @@ func (s *PerformanceFormula) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

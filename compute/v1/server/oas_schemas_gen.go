@@ -2705,8 +2705,9 @@ func (s *DiskTypeListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// How fast a disk of this type runs for its size. Alibaba Cloud's ESSD levels have this shape; PL1,
-// for example, is IOPS `min(50000, 1800 + 50 × size_gb)`.
+// How fast a disk of this type runs for its size. Alibaba Cloud's ESSD disks have this shape: PL1 is
+// IOPS `min(50000, 1800 + 50 × size_gb)`, and AutoPL's baseline adds a floor,
+// `max(3000, min(50000, 1800 + 50 × size_gb))`.
 //
 // A disk's own performance, computed from these for its size, is on the disk. Growing a disk raises
 // it, and the new performance applies from the disk's next attachment or the next start of its stopped
@@ -8876,12 +8877,19 @@ func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 }
 
 // One performance metric of a disk type for a disk of `size_gb`,
-// `min(max, base + size_gb × per_gib)`. A `per_gib` of zero is a fixed performance.
+// `max(min, min(max, base + size_gb × per_gib))`. A `per_gib` of zero is a fixed performance, and a
+// `min` of zero is no floor.
 // Ref: #/components/schemas/PerformanceFormula
 type PerformanceFormula struct {
+	Min    int64 `json:"min"`
 	Base   int64 `json:"base"`
 	PerGib int64 `json:"per_gib"`
 	Max    int64 `json:"max"`
+}
+
+// GetMin returns the value of Min.
+func (s *PerformanceFormula) GetMin() int64 {
+	return s.Min
 }
 
 // GetBase returns the value of Base.
@@ -8897,6 +8905,11 @@ func (s *PerformanceFormula) GetPerGib() int64 {
 // GetMax returns the value of Max.
 func (s *PerformanceFormula) GetMax() int64 {
 	return s.Max
+}
+
+// SetMin sets the value of Min.
+func (s *PerformanceFormula) SetMin(val int64) {
+	s.Min = val
 }
 
 // SetBase sets the value of Base.
